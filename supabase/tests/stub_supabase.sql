@@ -10,3 +10,4 @@ create or replace function auth.uid() returns uuid language sql stable as
 grant usage on schema public, auth to anon, authenticated, service_role;
 grant all on all tables in schema public to service_role;
 alter default privileges in schema public grant all on tables to service_role;
+alter default privileges in schema public grant all on tables to anon, authenticated; -- simula o padrão do Supabase
