@@ -125,23 +125,27 @@ Cada cliente usa o próprio domínio. O piloto é `www.mobisautoparts.com.br`, h
 
 **Fase 4 — Publicar e expandir.** Site próprio no domínio do cliente primeiro; depois marketplaces, feeds, SEO e campanhas.
 
-## 10. Decisões em aberto
+## 10. Decisões tomadas
+
+1. **Custo de IA é do cliente (chave própria).** Cada lojista escolhe o agente/provedor e cadastra a própria chave de API no Conecta.IA. A chave fica cifrada, só no servidor, isolada por loja, nunca em log nem no navegador. O Conecta.IA mede o uso por loja.
+2. **O Conecta.IA guarda só a memória de gerenciamento dos ERPs** (espelho, fila, vínculos, auditoria). Quem trabalha é o agente do Conecta.IA; o agente NanoShell fica como segunda via (ver seção 7).
+3. **Supabase migra para o plano Pro** antes de produção (backup diário, sem pausa). A cobrança é feita pelo titular da conta, não por mim.
+4. **Teste primeiro com URL do Supabase/app**, depois o domínio da Mobis. O domínio só entra com DNS e SSL verificados e autorização explícita.
+5. **Painel administrativo:** login por e-mail/senha e Google; visualização ao vivo do site (pré-visualização) para ver como está ficando; área de desenvolvimento e administração total (super admin, com MFA), no modelo SaaS.
+6. **Conexão com o Bling automática:** fluxo OAuth guiado (o lojista clica em "Conectar ao Bling"), renovação automática do token, sem copiar chave à mão. Acompanhar as mudanças do Bling na documentação.
+7. **Escrita no Bling (Fase 3):** depois dos testes de leitura, o Conecta.IA passa a poder atualizar o cadastro no Bling, **por campo, com autorização explícita do cliente**, com registro de antes/depois e opção de desfazer. Até lá, somente leitura.
+8. Já aprovados antes: campos espelhados (nome, SKU, preço, estoque, situação, imagens, categoria, marca, GTIN, descrição, peso, medidas, embalagem e volumes); imagem gerada por IA nunca é apresentada como foto real nem vira principal sem aprovação; fonte do cadastro é a API do Bling.
+
+## 11. Decisões em aberto
 
 1. Stack aprovada? Proposta: Next.js + TypeScript + Supabase.
-2. Campos obrigatórios para publicar um produto e campos espelhados do Bling.
+2. Campos obrigatórios para publicar um produto.
 3. Detalhes do Bling (webhooks, limites, publicação do aplicativo): ler a documentação antes de implementar.
 4. Quais UFs o super admin pode bloquear e como o lojista as vê.
 5. Formas de pagamento do checkout (o piloto começa só em modo WhatsApp).
-6. Plano do Supabase para produção (o gratuito pausa por inatividade e não tem backup diário).
-7. Nome das organizações: a do Supabase e a do GitHub serão renomeadas. Não fixar nomes de organização no código.
-8. Escrita de volta no Bling: nunca, ou só com autorização por campo? (recomendado: só na camada do Conecta.IA)
-9. "Recursos mais modernos": lista concreta a definir com o cliente (SEO local, dados estruturados, otimização de imagem, PWA...). Sem prometer resultado de ranking.
-10. Onde roda o front multi-domínio e como o certificado de cada domínio é emitido (custo, moeda, limite de domínios).
-11. Quem altera o DNS de cada cliente e como registrar essa autorização.
-12. Para a Mobis: onde está o registro do domínio e o DNS hoje (Locaweb?) e quem tem acesso a ele.
-13. Modelo de IA do agente integrado e quem paga o custo por cliente. Proposta a medir: modelo menor para triagem e rascunho, modelo maior só para casos difíceis.
-14. Prazo para o NanoShell reivindicar ou concluir uma tarefa antes de cair para o integrado (sugestão: 10 min).
-15. Perfil de enriquecimento da Mobis (autopeças): conteúdo e validação das regras fiscais pelo contador.
-17. Fonte do cadastro: só a API do Bling, ou também o XML de documentos fiscais? (o XML traz dado fiscal de nota, não o cadastro do produto; usar só se houver necessidade clara)
-18. Dados de logística a espelhar além de peso e medidas: embalagem e volumes (e a margem de segurança de peso e frete do perfil da Mobis).
-19. Infraestrutura do site: o documento-base cita AWS e Vercel, que cobram em dólar; comparar com alternativas cobradas em reais (ver decisão 10).
+6. Provedores de IA aceitos para a chave do cliente e limite de uso por loja.
+7. Onde roda o front multi-domínio e como o certificado de cada domínio é emitido (custo em reais, limite de domínios).
+8. Para a Mobis: onde está o registro do domínio e o DNS hoje (Locaweb?) e quem tem acesso.
+9. Prazo para o NanoShell reivindicar uma tarefa antes de cair para o integrado (sugestão: 10 min).
+10. Perfil de enriquecimento da Mobis (autopeças) e validação das regras fiscais pelo contador.
+11. "Recursos mais modernos": lista concreta, sem prometer ranking.
