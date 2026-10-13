@@ -11,7 +11,11 @@ Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no ch
 ## Modelo
 1. O ERP (Bling) é a **fonte** de cadastro, preço e estoque. Ninguém cadastra o mesmo produto duas vezes.
 2. **Fluxo principal: o Conecta.IA se conecta direto ao Bling de cada cliente** (credencial por cliente) e mantém um **espelho somente leitura** do catálogo, como um PDV. Se qualquer dado muda no cadastro do Bling, muda no site: atualização por **webhook em tempo real** (se confirmado na documentação) mais **varredura periódica de segurança**. **Ninguém edita produto no site.**
-3. **Enriquecimento próprio:** todo produto passa pela camada de enriquecimento do Conecta.IA, acionada **automaticamente quando o cadastro é insuficiente** ou **sob demanda**. Ela fica separada do dado original do Bling. O agente NanoShell roda no navegador, é **independente** e **não é dependência** do Conecta.IA; uma API de entrada para ele é opcional e fica fora da Fase 1.
+3. **Enriquecimento com dois caminhos, para o cliente nunca ficar na mão:**
+   - **Agente integrado do site:** roda dentro do Conecta.IA.
+   - **Agente NanoShell:** roda no navegador e trabalha por **fila de tarefas** (ele busca a tarefa e devolve o resultado; o navegador não recebe chamadas de fora).
+   - Cada loja escolhe o preferido: `integrado`, `nanoshell` ou `automático` (prefere o NanoShell e, se ele não responder a tempo, **cai para o integrado**).
+   - Os dois escrevem na **mesma camada de enriquecimento**, separada do dado do Bling. O enriquecimento é acionado automaticamente quando o cadastro é insuficiente, ou sob demanda.
 4. O Conecta.IA é a frente de venda (como um PDV do site). O ERP é a retaguarda.
 5. O lojista edita só o que é do site: banners, páginas, SEO, tema e regras de venda. O cadastro do produto vem do ERP.
 6. **Enriquecimento nunca inventa.** Cada dado enriquecido guarda fonte, data e nível de confiança, separado do dado original do ERP. Sem evidência, fica "a confirmar" ou vazio. Nunca inventar preço, estoque, GTIN, NCM, compatibilidade ou especificação.
@@ -37,7 +41,7 @@ Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no ch
 - Nenhum segredo (super admin, chaves de loja, tokens, service role do Supabase) no frontend, no repositório ou em log.
 - Isolamento total entre lojas no servidor e no banco (RLS quando suportado).
 - Não fazer deploy, migração destrutiva nem mudança de DNS/domínio sem autorização explícita.
-- Super admin e serviços usam credenciais **separadas**: login com MFA para pessoas; serviços com chave própria (nunca a mesma de pessoa).
+- Super admin e serviços usam credenciais **separadas**: login com MFA para pessoas; o agente NanoShell usa chave por loja que só alcança as rotas da fila de tarefas (nunca a mesma de pessoa).
 - **Credenciais do Bling por cliente**: guardadas cifradas, só no servidor, isoladas por loja, nunca em log nem no navegador. O JWT do Bling tem ~1.500 a 3.000 caracteres: não truncar. Header `enable-jwt: 1` na obtenção, na renovação e em todas as requisições.
 
 ## Como trabalhar aqui

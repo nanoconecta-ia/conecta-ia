@@ -9,10 +9,14 @@ O lojista mantém o cadastro no Bling. O Conecta.IA espelha o catálogo e o publ
 ```
 Bling (fonte única) ──webhook / varredura──▶ Sincronizador ──▶ Espelho (somente leitura) ──▶ Site no domínio do cliente
                                                                    │
-                                                                   └─▶ Enriquecimento próprio (se precisar / sob demanda)
+                                                  fila de tarefas de enriquecimento
+                                                   │                          │
+                                       Agente integrado do site      Agente NanoShell (navegador)
+                                                   └────────────┬────────────┘
+                                                      camada de enriquecimento (mesma para os dois)
 ```
 
-O agente NanoShell roda no navegador e é independente: não faz parte do caminho crítico.
+Os dois agentes são caminhos equivalentes: se um falhar, o outro assume e o cliente continua. O NanoShell **não** é pré-requisito para o site funcionar.
 
 ## 2. Sincronização com o Bling (fluxo principal)
 
@@ -60,11 +64,14 @@ Papéis: `super_admin` (plataforma), `lojista` (por loja). Cada um com login pr�
 
 ## 7. Enriquecimento próprio e autenticação do Bling (JWT)
 
-**Enriquecimento**
-- Todo produto passa pela camada de enriquecimento do Conecta.IA, **acionada automaticamente** quando o cadastro é insuficiente (campos faltando ou qualidade baixa) ou **sob demanda** pelo lojista.
-- Resultado fica **separado** do dado do Bling, com fonte, data, nível de confiança e o `hash` dos campos de origem usados. Se o Bling mudar esses campos, o enriquecimento fica **desatualizado** e pode ser reexecutado.
-- Nunca inventa. Sem evidência, fica "a confirmar" ou vazio.
-- **Custo de IA por loja:** limite de uso por loja e registro de cada execução.
+**Enriquecimento: dois provedores, uma fila**
+- Quando o cadastro é insuficiente (campos faltando, qualidade baixa) ou quando o lojista pede, o Conecta.IA cria uma **tarefa de enriquecimento** (produto, campos a melhorar, hash dos campos de origem).
+- **Preferência por loja:** `integrado`, `nanoshell` ou `automático`. No automático, a tarefa é oferecida ao NanoShell e, **se não for reivindicada ou concluída dentro do prazo** (sugestão: 10 min), passa ao agente integrado.
+- **Agente integrado:** roda no servidor do Conecta.IA, com limite de uso por loja e registro de cada execução (custo e quem acionou).
+- **Agente NanoShell:** roda no navegador, então **busca** tarefas na API (chave por loja, só rotas da fila), reivindica uma por vez com prazo de validade (para duas execuções não pegarem a mesma) e devolve o resultado.
+- **Resultado dos dois** passa pela mesma validação e entra na camada de enriquecimento: campo, valor, **fonte, data, nível de confiança**, provedor que gerou e o `hash` dos campos de origem. Se o Bling mudar esses campos, o enriquecimento fica **desatualizado** e a tarefa pode ser refeita.
+- Nunca inventa. Sem evidência, fica "a confirmar" ou vazio. Nunca sobrescreve dado já aprovado.
+- **Perfil de enriquecimento por ramo e por loja**, nunca global. Ex.: perfil "autopeças" para a Mobis. As regras fiscais de qualquer perfil devem ser **validadas pelo contador** antes de entrar em produção.
 - Escrita de volta no Bling: padrão é **não escrever**.
 
 **Autenticação do Bling** (fonte: guia "Migração para autenticação JWT" da documentação do Bling)
@@ -99,9 +106,10 @@ Cada cliente usa o próprio domínio. O piloto é `www.mobisautoparts.com.br`, h
 6. Plano do Supabase para produção (o gratuito pausa por inatividade e não tem backup diário).
 7. Nome das organizações: a do Supabase e a do GitHub serão renomeadas. Não fixar nomes de organização no código.
 8. Escrita de volta no Bling: nunca, ou só com autorização por campo? (recomendado: só na camada do Conecta.IA)
-9. Qual modelo de IA o enriquecimento usa e quem paga o custo por cliente.
-10. "Recursos mais modernos": lista concreta a definir com o cliente (SEO local, dados estruturados, otimização de imagem, PWA...). Sem prometer resultado de ranking.
-11. Onde roda o front multi-domínio e como o certificado de cada domínio é emitido (custo, moeda, limite de domínios).
-12. Quem altera o DNS de cada cliente e como registrar essa autorização.
-13. Para a Mobis: onde está o registro do domínio e o DNS hoje (Locaweb?) e quem tem acesso a ele.
-14. API de entrada opcional para o agente NanoShell: fora da Fase 1; decidir depois.
+9. "Recursos mais modernos": lista concreta a definir com o cliente (SEO local, dados estruturados, otimização de imagem, PWA...). Sem prometer resultado de ranking.
+10. Onde roda o front multi-domínio e como o certificado de cada domínio é emitido (custo, moeda, limite de domínios).
+11. Quem altera o DNS de cada cliente e como registrar essa autorização.
+12. Para a Mobis: onde está o registro do domínio e o DNS hoje (Locaweb?) e quem tem acesso a ele.
+13. Modelo de IA do agente integrado e quem paga o custo por cliente. Proposta a medir: modelo menor para triagem e rascunho, modelo maior só para casos difíceis.
+14. Prazo para o NanoShell reivindicar ou concluir uma tarefa antes de cair para o integrado (sugestão: 10 min).
+15. Perfil de enriquecimento da Mobis (autopeças): conteúdo e validação das regras fiscais pelo contador.
