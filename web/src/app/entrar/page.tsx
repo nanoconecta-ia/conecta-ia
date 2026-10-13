@@ -26,17 +26,25 @@ async function entrarComGoogle() {
   redirect(data.url);
 }
 
+const avisos: Record<string, string> = {
+  senha: "Senha alterada. Entre com a nova senha.",
+};
+
 const mensagens: Record<string, string> = {
   credenciais: "E-mail ou senha incorretos.",
   google: "Não foi possível entrar com o Google.",
   config: "O servidor ainda não está configurado.",
+  link: "O link de recuperação é inválido ou expirou. Peça um novo.",
 };
 
-export default async function Entrar({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
-  const { erro } = await searchParams;
+export default async function Entrar({ searchParams }: { searchParams: Promise<{ erro?: string; aviso?: string }> }) {
+  const { erro, aviso } = await searchParams;
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-5 p-6">
       <h1 className="text-2xl font-semibold">Entrar</h1>
+      {aviso && avisos[aviso] && (
+        <p role="status" className="rounded-lg border border-ok/40 bg-ok/10 p-3 text-sm">{avisos[aviso]}</p>
+      )}
       {erro && (
         <p role="alert" className="rounded-lg border border-erro/40 bg-erro/10 p-3 text-sm">
           {mensagens[erro] ?? "Não foi possível entrar."}
@@ -52,6 +60,7 @@ export default async function Entrar({ searchParams }: { searchParams: Promise<{
           <input name="senha" type="password" required autoComplete="current-password" className="mt-1 w-full rounded-lg border border-borda bg-card px-3 py-2.5" />
         </label>
         <button className="rounded-lg bg-marca px-4 py-2.5 font-medium text-marca-texto">Entrar</button>
+        <a href="/recuperar-senha" className="text-sm text-suave underline">Esqueci minha senha</a>
       </form>
       <form action={entrarComGoogle}>
         <button className="w-full rounded-lg border border-borda bg-card px-4 py-2.5 font-medium">Entrar com Google</button>

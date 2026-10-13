@@ -27,4 +27,4 @@ export async function middleware(req: NextRequest) {
   return res;
 }
 
-export const config = { matcher: ["/painel/:path*", "/admin/:path*", "/auth/:path*"] };
+export const config = { matcher: ["/painel/:path*", "/admin/:path*", "/auth/:path*", "/redefinir-senha"] };
