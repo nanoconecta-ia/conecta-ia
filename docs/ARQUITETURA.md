@@ -135,6 +135,7 @@ Cada cliente usa o próprio domínio. O piloto é `www.mobisautoparts.com.br`, h
 6. **Conexão com o Bling automática:** fluxo OAuth guiado (o lojista clica em "Conectar ao Bling"), renovação automática do token, sem copiar chave à mão. Acompanhar as mudanças do Bling na documentação.
 7. **Escrita no Bling (Fase 3):** depois dos testes de leitura, o Conecta.IA passa a poder atualizar o cadastro no Bling, **por campo, com autorização explícita do cliente**, com registro de antes/depois e opção de desfazer. Até lá, somente leitura.
 8. Já aprovados antes: campos espelhados (nome, SKU, preço, estoque, situação, imagens, categoria, marca, GTIN, descrição, peso, medidas, embalagem e volumes); imagem gerada por IA nunca é apresentada como foto real nem vira principal sem aprovação; fonte do cadastro é a API do Bling.
+9. **O Conecta.IA expõe um servidor MCP**, para que agentes (o do próprio Conecta.IA, o NanoShell e outros compatíveis) operem a plataforma por ferramentas padronizadas. Regras: credencial **por loja** que só alcança a própria loja (nunca a de pessoa nem a service role); ferramentas de leitura primeiro (catálogo, estado da sincronização, fila de enriquecimento); ferramentas de escrita passam pelas mesmas regras do painel (restrições por UF, autorização por campo, auditoria, limite de uso de IA); escrita no Bling só na Fase 3. Lista exata de ferramentas e forma de autenticação ficam para desenho antes de implementar.
 
 ## 11. Decisões em aberto
 
