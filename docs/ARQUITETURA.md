@@ -71,6 +71,15 @@ Papéis: `super_admin` (plataforma), `lojista` (por loja). Cada um com login pr�
 - **Agente integrado:** roda no servidor do Conecta.IA, com limite de uso por loja e registro de cada execução (custo e quem acionou).
 - **Agente NanoShell:** roda no navegador, então **busca** tarefas na API (chave por loja, só rotas da fila), reivindica uma por vez com prazo de validade (para duas execuções não pegarem a mesma) e devolve o resultado.
 - **Resultado dos dois** passa pela mesma validação e entra na camada de enriquecimento: campo, valor, **fonte, data, nível de confiança**, provedor que gerou e o `hash` dos campos de origem. Se o Bling mudar esses campos, o enriquecimento fica **desatualizado** e a tarefa pode ser refeita.
+- **Etapas do enriquecimento (iguais nos dois agentes):**
+  1. Receber os dados do Bling (cadastro; ver decisão sobre XML).
+  2. Buscar e enriquecer: catálogos técnicos, compatibilidade, especificações, imagens, taxonomia.
+  3. Validar imagens e dados: identidade do produto, referência e **direito de uso**.
+  4. Aplicar regras por canal: título, descrição, atributos, SEO e formatos (canais ficam para a Fase 4).
+  5. Revisar e aprovar: o lojista confere os campos incertos.
+  6. Sincronizar e publicar nos canais autorizados, com histórico.
+- **Etapas especializadas dentro do agente integrado:** indexador de produtos, validador de aplicações (compatibilidade), otimizador de conteúdo, gerador de SEO.
+- **Imagens:** cada imagem guarda tipo, origem, **direitos de uso** e resolução. Imagem de terceiros só entra com direito registrado. **Imagem gerada por IA nunca é apresentada como a foto real do produto** e não vira imagem principal sem aprovação do lojista.
 - Nunca inventa. Sem evidência, fica "a confirmar" ou vazio. Nunca sobrescreve dado já aprovado.
 - **Perfil de enriquecimento por ramo e por loja**, nunca global. Ex.: perfil "autopeças" para a Mobis. As regras fiscais de qualquer perfil devem ser **validadas pelo contador** antes de entrar em produção.
 - Escrita de volta no Bling: padrão é **não escrever**.
@@ -108,6 +117,8 @@ Cada cliente usa o próprio domínio. O piloto é `www.mobisautoparts.com.br`, h
 > 2. **Enriquecer com evidência:** todo dado enriquecido traz fonte e data, e o sistema distingue **confirmado** de **hipótese** ("a confirmar").
 > 3. **Sincronizar com segurança:** detecta alteração, trata conflito (dado mais antigo é ignorado, divergência é registrada) e se recupera de falha sem corromper o catálogo, mantendo o último catálogo válido no ar.
 
+> **Sobre o cronograma do documento-base** (planejamento 1–2 semanas, integração com o Bling 2–4, IA e enriquecimento 4–8, canais 6–10, testes e piloto 10–12, go live 12+): é uma estimativa do responsável, não um compromisso. **Proposta:** antecipar o piloto de leitura (Fase 1) para validar a arquitetura **antes** de construir canais e marketplaces.
+
 **Fase 2 — Painel do lojista.** Dados, pendências, divergências, aprovações do enriquecimento e histórico, em desktop e celular.
 
 **Fase 3 — Escritas controladas no Bling.** Só depois de testes, aprovação humana, regras por campo e mecanismo de recuperação.
@@ -131,3 +142,6 @@ Cada cliente usa o próprio domínio. O piloto é `www.mobisautoparts.com.br`, h
 13. Modelo de IA do agente integrado e quem paga o custo por cliente. Proposta a medir: modelo menor para triagem e rascunho, modelo maior só para casos difíceis.
 14. Prazo para o NanoShell reivindicar ou concluir uma tarefa antes de cair para o integrado (sugestão: 10 min).
 15. Perfil de enriquecimento da Mobis (autopeças): conteúdo e validação das regras fiscais pelo contador.
+17. Fonte do cadastro: só a API do Bling, ou também o XML de documentos fiscais? (o XML traz dado fiscal de nota, não o cadastro do produto; usar só se houver necessidade clara)
+18. Dados de logística a espelhar além de peso e medidas: embalagem e volumes (e a margem de segurança de peso e frete do perfil da Mobis).
+19. Infraestrutura do site: o documento-base cita AWS e Vercel, que cobram em dólar; comparar com alternativas cobradas em reais (ver decisão 10).
