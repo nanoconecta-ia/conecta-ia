@@ -1,44 +1,41 @@
 # Conecta.IA — arquitetura (rascunho para validação)
 
-Estado: **rascunho**. Stack, banco e hospedagem ainda **não definidos**: dependem de ler o site pronto neste repositório. Nada aqui foi implementado.
+Estado: **rascunho**. O site é o próprio Conecta.IA e ainda não existe código. Stack proposta (a aprovar): Next.js + TypeScript + Supabase; hospedagem do front em aberto. Nada aqui foi implementado.
 
 ## 1. Visão
 
-O lojista mantém o cadastro no ERP. O Conecta.IA publica no site sem recadastro. Cada cliente tem seu **indexador independente**, com agente próprio, e escolhe o modo de entrada. O NanoShell é uma opção, não uma dependência.
+O lojista mantém o cadastro no Bling. O Conecta.IA espelha o catálogo e o publica no site do cliente, sem recadastro. Mudou uma vírgula no Bling, muda no site.
 
 ```
-                    ┌─ Modo externo: Agente NanoShell ──(API de entrada, chave por loja)─┐
-Bling (ERP) ────────┤                                                                     ├─▶ Conecta.IA ─▶ Site / checkout / WhatsApp
-                    └─ Modo nativo: Indexador do Conecta.IA (credencial Bling do cliente) ┘
-                                    └─ agente do cliente: imagens, cadastro, SEO
-
-NanoShell fora do ar ⇒ o cliente muda para o modo nativo e continua operando.
+Bling (fonte única) ──webhook / varredura──▶ Sincronizador ──▶ Espelho (somente leitura) ──▶ Site no domínio do cliente
+                                                                   │
+                                                  fila de tarefas de enriquecimento
+                                                   │                          │
+                                       Agente integrado do site      Agente NanoShell (navegador)
+                                                   └────────────┬────────────┘
+                                                      camada de enriquecimento (mesma para os dois)
 ```
 
-O mesmo contrato de dados alimenta o site nos dois modos: o site não sabe de onde o dado veio, só a origem registrada.
+Os dois agentes são caminhos equivalentes: se um falhar, o outro assume e o cliente continua. O NanoShell **não** é pré-requisito para o site funcionar.
 
-## 2. API de entrada (modo externo; proposta, contrato a validar)
+## 2. Sincronização com o Bling (fluxo principal)
 
-O agente externo chama o Conecta.IA. No modo nativo o próprio indexador produz os mesmos eventos e passa pelas mesmas validações.
+- **Conexão por loja:** o cliente autoriza o Conecta.IA no Bling (OAuth). Tokens cifrados, só no servidor, renovação automática, header `enable-jwt: 1` (ver seção 7).
+- **Detecção de mudança:** webhook do Bling em tempo real, **se confirmado na documentação**; senão consulta periódica incremental. Em qualquer caso, uma **varredura periódica de segurança** corrige perdas de evento.
+- **Aplicação:** evento entra numa fila **idempotente**; busca o produto no Bling; aplica no espelho respeitando a **ordem pela data de alteração** (nunca regrava com dado mais antigo); respeita os limites de requisição do Bling com espera crescente.
+- **Espelho somente leitura:** ninguém edita produto no site. O lojista edita só o que é do site (banners, páginas, SEO, tema, regras de venda).
+- **Falhou?** mantém o último estado válido, registra o erro e tenta de novo. O site nunca depende do Bling para abrir.
+- **Registro:** origem, data e versão de cada gravação, com histórico de erros visível no painel.
+- **Divergência:** quando o espelho e o Bling discordam depois de uma sincronização, ou quando um dado enriquecido contradiz o Bling, o caso é **registrado e aparece no painel** para decisão. Até a decisão, **o Bling prevalece**.
 
-- **Autenticação:** `Authorization: Bearer <chave da loja>`. Uma chave por loja, guardada só no servidor (armazenar apenas o hash), revogável e com data de último uso.
-- **Idempotência:** cabeçalho `Idempotency-Key`. O mesmo envio repetido não duplica nem regrava.
-- **Ordem:** cada envio leva `versao_origem` (data/hora de alteração no Bling, ou número crescente). O Conecta.IA **ignora** envio mais antigo que o já gravado.
-- **Corpo (proposta):**
-  - `erp`: `"bling"`
-  - `erp_id`: ID do produto no ERP
-  - `tipo`: `produto` | `preco` | `estoque` | `inativacao`
-  - `versao_origem`
-  - `dados`: campos do tipo (ausente = não informado; nunca preencher por padrão)
-- **Respostas:** `200 aplicado`, `200 ignorado` (versão antiga ou repetido), `422` com a lista de campos obrigatórios que faltam, `401/403` credencial inválida ou loja errada, `429` limite.
-- **Registro:** origem, data e versão de cada gravação. Falha de validação fica visível para o lojista e para o agente.
+**Campos espelhados (mínimo a aprovar):** nome, código (SKU), preço, estoque, situação, imagens, categoria, marca, GTIN, descrição, peso e medidas.
 
 ## 3. Publicação
 
 - Produto só é publicado se tiver os campos obrigatórios (lista a definir com o lojista).
 - Campo vazio fica vazio na página. Nada é inventado.
 - Produto inativo ou removido no ERP é despublicado, não apagado.
-- Último catálogo válido continua no ar se o agente ou o ERP ficarem fora do ar.
+- Último catálogo válido continua no ar se o Bling ficar fora do ar.
 
 ## 4. Controle de venda
 
@@ -62,20 +59,36 @@ Papéis: `super_admin` (plataforma), `lojista` (por loja). Cada um com login pr�
 
 ## 6. Frescor de preço e estoque
 
-- O agente envia a cada mudança. O Conecta.IA guarda `atualizado_em` e a `versao_origem`.
-- Antes de cobrar: se o dado tem mais que a idade máxima (sugestão: 15 min), bloquear a compra e levar ao WhatsApp.
-- Observação: se um item não muda há muito tempo, isso não é erro. A idade máxima precisa se referir à **saúde da conexão** (último envio ou sinal de vida do agente), não à última alteração do produto. Definir um sinal de vida do agente.
+- O sincronizador guarda `atualizado_em` e a data/versão de origem do Bling em cada produto, e o horário da última sincronização bem-sucedida da loja.
+- **Antes de cobrar**, o Conecta.IA consulta o Bling na hora. Se o Bling não responder e a última sincronização bem-sucedida for mais velha que a idade máxima (sugestão: 15 min), a compra é bloqueada e o cliente vai ao WhatsApp.
+- Produto parado há muito tempo não é erro: a idade máxima se refere à **saúde da sincronização**, não à última alteração do produto.
 
-## 7. Indexador nativo e autenticação do Bling (JWT)
+## 7. Enriquecimento próprio e autenticação do Bling (JWT)
 
-Fonte da nota: guia "Migração para autenticação JWT" da documentação do Bling.
+**Enriquecimento: dois provedores, uma fila**
+- Quando o cadastro é insuficiente (campos faltando, qualidade baixa) ou quando o lojista pede, o Conecta.IA cria uma **tarefa de enriquecimento** (produto, campos a melhorar, hash dos campos de origem).
+- **Preferência por loja:** `integrado`, `nanoshell` ou `automático`. No automático, a tarefa é oferecida ao NanoShell e, **se não for reivindicada ou concluída dentro do prazo** (sugestão: 10 min), passa ao agente integrado.
+- **Agente integrado:** roda no servidor do Conecta.IA, com limite de uso por loja e registro de cada execução (custo e quem acionou).
+- **Agente NanoShell:** roda no navegador, então **busca** tarefas na API (chave por loja, só rotas da fila), reivindica uma por vez com prazo de validade (para duas execuções não pegarem a mesma) e devolve o resultado.
+- **Resultado dos dois** passa pela mesma validação e entra na camada de enriquecimento: campo, valor, **fonte, data, nível de confiança**, provedor que gerou e o `hash` dos campos de origem. Se o Bling mudar esses campos, o enriquecimento fica **desatualizado** e a tarefa pode ser refeita.
+- **Etapas do enriquecimento (iguais nos dois agentes):**
+  1. Receber os dados do Bling (cadastro; ver decisão sobre XML).
+  2. Buscar e enriquecer: catálogos técnicos, compatibilidade, especificações, imagens, taxonomia.
+  3. Validar imagens e dados: identidade do produto, referência e **direito de uso**.
+  4. Aplicar regras por canal: título, descrição, atributos, SEO e formatos (canais ficam para a Fase 4).
+  5. Revisar e aprovar: o lojista confere os campos incertos.
+  6. Sincronizar e publicar nos canais autorizados, com histórico.
+- **Etapas especializadas dentro do agente integrado:** indexador de produtos, validador de aplicações (compatibilidade), otimizador de conteúdo, gerador de SEO.
+- **Imagens:** cada imagem guarda tipo, origem, **direitos de uso** e resolução. Imagem de terceiros só entra com direito registrado. **Imagem gerada por IA nunca é apresentada como a foto real do produto** e não vira imagem principal sem aprovação do lojista.
+- Nunca inventa. Sem evidência, fica "a confirmar" ou vazio. Nunca sobrescreve dado já aprovado.
+- **Perfil de enriquecimento por ramo e por loja**, nunca global. Ex.: perfil "autopeças" para a Mobis. As regras fiscais de qualquer perfil devem ser **validadas pelo contador** antes de entrar em produção.
+- Escrita de volta no Bling: padrão é **não escrever**.
 
+**Autenticação do Bling** (fonte: guia "Migração para autenticação JWT" da documentação do Bling)
 - O Bling está descontinuando tokens opacos; a data do bloqueio está em definição.
 - Header `enable-jwt: 1` na obtenção do token, na renovação e em todas as requisições. O JWT tem ~1.500 a ~3.000 caracteres: colunas e headers precisam comportar isso.
-- **No modo nativo o Conecta.IA fala com o Bling**, então isso vale para ele: credenciais por cliente, cifradas, só no servidor, renovação automática, isolamento por loja.
-- Respeitar os limites de requisições e avaliar webhooks do Bling (páginas "Limites" e "Webhooks" da documentação). Não presumir; ler antes de implementar.
-- O indexador nativo reaproveita as regras de sincronização: idempotência, ordem por versão, backoff, último estado válido se o Bling cair.
-- **Agente do cliente:** melhora imagens, cadastro e SEO. Dado enriquecido fica separado do original, com fonte, data e confiança. Escrita de volta no Bling só com autorização explícita por campo.
+- Credenciais por cliente, cifradas, só no servidor, renovação automática, isolamento por loja.
+- **Ler antes de implementar** (páginas da documentação do Bling): "Webhooks", "Limites" e "Publicando um aplicativo". Não presumir comportamento.
 
 ## 8. Domínio próprio por cliente (proposta)
 
@@ -93,19 +106,42 @@ Cada cliente usa o próprio domínio. O piloto é `www.mobisautoparts.com.br`, h
 - **Piloto Mobis:** nada muda no DNS nem na Locaweb até haver autorização explícita. O site novo é validado antes, em endereço de teste, e o corte é um passo separado.
 - **Hospedagem do front multi-domínio (a decidir):** a hospedagem compartilhada da Locaweb não costuma servir vários domínios de clientes com SSL automático e lógica de servidor. Opções a avaliar, com custo e moeda: serviço gerenciado de front com domínios personalizados, ou servidor próprio (VPS) com certificado automático. O Render está descartado.
 
-## 9. Decisões em aberto
+## 9. Fases e marcos
 
-1. Stack, banco e hospedagem do site pronto (ler o repositório).
-2. Campos obrigatórios para publicar um produto.
-3. Sinal de vida do agente e idade máxima aceita.
+**Fase 0 — Auditoria (concluída).** O repositório tinha só um README e o projeto Supabase `conecta-ia` estava vazio: não havia código nem dados a reaproveitar. Nada de produção foi criado.
+
+**Fase 1 — Piloto de leitura, 20 a 50 produtos da Mobis.** Só leitura do Bling, site em modo WhatsApp, sem checkout e **sem escrever no Bling**.
+
+> **Marco 1 — três provas a demonstrar antes de seguir:**
+> 1. **Identificar sem duplicar:** cada produto do Bling é reconhecido por ID e SKU; sincronizar de novo não cria cópia.
+> 2. **Enriquecer com evidência:** todo dado enriquecido traz fonte e data, e o sistema distingue **confirmado** de **hipótese** ("a confirmar").
+> 3. **Sincronizar com segurança:** detecta alteração, trata conflito (dado mais antigo é ignorado, divergência é registrada) e se recupera de falha sem corromper o catálogo, mantendo o último catálogo válido no ar.
+
+> **Sobre o cronograma do documento-base** (planejamento 1–2 semanas, integração com o Bling 2–4, IA e enriquecimento 4–8, canais 6–10, testes e piloto 10–12, go live 12+): é uma estimativa do responsável, não um compromisso. **Proposta:** antecipar o piloto de leitura (Fase 1) para validar a arquitetura **antes** de construir canais e marketplaces.
+
+**Fase 2 — Painel do lojista.** Dados, pendências, divergências, aprovações do enriquecimento e histórico, em desktop e celular.
+
+**Fase 3 — Escritas controladas no Bling.** Só depois de testes, aprovação humana, regras por campo e mecanismo de recuperação.
+
+**Fase 4 — Publicar e expandir.** Site próprio no domínio do cliente primeiro; depois marketplaces, feeds, SEO e campanhas.
+
+## 10. Decisões em aberto
+
+1. Stack aprovada? Proposta: Next.js + TypeScript + Supabase.
+2. Campos obrigatórios para publicar um produto e campos espelhados do Bling.
+3. Detalhes do Bling (webhooks, limites, publicação do aplicativo): ler a documentação antes de implementar.
 4. Quais UFs o super admin pode bloquear e como o lojista as vê.
-5. Formas de pagamento do checkout (o piloto pode começar só em modo WhatsApp).
+5. Formas de pagamento do checkout (o piloto começa só em modo WhatsApp).
 6. Plano do Supabase para produção (o gratuito pausa por inatividade e não tem backup diário).
-7. Nome das organizações: a do Supabase e a do GitHub serão renomeadas para NanoConecta.ai. Não fixar nomes de organização no código.
-8. Escrita de volta no Bling: nunca, ou só com autorização por campo? (recomendado: só na camada do Conecta.IA; escrita opcional e explícita)
-9. Qual agente/modelo de IA o indexador nativo usa e quem paga o custo por cliente (limite de uso por loja).
-10. Critério de troca para o modo nativo quando o NanoShell falhar (sinal de vida do agente) e se a troca é automática ou manual.
-11. "Recursos mais modernos": lista concreta a definir com o cliente (SEO local, dados estruturados, otimização de imagem, PWA...). Sem prometer resultado de ranking.
-12. Onde roda o front multi-domínio e como o certificado de cada domínio é emitido (custo, moeda, limite de domínios).
-13. Quem altera o DNS de cada cliente (o próprio cliente, ou a plataforma com acesso delegado) e como registrar essa autorização.
-14. Para a Mobis: onde está o registro do domínio e o DNS hoje (Locaweb?) e quem tem acesso a ele.
+7. Nome das organizações: a do Supabase e a do GitHub serão renomeadas. Não fixar nomes de organização no código.
+8. Escrita de volta no Bling: nunca, ou só com autorização por campo? (recomendado: só na camada do Conecta.IA)
+9. "Recursos mais modernos": lista concreta a definir com o cliente (SEO local, dados estruturados, otimização de imagem, PWA...). Sem prometer resultado de ranking.
+10. Onde roda o front multi-domínio e como o certificado de cada domínio é emitido (custo, moeda, limite de domínios).
+11. Quem altera o DNS de cada cliente e como registrar essa autorização.
+12. Para a Mobis: onde está o registro do domínio e o DNS hoje (Locaweb?) e quem tem acesso a ele.
+13. Modelo de IA do agente integrado e quem paga o custo por cliente. Proposta a medir: modelo menor para triagem e rascunho, modelo maior só para casos difíceis.
+14. Prazo para o NanoShell reivindicar ou concluir uma tarefa antes de cair para o integrado (sugestão: 10 min).
+15. Perfil de enriquecimento da Mobis (autopeças): conteúdo e validação das regras fiscais pelo contador.
+17. Fonte do cadastro: só a API do Bling, ou também o XML de documentos fiscais? (o XML traz dado fiscal de nota, não o cadastro do produto; usar só se houver necessidade clara)
+18. Dados de logística a espelhar além de peso e medidas: embalagem e volumes (e a margem de segurança de peso e frete do perfil da Mobis).
+19. Infraestrutura do site: o documento-base cita AWS e Vercel, que cobram em dólar; comparar com alternativas cobradas em reais (ver decisão 10).
