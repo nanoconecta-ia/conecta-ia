@@ -47,6 +47,7 @@ Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no ch
 ## Como trabalhar aqui
 - Antes de escolher stack, banco ou estrutura: **leia o site pronto** neste repositório e mostre o que encontrou. Reaproveite o que existe.
 - Antes de criar tabelas ou migrações: mostre o desenho e espere aprovação.
+- Comece pelo **piloto de leitura de 20 a 50 produtos** (Marco 1 em `docs/ARQUITETURA.md`): só leitura do Bling, modo WhatsApp, sem escrever no ERP.
 - Entregue por etapas, com testes e evidências. Não declare concluído só porque compila.
 - Informe sempre: arquivos alterados, decisões, testes rodados, limitações reais.
 

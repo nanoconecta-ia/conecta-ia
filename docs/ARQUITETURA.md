@@ -26,6 +26,7 @@ Os dois agentes são caminhos equivalentes: se um falhar, o outro assume e o cli
 - **Espelho somente leitura:** ninguém edita produto no site. O lojista edita só o que é do site (banners, páginas, SEO, tema, regras de venda).
 - **Falhou?** mantém o último estado válido, registra o erro e tenta de novo. O site nunca depende do Bling para abrir.
 - **Registro:** origem, data e versão de cada gravação, com histórico de erros visível no painel.
+- **Divergência:** quando o espelho e o Bling discordam depois de uma sincronização, ou quando um dado enriquecido contradiz o Bling, o caso é **registrado e aparece no painel** para decisão. Até a decisão, **o Bling prevalece**.
 
 **Campos espelhados (mínimo a aprovar):** nome, código (SKU), preço, estoque, situação, imagens, categoria, marca, GTIN, descrição, peso e medidas.
 
@@ -96,7 +97,24 @@ Cada cliente usa o próprio domínio. O piloto é `www.mobisautoparts.com.br`, h
 - **Piloto Mobis:** nada muda no DNS nem na Locaweb até haver autorização explícita. O site novo é validado antes, em endereço de teste, e o corte é um passo separado.
 - **Hospedagem do front multi-domínio (a decidir):** a hospedagem compartilhada da Locaweb não costuma servir vários domínios de clientes com SSL automático e lógica de servidor. Opções a avaliar, com custo e moeda: serviço gerenciado de front com domínios personalizados, ou servidor próprio (VPS) com certificado automático. O Render está descartado.
 
-## 9. Decisões em aberto
+## 9. Fases e marcos
+
+**Fase 0 — Auditoria (concluída).** O repositório tinha só um README e o projeto Supabase `conecta-ia` estava vazio: não havia código nem dados a reaproveitar. Nada de produção foi criado.
+
+**Fase 1 — Piloto de leitura, 20 a 50 produtos da Mobis.** Só leitura do Bling, site em modo WhatsApp, sem checkout e **sem escrever no Bling**.
+
+> **Marco 1 — três provas a demonstrar antes de seguir:**
+> 1. **Identificar sem duplicar:** cada produto do Bling é reconhecido por ID e SKU; sincronizar de novo não cria cópia.
+> 2. **Enriquecer com evidência:** todo dado enriquecido traz fonte e data, e o sistema distingue **confirmado** de **hipótese** ("a confirmar").
+> 3. **Sincronizar com segurança:** detecta alteração, trata conflito (dado mais antigo é ignorado, divergência é registrada) e se recupera de falha sem corromper o catálogo, mantendo o último catálogo válido no ar.
+
+**Fase 2 — Painel do lojista.** Dados, pendências, divergências, aprovações do enriquecimento e histórico, em desktop e celular.
+
+**Fase 3 — Escritas controladas no Bling.** Só depois de testes, aprovação humana, regras por campo e mecanismo de recuperação.
+
+**Fase 4 — Publicar e expandir.** Site próprio no domínio do cliente primeiro; depois marketplaces, feeds, SEO e campanhas.
+
+## 10. Decisões em aberto
 
 1. Stack aprovada? Proposta: Next.js + TypeScript + Supabase.
 2. Campos obrigatórios para publicar um produto e campos espelhados do Bling.
