@@ -77,7 +77,23 @@ Fonte da nota: guia "Migração para autenticação JWT" da documentação do Bl
 - O indexador nativo reaproveita as regras de sincronização: idempotência, ordem por versão, backoff, último estado válido se o Bling cair.
 - **Agente do cliente:** melhora imagens, cadastro e SEO. Dado enriquecido fica separado do original, com fonte, data e confiança. Escrita de volta no Bling só com autorização explícita por campo.
 
-## 8. Decisões em aberto
+## 8. Domínio próprio por cliente (proposta)
+
+Cada cliente usa o próprio domínio. O piloto é `www.mobisautoparts.com.br`, hoje hospedado na Locaweb.
+
+- **Resolução:** o domínio da requisição identifica a loja, **no servidor**. Domínio desconhecido responde 404 sem revelar nada de nenhuma loja.
+- **Cadastro do domínio (conceito, nenhuma tabela criada ainda):** domínio, loja, principal ou alias, status da verificação de DNS, status do SSL, datas.
+- **Fluxo de ativação:**
+  1. O cliente informa o domínio no painel.
+  2. O Conecta.IA mostra os registros de DNS a criar (um registro de verificação e o apontamento para o destino da plataforma).
+  3. O Conecta.IA verifica o DNS sozinho.
+  4. O certificado SSL é emitido e renovado automaticamente.
+  5. O corte só acontece depois de validar o site novo, com **plano de volta**: o site atual continua no ar, com TTL do DNS reduzido antes da troca.
+- **SEO por domínio:** `canonical`, `sitemap.xml`, `robots.txt` e dados estruturados usam o domínio do cliente e só dados reais dele.
+- **Piloto Mobis:** nada muda no DNS nem na Locaweb até haver autorização explícita. O site novo é validado antes, em endereço de teste, e o corte é um passo separado.
+- **Hospedagem do front multi-domínio (a decidir):** a hospedagem compartilhada da Locaweb não costuma servir vários domínios de clientes com SSL automático e lógica de servidor. Opções a avaliar, com custo e moeda: serviço gerenciado de front com domínios personalizados, ou servidor próprio (VPS) com certificado automático. O Render está descartado.
+
+## 9. Decisões em aberto
 
 1. Stack, banco e hospedagem do site pronto (ler o repositório).
 2. Campos obrigatórios para publicar um produto.
@@ -90,3 +106,6 @@ Fonte da nota: guia "Migração para autenticação JWT" da documentação do Bl
 9. Qual agente/modelo de IA o indexador nativo usa e quem paga o custo por cliente (limite de uso por loja).
 10. Critério de troca para o modo nativo quando o NanoShell falhar (sinal de vida do agente) e se a troca é automática ou manual.
 11. "Recursos mais modernos": lista concreta a definir com o cliente (SEO local, dados estruturados, otimização de imagem, PWA...). Sem prometer resultado de ranking.
+12. Onde roda o front multi-domínio e como o certificado de cada domínio é emitido (custo, moeda, limite de domínios).
+13. Quem altera o DNS de cada cliente (o próprio cliente, ou a plataforma com acesso delegado) e como registrar essa autorização.
+14. Para a Mobis: onde está o registro do domínio e o DNS hoje (Locaweb?) e quem tem acesso a ele.
