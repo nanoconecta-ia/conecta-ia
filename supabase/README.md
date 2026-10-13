@@ -1,6 +1,6 @@
 # Banco (Supabase `conecta-ia`)
 
-Migrações da Fase 1 em `migrations/`. **Não estão aplicadas** no projeto: só são aplicadas após aprovação explícita, conferindo antes que o ref é `dsfzhsrudriqkumtlqwj` (nunca o do NanoShell IA).
+Migrações 1 a 7 da Fase 1 em `migrations/`, **aplicadas em 2026-10-13** no projeto `conecta-ia` (ref `dsfzhsrudriqkumtlqwj`) com autorização explícita. Novas migrações: conferir o ref antes (nunca o do NanoShell IA).
 
 ## Teste local (Postgres 16, sem tocar no Supabase)
 ```
