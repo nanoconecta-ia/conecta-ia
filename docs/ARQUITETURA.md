@@ -150,3 +150,49 @@ Cada cliente usa o próprio domínio. O piloto é `www.mobisautoparts.com.br`, h
 9. Prazo para o NanoShell reivindicar uma tarefa antes de cair para o integrado (sugestão: 10 min).
 10. Perfil de enriquecimento da Mobis (autopeças) e validação das regras fiscais pelo contador.
 11. "Recursos mais modernos": lista concreta, sem prometer ranking.
+
+## 12. Visão da plataforma (SaaS) e módulos
+
+Direção dada pelo dono do produto. Cada módulo entra por fase; nada aqui está implementado.
+
+### Quem usa
+- **Desenvolvedor / super admin (dono do SaaS):** área própria, com MFA. Cadastra lojas, planos e cobrança futura, define os **modelos globais de agentes LLM** disponíveis, vê uso e custo por loja, bloqueia vendas por UF e administra a plataforma inteira.
+- **Lojista (ex.: Mobis Autopeças):** painel da própria loja: conexão com o Bling, catálogo indexado, taxonomia, imagens, enriquecimento, regras de venda, aparência do site, integrações e métricas. Só vê a própria loja.
+- **Cliente final:** vitrine responsiva (celular primeiro), catálogo, WhatsApp e, quando liberado, checkout.
+
+### Abertura para agentes (MCP + API)
+- API própria e servidor MCP (ver decisão 9) para conectar agentes como o Claude e o NanoShell. O NanoShell continua **independente**: tem as próprias regras e memória e usa a mesma API/MCP quando o dono criar a credencial dele.
+- **Chave de IA do cliente:** o lojista pode cadastrar a chave da própria conta (ex.: Anthropic) para o agente do Conecta.IA. Custo dele, medido por loja.
+- **Agente nativo do Conecta.IA:** conhece o ecossistema do Bling (campos, regras, limites) e faz indexação, enriquecimento de catálogo e melhorias no site a pedido do lojista (fontes, cabeçalho, filtros, cascata de cores etc.). Mudança de aparência passa por **pré-visualização e aprovação do lojista** antes de publicar, com opção de desfazer.
+
+### Vitrine e SEO técnico (para o Google não penalizar)
+O que dá para garantir por construção (sem prometer posição):
+- HTTPS em todos os domínios, `sitemap.xml`, `robots.txt`, URLs canônicas, um `h1` por página, páginas rápidas (Core Web Vitals), imagens otimizadas com texto alternativo, sem conteúdo duplicado entre produtos.
+- Dados estruturados (schema.org) `Product`/`Offer` com preço e estoque **iguais aos da página**, `Organization` e `LocalBusiness` com endereço.
+- Feed de produtos para o Google Merchant Center e catálogos para Pinterest e Meta, gerados a partir do espelho. Preço, estoque e GTIN do feed vêm do Bling, nunca inventados.
+- Endereço, telefone e horário iguais aos do Perfil da Empresa no Google (Maps). Cadastro e verificação do perfil são do lojista.
+- Páginas de produto incompletas não são publicadas; produto removido vira indisponível, não 404 solto.
+- Regras e políticas do Google e das redes mudam: conferir a documentação oficial de cada uma antes de implementar.
+
+### Análise e estratégia (dentro do painel do lojista)
+Somente leitura e com consentimento do lojista (OAuth da conta dele): Google Search Console, Google Analytics, Google Trends. Mostrar resumo e sugestões; nada é alterado nas contas do lojista.
+
+### WhatsApp Business
+Conexão pela API oficial (WhatsApp Business Platform), com número, aprovação e custos da Meta por conta do lojista. Primeiro uso: link com produto (já no piloto). Atendimento e mensagens automáticas ficam para fase posterior.
+
+### Taxonomia e imagens (proposta, aguarda aprovação antes de virar migração)
+- `categorias` por loja: árvore (pai, nome, slug), `bling_categoria_id` quando existir, e correspondência opcional com a categoria de produto do Google. Categoria nova sugerida pelo agente fica "a confirmar".
+- `atributos_categoria` e valores por produto (ex.: autopeças: aplicação, lado, material), cada valor com fonte/data/confiança como no enriquecimento.
+- Imagens: já modeladas (tipo real/gerada/ilustrativa, direitos, resolução, aprovação); acrescentar variantes otimizadas (largura, formato) e texto alternativo.
+- Produto aponta para uma categoria; mudança de categoria no Bling atualiza o espelho, e a taxonomia própria só complementa.
+
+### Cadastro de produto
+O Bling continua sendo a origem. Criar produto a partir do Conecta.IA só na Fase 3, por API do Bling, por campo e com autorização (decisão 7).
+
+### Ordem sugerida
+1. Piloto de leitura Bling → espelho (Marco 1) e vitrine mínima responsiva em modo WhatsApp.
+2. Painel do lojista e área do super admin (login, MFA, lojas, uso por loja).
+3. Taxonomia, imagens otimizadas, SEO técnico e feeds.
+4. API/MCP para agentes e chave de IA do cliente; agente nativo.
+5. Integrações de análise (Search Console, Analytics, Trends) e WhatsApp.
+6. Escrita no Bling e cobrança.
