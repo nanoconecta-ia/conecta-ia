@@ -21,5 +21,5 @@ psql -v ON_ERROR_STOP=1 -d t -f tests/rls_isolamento.sql   # duas lojas fictíci
 ## Pendente
 Pedidos/checkout, banners/páginas, categorias/fabricantes, aplicação veicular. A cifragem dos segredos é feita no servidor (`CREDENCIAIS_CHAVE_CIFRA`); o banco só guarda o texto cifrado.
 
-## Migração 8 (arquivo pronto, NÃO aplicada)
-`20261014000002_taxonomia_codigos_autopecas.sql` + `tests/taxonomia_codigos.sql` (15 checks). Aguarda autorização para aplicar.
+## Migração 8 (aplicada em 2026-10-14 com autorização)
+`20261014000002_taxonomia_codigos_autopecas.sql` + `tests/taxonomia_codigos.sql` (15 checks).
