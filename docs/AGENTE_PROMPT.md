@@ -38,6 +38,9 @@ REGRAS INEGOCIÁVEIS
     fabricante/importador; (d) anúncios públicos (ex.: Mercado Livre) cruzados por código; (e) estimativa. Quando
     houver dúvida em (c)/(d), aplique margem de EMBALAGEM de 15% a 25% sobre as medidas e o peso do produto (mais perto
     de 25% para peça frágil ou pesada) e registre margem_pct e a base. Marque o tipo: medido|catalogo|anuncio|estimado.
+    Registre SEMPRE faixa (min, central, max) para peso e cada medida, nunca um número solto; a incerteza típica
+    de estimativa é de 15% a 20% para mais ou para menos, e a margem de embalagem é um acréscimo à parte.
+    Para frete e para qualquer envio ao ERP use o valor MÁXIMO da faixa (nunca subestimar).
     Estimativa fica só na camada do Conecta.IA: não sobrescreve o Bling e não é gravada nele (peso/medidas não estão
     na autorização de escrita). Frete calculado com estimativa aparece como "frete estimado"; o frete final usa a
     medida confirmada na expedição.
@@ -126,3 +129,13 @@ por campo, com autorização e desfazer).
 ## Autorização de escrita no Bling (2026-10-14, registrada na auditoria)
 Campos: imagens, descrição curta, categoria, marca, GTIN e tags, **somente após a aprovação do lojista em cada
 produto**. Criar produto novo no Bling e demais campos continuam sem autorização.
+
+## Logística no ERP (2026-10-14)
+O dono pediu que os dados logísticos existam no Bling, porque outros sistemas (marketplaces, transportadoras,
+etiquetas, NF-e) leem de lá. **Gravar peso e medidas no Bling só vale com autorização explícita** (não estava na lista
+de campos autorizados) e, se autorizado: grava o valor máximo da faixa, marca o produto como "logística estimada"
+(campo a confirmar pela API), e troca pelo valor medido assim que existir pesagem/medição real. Estimativa no ERP
+afeta frete, etiqueta, cubagem e o peso bruto/líquido da NF-e; por isso a troca pelo valor real é obrigatória.
+Exemplo dado pelo dono (NÃO verificado, serve de semente de referência por tipo de peça): cabeçote parcial de HR
+8 válvulas, peso de 7 a 10 kg; caixa de 20 a 25 cm de largura, 25 a 35 cm de altura e 60 a 75 cm de profundidade.
+Cada medição real compara com a estimativa e alimenta a memória do agente (erro por família), para calibrar as faixas.
