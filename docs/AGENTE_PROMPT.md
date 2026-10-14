@@ -82,3 +82,12 @@ por campo, com autorização e desfazer).
 - Salvaguardas mantidas: origem e cruzamento registrados, retirada imediata (`removida_em`) se o dono da
   imagem pedir, e nada de remover marca d'água/logotipo. "Público" não significa "livre de direitos": o risco
   de uso de imagem de terceiros é do lojista; por isso a prioridade é fabricante/fornecedor e a retirada é rápida.
+
+## Tratamento e sigilo da origem (decisão do dono, 2026-10-14)
+- Imagem pequena ou fora do padrão: o agente a coloca numa tela branca (preenchimento), sem reconstruir
+  detalhes por IA que mudem a forma ou as marcações da peça. O arquivo tratado vai para o **nosso** armazenamento
+  com nome, texto alternativo, código de fábrica e SKU aprovados.
+- **No público a origem não aparece**: a vitrine só lê a URL própria e o texto alternativo (permissão por coluna).
+- **Internamente a origem é sempre guardada** (`url_original`, licença, cruzamento): é o que permite retirar a
+  imagem se o dono pedir e auditar. Editar a imagem não transfere a autoria; o sigilo é de exibição, não de registro.
+  Exceção: se a licença de uma fonte exigir atribuição, ela é exibida.
