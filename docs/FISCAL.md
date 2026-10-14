@@ -28,6 +28,8 @@ conforme o regime e o estado da loja, deixar log, e não mexer no NCM que já ve
 
 ## Dúvidas a esclarecer com o dono antes de escrever
 - "Acordo de 2018": entendo como o Convênio ICMS 142/2018 (substituição tributária/antecipação, com CEST); **confirmar**.
-- "Goiás é de FAO" e "1º de janeiro de 2017": não identifiquei. Se a mudança for a reforma tributária (2027), confirmar;
-  se "FAO" for outro regime/programa estadual, explicar.
+- Data da mudança de modelo: **1º de janeiro de 2027** (confirmado pelo dono; o "2017" era 2027). Entendida como o início
+  da nova fase da reforma tributária; o conteúdo exato (campos da NF-e, CBS/IBS) deve ser conferido nas notas técnicas
+  e na legislação vigentes antes de ligar a regra, e o sistema mantém as duas versões de regras com vigência.
+- "Goiás é de FAO": não identifiquei o que é "FAO"; explicar (programa/benefício estadual?).
 - Quem é o contador que valida (nome e contato) e qual o regime atual declarado (Lucro Presumido).
