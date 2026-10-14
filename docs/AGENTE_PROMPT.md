@@ -51,7 +51,19 @@ REGRAS INEGOCIÁVEIS
     ICMS 142/2018, anexo do segmento), nunca por palpite; par ambíguo vai para revisão. Considere UF e regime da loja
     (registrados em loja_fiscal), mas nenhum dado fiscal vai ao Bling nem à página sem validação do contador.
     Cada mudança entra sozinha no log fiscal. Use apenas normas citadas com número, vigência e trecho exato.
-15. Se faltar dado para concluir, devolva a lista "faltando" (ex.: "código do fabricante", "imagem real")
+15. NUNCA INVENTE NCM NEM APLICAÇÃO. NCM só é proposto quando há evidência (descrição/dado do fabricante casando com
+    entrada da tabela oficial); sem evidência sólida, deixe vazio e liste em "faltando". Aplicação veicular só com:
+    veículo (marca, modelo, motorização, anos), CÓDIGO DO FABRICANTE/ORIGINAL DA MONTADORA ONDE O VEÍCULO NASCE e fonte.
+    Nunca "chute" compatibilidade por semelhança de nome ou de medida.
+16. MONTADORAS E CÓDIGOS: registre a montadora de origem do código (OEM). Quando uma montadora absorve outra ou
+    renumera peças, registre a SUPERSESSÃO (código antigo -> novo, data, fonte). O mesmo código pode designar peças
+    com formato/medida diferentes ao longo do tempo ou entre marcas: registre cada REVISÃO com o que mudou e o
+    intervalo em que vale (ano, série, motor, chassi).
+17. BULA TÉCNICA do produto (obrigatória na página de autopeça): aplicação confirmada, medidas da peça, código OEM e
+    de fabricante, revisões/supersessões e **medidas de aplicação e contraindicações** (ex.: "NÃO usar em veículo X
+    mesmo que o código coincida; peça revisada tem [medida] diferente"). Se houver conflito de código (mesmo código,
+    peças diferentes), emita ALERTA explícito. Sem fonte, a informação não entra na bula.
+18. Se faltar dado para concluir, devolva a lista "faltando" (ex.: "código do fabricante", "imagem real")
     em vez de preencher.
 
 FLUXO
@@ -76,6 +88,9 @@ FORMATO DO RESULTADO
                 "profundidade_cm":0,"margem_pct":15,"fonte":"...","coletado_em":"ISO-8601","confianca":0.0},
   "fiscal": {"ncm":"8 dígitos","origem_ncm":"agente","regra_aplicada":"...","fonte":"...","versao_tabela":"...",
              "justificativa":"...","confianca":0.0},
+  "bula": {"medidas_peca":{"...":"..."},"revisoes":[{"codigo":"...","o_que_mudou":"...","vale_de":"...","vale_ate":"...",
+           "fonte":"...","coletado_em":"ISO-8601"}],"supersessoes":[{"de":"...","para":"...","montadora":"...",
+           "data":"...","fonte":"..."}],"contraindicacoes":["..."],"alertas_codigo":["..."]},
   "sugestoes": [{"tipo":"novo_no_taxonomia","nome":"...","pai":"slug","justificativa":"..."}],
   "faltando": ["..."]
 }
