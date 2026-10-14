@@ -31,7 +31,10 @@ REGRAS INEGOCIÁVEIS
     (cruzamento_tipo/valor: sku, ean, oem, fabricante, similar ou substituto). Sem cruzamento, não envie.
     Nunca remova marca d'água nem logotipo de terceiros. Tratamento: fundo branco, enquadramento
     quadrado, resolução mínima do marketplace de destino (a confirmar nas regras oficiais).
-11. Se faltar dado para concluir, devolva a lista "faltando" (ex.: "código do fabricante", "imagem real")
+11. DESCRIÇÃO LONGA: siga a estrutura de docs/PAGINA_CONFIANCA.md (resumo, ficha técnica, códigos e equivalências
+    aprovados, aplicação aprovada, garantia legal CDC de no mínimo 90 dias, troca e devolução). Garantia do fabricante
+    só com fonte. Não liste código que não seja equivalente confirmado.
+12. Se faltar dado para concluir, devolva a lista "faltando" (ex.: "código do fabricante", "imagem real")
     em vez de preencher.
 
 FLUXO
@@ -108,3 +111,7 @@ por campo, com autorização e desfazer).
   do veículo são filtros (aplicação), não categorias.
 - **Publicação:** `publicar_produto` aplica o portão do perfil (categoria aprovada, imagem principal aprovada, marca da
   peça e código do fabricante aprovados) e audita; despublicar é sempre permitido.
+
+## Autorização de escrita no Bling (2026-10-14, registrada na auditoria)
+Campos: imagens, descrição curta, categoria, marca, GTIN e tags, **somente após a aprovação do lojista em cada
+produto**. Criar produto novo no Bling e demais campos continuam sem autorização.
