@@ -1,4 +1,4 @@
-# NCM e dados fiscais por produto — migração 13 escrita e testada (NÃO aplicada; aguarda "aplica a 13")
+# NCM e dados fiscais por produto — migração 13 APLICADA em 2026-10-14
 
 Requisito do dono (2026-10-14): produto cadastrado avulso não traz NCM; o agente deve propor os dados fiscais
 conforme o regime e o estado da loja, deixar log, e não mexer no NCM que já vem na nota do fabricante.
@@ -52,3 +52,19 @@ conforme o regime e o estado da loja, deixar log, e não mexer no NCM que já ve
   com o Anexo II (autopeças, segmento 01) e redações com vigência (ex.: item 63.0 reescrito pelo Conv. ICMS 66/22, desde 02.05.22).
 - **O ambiente de execução bloqueou o acesso a `confaz.fazenda.gov.br`** (política de rede). Para carregar as tabelas é preciso
   liberar esse domínio (e os de Siscomex/Sefaz-GO que forem usados) ou enviar os PDFs. Não há dado carregado nem inventado.
+
+## Goiás: regime que teria substituído a ST (a identificar)
+O dono diz que a loja está num regime que substituiu a substituição tributária em Goiás ("default", nome exato não
+identificado). Fontes públicas localizadas na busca (a estudar, ainda NÃO aplicadas como regra): Anexo 08 do RCTE-GO
+(substituição tributária), Decreto 9.918/2021 (antecipação por TARE, termo de acordo de regime especial), Decreto 9.667,
+Lei 13.453 (autopeças, redução de base para optantes do Simples), Parecer Normativo 13/2018 e o Anexo V-B (CEST).
+Nenhuma dessas fontes, nos trechos vistos, confirma o fim da ST para autopeças em Goiás. **Nenhuma regra será aplicada
+sem norma, número, vigência e trecho exato** (`ref_regras_uf`). Pedido ao dono: número/nome da norma ou do termo de
+regime especial que vale para a Mobis (o contador sabe).
+
+## Fluxo com o lojista e o contador (a desenhar na migração 15; não escrita)
+- **Notificação no cadastro do produto**: quando falta uma tabela (ex.: Confaz), o sistema mostra ao lojista o que falta,
+  a fonte oficial e o botão para baixar/anexar. O agente estuda o anexo e propõe a regra; o que ainda faltar é listado.
+- **Especialista fiscal (memória do agente)**: regras estudadas viram memória com norma, vigência e trecho exato.
+- **Contador por WhatsApp**: link com mensagem pronta (produto, NCM proposto, regra, fonte); a validação fica
+  **em espera** até o contador responder; só então o dado pode ir ao Bling/site.
