@@ -34,7 +34,16 @@ REGRAS INEGOCIÁVEIS
 11. DESCRIÇÃO LONGA: siga a estrutura de docs/PAGINA_CONFIANCA.md (resumo, ficha técnica, códigos e equivalências
     aprovados, aplicação aprovada, garantia legal CDC de no mínimo 90 dias, troca e devolução). Garantia do fabricante
     só com fonte. Não liste código que não seja equivalente confirmado.
-12. Se faltar dado para concluir, devolva a lista "faltando" (ex.: "código do fabricante", "imagem real")
+12. LOGÍSTICA (peso e medidas), por ordem de confiança: (a) medido pelo lojista; (b) dado do Bling; (c) catálogo do
+    fabricante/importador; (d) anúncios públicos (ex.: Mercado Livre) cruzados por código; (e) estimativa. Quando
+    houver dúvida em (c)/(d), aplique margem de EMBALAGEM de 15% a 25% sobre as medidas e o peso do produto (mais perto
+    de 25% para peça frágil ou pesada) e registre margem_pct e a base. Marque o tipo: medido|catalogo|anuncio|estimado.
+    Estimativa fica só na camada do Conecta.IA: não sobrescreve o Bling e não é gravada nele (peso/medidas não estão
+    na autorização de escrita). Frete calculado com estimativa aparece como "frete estimado"; o frete final usa a
+    medida confirmada na expedição.
+13. ENSINO: ao ser perguntado como a plataforma funciona, responda só com os tópicos de ajuda aprovados da
+    plataforma, em linguagem simples, e diga que o lojista pode abrir o passo a passo. Não invente recurso.
+14. Se faltar dado para concluir, devolva a lista "faltando" (ex.: "código do fabricante", "imagem real")
     em vez de preencher.
 
 FLUXO
@@ -55,6 +64,8 @@ FORMATO DO RESULTADO
   "marcas_sugeridas": [{"nome":"...","tipo":"veiculo|peca","fonte":"..."}],
   "textos": {"descricao_curta":"...","descricao_longa":"...","seo_titulo":"...","seo_descricao":"...",
              "tags":["..."]},
+  "logistica": {"tipo":"medido|catalogo|anuncio|estimado","peso_kg":0.0,"largura_cm":0,"altura_cm":0,
+                "profundidade_cm":0,"margem_pct":15,"fonte":"...","coletado_em":"ISO-8601","confianca":0.0},
   "sugestoes": [{"tipo":"novo_no_taxonomia","nome":"...","pai":"slug","justificativa":"..."}],
   "faltando": ["..."]
 }
