@@ -91,3 +91,20 @@ por campo, com autorização e desfazer).
 - **Internamente a origem é sempre guardada** (`url_original`, licença, cruzamento): é o que permite retirar a
   imagem se o dono pedir e auditar. Editar a imagem não transfere a autoria; o sigilo é de exibição, não de registro.
   Exceção: se a licença de uma fonte exigir atribuição, ela é exibida.
+
+## Memória e entrada de produto sem cadastro (migração 10, não aplicada)
+- **Entrada:** produto chega só com descrição ou NF-e (`entradas_cadastro`, idempotente pela chave da nota+item).
+  O agente consulta a memória (famílias técnicas, modelos de cadastro, equivalências) e monta uma **proposta**
+  com o que falta (`faltando`). Nada é criado no Bling sem aprovação do lojista; criar produto no Bling é
+  escrita nova e exige escopo e autorização próprios.
+- **Fiscal:** NCM/CEST/CFOP vêm só da nota (fonte registrada) e o envio ao Bling exige validação do contador do cliente
+  (`fiscal_validado_em`). Não há regra fiscal única para todos os produtos.
+- **Clone de marca equivalente** (Cofap -> Axon/Nakata): `clonar_para_entrada` copia a estrutura (família, taxonomia,
+  atributos, textos) e troca nome, SKU e marca. As **aplicações** copiadas nascem `a_confirmar` com `derivado_de`:
+  compatibilidade de outra marca só vira verdade com cruzamento de código (catálogo/OEM) e fonte.
+- **Família técnica** por marca/linha (Bosch, Luk...), ligada ao SKU; **equivalências** entre produtos (similar,
+  substituto, original) sempre com fonte e data; entre lojas diferentes é recusado pelo banco.
+- **Taxonomia inicial** de autopeças por sistema do veículo, como *proposta* até o lojista aprovar; marca/modelo/ano
+  do veículo são filtros (aplicação), não categorias.
+- **Publicação:** `publicar_produto` aplica o portão do perfil (categoria aprovada, imagem principal aprovada, marca da
+  peça e código do fabricante aprovados) e audita; despublicar é sempre permitido.

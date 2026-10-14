@@ -23,8 +23,7 @@ alter table public.produto_imagens
     not aprovada or tipo = 'real' or (cruzamento_tipo is not null and cruzamento_valor is not null));
 
 -- Vitrine: imagem retirada nunca aparece.
-drop policy imagens_publicas on public.produto_imagens;
-create policy imagens_publicas on public.produto_imagens for select to anon
+alter policy imagens_publicas on public.produto_imagens
   using (aprovada and removida_em is null
          and exists (select 1 from public.produtos p where p.id = produto_id));
 
