@@ -29,3 +29,6 @@ Pedidos/checkout, banners/páginas, categorias/fabricantes, aplicação veicular
 ## Migração 11 (aplicada em 2026-10-14 com autorização)
 `20261014000005_loja_politicas.sql` + `tests/loja_politicas.sql` (10 checks). Rascunho da Mobis criado só com a razão social.
 `20261014000004_memoria_familias_publicacao.sql` + `tests/memoria_publicacao.sql` (21 checks): memória, famílias, equivalências, entradas, taxonomia inicial, publicação com portão, vínculo companyId->loja.
+
+## Migração 12 (aplicada em 2026-10-14 com autorização)
+`20261014000006_ambiente_recursos_ajuda.sql` + `tests/ambiente_recursos.sql` (14 checks): ambiente teste/produção com requisitos, modo catálogo, recursos por loja, ajuda curada.
