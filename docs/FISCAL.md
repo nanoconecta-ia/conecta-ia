@@ -75,3 +75,11 @@ nas compras interestaduais (ex.: de Minas Gerais) e nas vendas a outros estados.
 `ref_regras_uf` (alíquota interna x interestadual por UF/NCM, com norma, vigência e trecho exato). Quem paga, base de cálculo e
 quando se aplica (revenda, uso/consumo, ativo, consumidor final de outro estado) dependem de legislação que o agente
 só aplica depois de estudada e **validada pelo contador**; não presumir. As fontes goianas listadas acima continuam a estudar.
+
+## Contador: troca frequente (decisão do dono)
+O contato do contador fica em **Configurações da plataforma** (`loja_contador`), preenchido depois, quando o dono obtiver o
+número (55 + DDD + número). Como a empresa troca de contabilidade com frequência: a troca é só editar o registro; cada
+alteração fica na **auditoria** (histórico de quem era o contador e quando), e cada validação guarda o **nome e o WhatsApp do
+contador da época** (`validacoes_contador`) e o `validado_por` em `produto_fiscal`. Validações antigas continuam válidas como
+registro histórico, mas uma troca de contador não revalida nada automaticamente: o sistema avisa quando houver mudança de
+regime, regra ou contador para o lojista decidir se pede nova confirmação.
