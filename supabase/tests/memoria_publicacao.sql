@@ -12,7 +12,7 @@ select public.afirma((select count(*) from public.taxonomia_nos where status='ap
 
 -- Portão de publicação
 select public.afirma((public.publicar_produto('aaaaaaaa-1111-0000-0000-000000000001', true)->>'ok')::boolean = false, 'produto incompleto não publica');
-select public.afirma(jsonb_array_length(public.publicar_produto('aaaaaaaa-1111-0000-0000-000000000001', true)->'faltando') = 4, 'informa o que falta (categoria, imagem, marca da peça, código do fabricante)') ;
+select public.afirma(jsonb_array_length(public.publicar_produto('aaaaaaaa-1111-0000-0000-000000000001', true)->'faltando') = 5, 'informa o que falta (categoria, imagem, marca da peça, código do fabricante, bula)') ;
 update public.taxonomia_nos set status='aprovado' where slug='amortecedores';
 update public.produtos set taxonomia_no_id=(select id from public.taxonomia_nos where slug='amortecedores') where sku='COF-1';
 insert into public.marcas (id, loja_id, nome, tipo, status) values ('aaaaaaaa-2222-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001','Cofap','peca','aprovado');
@@ -20,6 +20,8 @@ insert into public.produto_codigos (loja_id, produto_id, tipo, valor, marca_id, 
   ('aaaaaaaa-0000-0000-0000-000000000001','aaaaaaaa-1111-0000-0000-000000000001','fabricante','GP-123','aaaaaaaa-2222-0000-0000-000000000001','aprovado','catalogo',now());
 insert into public.produto_imagens (produto_id, loja_id, url, tipo, principal, aprovada, origem) values
   ('aaaaaaaa-1111-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001','u','real',true,true,'bling');
+select public.afirma((public.publicar_produto('aaaaaaaa-1111-0000-0000-000000000001', true)->>'faltando')::jsonb = '["bula_tecnica"]'::jsonb, 'sem bula aprovada não publica');
+insert into public.produto_bula (produto_id, loja_id, medidas_peca, status, aprovada_em) values ('aaaaaaaa-1111-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001','{"comprimento_mm":150}','aprovada',now());
 select public.afirma((public.publicar_produto('aaaaaaaa-1111-0000-0000-000000000001', true, '11111111-1111-1111-1111-111111111111')->>'ok')::boolean, 'produto completo publica');
 select public.afirma((select publicado from public.produtos where sku='COF-1'), 'flag publicado ligada');
 select public.afirma((select count(*) from public.auditoria where acao='publicar' and tabela='produtos') = 1, 'publicação auditada');
@@ -33,8 +35,8 @@ select public.afirma(public.loja_por_bling_company('777') = 'aaaaaaaa-0000-0000-
 select public.afirma(public.loja_por_bling_company('999') is null, 'companyId desconhecido não resolve');
 
 -- Clone de equivalente (Cofap -> Axon): rascunho, compatibilidade a confirmar
-insert into public.produto_aplicacoes (loja_id, produto_id, modelo, ano_inicial, ano_final, status, fonte, coletado_em) values
-  ('aaaaaaaa-0000-0000-0000-000000000001','aaaaaaaa-1111-0000-0000-000000000001','HR',2008,2012,'aprovado','catalogo',now());
+insert into public.produto_aplicacoes (loja_id, produto_id, montadora_origem_id, codigo_oem, modelo, ano_inicial, ano_final, status, fonte, coletado_em) values
+  ('aaaaaaaa-0000-0000-0000-000000000001','aaaaaaaa-1111-0000-0000-000000000001','aaaaaaaa-2222-0000-0000-000000000001','OEM-1','HR',2008,2012,'aprovado','catalogo',now());
 select public.clonar_para_entrada('aaaaaaaa-0000-0000-0000-000000000001','aaaaaaaa-1111-0000-0000-000000000001','AXO-1','Amortecedor Axon HR',null,'k1');
 select public.afirma((select count(*) from public.entradas_cadastro) = 1, 'clone gera uma entrada em rascunho');
 select public.clonar_para_entrada('aaaaaaaa-0000-0000-0000-000000000001','aaaaaaaa-1111-0000-0000-000000000001','AXO-1','Amortecedor Axon HR',null,'k1');

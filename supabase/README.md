@@ -35,3 +35,6 @@ Pedidos/checkout, banners/páginas, categorias/fabricantes, aplicação veicular
 
 ## Migração 13 (aplicada em 2026-10-14 com autorização)
 `20261014000007_fiscal.sql` + `tests/fiscal.sql` (14 checks): regime da loja, tabelas oficiais versionadas, fiscal do produto, log fiscal imutável.
+
+## Migrações 14 e 15 (arquivos prontos, NÃO aplicadas)
+`20261014000008_revisoes_supersessoes_bula.sql` e `20261014000009_notificacoes_contador.sql` + `tests/revisoes_bula_contador.sql` (19 checks). Total local: 118 checks.

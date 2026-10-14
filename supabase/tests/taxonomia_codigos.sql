@@ -40,8 +40,8 @@ do $$ begin
   exception when check_violation then null; end;
 end $$;
 select public.afirma(true, 'ano final menor que inicial é recusado');
-insert into public.produto_aplicacoes (loja_id, produto_id, marca_veiculo_id, modelo, ano_inicial, ano_final, status, fonte, coletado_em)
-  values ('aaaaaaaa-0000-0000-0000-000000000001','aaaaaaaa-1111-0000-0000-000000000001','aaaaaaaa-2222-0000-0000-000000000001','HR',2008,2012,'aprovado','catalogo-x', now());
+insert into public.produto_aplicacoes (loja_id, produto_id, marca_veiculo_id, montadora_origem_id, codigo_oem, modelo, ano_inicial, ano_final, status, fonte, coletado_em)
+  values ('aaaaaaaa-0000-0000-0000-000000000001','aaaaaaaa-1111-0000-0000-000000000001','aaaaaaaa-2222-0000-0000-000000000001','aaaaaaaa-2222-0000-0000-000000000001','235104A710','HR',2008,2012,'aprovado','catalogo-x', now());
 insert into public.produto_aplicacoes (loja_id, produto_id, modelo) values
   ('aaaaaaaa-0000-0000-0000-000000000001','aaaaaaaa-1111-0000-0000-000000000001','HR-pendente');
 

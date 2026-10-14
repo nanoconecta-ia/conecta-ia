@@ -53,7 +53,7 @@ conforme o regime e o estado da loja, deixar log, e não mexer no NCM que já ve
 - **O ambiente de execução bloqueou o acesso a `confaz.fazenda.gov.br`** (política de rede). Para carregar as tabelas é preciso
   liberar esse domínio (e os de Siscomex/Sefaz-GO que forem usados) ou enviar os PDFs. Não há dado carregado nem inventado.
 
-## Goiás: regime que teria substituído a ST (a identificar)
+## Goiás: DIFAL (diferencial de alíquota) — identificado pelo dono
 O dono diz que a loja está num regime que substituiu a substituição tributária em Goiás ("default", nome exato não
 identificado). Fontes públicas localizadas na busca (a estudar, ainda NÃO aplicadas como regra): Anexo 08 do RCTE-GO
 (substituição tributária), Decreto 9.918/2021 (antecipação por TARE, termo de acordo de regime especial), Decreto 9.667,
@@ -68,3 +68,10 @@ regime especial que vale para a Mobis (o contador sabe).
 - **Especialista fiscal (memória do agente)**: regras estudadas viram memória com norma, vigência e trecho exato.
 - **Contador por WhatsApp**: link com mensagem pronta (produto, NCM proposto, regra, fonte); a validação fica
   **em espera** até o contador responder; só então o dado pode ir ao Bling/site.
+
+### Atualização: o regime é o DIFAL
+O dono esclareceu que o "default" é **DIFAL** (diferença de alíquota entre estados), importante para a Mobis em Goiás
+nas compras interestaduais (ex.: de Minas Gerais) e nas vendas a outros estados. O DIFAL entra como `tipo = 'difal'` em
+`ref_regras_uf` (alíquota interna x interestadual por UF/NCM, com norma, vigência e trecho exato). Quem paga, base de cálculo e
+quando se aplica (revenda, uso/consumo, ativo, consumidor final de outro estado) dependem de legislação que o agente
+só aplica depois de estudada e **validada pelo contador**; não presumir. As fontes goianas listadas acima continuam a estudar.
