@@ -27,9 +27,22 @@ conforme o regime e o estado da loja, deixar log, e não mexer no NCM que já ve
 - Publicação: NCM validado pode entrar na página e na descrição longa; sem validação, não publica.
 
 ## Dúvidas a esclarecer com o dono antes de escrever
-- "Acordo de 2018": entendo como o Convênio ICMS 142/2018 (substituição tributária/antecipação, com CEST); **confirmar**.
+- "Acordo de 2018": **Convênio ICMS 142/2018** (substituição tributária/antecipação, com CEST por segmento; autopeças =
+  segmento 01, Anexo II). Confirmado por levantamento informativo de projeto anterior do dono (sem copiar código nem dados).
 - Data da mudança de modelo: **1º de janeiro de 2027** (confirmado pelo dono; o "2017" era 2027). Entendida como o início
   da nova fase da reforma tributária; o conteúdo exato (campos da NF-e, CBS/IBS) deve ser conferido nas notas técnicas
   e na legislação vigentes antes de ligar a regra, e o sistema mantém as duas versões de regras com vigência.
 - "Goiás é de FAO": não identifiquei o que é "FAO"; explicar (programa/benefício estadual?).
 - Quem é o contador que valida (nome e contato) e qual o regime atual declarado (Lucro Presumido).
+
+## Aprendizados do levantamento informativo (projeto anterior do dono; nada foi copiado)
+- **CEST nunca é adivinhado por IA**: resolve-se de forma determinística por tabela oficial (NCM -> CEST), extraída item a
+  item do PDF oficial do Convênio ICMS 142/2018, com a referência do item de origem em cada linha. Pares ambíguos
+  (mesmo NCM para CEST diferente) ficam de fora e vão para revisão humana. Vamos refazer essa extração aqui, do PDF oficial,
+  com conferência própria.
+- CST/CSOSN depende do **regime da loja**, não do produto; CEST e NCM dependem do **produto**.
+- Default usado antes: Simples -> CSOSN 500; Normal/Presumido/Real -> CST 060 (ICMS-ST já retido). Isso só vale para produto
+  sujeito a ST (com CEST); para o resto não há default. **Aqui nenhum default fiscal é aplicado sem validação do contador.**
+- Campos fiscais mínimos do produto: NCM, CEST, CST, origem. Logística mínima: peso bruto, altura, largura, comprimento.
+- Pendência: o PDF do Convênio ICMS 142/2018 que o dono forneceu antes **não está no Drive consultado**; reenviar ou
+  baixar do site oficial do Confaz e conferir a versão vigente (o convênio é alterado com frequência).
