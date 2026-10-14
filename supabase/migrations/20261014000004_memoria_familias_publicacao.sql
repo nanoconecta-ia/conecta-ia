@@ -85,8 +85,7 @@ create index on public.entradas_cadastro (loja_id, status);
 -- 5) Taxonomia: status (proposto/aprovado) e árvore inicial de autopeças PROPOSTA (por sistema do veículo).
 -- Marca/modelo/ano do veículo NÃO são categoria: são filtros (aplicação).
 alter table public.taxonomia_nos add column status text not null default 'proposto' check (status in ('proposto', 'aprovado'));
-drop policy taxonomia_ver on public.taxonomia_nos;
-create policy taxonomia_lojista on public.taxonomia_nos for select to authenticated using (true);
+alter policy taxonomia_ver on public.taxonomia_nos to authenticated using (true);   -- lojista vê tudo
 create policy taxonomia_publica on public.taxonomia_nos for select to anon using (status = 'aprovado');
 
 do $$

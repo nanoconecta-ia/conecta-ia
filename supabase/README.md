@@ -24,5 +24,5 @@ Pedidos/checkout, banners/páginas, categorias/fabricantes, aplicação veicular
 ## Migrações 8 e 9 (aplicadas em 2026-10-14 com autorização)
 `20261014000002_taxonomia_codigos_autopecas.sql` + `tests/taxonomia_codigos.sql` (15 checks).
 
-## Migração 10 (arquivo pronto, NÃO aplicada)
+## Migração 10 (aplicada em 2026-10-14 com autorização)
 `20261014000004_memoria_familias_publicacao.sql` + `tests/memoria_publicacao.sql` (21 checks): memória, famílias, equivalências, entradas, taxonomia inicial, publicação com portão, vínculo companyId->loja.

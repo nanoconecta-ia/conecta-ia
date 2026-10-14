@@ -92,7 +92,7 @@ por campo, com autorização e desfazer).
   imagem se o dono pedir e auditar. Editar a imagem não transfere a autoria; o sigilo é de exibição, não de registro.
   Exceção: se a licença de uma fonte exigir atribuição, ela é exibida.
 
-## Memória e entrada de produto sem cadastro (migração 10, não aplicada)
+## Memória e entrada de produto sem cadastro (migração 10, aplicada)
 - **Entrada:** produto chega só com descrição ou NF-e (`entradas_cadastro`, idempotente pela chave da nota+item).
   O agente consulta a memória (famílias técnicas, modelos de cadastro, equivalências) e monta uma **proposta**
   com o que falta (`faltando`). Nada é criado no Bling sem aprovação do lojista; criar produto no Bling é
