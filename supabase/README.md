@@ -32,3 +32,6 @@ Pedidos/checkout, banners/páginas, categorias/fabricantes, aplicação veicular
 
 ## Migração 12 (aplicada em 2026-10-14 com autorização)
 `20261014000006_ambiente_recursos_ajuda.sql` + `tests/ambiente_recursos.sql` (14 checks): ambiente teste/produção com requisitos, modo catálogo, recursos por loja, ajuda curada.
+
+## Migração 13 (arquivo pronto, NÃO aplicada)
+`20261014000007_fiscal.sql` + `tests/fiscal.sql` (14 checks): regime da loja, tabelas oficiais versionadas, fiscal do produto, log fiscal imutável.

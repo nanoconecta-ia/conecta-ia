@@ -1,4 +1,4 @@
-# NCM e dados fiscais por produto — desenho (migração 13 NÃO escrita; aguarda aprovação)
+# NCM e dados fiscais por produto — migração 13 escrita e testada (NÃO aplicada; aguarda "aplica a 13")
 
 Requisito do dono (2026-10-14): produto cadastrado avulso não traz NCM; o agente deve propor os dados fiscais
 conforme o regime e o estado da loja, deixar log, e não mexer no NCM que já vem na nota do fabricante.
@@ -46,3 +46,9 @@ conforme o regime e o estado da loja, deixar log, e não mexer no NCM que já ve
 - Campos fiscais mínimos do produto: NCM, CEST, CST, origem. Logística mínima: peso bruto, altura, largura, comprimento.
 - Pendência: o PDF do Convênio ICMS 142/2018 que o dono forneceu antes **não está no Drive consultado**; reenviar ou
   baixar do site oficial do Confaz e conferir a versão vigente (o convênio é alterado com frequência).
+
+## Estado das fontes (2026-10-14)
+- Fonte oficial localizada: página do Confaz do Convênio ICMS 142/18 (`confaz.fazenda.gov.br/legislacao/convenios/2018/CV142_18`),
+  com o Anexo II (autopeças, segmento 01) e redações com vigência (ex.: item 63.0 reescrito pelo Conv. ICMS 66/22, desde 02.05.22).
+- **O ambiente de execução bloqueou o acesso a `confaz.fazenda.gov.br`** (política de rede). Para carregar as tabelas é preciso
+  liberar esse domínio (e os de Siscomex/Sefaz-GO que forem usados) ou enviar os PDFs. Não há dado carregado nem inventado.

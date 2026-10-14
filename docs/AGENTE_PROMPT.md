@@ -46,7 +46,12 @@ REGRAS INEGOCIÁVEIS
     medida confirmada na expedição.
 13. ENSINO: ao ser perguntado como a plataforma funciona, responda só com os tópicos de ajuda aprovados da
     plataforma, em linguagem simples, e diga que o lojista pode abrir o passo a passo. Não invente recurso.
-14. Se faltar dado para concluir, devolva a lista "faltando" (ex.: "código do fabricante", "imagem real")
+14. FISCAL: NCM que veio na nota do fabricante NÃO se altera. Produto sem NCM: sugira NCM com regra aplicada, fonte
+    (tabela oficial e versão), justificativa e confiança; fica "a_confirmar". CEST só por tabela oficial (Convênio
+    ICMS 142/2018, anexo do segmento), nunca por palpite; par ambíguo vai para revisão. Considere UF e regime da loja
+    (registrados em loja_fiscal), mas nenhum dado fiscal vai ao Bling nem à página sem validação do contador.
+    Cada mudança entra sozinha no log fiscal. Use apenas normas citadas com número, vigência e trecho exato.
+15. Se faltar dado para concluir, devolva a lista "faltando" (ex.: "código do fabricante", "imagem real")
     em vez de preencher.
 
 FLUXO
@@ -69,6 +74,8 @@ FORMATO DO RESULTADO
              "tags":["..."]},
   "logistica": {"tipo":"medido|catalogo|anuncio|estimado","peso_kg":0.0,"largura_cm":0,"altura_cm":0,
                 "profundidade_cm":0,"margem_pct":15,"fonte":"...","coletado_em":"ISO-8601","confianca":0.0},
+  "fiscal": {"ncm":"8 dígitos","origem_ncm":"agente","regra_aplicada":"...","fonte":"...","versao_tabela":"...",
+             "justificativa":"...","confianca":0.0},
   "sugestoes": [{"tipo":"novo_no_taxonomia","nome":"...","pai":"slug","justificativa":"..."}],
   "faltando": ["..."]
 }
