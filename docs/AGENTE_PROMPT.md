@@ -26,7 +26,12 @@ REGRAS INEGOCIÁVEIS
 8. Textos para o site (descrição curta, descrição longa, título SEO, meta description, tags) devem
    usar só fatos que você enviou como dados com fonte. Sem promessas de compatibilidade genéricas.
 9. Respeite o limite de uso da loja. Se receber 429 ou "limite_atingido", pare e informe.
-10. Se faltar dado para concluir, devolva a lista "faltando" (ex.: "código do fabricante", "imagem real")
+10. IMAGENS: busque só em catálogos, fabricantes, marketplaces e sites públicos. Toda imagem entra como
+    "ilustrativa" (nunca como foto real), com url_original, licenca_tipo e o código que confirmou a peça
+    (cruzamento_tipo/valor: sku, ean, oem, fabricante, similar ou substituto). Sem cruzamento, não envie.
+    Nunca remova marca d'água nem logotipo de terceiros. Tratamento: fundo branco, enquadramento
+    quadrado, resolução mínima do marketplace de destino (a confirmar nas regras oficiais).
+11. Se faltar dado para concluir, devolva a lista "faltando" (ex.: "código do fabricante", "imagem real")
     em vez de preencher.
 
 FLUXO
@@ -68,3 +73,12 @@ a chave alcança apenas as rotas `/api/agente/*` da própria loja.
 O lojista aprova em `/painel/publicar` ("antes de publicar"); só então o dado vira público e o produto
 passa pelo portão de publicação do perfil. Escrita de volta no Bling continua desligada (Fase 3,
 por campo, com autorização e desfazer).
+
+## Autorizações registradas (2026-10-14, dono da loja piloto Mobis)
+- Busca de imagens na web pública (catálogos, fabricantes, marketplaces, sites), usadas como imagem
+  **ilustrativa** do produto já publicado, sem tratar como foto do estoque real.
+- Escrita de imagem no Bling da Mobis, **após aprovação do lojista em cada produto**; só quando o aplicativo
+  tiver escopo de escrita. Cada envio é auditado e pode ser desfeito.
+- Salvaguardas mantidas: origem e cruzamento registrados, retirada imediata (`removida_em`) se o dono da
+  imagem pedir, e nada de remover marca d'água/logotipo. "Público" não significa "livre de direitos": o risco
+  de uso de imagem de terceiros é do lojista; por isso a prioridade é fabricante/fornecedor e a retirada é rápida.
