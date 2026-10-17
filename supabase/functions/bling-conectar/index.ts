@@ -2,6 +2,7 @@
 // O state é assinado (loja + usuário + validade). Nada sensível volta ao navegador.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { assinarEstado } from "../_shared/estado.ts";
+import { segredoEstado } from "../_shared/plataforma.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -15,7 +16,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ erro: "Método não permitido." }, 405);
 
-  const segredo = Deno.env.get("ESTADO_SEGREDO");
+  const adminV = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  const segredo = await segredoEstado(adminV, (n) => Deno.env.get(n));
   if (!segredo) return json({ erro: "Conexão com o Bling ainda não configurada no servidor." }, 503);
 
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {

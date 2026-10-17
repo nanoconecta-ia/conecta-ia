@@ -4,7 +4,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { armazemSupabase } from "../_shared/bling_armazem.ts";
 import { renovarLoja } from "../_shared/bling_token.ts";
-import { chaveiroDoAmbiente } from "../_shared/cripto.ts";
+import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 
 const json = (o: unknown, status = 200) =>
   new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
@@ -18,10 +18,9 @@ function igual(a: string, b: string): boolean {
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ erro: "Método não permitido." }, 405);
-  const chaveCifra = chaveiroDoAmbiente((n) => Deno.env.get(n));
-  if (!chaveCifra) return json({ erro: "Conexão com o Bling ainda não configurada no servidor." }, 503);
-
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  const chaveCifra = await chaveiroPlataforma(admin, (n) => Deno.env.get(n));
+  if (!chaveCifra) return json({ erro: "Conexão com o Bling ainda não configurada no servidor." }, 503);
   const enviado = req.headers.get("x-cron-segredo") ?? "";
   const { data: esperado } = await admin.rpc("bling_cron_segredo");
   if (typeof esperado !== "string" || !esperado || !igual(enviado, esperado)) return json({ erro: "Não autorizado." }, 401);

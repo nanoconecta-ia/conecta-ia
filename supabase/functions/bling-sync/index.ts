@@ -5,7 +5,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { armazemSupabase } from "../_shared/bling_armazem.ts";
 import { blingFetch } from "../_shared/bling_api.ts";
-import { chaveiroDoAmbiente } from "../_shared/cripto.ts";
+import { type Chaveiro } from "../_shared/cripto.ts";
+import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 import { sincronizar, type Existente, type PortasSync } from "../_shared/bling_sync.ts";
 
 const CORS = {
@@ -23,7 +24,7 @@ function igual(a: string, b: string): boolean {
 }
 
 // deno-lint-ignore no-explicit-any
-function portasDaLoja(admin: any, lojaId: string, chaveCifra: NonNullable<ReturnType<typeof chaveiroDoAmbiente>>): PortasSync {
+function portasDaLoja(admin: any, lojaId: string, chaveCifra: Chaveiro): PortasSync {
   const arm = armazemSupabase(admin);
   const cfg = { chaveCifra };
   return {
@@ -78,11 +79,10 @@ function portasDaLoja(admin: any, lojaId: string, chaveCifra: NonNullable<Return
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ erro: "Método não permitido." }, 405);
-  const chaveCifra = chaveiroDoAmbiente((n) => Deno.env.get(n));
-  if (!chaveCifra) return json({ erro: "Conexão com o Bling ainda não configurada no servidor." }, 503);
-
   const url = Deno.env.get("SUPABASE_URL")!;
   const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  const chaveCifra = await chaveiroPlataforma(admin, (n) => Deno.env.get(n));
+  if (!chaveCifra) return json({ erro: "Conexão com o Bling ainda não configurada no servidor." }, 503);
   const corpo = await req.json().catch(() => ({}));
   let lojas: string[] = [];
 
