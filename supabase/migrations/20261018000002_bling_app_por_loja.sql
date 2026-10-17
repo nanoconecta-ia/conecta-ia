@@ -1,4 +1,6 @@
--- Migração 21 (REVISADA — NÃO APLICADA): app do Bling por loja, com os achados da revisão corrigidos.
+-- Migração 21: app do Bling por loja, com os achados da revisão corrigidos. APLICADA em 2026-10-18 em 4 partes
+-- (papeis, app, state_oauth, limite). A limpeza de registros antigos (estados e limite) NÃO está nas funções:
+-- fica para um job de manutenção (pg_cron) a propor.
 -- Reversão: ver docs/BLING_RECUPERACAO_E_REVERSAO.md (bloco ROLLBACK no fim deste arquivo).
 
 -- 1) Quem pode administrar a integração: papel 'lojista' da loja ou super_admin com MFA (aal2). 'editor' NÃO.
@@ -73,7 +75,6 @@ create function public.bling_estado_criar(p_loja_id uuid, p_user_id uuid, p_ttl_
 language plpgsql security definer set search_path = '' as $$
 declare v uuid;
 begin
-  delete from private.bling_oauth_estados where expira_em < now() - interval '1 day';
   insert into private.bling_oauth_estados (loja_id, user_id, expira_em)
   values (p_loja_id, p_user_id, now() + make_interval(secs => least(greatest(p_ttl_s, 30), 900))) returning nonce into v;
   return v;
@@ -101,7 +102,6 @@ begin
   v_janela := to_timestamp(floor(extract(epoch from now()) / p_janela_s) * p_janela_s);
   insert into private.limite_chamadas (chave, janela, n) values (p_chave, v_janela, 1)
   on conflict (chave, janela) do update set n = private.limite_chamadas.n + 1 returning n into v_n;
-  delete from private.limite_chamadas where janela < now() - interval '1 day';
   return v_n <= p_max;
 end $$;
 
