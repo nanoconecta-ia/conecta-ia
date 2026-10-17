@@ -106,3 +106,77 @@ Custos: o plano gratuito do Supabase tem limites de Edge Functions e pausa por i
 3. Rotas `/agent/v1/*` em Edge Function única, com os contratos acima e testes de isolamento.
 4. Central de Agentes real (hoje só protótipo em `#/agentes`): fila, resultado, evidências, aprovação.
 5. Plugin de referência (o agente integrado) e adaptador do NanoShell por contrato, sem alterar o NanoShell.
+
+---
+
+# Atualização com as decisões do dono (rodada 2)
+
+Decisão registrada: **corrigir os achados da PR #14 e reapresentar**. Nada de migração, deploy ou merge sem nova autorização explícita. A Central de Agentes permanece **demonstração** até que autenticação, execução, auditoria e testes estejam concluídos.
+
+## 9. Módulos separados (nenhum conhece o outro por dentro)
+
+| Módulo | Responsabilidade | Fala com | Nunca faz |
+|---|---|---|---|
+| Conector ERP Bling | OAuth por loja, leitura/escrita autorizada, renovação | Bling | Entregar token a agente ou ao navegador |
+| Agent Gateway | Fila, roteamento por capacidade, contratos SDK, fallback | Plugins (NanoShell, GPT, Claude, outros) | Executar escrita no ERP |
+| Motor de taxonomia e indexação | Taxonomia, genealogia, códigos, equivalências | Memória técnica | Homologar hipótese de agente |
+| Memória técnica com evidências | Fonte, procedência, versão, confiança, permissões | Todos, por API | Misturar dado privado de lojas |
+| Serviço de imagens | Gerar/tratar imagens, validar formatos de marketplace, marcar sintética | Gateway, armazenamento | Trocar foto técnica real por sintética |
+| Serviço de SEO e publicação | Título, descrição, dados estruturados, preparo de publicação | Memória (só aprovado) | Publicar produto incompleto |
+
+O frontend consome os módulos por **interfaces autenticadas** (Edge Functions com o JWT do usuário); nenhum segredo chega ao navegador.
+
+## 10. Taxonomia como patrimônio técnico (não pertence a um agente)
+
+- Vive no banco (taxonomia, genealogia da migração 18, `pecas_ref`, `ref_cruzada`). Agente pesquisa e **propõe**; só vira dado homologado com validação humana (`status: a_confirmar -> aprovado`, com fonte e data).
+- Hipótese nunca vira fato: o banco já recusa aprovado sem fonte/data, OEM/OES sem fornecimento original documentado e equivalente sem evidência.
+- Memória preserva evidência, procedência, versão (receitas imutáveis), histórico e permissões por loja.
+
+## 11. Ferramenta de imagens (Central de Agentes)
+
+Capacidades planejadas: banners comerciais, composições promocionais, melhoria de apresentação de produto, **validação de dimensões e formatos por marketplace**, conteúdo visual para SEO e campanhas.
+Regras: toda imagem gerada é `sintetica: true`, com direitos registrados, hash e origem; **foto técnica real e imagem gerada ficam em campos e rótulos distintos**; a sintética nunca ocupa o lugar da foto real da peça e só publica com aprovação. Dimensões de marketplaces entram como tabela de requisitos com **fonte e data** (não inventada aqui).
+
+## 12. OAuth do Bling — redação para não afirmar o que não foi verificado
+
+- Caminho **por loja** (individual) está implementado e permanece como opção técnica.
+- Caminho **central do Conecta.IA** (app único, autorização OAuth por loja) é **candidato**, não verificado: a documentação oficial do Bling estava inacessível. Nenhuma regra de publicação, homologação ou prazo de token é tratada como oficial neste projeto até alguém conferir em `developer.bling.com.br`.
+
+## 13. Fluxo completo de uma tarefa executada por agente
+
+1. Lojista abre um produto na Central e escolhe "Enriquecer cadastro e taxonomia" (ou o gatilho automático detecta cadastro insuficiente).
+2. Servidor cria a tarefa (`enriquecimento_tarefas`) com `capacidade`, `idempotency_key`, risco e escopo; Policy Engine classifica o risco (leitura LOW; escrita MEDIUM+ exige aprovação).
+3. Roteador escolhe o plugin habilitado para a capacidade (preferência da loja, custo, disponibilidade); fallback se não responder no prazo.
+4. Plugin reivindica a tarefa (lease), recebe **só dados do produto e a receita**, nunca tokens.
+5. Plugin pesquisa e devolve itens com fonte, data e confiança por contrato.
+6. Verificador recusa o que não tem evidência ou formato; o restante entra `a_confirmar`.
+7. Lojista vê na Central: resultado, evidências e diferenças; aprova ou rejeita item a item (auditado).
+8. Aprovado vira dado da loja; a taxonomia/memória global só muda por promoção revisada pelo super admin.
+9. Se houver escrita no Bling: ferramenta do catálogo fechado, só ativa e com `aprovacao_id`, com `idempotency_key`, e leitura de confirmação depois (timeout em escrita => estado desconhecido, nunca repetir às cegas).
+10. Auditoria encadeada: tenant, agente, tarefa, ferramenta, risco, resultado, aprovação.
+
+## 14. Plano de testes de segurança e integração
+
+| Área | Teste | Tipo |
+|---|---|---|
+| Isolamento | Plugin/usuário da loja A não lê, reivindica nem altera nada da B (fila, memória, app do Bling) | SQL com duas lojas + função |
+| Privilégio | `editor` não altera integração, não aprova escrita; super_admin só com aal2 | SQL + função |
+| OAuth | state de uso único, expirado, de outra loja, de usuário que perdeu o papel; CNPJ divergente | função com Bling simulado |
+| Segredos | Nenhum token/secret em resposta, log, erro ou entrada de tarefa | teste + varredura de segredos no CI |
+| Contrato SDK | Manifesto, tarefa e resultado inválidos são recusados; versão desconhecida recusada | Node |
+| Evidência | Item sem fonte/data/confiança recusado; sintética sem rótulo recusada | Node + SQL |
+| Escrita | Ferramenta desligada recusa mesmo com aprovação; sem `idempotency_key` recusa; timeout => desconhecido | Node |
+| Fallback | Lease expira, tarefa volta à fila, segundo plugin assume | Node |
+| Custo | Estourar `limite_mensal_tokens` bloqueia novas tarefas | SQL |
+| Integração | Demonstração ponta a ponta em **ambiente de teste** com os produtos da Mobis (sem escrever no Bling) | roteiro manual + captura |
+
+## 15. Plano de implantação com rollback
+
+Ordem (cada passo exige autorização explícita; nenhum está autorizado hoje):
+1. Corrigir/aprovar PR #14 → aplicar migração 21 → publicar `bling-app`, `bling-conectar`, `bling-callback`, `bling-renovar`. **Rollback:** bloco ROLLBACK da migração + republicar versões anteriores.
+2. Tabelas e rotas do gateway (`/agent/v1/*`) em ambiente de teste. **Rollback:** desligar o roteador; tarefas ficam na fila; remover rotas.
+3. Central de Agentes real, atrás de flag por loja. **Rollback:** desligar a flag; volta a demonstração.
+4. Plugin de referência (agente integrado) → NanoShell por contrato → GPT/Claude. **Rollback:** desabilitar o plugin por loja (sem apagar histórico).
+5. Serviço de imagens e SEO, depois publicação. **Rollback:** despublicar; originais preservados.
+
+Marco de demonstração (ambiente de teste): escolher um produto da Mobis, pedir enriquecimento a um agente, ver taxonomia e evidências, gerar uma imagem comercial **rotulada como sintética**, preparar o SEO — tudo com revisão antes de publicar e sem escrita no Bling.
