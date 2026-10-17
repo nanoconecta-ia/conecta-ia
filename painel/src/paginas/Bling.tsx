@@ -29,9 +29,11 @@ export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [ultimoSync, setUltimoSync] = useState<string | null>(null);
+  const [sincMsg, setSincMsg] = useState("");
 
   const carregar = () => {
-    supabase.from("bling_conexoes").select("status").eq("loja_id", loja.id).maybeSingle().then(({ data }) => setStatus(data?.status ?? "pendente"));
+    supabase.from("bling_conexoes").select("status, ultimo_sync_ok_em").eq("loja_id", loja.id).maybeSingle().then(({ data }) => { setStatus(data?.status ?? "pendente"); setUltimoSync(data?.ultimo_sync_ok_em ?? null); });
     supabase.rpc("bling_app_configurado", { p_loja_id: loja.id }).then(({ data }) => setConfigurado(data === true));
   };
   useEffect(carregar, [loja.id, query]);
@@ -49,6 +51,16 @@ export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
     const { data, error } = await supabase.functions.invoke("bling-conectar", { body: { loja_id: loja.id } });
     if (error) { setErro(await mensagem(error, "Não foi possível iniciar a conexão.")); setOcupado(false); return; }
     window.location.href = (data as { url: string }).url;
+  }
+
+  async function sincronizarAgora() {
+    setOcupado(true); setErro(""); setSincMsg("");
+    const { data, error } = await supabase.functions.invoke("bling-sync", { body: { loja_id: loja.id } });
+    setOcupado(false);
+    if (error) { setErro(await mensagem(error, "Não foi possível sincronizar agora.")); return; }
+    const r = (data as { resultado?: { gravados?: number; completo?: boolean }[] })?.resultado?.[0];
+    setSincMsg(r?.completo ? `Sincronização concluída: ${r.gravados ?? 0} produtos atualizados.` : "Sincronização parcial; continua na próxima rodada.");
+    carregar();
   }
 
   const conectada = status === "conectada";
@@ -88,7 +100,10 @@ export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
           <div className="linha">
             <button onClick={() => void conectar()} disabled={ocupado}>{conectada ? "Reconectar ao Bling" : "Conectar ao Bling"}</button>
             <button className="sec" onClick={() => setEditando(true)}>Trocar as chaves do app</button>
+            {conectada && <button className="sec" onClick={() => void sincronizarAgora()} disabled={ocupado}>Sincronizar agora</button>}
           </div>
+          {conectada && <p className="suave">Última sincronização: {ultimoSync ? new Date(ultimoSync).toLocaleString("pt-BR") : "ainda não houve"}. O catálogo é uma cópia só de leitura: nada é gravado no Bling.</p>}
+          {sincMsg && <p className="msg-ok">{sincMsg}</p>}
         </>
       )}
     </div>
