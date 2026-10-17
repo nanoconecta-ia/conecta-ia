@@ -10,12 +10,22 @@ async function mensagem(error: unknown, padrao: string) {
   return padrao;
 }
 
+const MOTIVOS: Record<string, string> = {
+  conta: "A conta do Bling que autorizou não é a da empresa cadastrada (CNPJ diferente). Entre na conta certa do Bling e tente de novo.",
+  conta_verificacao: "Não foi possível confirmar qual conta do Bling autorizou. Tente de novo.",
+  estado: "O link de autorização expirou ou já foi usado. Clique em Conectar de novo.",
+  permissao: "Só o responsável da loja pode conectar o Bling.",
+  app: "O app do Bling não está cadastrado. Informe o Client ID e o Client Secret.",
+  troca: "O Bling recusou a autorização. Confira o Client ID, o Client Secret e o link de redirecionamento do app.",
+};
+
 export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
   const [status, setStatus] = useState("…");
   const [configurado, setConfigurado] = useState<boolean | null>(null);
   const [editando, setEditando] = useState(false);
   const [clientId, setClientId] = useState("");
   const [secret, setSecret] = useState("");
+  const [cnpj, setCnpj] = useState("");
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [copiado, setCopiado] = useState(false);
@@ -28,10 +38,10 @@ export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
 
   async function salvar(e: FormEvent) {
     e.preventDefault(); setOcupado(true); setErro("");
-    const { error } = await supabase.functions.invoke("bling-app", { body: { loja_id: loja.id, client_id: clientId, client_secret: secret } });
+    const { error } = await supabase.functions.invoke("bling-app", { body: { loja_id: loja.id, client_id: clientId, client_secret: secret, cnpj } });
     setOcupado(false);
     if (error) { setErro(await mensagem(error, "Não foi possível salvar.")); return; }
-    setClientId(""); setSecret(""); setEditando(false); carregar(); // o secret nunca fica na tela nem no navegador
+    setClientId(""); setSecret(""); setCnpj(""); setEditando(false); carregar(); // o secret nunca fica na tela nem no navegador
   }
 
   async function conectar() {
@@ -49,7 +59,7 @@ export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
       <p><span className={`selo ${conectada ? "ok" : "atencao"}`}>{conectada ? "Conectada" : "Não conectada"}</span>{" "}
         {configurado && <span className="selo ok">App cadastrado</span>}</p>
       {query.get("ok") && <p className="msg-ok">Conexão concluída.</p>}
-      {query.get("erro") && <p className="msg-erro">Não foi possível conectar ({query.get("erro")}). Confira o cadastro do app e tente de novo.</p>}
+      {query.get("erro") && <p className="msg-erro">{MOTIVOS[query.get("erro") ?? ""] ?? "Não foi possível conectar. Confira o cadastro do app e tente de novo."}</p>}
       {erro && <p className="msg-erro">{erro}</p>}
 
       {mostrarForm ? (
@@ -66,8 +76,9 @@ export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
           <h2>2. Cole as duas chaves aqui</h2>
           <form onSubmit={salvar}>
             <label>Client ID<input value={clientId} onChange={(e) => setClientId(e.target.value)} required autoComplete="off" spellCheck={false} /></label>
+            <label>CNPJ da empresa no Bling<input value={cnpj} onChange={(e) => setCnpj(e.target.value)} required inputMode="numeric" autoComplete="off" placeholder="00.000.000/0000-00" /></label>
             <label>Client Secret<input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} required autoComplete="new-password" spellCheck={false} /></label>
-            <p className="suave">A chave é guardada cifrada no servidor e não aparece mais depois de salva.</p>
+            <p className="suave">O CNPJ evita conectar a conta errada. A chave é guardada cifrada no servidor e não aparece mais depois de salva. Só o responsável da loja pode alterar.</p>
             <div className="linha"><button disabled={ocupado}>Salvar</button>{editando && <button type="button" className="sec" onClick={() => setEditando(false)}>Cancelar</button>}</div>
           </form>
         </>

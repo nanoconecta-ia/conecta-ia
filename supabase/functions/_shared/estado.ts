@@ -13,7 +13,7 @@ export function unb64u(s: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(atob(p), (c) => c.charCodeAt(0));
 }
 
-export type Estado = { l: string; u: string; e: number }; // loja, usuário, expira (ms)
+export type Estado = { l: string; u: string; e: number; n?: string }; // loja, usuário, expira (ms), nonce de uso único
 
 const chaveHmac = (segredo: string) =>
   crypto.subtle.importKey("raw", enc.encode(segredo), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);

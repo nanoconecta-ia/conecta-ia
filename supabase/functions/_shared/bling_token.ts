@@ -1,7 +1,7 @@
 // Renovação do access_token do Bling. O refresh_token roda a cada renovação (o antigo morre), então
 // só UMA renovação por loja pode acontecer por vez: reserva (lease) no banco antes de chamar o Bling.
 // Lógica pura sobre portas (Armazem/Http): testável sem Supabase nem rede. Nunca registra token.
-import { decifrar, cifrar } from "./cripto.ts";
+import { decifrar, cifrar, type Chaveiro } from "./cripto.ts";
 
 export const ANTECEDENCIA_MS = 30 * 60_000; // renova quando faltar menos que isso
 export const RESERVA_S = 60;
@@ -16,11 +16,11 @@ export interface Armazem {
   salvar(lojaId: string, access: string, refresh: string, expiraEm: string): Promise<void>; // também libera a reserva
   marcar(lojaId: string, status: "conectada" | "expirada" | "erro", erro: string | null): Promise<void>;
   /** App (Client ID + secret cifrado) que o lojista cadastrou para a loja. */
-  lerApp(lojaId: string): Promise<{ client_id: string; client_secret_cifrado: string } | null>;
+  lerApp(lojaId: string): Promise<{ client_id: string; client_secret_cifrado: string; cnpj: string } | null>;
 }
 
 export interface Config {
-  chaveCifra: string;
+  chaveCifra: Chaveiro;
   fetch?: typeof fetch; agora?: () => number; espera?: (ms: number) => Promise<void>; id?: string;
 }
 
