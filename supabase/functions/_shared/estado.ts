@@ -8,7 +8,7 @@ export function b64u(b: Uint8Array): string {
   for (const x of b) s += String.fromCharCode(x);
   return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
-export function unb64u(s: string): Uint8Array {
+export function unb64u(s: string): Uint8Array<ArrayBuffer> {
   const p = s.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (s.length % 4)) % 4);
   return Uint8Array.from(atob(p), (c) => c.charCodeAt(0));
 }

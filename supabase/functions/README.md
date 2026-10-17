@@ -3,6 +3,7 @@
 | Função | verify_jwt | Função |
 |---|---|---|
 | `bling-conectar` | sim | POST `{loja_id}` com o login do usuário; devolve a URL de autorização do Bling (state assinado) |
+| `bling-renovar` | não (autenticação própria: `x-cron-segredo`) | Chamada pelo cron a cada 30 min; renova o token do Bling que vence em até 60 min. **Depende da proposta SQL `propostas/20261018000001_bling_renovacao_automatica.sql` (não aplicada)** |
 | `bling-callback` | não (autenticação própria: state assinado, 10 min) | Troca o código por tokens no servidor, cifra e grava via RPC |
 
 Secrets (painel do Supabase > Edge Functions > Secrets; nunca no repositório): `BLING_CLIENT_ID`, `BLING_CLIENT_SECRET`,

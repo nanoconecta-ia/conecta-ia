@@ -20,6 +20,7 @@ Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no ch
 5. O lojista edita só o que é do site: banners, páginas, SEO, tema e regras de venda. O cadastro do produto vem do ERP.
 6. **Enriquecimento nunca inventa.** Cada dado enriquecido guarda fonte, data e nível de confiança, separado do dado original do ERP. Sem evidência, fica "a confirmar" ou vazio. Nunca inventar preço, estoque, GTIN, NCM, compatibilidade ou especificação.
 7. **Escrita de volta no Bling: padrão é NÃO escrever.** O que o enriquecimento melhora fica na camada do Conecta.IA. Gravar no Bling só com autorização explícita do cliente, por campo (decisão em aberto).
+   Decisão do dono (2026-10-17): o app do Bling pode ter escopos de cadastro (produtos, clientes/contatos, lojas virtuais, marketplace); nota fiscal só consulta (emitir/enviar proibido). Escopo no app NÃO liga a escrita: cada ferramenta de escrita fica desligada até teste com mock, passar pelo Policy Engine (MEDIUM+ exige aprovação humana e `idempotency_key`) e registro em auditoria (`supabase/functions/_shared/bling_ferramentas.ts`).
 8. Produto incompleto não é publicado.
 9. **Cada cliente tem o próprio domínio** (o piloto usa `www.mobisautoparts.com.br`). A loja é resolvida pelo domínio, no servidor. Um domínio só entra em produção depois de verificar DNS e SSL. **Nunca alterar DNS, domínio ou hospedagem de um cliente sem autorização explícita**, e sempre com plano de volta (o site atual continua no ar até o novo ser validado).
 
