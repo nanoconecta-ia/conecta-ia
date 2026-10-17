@@ -3,11 +3,12 @@
 | Função | verify_jwt | Função |
 |---|---|---|
 | `bling-conectar` | sim | POST `{loja_id}` com o login do usuário; devolve a URL de autorização do Bling (state assinado) |
+| `agente` | sim | POST `{produto_id, idempotency_key}`: executa a receita ativa do tipo do produto (passos 1–3, 9–10), grava `a_confirmar` e registra a execução. Passos 4–8 pendentes; não escreve no Bling. **Ainda não publicada** |
 | `bling-callback` | não (autenticação própria: state assinado, 10 min) | Troca o código por tokens no servidor, cifra e grava via RPC |
 
 Secrets (painel do Supabase > Edge Functions > Secrets; nunca no repositório): `BLING_CLIENT_ID`, `BLING_CLIENT_SECRET`,
 `ESTADO_SEGREDO`, `CREDENCIAIS_CHAVE_CIFRA` (32 bytes em base64) e, opcional, `APP_URL` (para redirecionar ao painel).
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` já existem no ambiente das funções.
 
-Testes locais (Node 22): `node --experimental-strip-types --test supabase/functions/_shared/shared.test.ts`.
+Testes locais (Node 22): `node --experimental-strip-types --test supabase/functions/_shared/shared.test.ts supabase/functions/_shared/agente/agente.test.ts`.
 Publicadas em 2026-10-14 (versão 1 de cada). Sem secrets, ambas respondem 503 "ainda não configurada".
