@@ -180,3 +180,26 @@ Ordem (cada passo exige autorização explícita; nenhum está autorizado hoje):
 5. Serviço de imagens e SEO, depois publicação. **Rollback:** despublicar; originais preservados.
 
 Marco de demonstração (ambiente de teste): escolher um produto da Mobis, pedir enriquecimento a um agente, ver taxonomia e evidências, gerar uma imagem comercial **rotulada como sintética**, preparar o SEO — tudo com revisão antes de publicar e sem escrita no Bling.
+
+---
+
+## 16. Vários agentes por loja: plugin **ou** API (decisão do dono)
+
+A plataforma não tem "um agente". Cada loja pode ter **vários agentes ao mesmo tempo**, de dois tipos de conexão, todos atrás do mesmo contrato do SDK (seção 4):
+
+| Tipo | Como conecta | Quem inicia | Exemplo | Segredos |
+|---|---|---|---|---|
+| **Plugin (pull)** | O agente roda onde quiser (navegador, desktop, servidor da loja) e **busca** tarefas na fila com a chave dele | O agente | NanoShell IA no navegador do lojista | Chave por loja e por plugin; só alcança as rotas da fila |
+| **API (push)** | A plataforma **chama** um endpoint cadastrado pela loja (webhook assinado) ou um provedor de IA com a chave da própria loja (BYOK) | A plataforma | GPT, Claude, Gemini ou outro agente HTTP | Chave da loja cifrada no servidor; nunca no navegador |
+| **Integrado** | Roda dentro do Conecta.IA | A plataforma | Agente integrado (regras e receitas) | Nenhum externo |
+
+Regras para multiplicar agentes:
+1. **Registro por loja** (`agentes_plugins`): nome, tipo (`plugin`/`api`/`integrado`), manifesto de capacidades, habilitação por capacidade, prioridade, limite mensal de custo, hash da chave (plugin) ou URL assinada/segredo cifrado (API).
+2. **Roteamento por capacidade**: para cada tarefa, o roteador escolhe entre os agentes habilitados naquela capacidade, por prioridade, custo e disponibilidade; se o escolhido não responde no prazo, cai para o próximo (fallback).
+3. **Execução em paralelo e conferência** (opcional, por capacidade de alto risco como códigos OEM e aplicações): a mesma tarefa pode ir a **dois agentes**; só o que **concorda** entra como `a_confirmar` com confiança maior; divergência vira alerta para o lojista, nunca é resolvida por palpite.
+4. **Mesma camada de evidência para todos**: todo resultado, de qualquer tipo, passa pelo Verificador (fonte, data, confiança) e pela aprovação humana. Nenhum agente tem memória própria que contradiga a taxonomia.
+5. **Isolamento e custo**: cada agente só vê as tarefas da loja a que foi habilitado; custo e tokens medidos por agente e por loja; estourar o limite pausa o agente, não a loja.
+6. **Nunca expor provedor ao cliente final**: a vitrine só diz "assistente da loja".
+7. **Adaptadores de API** ficam em uma camada única (OpenAI-compatível primeiro, depois Anthropic e outros), para o núcleo não saber qual provedor executou.
+
+Aprovação necessária antes de implementar: tabelas `agentes_plugins` e extensões da fila (seção 8, item 2) e as rotas `/agent/v1/*`. Nada disso foi aplicado.
