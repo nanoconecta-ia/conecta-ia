@@ -35,7 +35,7 @@ test("cripto: adulteração e chave errada falham", async () => {
   await assert.rejects(cifrar("x", undefined));
 });
 
-test("cripto: formato compatível com o módulo Node (AES-256-GCM v1.iv.tag.texto)", async () => {
+test("cripto: v1 legado do Node abre; o v2.kid.iv.tag.texto nosso abre no Node (AES-256-GCM)", async () => {
   const k = Buffer.from(chave, "base64");
   const iv = randomBytes(12);
   const ci = createCipheriv("aes-256-gcm", k, iv);
@@ -43,7 +43,8 @@ test("cripto: formato compatível com o módulo Node (AES-256-GCM v1.iv.tag.text
   const valor = ["v1", iv.toString("base64url"), ci.getAuthTag().toString("base64url"), ct.toString("base64url")].join(".");
   assert.equal(await decifrar(valor, chave), "segredo-node");
   const nosso = (await cifrar("segredo-deno", chave)).split(".");
-  const d = createDecipheriv("aes-256-gcm", k, Buffer.from(nosso[1], "base64url"));
-  d.setAuthTag(Buffer.from(nosso[2], "base64url"));
-  assert.equal(Buffer.concat([d.update(Buffer.from(nosso[3], "base64url")), d.final()]).toString(), "segredo-deno");
+  const d = createDecipheriv("aes-256-gcm", k, Buffer.from(nosso[2], "base64url"));
+  d.setAuthTag(Buffer.from(nosso[3], "base64url"));
+  assert.equal(nosso[0], "v2");
+  assert.equal(Buffer.concat([d.update(Buffer.from(nosso[4], "base64url")), d.final()]).toString(), "segredo-deno");
 });

@@ -1,7 +1,7 @@
 // Renovação do access_token do Bling. O refresh_token roda a cada renovação (o antigo morre), então
 // só UMA renovação por loja pode acontecer por vez: reserva (lease) no banco antes de chamar o Bling.
 // Lógica pura sobre portas (Armazem/Http): testável sem Supabase nem rede. Nunca registra token.
-import { decifrar, cifrar } from "./cripto.ts";
+import { decifrar, cifrar, type Chaveiro } from "./cripto.ts";
 
 export const ANTECEDENCIA_MS = 30 * 60_000; // renova quando faltar menos que isso
 export const RESERVA_S = 60;
@@ -15,10 +15,12 @@ export interface Armazem {
   liberar(lojaId: string, por: string): Promise<void>;
   salvar(lojaId: string, access: string, refresh: string, expiraEm: string): Promise<void>; // também libera a reserva
   marcar(lojaId: string, status: "conectada" | "expirada" | "erro", erro: string | null): Promise<void>;
+  /** App (Client ID + secret cifrado) que o lojista cadastrou para a loja. */
+  lerApp(lojaId: string): Promise<{ client_id: string; client_secret_cifrado: string; cnpj: string } | null>;
 }
 
 export interface Config {
-  clientId: string; clientSecret: string; chaveCifra: string;
+  chaveCifra: Chaveiro;
   fetch?: typeof fetch; agora?: () => number; espera?: (ms: number) => Promise<void>; id?: string;
 }
 
@@ -50,6 +52,13 @@ export async function renovarLoja(arm: Armazem, lojaId: string, cfg: Config, for
     // relê com a reserva em mãos: outra renovação pode ter terminado entre a leitura e a reserva
     const atual = (await arm.ler(lojaId)) ?? antes;
     if (!forcar && atual.refresh_token_cifrado !== antes.refresh_token_cifrado) { await arm.liberar(lojaId, por); return "outra_renovacao"; }
+    const app = await arm.lerApp(lojaId);
+    if (!app) {
+      await arm.marcar(lojaId, "erro", "App do Bling não cadastrado. Informe o Client ID e o Client Secret no painel.");
+      await arm.liberar(lojaId, por);
+      return "reconectar";
+    }
+    const clientSecret = await decifrar(app.client_secret_cifrado, cfg.chaveCifra);
     const refresh = await decifrar(atual.refresh_token_cifrado, cfg.chaveCifra);
 
     let r: Response;
@@ -57,7 +66,7 @@ export async function renovarLoja(arm: Armazem, lojaId: string, cfg: Config, for
       r = await f(TOKEN_URL, {
         method: "POST",
         headers: {
-          Authorization: "Basic " + btoa(`${cfg.clientId}:${cfg.clientSecret}`),
+          Authorization: "Basic " + btoa(`${app.client_id}:${clientSecret}`),
           "Content-Type": "application/x-www-form-urlencoded", Accept: "1.0", "enable-jwt": "1",
         },
         body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: refresh }).toString(),

@@ -21,6 +21,11 @@ export function armazemSupabase(admin: any): Armazem {
       const { error } = await admin.rpc("bling_salvar_credenciais", { p_loja_id: lojaId, p_access: access, p_refresh: refresh, p_expira_em: expiraEm });
       if (error) throw new Error("falha ao salvar credenciais");
     },
+    async lerApp(lojaId) {
+      const { data, error } = await admin.rpc("bling_ler_app", { p_loja_id: lojaId });
+      if (error) throw new Error("falha ao ler o app do Bling");
+      return ((data as { client_id: string; client_secret_cifrado: string; cnpj: string }[] | null) ?? [])[0] ?? null;
+    },
     async marcar(lojaId, status, erro) {
       await admin.rpc("bling_marcar_status", { p_loja_id: lojaId, p_status: status, p_erro: erro });
     },
