@@ -1,5 +1,5 @@
--- PROPOSTA — NÃO APLICADA. Renovação automática do token do Bling (reserva + cron a cada 30 min).
--- Aplicar só com aprovação explícita; depois mover para supabase/migrations/.
+-- Renovação automática do token do Bling (reserva + cron a cada 30 min).
+-- APLICADA no Supabase em 2026-10-17, em duas migrações (bling_renovacao_reserva_rpcs = parte 1; bling_renovacao_cron_vault = parte 2).
 -- Parte 1 (reserva e RPCs) é testada localmente em tests/bling_renovacao.sql.
 -- Parte 2 (Vault + pg_cron + pg_net) só roda no Supabase: pg_cron e pg_net ainda não estão instaladas.
 

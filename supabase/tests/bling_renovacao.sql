@@ -1,6 +1,6 @@
--- Testa a PARTE 1 da proposta propostas/20261018000001_bling_renovacao_automatica.sql (reserva e RPCs).
+-- Testa a PARTE 1 da migração migrations/20261018000001_bling_renovacao_automatica.sql (reserva e RPCs).
 -- Pré-requisito local: migrações 1–19 + parte 1 aplicada:
---   sed '/===== PARTE 2/,$d' propostas/20261018000001_bling_renovacao_automatica.sql | psql -v ON_ERROR_STOP=1 -d t
+--   sed '/===== PARTE 2/,$d' migrations/20261018000001_bling_renovacao_automatica.sql | psql -v ON_ERROR_STOP=1 -d t
 begin;
 create or replace function public.afirma(ok boolean, msg text) returns void language plpgsql as
 $$ begin if not ok then raise exception 'FALHOU: %', msg; end if; raise notice 'ok: %', msg; end $$;
