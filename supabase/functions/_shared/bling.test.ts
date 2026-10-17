@@ -7,14 +7,16 @@ import { blingFetch } from "./bling_api.ts";
 import { FERRAMENTAS, podeExecutar } from "./bling_ferramentas.ts";
 
 const chave = randomBytes(32).toString("base64");
-const cfgBase = { clientId: "cid", clientSecret: "csec", chaveCifra: chave, espera: async () => {} };
+const cfgBase = { chaveCifra: chave, espera: async () => {} };
 const AGORA = Date.parse("2026-10-18T12:00:00Z");
 
+let segredoApp = "";
 async function armazemFalso(expiraEmMin: number, reservaOcupada = false) {
+  segredoApp = await cifrar("SEGREDO-DA-LOJA", chave);
   const estado = {
     cred: { access_token_cifrado: await cifrar("ACC-VELHO", chave), refresh_token_cifrado: await cifrar("REF-VELHO", chave),
             expira_em: new Date(AGORA + expiraEmMin * 60_000).toISOString() } as CredCifrada | null,
-    reservado: reservaOcupada, liberacoes: 0, status: null as string | null, erro: null as string | null, salvos: 0,
+    reservado: reservaOcupada, semApp: false, liberacoes: 0, status: null as string | null, erro: null as string | null, salvos: 0,
   };
   const arm: Armazem = {
     ler: async () => estado.cred,
@@ -22,6 +24,7 @@ async function armazemFalso(expiraEmMin: number, reservaOcupada = false) {
     liberar: async () => { estado.reservado = false; estado.liberacoes++; },
     salvar: async (_l, a, r, e) => { estado.cred = { access_token_cifrado: a, refresh_token_cifrado: r, expira_em: e }; estado.reservado = false; estado.salvos++; },
     marcar: async (_l, s, e) => { estado.status = s; estado.erro = e; },
+    lerApp: async () => estado.semApp ? null : { client_id: "cid-da-loja", client_secret_cifrado: segredoApp },
   };
   return { arm, estado };
 }
@@ -46,6 +49,21 @@ test("renova perto de vencer: usa o refresh antigo, guarda os dois tokens novos 
   assert.equal(await decifrar(estado.cred!.refresh_token_cifrado, chave), "REF-NOVO");
   assert.equal(estado.cred!.expira_em, new Date(AGORA + 21600_000).toISOString());
   assert.ok(!JSON.stringify(estado.cred).includes("ACC-NOVO"), "nada em texto claro");
+});
+
+test("usa o app DA LOJA (Client ID e Secret cadastrados no painel) na renovação", async () => {
+  const { arm } = await armazemFalso(10);
+  let basic = "";
+  const f = (async (_u: string, init: RequestInit) => { basic = (init.headers as Record<string, string>).Authorization; return resp(200, { access_token: "A", refresh_token: "R", expires_in: 21600 }); }) as typeof fetch;
+  assert.equal(await renovarLoja(arm, "L", { ...cfgBase, agora: () => AGORA, fetch: f }), "renovada");
+  assert.equal(basic, "Basic " + btoa("cid-da-loja:SEGREDO-DA-LOJA"));
+});
+
+test("sem app cadastrado: pede para informar no painel, sem chamar o Bling", async () => {
+  const { arm, estado } = await armazemFalso(10); estado.semApp = true;
+  let chamou = false;
+  const r = await renovarLoja(arm, "L", { ...cfgBase, agora: () => AGORA, fetch: (async () => { chamou = true; return resp(200); }) as typeof fetch });
+  assert.equal(r, "reconectar"); assert.equal(chamou, false); assert.equal(estado.status, "erro"); assert.match(estado.erro!, /Client ID/);
 });
 
 test("refresh inválido (400/401) => expirada com mensagem de reconectar, sem apagar nada e liberando a reserva", async () => {

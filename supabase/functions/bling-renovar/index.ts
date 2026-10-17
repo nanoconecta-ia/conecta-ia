@@ -17,10 +17,8 @@ function igual(a: string, b: string): boolean {
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ erro: "Método não permitido." }, 405);
-  const clientId = Deno.env.get("BLING_CLIENT_ID");
-  const clientSecret = Deno.env.get("BLING_CLIENT_SECRET");
   const chaveCifra = Deno.env.get("CREDENCIAIS_CHAVE_CIFRA");
-  if (!clientId || !clientSecret || !chaveCifra) return json({ erro: "Conexão com o Bling ainda não configurada no servidor." }, 503);
+  if (!chaveCifra) return json({ erro: "Conexão com o Bling ainda não configurada no servidor." }, 503);
 
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const enviado = req.headers.get("x-cron-segredo") ?? "";
@@ -31,7 +29,7 @@ Deno.serve(async (req) => {
   const arm = armazemSupabase(admin);
   const cont: Record<string, number> = {};
   for (const l of (lojas ?? []) as { loja_id: string }[]) {
-    const r = await renovarLoja(arm, l.loja_id, { clientId, clientSecret, chaveCifra });
+    const r = await renovarLoja(arm, l.loja_id, { chaveCifra });
     cont[r] = (cont[r] ?? 0) + 1;
   }
   return json({ verificadas: (lojas ?? []).length, resultado: cont });

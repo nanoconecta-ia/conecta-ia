@@ -2,7 +2,7 @@
 // cifra e grava via RPC (só service_role). Não registra nem devolve token algum.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { verificarEstado } from "../_shared/estado.ts";
-import { cifrar } from "../_shared/cripto.ts";
+import { cifrar, decifrar } from "../_shared/cripto.ts";
 
 const texto = (msg: string, status = 200) =>
   new Response(msg, { status, headers: { "Content-Type": "text/plain; charset=utf-8" } });
@@ -15,17 +15,24 @@ function voltar(q: string): Response {
 
 Deno.serve(async (req) => {
   if (req.method !== "GET") return texto("Método não permitido.", 405);
-  const clientId = Deno.env.get("BLING_CLIENT_ID");
-  const clientSecret = Deno.env.get("BLING_CLIENT_SECRET");
   const segredo = Deno.env.get("ESTADO_SEGREDO");
   const chaveCifra = Deno.env.get("CREDENCIAIS_CHAVE_CIFRA");
-  if (!clientId || !clientSecret || !segredo || !chaveCifra) return texto("Conexão com o Bling ainda não configurada no servidor.", 503);
+  if (!segredo || !chaveCifra) return texto("Conexão com o Bling ainda não configurada no servidor.", 503);
 
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const est = state ? await verificarEstado(state, segredo) : null;
   if (!code || !est) return voltar("erro=estado");
+
+  // App do Bling cadastrado pelo lojista para ESTA loja (a loja vem do state assinado).
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  const { data: appRows } = await admin.rpc("bling_ler_app", { p_loja_id: est.l });
+  const app = (appRows as { client_id: string; client_secret_cifrado: string }[] | null)?.[0];
+  if (!app) return voltar("erro=app");
+  let clientSecret: string;
+  try { clientSecret = await decifrar(app.client_secret_cifrado, chaveCifra); } catch { return voltar("erro=app"); }
+  const clientId = app.client_id;
 
   let tokens: { access_token?: string; refresh_token?: string; expires_in?: number };
   try {
@@ -47,9 +54,6 @@ Deno.serve(async (req) => {
   if (!tokens.access_token || !tokens.refresh_token || !tokens.expires_in) return voltar("erro=troca");
 
   try {
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
-      auth: { persistSession: false },
-    });
     const { error } = await admin.rpc("bling_salvar_credenciais", {
       p_loja_id: est.l,
       p_access: await cifrar(tokens.access_token, chaveCifra),
