@@ -57,6 +57,7 @@ create table public.pair_sessoes (
   token_hash text not null unique check (token_hash ~ '^[0-9a-f]{64}$'),
   token_anterior_hash text unique check (token_anterior_hash ~ '^[0-9a-f]{64}$'),
   rotacionado_em timestamptz,
+  renovavel boolean not null default true,              -- false: o token vale até limite_ate e não gira (agente que só guarda um token estático)
   escopos text[] not null check (cardinality(escopos) between 1 and 12 and array_to_string(escopos, ',') !~ '(aprovar|executar|admin)'),
   criado_em timestamptz not null default now(),
   expira_em timestamptz not null,                        -- token de acesso curto (15 min), renovável até limite_ate
@@ -81,6 +82,7 @@ create table public.pair_desafios (
   escopos_solicitados text[] not null check (cardinality(escopos_solicitados) between 1 and 12 and array_to_string(escopos_solicitados, ',') !~ '(aprovar|executar|admin)'),
   capacidades_solicitadas text[] not null default '{}' check (cardinality(capacidades_solicitadas) <= 20),
   duracao_solicitada_min int not null check (duracao_solicitada_min between 5 and 480),
+  renovavel boolean not null default true,
   estado text not null default 'pendente' check (estado in ('pendente', 'aprovado', 'resgatado', 'recusado', 'expirado', 'cancelado')),
   tentativas smallint not null default 0,
   criado_em timestamptz not null default now(),
@@ -200,7 +202,7 @@ create trigger aprovacao_guarda_upd before update on public.aprovacoes for each 
 -- ---------------------------------------------------------------------------------------------------------------
 -- 3) Pareamento — lado do solicitante (sem login): chamado só pela Edge Function `pair` (service_role)
 create function public.pair_iniciar(p_codigo_hash text, p_segredo_hash text, p_verificacao_hash text, p_token_hash text,
-  p_nome text, p_tipo text, p_escopos text[], p_capacidades text[], p_duracao_min int, p_ttl_s int default 120)
+  p_nome text, p_tipo text, p_escopos text[], p_capacidades text[], p_duracao_min int, p_ttl_s int default 120, p_renovavel boolean default true)
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare v_id uuid; v_exp timestamptz; v_ttl int := least(greatest(coalesce(p_ttl_s, 120), 30), 120); c text;
 begin
@@ -216,9 +218,9 @@ begin
   v_exp := now() + make_interval(secs => v_ttl);
   delete from public.pair_desafios where expira_em < now() - interval '1 day' and estado <> 'resgatado'; -- limpeza oportunista
   insert into public.pair_desafios (codigo_hash, segredo_hash, verificacao_hash, token_hash, nome_dispositivo, tipo,
-      escopos_solicitados, capacidades_solicitadas, duracao_solicitada_min, expira_em)
+      escopos_solicitados, capacidades_solicitadas, duracao_solicitada_min, renovavel, expira_em)
   values (p_codigo_hash, p_segredo_hash, p_verificacao_hash, p_token_hash, btrim(p_nome), p_tipo,
-      p_escopos, coalesce(p_capacidades, '{}'), p_duracao_min, v_exp)
+      p_escopos, coalesce(p_capacidades, '{}'), p_duracao_min, coalesce(p_renovavel, true), v_exp)
   returning id into v_id;
   return jsonb_build_object('id', v_id, 'expira_em', v_exp);
 end $$;
@@ -250,16 +252,17 @@ begin
   insert into public.pair_dispositivos (loja_id, usuario_id, nome, tipo, capacidades)
   values (d.loja_id, d.aprovado_por, d.nome_dispositivo, d.tipo, coalesce(d.capacidades_aprovadas, '{}'))
   returning id into v_disp;
-  insert into public.pair_sessoes (loja_id, usuario_id, dispositivo_id, token_hash, escopos, expira_em, limite_ate)
-  values (d.loja_id, d.aprovado_por, v_disp, d.token_hash, d.escopos_aprovados,
-          least(now() + interval '15 minutes', now() + make_interval(mins => d.duracao_aprovada_min)),
+  insert into public.pair_sessoes (loja_id, usuario_id, dispositivo_id, token_hash, escopos, renovavel, expira_em, limite_ate)
+  values (d.loja_id, d.aprovado_por, v_disp, d.token_hash, d.escopos_aprovados, d.renovavel,
+          case when d.renovavel then least(now() + interval '15 minutes', now() + make_interval(mins => d.duracao_aprovada_min))
+               else now() + make_interval(mins => d.duracao_aprovada_min) end,
           now() + make_interval(mins => d.duracao_aprovada_min))
   returning * into v_sessao;
   update public.pair_desafios set dispositivo_id = v_disp where id = d.id;
   perform private.pair_auditar(d.loja_id, d.aprovado_por, 'pair.sessao_criada', 'pair_sessoes',
     jsonb_build_object('sessao_id', v_sessao.id, 'dispositivo_id', v_disp, 'tipo', d.tipo, 'escopos', d.escopos_aprovados, 'limite_ate', v_sessao.limite_ate));
   return jsonb_build_object('estado', 'resgatado', 'loja_id', d.loja_id, 'escopos', d.escopos_aprovados, 'dispositivo_id', v_disp,
-    'sessao_expira_em', v_sessao.expira_em, 'limite_ate', v_sessao.limite_ate);
+    'sessao_expira_em', v_sessao.expira_em, 'limite_ate', v_sessao.limite_ate, 'renovavel', d.renovavel);
 end $$;
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -273,7 +276,7 @@ begin
   if not found or d.estado <> 'pendente' or d.expira_em <= now() then return null; end if;
   return jsonb_build_object(
     'nome', d.nome_dispositivo, 'tipo', d.tipo, 'escopos', d.escopos_solicitados, 'capacidades', d.capacidades_solicitadas,
-    'duracao_min', d.duracao_solicitada_min, 'expira_em', d.expira_em,
+    'duracao_min', d.duracao_solicitada_min, 'renovavel', d.renovavel, 'expira_em', d.expira_em,
     'lojas', coalesce((select jsonb_agg(jsonb_build_object('id', l.id, 'nome', l.nome) order by l.nome)
                          from public.lojas l where private.administra_loja(l.id, uid)), '[]'::jsonb));
 end $$;
@@ -354,7 +357,7 @@ begin
   update public.pair_sessoes set ultimo_uso_em = now() where id = s.id and (ultimo_uso_em is null or ultimo_uso_em < now() - interval '30 seconds');
   update public.pair_dispositivos set ultimo_uso_em = now() where id = d.id and (ultimo_uso_em is null or ultimo_uso_em < now() - interval '30 seconds');
   return jsonb_build_object('sessao_id', s.id, 'loja_id', s.loja_id, 'usuario_id', s.usuario_id, 'dispositivo_id', d.id,
-    'nome', d.nome, 'tipo', d.tipo, 'escopos', s.escopos, 'capacidades', d.capacidades, 'expira_em', s.expira_em,
+    'nome', d.nome, 'tipo', d.tipo, 'escopos', s.escopos, 'capacidades', d.capacidades, 'expira_em', s.expira_em, 'renovavel', s.renovavel,
     'atual', s.token_hash = p_token_hash);
 end $$;
 
@@ -380,6 +383,7 @@ begin
   end if;
   v := public.pair_validar(p_token_hash);
   if v is null or (v ->> 'atual')::boolean is not true then return jsonb_build_object('ok', false, 'motivo', 'token_invalido'); end if;
+  if (v ->> 'renovavel')::boolean is not true then return jsonb_build_object('ok', false, 'motivo', 'sessao_nao_renovavel'); end if;
   update public.pair_sessoes set token_anterior_hash = token_hash, token_hash = p_novo_hash, rotacionado_em = now(),
          expira_em = least(now() + interval '15 minutes', limite_ate)
    where id = (v ->> 'sessao_id')::uuid and token_hash = p_token_hash and revogado_em is null returning * into s;
@@ -567,7 +571,7 @@ create policy pair_sess_ver on public.pair_sessoes for select to authenticated
   using (usuario_id = auth.uid() or private.administra_loja(loja_id, auth.uid()));
 create policy aprovacoes_ver on public.aprovacoes for select to authenticated using (private.pode_ver_loja(loja_id));
 
-revoke all on function public.pair_iniciar(text, text, text, text, text, text, text[], text[], int, int) from public, anon, authenticated;
+revoke all on function public.pair_iniciar(text, text, text, text, text, text, text[], text[], int, int, boolean) from public, anon, authenticated;
 revoke all on function public.pair_consultar(text, text) from public, anon, authenticated;
 revoke all on function public.pair_validar(text) from public, anon, authenticated;
 revoke all on function public.pair_renovar(text, text) from public, anon, authenticated;
@@ -575,7 +579,7 @@ revoke all on function public.pair_encerrar(text) from public, anon, authenticat
 revoke all on function public.aprovacao_propor(uuid, text, text, text, uuid, uuid, uuid, jsonb, jsonb, jsonb, text[], text, text, int, uuid) from public, anon, authenticated;
 revoke all on function public.aprovacao_consumir(uuid, text) from public, anon, authenticated;
 revoke all on function public.aprovacao_concluir(uuid, boolean, jsonb) from public, anon, authenticated;
-grant execute on function public.pair_iniciar(text, text, text, text, text, text, text[], text[], int, int) to service_role;
+grant execute on function public.pair_iniciar(text, text, text, text, text, text, text[], text[], int, int, boolean) to service_role;
 grant execute on function public.pair_consultar(text, text) to service_role;
 grant execute on function public.pair_validar(text) to service_role;
 grant execute on function public.pair_renovar(text, text) to service_role;
@@ -601,7 +605,7 @@ grant execute on function public.pair_detalhe(text), public.pair_aprovar(text, u
 --   public.aprovacao_propor(uuid,text,text,text,uuid,uuid,uuid,jsonb,jsonb,jsonb,text[],text,text,int,uuid), public.pair_revogar_todos(uuid),
 --   public.pair_revogar_sessao(uuid,text), public.pair_revogar_dispositivo(uuid,text), private.pair_pode_revogar(uuid,uuid,uuid),
 --   public.pair_renovar(text,text), public.pair_validar(text), public.pair_recusar(text), public.pair_aprovar(text,uuid,text,text[],int,text[]),
---   public.pair_detalhe(text), public.pair_consultar(text,text), public.pair_iniciar(text,text,text,text,text,text,text[],text[],int,int);
+--   public.pair_detalhe(text), public.pair_consultar(text,text), public.pair_iniciar(text,text,text,text,text,text,text[],text[],int,int,boolean);
 -- drop table public.aprovacoes, public.pair_desafios, public.pair_sessoes, public.pair_dispositivos;
 -- drop function private.aprovacao_guarda(), private.aprovacao_hash_proposta(public.aprovacoes), private.aprovacao_hash_conteudo(public.aprovacoes),
 --   private.aprovacao_hash_conteudo_de(uuid,text,text,text,jsonb,jsonb,jsonb,text[],text), private.risco_ordem(text), private.aprovacao_risco_minimo(text), private.pair_auditar(uuid,uuid,text,text,jsonb),

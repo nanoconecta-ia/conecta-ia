@@ -219,6 +219,25 @@ select public.afirma((select public.pair_validar(public.h('TOK-D2'))) is null, '
 select public.admin();
 select public.afirma((select capacidades_solicitadas from public.pair_desafios where codigo_hash = public.h('D2')) = '{}', 'agente desktop nasce SEM nenhuma capacidade');
 
+-- sessão NÃO renovável (agente que guarda um token estático): vale até o fim da duração aprovada, não gira, e o dispositivo pode se encerrar
+select public.servidor();
+select public.pair_iniciar(public.h('N1'), public.h('SEG-N1'), public.h('VER-N1'), public.h('TOK-N1'), 'Agente token estático', 'agente_externo', array['produtos:ler'], '{}', 45, 120, false);
+select public.como('11111111-1111-1111-1111-111111111111');
+select public.afirma((select public.pair_detalhe('N1') ->> 'renovavel') = 'false', 'aprovador vê que a sessão NÃO é renovável');
+select public.pair_aprovar('N1', 'aaaaaaaa-0000-0000-0000-000000000001', 'VER-N1', array['produtos:ler'], 45);
+select public.servidor(); select public.pair_consultar(public.h('N1'), public.h('SEG-N1'));
+select public.admin();
+select public.afirma((select limite_ate - expira_em from public.pair_sessoes where token_hash = public.h('TOK-N1')) < interval '1 second', 'não renovável: o token vale até o fim da duração aprovada');
+select public.servidor();
+select public.afirma((select public.pair_renovar(public.h('TOK-N1'), public.h('TOK-N1b')) ->> 'motivo') = 'sessao_nao_renovavel', 'sessão não renovável recusa rotação');
+select public.afirma(public.pair_validar(public.h('TOK-N1')) is not null, 'o token estático segue válido até o prazo');
+select public.afirma((select public.pair_encerrar(public.h('TOK-N1')) ->> 'ok')::boolean, 'o próprio dispositivo encerra a sessão (botão de interrupção local)');
+select public.afirma(public.pair_validar(public.h('TOK-N1')) is null, '...e ela deixa de valer na hora');
+select public.afirma((select public.pair_encerrar(public.h('TOK-N1')) ->> 'ok')::boolean is not true, 'encerrar de novo não faz nada');
+select public.afirma((select public.pair_encerrar(public.h('qualquer')) ->> 'ok')::boolean is not true, 'encerrar com token desconhecido não revela nada');
+select public.admin();
+select public.afirma((select count(*) from public.auditoria where acao = 'pair.sessao_encerrada_pelo_dispositivo') = 1, 'encerramento pelo dispositivo auditado');
+
 -- ===================================================================================================================
 -- E) Central de Aprovações
 select public.servidor();

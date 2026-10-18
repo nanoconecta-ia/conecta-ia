@@ -42,18 +42,20 @@ async function iniciar(c: Record<string, unknown>, ip: string, p: PortasPair): P
   if (c.tipo !== "agente_desktop" && caps.length) return res(400, { erro: "Capacidades só existem para agente desktop." });
   const dur = c.duracao_min === undefined ? 60 : c.duracao_min;
   if (!Number.isInteger(dur) || (dur as number) < 5 || (dur as number) > 480) return res(400, { erro: "Duração deve ficar entre 5 e 480 minutos." });
+  const renovavel = c.renovavel === undefined ? true : c.renovavel;
+  if (typeof renovavel !== "boolean") return res(400, { erro: "renovavel deve ser verdadeiro/falso." });
   if (typeof c.token_hash !== "string" || !HASH_RE.test(c.token_hash)) return res(400, { erro: "token_hash deve ser o SHA-256 (hex) do token gerado no dispositivo." });
 
   for (let tentativa = 0; tentativa < 3; tentativa++) {
     const codigo = aleatorioB64u(32), segredo = aleatorioB64u(32), verificacao = codigoVerificacao();
     const { data, error } = await p.rpc("pair_iniciar", {
       p_codigo_hash: await sha256Hex(codigo), p_segredo_hash: await sha256Hex(segredo), p_verificacao_hash: await sha256Hex(verificacao),
-      p_token_hash: c.token_hash, p_nome: nome, p_tipo: c.tipo, p_escopos: c.escopos, p_capacidades: caps, p_duracao_min: dur, p_ttl_s: 120,
+      p_token_hash: c.token_hash, p_nome: nome, p_tipo: c.tipo, p_escopos: c.escopos, p_capacidades: caps, p_duracao_min: dur, p_ttl_s: 120, p_renovavel: renovavel,
     });
     if (error?.code === "23505") { if (tentativa === 2) break; continue; } // colisão de hash: tenta de novo (token_hash repetido também cai aqui)
     if (error || !data) return res(500, { erro: "Não foi possível iniciar o pareamento agora." });
     const d = data as { id: string; expira_em: string };
-    return res(200, { desafio_id: d.id, codigo, url: montarUrlPareamento(p.appUrl, codigo), verificacao, segredo, expira_em: d.expira_em, ttl_s: 120 },
+    return res(200, { desafio_id: d.id, codigo, url: montarUrlPareamento(p.appUrl, codigo), verificacao, segredo, expira_em: d.expira_em, ttl_s: 120, renovavel },
       { "Cache-Control": "no-store" });
   }
   return res(409, { erro: "Token já usado. Gere um token novo e tente de novo." });

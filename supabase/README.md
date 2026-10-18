@@ -38,3 +38,6 @@ Pedidos/checkout, banners/páginas, categorias/fabricantes, aplicação veicular
 
 ## Migrações 14 e 15 (aplicadas em 2026-10-14 com autorização)
 `20261014000008_revisoes_supersessoes_bula.sql` e `20261014000009_notificacoes_contador.sql` + `tests/revisoes_bula_contador.sql` (19 checks). Total local: 118 checks.
+
+## Migração 28 — Conecta Pair (PROPOSTA, NÃO APLICADA)
+`20261019000001_conecta_pair.sql` + `tests/conecta_pair.sql` (133 verificações) + `tests/conecta_pair_concorrencia.sh` (várias conexões simultâneas). Pareamento por QR, sessões de dispositivo e Central de Aprovações. Aplicar só com autorização explícita; bloco ROLLBACK no fim do arquivo. Teste local: `PGHOST=… PGUSER=postgres tests/rodar_local.sh` (Postgres 16 descartável; ignora as 3 migrações que dependem de pg_net/vault/pg_cron do Supabase).
