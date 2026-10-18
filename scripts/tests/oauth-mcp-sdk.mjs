@@ -43,12 +43,13 @@ let clientInfo,tokens,verifier,authorizeURL;
 const provider={
  get redirectUrl(){return new URL(`http://127.0.0.1:${servidor.address().port}/callback`)},
  get clientMetadata(){return {client_name:'SDK SIMULADO',redirect_uris:[this.redirectUrl.href],token_endpoint_auth_method:'none',grant_types:['authorization_code','refresh_token'],response_types:['code'],scope:'bling:consultar offline_access'}},
+ state:()=>'state-apenas-sintetico',
  clientInformation:()=>clientInfo,saveClientInformation:i=>{clientInfo=i},tokens:()=>tokens,saveTokens:t=>{tokens=t},saveCodeVerifier:v=>{verifier=v},codeVerifier:()=>verifier,
  redirectToAuthorization:u=>{authorizeURL=u},invalidateCredentials:scope=>{if(scope==='all'||scope==='client')clientInfo=undefined;if(scope==='all'||scope==='tokens')tokens=undefined},
 };
 let client=new Client({name:'teste-oauth-conecta',version:'1.0.0'}),transport=new StreamableHTTPClientTransport(new URL(base),{authProvider:provider});
 try{
- await assert.rejects(client.connect(transport));assert.ok(authorizeURL,'SDK não descobriu o servidor OAuth');assert.ok(clientInfo?.client_id,'registro dinâmico não ocorreu');
+ let initialError;try{await client.connect(transport)}catch(e){initialError=e}assert.ok(initialError,'esperava redirecionamento OAuth');if(!authorizeURL)console.log('Diagnóstico OAuth sintético:',String(initialError),JSON.stringify(caminhos));assert.ok(authorizeURL,'SDK não descobriu o servidor OAuth');assert.ok(clientInfo?.client_id,'registro dinâmico não ocorreu');
  const a=await fetch(authorizeURL,{redirect:'manual'});assert.equal(a.status,302);const code=new URLSearchParams(new URL(a.headers.get('location')).hash.split('?')[1]).get('c');assert.ok(code);
  assert.equal(flow.p_codigo_hash,await sha256Hex(code));assert.equal(flow.p_challenge,authorizeURL.searchParams.get('code_challenge'));
  aprovado=true;await transport.finishAuth(code);assert.ok(separarToken(tokens.access_token));assert.ok(tokens.refresh_token);
