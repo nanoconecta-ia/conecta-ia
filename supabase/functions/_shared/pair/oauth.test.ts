@@ -24,6 +24,16 @@ test('discovery público não consulta segredo nem dados da loja',async()=>{
  const a=ambiente();a.p.segredo=async()=>{throw Error('não pode ler')};
  for(const path of ['/.well-known/oauth-protected-resource','/oauth/.well-known/oauth-authorization-server']){const r=await a.chamar(path);assert.equal(r!.status,200);assert.equal(a.calls.length,0)}
 });
+test('proxy Edge: prefixo curto preserva discovery público e DCR; caminhos vizinhos são recusados',async()=>{
+ const a=ambiente(),interno='http://edge-runtime/conecta-gateway';
+ for(const path of ['/.well-known/oauth-protected-resource','/oauth/.well-known/openid-configuration']){
+  const r=await tratarOAuth(new Request(interno+path),a.p);assert.equal(r!.status,200);
+  const metadata=await r!.json();assert.equal(metadata.resource??metadata.issuer,metadata.resource?base:base+'/oauth');
+ }
+ const r=await tratarOAuth(new Request(interno+'/oauth/register',{method:'POST',body:JSON.stringify({redirect_uris:[redirect],client_name:'Proxy SIMULADO'})}),a.p);
+ assert.equal(r!.status,201);assert.equal(a.calls.length,0);
+ for(const path of ['/outro/oauth/register','/conecta-gateway-falso/oauth/register','/functions/v1/conecta-gateway-falso/oauth/register'])assert.equal(await tratarOAuth(new Request('http://edge-runtime'+path),a.p),null);
+});
 test('DCR → authorize → PKCE → token: consentimento obrigatório, token opaco e uso único',async()=>{
  const a=ambiente(),client=await a.registrar();
  const q=new URLSearchParams({client_id:client,redirect_uri:redirect,response_type:'code',state:'state-sintetico',code_challenge:challenge,code_challenge_method:'S256',scope:'bling:consultar offline_access',resource:base});

@@ -36,8 +36,12 @@ async function lerCliente(v:unknown,s:string):Promise<Cliente|null>{
 export const metadataRecurso=(base:string)=>({resource:base,authorization_servers:[base+'/oauth'],scopes_supported:[...ESCOPOS,'offline_access'],bearer_methods_supported:['header'],resource_name:'Conecta IA — loja autorizada'});
 export const desafioOAuth=(base:string)=>`Bearer resource_metadata="${base}/.well-known/oauth-protected-resource"`;
 export async function tratarOAuth(req:Request,p:OAuthPortas):Promise<Response|null>{
-  const u=new URL(req.url),basePath=new URL(p.baseURL).pathname.replace(/\/$/,''),path=u.pathname.slice(basePath.length);
-  if(!u.pathname.startsWith(basePath+'/'))return null;
+  const u=new URL(req.url),basePath=new URL(p.baseURL).pathname.replace(/\/$/,'');
+  // O proxy Edge remove /functions/v1 antes de entregar a URL ao runtime.
+  // Aceitar somente os dois prefixos completos, preservando as URLs públicas na metadata.
+  const prefixes=[basePath,...(basePath.startsWith('/functions/v1/')?[basePath.slice('/functions/v1'.length)]:[])];
+  const prefix=prefixes.find(x=>u.pathname.startsWith(x+'/'));if(!prefix)return null;
+  const path=u.pathname.slice(prefix.length);
   if(path==='/.well-known/oauth-protected-resource'&&req.method==='GET')return json(metadataRecurso(p.baseURL));
   // Alguns clientes só tentam discovery OIDC como fallback quando o emissor tem subcaminho.
   // O gateway usa tokens opacos: não oferece openid, ID tokens ou chaves públicas de JWT.

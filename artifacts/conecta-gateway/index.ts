@@ -1702,8 +1702,16 @@ const metadataRecurso = (base)=>({
     });
 const desafioOAuth = (base)=>`Bearer resource_metadata="${base}/.well-known/oauth-protected-resource"`;
 async function tratarOAuth(req, p) {
-    const u = new URL(req.url), basePath = new URL(p.baseURL).pathname.replace(/\/$/, ''), path = u.pathname.slice(basePath.length);
-    if (!u.pathname.startsWith(basePath + '/')) return null;
+    const u = new URL(req.url), basePath = new URL(p.baseURL).pathname.replace(/\/$/, '');
+    const prefixes = [
+        basePath,
+        ...basePath.startsWith('/functions/v1/') ? [
+            basePath.slice('/functions/v1'.length)
+        ] : []
+    ];
+    const prefix = prefixes.find((x)=>u.pathname.startsWith(x + '/'));
+    if (!prefix) return null;
+    const path = u.pathname.slice(prefix.length);
     if (path === '/.well-known/oauth-protected-resource' && req.method === 'GET') return json(metadataRecurso(p.baseURL));
     if (path === '/oauth/jwks' && req.method === 'GET') return json({
         keys: []

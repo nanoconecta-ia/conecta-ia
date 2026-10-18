@@ -30,7 +30,9 @@ const portas={validar:async(h,s)=>!revogado&&!expirado&&hashes?.p_token_hash===h
 const servidor=createServer(async(req,res)=>{
  try{
   const chunks=[];for await(const ch of req)chunks.push(ch);const body=Buffer.concat(chunks).toString();const u=new URL(req.url,base);caminhos.push(u.pathname);
-  const request=new Request(u,{method:req.method,headers:req.headers,...(req.method==='POST'?{body}:{})});
+  // Reproduz a URL interna do proxy Supabase, mantendo metadata e redirects públicos.
+  const interna=new URL(u);if(interna.pathname.startsWith('/functions/v1/'))interna.pathname=interna.pathname.slice('/functions/v1'.length);
+  const request=new Request(interna,{method:req.method,headers:req.headers,...(req.method==='POST'?{body}:{})});
   const o=await tratarOAuth(request,oauth);if(o){res.writeHead(o.status,Object.fromEntries(o.headers));res.end(await o.text());return}
   // Simula a montagem real: fora da rota da Edge Function não há discovery hospedado.
   if(u.pathname!==new URL(base).pathname){res.writeHead(404);res.end('{}');return}

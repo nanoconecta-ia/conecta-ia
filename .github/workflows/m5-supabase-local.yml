@@ -31,7 +31,7 @@ jobs:
           # Lê o parser exato do #23, sem alterar o PR ou incorporar sua migração inteira.
           ref: 65ac98c0961285cccbde2901edb9d231a8c97031
           path: .m5-reference
-          sparse-checkout: supabase/migrations/20261018230657_conecta_pair.sql
+          sparse-checkout: supabase/migrations/20261019000001_conecta_pair.sql
           sparse-checkout-cone-mode: false
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -57,7 +57,7 @@ jobs:
         run: |
           mkdir .m5-local
           supabase init --workdir .m5-local
-          node scripts/m5/preparar.mjs .m5-local .m5-reference/supabase/migrations/20261018230657_conecta_pair.sql
+          node scripts/m5/preparar.mjs .m5-local .m5-reference/supabase/migrations/20261019000001_conecta_pair.sql
       - name: Subir GoTrue, PostgREST e edge-runtime locais
         run: |
           supabase start --workdir .m5-local > "$RUNNER_TEMP/m5-start.log" 2>&1
