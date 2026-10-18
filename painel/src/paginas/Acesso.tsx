@@ -16,9 +16,10 @@ export function Entrar({ aviso }: { aviso: string | null }) {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha });
     setOcupado(false);
     if (error) setErro("E-mail ou senha incorretos.");
-    else ir("/");
+    else if (!window.location.hash.startsWith("#/parear")) ir("/"); // o aprovador do Conecta Pair volta para o link do QR
   }
   async function google() {
+    if (window.location.hash.startsWith("#/parear")) { try { sessionStorage.setItem("conecta:retorno", window.location.hash); } catch { /* sem storage: volta para o início */ } }
     await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin + window.location.pathname } });
   }
   return (
