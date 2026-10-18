@@ -18,7 +18,7 @@
     },
     {
       "path": "supabase/functions/_shared/pair/gateway.ts",
-      "sha256": "2b936e476498c05b0a0aef6e6b92b92a734ac370b8d8cb6735e0c0677b94923e"
+      "sha256": "a4e7c74464faae692174c5c675f48eb8a2451c246b4ebc687e9365f765fb122f"
     },
     {
       "path": "supabase/functions/_shared/ia/escrita.ts",
@@ -54,7 +54,7 @@
     },
     {
       "path": "supabase/functions/conecta-gateway/index.ts",
-      "sha256": "d981fba48c86d6fe14790e5642dec6c3bce2f07d36cb38386e3c2a45932546b7"
+      "sha256": "1cfd1ae1eaa45de2c0980b81b37133cf56860c094dcdb7b8e069b488e07d3699"
     }
   ]
 }

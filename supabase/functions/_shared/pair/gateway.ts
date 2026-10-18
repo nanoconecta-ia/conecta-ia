@@ -6,7 +6,7 @@
 //    então revogação, expiração e perda de papel valem na próxima chamada.
 //  * A loja vem SEMPRE da sessão, nunca de argumento do modelo. Nenhuma ferramenta aceita loja_id.
 //  * Escopo mínimo por ferramenta, conferido em cada tools/call (e tools/list só mostra o que a sessão pode usar).
-//  * Ferramentas de escrita só PROPÕEM (a_confirmar / Central de Aprovações). Nenhuma aprova, executa ou toca o Bling.
+//  * Ferramentas de escrita só PROPÕEM (a_confirmar / Central de Aprovações). Nenhuma aprova, executa ou altera produtos no Bling.
 //  * O modelo nunca recebe credencial do Supabase ou do Bling; erros internos viram mensagem genérica.
 //  * Toda chamada (ok, negada, inválida, com erro) gera auditoria com usuário, loja, sessão, dispositivo e ferramenta.
 import { ehEscopo, type Escopo } from "./escopos.ts";
