@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { PAIR_ATIVO } from "./lib/flags.ts";
 import { useLojas, useSessao } from "./lib/dados.ts";
 import { ir, useRota } from "./lib/rota.ts";
 import { supabase } from "./supabase.ts";
@@ -26,12 +27,11 @@ import { Dispositivos } from "./paginas/Dispositivos.tsx";
 const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
 const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(window.location.hostname) ? window.location.hostname : null;
 
+const ITENS_PAIR: [string, string][] = [["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
   ["/catalogo", "Catálogo"],
   ["/fila", "Fila de aprovação"],
-  ["/aprovacoes", "Aprovações"],
-  ["/dispositivos", "Dispositivos"],
   ["/taxonomia", "Taxonomia"],
   ["/assistente", "Assistente"],
   ["/aparencia", "Aparência da loja"],
@@ -42,6 +42,7 @@ const ITENS: [string, string][] = [
   ["/bling", "Bling"],
   ["/contador", "Contador"],
 ];
+const MENU: [string, string][] = PAIR_ATIVO ? [...ITENS.slice(0, 3), ...ITENS_PAIR, ...ITENS.slice(3)] : ITENS;
 
 export function App() {
   const { sessao, recuperando, fimRecuperacao } = useSessao();
@@ -58,12 +59,12 @@ export function App() {
   const pub = caminho.match(/^\/p\/([a-z0-9-]+)\/(.+)$/);
   if (caminho === "/demo/vitrine") return <VitrineDemo />;
   if (pub) return <ProdutoPublico slug={pub[1]} sku={decodeURIComponent(pub[2])} />;
-  if (caminho === "/parear" && !query.get("c")) return <ParearSolicitante />; // pública: o dispositivo que pede o pareamento ainda não tem login
+  if (PAIR_ATIVO && caminho === "/parear" && !query.get("c")) return <ParearSolicitante />; // pública: o dispositivo que pede o pareamento ainda não tem login
   if (sessao === undefined) return <p className="entrar suave">Carregando…</p>;
   if (recuperando || caminho === "/redefinir") return <Redefinir aoConcluir={() => { fimRecuperacao(); void supabase.auth.signOut().then(() => ir("/entrar?aviso=senha")); }} />;
   if (!sessao) return caminho === "/recuperar" ? <Recuperar /> : <Entrar aviso={query.get("aviso")} />;
 
-  if (caminho === "/parear") return <ParearAprovador codigo={query.get("c") ?? ""} email={sessao.user.email ?? null} />;
+  if (PAIR_ATIVO && caminho === "/parear") return <ParearAprovador codigo={query.get("c") ?? ""} email={sessao.user.email ?? null} />;
   const loja = lojas?.[0] ?? null;
   return (
     <>
@@ -73,7 +74,7 @@ export function App() {
       </header>
       <div className="layout">
       <nav className="menu" aria-label="Menu principal">
-        {ITENS.map(([c, t]) => (
+        {MENU.map(([c, t]) => (
           <a key={c} href={`#${c}`} className={caminho === c ? "ativo" : ""} aria-current={caminho === c ? "page" : undefined}>{t}</a>
         ))}
       </nav>
@@ -82,8 +83,8 @@ export function App() {
           <div className="cartao"><h1>Sem loja vinculada</h1><p className="suave">Seu login ainda não está ligado a uma loja. Peça ao suporte para vincular.</p></div>
         ) : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />
-          : caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao.user.email ?? null} />
-          : caminho === "/dispositivos" ? <Dispositivos loja={loja} />
+          : PAIR_ATIVO && caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao.user.email ?? null} />
+          : PAIR_ATIVO && caminho === "/dispositivos" ? <Dispositivos loja={loja} />
           : caminho === "/taxonomia" ? <Taxonomia loja={loja} />
           : caminho === "/assistente" ? <Assistente loja={loja} />
           : caminho === "/aparencia" ? <Aparencia loja={loja} />
