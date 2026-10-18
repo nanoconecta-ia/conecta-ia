@@ -20,7 +20,9 @@ export function ParearSolicitante() {
   const [mensagem, setMensagem] = useState("");
   const [restante, setRestante] = useState(0);
   const [mostrarToken, setMostrarToken] = useState(false);
-  const token = useRef<string>("");
+  const token = useRef<string>("");   // 1ª metade do token: nasce AQUI
+  const sal = useRef<string>("");     // 2ª metade: entregue pelo servidor (dá a entropia mínima)
+  const completo = () => `${token.current}.${sal.current}`;
 
   // contagem regressiva do QR
   useEffect(() => {
@@ -38,7 +40,7 @@ export function ParearSolicitante() {
       if (!vivo) return;
       const estado = r.corpo.estado;
       if (estado === "resgatado") {
-        setConectado({ token: token.current, loja_id: String(r.corpo.loja_id), escopos: (r.corpo.escopos as string[]) ?? [], limite_ate: String(r.corpo.limite_ate), renovavel: d.renovavel });
+        setConectado({ token: completo(), loja_id: String(r.corpo.loja_id), escopos: (r.corpo.escopos as string[]) ?? [], limite_ate: String(r.corpo.limite_ate), renovavel: d.renovavel });
         return;
       }
       if (estado === "recusado" || estado === "expirado" || estado === "invalido" || estado === "cancelado") {
@@ -56,8 +58,8 @@ export function ParearSolicitante() {
     if (!conectado?.renovavel) return;
     const t = setInterval(async () => {
       const novo = aleatorioB64u();
-      const r = await chamarPair({ acao: "renovar", novo_token_hash: await sha256Hex(novo) }, token.current);
-      if (r.status === 200) { token.current = novo; setConectado((c) => (c ? { ...c, token: novo } : c)); }
+      const r = await chamarPair({ acao: "renovar", novo_token_hash: await sha256Hex(novo) }, completo());
+      if (r.status === 200) { token.current = novo; setConectado((c) => (c ? { ...c, token: completo() } : c)); }
       else { setConectado(null); setD(null); setMensagem("A sessão terminou. Faça um novo pareamento."); }
     }, 10 * 60 * 1000);
     return () => clearInterval(t);
@@ -65,16 +67,17 @@ export function ParearSolicitante() {
 
   async function iniciar() {
     setMensagem(""); setMostrarToken(false);
-    token.current = aleatorioB64u(); // o token nasce AQUI; ao servidor vai só o hash
+    token.current = aleatorioB64u(); // ao servidor vai só o hash desta metade
     const r = await chamarPair({ acao: "iniciar", nome: nome.trim(), tipo, escopos, duracao_min: duracao, renovavel, token_hash: await sha256Hex(token.current) });
     if (r.status !== 200) { setMensagem(String(r.corpo.erro ?? "Não foi possível iniciar.")); return; }
-    const x = r.corpo as unknown as Desafio & { expira_em: string };
+    const x = r.corpo as unknown as Desafio & { expira_em: string; sal: string };
+    sal.current = x.sal;
     setD({ codigo: x.codigo, url: x.url, verificacao: x.verificacao, segredo: x.segredo, expira_em: x.expira_em, renovavel });
     setRestante(segundosAte(x.expira_em));
   }
   async function desconectar() {
-    await chamarPair({ acao: "encerrar" }, token.current);
-    token.current = ""; setConectado(null); setD(null); setMensagem("Desconectado.");
+    await chamarPair({ acao: "encerrar" }, completo());
+    token.current = ""; sal.current = ""; setConectado(null); setD(null); setMensagem("Desconectado.");
   }
   const alternar = (e: string) => setEscopos((l) => (l.includes(e) ? l.filter((x) => x !== e) : [...l, e]));
 

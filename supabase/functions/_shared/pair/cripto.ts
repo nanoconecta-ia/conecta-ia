@@ -37,6 +37,16 @@ export const SEGREDO_RE = /^[A-Za-z0-9_-]{43,128}$/;
 export const HASH_RE = /^[0-9a-f]{64}$/;
 
 /**
+ * Token completo = `<token>.<sal>`: a 1ª metade nasce no dispositivo, a 2ª (o "sal", 256 bits) é gerada pelo SERVIDOR e entregue
+ * só a quem iniciou o pareamento. Mesmo que o dispositivo escolha uma 1ª metade fraca, o token tem a entropia da 2ª.
+ */
+export function separarToken(completo: string | null | undefined): { token: string; sal: string } | null {
+  const partes = (completo ?? "").split(".");
+  if (partes.length !== 2 || !SEGREDO_RE.test(partes[0]) || !SEGREDO_RE.test(partes[1])) return null;
+  return { token: partes[0], sal: partes[1] };
+}
+
+/**
  * Conteúdo do QR Code: SOMENTE uma URL de navegação com o código de uso único (expira em 2 min).
  * Não leva senha, token de sessão, segredo de consulta, credencial de ERP nem dado da loja.
  */

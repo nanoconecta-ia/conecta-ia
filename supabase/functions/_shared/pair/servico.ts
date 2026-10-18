@@ -1,7 +1,8 @@
 // Lado do SOLICITANTE do Conecta Pair (sem login): iniciar, consultar/resgatar, renovar e encerrar.
 // Função pública (verify_jwt=false): por isso tudo é validado aqui, limitado por taxa e sem oráculo de existência.
-// O servidor gera código (QR), segredo de consulta e código de verificação; o TOKEN DE ACESSO é gerado pelo solicitante e só o hash chega aqui.
-import { aleatorioB64u, codigoVerificacao, HASH_RE, montarUrlPareamento, SEGREDO_RE, sha256Hex } from "./cripto.ts";
+// O servidor gera código (QR), segredo de consulta, código de verificação e o SAL (2ª metade do token); a 1ª metade do token é gerada pelo
+// solicitante e só o hash dela chega aqui. Token completo = `<token>.<sal>`: a entropia mínima vem do servidor.
+import { aleatorioB64u, codigoVerificacao, HASH_RE, montarUrlPareamento, SEGREDO_RE, separarToken, sha256Hex } from "./cripto.ts";
 import { ehTipo, escoposValidos } from "./escopos.ts";
 
 export interface PortasPair {
@@ -47,15 +48,15 @@ async function iniciar(c: Record<string, unknown>, ip: string, p: PortasPair): P
   if (typeof c.token_hash !== "string" || !HASH_RE.test(c.token_hash)) return res(400, { erro: "token_hash deve ser o SHA-256 (hex) do token gerado no dispositivo." });
 
   for (let tentativa = 0; tentativa < 3; tentativa++) {
-    const codigo = aleatorioB64u(32), segredo = aleatorioB64u(32), verificacao = codigoVerificacao();
+    const codigo = aleatorioB64u(32), segredo = aleatorioB64u(32), sal = aleatorioB64u(32), verificacao = codigoVerificacao();
     const { data, error } = await p.rpc("pair_iniciar", {
       p_codigo_hash: await sha256Hex(codigo), p_segredo_hash: await sha256Hex(segredo), p_verificacao_hash: await sha256Hex(verificacao),
-      p_token_hash: c.token_hash, p_nome: nome, p_tipo: c.tipo, p_escopos: c.escopos, p_capacidades: caps, p_duracao_min: dur, p_ttl_s: 120, p_renovavel: renovavel,
+      p_token_hash: c.token_hash, p_sal_hash: await sha256Hex(sal), p_nome: nome, p_tipo: c.tipo, p_escopos: c.escopos, p_capacidades: caps, p_duracao_min: dur, p_ttl_s: 120, p_renovavel: renovavel,
     });
     if (error?.code === "23505") { if (tentativa === 2) break; continue; } // colisão de hash: tenta de novo (token_hash repetido também cai aqui)
     if (error || !data) return res(500, { erro: "Não foi possível iniciar o pareamento agora." });
     const d = data as { id: string; expira_em: string };
-    return res(200, { desafio_id: d.id, codigo, url: montarUrlPareamento(p.appUrl, codigo), verificacao, segredo, expira_em: d.expira_em, ttl_s: 120, renovavel },
+    return res(200, { desafio_id: d.id, codigo, url: montarUrlPareamento(p.appUrl, codigo), verificacao, segredo, sal, token_formato: "<token>.<sal>", expira_em: d.expira_em, ttl_s: 120, renovavel },
       { "Cache-Control": "no-store" });
   }
   return res(409, { erro: "Token já usado. Gere um token novo e tente de novo." });
@@ -70,13 +71,13 @@ async function consultar(c: Record<string, unknown>, ip: string, p: PortasPair):
   return res(200, data, { "Cache-Control": "no-store" });
 }
 
-function bearer(a: string | null): string | null { const m = /^Bearer ([A-Za-z0-9_-]{43,128})$/.exec(a ?? ""); return m ? m[1] : null; }
+function bearer(a: string | null): { token: string; sal: string } | null { const m = /^Bearer ([A-Za-z0-9_.-]+)$/.exec(a ?? ""); return m ? separarToken(m[1]) : null; }
 
 async function renovar(c: Record<string, unknown>, auth: string | null, ip: string, p: PortasPair): Promise<Res> {
   const t = bearer(auth);
-  if (!t || typeof c.novo_token_hash !== "string" || !HASH_RE.test(c.novo_token_hash)) return res(400, { erro: "Informe o token atual (Authorization) e novo_token_hash." });
+  if (!t || typeof c.novo_token_hash !== "string" || !HASH_RE.test(c.novo_token_hash)) return res(400, { erro: "Informe o token completo atual (Authorization: Bearer <token>.<sal>) e novo_token_hash." });
   if (!(await p.limite(`pair-renovar:${ip}`, 60, 600))) return res(429, { erro: "Muitas renovações." });
-  const { data, error } = await p.rpc("pair_renovar", { p_token_hash: await sha256Hex(t), p_novo_hash: c.novo_token_hash });
+  const { data, error } = await p.rpc("pair_renovar", { p_token_hash: await sha256Hex(t.token), p_sal_hash: await sha256Hex(t.sal), p_novo_hash: c.novo_token_hash });
   const d = data as { ok?: boolean } | null;
   if (error) return res(500, { erro: "Não foi possível renovar agora." });
   return d?.ok ? res(200, data, { "Cache-Control": "no-store" }) : res(401, { erro: "Sessão inválida, expirada ou revogada. Faça um novo pareamento." });
@@ -84,8 +85,8 @@ async function renovar(c: Record<string, unknown>, auth: string | null, ip: stri
 
 async function encerrar(auth: string | null, ip: string, p: PortasPair): Promise<Res> {
   const t = bearer(auth);
-  if (!t) return res(401, { erro: "Informe o token (Authorization)." });
+  if (!t) return res(401, { erro: "Informe o token completo (Authorization: Bearer <token>.<sal>)." });
   if (!(await p.limite(`pair-encerrar:${ip}`, 30, 600))) return res(429, { erro: "Muitas tentativas." });
-  const { data } = await p.rpc("pair_encerrar", { p_token_hash: await sha256Hex(t) });
+  const { data } = await p.rpc("pair_encerrar", { p_token_hash: await sha256Hex(t.token), p_sal_hash: await sha256Hex(t.sal) });
   return res(200, { ok: (data as { ok?: boolean } | null)?.ok === true });
 }

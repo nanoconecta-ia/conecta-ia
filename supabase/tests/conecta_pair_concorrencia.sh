@@ -24,7 +24,7 @@ servidor() { psql -qAt -c "set role service_role" -c "$*" | tail -1; }
 paralelo() { local n=$1; shift; local d; d=$(mktemp -d); for i in $(seq 1 "$n"); do ( "$@" "$i" > "$d/$i" 2>&1 ) & done; wait; cat "$d"/* ; rm -rf "$d"; }
 
 # 1) Dois aparelhos aprovam o MESMO QR ao mesmo tempo: só um vence
-sql "select public.pair_iniciar('$(h C1)','$(h SEG-C1)','$(h VER-C1)','$(h TOK-C1)','Notebook','navegador',array['produtos:ler'],'{}',60,120)" >/dev/null
+sql "select public.pair_iniciar('$(h C1)','$(h SEG-C1)','$(h VER-C1)','$(h TOK-C1)','$(h SAL-C1)','Notebook','navegador',array['produtos:ler'],'{}',60,120)" >/dev/null
 aprovar() { como "$([ $(( $1 % 2 )) = 0 ] && echo $U1 || echo $U4)" "select public.pair_aprovar('C1','$A','VER-C1',array['produtos:ler'],30)"; }
 export -f aprovar como; export A U1 U4 PGHOST PGPORT PGUSER PGDATABASE
 R=$(paralelo "$N" bash -c 'aprovar $0' )
@@ -78,5 +78,14 @@ afirma "versões concorrentes: nenhum erro" "$(echo "$R" | grep -c 'ERROR')" "0"
 afirma "versões concorrentes: números distintos" "$(sql "select count(distinct versao)=count(*) from public.aprovacoes where grupo_id='$GRUPO'")" "t"
 afirma "versões concorrentes: só a última segue pendente" "$(sql "select count(*) from public.aprovacoes where grupo_id='$GRUPO' and estado='pendente'")" "1"
 
-[ -n "${MANTER:-}" ] || psql -qAt -d postgres -c "drop database if exists $DB" >/dev/null
+[ -n "${MANTER:-}" ] || # 7) Teto de propostas pendentes sob concorrência: 30 chamadas simultâneas da MESMA sessão => exatamente 20 entram
+SESS=$(sql "with d as (insert into public.pair_dispositivos (loja_id,usuario_id,nome,tipo) values ('$A','$U1','Agente do teto','agente_externo') returning id) insert into public.pair_sessoes (loja_id,usuario_id,dispositivo_id,token_hash,sal_hash,escopos,expira_em,limite_ate) select '$A','$U1',id,'$(h TOK-TETO)','$(h SAL-TETO)',array['banners:propor'],now()+interval '15 minutes',now()+interval '1 hour' from d returning id")
+SESS=$(echo "$SESS" | head -1)
+teto() { servidor "select public.aprovacao_propor('$A','banner_publicacao','conecta.propose_banner','Agente',(select id from public.pair_sessoes where token_hash='$(h TOK-TETO)'),null,null,'[{\"tabela\":\"banners\"}]',null,('{\"n\":'||$1||'}')::jsonb,'{}','MEDIUM','teto-conc-'||$1,60)"; }
+export -f teto
+R=$(paralelo 30 bash -c 'teto $0')
+afirma "teto sob concorrência: exatamente 20 propostas entram" "$(sql "select count(*) from public.aprovacoes where idempotency_key like 'teto-conc-%'")" "20"
+afirma "teto sob concorrência: as outras 10 recebem o erro de limite" "$(echo "$R" | grep -c 'limite de propostas pendentes')" "10"
+
+psql -qAt -d postgres -c "drop database if exists $DB" >/dev/null
 [ "$FALHAS" -eq 0 ] && echo "TODOS OS TESTES DE CONCORRÊNCIA PASSARAM" || { echo "$FALHAS falha(s)"; exit 1; }

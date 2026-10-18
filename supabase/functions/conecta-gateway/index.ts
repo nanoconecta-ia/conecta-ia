@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   const r = await tratar(
     { metodo: req.method, authorization: req.headers.get("Authorization"), corpo: await req.text(), ip },
     {
-      async validar(hash) { const { data } = await admin.rpc("pair_validar", { p_token_hash: hash }); return (data as Sessao | null) ?? null; },
+      async validar(hash, salHash) { const { data } = await admin.rpc("pair_validar", { p_token_hash: hash, p_sal_hash: salHash }); return (data as Sessao | null) ?? null; },
       limite: async (chave, max, janelaS) => (await admin.rpc("limite_chamada", { p_chave: chave, p_max: max, p_janela_s: janelaS })).data === true,
       async auditar(e) {
         const { error } = await admin.from("auditoria").insert({

@@ -38,6 +38,7 @@ export function dadosSupabase(admin: AdminRpc, agora: () => Date = () => new Dat
       });
       if (error) {
         if (error.code === "23505") return { erro: "A chave de idempotência já foi usada com outro conteúdo. Use uma chave nova." };
+        if (error.code === "54000") return { erro: "Há propostas pendentes demais. Aguarde o lojista decidir as anteriores antes de enviar novas." };
         throw new Error("falha ao registrar a proposta"); // detalhe fica no log do servidor, não no modelo
       }
       return { ...data, mensagem: "Pedido enviado à Central de Aprovações. Nada foi publicado: o lojista precisa aprovar esta versão (hash_proposta)." };

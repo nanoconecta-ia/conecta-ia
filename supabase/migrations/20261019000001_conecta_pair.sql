@@ -56,6 +56,7 @@ create table public.pair_sessoes (
   dispositivo_id uuid not null references public.pair_dispositivos(id) on delete cascade,
   token_hash text not null unique check (token_hash ~ '^[0-9a-f]{64}$'),
   token_anterior_hash text unique check (token_anterior_hash ~ '^[0-9a-f]{64}$'),
+  sal_hash text not null check (sal_hash ~ '^[0-9a-f]{64}$'),   -- 2ª metade do token: segredo de 256 bits GERADO PELO SERVIDOR (o cliente pode escolher uma 1ª metade fraca)
   rotacionado_em timestamptz,
   renovavel boolean not null default true,              -- false: o token vale até limite_ate e não gira (agente que só guarda um token estático)
   escopos text[] not null check (cardinality(escopos) between 1 and 12 and array_to_string(escopos, ',') !~ '(aprovar|executar|admin)'),
@@ -76,7 +77,8 @@ create table public.pair_desafios (
   codigo_hash text not null unique check (codigo_hash ~ '^[0-9a-f]{64}$'),       -- vai no QR (o código em si, nunca o hash)
   segredo_hash text not null check (segredo_hash ~ '^[0-9a-f]{64}$'),           -- só o solicitante conhece (consulta/resgate)
   verificacao_hash text not null check (verificacao_hash ~ '^[0-9a-f]{64}$'),   -- código curto exibido NA TELA do solicitante
-  token_hash text not null unique check (token_hash ~ '^[0-9a-f]{64}$'),        -- token de acesso que o solicitante gerou
+  token_hash text not null unique check (token_hash ~ '^[0-9a-f]{64}$'),        -- 1ª metade do token, gerada pelo solicitante
+  sal_hash text not null check (sal_hash ~ '^[0-9a-f]{64}$'),                   -- 2ª metade, gerada pelo servidor (a entropia mínima do token vem daqui)
   nome_dispositivo text not null check (length(btrim(nome_dispositivo)) between 1 and 80),
   tipo text not null check (tipo in ('navegador', 'computador', 'smartphone', 'agente_externo', 'agente_desktop')),
   escopos_solicitados text[] not null check (cardinality(escopos_solicitados) between 1 and 12 and array_to_string(escopos_solicitados, ',') !~ '(aprovar|executar|admin)'),
@@ -201,7 +203,7 @@ create trigger aprovacao_guarda_upd before update on public.aprovacoes for each 
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- 3) Pareamento — lado do solicitante (sem login): chamado só pela Edge Function `pair` (service_role)
-create function public.pair_iniciar(p_codigo_hash text, p_segredo_hash text, p_verificacao_hash text, p_token_hash text,
+create function public.pair_iniciar(p_codigo_hash text, p_segredo_hash text, p_verificacao_hash text, p_token_hash text, p_sal_hash text,
   p_nome text, p_tipo text, p_escopos text[], p_capacidades text[], p_duracao_min int, p_ttl_s int default 120, p_renovavel boolean default true)
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare v_id uuid; v_exp timestamptz; v_ttl int := least(greatest(coalesce(p_ttl_s, 120), 30), 120); c text;
@@ -217,9 +219,9 @@ begin
   end loop;
   v_exp := now() + make_interval(secs => v_ttl);
   delete from public.pair_desafios where expira_em < now() - interval '1 day' and estado <> 'resgatado'; -- limpeza oportunista
-  insert into public.pair_desafios (codigo_hash, segredo_hash, verificacao_hash, token_hash, nome_dispositivo, tipo,
+  insert into public.pair_desafios (codigo_hash, segredo_hash, verificacao_hash, token_hash, sal_hash, nome_dispositivo, tipo,
       escopos_solicitados, capacidades_solicitadas, duracao_solicitada_min, renovavel, expira_em)
-  values (p_codigo_hash, p_segredo_hash, p_verificacao_hash, p_token_hash, btrim(p_nome), p_tipo,
+  values (p_codigo_hash, p_segredo_hash, p_verificacao_hash, p_token_hash, p_sal_hash, btrim(p_nome), p_tipo,
       p_escopos, coalesce(p_capacidades, '{}'), p_duracao_min, coalesce(p_renovavel, true), v_exp)
   returning id into v_id;
   return jsonb_build_object('id', v_id, 'expira_em', v_exp);
@@ -252,8 +254,8 @@ begin
   insert into public.pair_dispositivos (loja_id, usuario_id, nome, tipo, capacidades)
   values (d.loja_id, d.aprovado_por, d.nome_dispositivo, d.tipo, coalesce(d.capacidades_aprovadas, '{}'))
   returning id into v_disp;
-  insert into public.pair_sessoes (loja_id, usuario_id, dispositivo_id, token_hash, escopos, renovavel, expira_em, limite_ate)
-  values (d.loja_id, d.aprovado_por, v_disp, d.token_hash, d.escopos_aprovados, d.renovavel,
+  insert into public.pair_sessoes (loja_id, usuario_id, dispositivo_id, token_hash, sal_hash, escopos, renovavel, expira_em, limite_ate)
+  values (d.loja_id, d.aprovado_por, v_disp, d.token_hash, d.sal_hash, d.escopos_aprovados, d.renovavel,
           case when d.renovavel then least(now() + interval '15 minutes', now() + make_interval(mins => d.duracao_aprovada_min))
                else now() + make_interval(mins => d.duracao_aprovada_min) end,
           now() + make_interval(mins => d.duracao_aprovada_min))
@@ -333,17 +335,30 @@ end $$;
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- 5) Sessões: validar a cada chamada, renovar (rotação) e revogar
-create function public.pair_validar(p_token_hash text) returns jsonb
+-- Revogar uma sessão cancela as propostas dela que ainda não foram executadas (pendentes e aprovadas-não-executadas):
+-- um agente comprometido não pode deixar pedidos "armados" para o lojista aprovar depois.
+create function private.pair_cancelar_propostas(p_sessoes uuid[]) returns int
+language plpgsql security definer set search_path = '' as $$
+declare n int;
+begin
+  update public.aprovacoes set estado = 'cancelada' where solicitante_sessao = any(p_sessoes) and estado in ('pendente', 'aprovada');
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
+create function public.pair_validar(p_token_hash text, p_sal_hash text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare s public.pair_sessoes; d public.pair_dispositivos; v_ativa boolean;
 begin
-  if p_token_hash is null or p_token_hash !~ '^[0-9a-f]{64}$' then return null; end if;
-  select * into s from public.pair_sessoes where token_hash = p_token_hash or token_anterior_hash = p_token_hash;
+  if p_token_hash is null or p_token_hash !~ '^[0-9a-f]{64}$' or p_sal_hash is null or p_sal_hash !~ '^[0-9a-f]{64}$' then return null; end if;
+  -- as DUAS metades têm de bater: quem só tem a 1ª metade (token fraco/vazado) não autentica nem consegue disparar a revogação por replay
+  select * into s from public.pair_sessoes where (token_hash = p_token_hash or token_anterior_hash = p_token_hash) and sal_hash = p_sal_hash;
   if not found then return null; end if;
   if s.token_hash <> p_token_hash then
     -- token anterior: tolerado só por 60 s após a rotação (resposta perdida). Depois disso é replay => revoga a sessão inteira.
     if s.rotacionado_em is null or now() - s.rotacionado_em > interval '60 seconds' then
       update public.pair_sessoes set revogado_em = now(), motivo_revogacao = 'replay_token_anterior' where id = s.id and revogado_em is null;
+      perform private.pair_cancelar_propostas(array[s.id]);
       perform private.pair_auditar(s.loja_id, s.usuario_id, 'pair.replay_detectado', 'pair_sessoes', jsonb_build_object('sessao_id', s.id, 'dispositivo_id', s.dispositivo_id));
       return null;
     end if;
@@ -362,26 +377,27 @@ begin
 end $$;
 
 -- O próprio dispositivo encerra a sessão (botão "Desconectar" / interrupção local do agente).
-create function public.pair_encerrar(p_token_hash text) returns jsonb
+create function public.pair_encerrar(p_token_hash text, p_sal_hash text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare s public.pair_sessoes;
 begin
   update public.pair_sessoes set revogado_em = now(), motivo_revogacao = 'encerrada_pelo_dispositivo'
-   where token_hash = p_token_hash and revogado_em is null returning * into s;
+   where token_hash = p_token_hash and sal_hash = p_sal_hash and revogado_em is null returning * into s;
   if not found then return jsonb_build_object('ok', false); end if;
+  perform private.pair_cancelar_propostas(array[s.id]);
   perform private.pair_auditar(s.loja_id, s.usuario_id, 'pair.sessao_encerrada_pelo_dispositivo', 'pair_sessoes', jsonb_build_object('sessao_id', s.id, 'dispositivo_id', s.dispositivo_id));
   return jsonb_build_object('ok', true);
 end $$;
 
 -- O solicitante gera o token novo e manda só o hash. Só o token ATUAL e ainda válido renova.
-create function public.pair_renovar(p_token_hash text, p_novo_hash text) returns jsonb
+create function public.pair_renovar(p_token_hash text, p_sal_hash text, p_novo_hash text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare v jsonb; s public.pair_sessoes;
 begin
   if p_novo_hash is null or p_novo_hash !~ '^[0-9a-f]{64}$' or p_novo_hash = p_token_hash then
     return jsonb_build_object('ok', false, 'motivo', 'token_novo_invalido');
   end if;
-  v := public.pair_validar(p_token_hash);
+  v := public.pair_validar(p_token_hash, p_sal_hash);
   if v is null or (v ->> 'atual')::boolean is not true then return jsonb_build_object('ok', false, 'motivo', 'token_invalido'); end if;
   if (v ->> 'renovavel')::boolean is not true then return jsonb_build_object('ok', false, 'motivo', 'sessao_nao_renovavel'); end if;
   update public.pair_sessoes set token_anterior_hash = token_hash, token_hash = p_novo_hash, rotacionado_em = now(),
@@ -398,7 +414,7 @@ language sql stable security definer set search_path = '' as $$ select p_uid is 
 
 create function public.pair_revogar_dispositivo(p_dispositivo uuid, p_motivo text default null) returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare d public.pair_dispositivos; uid uuid := auth.uid(); n int;
+declare d public.pair_dispositivos; uid uuid := auth.uid(); n int; c int;
 begin
   select * into d from public.pair_dispositivos where id = p_dispositivo;
   if not found or not private.pair_pode_revogar(d.loja_id, d.usuario_id, uid) then raise exception 'dispositivo não encontrado' using errcode = '42501'; end if;
@@ -406,33 +422,36 @@ begin
   update public.pair_sessoes set revogado_em = now(), revogado_por = uid, motivo_revogacao = coalesce(left(p_motivo, 200), 'revogado_pelo_lojista')
    where dispositivo_id = d.id and revogado_em is null;
   get diagnostics n = row_count;
-  perform private.pair_auditar(d.loja_id, uid, 'pair.dispositivo_revogado', 'pair_dispositivos', jsonb_build_object('dispositivo_id', d.id, 'sessoes_encerradas', n));
-  return jsonb_build_object('ok', true, 'sessoes_encerradas', n);
+  c := private.pair_cancelar_propostas(array(select id from public.pair_sessoes where dispositivo_id = d.id));
+  perform private.pair_auditar(d.loja_id, uid, 'pair.dispositivo_revogado', 'pair_dispositivos', jsonb_build_object('dispositivo_id', d.id, 'sessoes_encerradas', n, 'propostas_canceladas', c));
+  return jsonb_build_object('ok', true, 'sessoes_encerradas', n, 'propostas_canceladas', c);
 end $$;
 
 create function public.pair_revogar_sessao(p_sessao uuid, p_motivo text default null) returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare s public.pair_sessoes; uid uuid := auth.uid();
+declare s public.pair_sessoes; uid uuid := auth.uid(); c int;
 begin
   select * into s from public.pair_sessoes where id = p_sessao;
   if not found or not private.pair_pode_revogar(s.loja_id, s.usuario_id, uid) then raise exception 'sessão não encontrada' using errcode = '42501'; end if;
   update public.pair_sessoes set revogado_em = coalesce(revogado_em, now()), revogado_por = coalesce(revogado_por, uid),
          motivo_revogacao = coalesce(motivo_revogacao, left(p_motivo, 200), 'revogado_pelo_lojista') where id = s.id;
-  perform private.pair_auditar(s.loja_id, uid, 'pair.sessao_revogada', 'pair_sessoes', jsonb_build_object('sessao_id', s.id, 'dispositivo_id', s.dispositivo_id));
-  return jsonb_build_object('ok', true);
+  c := private.pair_cancelar_propostas(array[s.id]);
+  perform private.pair_auditar(s.loja_id, uid, 'pair.sessao_revogada', 'pair_sessoes', jsonb_build_object('sessao_id', s.id, 'dispositivo_id', s.dispositivo_id, 'propostas_canceladas', c));
+  return jsonb_build_object('ok', true, 'propostas_canceladas', c);
 end $$;
 
 -- Botão de interrupção da loja: encerra TODAS as sessões de dispositivo.
 create function public.pair_revogar_todos(p_loja uuid) returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare uid uuid := auth.uid(); n int;
+declare uid uuid := auth.uid(); n int; c int;
 begin
   if uid is null or not private.administra_loja(p_loja, uid) then raise exception 'sem permissão nesta loja' using errcode = '42501'; end if;
   update public.pair_dispositivos set revogado_em = coalesce(revogado_em, now()), revogado_por = coalesce(revogado_por, uid) where loja_id = p_loja;
   update public.pair_sessoes set revogado_em = now(), revogado_por = uid, motivo_revogacao = 'interrupcao_total' where loja_id = p_loja and revogado_em is null;
   get diagnostics n = row_count;
-  perform private.pair_auditar(p_loja, uid, 'pair.interrupcao_total', 'pair_sessoes', jsonb_build_object('sessoes_encerradas', n));
-  return jsonb_build_object('ok', true, 'sessoes_encerradas', n);
+  c := private.pair_cancelar_propostas(array(select id from public.pair_sessoes where loja_id = p_loja));
+  perform private.pair_auditar(p_loja, uid, 'pair.interrupcao_total', 'pair_sessoes', jsonb_build_object('sessoes_encerradas', n, 'propostas_canceladas', c));
+  return jsonb_build_object('ok', true, 'sessoes_encerradas', n, 'propostas_canceladas', c);
 end $$;
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -452,6 +471,18 @@ begin
       raise exception 'produto não pertence à loja' using errcode = '42501';
     end if;
   end loop;
+
+  -- Teto de propostas pendentes (só para pedidos NOVOS: duplicata idempotente e nova versão não contam): 20 por sessão, 200 por loja.
+  -- Pendente vencida não conta. O lock por loja evita furar o teto com chamadas simultâneas.
+  if p_grupo is null and not exists (select 1 from public.aprovacoes where loja_id = p_loja and idempotency_key = p_idempotency_key) then
+    perform pg_advisory_xact_lock(hashtextextended('aprovacoes-teto:' || p_loja::text, 0));
+    if p_sessao is not null and (select count(*) from public.aprovacoes where solicitante_sessao = p_sessao and estado = 'pendente' and expira_em > now()) >= 20 then
+      raise exception 'limite de propostas pendentes desta sessão atingido' using errcode = '54000';
+    end if;
+    if (select count(*) from public.aprovacoes where loja_id = p_loja and estado = 'pendente' and expira_em > now()) >= 200 then
+      raise exception 'limite de propostas pendentes da loja atingido' using errcode = '54000';
+    end if;
+  end if;
 
   if p_grupo is not null then
     perform pg_advisory_xact_lock(hashtextextended('aprovacao:' || p_grupo::text, 0)); -- versões simultâneas da mesma proposta entram em fila
@@ -570,19 +601,19 @@ create policy pair_disp_ver on public.pair_dispositivos for select to authentica
 create policy pair_sess_ver on public.pair_sessoes for select to authenticated using (private.administra_loja(loja_id, auth.uid()));
 create policy aprovacoes_ver on public.aprovacoes for select to authenticated using (private.pode_ver_loja(loja_id));
 
-revoke all on function public.pair_iniciar(text, text, text, text, text, text, text[], text[], int, int, boolean) from public, anon, authenticated;
+revoke all on function public.pair_iniciar(text, text, text, text, text, text, text, text[], text[], int, int, boolean) from public, anon, authenticated;
 revoke all on function public.pair_consultar(text, text) from public, anon, authenticated;
-revoke all on function public.pair_validar(text) from public, anon, authenticated;
-revoke all on function public.pair_renovar(text, text) from public, anon, authenticated;
-revoke all on function public.pair_encerrar(text) from public, anon, authenticated;
+revoke all on function public.pair_validar(text, text) from public, anon, authenticated;
+revoke all on function public.pair_renovar(text, text, text) from public, anon, authenticated;
+revoke all on function public.pair_encerrar(text, text) from public, anon, authenticated;
 revoke all on function public.aprovacao_propor(uuid, text, text, text, uuid, uuid, uuid, jsonb, jsonb, jsonb, text[], text, text, int, uuid) from public, anon, authenticated;
 revoke all on function public.aprovacao_consumir(uuid, text) from public, anon, authenticated;
 revoke all on function public.aprovacao_concluir(uuid, boolean, jsonb) from public, anon, authenticated;
-grant execute on function public.pair_iniciar(text, text, text, text, text, text, text[], text[], int, int, boolean) to service_role;
+grant execute on function public.pair_iniciar(text, text, text, text, text, text, text, text[], text[], int, int, boolean) to service_role;
 grant execute on function public.pair_consultar(text, text) to service_role;
-grant execute on function public.pair_validar(text) to service_role;
-grant execute on function public.pair_renovar(text, text) to service_role;
-grant execute on function public.pair_encerrar(text) to service_role;
+grant execute on function public.pair_validar(text, text) to service_role;
+grant execute on function public.pair_renovar(text, text, text) to service_role;
+grant execute on function public.pair_encerrar(text, text) to service_role;
 grant execute on function public.aprovacao_propor(uuid, text, text, text, uuid, uuid, uuid, jsonb, jsonb, jsonb, text[], text, text, int, uuid) to service_role;
 grant execute on function public.aprovacao_consumir(uuid, text) to service_role;
 grant execute on function public.aprovacao_concluir(uuid, boolean, jsonb) to service_role;
@@ -599,12 +630,25 @@ grant execute on function public.pair_detalhe(text), public.pair_aprovar(text, u
   public.pair_revogar_dispositivo(uuid, text), public.pair_revogar_sessao(uuid, text), public.pair_revogar_todos(uuid),
   public.aprovacao_decidir(uuid, text, text, text) to authenticated;
 
+-- Funções auxiliares em `private`: só o servidor e as funções SECURITY DEFINER (que rodam como dono) as usam. O usuário
+-- autenticado nunca as chama (antes elas herdavam EXECUTE de PUBLIC e `pair_auditar` permitia forjar auditoria via SQL).
+revoke all on function private.pair_sha256(text), private.pair_escopos_validos(), private.autenticacao_recente(int),
+  private.pair_auditar(uuid, uuid, text, text, jsonb), private.pair_pode_revogar(uuid, uuid, uuid), private.pair_cancelar_propostas(uuid[]),
+  private.aprovacao_risco_minimo(text), private.risco_ordem(text),
+  private.aprovacao_hash_conteudo_de(uuid, text, text, text, jsonb, jsonb, jsonb, text[], text),
+  private.aprovacao_hash_conteudo(public.aprovacoes), private.aprovacao_hash_proposta(public.aprovacoes), private.aprovacao_guarda()
+  from public, anon, authenticated;
+-- o servidor (service_role) precisa das que o trigger de aprovações chama quando ele grava direto na tabela
+grant execute on function private.risco_ordem(text), private.aprovacao_risco_minimo(text),
+  private.aprovacao_hash_conteudo_de(uuid, text, text, text, jsonb, jsonb, jsonb, text[], text),
+  private.aprovacao_hash_conteudo(public.aprovacoes), private.aprovacao_hash_proposta(public.aprovacoes), private.pair_sha256(text) to service_role;
+
 -- ROLLBACK (sem dados em produção antes do primeiro pareamento; conferir antes):
--- drop function public.pair_encerrar(text), public.aprovacao_concluir(uuid,boolean,jsonb), public.aprovacao_consumir(uuid,text), public.aprovacao_decidir(uuid,text,text,text),
+-- drop function private.pair_cancelar_propostas(uuid[]), public.pair_encerrar(text, text), public.aprovacao_concluir(uuid,boolean,jsonb), public.aprovacao_consumir(uuid,text), public.aprovacao_decidir(uuid,text,text,text),
 --   public.aprovacao_propor(uuid,text,text,text,uuid,uuid,uuid,jsonb,jsonb,jsonb,text[],text,text,int,uuid), public.pair_revogar_todos(uuid),
 --   public.pair_revogar_sessao(uuid,text), public.pair_revogar_dispositivo(uuid,text), private.pair_pode_revogar(uuid,uuid,uuid),
---   public.pair_renovar(text,text), public.pair_validar(text), public.pair_recusar(text), public.pair_aprovar(text,uuid,text,text[],int,text[]),
---   public.pair_detalhe(text), public.pair_consultar(text,text), public.pair_iniciar(text,text,text,text,text,text,text[],text[],int,int,boolean);
+--   public.pair_renovar(text,text,text), public.pair_validar(text, text), public.pair_recusar(text), public.pair_aprovar(text,uuid,text,text[],int,text[]),
+--   public.pair_detalhe(text), public.pair_consultar(text,text), public.pair_iniciar(text,text,text,text,text,text,text,text[],text[],int,int,boolean);
 -- drop table public.aprovacoes, public.pair_desafios, public.pair_sessoes, public.pair_dispositivos;
 -- drop function private.aprovacao_guarda(), private.aprovacao_hash_proposta(public.aprovacoes), private.aprovacao_hash_conteudo(public.aprovacoes),
 --   private.aprovacao_hash_conteudo_de(uuid,text,text,text,jsonb,jsonb,jsonb,text[],text), private.risco_ordem(text), private.aprovacao_risco_minimo(text), private.pair_auditar(uuid,uuid,text,text,jsonb),

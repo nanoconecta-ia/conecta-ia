@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { aleatorioB64u, codigoDaUrl, codigoVerificacao, iguais, montarUrlPareamento, SEGREDO_RE, sha256Hex } from "./cripto.ts";
+import { aleatorioB64u, codigoDaUrl, codigoVerificacao, iguais, montarUrlPareamento, SEGREDO_RE, separarToken, sha256Hex } from "./cripto.ts";
 import { ESCOPOS, escoposValidos, ROTULOS } from "./escopos.ts";
 import { tratarPair, type PortasPair } from "./servico.ts";
 import { FERRAMENTAS, MAX_SAIDA, tratar, urlHttps, type Dados, type EventoAuditoria, type Portas, type PropostaAprovacao, type Sessao } from "./gateway.ts";
@@ -124,7 +124,9 @@ test("pair/renovar e encerrar: exigem Bearer no formato; token inválido => 401"
   const { p } = portasPair({ rpc: () => ({ data: { ok: false }, error: null }) });
   const novo = await sha256Hex("novo");
   assert.equal((await tratarPair({ metodo: "POST", authorization: null, corpo: JSON.stringify({ acao: "renovar", novo_token_hash: novo }) }, p)).status, 400);
-  assert.equal((await tratarPair({ metodo: "POST", authorization: `Bearer ${aleatorioB64u()}`, corpo: JSON.stringify({ acao: "renovar", novo_token_hash: novo }) }, p)).status, 401);
+  assert.equal((await tratarPair({ metodo: "POST", authorization: `Bearer ${aleatorioB64u()}.${aleatorioB64u()}`, corpo: JSON.stringify({ acao: "renovar", novo_token_hash: novo }) }, p)).status, 401);
+  // token SEM a 2ª metade (sal) nem chega ao banco
+  assert.equal((await tratarPair({ metodo: "POST", authorization: `Bearer ${aleatorioB64u()}`, corpo: JSON.stringify({ acao: "renovar", novo_token_hash: novo }) }, p)).status, 400);
   assert.equal((await tratarPair({ metodo: "POST", authorization: null, corpo: JSON.stringify({ acao: "encerrar" }) }, p)).status, 401);
 });
 
@@ -148,16 +150,17 @@ function ambiente(s: Sessao | null, opcoes: { limite?: (c: string) => boolean; d
     statusTarefa: async (loja, id) => { chamadasDados.push({ metodo: "statusTarefa", loja, args: id }); return null; },
     ...opcoes.dados,
   };
-  const validadas: string[] = [];
+  const validadas: [string, string][] = [];
   const portas: Portas = {
-    validar: async (h) => { validadas.push(h); return s; },
+    validar: async (h, sal) => { validadas.push([h, sal]); return s; },
     limite: async (c) => opcoes.limite?.(c) ?? true,
     auditar: async (e) => { auditoria.push(e); },
     dados,
   };
   return { portas, auditoria, chamadasDados, propostas, validadas };
 }
-const TOKEN = aleatorioB64u();
+const TOKEN_PARTE = aleatorioB64u(), SAL = aleatorioB64u();
+const TOKEN = `${TOKEN_PARTE}.${SAL}`; // token completo = <token>.<sal>
 const rpc = (method: string, params?: unknown, id: number | string | undefined = 1) => JSON.stringify({ jsonrpc: "2.0", ...(id === undefined ? {} : { id }), method, params });
 const chamar = (a: ReturnType<typeof ambiente>, corpo: string, extra: { auth?: string | null; metodo?: string; ip?: string } = {}) =>
   tratar({ metodo: extra.metodo ?? "POST", authorization: extra.auth === undefined ? `Bearer ${TOKEN}` : extra.auth, corpo, ip: extra.ip ?? "5.5.5.5" }, a.portas);
@@ -172,7 +175,7 @@ test("gateway: sem token, token malformado ou sessão inexistente/revogada => 40
     assert.match(r.headers!["WWW-Authenticate"], /Bearer/);
   }
   assert.equal(a.chamadasDados.length, 0);
-  assert.equal(a.validadas[0], await sha256Hex(TOKEN), "o banco recebe só o HASH do token");
+  assert.deepEqual(a.validadas[0], [await sha256Hex(TOKEN_PARTE), await sha256Hex(SAL)], "o banco recebe só os HASHES das duas metades");
 });
 test("gateway: tentativas inválidas repetidas do mesmo IP são limitadas (429)", async () => {
   let n = 0;
@@ -325,6 +328,36 @@ test("gateway: o catálogo NÃO tem ferramenta que aprove, execute, publique, al
     assert.equal(JSON.stringify(f.inputSchema).includes("loja_id"), false, `${f.nome} não aceita loja`);
     assert.equal((f.inputSchema as { additionalProperties: boolean }).additionalProperties, false);
   }
+});
+
+test("token em duas metades: separarToken exige <token>.<sal> no formato; aceita só o que o servidor entrega", () => {
+  const t = aleatorioB64u(), sal = aleatorioB64u();
+  assert.deepEqual(separarToken(`${t}.${sal}`), { token: t, sal });
+  for (const ruim of [t, `${t}.`, `.${sal}`, `${t}.${sal}.x`, "curto.curto", "", null, undefined, `${t} .${sal}`]) assert.equal(separarToken(ruim as string), null, String(ruim));
+});
+test("gateway: só a 1ª metade do token (token fraco/vazado) é 401 e NÃO chega ao banco", async () => {
+  const a = ambiente(sessao(["produtos:ler"]));
+  const fraco = "A".repeat(43);
+  assert.equal((await chamar(a, tool("conecta.list_products"), { auth: `Bearer ${fraco}` })).status, 401);
+  assert.equal(a.validadas.length, 0, "sem as duas metades nem consulta o banco");
+  assert.equal((await chamar(a, tool("conecta.list_products"), { auth: `Bearer ${fraco}.${SAL}` })).status, 200, "com sal do servidor autentica (o banco decide)");
+});
+test("pair/iniciar: gera o SAL no servidor (256 bits, único, só o hash vai ao banco) e o devolve uma vez", async () => {
+  const { p, chamadas } = portasPair();
+  const r1 = await tratarPair({ metodo: "POST", authorization: null, corpo: await corpoIniciar(), ip: "1.1.1.1" }, p);
+  const r2 = await tratarPair({ metodo: "POST", authorization: null, corpo: await corpoIniciar({ token_hash: await sha256Hex("OUTRO") }), ip: "1.1.1.1" }, p);
+  const a = r1.corpo as Record<string, string>, b = r2.corpo as Record<string, string>;
+  assert.match(a.sal, SEGREDO_RE); assert.notEqual(a.sal, b.sal); assert.notEqual(a.sal, a.segredo); assert.notEqual(a.sal, a.codigo);
+  assert.equal(a.token_formato, "<token>.<sal>");
+  assert.equal(chamadas[0].args.p_sal_hash, await sha256Hex(a.sal));
+  assert.ok(!JSON.stringify(chamadas[0].args).includes(a.sal), "o sal em claro não vai ao banco");
+});
+test("dadosSupabase: erro de teto de propostas (54000) vira mensagem útil para o agente", async () => {
+  const { admin } = adminFalso();
+  const d = dadosSupabase({ ...admin, rpc: async () => ({ data: null, error: { code: "54000", message: "limite" } }) } as never);
+  const base: PropostaAprovacao = { loja_id: LOJA_A, usuario_id: "u", sessao_id: "s", dispositivo_id: "d", agente: "A", tipo: "banner_publicacao", ferramenta: "conecta.propose_banner",
+    alvos: [], antes: null, depois: {}, riscos: [], risco: "MEDIUM", idempotency_key: "k".repeat(10), ttl_min: 60 };
+  assert.match(JSON.stringify(await d.proporAprovacao(base)), /pendentes demais/);
 });
 
 // ------------------------------------------------------------------------------------------------ isolamento por loja nas consultas reais

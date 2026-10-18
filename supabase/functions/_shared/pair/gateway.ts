@@ -10,7 +10,7 @@
 //  * O modelo nunca recebe credencial do Supabase ou do Bling; erros internos viram mensagem genérica.
 //  * Toda chamada (ok, negada, inválida, com erro) gera auditoria com usuário, loja, sessão, dispositivo e ferramenta.
 import { ehEscopo, type Escopo } from "./escopos.ts";
-import { HASH_RE, SEGREDO_RE, sha256Hex } from "./cripto.ts";
+import { HASH_RE, separarToken, sha256Hex } from "./cripto.ts";
 
 export const VERSOES_PROTOCOLO = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05", "2024-10-07"] as const; // do @modelcontextprotocol/sdk 1.32
 export const MAX_CORPO = 64 * 1024;
@@ -42,7 +42,7 @@ export interface Dados {
   statusTarefa(loja: string, id: string): Promise<unknown | null>;
 }
 export interface Portas {
-  validar(tokenHash: string): Promise<Sessao | null>;
+  validar(tokenHash: string, salHash: string): Promise<Sessao | null>;
   limite(chave: string, max: number, janelaS: number): Promise<boolean>;
   auditar(e: EventoAuditoria): Promise<void>;
   dados: Dados;
@@ -204,12 +204,13 @@ export async function tratar(req: Requisicao, p: Portas): Promise<Resposta> {
   if (req.corpo.length > MAX_CORPO) return { status: 413, corpo: { erro: "Corpo grande demais." } };
 
   // 1) autenticação (o banco decide: revogada, expirada, dispositivo revogado, usuário sem papel => null)
-  const m = /^Bearer ([A-Za-z0-9_-]+)$/.exec(req.authorization ?? "");
+  const m = /^Bearer ([A-Za-z0-9_.-]+)$/.exec(req.authorization ?? "");
+  const tk = m ? separarToken(m[1]) : null; // token completo = <token>.<sal>; sem as duas metades nem chega ao banco
   const ip = req.ip ?? "?";
-  if (!m || !SEGREDO_RE.test(m[1])) { if (!(await p.limite(`gw401:${ip}`, LIMITE_FALHAS_IP.max, LIMITE_FALHAS_IP.janelaS))) return naoAut(429); return naoAut(); }
-  const hash = await sha256Hex(m[1]);
-  if (!HASH_RE.test(hash)) return naoAut();
-  const sessao = await p.validar(hash);
+  if (!tk) { if (!(await p.limite(`gw401:${ip}`, LIMITE_FALHAS_IP.max, LIMITE_FALHAS_IP.janelaS))) return naoAut(429); return naoAut(); }
+  const hash = await sha256Hex(tk.token), salHash = await sha256Hex(tk.sal);
+  if (!HASH_RE.test(hash) || !HASH_RE.test(salHash)) return naoAut();
+  const sessao = await p.validar(hash, salHash);
   if (!sessao) { if (!(await p.limite(`gw401:${ip}`, LIMITE_FALHAS_IP.max, LIMITE_FALHAS_IP.janelaS))) return naoAut(429); return naoAut(); }
   if (!(await p.limite(`gw:${sessao.sessao_id}`, LIMITE_SESSAO.max, LIMITE_SESSAO.janelaS))) return { status: 429, headers: { "Retry-After": "30" }, corpo: { jsonrpc: "2.0", id: null, error: { code: -32002, message: "Muitas chamadas. Aguarde." } } };
 

@@ -20,7 +20,7 @@ Deixa o lojista conectar computador, celular, sessão de navegador ou **agente e
                                       escolhe loja/escopos/duração (só pode REDUZIR),
                                       digita o código da TELA do dispositivo ──────────────────▶ pair_aprovar (FOR UPDATE; 1 vencedor)
  POST pair/consultar {codigo,segredo} (polling) ─────────────────────────────────────────────────▶ aprovado → resgata UMA vez:
- ◀── {estado:"resgatado", loja, escopos, limite_ate}                                               cria dispositivo + sessão (hash do token do solicitante)
+ ◀── {estado:"resgatado", loja, escopos, limite_ate}                                               cria dispositivo + sessão (hashes das 2 metades do token)
  usa o TOKEN (que nunca saiu do dispositivo) ──▶ conecta-gateway (JSON-RPC) ────────────────────▶ pair_validar a CADA chamada (revogação imediata)
 ```
 
@@ -33,8 +33,8 @@ Propriedades-chave:
 | Aprovador autenticado, vê dispositivo/loja/permissões/duração, confirma | RPCs rodam com o JWT do lojista (`auth.uid()`); tela mostra tudo; exige digitar o código da tela do dispositivo | `pair_detalhe`, `pair_aprovar`, `Parear.tsx` |
 | Consumo atômico, sem reuso | `FOR UPDATE` + `UPDATE … WHERE estado=…`; 8–12 conexões simultâneas: 1 vencedor | SQL + `conecta_pair_concorrencia.sh` |
 | Vínculo sessão ↔ usuário ↔ loja ↔ dispositivo | `pair_sessoes`/`pair_dispositivos`; a loja vem **da sessão**, nunca de argumento | gateway |
-| Revogação e encerramento remoto | `pair_revogar_*` (lojista/dono) e `pair_encerrar` (o próprio dispositivo); valem na **próxima** chamada porque o banco confere a cada uso | SQL |
-| Token curto, escopo mínimo | Acesso 15 min com rotação (ou, opcionalmente, token fixo até o fim da duração aprovada); escopos só `*:ler` e `*:propor` | migração |
+| Revogação e encerramento remoto | `pair_revogar_*` (lojista/dono) e `pair_encerrar` (o próprio dispositivo); valem na **próxima** chamada porque o banco confere a cada uso. **Revogar também cancela as propostas pendentes e aprovadas-não-executadas** daquela sessão | SQL |
+| Token curto, escopo mínimo | Acesso 15 min com rotação (ou, opcionalmente, token fixo até o fim da duração aprovada); escopos só `*:ler` e `*:propor`. **Token em duas metades** `<token>.<sal>`: o dispositivo gera a 1ª, o **servidor gera o sal de 256 bits**; as duas precisam bater, então um token fraco escolhido pelo cliente não autentica sozinho | migração, `separarToken` |
 | Proteção contra replay | Token anterior tolerado 60 s (resposta perdida); depois disso **revoga a sessão inteira** | `pair_validar` |
 | Nova confirmação para operação sensível | Aprovar risco HIGH/CRITICAL e parear agente desktop exigem autenticação recente (≤ 5 min, claim `amr`) | `autenticacao_recente` |
 | Auditoria com usuário, loja, dispositivo e operação | `auditoria` imutável; toda chamada do gateway (ok/negada/inválida/erro) e todo evento de pareamento/aprovação | `pair_auditar` |
@@ -46,6 +46,7 @@ Tipos: atualização de produto, criação de categoria, publicação de banner,
 
 - **Risco mínimo por tipo, imposto no banco**: o agente não consegue rebaixar o risco (banner/página/produto/categoria ≥ MEDIUM; catálogo/lote/campanha/orçamento ≥ HIGH).
 - **Estados**: `pendente → aprovada → executando → executada | falhou`; desvios `recusada`, `expirada`, `substituida`, `cancelada`. Transições inválidas são barradas por trigger.
+- **Teto de pendentes**: no máximo **20 por sessão** e **200 por loja** (pedido novo; duplicata idempotente e nova versão não contam; vencidas não contam). Acima disso o banco responde `54000` e o agente recebe a mensagem "há propostas pendentes demais".
 - **Duplicadas**: `idempotency_key` única por loja. Mesma chave + mesmo conteúdo devolve o pedido existente; mesma chave + conteúdo diferente é recusada (`23505`).
 - **Alterar depois = aprovar de novo**: `aprovacao_propor(p_grupo=…)` cria a versão N+1 e marca as anteriores como `substituida` (inclusive as já aprovadas e não executadas). Versões simultâneas entram em fila (advisory lock).
 - **Notificação**: cada proposta cria uma linha em `notificacoes` (tipo `aprovacao`) e aparece na Central (atualiza a cada 15 s e ao focar a aba). *Push/e-mail não foram implementados.*
@@ -53,7 +54,7 @@ Tipos: atualização de produto, criação de categoria, publicação de banner,
 
 ## 3. Gateway MCP/API para agentes externos
 
-`POST /functions/v1/conecta-gateway`, JSON-RPC 2.0, `Authorization: Bearer <token da sessão>`. Respostas conferidas contra os schemas oficiais do SDK `@modelcontextprotocol/sdk` 1.32 (versão de protocolo mais recente suportada: `2025-11-25`; aceita também `2025-06-18`, `2025-03-26`, `2024-11-05`, `2024-10-07`).
+`POST /functions/v1/conecta-gateway`, JSON-RPC 2.0, `Authorization: Bearer <token>.<sal>` (token completo da sessão). Respostas conferidas contra os schemas oficiais do SDK `@modelcontextprotocol/sdk` 1.32 (versão de protocolo mais recente suportada: `2025-11-25`; aceita também `2025-06-18`, `2025-03-26`, `2024-11-05`, `2024-10-07`).
 
 Ferramentas (exatamente as pedidas): `conecta.list_products`, `conecta.get_product`, `conecta.propose_enrichment`, `conecta.propose_banner`, `conecta.get_pending_approvals`, `conecta.get_task_status`. Nenhuma aprova, executa, publica, altera preço/estoque ou toca o Bling (um teste varre o catálogo). `tools/list` só mostra o que o escopo da sessão permite. Detalhes em [API.md](API.md).
 
@@ -82,26 +83,29 @@ Não existe controle irrestrito de desktop. Para operar aplicativos locais haver
 | Sessão revogada | SQL: revogar dispositivo/sessão/tudo; `pair_validar` → nulo na próxima chamada; renovar recusado; só dono/lojista revogam; TS: revalida a cada chamada | ✔ |
 | Aprovação adulterada | SQL: `UPDATE` de conteúdo/hash/risco/estado barrado por trigger; hash errado → `proposta_alterada` (auditado); nova versão invalida a anterior; executor com hash antigo recusado | ✔ |
 | Solicitação duplicada | SQL e concorrência: mesma chave/conteúdo → 1 linha, 1 notificação; conteúdo diferente → erro; TS: chave automática estável por sessão | ✔ |
-| Perda de conexão | SQL/TS: reresgate idempotente (token nunca trafega); token anterior vale 60 s após rotação; replay depois disso revoga a sessão; `pair_encerrar` | ✔ |
+| Perda de conexão | SQL/TS: reresgate idempotente (token nunca trafega); token anterior vale 60 s após rotação; replay depois disso revoga a sessão (e só quem tem as **duas** metades dispara isso); `pair_encerrar` | ✔ |
 | Concorrência entre dispositivos | `conecta_pair_concorrencia.sh`: 8 e 12 conexões reais simultâneas para aprovar, resgatar, propor, decidir (aprovar×recusar), executar e versionar | ✔ (4 execuções) |
 | Operação recusada | SQL: recusada não executa (`estado_recusada`); TS executor: nada roda sem reivindicação | ✔ |
 
-Totais nesta branch: **137** verificações SQL, **16** asserções de concorrência real, **120** testes Node nas funções (40 do Pair, 11 dos contratos da Ordem Mestra, 69 pré-existentes), **9** testes do painel, `tsc --noEmit` e `vite build` limpos. UI conferida em Chromium 390 px (QR decodificado = URL; sem rolagem horizontal; HIGH pede a senha; decisão envia o hash exibido).
+Totais nesta branch (reexecutados após as correções da auditoria): **176** verificações SQL do Pair e **17 de 17** suítes SQL do repositório passando no CI (antes só 1 rodava), **18** asserções de concorrência real (8–12 conexões, 30 no teto), **124** testes Node nas funções (44 do Pair, 11 dos contratos, 69 pré-existentes), **9** testes do painel, `tsc --noEmit` e `vite build` (com e sem a flag) limpos. **E2E local com HTTP real** (Postgres + PostgREST + as Edge Functions originais em Deno): **84/84**; esse E2E e a conferência MCP/UI ficam fora do repositório (dependem de binários baixados) — ver "Limitações". Teste de mutação: remover cada uma das 4 proteções novas (sal, cancelamento, teto, revoke de `private`) faz a suíte falhar.
 
 ## 7. Limitações e riscos reais (leia antes de aprovar)
 
-1. **Nada rodou contra o Supabase real.** O Postgres de teste usa o *stub* do repositório (`auth.uid()/auth.jwt()` simulados). Antes de produção: aplicar em **branch/ambiente de teste do Supabase** e repetir a suíte.
-2. **`amr` (autenticação recente):** a reconfirmação depende do claim `amr` com `timestamp` do Supabase Auth. Não pude verificar o formato real aqui; a tela reconfirma por **senha** — usuários que entram só com Google não conseguem reconfirmar (precisam de fluxo de reautenticação OAuth, não feito).
-3. **`verify_jwt=false` com `Authorization: Bearer <token opaco>`:** `pair` (renovar/encerrar) e `conecta-gateway` recebem um token que não é JWT do Supabase. Precisa ser confirmado num deploy de teste que a plataforma não rejeita esse cabeçalho; se rejeitar, mover o token para `x-conecta-token` (mudança de uma linha).
-4. **Janela de 60 s:** o token anterior segue válido por 60 s após a rotação (para sobreviver a respostas perdidas). Um token roubado nesse intervalo funciona uma vez; depois, o uso do token antigo revoga a sessão e o dono perde o acesso (falha segura).
-5. **Token estático (modo não renovável):** quem o copia age como o dispositivo até o prazo. Mitigação: duração curta escolhida pelo lojista, escopos mínimos, revogação imediata.
+1. **Nada rodou contra o Supabase real.** O Postgres de teste usa o *stub* do repositório (`auth.uid()/auth.jwt()` simulados) e o E2E usa PostgREST local, não o gateway do Supabase. Antes de produção: aplicar em **branch/ambiente de teste do Supabase** (precisa de autorização) e repetir as suítes.
+2. **`amr` (autenticação recente):** a reconfirmação depende do claim `amr` com `timestamp` do Supabase Auth. Não pude verificar o formato real aqui; a tela reconfirma por **senha** — usuários que entram só com Google não conseguem reconfirmar (precisam de fluxo de reautenticação OAuth, não feito). **Pendente de teste na branch do Supabase.**
+3. **`verify_jwt=false` com `Authorization: Bearer <token opaco>`:** `pair` (renovar/encerrar) e `conecta-gateway` recebem um token que não é JWT do Supabase. Precisa ser confirmado num deploy de teste que a plataforma não rejeita esse cabeçalho; se rejeitar, mover o token para `x-conecta-token` (mudança pequena). **Pendente de teste na branch do Supabase.**
+4. **Janela de 60 s:** o token anterior segue válido por 60 s após a rotação (para sobreviver a respostas perdidas). Um token completo roubado nesse intervalo funciona; depois, o uso do token antigo (com as duas metades) revoga a sessão e cancela as propostas dela (falha segura).
+5. **Token estático (modo não renovável):** quem o copia (as duas metades) age como o dispositivo até o prazo. Mitigação: duração curta escolhida pelo lojista, escopos mínimos, revogação imediata, cancelamento das propostas ao revogar.
 6. **Engenharia social / QR-jacking:** o lojista só autoriza digitando o código da **tela do dispositivo**; o nome do dispositivo é informado pelo próprio dispositivo (a tela avisa). Não há como o servidor provar que o aparelho é "o notebook da loja".
 7. **Gateway de leitura de produtos** devolve preço e estoque ao agente pareado; custo, fornecedor, `bling_id` e campos internos não estão na lista de colunas. O lojista decide os escopos.
-8. **Imagem do banner** é URL externa (https, sem IP/localhost/credenciais); o servidor **não a busca** nem verifica direitos de uso — o risco aparece na aprovação.
-9. **Limite de taxa** usa a tabela `limite_chamadas` (escreve no banco a cada chamada); suficiente para o piloto, não para tráfego alto.
-10. **Funções SQL expostas no PostgREST:** as RPCs do lado do lojista são `SECURITY DEFINER` executáveis por `authenticated` (cada uma confere `auth.uid()` e o papel). O advisor do Supabase vai sinalizá-las como as duas já existentes; é intencional e coberto por teste.
-11. **Não implementado:** push/e-mail de aprovação, executores reais (banner, página, catálogo, campanha…), agente desktop, painel de custos do Pair, expiração automática de linhas (só limpeza oportunista de desafios), reautenticação OAuth.
+8. **Imagem do banner** é URL externa (https, sem IP/localhost/credenciais); o servidor **não a busca** nem verifica direitos de uso — o risco aparece na aprovação (e a Central ainda não mostra prévia da imagem).
+9. **Limite de taxa** usa a tabela `limite_chamadas` (escreve no banco a cada chamada); suficiente para o piloto, não para tráfego alto. A auditoria de **leituras** do gateway é melhor esforço (a de propostas e decisões é transacional).
+10. **Funções SQL expostas no PostgREST:** as 7 RPCs do lado do lojista são `SECURITY DEFINER` executáveis por `authenticated` (cada uma confere `auth.uid()` e o papel). O advisor do Supabase vai sinalizá-las como as duas já existentes; é intencional e coberto por teste. As funções auxiliares em `private` **não** são mais executáveis por `authenticated`.
+11. **Tetos** (20 por sessão, 200 por loja) são constantes na função SQL; ainda não configuráveis por plano.
+12. **Não implementado:** push/e-mail de aprovação, executores reais (banner, página, catálogo, campanha…), agente desktop, painel de custos do Pair, expiração automática de linhas (só limpeza oportunista de desafios), reautenticação OAuth.
+13. **Fora do escopo do PR, mas relevante:** a função `assistente` (pré-existente) deixa um usuário com papel **editor** aprovar itens de enriquecimento e imagens da Fila (diferente da Central de Aprovações, que exige lojista).
+14. **Recursos escondidos por padrão:** no painel, Aprovações, Dispositivos e `#/parear` só aparecem em builds com `VITE_PAIR_ATIVO=1`. O build de produção (GitHub Pages) **não liga** a flag; ligar só depois de migração e funções estarem aplicadas no mesmo ambiente.
 
 ## 8. Plano de entrada em produção (cada passo exige autorização)
 
-1. Revisar este PR e o desenho da migração. 2. Aplicar a migração em **branch do Supabase** e rodar `rodar_local.sh`/concorrência apontando para ela. 3. Publicar `pair` e `conecta-gateway` em ambiente de teste; confirmar item 3 acima; configurar `APP_URL`. 4. Pareamento real de teste com um agente MCP e a loja Mobis (somente leitura + proposta). 5. Escrever e aprovar o **primeiro executor** (provavelmente banner, que não toca o Bling). 6. Produção. **Rollback:** bloco ROLLBACK da migração; despublicar as duas funções; o site e o Bling não dependem do Pair.
+1. Revisar este PR e o desenho da migração. 2. Aplicar a migração em **branch do Supabase** e rodar `rodar_local.sh`/concorrência apontando para ela. 3. Publicar `pair` e `conecta-gateway` em ambiente de teste; confirmar os itens 2 e 3 acima; configurar `APP_URL`; só então gerar o painel com `VITE_PAIR_ATIVO=1`. 4. Pareamento real de teste com um agente MCP e a loja Mobis (somente leitura + proposta). 5. Escrever e aprovar o **primeiro executor** (provavelmente banner, que não toca o Bling). 6. Produção. **Rollback:** bloco ROLLBACK da migração; despublicar as duas funções; o site e o Bling não dependem do Pair.
