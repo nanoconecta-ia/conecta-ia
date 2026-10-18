@@ -1,5 +1,5 @@
 // Guia vivo do Design System: mostra os tokens e componentes reais, para todas as telas compartilharem o mesmo padrão.
-const CORES: [string, string][] = [["--fundo", "Fundo"], ["--cartao", "Cartão"], ["--realce", "Realce"], ["--borda", "Borda"], ["--texto", "Texto"], ["--suave", "Texto suave"], ["--marca", "Marca"], ["--marca-forte", "Marca forte"], ["--ok", "OK"], ["--atencao", "Atenção"], ["--erro", "Erro"]];
+const CORES: [string, string][] = [["--fundo", "Fundo"], ["--cartao", "Cartão"], ["--realce", "Realce"], ["--borda", "Borda"], ["--texto", "Texto"], ["--suave", "Texto suave"], ["--marca", "Azul (primário)"], ["--marca-forte", "Azul forte"], ["--verde", "Verde (sucesso/WhatsApp)"], ["--grafite", "Grafite"], ["--ok", "OK"], ["--atencao", "Atenção"], ["--erro", "Erro"]];
 
 export function Design() {
   return (
