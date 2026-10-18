@@ -1,6 +1,6 @@
 // POST { loja_id } com o JWT do usuário logado -> { url } para autorizar o app no Bling.
 // O state é assinado (loja + usuário + validade). Nada sensível volta ao navegador.
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { assinarEstado } from "../_shared/estado.ts";
 import { segredoEstado } from "../_shared/plataforma.ts";
 

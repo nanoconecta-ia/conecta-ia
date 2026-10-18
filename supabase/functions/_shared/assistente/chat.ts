@@ -13,6 +13,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  const { usuario, admin, loja, userId } = ctx;
  const { data: flags, error: flagsError } = await usuario.from("recursos_efetivos").select("codigo, ativo").eq("loja_id", loja.id);
  if (flagsError || !Array.isArray(flags)) return resultado({ erro: "Não foi possível verificar os recursos do chat." }, 503);
+ if (c.antes != null && (typeof c.antes !== "string" || !/^\d{4}-\d{2}-\d{2}T[0-9:.+-]+Z?$/.test(c.antes) || !Number.isFinite(Date.parse(c.antes)) || !uuid(c.antes_id))) return resultado({ erro: "Cursor inválido." }, 400);
  const ativo = (codigo: string) => flags.some((r: any) => r.codigo === codigo && r.ativo === true);
  if (c.acao === "chat_config") {
   const { data: config, error } = await usuario.from("lojas").select("chat_retencao_dias").eq("id", loja.id).single();
@@ -29,18 +30,18 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   return error || data !== true ? resultado({ erro: "Alteração não permitida." }, 403) : resultado({ ok: true });
  }
  if (c.acao === "chat_admin" && uuid(c.conversa_id)) {
-  const { data, error } = await usuario.rpc("chat_ler_como_administrador", { p_loja: loja.id, p_conversa: c.conversa_id, p_motivo: c.motivo, p_antes: c.antes ?? null });
+  const { data, error } = await usuario.rpc("chat_ler_como_administrador", { p_loja: loja.id, p_conversa: c.conversa_id, p_motivo: c.motivo, p_antes: c.antes ?? null, p_antes_id: c.antes_id ?? null });
   return error ? resultado({ erro: "Leitura administrativa não permitida." }, 403) : resultado({ mensagens: data });
  }
  if (c.acao === "chat_listar") {
   let q = usuario.from("conversas").select("id, titulo, atualizada_em").eq("loja_id", loja.id).eq("user_id", userId).order("atualizada_em", { ascending: false }).order("id", { ascending: false }).limit(50);
-  if (c.antes) q = q.lt("atualizada_em", c.antes);
+  if (c.antes) q = q.or(`atualizada_em.lt.${c.antes},and(atualizada_em.eq.${c.antes},id.lt.${c.antes_id})`);
   const { data, error } = await q;
   return error ? resultado({ erro: "Não foi possível ler o histórico." }, 503) : resultado({ conversas: data });
  }
  if (c.acao === "chat_mensagens" && uuid(c.conversa_id)) {
   let q = usuario.from("mensagens").select("id, papel, conteudo, metadados, criada_em").eq("loja_id", loja.id).eq("user_id", userId).eq("conversa_id", c.conversa_id).order("criada_em", { ascending: false }).order("id", { ascending: false }).limit(100);
-  if (c.antes) q = q.lt("criada_em", c.antes);
+  if (c.antes) q = q.or(`criada_em.lt.${c.antes},and(criada_em.eq.${c.antes},id.lt.${c.antes_id})`);
   const { data, error } = await q;
   return error ? resultado({ erro: "Não foi possível ler as mensagens." }, 503) : resultado({ mensagens: (data ?? []).reverse() });
  }

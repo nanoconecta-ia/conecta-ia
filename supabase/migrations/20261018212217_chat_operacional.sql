@@ -166,7 +166,7 @@ begin
  insert into public.auditoria(loja_id,user_id,acao,tabela,antes,depois) values(p_loja,auth.uid(),'chat.retencao_alterada','lojas',jsonb_build_object('dias',antes),jsonb_build_object('dias',p_dias)); return true;
 end $$;
 
-create function public.chat_ler_como_administrador(p_loja uuid,p_conversa uuid,p_motivo text,p_antes timestamptz default null)
+create function public.chat_ler_como_administrador(p_loja uuid,p_conversa uuid,p_motivo text,p_antes timestamptz default null,p_antes_id uuid default null)
 returns setof public.mensagens language plpgsql security definer set search_path='' as $$
 declare dono uuid;
 begin
@@ -177,7 +177,7 @@ begin
  insert into public.auditoria(loja_id,user_id,acao,tabela,depois) values(p_loja,auth.uid(),'chat.leitura_administrativa','conversas',
  jsonb_build_object('conversa_id',p_conversa,'dono',dono,'motivo',left(btrim(p_motivo),300),'antes',p_antes,'limite',100));
  return query select * from public.mensagens m where m.conversa_id=p_conversa and m.loja_id=p_loja and private.chat_visivel(m.loja_id,m.criada_em)
- and (p_antes is null or m.criada_em<p_antes) order by m.criada_em desc,m.id desc limit 100;
+ and (p_antes is null or (m.criada_em,m.id)<(p_antes,p_antes_id)) order by m.criada_em desc,m.id desc limit 100;
 end $$;
 
 create function public.chat_expurgar() returns int language plpgsql security definer set search_path='' as $$
@@ -189,9 +189,9 @@ begin
  delete from public.conversas c where not exists(select 1 from public.mensagens m where m.conversa_id=c.id) and coalesce(c.turno_ate,'-infinity')<now();
  if n>0 then insert into public.auditoria(acao,tabela,depois) values('chat.expurgo','mensagens',jsonb_build_object('mensagens',n)); end if; return n;
 end $$;
-revoke all on function public.chat_iniciar(uuid,uuid,uuid,text,text,text),public.chat_responder(uuid,uuid,uuid,uuid,text,jsonb),public.chat_excluir(uuid),public.chat_definir_retencao(uuid,int),public.chat_ler_como_administrador(uuid,uuid,text,timestamptz),public.chat_expurgar() from public,anon,authenticated;
+revoke all on function public.chat_iniciar(uuid,uuid,uuid,text,text,text),public.chat_responder(uuid,uuid,uuid,uuid,text,jsonb),public.chat_excluir(uuid),public.chat_definir_retencao(uuid,int),public.chat_ler_como_administrador(uuid,uuid,text,timestamptz,uuid),public.chat_expurgar() from public,anon,authenticated;
 grant execute on function public.chat_iniciar(uuid,uuid,uuid,text,text,text),public.chat_responder(uuid,uuid,uuid,uuid,text,jsonb),public.chat_expurgar() to service_role;
-grant execute on function public.chat_excluir(uuid),public.chat_definir_retencao(uuid,int),public.chat_ler_como_administrador(uuid,uuid,text,timestamptz) to authenticated;
+grant execute on function public.chat_excluir(uuid),public.chat_definir_retencao(uuid,int),public.chat_ler_como_administrador(uuid,uuid,text,timestamptz,uuid) to authenticated;
 -- Rotina estritamente local ao banco; nenhuma URL, JWT ou segredo em cron.
 do $$ begin if exists(select 1 from pg_extension where extname='pg_cron') then
  perform cron.schedule('chat-expurgo','17 * * * *','select public.chat_expurgar();'); end if; end $$;

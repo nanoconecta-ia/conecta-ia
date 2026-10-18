@@ -1771,6 +1771,9 @@ async function atenderChat(c, ctx) {
     if (flagsError || !Array.isArray(flags)) return resultado({
         erro: "Não foi possível verificar os recursos do chat."
     }, 503);
+    if (c.antes != null && (typeof c.antes !== "string" || !/^\d{4}-\d{2}-\d{2}T[0-9:.+-]+Z?$/.test(c.antes) || !Number.isFinite(Date.parse(c.antes)) || !uuid(c.antes_id))) return resultado({
+        erro: "Cursor inválido."
+    }, 400);
     const ativo = (codigo)=>flags.some((r)=>r.codigo === codigo && r.ativo === true);
     if (c.acao === "chat_config") {
         const { data: config, error } = await usuario.from("lojas").select("chat_retencao_dias").eq("id", loja.id).single();
@@ -1812,7 +1815,8 @@ async function atenderChat(c, ctx) {
             p_loja: loja.id,
             p_conversa: c.conversa_id,
             p_motivo: c.motivo,
-            p_antes: c.antes ?? null
+            p_antes: c.antes ?? null,
+            p_antes_id: c.antes_id ?? null
         });
         return error ? resultado({
             erro: "Leitura administrativa não permitida."
@@ -1826,7 +1830,7 @@ async function atenderChat(c, ctx) {
         }).order("id", {
             ascending: false
         }).limit(50);
-        if (c.antes) q = q.lt("atualizada_em", c.antes);
+        if (c.antes) q = q.or(`atualizada_em.lt.${c.antes},and(atualizada_em.eq.${c.antes},id.lt.${c.antes_id})`);
         const { data, error } = await q;
         return error ? resultado({
             erro: "Não foi possível ler o histórico."
@@ -1840,7 +1844,7 @@ async function atenderChat(c, ctx) {
         }).order("id", {
             ascending: false
         }).limit(100);
-        if (c.antes) q = q.lt("criada_em", c.antes);
+        if (c.antes) q = q.or(`criada_em.lt.${c.antes},and(criada_em.eq.${c.antes},id.lt.${c.antes_id})`);
         const { data, error } = await q;
         return error ? resultado({
             erro: "Não foi possível ler as mensagens."
