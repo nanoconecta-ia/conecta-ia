@@ -80,4 +80,16 @@ do $$ begin begin update public.mensagens set conteudo='alterada'; raise excepti
 select public.afirma(true,'mensagens imutáveis inclusive para serviço');
 do $$ begin begin insert into public.mensagens(loja_id,user_id,conversa_id,papel,conteudo,idempotency_key) values('bbbbbbbb-0000-0000-0000-000000000002','33333333-3333-3333-3333-333333333333',(select(j->>'conversa_id')::uuid from t2),'usuario','vazamento','idem-cruzada-1'); raise exception 'aceitou'; exception when foreign_key_violation then null; end; end $$;
 select public.afirma(true,'chave composta impede associar mensagem a conversa de outra loja');
+-- Integração do contador real de uso: a gravação final deve cobrar uma vez, junto da mensagem/auditoria.
+select public.ia_salvar_chave('aaaaaaaa-0000-0000-0000-000000000001','compativel_openai','v2.k1.sintetico','test','gpt-sintetico',1000,'https://api.openai.com/v1');
+select public.chat_responder('aaaaaaaa-0000-0000-0000-000000000001','22222222-2222-2222-2222-222222222222',(select(j->>'pergunta_id')::uuid from t2),(select(j->>'turno_token')::uuid from t2),'Resposta sintética','{"tokens":10,"provedor":"compativel_openai","simulado":true,"desfecho":"ok"}');
+select public.afirma((select tokens_mes=10 from public.loja_chaves_ia where provedor='compativel_openai'),'uso contabilizado junto da resposta');
+select public.chat_iniciar('aaaaaaaa-0000-0000-0000-000000000001','22222222-2222-2222-2222-222222222222',null,'Pergunta teste','idempotencia-nova-1','compativel_openai');
+select public.afirma((select tokens_mes=10 from public.loja_chaves_ia where provedor='compativel_openai'),'recuperação não contabiliza tokens duas vezes');
+insert into public.mensagens(loja_id,user_id,conversa_id,papel,conteudo,idempotency_key,criada_em) values('aaaaaaaa-0000-0000-0000-000000000001','22222222-2222-2222-2222-222222222222',(select(j->>'conversa_id')::uuid from t2),'usuario','Não ressuscitar','idempotencia-vencida-2',now()-interval '31 days');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}',true);
+select public.afirma(public.chat_definir_retencao('aaaaaaaa-0000-0000-0000-000000000001',180),'retenção pode ser estendida de forma auditada');
+reset role;
+select public.afirma(not exists(select 1 from public.mensagens where conteudo='Não ressuscitar'),'aumento de retenção não ressuscita mensagem vencida');
 rollback;
