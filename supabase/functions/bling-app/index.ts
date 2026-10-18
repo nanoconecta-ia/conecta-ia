@@ -2,7 +2,8 @@
 // no servidor (AES-256-GCM, chave identificada) e nunca volta ao navegador, nem em erro. Só quem ADMINISTRA a loja
 // (papel lojista, ou super_admin com MFA) pode cadastrar/trocar; limite de tentativas por loja e usuário.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { chaveiroDoAmbiente, cifrar } from "../_shared/cripto.ts";
+import { cifrar } from "../_shared/cripto.ts";
+import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 import { cnpjValido, somenteDigitos } from "../_shared/bling_conta.ts";
 
 const CORS = {
@@ -15,7 +16,7 @@ const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { sta
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ erro: "Método não permitido." }, 405);
-  const chaveiro = chaveiroDoAmbiente((n) => Deno.env.get(n));
+  const chaveiro = await chaveiroPlataforma(createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } }), (n) => Deno.env.get(n));
   if (!chaveiro) return json({ erro: "O servidor ainda não está pronto para guardar credenciais." }, 503);
 
   const url = Deno.env.get("SUPABASE_URL")!;

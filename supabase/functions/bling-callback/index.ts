@@ -2,7 +2,8 @@
 // cifra e grava via RPC (só service_role). Não registra nem devolve token algum.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { verificarEstado } from "../_shared/estado.ts";
-import { chaveiroDoAmbiente, cifrar, decifrar } from "../_shared/cripto.ts";
+import { cifrar, decifrar } from "../_shared/cripto.ts";
+import { chaveiroPlataforma, segredoEstado } from "../_shared/plataforma.ts";
 import { cnpjConfere } from "../_shared/bling_conta.ts";
 
 const texto = (msg: string, status = 200) =>
@@ -16,8 +17,9 @@ function voltar(q: string): Response {
 
 Deno.serve(async (req) => {
   if (req.method !== "GET") return texto("Método não permitido.", 405);
-  const segredo = Deno.env.get("ESTADO_SEGREDO");
-  const chaveCifra = chaveiroDoAmbiente((n) => Deno.env.get(n));
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  const segredo = await segredoEstado(admin, (n) => Deno.env.get(n));
+  const chaveCifra = await chaveiroPlataforma(admin, (n) => Deno.env.get(n));
   if (!segredo || !chaveCifra) return texto("Conexão com o Bling ainda não configurada no servidor.", 503);
 
   const url = new URL(req.url);
@@ -26,7 +28,6 @@ Deno.serve(async (req) => {
   const est = state ? await verificarEstado(state, segredo) : null;
   if (!code || !est || !est.n) return voltar("erro=estado");
 
-  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   // Uso único e atômico: o mesmo state nunca vale duas vezes; deve pertencer à loja e ao usuário assinados.
   const { data: usado } = await admin.rpc("bling_estado_consumir", { p_nonce: est.n });
   const u0 = (usado as { loja_id: string; user_id: string }[] | null)?.[0];
