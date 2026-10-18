@@ -1,0 +1,37 @@
+name: Web Next.js - validação sem produção
+on:
+  pull_request:
+    paths: ['web/**', '.env.example', '.github/workflows/web-legado.yml', 'scripts/tests/web-legado-smoke.mjs']
+permissions:
+  contents: read
+jobs:
+  verificar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - name: Conferir runner padrão e repositório público
+        env:
+          PUBLICO: ${{ github.event.repository.private == false }}
+        run: |
+          test "$PUBLICO" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_ARCH" = X64
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npm run test --if-present
+        working-directory: web
+      - run: npm run typecheck
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - name: Rotas locais sem credenciais e OAuth legado bloqueado
+        run: node scripts/tests/web-legado-smoke.mjs

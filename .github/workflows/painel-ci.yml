@@ -1,0 +1,29 @@
+name: Painel (verificação em PR)
+
+# O workflow "Painel (GitHub Pages)" só roda no push para main. Este valida o painel ANTES do merge:
+# tipos, testes e build, com e sem a flag dos recursos que dependem de backend ainda não implantado.
+on:
+  pull_request:
+    paths: ["painel/**", "supabase/migrations/**", ".github/workflows/painel-ci.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: painel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: painel/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build                       # como vai para produção (Pair escondido)
+      - run: VITE_PAIR_ATIVO=1 npm run build     # com o Pair ligado: precisa compilar também

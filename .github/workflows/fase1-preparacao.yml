@@ -1,0 +1,47 @@
+name: Fase 1 - preparação sem deploy
+on:
+  pull_request:
+    paths: ['scripts/**', 'artifacts/**', 'supabase/functions/**', 'painel/**', '.github/workflows/fase1-preparacao.yml']
+permissions:
+  contents: read
+concurrency:
+  group: fase1-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  artefato-seguranca:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - run: node --experimental-vm-modules scripts/gerar-autocontido.mjs --check
+      - run: node --experimental-vm-modules scripts/tests/assistente-artefato.test.mjs
+      - run: node scripts/tests/m5-seguranca.test.mjs
+      - name: Regressão das funções (sem rede)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # O import quebrado deste único teste é corrigido pelo #23, ainda separado.
+          while IFS= read -r teste; do node "$teste"; done < <(rg --files supabase/functions/_shared -g '*.test.ts' | sort | rg -v '/assistente/assistente.test.ts$')
+  painel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: painel
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+          cache-dependency-path: painel/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
