@@ -15,6 +15,11 @@ import { CentralAgentes } from "./paginas/CentralAgentes.tsx";
 import { Design } from "./paginas/Design.tsx";
 import { Imagens } from "./paginas/Imagens.tsx";
 import { VitrineDemo } from "./paginas/VitrineDemo.tsx";
+import { Loja } from "./paginas/Loja.tsx";
+
+// Em domínio de cliente (fora do GitHub Pages/localhost) a raiz é a loja daquele domínio, resolvida pelo servidor.
+const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
+const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(window.location.hostname) ? window.location.hostname : null;
 
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
@@ -35,6 +40,9 @@ export function App() {
   const { caminho, query } = useRota();
   const lojas = useLojas(!!sessao);
 
+  const lojaSlug = caminho.match(/^\/loja\/([a-z0-9-]{2,63})$/);
+  if (lojaSlug) return <Loja slug={lojaSlug[1]} />;
+  if (hostCliente && !caminho.startsWith("/p/")) return <Loja host={hostCliente} />;
   const pub = caminho.match(/^\/p\/([a-z0-9-]+)\/(.+)$/);
   if (caminho === "/demo/vitrine") return <VitrineDemo />;
   if (pub) return <ProdutoPublico slug={pub[1]} sku={decodeURIComponent(pub[2])} />;
@@ -49,9 +57,10 @@ export function App() {
         <div className="marca"><i>C</i><div>Conecta.IA<small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
         <button className="sec" onClick={() => void supabase.auth.signOut()}>Sair</button>
       </header>
-      <nav className="menu">
+      <div className="layout">
+      <nav className="menu" aria-label="Menu principal">
         {ITENS.map(([c, t]) => (
-          <a key={c} href={`#${c}`} className={caminho === c ? "ativo" : ""}>{t}</a>
+          <a key={c} href={`#${c}`} className={caminho === c ? "ativo" : ""} aria-current={caminho === c ? "page" : undefined}>{t}</a>
         ))}
       </nav>
       <main>
@@ -69,6 +78,7 @@ export function App() {
           : caminho === "/contador" ? <Contador loja={loja} />
           : <VisaoGeral loja={loja} />}
       </main>
+      </div>
     </>
   );
 }

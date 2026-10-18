@@ -1,3 +1,9 @@
+> **Atualização — o PDF "Design System avançado | Conecta.IA" é o modelo do sistema inteiro (painel e loja).**
+> Tokens: azul `#0864A0` (primário), verde `#04A88D` (sucesso, WhatsApp; **texto grafite sobre ele** para contraste AA), grafite `#102335` (menu lateral, cabeçalho, bloco de destaque), fundo `#F3F7FA`; fonte **Inter** (self-hosted via `@fontsource-variable/inter`); áreas de toque ≥ 44 px; foco visível; sem animação com `prefers-reduced-motion`.
+> Painel: menu lateral escuro no desktop (≥ 960 px) e menu horizontal compacto no celular. Loja pública (`#/loja/<slug>` ou domínio do cliente): busca no topo, bloco grafite "Encontre a peça correta", **busca por veículo em cascata** (Modelo → Motor → Ano, só com aplicações **aprovadas** dos produtos publicados), categorias da taxonomia, cards legíveis e WhatsApp contextual.
+> Regra do PDF: nenhum valor fictício de estoque, preço, compatibilidade ou métrica em produção — sem dado real, a tela mostra "a confirmar", "consulte" ou esconde o bloco.
+> Os tokens laranja/IBM Plex descritos abaixo são o desenho anterior e ficam só como histórico.
+
 # Design System do Conecta.IA — proposta integrada
 
 > **Aviso:** o PDF "Design System Avançado — Conecta.IA (7 páginas)" citado na decisão **não chegou à sessão** (não há anexo acessível). Esta proposta parte dos tokens já implementados em `painel/src/styles.css` e do padrão do projeto irmão (tokens semânticos, componentes reaproveitados, responsivo nativo). Quando o PDF for enviado, comparo página a página e ajusto; nada abaixo depende dele.
