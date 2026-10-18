@@ -20,6 +20,7 @@ jobs:
           node-version: '24.19.0'
       - run: node --experimental-vm-modules scripts/gerar-autocontido.mjs --check
       - run: node --experimental-vm-modules scripts/tests/assistente-artefato.test.mjs
+      - run: node scripts/tests/m5-seguranca.test.mjs
       - name: Regressão das funções (sem rede)
         shell: bash
         run: |
