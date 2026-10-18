@@ -44,6 +44,18 @@ Deno.serve(async (req) => {
     return json({ ok: true, status: decisao });
   }
 
+
+  if (c.acao === "decidir_imagem") {
+    const id = typeof c.id === "string" ? c.id : "";
+    const decisao = c.decisao === "aprovar" ? "aprovar" : c.decisao === "rejeitar" ? "rejeitar" : "";
+    if (!id || !decisao) return json({ erro: "Informe id e decisao (aprovar ou rejeitar)." }, 400);
+    const sb2 = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+    const { error } = await sb2.rpc("imagem_decidir", { p_loja: loja.id, p_imagem: id, p_decisao: decisao });
+    if (error) return json({ erro: "Não foi possível registrar a decisão (a imagem já pode ter sido decidida)." }, 409);
+    await sb2.from("auditoria").insert({ loja_id: loja.id, user_id: u.user.id, acao: `imagem.${decisao === "aprovar" ? "aprovada" : "rejeitada"}`, tabela: "produto_imagens", depois: { id } });
+    return json({ ok: true });
+  }
+
   const texto = typeof c?.texto === "string" ? c.texto.slice(0, 1000) : "";
   if (!texto.trim()) return json({ erro: "Escreva sua pergunta." }, 400);
 
@@ -55,6 +67,9 @@ Deno.serve(async (req) => {
   if (k && chaveiro) {
     if (k.limite != null && k.tokens_mes >= k.limite) return json({ resposta: "O limite mensal de uso da IA desta loja foi atingido. Ajuste o limite em Integrações de IA ou aguarde o próximo mês.", ia: false });
     const { data: plugs } = await usuario.from("loja_plugins").select("id, nome, tipo, url, capacidades, risco, ativo").eq("loja_id", loja.id);
+    const { data: biRows } = await sb.rpc("busca_imagem_ler", { p_loja: loja.id });
+    const bi = (biRows as { api_key_cifrada: string; cx: string }[] | null)?.[0];
+    const buscaImagem = bi ? { chave: await decifrar(bi.api_key_cifrada, chaveiro), cx: bi.cx } : null;
     const historico: Mensagem[] = (Array.isArray(c.historico) ? c.historico : []).slice(-10)
       .filter((m: any) => m && (m.de === "eu" || m.de === "ia") && typeof m.texto === "string")
       .map((m: any): Mensagem => ({ role: m.de === "eu" ? "user" : "assistant", content: m.texto.slice(0, 2000) }));
@@ -68,7 +83,7 @@ Deno.serve(async (req) => {
       const r = await conversar({
         provedor: k.provedor, baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: k.modelo ?? (k.provedor === "gemini" ? "gemini-2.5-flash" : "claude-sonnet-5-5"), sistema: `${SISTEMA}\nLoja: ${loja.nome}.`, mensagens, ferramentas: FERRAMENTAS,
         executar: (nome, entrada) => executarFerramenta(nome, entrada, {
-          usuario, lojaId: loja.id, plugins: (plugs ?? []) as PluginRegistro[],
+          usuario, admin: sb, lojaId: loja.id, plugins: (plugs ?? []) as PluginRegistro[], buscaImagem,
           credencial: async (pid) => { const { data } = await sb.rpc("plugin_credencial", { p_loja: loja.id, p_id: pid }); return typeof data === "string" ? await decifrar(data, chaveiro) : null; },
         }),
       });

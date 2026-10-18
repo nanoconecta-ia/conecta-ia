@@ -75,7 +75,7 @@ test("chamarPlugin: envia contrato v1 com credencial, não segue redirect, devol
 
 test("ferramentas: chamar_plugin só alcança plugin ativo da loja; resultado vem marcado como dado a conferir", async () => {
   const f = (async () => resp({ marca: "X" })) as unknown as typeof fetch;
-  const ctx = { usuario: null, lojaId: "L", plugins: [plugin(), plugin({ id: "2", nome: "Off", ativo: false })], credencial: async () => "c", fetch: f };
+  const ctx = { usuario: null, admin: { from: () => ({}), rpc: async () => ({ data: null, error: null }) }, lojaId: "L", plugins: [plugin(), plugin({ id: "2", nome: "Off", ativo: false })], credencial: async () => "c", fetch: f };
   const ok: any = await executarFerramenta("chamar_plugin", { plugin: "forn", capacidade: "enriquecer" }, ctx);
   assert.deepEqual(ok, { dados_do_plugin_a_conferir: { marca: "X" } });
   assert.ok((await executarFerramenta("chamar_plugin", { plugin: "Off", capacidade: "enriquecer" }, ctx) as any).erro);
