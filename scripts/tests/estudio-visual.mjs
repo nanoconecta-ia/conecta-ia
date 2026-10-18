@@ -13,7 +13,7 @@ let browser;
 try{
  for(let i=0;i<100;i++){try{if((await fetch('http://127.0.0.1:4181/.estudio-demo.html')).ok)break}catch{}await new Promise(r=>setTimeout(r,100))}
  browser=await chromium.launch({headless:true});
- const context=await browser.newContext({permissions:['clipboard-read','clipboard-write']});const page=await context.newPage(),erros=[],requests=[];
+ const context=await browser.newContext({permissions:['clipboard-read','clipboard-write']});const page=await context.newPage(),erros=[],requests=[];let falharProxima=false;
  page.on('pageerror',e=>erros.push(e.message));
  await page.route('**/*',async route=>{
   const req=route.request(),u=new URL(req.url());
@@ -25,6 +25,7 @@ try{
   let body;
   if(u.pathname==='/rest/v1/produtos'){
    assert.equal(u.searchParams.get('loja_id'),'eq.'+L);
+   if(falharProxima){falharProxima=false;return route.fulfill({status:500,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify({message:'erro sintético'})})}
    body=u.searchParams.get('sku')==='eq.80692'?{id:'produto-sintetico',nome:'Produto de teste — DADOS SIMULADOS',sku:'80692',marca:'Marca de teste',gtin:null,descricao:'Descrição de demonstração. Não são dados reais do Bling.',preco:79.9,estoque:12,sincronizado_em:'2026-10-18T14:00:00Z',publicado:false}:null;
   }else if(u.pathname==='/rest/v1/produto_imagens'){
    assert.equal(u.searchParams.get('loja_id'),'eq.'+L);assert.equal(u.searchParams.get('aprovada'),'eq.true');assert.equal(u.searchParams.get('produto_id'),'eq.produto-sintetico');body=[];
@@ -55,6 +56,7 @@ try{
   await page.getByRole('button',{name:'Imagens',exact:true}).click();await page.getByText('Nenhuma imagem aprovada disponível para este produto.').waitFor();
   await page.getByRole('button',{name:'SEO técnico',exact:true}).click();await page.getByRole('heading',{name:'SEO técnico do produto'}).waitFor();
   await page.emulateMedia({reducedMotion:'reduce'});await page.getByRole('button',{name:'Abrir agente',exact:false}).click();assert.equal(await page.getByRole('complementary',{name:'Torre do agente'}).evaluate(el=>getComputedStyle(el).animationName),'none');await page.keyboard.press('Escape');
+  if(width===390){await page.getByRole('button',{name:'Produto',exact:true}).click();falharProxima=true;await page.getByRole('button',{name:'Abrir',exact:true}).click();await page.getByRole('alert').filter({hasText:'Não foi possível consultar o produto desta loja.'}).waitFor();assert.equal(await page.getByRole('button',{name:'Preparar tarefa',exact:false}).isDisabled(),true);await page.getByRole('button',{name:'Abrir',exact:true}).click();await page.getByRole('heading',{name:'Produto de teste — DADOS SIMULADOS'}).waitFor();console.log('ok: falha de consulta desabilita tarefa e o mesmo SKU pode ser consultado novamente');}
   console.log(`ok: ${width}px, torre lateral/flutuante, contexto, clipboard, taxonomia/imagens/SEO, browser pendente, Escape e movimento reduzido`);
  }
  assert.deepEqual(erros,[]);assert.ok(requests.length>0);assert.ok(requests.every(r=>r.method==='GET'));console.log('ok: somente leituras sintéticas; zero escrita, execução de agente, credencial ou QR falso');

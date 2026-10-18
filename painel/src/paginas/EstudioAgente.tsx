@@ -31,6 +31,7 @@ export function EstudioAgente({ loja }: { loja: Loja }) {
   const [torre, setTorre] = useState(false);
   const [entrada, setEntrada] = useState(loja.slug === "mobis" ? "80692" : "");
   const [sku, setSku] = useState(entrada);
+  const [consulta, setConsulta] = useState(0);
   const [produto, setProduto] = useState<Produto | null>(null);
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [carregando, setCarregando] = useState(false);
@@ -60,7 +61,7 @@ export function EstudioAgente({ loja }: { loja: Loja }) {
     }
     void ler();
     return () => { ativo = false; };
-  }, [loja.id, sku]);
+  }, [loja.id, sku, consulta]);
   useEffect(() => {
     if (!torre) return;
     function teclado(e: KeyboardEvent) { if (e.key === "Escape") { setTorre(false); botaoTorre.current?.focus(); } }
@@ -68,7 +69,7 @@ export function EstudioAgente({ loja }: { loja: Loja }) {
     tarefa.current?.focus();
     return () => window.removeEventListener("keydown", teclado);
   }, [torre]);
-  function buscar(e: FormEvent) { e.preventDefault(); setSku(entrada.trim()); }
+  function buscar(e: FormEvent) { e.preventDefault(); setSku(entrada.trim()); setConsulta(v => v + 1); }
   function preparar() {
     if (!produto) return;
     setRascunho(`Loja: ${loja.nome}\nProduto: SKU ${produto.sku}\nAmbiente: ${sistema === "bling" ? "Bling" : sistema === "site" ? "Site da loja" : "Conecta.IA"}\nTarefa: ${TAREFAS[area]}\nRespeitar o escopo da loja. Antes de gravar ou publicar, apresentar as alterações e solicitar aprovação por produto.`);
