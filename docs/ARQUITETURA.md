@@ -129,7 +129,7 @@ Cada cliente usa o próprio domínio. O piloto é `www.mobisautoparts.com.br`, h
 
 1. **Custo de IA é do cliente (chave própria).** Cada lojista escolhe o agente/provedor e cadastra a própria chave de API no Conecta.IA. A chave fica cifrada, só no servidor, isolada por loja, nunca em log nem no navegador. O Conecta.IA mede o uso por loja.
 2. **O Conecta.IA guarda só a memória de gerenciamento dos ERPs** (espelho, fila, vínculos, auditoria). Quem trabalha é o agente do Conecta.IA; o agente NanoShell fica como segunda via (ver seção 7).
-3. **Supabase migra para o plano Pro** antes de produção (backup diário, sem pausa). A cobrança é feita pelo titular da conta, não por mim.
+3. **Plano Supabase Pro previsto para produção** (backup diário, sem pausa). Contratação ou alteração de plano exige autorização específica do titular; o merge deste documento não altera a cobrança.
 4. **Teste primeiro com URL do Supabase/app**, depois o domínio da Mobis. O domínio só entra com DNS e SSL verificados e autorização explícita.
 5. **Painel administrativo:** login por e-mail/senha e Google; visualização ao vivo do site (pré-visualização) para ver como está ficando; área de desenvolvimento e administração total (super admin, com MFA), no modelo SaaS.
 6. **Conexão com o Bling automática:** fluxo OAuth guiado (o lojista clica em "Conectar ao Bling"), renovação automática do token, sem copiar chave à mão. Acompanhar as mudanças do Bling na documentação.
@@ -153,7 +153,7 @@ Cada cliente usa o próprio domínio. O piloto é `www.mobisautoparts.com.br`, h
 
 ## 12. Visão da plataforma (SaaS) e módulos
 
-Direção dada pelo dono do produto. Cada módulo entra por fase; nada aqui está implementado.
+Direção dada pelo dono do produto, registrada no desenho original. O estado de implementação em 18/10/2026 está em `chat-operacional/ENTREGA.md`, `estudio-agente/ESCOPO.md` e `conecta-pair/OPERACAO-AGENTE.md`; módulos futuros abaixo continuam sujeitos a implementação e validação.
 
 ### Quem usa
 - **Desenvolvedor / super admin (dono do SaaS):** área própria, com MFA. Cadastra lojas, planos e cobrança futura, define os **modelos globais de agentes LLM** disponíveis, vê uso e custo por loja, bloqueia vendas por UF e administra a plataforma inteira.
