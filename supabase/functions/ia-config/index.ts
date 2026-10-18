@@ -88,6 +88,20 @@ Deno.serve(async (req) => {
       await auditar("ia.principal_definido", { provedor });
       return json({ ok: true });
     }
+    case "salvar_busca_imagem": {
+      const chave = texto(c.chave, 200), cx = texto(c.cx, 60);
+      if (chave.length < 10 || /\s/.test(chave)) return json({ erro: "Confira a chave de API do Google (sem espaços)." }, 400);
+      if (!/^[0-9a-zA-Z:_-]{6,60}$/.test(cx)) return json({ erro: "Confira o mecanismo de busca (cx)." }, 400);
+      const { error } = await sb.rpc("busca_imagem_salvar", { p_loja: lojaId, p_api_key_cifrada: await cifrar(chave, chaveiro), p_cx: cx });
+      if (error) return json({ erro: "Não foi possível salvar." }, 500);
+      await auditar("ia.busca_imagem_salva", { final: chave.slice(-4) });
+      return json({ ok: true });
+    }
+    case "remover_busca_imagem": {
+      await sb.rpc("busca_imagem_desativar", { p_loja: lojaId });
+      await auditar("ia.busca_imagem_removida", {});
+      return json({ ok: true });
+    }
     case "salvar_plugin": {
       const nome = texto(c.nome, 60), tipo = texto(c.tipo, 20), risco = texto(c.risco, 10) || "LOW";
       const endereco = texto(c.url, 300), credencial = texto(c.credencial, 600);

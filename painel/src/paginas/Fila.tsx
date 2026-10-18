@@ -3,23 +3,35 @@ import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 
 type Item = { id: string; campo: string; valor: unknown; fonte: string | null; confianca: number | null; produtos: { sku: string | null; nome: string | null } | null };
+type Imagem = { id: string; url: string; origem: string | null; produtos: { sku: string | null; nome: string | null } | null };
 
 const texto = (v: unknown) => (typeof v === "string" ? v : JSON.stringify(v));
 
 /** Fila de aprovação: tudo que o agente propôs fica "a confirmar" até você decidir. */
 export function Fila({ loja }: { loja: Loja }) {
   const [itens, setItens] = useState<Item[] | null>(null);
+  const [imagens, setImagens] = useState<Imagem[] | null>(null);
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState("");
-  const carregar = () =>
+  const carregar = () => {
     supabase.from("produto_enriquecimento").select("id, campo, valor, fonte, confianca, produtos(sku, nome)")
       .eq("loja_id", loja.id).eq("status", "a_confirmar").order("criado_em", { ascending: false }).limit(200)
       .then(({ data }) => setItens((data ?? []) as unknown as Item[]));
+    supabase.from("produto_imagens").select("id, url, origem, produtos(sku, nome)")
+      .eq("loja_id", loja.id).eq("aprovada", false).order("criado_em", { ascending: false }).limit(100)
+      .then(({ data }) => setImagens((data ?? []) as unknown as Imagem[]));
+  };
   useEffect(() => { void carregar(); }, [loja.id]);
 
   async function decidir(id: string, decisao: "aprovar" | "rejeitar") {
     setOcupado(id); setErro("");
     const { error } = await supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao: "decidir", id, decisao } });
+    setOcupado("");
+    if (error) setErro("Não foi possível registrar a decisão."); else void carregar();
+  }
+  async function decidirImagem(id: string, decisao: "aprovar" | "rejeitar") {
+    setOcupado(id); setErro("");
+    const { error } = await supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao: "decidir_imagem", id, decisao } });
     setOcupado("");
     if (error) setErro("Não foi possível registrar a decisão."); else void carregar();
   }
@@ -42,6 +54,24 @@ export function Fila({ loja }: { loja: Loja }) {
               </td>
             </tr>))}</tbody>
         </table></div>
+      )}
+
+      <h2>Imagens propostas</h2>
+      <p className="suave">O agente só encontrou candidatas na web; direitos de uso ainda não confirmados. Confira antes de aprovar.</p>
+      {imagens === null ? <p className="suave">Carregando…</p> : imagens.length === 0 ? <p className="suave">Nenhuma imagem aguardando aprovação.</p> : (
+        <div className="grade">
+          {imagens.map((img) => (
+            <div key={img.id} className="cartao">
+              <img src={img.url} alt="" style={{ width: "100%", aspectRatio: "4/3", objectFit: "contain", background: "var(--realce)", borderRadius: 8 }} />
+              <p><span className="mono">{img.produtos?.sku ?? "sem SKU"}</span><br /><span className="suave">{img.produtos?.nome}</span></p>
+              <p className="suave">{img.origem ?? "—"}</p>
+              <div className="linha">
+                <button disabled={ocupado === img.id} onClick={() => void decidirImagem(img.id, "aprovar")}>Aprovar</button>
+                <button className="perigo" disabled={ocupado === img.id} onClick={() => void decidirImagem(img.id, "rejeitar")}>Rejeitar</button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

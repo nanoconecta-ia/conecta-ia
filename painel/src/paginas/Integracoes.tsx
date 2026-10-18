@@ -35,6 +35,8 @@ export function Integracoes({ loja }: { loja: Loja }) {
   const [abertos, setAbertos] = useState<Record<string, boolean>>({});
   const [campos, setCampos] = useState<Record<string, { chave: string; modelo: string; limite: string; base: string }>>({});
   const [novo, setNovo] = useState(false);
+  const [busca, setBusca] = useState<{ ativa: boolean } | null>(null);
+  const [buscaChave, setBuscaChave] = useState(""); const [buscaCx, setBuscaCx] = useState(""); const [editandoBusca, setEditandoBusca] = useState(false);
   const [f, setF] = useState({ nome: "", tipo: "api", url: "", credencial: "", risco: "LOW", caps: [] as string[] });
 
   const carregar = () => {
@@ -42,6 +44,8 @@ export function Integracoes({ loja }: { loja: Loja }) {
       .then(({ data }) => setChaves(Object.fromEntries(((data ?? []) as Chave[]).filter((c) => c.ativa).map((c) => [c.provedor, c]))));
     supabase.from("loja_plugins").select("id, nome, tipo, url, capacidades, risco, ativo, ultimo_teste_ok, ultimo_teste_em").eq("loja_id", loja.id).order("criado_em")
       .then(({ data }) => setPlugins((data ?? []) as Plugin[]));
+    supabase.from("loja_busca_imagem").select("ativa").eq("loja_id", loja.id).maybeSingle()
+      .then(({ data }) => setBusca((data as { ativa: boolean } | null)?.ativa ? (data as { ativa: boolean }) : null));
   };
   useEffect(carregar, [loja.id]);
 
@@ -70,6 +74,11 @@ export function Integracoes({ loja }: { loja: Loja }) {
     if (r?.ok) { setF({ nome: "", tipo: "api", url: "", credencial: "", risco: "LOW", caps: [] }); setNovo(false); }
   }
   const alternar = (c: string) => setF((x) => ({ ...x, caps: x.caps.includes(c) ? x.caps.filter((y) => y !== c) : [...x.caps, c] }));
+  async function salvarBusca(e: FormEvent) {
+    e.preventDefault();
+    const r = await chamar({ acao: "salvar_busca_imagem", chave: buscaChave, cx: buscaCx }, "Busca de imagens ativada.");
+    if (r?.ok) { setBuscaChave(""); setBuscaCx(""); setEditandoBusca(false); }
+  }
   
   return (
     <div className="cartao">
@@ -110,6 +119,21 @@ export function Integracoes({ loja }: { loja: Loja }) {
           </div>
         );
       })}
+
+      <h2>Busca de imagem de produto</h2>
+      <p className="suave">Permite o agente procurar fotos da peça na web e propor para a sua aprovação. Use uma chave do Google Programmable Search (cse.google.com): 100 buscas grátis por dia.</p>
+      {busca && !editandoBusca ? (
+        <div className="linha"><span className="selo ok">Ativa</span>
+          <button className="sec" onClick={() => setEditandoBusca(true)}>Trocar</button>
+          <button className="sec" disabled={ocupado} onClick={() => { if (confirm("Desligar a busca de imagens?")) void chamar({ acao: "remover_busca_imagem" }, "Desligada."); }}>Desligar</button>
+        </div>
+      ) : (
+        <form onSubmit={(e) => void salvarBusca(e)}>
+          <label>Chave de API do Google<input type="password" value={buscaChave} onChange={(e) => setBuscaChave(e.target.value)} required minLength={10} autoComplete="new-password" spellCheck={false} /></label>
+          <label>Mecanismo de busca (cx)<input value={buscaCx} onChange={(e) => setBuscaCx(e.target.value)} required placeholder="ex.: a1b2c3d4e5f6g7h8i" /></label>
+          <div className="linha"><button disabled={ocupado}>Salvar</button>{busca && <button type="button" className="sec" onClick={() => setEditandoBusca(false)}>Cancelar</button>}</div>
+        </form>
+      )}
 
       <h2>Plugins e conexões</h2>
       {plugins.length === 0 && <p className="suave">Nenhum plugin cadastrado.</p>}
