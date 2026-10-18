@@ -1652,6 +1652,7 @@ const CONSULTAR_PRODUTO = {
 const numero = (v)=>(typeof v === "number" || typeof v === "string" && v.trim() !== "") && Number.isFinite(Number(v)) ? Number(v) : null;
 const texto = (v)=>typeof v === "string" ? v.slice(0, 200) : null;
 async function consultarProduto(entrada, c) {
+    if (!!c.conversaId === !!c.pair) throw new Error("Contexto de auditoria inválido.");
     const e = entrada;
     if (!e || typeof e !== "object" || Object.keys(e).some((k)=>k !== "sku") || typeof e.sku !== "string" || !e.sku.trim() || e.sku.length > 80) throw new Error("Informe apenas um SKU válido.");
     if (c.chamadas.length >= 3) throw new Error("Limite de três consultas por turno.");
@@ -1722,14 +1723,24 @@ async function consultarProduto(entrada, c) {
         ferramenta: CONSULTAR_PRODUTO.name,
         origem,
         simulado: c.simulado,
+        ...c.pair ? {
+            ambiente: c.pair.ambiente
+        } : {},
         consultado_em: new Date().toISOString(),
         sincronizado_em: origem === "espelho" ? p.sincronizado_em : null,
         motivo,
         dados
     };
     const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(evidencia))))).map((b)=>b.toString(16).padStart(2, "0")).join("");
+    const identidade = c.pair ? {
+        sessao_id: c.pair.sessaoId,
+        dispositivo_id: c.pair.dispositivoId,
+        ambiente: c.pair.ambiente
+    } : {
+        conversa_id: c.conversaId
+    };
     const chamada = {
-        conversa_id: c.conversaId,
+        ...identidade,
         ferramenta: CONSULTAR_PRODUTO.name,
         origem,
         status,
@@ -1740,7 +1751,7 @@ async function consultarProduto(entrada, c) {
     const { error: auditError } = await c.admin.from("auditoria").insert({
         loja_id: c.lojaId,
         user_id: c.userId,
-        acao: "chat.bling_consulta",
+        acao: c.pair ? "pair.bling_consulta" : "chat.bling_consulta",
         tabela: "produtos",
         depois: chamada
     });

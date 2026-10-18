@@ -46,7 +46,7 @@ test("QR: recusa APP_URL insegura ou com credenciais/query e código fora do for
 
 // ------------------------------------------------------------------------------------------------ escopos
 test("escopos: mesma lista da migração (private.pair_escopos_validos) e nenhum aprova/executa/administra", () => {
-  const sql = readFileSync(new URL("../../../migrations/20261019000001_conecta_pair.sql", import.meta.url), "utf8");
+  const sql = readFileSync(new URL("../../../migrations/20261019000002_pair_consulta_bling.sql", import.meta.url), "utf8");
   const bloco = /pair_escopos_validos\(\) returns text\[\][\s\S]*?array\[([\s\S]*?)\];/.exec(sql)![1];
   const daMigracao = [...bloco.matchAll(/'([^']+)'/g)].map((m) => m[1]);
   assert.deepEqual([...ESCOPOS].sort(), daMigracao.sort());
@@ -142,6 +142,7 @@ function ambiente(s: Sessao | null, opcoes: { limite?: (c: string) => boolean; d
   const propostas: PropostaAprovacao[] = [];
   const dados: Dados = {
     listarProdutos: async (loja, f) => { chamadasDados.push({ metodo: "listarProdutos", loja, args: f }); return [{ nome: "Pastilha", sku: "P1" }]; },
+    consultarProdutoBling: async (s, sku) => { chamadasDados.push({ metodo: "consultarProdutoBling", loja: s.loja_id, args: sku }); return { origem: "api_bling", simulado: true, dados: { sku } }; },
     obterProduto: async (loja, sku) => { chamadasDados.push({ metodo: "obterProduto", loja, args: sku }); return sku === "P1" ? { nome: "Pastilha", sku } : null; },
     skuParaId: async (loja, sku) => { chamadasDados.push({ metodo: "skuParaId", loja, args: sku }); return sku === "P1" ? "id-p1" : null; },
     proporEnriquecimento: async (loja, a) => { chamadasDados.push({ metodo: "proporEnriquecimento", loja, args: a }); return { ok: true, status: "a_confirmar" }; },
@@ -208,7 +209,7 @@ test("gateway: tools/list mostra só o que o escopo da sessão permite", async (
   const nomes = async (escopos: string[]) => ((await chamar(ambiente(sessao(escopos)), rpc("tools/list"))).corpo as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name).sort();
   assert.deepEqual(await nomes(["produtos:ler"]), ["conecta.get_product", "conecta.list_products"]);
   assert.deepEqual(await nomes([]), []);
-  assert.equal((await nomes([...ESCOPOS])).length, 6);
+  assert.equal((await nomes([...ESCOPOS])).length, 7);
 });
 test("gateway: ferramenta sem o escopo é NEGADA, auditada e não toca os dados", async () => {
   const a = ambiente(sessao(["produtos:ler"]));
@@ -319,10 +320,10 @@ test("gateway: cada chamada revalida a sessão no banco (revogação vale na pr�
   viva = false;
   assert.equal((await chamar(a, tool("conecta.list_products"))).status, 401);
 });
-test("gateway: o catálogo NÃO tem ferramenta que aprove, execute, publique, altere preço/estoque ou toque o Bling", () => {
+test("gateway: o catálogo NÃO tem ferramenta que aprove, execute, publique, altere preço/estoque ou grave no Bling", () => {
   for (const f of FERRAMENTAS) {
-    assert.match(f.nome, /^conecta\.(list_|get_|propose_)/, f.nome);
-    assert.doesNotMatch(f.nome + f.descricao.split(".")[0], /approve|execute|publish|delete|price|stock|bling/i, f.nome);
+    assert.match(f.nome, /^conecta\.(list_|get_|propose_|bling_consultar_produto$)/, f.nome);
+    assert.doesNotMatch(f.nome + f.descricao.split(".")[0], /approve|execute|publish|delete|price|stock/i, f.nome);
     assert.ok(ESCOPOS.includes(f.escopo), f.nome);
     assert.equal(f.somenteLeitura, !f.nome.includes("propose_"), `${f.nome}: leitura x proposta`);
     assert.equal(JSON.stringify(f.inputSchema).includes("loja_id"), false, `${f.nome} não aceita loja`);
@@ -398,4 +399,36 @@ test("dadosSupabase: proposta usa a RPC com loja, sessão e dispositivo; conflit
   assert.match(JSON.stringify(await conflito.proporAprovacao(base)), /idempotência/);
   const quebrado = dadosSupabase({ ...admin, rpc: async () => ({ data: null, error: { code: "XX000", message: "segredo interno" } }) } as never);
   await assert.rejects(() => quebrado.proporAprovacao(base), (e: Error) => !/segredo interno/.test(e.message));
+});
+
+// Consulta da API é consentimento próprio; sessões antigas de espelho não o ganham.
+test("gateway/Bling: consentimento separado, loja da sessão, rejeição de loja/URL e revogação", async () => {
+  const a = ambiente(sessao(["produtos:ler"]));
+  assert.equal(resultado(await chamar(a, tool("conecta.bling_consultar_produto", {sku:"P1"}))).isError, true);
+  assert.equal(a.chamadasDados.length, 0);
+  a.portas.validar = async () => sessao(["bling:consultar"]);
+  const lista: any = (await chamar(a, rpc("tools/list"))).corpo;
+  assert.equal(lista.result.tools.length, 1);
+  assert.equal(lista.result.tools[0].annotations.readOnlyHint, true);
+  assert.equal(lista.result.tools[0].annotations.openWorldHint, true);
+  for (const extra of [{loja_id:LOJA_B},{url:"https://malicioso.test"},{id:"123"}]) {
+    assert.equal(resultado(await chamar(a, tool("conecta.bling_consultar_produto", {sku:"P1",...extra}))).isError, true);
+  }
+  const r = resultado(await chamar(a, tool("conecta.bling_consultar_produto", {sku:"P1"})));
+  assert.equal(JSON.parse(r.content[0].text).origem, "api_bling");
+  assert.deepEqual(a.chamadasDados, [{metodo:"consultarProdutoBling",loja:LOJA_A,args:"P1"}]);
+  a.portas.validar = async () => null;
+  assert.equal((await chamar(a, tool("conecta.bling_consultar_produto", {sku:"P1"}))).status, 401);
+  assert.equal(a.chamadasDados.length, 1);
+});
+test("gateway: falha de auditoria bloqueia dados, negações, argumentos inválidos e erros internos", async () => {
+  for (const modo of ["ok", "negado", "invalido", "erro"]) {
+    const a = ambiente(sessao(modo === "negado" ? [] : ["produtos:ler"]));
+    if (modo === "erro") a.portas.dados.obterProduto = async () => { throw Error("segredo"); };
+    a.portas.auditar = async () => { throw Error("auditoria secreta"); };
+    const r = await chamar(a, tool("conecta.get_product", modo === "invalido" ? {loja_id:LOJA_B} : {sku:"P1"}));
+    assert.equal(r.status,503);
+    assert.doesNotMatch(JSON.stringify(r), /Pastilha|segredo|auditoria secreta/);
+    if (modo === "negado" || modo === "invalido") assert.equal(a.chamadasDados.length,0);
+  }
 });

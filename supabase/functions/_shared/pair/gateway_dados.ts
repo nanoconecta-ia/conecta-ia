@@ -1,13 +1,24 @@
 // Implementação de Dados (gateway.ts) sobre o cliente service_role do Supabase. TODA consulta filtra por loja_id vindo da sessão.
 // Colunas selecionadas são lista fechada: nunca bling_id, custo, fornecedor ou campos internos.
 import { proporEnriquecimento, type AdminRpc } from "../ia/escrita.ts";
+import { consultarProduto } from "../assistente/bling_consultar.ts";
+import type { Config } from "../bling_token.ts";
 import type { Dados, PropostaAprovacao } from "./gateway.ts";
 
 const seguro = (s: string) => s.replace(/[%,()*\\]/g, " "); // vai para filtro .or(): sem caracteres de sintaxe
 const COLUNAS_PRODUTO = "nome, sku, preco, estoque, marca, publicado, situacao";
 
-export function dadosSupabase(admin: AdminRpc, agora: () => Date = () => new Date()): Dados {
+export function dadosSupabase(admin: AdminRpc, agora: () => Date = () => new Date(), bling?: { cfg: Config; ambiente: "real" | "sintetico" | "nao_validado" }): Dados {
   return {
+    async consultarProdutoBling(sessao, sku) {
+      // Defesa extra para uso desta porta fora do roteador. Nenhuma loja vem dos argumentos do agente.
+      if (!sessao.escopos.includes("bling:consultar") || !bling) throw new Error("Consulta Bling não autorizada ou não configurada.");
+      return consultarProduto({ sku }, {
+        usuario: admin, admin, lojaId: sessao.loja_id, userId: sessao.usuario_id,
+        pair: { sessaoId: sessao.sessao_id, dispositivoId: sessao.dispositivo_id, ambiente: bling.ambiente },
+        cfg: bling.cfg, simulado: bling.ambiente === "sintetico", chamadas: [], evidencias: [],
+      });
+    },
     async listarProdutos(loja, f) {
       let q = admin.from("produtos").select(COLUNAS_PRODUTO).eq("loja_id", loja).limit(f.limite);
       if (f.apenasPublicados) q = q.eq("publicado", true);

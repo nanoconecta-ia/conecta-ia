@@ -4,9 +4,10 @@ import { readFileSync } from "node:fs";
 import { aleatorioB64u, ESCOPOS, mmss, ROTULOS_ESCOPO, ROTULOS_TIPO_APROVACAO, segundosAte, sha256Hex } from "./pair.ts";
 
 const migracao = readFileSync(new URL("../../../supabase/migrations/20261019000001_conecta_pair.sql", import.meta.url), "utf8");
+const escoposMigracao = readFileSync(new URL("../../../supabase/migrations/20261019000002_pair_consulta_bling.sql", import.meta.url), "utf8");
 
 test("escopos do painel = escopos da migração, todos com rótulo, nenhum aprova/executa/administra", () => {
-  const bloco = /pair_escopos_validos\(\) returns text\[\][\s\S]*?array\[([\s\S]*?)\];/.exec(migracao)![1];
+  const bloco = /pair_escopos_validos\(\) returns text\[\][\s\S]*?array\[([\s\S]*?)\];/.exec(escoposMigracao)![1];
   const daMigracao = [...bloco.matchAll(/'([^']+)'/g)].map((m) => m[1]).sort();
   assert.deepEqual([...ESCOPOS].sort(), daMigracao);
   for (const e of ESCOPOS) { assert.ok(ROTULOS_ESCOPO[e], e); assert.doesNotMatch(e, /aprovar|executar|admin/); }

@@ -90,6 +90,7 @@ export function ParearSolicitante() {
         {tipo === "agente_externo" && (
           <div className="cartao">
             <h2>Usar em um agente externo</h2>
+            <p className="suave">O pareamento autoriza esta sessão. Conecte o gateway em um cliente que aceite token Bearer, como o Codex CLI. Este QR não instala uma conexão neste chat. A conexão direta pelo ChatGPT ainda depende da integração OAuth.</p>
             <p className="suave">Endereço do gateway (MCP, JSON-RPC por HTTPS):</p>
             <p className="mono" style={{ wordBreak: "break-all" }}>{URL_GATEWAY}</p>
             <p className="suave">Token (envie como <span className="mono">Authorization: Bearer …</span>). Trate como senha: ele só alcança esta loja e só com as permissões acima, mas qualquer pessoa com ele age como este dispositivo até o prazo.</p>
@@ -120,6 +121,7 @@ export function ParearSolicitante() {
       {mensagem && <p className="msg-erro">{mensagem}</p>}
       <label>Nome do dispositivo<input value={nome} onChange={(e) => setNome(e.target.value)} maxLength={80} /></label>
       <label>Tipo<select value={tipo} onChange={(e) => { setTipo(e.target.value); setRenovavel(e.target.value !== "agente_externo"); }}>{TIPOS_DISPOSITIVO.filter(([v]) => v !== "agente_desktop").map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select></label>
+      {tipo === "agente_externo" && <p className="suave">Para consultar a API Bling, marque a permissão específica abaixo. A conexão deste agente com o ChatGPT ainda requer OAuth; gerar o QR não conecta esta conversa automaticamente.</p>}
       <fieldset><legend>O que ele poderá fazer</legend>
         {ESCOPOS.map((e) => <label key={e} className="marcar"><input type="checkbox" checked={escopos.includes(e)} onChange={() => alternar(e)} /> {ROTULOS_ESCOPO[e]}</label>)}
       </fieldset>
