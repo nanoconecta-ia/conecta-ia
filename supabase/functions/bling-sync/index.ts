@@ -2,6 +2,12 @@
 //  - cron: POST com cabeçalho x-cron-segredo => todas as lojas conectadas;
 //  - manual: POST { loja_id } com o login de quem administra a loja ("Sincronizar agora"), no máx. 6 por hora.
 // verify_jwt = false (autenticação própria). Responde só contagens; nunca token, custo ou fornecedor.
+//
+// ATENÇÃO (deploy): o bundler de Edge Functions do Supabase apresentou um bug de bundling ("Module not found")
+// em deploys multi-arquivo repetidos para esta função (mesmo bug encontrado antes em "assistente"). Por isso o
+// deploy real em produção usa uma versão AUTOCONTIDA (tudo inline, sem imports de ../_shared/*), mantida à parte.
+// Esta é a fonte modular de verdade — qualquer mudança de lógica aqui deve ser replicada manualmente na versão
+// de deploy até o bug de bundling ser resolvido pela plataforma.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { armazemSupabase } from "../_shared/bling_armazem.ts";
 import { blingFetch } from "../_shared/bling_api.ts";
@@ -110,8 +116,11 @@ Deno.serve(async (req) => {
   for (const lojaId of lojas) {
     try {
       const r = await sincronizar(lojaId, portasDaLoja(admin, lojaId, chaveCifra));
-      if (r.completo) await admin.from("bling_conexoes").update({ ultimo_sync_ok_em: new Date().toISOString(), ultimo_erro: null }).eq("loja_id", lojaId);
-      else if (r.erro) await admin.from("bling_conexoes").update({ ultimo_erro: r.erro.slice(0, 300) }).eq("loja_id", lojaId);
+      if (r.completo) {
+        await admin.from("bling_conexoes").update({ ultimo_sync_ok_em: new Date().toISOString(), ultimo_erro: null }).eq("loja_id", lojaId);
+        // Produto novo ou que trocou de categoria no Bling: aplica o mapeamento de taxonomia já definido pelo lojista.
+        await admin.rpc("bling_categoria_taxonomia_aplicar", { p_loja: lojaId });
+      } else if (r.erro) await admin.from("bling_conexoes").update({ ultimo_erro: r.erro.slice(0, 300) }).eq("loja_id", lojaId);
       resultado.push({ paginas: r.paginas, vistos: r.vistos, gravados: r.gravados, detalhes: r.detalhes, ausentes: r.ausentes, completo: r.completo, erro: r.erro ? true : undefined });
     } catch {
       resultado.push({ completo: false, erro: true });
