@@ -9,9 +9,10 @@ export interface Opcoes {
   chave: string; modelo: string; sistema: string; mensagens: Mensagem[]; ferramentas: Ferramenta[];
   executar(nome: string, entrada: unknown): Promise<unknown>;
   fetch?: typeof fetch; maxPassos?: number; maxTokens?: number; limiteResultado?: number;
+  onPasso?: (p: { tokens: number; respostaId?: string; modelo?: string }) => void;
   provedor?: "claude" | "gemini" | "compativel_openai"; baseUrl?: string;
 }
-export interface Resposta { texto: string; tokens: number; passos: number; ferramentasUsadas: string[] }
+export interface Resposta { texto: string; tokens: number; passos: number; ferramentasUsadas: string[]; respostaId?: string; modelo?: string }
 
 export const VERSAO_API = "2023-06-01";
 
@@ -26,10 +27,11 @@ export async function conversar(o: Opcoes): Promise<Resposta> {
   for (let passo = 1; passo <= maxPassos; passo++) {
     const r = await adaptador({ chave: o.chave, modelo: o.modelo, sistema: o.sistema, ferramentas: o.ferramentas, maxTokens: o.maxTokens ?? 1024, baseUrl: o.baseUrl, fetch: o.fetch }, msgs);
     tokens += r.tokens;
+    o.onPasso?.({ tokens: r.tokens, respostaId: r.respostaId, modelo: r.modelo });
     const usos = r.blocos.filter((b): b is Extract<Bloco, { type: "tool_use" }> => b.type === "tool_use");
     if (usos.length === 0) {
       const texto = r.blocos.filter((b): b is Extract<Bloco, { type: "text" }> => b.type === "text").map((b) => b.text).join("\n").trim();
-      return { texto, tokens, passos: passo, ferramentasUsadas: usadas };
+      return { texto, tokens, passos: passo, ferramentasUsadas: usadas, respostaId: r.respostaId, modelo: r.modelo };
     }
 
     msgs.push({ role: "assistant", content: r.blocos });

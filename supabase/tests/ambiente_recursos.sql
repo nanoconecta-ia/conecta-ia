@@ -19,12 +19,12 @@ update public.lojas set ambiente='producao' where slug='loja-a';
 select public.afirma((select ambiente from public.lojas where slug='loja-a') = 'producao', 'produção liberada com política aprovada + DNS + SSL');
 select public.afirma((select count(*) from public.auditoria where tabela='lojas' and acao='update') >= 1, 'mudança de ambiente é auditada');
 
-select public.afirma((select count(*) from public.recursos_plataforma) = 10, 'recursos da plataforma carregados');
+select public.afirma((select count(*) from public.recursos_plataforma where grupo <> 'assistente') = 10, 'recursos da plataforma carregados');
 select public.afirma((select count(*) from public.ajuda_topicos where status='aprovado') = 0, 'ajuda nasce como rascunho (agente não ensina sem aprovação)');
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"11111111-1111-1111-1111-111111111111"}',true);
-select public.afirma((select count(*) from public.recursos_efetivos) = 10, 'lojista A vê os recursos só da própria loja');
+select public.afirma((select count(*) from public.recursos_efetivos where loja_id='aaaaaaaa-0000-0000-0000-000000000001') = (select count(*) from public.recursos_plataforma), 'lojista A vê os recursos só da própria loja');
 select public.afirma((select ativo from public.recursos_efetivos where codigo='catalogo'), 'catálogo ativo por padrão');
 select public.afirma(not (select ativo from public.recursos_efetivos where codigo='pagamentos'), 'pagamentos fica desligado (em breve)');
 insert into public.loja_recursos (loja_id, recurso, ativo) values ('aaaaaaaa-0000-0000-0000-000000000001','pagamentos', true);

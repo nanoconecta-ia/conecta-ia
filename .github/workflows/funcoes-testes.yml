@@ -41,3 +41,14 @@ jobs:
       # Banco DESCARTÁVEL do runner (nunca o Supabase). Aplica stub + migrações e roda os testes SQL do Conecta Pair.
       - run: ./supabase/tests/rodar_local.sh
       - run: ./supabase/tests/conecta_pair_concorrencia.sh
+      - run: node scripts/tests/chat-concorrencia.mjs
+      - name: Validar reversão somente no banco descartável
+        env:
+          PGDATABASE: conecta_teste
+        run: |
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/chat-operacional/REVERSAO.sql
+          psql -XqAt -v ON_ERROR_STOP=1 <<'SQL'
+          do $$ begin
+            if to_regclass('public.conversas') is not null or to_regclass('public.mensagens') is not null or to_regclass('public.auditoria') is null then raise exception 'reversão inválida'; end if;
+          end $$;
+          SQL

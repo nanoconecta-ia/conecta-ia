@@ -24,7 +24,7 @@ export async function blingFetch(arm: Armazem, lojaId: string, caminho: string, 
 
   for (let tentativa = 0; ; tentativa++) {
     const r = await f(BASE + caminho, {
-      method: metodo,
+      method: metodo, redirect: "manual",
       headers: {
         Authorization: `Bearer ${token}`, Accept: "application/json", "enable-jwt": "1",
         ...(op.corpo !== undefined ? { "Content-Type": "application/json" } : {}),

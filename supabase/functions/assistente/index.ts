@@ -10,6 +10,8 @@ import type { PluginRegistro } from "../_shared/ia/plugin.ts";
 import { listarProvedores, modeloDaChave, validarProvedor } from "../_shared/assistente/provedores.ts";
 import { MSG_SO_LOJISTA, podeDecidir } from "../_shared/assistente/permissao.ts";
 
+import { atenderChat } from "../_shared/assistente/chat.ts";
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
@@ -26,10 +28,19 @@ Deno.serve(async (req) => {
   });
   const { data: u } = await usuario.auth.getUser();
   if (!u.user) return json({ erro: "Não autenticado." }, 401);
-  const c = await req.json().catch(() => ({}));
+  const corpo = await req.json().catch(() => ({}));
+  const c = corpo && typeof corpo === "object" && !Array.isArray(corpo) ? corpo : {};
   const lojaId = typeof c?.loja_id === "string" ? c.loja_id : "";
   const { data: loja } = await usuario.from("lojas").select("id, nome").eq("id", lojaId).maybeSingle();
   if (!loja) return json({ erro: "Loja não encontrada." }, 404);
+
+  if (typeof c.acao === "string" && c.acao.startsWith("chat_")) {
+    const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+    try {
+      const r = await atenderChat(c, { usuario, admin, loja, userId: u.user.id, get: (n) => Deno.env.get(n) });
+      return json(r.corpo, r.status);
+    } catch { return json({ erro: "Chat indisponível; nenhuma resposta foi confirmada." }, 503); }
+  }
 
   // Só metadados da loja visível ao JWT. Nenhum cofre, decriptação, teste de chave ou chamada ao provedor.
   if (c.acao === "provedores") {
