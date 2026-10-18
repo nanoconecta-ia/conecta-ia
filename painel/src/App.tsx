@@ -71,7 +71,7 @@ export function App() {
         ) : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />
           : caminho === "/taxonomia" ? <Taxonomia loja={loja} />
-          : caminho === "/assistente" ? <Assistente loja={loja} />
+          : caminho === "/assistente" ? <Assistente key={loja.id} loja={loja} />
           : caminho === "/aparencia" ? <Aparencia loja={loja} />
           : caminho === "/integracoes" ? <Integracoes loja={loja} />
           : caminho === "/agentes" ? <CentralAgentes />
@@ -85,3 +85,4 @@ export function App() {
     </>
   );
 }
+

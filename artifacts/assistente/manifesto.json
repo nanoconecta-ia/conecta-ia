@@ -1,0 +1,64 @@
+{
+  "versao": 1,
+  "entrada": "supabase/functions/assistente/index.ts",
+  "externo": "npm:@supabase/supabase-js@2.117.3",
+  "artefato_sha256": "320fb41bb0ba70a213fd0e55f31afa470f1e6e3a4dda170adf51a908c8d7ba5f",
+  "fontes": [
+    {
+      "path": "supabase/functions/_shared/intencoes.ts",
+      "sha256": "09bd852a84c478521a811629464e79b37b2d6f3994ccf9ebd73a1fd6e07afb90"
+    },
+    {
+      "path": "supabase/functions/_shared/estado.ts",
+      "sha256": "aa6756223200867956f0db6381a27bad97528a45a7b3e5b01ed232ea1371b835"
+    },
+    {
+      "path": "supabase/functions/_shared/cripto.ts",
+      "sha256": "b5fa3004da11c41e5a7a4299c576858e53a503524b914c4d8e300c1aa64ecdaa"
+    },
+    {
+      "path": "supabase/functions/_shared/plataforma.ts",
+      "sha256": "7588dd8032c57f9ed91c01b34ba9e61f3d3201d13775b4932e99babbe799f1b2"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/tipos.ts",
+      "sha256": "4605313f18ffa0087b1547991cb47bfbaec5dd6b38cf1e1e944ec46428306a49"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/plugin.ts",
+      "sha256": "8663d1f5fe9619c13f606a01e0f36ccace380755981e68694e4ead29fed2d229"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/adaptadores.ts",
+      "sha256": "56aa852c989040a2a189aa655952e6d7c2a46ab77d51314a9b440f4230819b38"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/claude.ts",
+      "sha256": "8f917d4407b21220a6a062a4b3a39008b6c95054a8a2aa213615ce25edc01a7e"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/escrita.ts",
+      "sha256": "e8e89d71442243b244b32a01954b97d316d41221402b6a299d6f2885b7a8931c"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/google.ts",
+      "sha256": "363360caed8ec5d9617247e713c9e3ebd87d89eef5e9e0cc7abe4aa2988b6b1c"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/ferramentas.ts",
+      "sha256": "eb9f8644cc663e2458af95e64fb461b405fd22abd78a9672a6eb3fb077f91e64"
+    },
+    {
+      "path": "supabase/functions/_shared/assistente/provedores.ts",
+      "sha256": "8e164c69e33b12e7dfe0a80aebf56ef68a691c6076db5e31caa10a6af77c473f"
+    },
+    {
+      "path": "supabase/functions/_shared/assistente/permissao.ts",
+      "sha256": "d70741366236cc1246a3ee15006789bee2ae36852e3e81e5ecb23c2fb23d4404"
+    },
+    {
+      "path": "supabase/functions/assistente/index.ts",
+      "sha256": "b1afcd7af61389a813d36260c2e92508adefa0cc2b2686da650fe1ea98660917"
+    }
+  ]
+}
