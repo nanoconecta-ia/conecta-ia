@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/pair/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "9420f89beed3e692b02e1480a20574f9bb183155544478b7bf36c0e3817f29bd",
+  "artefato_sha256": "6695e1ef063df7e61c6765d0f9ea8e02962eb6c23a957473a1a795ab09fca2d7",
   "fontes": [
     {
       "path": "supabase/functions/_shared/estado.ts",
@@ -21,8 +21,12 @@
       "sha256": "b34430c4621e6535a792f125dd09e27b752e4e08a85a8742163b8507267db414"
     },
     {
+      "path": "supabase/functions/_shared/pair/implantacao.ts",
+      "sha256": "b9051d28828454c682c22b718df9477491a427256a957461a6aafca785598e80"
+    },
+    {
       "path": "supabase/functions/pair/index.ts",
-      "sha256": "bba20f88075d72912cb3f0ae771394c7ec2039b30e99da5e388a45045e8ffd43"
+      "sha256": "8df7cb0de978a3c09e14d81ee5c3aee9a2e58d8a0f38f1833bf5f4730b15ae68"
     }
   ]
 }

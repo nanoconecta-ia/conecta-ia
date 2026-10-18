@@ -8,7 +8,7 @@ const chave = btoa('s'.repeat(32)), segredo = 'TOKEN-BLING-APENAS-SINTETICO';
 const cifrado = await cifrar(segredo, chave);
 const token = `${'t'.repeat(43)}.${'s'.repeat(43)}`;
 const sessao = {sessao_id:'sessao-sintetica',loja_id:'loja-A',usuario_id:'usuario-A',dispositivo_id:'dispositivo-A',nome:'Teste SIMULADO',tipo:'agente_externo',escopos:['bling:consultar'],capacidades:[]};
-async function ambiente({escopos=sessao.escopos,revogada=false,flag=true,api=200,identidade=true,auditFalha='',ambiente='sintetico',chaveAusente=false,validarErro=false}={}) {
+async function ambiente({escopos=sessao.escopos,revogada=false,flag=true,api=200,identidade=true,auditFalha='',ambiente='sintetico',chaveAusente=false,vault=false,validarErro=false}={}) {
   let handler;
   const consultas=[],rede=[],audits=[],rpcs=[];
   const admin={from(t){
@@ -20,6 +20,7 @@ async function ambiente({escopos=sessao.escopos,revogada=false,flag=true,api=200
   },async rpc(fn,p){rpcs.push({fn,p});
     if(fn==='pair_validar'){if(validarErro)throw Error('SEGREDO-SQL');assert.match(p.p_token_hash,/^[a-f0-9]{64}$/);assert.match(p.p_sal_hash,/^[a-f0-9]{64}$/);return {data:revogada?null:{...sessao,escopos}}}
     if(fn==='limite_chamada')return {data:true};
+    if(fn==='plataforma_segredo')return {data:vault?chave:null};
     if(fn==='bling_ler_credenciais'){assert.equal(p.p_loja_id,'loja-A');return {data:[{access_token_cifrado:cifrado,refresh_token_cifrado:cifrado,expira_em:new Date(Date.now()+86400000).toISOString()}]}}
     throw Error('RPC inesperada '+fn);
   }};
@@ -73,3 +74,5 @@ test('artefato pair: QR real do protocolo contém só desafio; credenciais sint�
   const args=rpcs.find(v=>v.fn==='pair_iniciar').p;
   assert.deepEqual([...args.p_escopos],['bling:consultar']);for(const campo of ['p_codigo_hash','p_segredo_hash','p_verificacao_hash','p_token_hash','p_sal_hash'])assert.match(args[campo],/^[a-f0-9]{64}$/);
 });
+
+test('artefato: chaveiro existente no Vault permite consulta sem variável de cifra',async()=>{const a=await ambiente({chaveAusente:true,vault:true}),r=await a.chamar();assert.equal(dado(r).origem,'api_bling');assert.equal(a.rede.length,1);assert.ok(a.rpcs.some(r=>r.fn==='plataforma_segredo'));});

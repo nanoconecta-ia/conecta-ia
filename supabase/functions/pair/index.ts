@@ -2,12 +2,13 @@
 // O lado do APROVADOR (pair_detalhe/pair_aprovar/pair_recusar/revogações) é chamado direto pelo painel com o JWT do lojista, via RPC.
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { tratarPair } from "../_shared/pair/servico.ts";
+import { configuracaoPair } from "../_shared/pair/implantacao.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
-  const appUrl = Deno.env.get("APP_URL");
+  const { appUrl } = configuracaoPair((k) => Deno.env.get(k));
   if (!appUrl) return new Response(JSON.stringify({ erro: "Pareamento ainda não configurado no servidor." }), { status: 503, headers: { ...CORS, "Content-Type": "application/json" } });
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || undefined;
