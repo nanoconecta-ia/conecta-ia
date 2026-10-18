@@ -1,0 +1,22 @@
+name: Testes das funções (Edge Functions)
+
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/functions/**", ".github/workflows/funcoes-testes.yml"]
+  pull_request:
+    paths: ["supabase/functions/**", ".github/workflows/funcoes-testes.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Só testes puros (sem rede, sem Supabase, sem segredo). Deploy não faz parte deste fluxo.
+      - run: node --experimental-strip-types --test supabase/functions/_shared/*.test.ts supabase/functions/_shared/*/*.test.ts
