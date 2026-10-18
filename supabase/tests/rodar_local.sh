@@ -5,7 +5,8 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 BANCO="${1:-t_local}"; shift || true
-service postgresql start >/dev/null 2>&1 || true
+# Fora de CI (sem PGHOST), sobe o Postgres local do ambiente de desenvolvimento.
+[ -z "${PGHOST:-}" ] && { service postgresql start >/dev/null 2>&1 || true; }
 dropdb --if-exists "$BANCO" && createdb "$BANCO" || exit 1
 psql -X -q -d "$BANCO" -f tests/stub_supabase.sql >/dev/null 2>&1
 com_erro=0
