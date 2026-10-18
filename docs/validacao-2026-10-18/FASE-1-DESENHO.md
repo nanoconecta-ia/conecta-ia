@@ -1,3 +1,5 @@
+> **SUPERSEDIDO** por `docs/fase-1/ARQUITETURA.md` (v2): a tabela `agente_tarefas` e a leitura do lojista por RLS foram descartadas após as decisões D1–D5. Mantido só como histórico.
+
 # Fase 1 — desenho técnico (para aprovação; nenhuma tabela, migração ou código foi criado)
 
 Conforme o CLAUDE.md: *"Antes de criar tabelas ou migrações: mostre o desenho e espere aprovação."*

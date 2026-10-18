@@ -1,0 +1,3 @@
+EDITOR           : botões desabilitados=[true,true,true,true] aviso_visível=true
+LOJISTA          : botões desabilitados=[false,false,false,false] aviso_visível=false
+SEM PERMISSÃO/ERRO: botões desabilitados=[true,true,true,true] aviso_visível=true

@@ -1,0 +1,14 @@
+
+## com GPT disponivel, Gemini nao configurado, Claude indisponivel
+opções: ["Resumo local (sem IA externa)","GPT · gpt-x — Disponível","Gemini — Não configurado [desabilitada]","Claude · claude-sonnet-5-5 — Indisponível [desabilitada]"]
+valor inicial: compativel_openai | Enviar habilitado antes do consentimento: false | overflow horizontal: false
+após consentir e enviar → corpo enviado: {"loja_id":"L1","acao":"perguntar","texto":"Resumo","historico":[],"provedor":"compativel_openai"}
+
+## nenhum provedor configurado
+opções: ["Resumo local (sem IA externa)","GPT — Não configurado [desabilitada]","Gemini — Não configurado [desabilitada]","Claude — Não configurado [desabilitada]"]
+valor inicial:  | Enviar habilitado antes do consentimento: true | overflow horizontal: false
+sem provedor → corpo enviado: {"loja_id":"L1","acao":"perguntar","texto":"Resumo","historico":[],"sem_ia":true}
+
+## falha ao consultar a configuracao
+opções: ["Resumo local (sem IA externa)"]
+valor inicial:  | Enviar habilitado antes do consentimento: false | overflow horizontal: false
