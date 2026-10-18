@@ -14,7 +14,7 @@
 |---|---|---|---|---|---|---|
 | Ver dados da própria loja | ✅ | ✅ | ✅ | só publicado | ✅ (RLS do usuário) | só publicado/aprovado |
 | Conectar/trocar app Bling, chaves de IA, plugins | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Aprovar/rejeitar propostas (Fila de enriquecimento/imagens e Central de Aprovações) | ✅ | ✅ | ❌ (decidido; na `main` a Fila ainda aceita editor até o PR #24 ser mesclado e a função publicada) | ❌ | ❌ propõe só | ❌ |
+| Aprovar/rejeitar propostas (Fila de enriquecimento/imagens e Central de Aprovações) | ✅ | ✅ | ❌ (bloqueado no backend e na interface; correção M6 do PR #24 publicada no `assistente` v6) | ❌ | ❌ propõe só | ❌ |
 | Escrever no Bling | ❌ por padrão | só com aprovação por escrita (futuro) | ❌ | ❌ | só via Policy Engine, desligado | ❌ |
 | Ver custos/fornecedor | — (não existem no espelho) | — | — | ❌ | ❌ | ❌ |
 | Bloquear UF | ✅ | dentro do permitido | ❌ | ❌ | ❌ | ❌ |
