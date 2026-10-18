@@ -1,3 +1,4 @@
+import { AutorizarAgente } from "./paginas/AutorizarAgente.tsx";
 import { useEffect } from "react";
 import { PAIR_ATIVO } from "./lib/flags.ts";
 import { useLojas, useSessao } from "./lib/dados.ts";
@@ -52,7 +53,7 @@ export function App() {
   const lojas = useLojas(!!sessao);
   useEffect(() => { // volta ao link do QR de pareamento depois do login com Google (o retorno do OAuth descarta o #)
     if (!sessao) return;
-    try { const r = sessionStorage.getItem("conecta:retorno"); if (r && r.startsWith("#/parear")) { sessionStorage.removeItem("conecta:retorno"); window.location.hash = r; } } catch { /* sem storage */ }
+    try { const r = sessionStorage.getItem("conecta:retorno"); if (r && /^#\/(?:parear|autorizar-agente)(?:\?|$)/.test(r)) { sessionStorage.removeItem("conecta:retorno"); window.location.hash = r; } } catch { /* sem storage */ }
   }, [sessao]);
 
   const lojaSlug = caminho.match(/^\/loja\/([a-z0-9-]{2,63})$/);
@@ -66,6 +67,7 @@ export function App() {
   if (recuperando || caminho === "/redefinir") return <Redefinir aoConcluir={() => { fimRecuperacao(); void supabase.auth.signOut().then(() => ir("/entrar?aviso=senha")); }} />;
   if (!sessao) return caminho === "/recuperar" ? <Recuperar /> : <Entrar aviso={query.get("aviso")} />;
 
+  if (PAIR_ATIVO && caminho === "/autorizar-agente") return <AutorizarAgente codigo={query.get("c") ?? ""} />;
   if (PAIR_ATIVO && caminho === "/parear") return <ParearAprovador codigo={query.get("c") ?? ""} email={sessao.user.email ?? null} />;
   const loja = lojas?.[0] ?? null;
   return (

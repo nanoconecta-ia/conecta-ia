@@ -46,7 +46,7 @@ test("QR: recusa APP_URL insegura ou com credenciais/query e código fora do for
 
 // ------------------------------------------------------------------------------------------------ escopos
 test("escopos: mesma lista da migração (private.pair_escopos_validos) e nenhum aprova/executa/administra", () => {
-  const sql = readFileSync(new URL("../../../migrations/20261019000002_pair_consulta_bling.sql", import.meta.url), "utf8");
+  const sql = readFileSync(new URL("../../../migrations/20261018230659_pair_consulta_bling.sql", import.meta.url), "utf8");
   const bloco = /pair_escopos_validos\(\) returns text\[\][\s\S]*?array\[([\s\S]*?)\];/.exec(sql)![1];
   const daMigracao = [...bloco.matchAll(/'([^']+)'/g)].map((m) => m[1]);
   assert.deepEqual([...ESCOPOS].sort(), daMigracao.sort());

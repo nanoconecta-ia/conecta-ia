@@ -2,7 +2,7 @@
 
 **Estado: proposta em branch de desenvolvimento. Nada foi aplicado, publicado ou conectado.** Não há migração aplicada em produção, deploy de função, chamada ao Bling nem pareamento real. Tudo foi testado em Postgres 16 descartável, em Node e em Chromium com rede simulada.
 
-Contratos de API: [API.md](API.md). Migração: `supabase/migrations/20261019000001_conecta_pair.sql` (com bloco ROLLBACK).
+Contratos de API: [API.md](API.md). Migração: `supabase/migrations/20261018230657_conecta_pair.sql` (com bloco ROLLBACK).
 
 ## 1. O que é
 
