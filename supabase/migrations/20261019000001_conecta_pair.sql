@@ -354,7 +354,20 @@ begin
   update public.pair_sessoes set ultimo_uso_em = now() where id = s.id and (ultimo_uso_em is null or ultimo_uso_em < now() - interval '30 seconds');
   update public.pair_dispositivos set ultimo_uso_em = now() where id = d.id and (ultimo_uso_em is null or ultimo_uso_em < now() - interval '30 seconds');
   return jsonb_build_object('sessao_id', s.id, 'loja_id', s.loja_id, 'usuario_id', s.usuario_id, 'dispositivo_id', d.id,
-    'tipo', d.tipo, 'escopos', s.escopos, 'capacidades', d.capacidades, 'expira_em', s.expira_em, 'atual', s.token_hash = p_token_hash);
+    'nome', d.nome, 'tipo', d.tipo, 'escopos', s.escopos, 'capacidades', d.capacidades, 'expira_em', s.expira_em,
+    'atual', s.token_hash = p_token_hash);
+end $$;
+
+-- O próprio dispositivo encerra a sessão (botão "Desconectar" / interrupção local do agente).
+create function public.pair_encerrar(p_token_hash text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare s public.pair_sessoes;
+begin
+  update public.pair_sessoes set revogado_em = now(), motivo_revogacao = 'encerrada_pelo_dispositivo'
+   where token_hash = p_token_hash and revogado_em is null returning * into s;
+  if not found then return jsonb_build_object('ok', false); end if;
+  perform private.pair_auditar(s.loja_id, s.usuario_id, 'pair.sessao_encerrada_pelo_dispositivo', 'pair_sessoes', jsonb_build_object('sessao_id', s.id, 'dispositivo_id', s.dispositivo_id));
+  return jsonb_build_object('ok', true);
 end $$;
 
 -- O solicitante gera o token novo e manda só o hash. Só o token ATUAL e ainda válido renova.
@@ -558,6 +571,7 @@ revoke all on function public.pair_iniciar(text, text, text, text, text, text, t
 revoke all on function public.pair_consultar(text, text) from public, anon, authenticated;
 revoke all on function public.pair_validar(text) from public, anon, authenticated;
 revoke all on function public.pair_renovar(text, text) from public, anon, authenticated;
+revoke all on function public.pair_encerrar(text) from public, anon, authenticated;
 revoke all on function public.aprovacao_propor(uuid, text, text, text, uuid, uuid, uuid, jsonb, jsonb, jsonb, text[], text, text, int, uuid) from public, anon, authenticated;
 revoke all on function public.aprovacao_consumir(uuid, text) from public, anon, authenticated;
 revoke all on function public.aprovacao_concluir(uuid, boolean, jsonb) from public, anon, authenticated;
@@ -565,6 +579,7 @@ grant execute on function public.pair_iniciar(text, text, text, text, text, text
 grant execute on function public.pair_consultar(text, text) to service_role;
 grant execute on function public.pair_validar(text) to service_role;
 grant execute on function public.pair_renovar(text, text) to service_role;
+grant execute on function public.pair_encerrar(text) to service_role;
 grant execute on function public.aprovacao_propor(uuid, text, text, text, uuid, uuid, uuid, jsonb, jsonb, jsonb, text[], text, text, int, uuid) to service_role;
 grant execute on function public.aprovacao_consumir(uuid, text) to service_role;
 grant execute on function public.aprovacao_concluir(uuid, boolean, jsonb) to service_role;
@@ -582,7 +597,7 @@ grant execute on function public.pair_detalhe(text), public.pair_aprovar(text, u
   public.aprovacao_decidir(uuid, text, text, text) to authenticated;
 
 -- ROLLBACK (sem dados em produção antes do primeiro pareamento; conferir antes):
--- drop function public.aprovacao_concluir(uuid,boolean,jsonb), public.aprovacao_consumir(uuid,text), public.aprovacao_decidir(uuid,text,text,text),
+-- drop function public.pair_encerrar(text), public.aprovacao_concluir(uuid,boolean,jsonb), public.aprovacao_consumir(uuid,text), public.aprovacao_decidir(uuid,text,text,text),
 --   public.aprovacao_propor(uuid,text,text,text,uuid,uuid,uuid,jsonb,jsonb,jsonb,text[],text,text,int,uuid), public.pair_revogar_todos(uuid),
 --   public.pair_revogar_sessao(uuid,text), public.pair_revogar_dispositivo(uuid,text), private.pair_pode_revogar(uuid,uuid,uuid),
 --   public.pair_renovar(text,text), public.pair_validar(text), public.pair_recusar(text), public.pair_aprovar(text,uuid,text,text[],int,text[]),
