@@ -1,6 +1,6 @@
 # OAuth do agente
 
-Implementação: cliente público OAuth 2.1, PKCE S256 obrigatório, consentimento nativo por empresa, código de uso único (60s após aprovação), token opaco Pair, renovação com rotação e revogação. Não entrega JWT Supabase, chave de IA nem credenciais Bling ao cliente.
+Implementação: cliente público OAuth 2.1, PKCE S256 obrigatório, consentimento nativo por empresa, código de uso único (60s após aprovação), token opaco Pair, renovação com rotação e revogação. Todas as gerações de refresh emitidas na sessão são reconhecidas para detectar replay; a família tem limite de 256 rotações. Não entrega JWT Supabase, chave de IA nem credenciais Bling ao cliente.
 
 ## Reuso e armazenamento
 
@@ -13,7 +13,7 @@ O lojista vê o nome declarado do cliente, domínio de retorno, empresa, escopos
 Base/recurso: `https://dsfzhsrudriqkumtlqwj.supabase.co/functions/v1/conecta-gateway`.
 
 - `/.well-known/oauth-protected-resource`: recurso, emissor e escopos.
-- `/oauth/.well-known/oauth-authorization-server` e `/oauth/.well-known/openid-configuration`: metadados do emissor com subcaminho.
+- `/oauth/.well-known/oauth-authorization-server` e `/oauth/.well-known/openid-configuration`: metadados do emissor com subcaminho. O alias OIDC é somente compatibilidade de discovery; a lista de algoritmos de ID token e o JWKS são vazios, e o escopo openid é recusado. O serviço não oferece login OpenID nem emite ID tokens.
 - `/oauth/register`: DCR, cliente público `none`, redirects HTTPS ou HTTP loopback explícito, sem fragmentos/credenciais. Limites de tamanho e taxa.
 - `/oauth/authorize`: registro assinado, redirect exato, resource correspondente e PKCE; redireciona ao painel `#/autorizar-agente`.
 - `/oauth/token`: authorization_code ou refresh_token. Não aceita autenticação Basic. Tokens curtos, renovação limitada ao prazo absoluto escolhido pelo lojista.

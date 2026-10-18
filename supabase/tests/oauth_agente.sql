@@ -70,8 +70,9 @@ select public.oa(public.oauth_pair_renovar(public.oh('refresh-C2'),public.oh('cl
 select public.oa(public.pair_validar(public.oh('token-C2'),public.oh('sal-C2')) is null,'access anterior deixa de autenticar');
 select public.oa(public.pair_validar(public.oh('t2'),public.oh('s2')) is not null,'novo access autentica');
 select public.oa((select expira_em<=limite_ate from public.pair_sessoes where token_hash=public.oh('t2')),'renovação respeita teto absoluto aprovado');
-select public.oa(public.oauth_pair_renovar(public.oh('refresh-C2'),public.oh('cliente-A'),public.oh('t3'),public.oh('s3'),public.oh('r3')) is null,'refresh anterior não pode ser reutilizado');
-select public.oa(public.pair_validar(public.oh('t2'),public.oh('s2')) is null,'replay do refresh revoga a sessão');
+select public.oa(public.oauth_pair_renovar(public.oh('r2'),public.oh('cliente-A'),public.oh('t3'),public.oh('s3'),public.oh('r3')) is not null,'segunda renovação válida');
+select public.oa(public.oauth_pair_renovar(public.oh('refresh-C2'),public.oh('cliente-A'),public.oh('t4'),public.oh('s4'),public.oh('r4')) is null,'refresh antigo de qualquer geração não pode ser reutilizado');
+select public.oa(public.pair_validar(public.oh('t3'),public.oh('s3')) is null,'replay de refresh antigo revoga a sessão');
 
 select public.onovo('C3',false);
 select public.ou('11111111-aaaa-aaaa-aaaa-111111111111');

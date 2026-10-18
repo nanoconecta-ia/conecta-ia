@@ -39,10 +39,14 @@ export async function tratarOAuth(req:Request,p:OAuthPortas):Promise<Response|nu
   const u=new URL(req.url),basePath=new URL(p.baseURL).pathname.replace(/\/$/,''),path=u.pathname.slice(basePath.length);
   if(!u.pathname.startsWith(basePath+'/'))return null;
   if(path==='/.well-known/oauth-protected-resource'&&req.method==='GET')return json(metadataRecurso(p.baseURL));
+  // Alguns clientes só tentam discovery OIDC como fallback quando o emissor tem subcaminho.
+  // O gateway usa tokens opacos: não oferece openid, ID tokens ou chaves públicas de JWT.
+  if(path==='/oauth/jwks'&&req.method==='GET')return json({keys:[]});
   if(['/oauth/.well-known/oauth-authorization-server','/.well-known/oauth-authorization-server','/oauth/.well-known/openid-configuration','/.well-known/openid-configuration'].includes(path)&&req.method==='GET')return json({
     issuer:p.baseURL+'/oauth',authorization_endpoint:p.baseURL+'/oauth/authorize',token_endpoint:p.baseURL+'/oauth/token',registration_endpoint:p.baseURL+'/oauth/register',revocation_endpoint:p.baseURL+'/oauth/revoke',
     response_types_supported:['code'],grant_types_supported:['authorization_code','refresh_token'],token_endpoint_auth_methods_supported:['none'],revocation_endpoint_auth_methods_supported:['none'],
     code_challenge_methods_supported:['S256'],scopes_supported:[...ESCOPOS,'offline_access'],
+    jwks_uri:p.baseURL+'/oauth/jwks',subject_types_supported:[],id_token_signing_alg_values_supported:[],
   });
   if(!['/oauth/register','/oauth/authorize','/oauth/token','/oauth/revoke'].includes(path))return null;
   const method=path==='/oauth/authorize'?'GET':'POST';if(req.method!==method)return erro('invalid_request',405);

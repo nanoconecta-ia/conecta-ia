@@ -1705,6 +1705,9 @@ async function tratarOAuth(req, p) {
     const u = new URL(req.url), basePath = new URL(p.baseURL).pathname.replace(/\/$/, ''), path = u.pathname.slice(basePath.length);
     if (!u.pathname.startsWith(basePath + '/')) return null;
     if (path === '/.well-known/oauth-protected-resource' && req.method === 'GET') return json(metadataRecurso(p.baseURL));
+    if (path === '/oauth/jwks' && req.method === 'GET') return json({
+        keys: []
+    });
     if ([
         '/oauth/.well-known/oauth-authorization-server',
         '/.well-known/oauth-authorization-server',
@@ -1735,7 +1738,10 @@ async function tratarOAuth(req, p) {
         scopes_supported: [
             ...ESCOPOS,
             'offline_access'
-        ]
+        ],
+        jwks_uri: p.baseURL + '/oauth/jwks',
+        subject_types_supported: [],
+        id_token_signing_alg_values_supported: []
     });
     if (![
         '/oauth/register',

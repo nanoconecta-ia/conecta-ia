@@ -3,7 +3,8 @@ alter table public.pair_desafios add column oauth jsonb check (oauth is null or 
 alter table public.pair_sessoes
   add column oauth_cliente_hash text check (oauth_cliente_hash ~ '^[0-9a-f]{64}$'),
   add column oauth_refresh_hash text unique check (oauth_refresh_hash ~ '^[0-9a-f]{64}$'),
-  add column oauth_refresh_anterior_hash text unique check (oauth_refresh_anterior_hash ~ '^[0-9a-f]{64}$');
+  add column oauth_refresh_usados text[] not null default '{}' check (cardinality(oauth_refresh_usados)<=256);
+create index pair_oauth_refresh_usados on public.pair_sessoes using gin(oauth_refresh_usados);
 
 -- Apenas o servidor cria um pedido depois de validar registro, redirect URI, resource e PKCE.
 create function public.oauth_pair_iniciar(p_codigo_hash text,p_cliente_hash text,p_redirect text,p_challenge text,p_state text,p_nome text,p_escopos text[],p_offline boolean)
@@ -81,7 +82,7 @@ create function public.oauth_pair_renovar(p_refresh_hash text,p_cliente_hash tex
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare s public.pair_sessoes;
 begin
-  select * into s from public.pair_sessoes where (oauth_refresh_hash=p_refresh_hash or oauth_refresh_anterior_hash=p_refresh_hash)
+  select * into s from public.pair_sessoes where (oauth_refresh_hash=p_refresh_hash or oauth_refresh_usados @> array[p_refresh_hash])
     and oauth_cliente_hash=p_cliente_hash for update;
   if not found then return null; end if;
   if s.oauth_refresh_hash<>p_refresh_hash then
@@ -93,8 +94,13 @@ begin
   if s.revogado_em is not null or s.limite_ate<=now() or not private.administra_loja(s.loja_id,s.usuario_id)
     or not exists(select 1 from public.lojas where id=s.loja_id and ativa)
     or not exists(select 1 from public.pair_dispositivos where id=s.dispositivo_id and revogado_em is null) then return null; end if;
+  if cardinality(s.oauth_refresh_usados)>=256 then
+    update public.pair_sessoes set revogado_em=now(),motivo_revogacao='oauth_limite_renovacoes' where id=s.id;
+    perform private.pair_cancelar_propostas(array[s.id]);
+    return null;
+  end if;
   update public.pair_sessoes set token_anterior_hash=null,token_hash=p_token_hash,sal_hash=p_sal_hash,
-    oauth_refresh_anterior_hash=oauth_refresh_hash,oauth_refresh_hash=p_novo_refresh_hash,rotacionado_em=now(),
+    oauth_refresh_usados=array_append(oauth_refresh_usados,oauth_refresh_hash),oauth_refresh_hash=p_novo_refresh_hash,rotacionado_em=now(),
     expira_em=least(now()+interval '15 minutes',limite_ate) where id=s.id returning * into s;
   perform private.pair_auditar(s.loja_id,s.usuario_id,'oauth.renovado','pair_sessoes',jsonb_build_object('sessao_id',s.id));
   return jsonb_build_object('escopos',s.escopos,'expira_em',s.expira_em,'offline',true);
@@ -104,7 +110,7 @@ create function public.oauth_pair_revogar(p_hash text,p_cliente_hash text,p_sal_
 language plpgsql security definer set search_path='' as $$
 declare s public.pair_sessoes;
 begin
-  select * into s from public.pair_sessoes where (oauth_refresh_hash=p_hash or oauth_refresh_anterior_hash=p_hash or (token_hash=p_hash and sal_hash=p_sal_hash))
+  select * into s from public.pair_sessoes where (oauth_refresh_hash=p_hash or oauth_refresh_usados @> array[p_hash] or (token_hash=p_hash and sal_hash=p_sal_hash))
     and oauth_cliente_hash=p_cliente_hash for update;
   if not found then return; end if;
   update public.pair_sessoes set revogado_em=coalesce(revogado_em,now()),motivo_revogacao='oauth_revogado' where id=s.id;
