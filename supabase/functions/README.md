@@ -8,6 +8,8 @@
 | `assistente` | sim | Assistente do lojista: responde só com dados da própria loja e registra Aprovar/Rejeitar da fila (grava via service role e audita). Sem provedor de IA: intenção por palavras-chave |
 | `vitrine-assistente` | não (público, só lê produto publicado e fato aprovado) | Assistente da página do produto para o cliente: nunca inventa, leva ao WhatsApp quando não há confirmação |
 | `bling-sync` | não (autenticação própria: cron ou login de quem administra a loja) | Varredura do espelho **somente leitura** do catálogo (lista os ativos, busca o detalhe só do que é novo/mudou/velho, marca ausentes, nunca copia custo nem fornecedor). **Escrita no código; ainda não publicada nem agendada** |
+| `pair` | não (pública, valida e limita taxa) | Conecta Pair, lado do solicitante: `iniciar` (QR), `consultar`/resgatar, `renovar`, `encerrar`. **Proposta: não publicada** (depende da migração `20261019000001`, não aplicada). Contratos em `docs/conecta-pair/API.md` |
+| `conecta-gateway` | não (autenticação própria por sessão do Pair) | Gateway MCP (JSON-RPC) para agentes externos: 6 ferramentas, só leitura e **proposta**. **Proposta: não publicada** |
 | `bling-callback` | não (autenticação própria: state assinado, 10 min) | Troca o código por tokens no servidor, cifra e grava via RPC |
 
 Secrets (painel do Supabase > Edge Functions > Secrets; nunca no repositório): `BLING_CLIENT_ID`, `BLING_CLIENT_SECRET`,

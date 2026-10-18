@@ -112,3 +112,16 @@ button.mic { width:var(--alvo); padding:0; border-radius:50%; } button.mic[aria-
 .v-logo { max-height:44px; max-width:220px; width:auto; height:auto; object-fit:contain; }
 
 .cartao h2 { margin-top:22px; }
+
+/* Conecta Pair */
+.qr { display:block; width:min(100%, 280px); height:auto; margin:12px 0; border-radius:12px; border:1px solid var(--borda); background:#fff; }
+.codigo-grande { font-size:2.2rem; letter-spacing:.35em; margin:4px 0 12px; font-weight:700; }
+.grade-aprov { display:grid; gap:14px; grid-template-columns:minmax(0,1fr); }
+@media (min-width:1000px) { .grade-aprov { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+main > .cartao { min-width:0; }
+.diff { display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); }
+.diff pre { margin:0; padding:10px; background:var(--realce); border:1px solid var(--borda); border-radius:8px; overflow:auto; max-height:220px; font-family:var(--mono, monospace); font-size:.82rem; white-space:pre-wrap; word-break:break-word; }
+.diff h3 { margin:0 0 4px; font-size:.9rem; color:var(--suave); }
+.marcar { display:flex; gap:10px; align-items:flex-start; font-weight:400; }
+.marcar input[type=checkbox] { width:24px; min-height:24px; height:24px; flex:none; margin:0; padding:0; accent-color:var(--marca); }
+fieldset { border:1px solid var(--borda); border-radius:var(--raio); padding:10px 14px; }
