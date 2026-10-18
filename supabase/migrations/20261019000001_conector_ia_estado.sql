@@ -164,7 +164,6 @@ create table public.agente_operacoes (
   tentativa int not null default 1 check (tentativa >= 1),
   idempotency_key text not null,
   ferramenta text not null,
-  modo text not null default 'simulado' check (modo in ('simulado', 'real')),
   estado public.operacao_estado not null default 'pendente',
   requisicao jsonb,                                     -- resumo sem segredos
   resposta jsonb,
@@ -177,7 +176,22 @@ create table public.agente_operacoes (
 );
 create index on public.agente_operacoes (loja_id, estado, iniciado_em desc);
 
--- Liberação explícita de escrita REAL por loja e ferramenta. Sem linha ativa, o banco recusa modo 'real'.
+-- Ensaio ("simulação"): roda a proposta aprovada contra a porta SIMULADA (mock) e guarda o relatório. NÃO muda estado de item,
+-- proposta nem produto: nada simulado pode parecer confirmado ou sincronizado.
+create table public.agente_simulacoes (
+  id uuid primary key default gen_random_uuid(),
+  loja_id uuid not null,
+  proposta_id uuid not null,
+  versao int not null,
+  hash_proposta text not null,
+  solicitada_por uuid not null,
+  resultado jsonb not null,
+  criado_em timestamptz not null default now(),
+  foreign key (proposta_id, loja_id) references public.agente_propostas (id, loja_id)
+);
+create index on public.agente_simulacoes (proposta_id);
+
+-- Liberação explícita de escrita REAL no ERP por loja e ferramenta bling.*. Sem linha ativa, o banco recusa a operação.
 create table public.agente_escrita_liberada (
   loja_id uuid not null references public.lojas(id) on delete cascade,
   ferramenta text not null,
@@ -288,7 +302,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['agente_conversas', 'agente_mensagens', 'agente_anexos', 'agente_tarefas', 'agente_propostas',
-    'agente_proposta_itens', 'agente_aprovacoes', 'agente_operacoes', 'agente_escrita_liberada', 'produto_travas',
+    'agente_proposta_itens', 'agente_aprovacoes', 'agente_operacoes', 'agente_simulacoes', 'agente_escrita_liberada', 'produto_travas',
     'agente_chamadas_ferramenta', 'agente_prompts', 'agente_conhecimento', 'provedor_capacidades'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from anon, authenticated', t);
@@ -310,6 +324,7 @@ create policy agente_tarefas_ver on public.agente_tarefas for select to authenti
 create policy agente_propostas_ver on public.agente_propostas for select to authenticated using (private.pode_ver_loja(loja_id));
 create policy agente_itens_ver on public.agente_proposta_itens for select to authenticated using (private.pode_ver_loja(loja_id));
 create policy agente_aprovacoes_ver on public.agente_aprovacoes for select to authenticated using (private.pode_ver_loja(loja_id));
+create policy agente_simulacoes_ver on public.agente_simulacoes for select to authenticated using (private.pode_ver_loja(loja_id));
 create policy agente_operacoes_ver on public.agente_operacoes for select to authenticated using (private.pode_ver_loja(loja_id));
 create policy agente_escrita_ver on public.agente_escrita_liberada for select to authenticated using (private.pode_ver_loja(loja_id));
 create policy produto_travas_ver on public.produto_travas for select to authenticated using (private.pode_ver_loja(loja_id));
@@ -325,6 +340,8 @@ begin
   raise exception '% é imutável (append-only)', tg_table_name using errcode = '42501';
 end $$;
 create trigger agente_chamadas_imutavel before update or delete on public.agente_chamadas_ferramenta
+  for each row execute function private.agente_imutavel();
+create trigger agente_simulacoes_imutavel before update or delete on public.agente_simulacoes
   for each row execute function private.agente_imutavel();
 create trigger agente_aprovacoes_imutavel before update or delete on public.agente_aprovacoes
   for each row execute function private.agente_imutavel();

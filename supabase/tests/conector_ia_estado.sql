@@ -22,6 +22,7 @@ insert into public.usuarios_loja (loja_id, user_id, papel) values
   ('aaaaaaaa-0000-0000-0000-00000000000a', '22222222-2222-2222-2222-222222222222', 'editor'),
   ('bbbbbbbb-0000-0000-0000-00000000000b', '33333333-3333-3333-3333-333333333333', 'lojista');
 insert into public.produtos (id, loja_id, bling_id, sku, nome, preco, situacao) values
+  ('c0000000-0000-0000-0000-000000000004', 'aaaaaaaa-0000-0000-0000-00000000000a', '4', 'SKU4', 'Bomba de óleo HR', 200, 'A'),
   ('c0000000-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-00000000000a', '1', 'SKU1', 'Cabeçote HR', 100, 'A'),
   ('c0000000-0000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-00000000000a', '2', 'SKU2', 'Junta HR', 50, 'A'),
   ('c0000000-0000-0000-0000-000000000003', 'bbbbbbbb-0000-0000-0000-00000000000b', '3', 'SKU3', 'Peça B', 10, 'A');
@@ -33,6 +34,7 @@ insert into public.produtos (id, loja_id, bling_id, sku, nome, preco, situacao) 
 \set P1 '\'c0000000-0000-0000-0000-000000000001\''
 \set P2 '\'c0000000-0000-0000-0000-000000000002\''
 \set P3 '\'c0000000-0000-0000-0000-000000000003\''
+\set P4 '\'c0000000-0000-0000-0000-000000000004\''
 
 -- ============================================================ conversa persistente + troca de modelo + exclusão
 create temp table v (k text primary key, val text);
@@ -105,13 +107,11 @@ select public.espera_erro($$update public.agente_aprovacoes set decisao = 'rejei
 select public.espera_erro($$select public.agente_proposta_decidir('aaaaaaaa-0000-0000-0000-00000000000a', (select val::uuid from v where k = 'prop1'), 1, (select hash from public.agente_propostas where id = (select val::uuid from v where k = 'prop1')), '11111111-1111-1111-1111-111111111111', 'aprovada')$$,
   'proposta_nao_pendente', 'não se aprova duas vezes');
 
--- ============================================================ execução simulada com confirmação por evidência
-select public.espera_erro($$select * from public.agente_proposta_iniciar_execucao('aaaaaaaa-0000-0000-0000-00000000000a', (select val::uuid from v where k = 'prop1'), 'real')$$,
-  'escrita_real_nao_liberada', 'modo real sem liberação explícita é bloqueado no banco');
-select public.afirma((select count(*) from public.agente_proposta_iniciar_execucao(:A, (select val::uuid from v where k = 'prop1'), 'simulado')) = 1, 'execução simulada devolve só os itens aprovados');
+-- ============================================================ execução com confirmação por evidência
+select public.afirma((select count(*) from public.agente_proposta_iniciar_execucao(:A, (select val::uuid from v where k = 'prop1'))) = 1, 'execução devolve só os itens aprovados');
 select public.afirma(private.estado_produto(:A, :P1) = 'em_execucao', 'produto em execução');
-insert into v select 'op1', public.agente_operacao_abrir(:A, (select id from public.agente_proposta_itens where proposta_id = (select val::uuid from v where k = 'prop1')), 'simulado', 'conecta.enriquecimento.definir', '{"marca_peca":"Sabó"}')::text;
-select public.espera_erro($$select public.agente_operacao_abrir('aaaaaaaa-0000-0000-0000-00000000000a', (select id from public.agente_proposta_itens where proposta_id = (select val::uuid from v where k = 'prop1')), 'simulado', 'conecta.enriquecimento.definir', '{}')$$,
+insert into v select 'op1', public.agente_operacao_abrir(:A, (select id from public.agente_proposta_itens where proposta_id = (select val::uuid from v where k = 'prop1')), 'conecta.enriquecimento.definir', '{"marca_peca":"Sabó"}')::text;
+select public.espera_erro($$select public.agente_operacao_abrir('aaaaaaaa-0000-0000-0000-00000000000a', (select id from public.agente_proposta_itens where proposta_id = (select val::uuid from v where k = 'prop1')), 'conecta.enriquecimento.definir', '{}')$$,
   'tentativa_anterior_em_aberto', 'não abre segunda tentativa com a primeira em aberto');
 select public.agente_operacao_marcar_enviada(:A, (select val::uuid from v where k = 'op1'));
 select public.espera_erro($$select public.agente_operacao_fechar('aaaaaaaa-0000-0000-0000-00000000000a', (select val::uuid from v where k = 'op1'), 'confirmada', '{}', null, null)$$,
@@ -150,7 +150,7 @@ select public.agente_proposta_enviar(:A, (select val::uuid from v where k = 'lot
 select public.afirma((select estado from public.agente_proposta_itens where idempotency_key = 'chave-lote-0002') = 'travado', 'item de produto travado vira só sugestão');
 select public.afirma((select estado from public.agente_proposta_itens where idempotency_key = 'chave-lote-0001') = 'pendente', 'item do produto livre segue pendente');
 select public.agente_proposta_decidir(:A, (select val::uuid from v where k = 'lote'), 1, (select hash from public.agente_propostas where id = (select val::uuid from v where k = 'lote')), :U1, 'aprovada');
-select public.afirma((select count(*) from public.agente_proposta_iniciar_execucao(:A, (select val::uuid from v where k = 'lote'), 'simulado')) = 1, 'execução ignora o item travado');
+select public.afirma((select count(*) from public.agente_proposta_iniciar_execucao(:A, (select val::uuid from v where k = 'lote'))) = 1, 'execução ignora o item travado');
 select public.afirma(private.estado_produto(:A, :P2) = 'bloqueado', 'produto travado segue travado');
 
 -- trava depois do envio tira o item do escopo
@@ -170,22 +170,22 @@ select public.agente_proposta_item_adicionar(:A, (select val::uuid from v where 
   '{"marca_peca": null}', '{"marca_peca": "Sabó"}', '[{"url":"https://exemplo.com/d"}]', '[]', 'MEDIUM', 'chave-timeout-001');
 select public.agente_proposta_enviar(:A, (select val::uuid from v where k = 'prop3'));
 select public.agente_proposta_decidir(:A, (select val::uuid from v where k = 'prop3'), 1, (select hash from public.agente_propostas where id = (select val::uuid from v where k = 'prop3')), :U1, 'aprovada');
-select * from public.agente_proposta_iniciar_execucao(:A, (select val::uuid from v where k = 'prop3'), 'simulado');
-insert into v select 'op3', public.agente_operacao_abrir(:A, (select id from public.agente_proposta_itens where proposta_id = (select val::uuid from v where k = 'prop3')), 'simulado', 'conecta.enriquecimento.definir', '{}')::text;
+select * from public.agente_proposta_iniciar_execucao(:A, (select val::uuid from v where k = 'prop3'));
+insert into v select 'op3', public.agente_operacao_abrir(:A, (select id from public.agente_proposta_itens where proposta_id = (select val::uuid from v where k = 'prop3')), 'conecta.enriquecimento.definir', '{}')::text;
 select public.agente_operacao_marcar_enviada(:A, (select val::uuid from v where k = 'op3'));
 select public.agente_operacao_fechar(:A, (select val::uuid from v where k = 'op3'), 'desconhecida', null, null, 'timeout');
 select public.afirma((select estado from public.agente_proposta_itens where proposta_id = (select val::uuid from v where k = 'prop3')) = 'desconhecido', 'timeout vira desconhecido, não falhou');
-select public.espera_erro($$select public.agente_operacao_abrir('aaaaaaaa-0000-0000-0000-00000000000a', (select id from public.agente_proposta_itens where proposta_id = (select val::uuid from v where k = 'prop3')), 'simulado', 'conecta.enriquecimento.definir', '{}')$$,
+select public.espera_erro($$select public.agente_operacao_abrir('aaaaaaaa-0000-0000-0000-00000000000a', (select id from public.agente_proposta_itens where proposta_id = (select val::uuid from v where k = 'prop3')), 'conecta.enriquecimento.definir', '{}')$$,
   'item_nao_esta_em_execucao', 'não se repete às cegas depois do timeout');
 select public.afirma(public.agente_proposta_finalizar(:A, (select val::uuid from v where k = 'prop3')) = 'falhou', 'proposta sem confirmação não é executada');
 select public.afirma(private.estado_produto(:A, :P2) = 'erro_divergencia', 'produto fica em erro/divergência');
-select public.espera_erro($$select * from public.agente_proposta_iniciar_execucao('aaaaaaaa-0000-0000-0000-00000000000a', (select val::uuid from v where k = 'prop3'), 'simulado')$$,
+select public.espera_erro($$select * from public.agente_proposta_iniciar_execucao('aaaaaaaa-0000-0000-0000-00000000000a', (select val::uuid from v where k = 'prop3'))$$,
   'reconciliar_antes', 'retomar exige reconciliar antes');
 select public.espera_erro($$select public.agente_operacao_reconciliar('aaaaaaaa-0000-0000-0000-00000000000a', (select val::uuid from v where k = 'op3'), 'nao_gravado', '{}', '11111111-1111-1111-1111-111111111111')$$,
   'reconciliacao_exige_evidencia', 'reconciliar exige prova');
 select public.agente_operacao_reconciliar(:A, (select val::uuid from v where k = 'op3'), 'nao_gravado', '{"leitura":{"marca_peca":null}}', :U1);
-select public.afirma((select count(*) from public.agente_proposta_iniciar_execucao(:A, (select val::uuid from v where k = 'prop3'), 'simulado')) = 1, 'com prova de que não gravou, retoma só o item pendente');
-insert into v select 'op3b', public.agente_operacao_abrir(:A, (select id from public.agente_proposta_itens where proposta_id = (select val::uuid from v where k = 'prop3')), 'simulado', 'conecta.enriquecimento.definir', '{}')::text;
+select public.afirma((select count(*) from public.agente_proposta_iniciar_execucao(:A, (select val::uuid from v where k = 'prop3'))) = 1, 'com prova de que não gravou, retoma só o item pendente');
+insert into v select 'op3b', public.agente_operacao_abrir(:A, (select id from public.agente_proposta_itens where proposta_id = (select val::uuid from v where k = 'prop3')), 'conecta.enriquecimento.definir', '{}')::text;
 select public.afirma((select tentativa from public.agente_operacoes where id = (select val::uuid from v where k = 'op3b')) = 2, 'segunda tentativa registrada');
 select public.afirma((select idempotency_key from public.agente_operacoes where id = (select val::uuid from v where k = 'op3b')) = 'chave-timeout-001', 'mesma chave de idempotência na retomada (sem duplicar)');
 select public.agente_operacao_marcar_enviada(:A, (select val::uuid from v where k = 'op3b'));
@@ -195,8 +195,61 @@ select public.afirma(public.agente_proposta_finalizar(:A, (select val::uuid from
 -- o lote deixou P1 em execução de propósito (execução simulada nunca finalizada): enviar outra proposta p/ ele é recusado
 select public.espera_erro($$select public.agente_proposta_enviar('aaaaaaaa-0000-0000-0000-00000000000a', gen_random_uuid())$$, 'proposta_nao_encontrada', 'proposta inexistente é recusada');
 -- encerra a execução do lote para seguir o cenário
-select public.agente_operacao_fechar(:A, (select public.agente_operacao_abrir(:A, (select id from public.agente_proposta_itens where idempotency_key = 'chave-lote-0001'), 'simulado', 'conecta.enriquecimento.definir', '{}')), 'confirmada', '{}', '{"leitura":{"ok":true}}', null);
+select public.agente_operacao_fechar(:A, (select public.agente_operacao_abrir(:A, (select id from public.agente_proposta_itens where idempotency_key = 'chave-lote-0001'), 'conecta.enriquecimento.definir', '{}')), 'confirmada', '{}', '{"leitura":{"ok":true}}', null);
 select public.afirma(public.agente_proposta_finalizar(:A, (select val::uuid from v where k = 'lote')) in ('executada', 'parcial'), 'lote termina com itens confirmados e o travado preservado');
+
+
+-- ============================================================ execução interna: enriquecimento aplicado com conflito checado e leitura de volta
+insert into v select 'prop5', public.agente_proposta_criar(:A, :U1, null, null, 'Conector IA', 'claude', 'm', 1, 'Descrição da bomba', null, false)::text;
+select public.agente_proposta_item_adicionar(:A, (select val::uuid from v where k = 'prop5'), :P4, 'conecta.enriquecimento.definir', 'SKU4', array['descricao_curta'],
+  '{}', '{"descricao_curta": "Bomba de óleo HR 2.5 16V"}', '[{"url":"https://exemplo.com/bomba"}]', '[]', 'MEDIUM', 'chave-bomba-0001');
+select public.agente_proposta_enviar(:A, (select val::uuid from v where k = 'prop5'));
+select public.agente_proposta_decidir(:A, (select val::uuid from v where k = 'prop5'), 1, (select hash from public.agente_propostas where id = (select val::uuid from v where k = 'prop5')), :U1, 'aprovada');
+-- ensaio: validar não muda nenhum estado
+select public.afirma((select count(*) from public.agente_proposta_validar(:A, (select val::uuid from v where k = 'prop5'))) = 1, 'validar devolve o item aprovável sem executar');
+select public.afirma((select estado from public.agente_propostas where id = (select val::uuid from v where k = 'prop5')) = 'aprovada' and private.estado_produto(:A, :P4) = 'aprovado_execucao', 'validar não muda estado de proposta nem de produto');
+select public.agente_simulacao_registrar(:A, (select val::uuid from v where k = 'prop5'), :U1, '{"modo":"simulado","itens":[{"ok":true}]}');
+select public.afirma((select count(*) from public.agente_simulacoes) = 1, 'simulação registrada à parte');
+select public.espera_erro($$update public.agente_simulacoes set resultado = '{}'$$, 'imutável', 'simulação é append-only');
+select public.afirma((select estado from public.agente_proposta_itens where idempotency_key = 'chave-bomba-0001') = 'aprovado', 'simulação não confirma item nenhum');
+select * from public.agente_proposta_iniciar_execucao(:A, (select val::uuid from v where k = 'prop5'));
+select public.afirma((select public.agente_aplicar_enriquecimento(:A, (select id from public.agente_proposta_itens where idempotency_key = 'chave-bomba-0001'))->>'descricao_curta') = 'Bomba de óleo HR 2.5 16V', 'enriquecimento aplicado e lido de volta da tabela');
+select public.afirma((select status::text || '/' || (fonte is not null)::text from public.produto_enriquecimento where produto_id = 'c0000000-0000-0000-0000-000000000004' and campo = 'descricao_curta') = 'aprovado/true', 'dado aprovado carrega fonte e data');
+select public.afirma((select estado from public.agente_proposta_itens where idempotency_key = 'chave-bomba-0001') = 'em_execucao', 'aplicar não confirma sozinho: confirmação é do executor');
+select public.agente_operacao_fechar(:A, (select public.agente_operacao_abrir(:A, (select id from public.agente_proposta_itens where idempotency_key = 'chave-bomba-0001'), 'conecta.enriquecimento.definir', '{}')), 'confirmada', '{}', '{"leitura":{"descricao_curta":"Bomba de óleo HR 2.5 16V"}}', null);
+select public.agente_proposta_finalizar(:A, (select val::uuid from v where k = 'prop5'));
+-- conflito: o "antes" aprovado não bate com o valor atual
+insert into v select 'prop6', public.agente_proposta_criar(:A, :U1, null, null, 'Conector IA', 'claude', 'm', 1, 'Conflito', null, false)::text;
+select public.agente_proposta_item_adicionar(:A, (select val::uuid from v where k = 'prop6'), :P4, 'conecta.enriquecimento.definir', 'SKU4', array['descricao_curta'],
+  '{}', '{"descricao_curta": "Outra descrição"}', '[{"url":"https://exemplo.com/outra"}]', '[]', 'MEDIUM', 'chave-bomba-0002');
+select public.agente_proposta_enviar(:A, (select val::uuid from v where k = 'prop6'));
+select public.agente_proposta_decidir(:A, (select val::uuid from v where k = 'prop6'), 1, (select hash from public.agente_propostas where id = (select val::uuid from v where k = 'prop6')), :U1, 'aprovada');
+select * from public.agente_proposta_iniciar_execucao(:A, (select val::uuid from v where k = 'prop6'));
+select public.espera_erro($$select public.agente_aplicar_enriquecimento('aaaaaaaa-0000-0000-0000-00000000000a', (select id from public.agente_proposta_itens where idempotency_key = 'chave-bomba-0002'))$$,
+  'divergencia_antes', 'valor mudou depois da proposta: não sobrescreve (conflito detectado)');
+select public.afirma((select valor #>> '{}' from public.produto_enriquecimento where produto_id = 'c0000000-0000-0000-0000-000000000004' and campo = 'descricao_curta') = 'Bomba de óleo HR 2.5 16V', 'conflito não alterou o dado');
+
+-- o conflito termina como falha registrada e deixa o produto em divergência
+select public.agente_operacao_fechar(:A, (select public.agente_operacao_abrir(:A, (select id from public.agente_proposta_itens where idempotency_key = 'chave-bomba-0002'), 'conecta.enriquecimento.definir', '{}')), 'falhou', '{}', null, 'divergencia_antes');
+select public.afirma(public.agente_proposta_finalizar(:A, (select val::uuid from v where k = 'prop6')) = 'falhou', 'conflito termina como falha registrada');
+select public.afirma(private.estado_produto(:A, :P4) = 'erro_divergencia', 'conflito deixa o produto em divergência para decisão humana');
+select public.produto_destravar(:A, array['c0000000-0000-0000-0000-000000000004'::uuid], :U1, 'divergência resolvida');
+
+-- publicação: produto incompleto não publica; completo publica; evidência é a leitura do produto
+insert into v select 'pub', public.agente_proposta_criar(:A, :U1, null, null, 'Conector IA', 'claude', 'm', 1, 'Publicar bomba', null, false)::text;
+select public.agente_proposta_item_adicionar(:A, (select val::uuid from v where k = 'pub'), :P4, 'conecta.publicacao.publicar', 'SKU4', array['publicado'],
+  '{"publicado": false}', '{"publicado": true}', '[{"documento":"revisão do lojista"}]', '[]', 'HIGH', 'chave-publica-001');
+select public.agente_proposta_enviar(:A, (select val::uuid from v where k = 'pub'));
+select public.espera_erro($$select public.agente_proposta_enviar('aaaaaaaa-0000-0000-0000-00000000000a', (select val::uuid from v where k = 'pub'))$$, 'proposta_ja_enviada', 'não se reenvia proposta');
+select public.agente_proposta_decidir(:A, (select val::uuid from v where k = 'pub'), 1, (select hash from public.agente_propostas where id = (select val::uuid from v where k = 'pub')), :U1, 'aprovada', null, true);
+select * from public.agente_proposta_iniciar_execucao(:A, (select val::uuid from v where k = 'pub'));
+select public.espera_erro($$select public.agente_aplicar_publicacao('aaaaaaaa-0000-0000-0000-00000000000a', (select id from public.agente_proposta_itens where idempotency_key = 'chave-publica-001'))$$,
+  'imagem principal aprovada', 'sem imagem principal aprovada o produto não publica');
+select public.afirma((select publicado from public.produtos where id = 'c0000000-0000-0000-0000-000000000004') = false, 'produto incompleto continua despublicado');
+insert into public.produto_imagens (produto_id, loja_id, url, tipo, origem, aprovada, principal) values ('c0000000-0000-0000-0000-000000000004', 'aaaaaaaa-0000-0000-0000-00000000000a', 'https://cdn.loja.com/bomba.jpg', 'real', 'foto própria', true, true);
+select public.afirma((select public.agente_aplicar_publicacao(:A, (select id from public.agente_proposta_itens where idempotency_key = 'chave-publica-001'))->>'publicado') = 'true', 'com imagem aprovada o produto publica');
+select public.agente_operacao_fechar(:A, (select public.agente_operacao_abrir(:A, (select id from public.agente_proposta_itens where idempotency_key = 'chave-publica-001'), 'conecta.publicacao.publicar', '{}')), 'confirmada', '{}', '{"leitura":{"publicado":true}}', null);
+select public.afirma(public.agente_proposta_finalizar(:A, (select val::uuid from v where k = 'pub')) = 'executada', 'publicação concluída');
 
 -- ============================================================ adulteração depois da aprovação (defesa em profundidade)
 insert into v select 'prop4', public.agente_proposta_criar(:A, :U1, null, null, 'Conector IA', 'claude', 'm', 1, 'Adulterada', null, false)::text;
@@ -209,10 +262,19 @@ select public.agente_proposta_decidir(:A, (select val::uuid from v where k = 'pr
 alter table public.agente_proposta_itens disable trigger agente_itens_imutaveis;
 update public.agente_proposta_itens set depois = '{"marca_peca":"OUTRA"}' where proposta_id = (select val::uuid from v where k = 'prop4');
 alter table public.agente_proposta_itens enable trigger agente_itens_imutaveis;
-select public.espera_erro($$select * from public.agente_proposta_iniciar_execucao('aaaaaaaa-0000-0000-0000-00000000000a', (select val::uuid from v where k = 'prop4'), 'simulado')$$,
+select public.espera_erro($$select * from public.agente_proposta_iniciar_execucao('aaaaaaaa-0000-0000-0000-00000000000a', (select val::uuid from v where k = 'prop4'))$$,
   'aprovacao_invalida', 'conteúdo alterado fora do fluxo invalida a aprovação na execução');
 
--- ============================================================ escrita real: liberação explícita por loja e ferramenta
+-- ============================================================ escrita real no ERP: liberação explícita por loja e ferramenta
+select public.produto_destravar(:A, array['c0000000-0000-0000-0000-000000000004'::uuid], :U1, 'resolvido a divergência');
+insert into v select 'bl', public.agente_proposta_criar(:A, :U1, null, null, 'Conector IA', 'claude', 'm', 1, 'Alterar marca no Bling', null, false)::text;
+select public.agente_proposta_item_adicionar(:A, (select val::uuid from v where k = 'bl'), :P4, 'bling.produtos.alterar', '4', array['marca'],
+  '{"marca": null}', '{"marca": "Sabó"}', '[{"url":"https://exemplo.com/f"}]', '[]', 'MEDIUM', 'chave-bling-0001');
+select public.agente_proposta_enviar(:A, (select val::uuid from v where k = 'bl'));
+select public.agente_proposta_decidir(:A, (select val::uuid from v where k = 'bl'), 1, (select hash from public.agente_propostas where id = (select val::uuid from v where k = 'bl')), :U1, 'aprovada');
+select public.espera_erro($$select * from public.agente_proposta_iniciar_execucao('aaaaaaaa-0000-0000-0000-00000000000a', (select val::uuid from v where k = 'bl'))$$,
+  'escrita_real_nao_liberada', 'aprovada mas sem liberação da ferramenta bling.*: o banco recusa executar');
+select public.afirma((select estado from public.agente_propostas where id = (select val::uuid from v where k = 'bl')) = 'aprovada', 'recusa não deixa estado pela metade');
 select public.espera_erro($$select public.agente_escrita_liberar('aaaaaaaa-0000-0000-0000-00000000000a', 'bling.produtos.alterar', '22222222-2222-2222-2222-222222222222', 'testes e escopo conferidos em 2026-10-19')$$,
   'sem_permissao', 'editor não libera escrita real');
 select public.espera_erro($$select public.agente_escrita_liberar('aaaaaaaa-0000-0000-0000-00000000000a', 'bling.produtos.alterar', '11111111-1111-1111-1111-111111111111', 'curta')$$,
@@ -221,6 +283,7 @@ select public.espera_erro($$select public.agente_escrita_liberar('aaaaaaaa-0000-
   'ferramenta_invalida', 'só ferramentas bling.* podem ser liberadas');
 select public.agente_escrita_liberar(:A, 'bling.produtos.alterar', :U1, 'testes e escopo conferidos em 2026-10-19');
 select public.afirma((select count(*) from public.agente_escrita_liberada where revogada_em is null) = 1, 'liberação registrada com referência');
+select public.afirma((select count(*) from public.agente_proposta_iniciar_execucao(:A, (select val::uuid from v where k = 'bl'))) = 1, 'com liberação explícita e aprovação, a execução é permitida');
 select public.agente_escrita_revogar(:A, 'bling.produtos.alterar', :U1);
 select public.afirma((select count(*) from public.agente_escrita_liberada where revogada_em is null) = 0, 'liberação pode ser revogada');
 
@@ -246,7 +309,7 @@ select public.espera_erro($$insert into public.agente_propostas (loja_id, solici
 select public.espera_erro($$select public.dashboard_operacional('aaaaaaaa-0000-0000-0000-00000000000a')$$, 'sem_permissao', 'dashboard de outra loja é negado');
 select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
 select public.afirma((select count(*) from public.agente_propostas) >= 4, 'lojista A enxerga as propostas da loja');
-select public.afirma((select (public.dashboard_operacional('aaaaaaaa-0000-0000-0000-00000000000a')->'produtos_sincronizados'->>'valor')::int) = 2, 'dashboard: produtos sincronizados é contagem real');
+select public.afirma((select (public.dashboard_operacional('aaaaaaaa-0000-0000-0000-00000000000a')->'produtos_sincronizados'->>'valor')::int) = 3, 'dashboard: produtos sincronizados é contagem real');
 select public.afirma((select public.dashboard_operacional('aaaaaaaa-0000-0000-0000-00000000000a')->'qualidade_seo'->'valor') = 'null'::jsonb, 'dashboard: SEO não medido devolve null, não número inventado');
 select public.afirma((select (public.dashboard_operacional('aaaaaaaa-0000-0000-0000-00000000000a')->'produtos_bloqueados'->>'valor')::int) = 1, 'dashboard: bloqueados reflete a trava real');
 select public.afirma((select count(*) from public.agente_conversas) = 0, 'conversas excluídas não aparecem');
