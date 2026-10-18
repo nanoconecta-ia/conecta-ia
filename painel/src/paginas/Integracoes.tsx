@@ -7,7 +7,13 @@ async function mensagem(error: unknown, padrao: string) {
   return padrao;
 }
 
-type Chave = { ativa: boolean; final_chave: string | null; modelo: string | null; limite_mensal_tokens: number | null; tokens_mes: number; ultimo_uso_em: string | null };
+type Chave = { provedor: string; ativa: boolean; principal: boolean; final_chave: string | null; modelo: string | null; base_url: string | null; limite_mensal_tokens: number | null; tokens_mes: number; ultimo_uso_em: string | null };
+
+const PROVEDORES = [
+  { id: "claude", nome: "Claude", aviso: "Pago por uso; crie a chave no console do provedor.", modelo: "claude-sonnet-5-5", precisaEndereco: false },
+  { id: "gemini", nome: "Gemini (Google AI Studio)", aviso: "Há plano gratuito, mas no gratuito o Google pode usar o conteúdo enviado para melhorar os produtos dele. O agente não envia custo nem fornecedor, só dados de catálogo.", modelo: "gemini-2.5-flash", precisaEndereco: false },
+  { id: "compativel_openai", nome: "Llama ou outro modelo compatível com OpenAI", aviso: "Use um provedor que hospede o Llama e exponha uma API compatível com OpenAI (por exemplo Groq, Together ou OpenRouter). Um Llama rodando só no seu computador não é alcançável pelo servidor.", modelo: "", precisaEndereco: true },
+] as const;
 type Plugin = { id: string; nome: string; tipo: string; url: string | null; capacidades: string[]; risco: string; ativo: boolean; ultimo_teste_ok: boolean | null; ultimo_teste_em: string | null };
 
 const CAPACIDADES: [string, string][] = [
@@ -22,18 +28,18 @@ const TIPOS: [string, string, string][] = [
 ];
 
 export function Integracoes({ loja }: { loja: Loja }) {
-  const [chave, setChave] = useState<Chave | null>(null);
+  const [chaves, setChaves] = useState<Record<string, Chave>>({});
   const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
   const [ocupado, setOcupado] = useState(false);
-  const [editandoChave, setEditandoChave] = useState(false);
-  const [novaChave, setNovaChave] = useState(""); const [modelo, setModelo] = useState(""); const [limite, setLimite] = useState("");
+  const [abertos, setAbertos] = useState<Record<string, boolean>>({});
+  const [campos, setCampos] = useState<Record<string, { chave: string; modelo: string; limite: string; base: string }>>({});
   const [novo, setNovo] = useState(false);
   const [f, setF] = useState({ nome: "", tipo: "api", url: "", credencial: "", risco: "LOW", caps: [] as string[] });
 
   const carregar = () => {
-    supabase.from("loja_chaves_ia").select("ativa, final_chave, modelo, limite_mensal_tokens, tokens_mes, ultimo_uso_em").eq("loja_id", loja.id).eq("provedor", "claude").maybeSingle()
-      .then(({ data }) => setChave((data as Chave | null)?.ativa ? (data as Chave) : null));
+    supabase.from("loja_chaves_ia").select("provedor, ativa, principal, final_chave, modelo, base_url, limite_mensal_tokens, tokens_mes, ultimo_uso_em").eq("loja_id", loja.id)
+      .then(({ data }) => setChaves(Object.fromEntries(((data ?? []) as Chave[]).filter((c) => c.ativa).map((c) => [c.provedor, c]))));
     supabase.from("loja_plugins").select("id, nome, tipo, url, capacidades, risco, ativo, ultimo_teste_ok, ultimo_teste_em").eq("loja_id", loja.id).order("criado_em")
       .then(({ data }) => setPlugins((data ?? []) as Plugin[]));
   };
@@ -50,10 +56,13 @@ export function Integracoes({ loja }: { loja: Loja }) {
     return r;
   }
 
-  async function salvarChave(e: FormEvent) {
+  const campo = (id: string) => campos[id] ?? { chave: "", modelo: "", limite: "", base: "" };
+  const mudar = (id: string, p: Partial<{ chave: string; modelo: string; limite: string; base: string }>) => setCampos((c) => ({ ...c, [id]: { ...campo(id), ...p } }));
+  async function salvarChave(e: FormEvent, id: string) {
     e.preventDefault();
-    const r = await chamar({ acao: "salvar_chave", provedor: "claude", chave: novaChave, modelo: modelo || undefined, limite_mensal_tokens: limite || null }, "Chave salva.");
-    if (r?.ok) { setNovaChave(""); setEditandoChave(false); } // a chave nunca fica na tela nem no navegador
+    const v = campo(id);
+    const r = await chamar({ acao: "salvar_chave", provedor: id, chave: v.chave, modelo: v.modelo || undefined, base_url: v.base || undefined, limite_mensal_tokens: v.limite || null }, "Chave salva. Toque em Testar chave.");
+    if (r?.ok) { setCampos((c) => ({ ...c, [id]: { chave: "", modelo: "", limite: "", base: "" } })); setAbertos((x) => ({ ...x, [id]: false })); } // a chave nunca fica na tela nem no navegador
   }
   async function salvarPlugin(e: FormEvent) {
     e.preventDefault();
@@ -61,35 +70,46 @@ export function Integracoes({ loja }: { loja: Loja }) {
     if (r?.ok) { setF({ nome: "", tipo: "api", url: "", credencial: "", risco: "LOW", caps: [] }); setNovo(false); }
   }
   const alternar = (c: string) => setF((x) => ({ ...x, caps: x.caps.includes(c) ? x.caps.filter((y) => y !== c) : [...x.caps, c] }));
-  const usoPct = chave?.limite_mensal_tokens ? Math.min(100, Math.round((chave.tokens_mes / chave.limite_mensal_tokens) * 100)) : null;
-
+  
   return (
     <div className="cartao">
       <h1>Integrações de IA</h1>
       <p className="suave">A chave e as credenciais são cifradas no servidor e nunca voltam para a tela. O agente só lê e propõe; quem aprova é você, na fila.</p>
       {msg && <p className={msg.ok ? "msg-ok" : "msg-erro"}>{msg.texto}</p>}
 
-      <h2>Chave do provedor de IA</h2>
-      {chave && !editandoChave ? (
-        <>
-          <p><span className="selo ok">Ativa</span> Claude · chave terminada em <code>{chave.final_chave}</code> · modelo <code>{chave.modelo}</code></p>
-          <p className="suave">Uso no mês: {chave.tokens_mes.toLocaleString("pt-BR")} tokens{chave.limite_mensal_tokens ? ` de ${chave.limite_mensal_tokens.toLocaleString("pt-BR")} (${usoPct}%)` : " (sem limite definido)"}.</p>
-          <div className="linha">
-            <button className="sec" disabled={ocupado} onClick={() => void chamar({ acao: "testar_chave" }, "A chave respondeu normalmente.")}>Testar chave</button>
-            <button className="sec" onClick={() => setEditandoChave(true)}>Trocar chave ou limite</button>
-            <button className="sec" disabled={ocupado} onClick={() => { if (confirm("Remover a chave? O assistente volta ao modo simples.")) void chamar({ acao: "remover_chave" }, "Chave removida."); }}>Remover</button>
+      <h2>Provedores de IA</h2>
+      <p className="suave">Cadastre um ou mais. O principal responde no Assistente; se ele falhar por falta de chave, outro ativo assume. Sem nenhum, o assistente responde só por palavras-chave.</p>
+      {PROVEDORES.map((pv) => {
+        const k = chaves[pv.id]; const v = campo(pv.id); const aberto = !k || abertos[pv.id];
+        const pct = k?.limite_mensal_tokens ? Math.min(100, Math.round((k.tokens_mes / k.limite_mensal_tokens) * 100)) : null;
+        return (
+          <div key={pv.id} className="cartao" style={{ margin: "8px 0" }}>
+            <p><strong>{pv.nome}</strong> {k ? <span className="selo ok">Ativa</span> : <span className="selo atencao">Sem chave</span>} {k?.principal && <span className="selo">principal</span>}</p>
+            <p className="suave">{pv.aviso}</p>
+            {k && !aberto && (
+              <>
+                <p className="suave">Chave terminada em <code>{k.final_chave}</code> · modelo <code>{k.modelo}</code>{k.base_url ? <> · <code>{k.base_url}</code></> : null}</p>
+                <p className="suave">Uso no mês: {k.tokens_mes.toLocaleString("pt-BR")} tokens{k.limite_mensal_tokens ? ` de ${k.limite_mensal_tokens.toLocaleString("pt-BR")} (${pct}%)` : " (sem limite definido)"}.</p>
+                <div className="linha">
+                  <button className="sec" disabled={ocupado} onClick={() => void chamar({ acao: "testar_chave", provedor: pv.id }, "A chave respondeu normalmente.")}>Testar chave</button>
+                  {!k.principal && <button className="sec" disabled={ocupado} onClick={() => void chamar({ acao: "definir_principal", provedor: pv.id }, "Provedor principal atualizado.")}>Usar como principal</button>}
+                  <button className="sec" onClick={() => setAbertos((x) => ({ ...x, [pv.id]: true }))}>Trocar chave ou limite</button>
+                  <button className="sec" disabled={ocupado} onClick={() => { if (confirm(`Remover a chave de ${pv.nome}?`)) void chamar({ acao: "remover_chave", provedor: pv.id }, "Chave removida."); }}>Remover</button>
+                </div>
+              </>
+            )}
+            {aberto && (
+              <form onSubmit={(e) => void salvarChave(e, pv.id)}>
+                {pv.precisaEndereco && <label>Endereço da API (https)<input value={v.base} onChange={(e) => mudar(pv.id, { base: e.target.value })} placeholder="https://api.groq.com/openai/v1" required /></label>}
+                <label>Chave de API<input type="password" value={v.chave} onChange={(e) => mudar(pv.id, { chave: e.target.value })} required minLength={8} autoComplete="new-password" spellCheck={false} /></label>
+                <label>Modelo{pv.precisaEndereco ? "" : " (opcional)"}<input value={v.modelo} onChange={(e) => mudar(pv.id, { modelo: e.target.value })} required={pv.precisaEndereco} placeholder={pv.modelo ? `padrão: ${pv.modelo}` : "nome do modelo no seu provedor"} /></label>
+                <label>Limite mensal de tokens (opcional)<input inputMode="numeric" value={v.limite} onChange={(e) => mudar(pv.id, { limite: e.target.value.replace(/\D/g, "") })} placeholder="ex.: 500000" /></label>
+                <div className="linha"><button disabled={ocupado}>Salvar chave</button>{k && <button type="button" className="sec" onClick={() => setAbertos((x) => ({ ...x, [pv.id]: false }))}>Cancelar</button>}</div>
+              </form>
+            )}
           </div>
-        </>
-      ) : (
-        <form onSubmit={(e) => void salvarChave(e)}>
-          <p className="suave">Sem chave, o assistente responde só por palavras-chave. Crie uma chave no console do provedor e cole aqui; o custo de uso é da sua loja.</p>
-          <label>Provedor<select value="claude" disabled><option value="claude">Claude</option></select></label>
-          <label>Chave de API<input type="password" value={novaChave} onChange={(e) => setNovaChave(e.target.value)} required minLength={20} autoComplete="new-password" spellCheck={false} /></label>
-          <label>Modelo (opcional)<input value={modelo} onChange={(e) => setModelo(e.target.value)} placeholder="deixe vazio para o padrão" /></label>
-          <label>Limite mensal de tokens (opcional)<input inputMode="numeric" value={limite} onChange={(e) => setLimite(e.target.value.replace(/\D/g, ""))} placeholder="ex.: 500000" /></label>
-          <div className="linha"><button disabled={ocupado}>Salvar chave</button>{editandoChave && <button type="button" className="sec" onClick={() => setEditandoChave(false)}>Cancelar</button>}</div>
-        </form>
-      )}
+        );
+      })}
 
       <h2>Plugins e conexões</h2>
       {plugins.length === 0 && <p className="suave">Nenhum plugin cadastrado.</p>}

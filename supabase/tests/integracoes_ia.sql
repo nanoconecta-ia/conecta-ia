@@ -6,7 +6,7 @@ insert into public.lojas (id, nome, slug) values
   ('aaaaaaaa-0000-0000-0000-000000000001', 'Loja A', 'loja-a'), ('bbbbbbbb-0000-0000-0000-000000000002', 'Loja B', 'loja-b');
 
 -- chave: salvar, ler, limite, mês, desativar
-select public.ia_salvar_chave('aaaaaaaa-0000-0000-0000-000000000001', 'claude', 'v2.k1.cifrado', '1234', 'claude-sonnet-5-5', 100000);
+select public.ia_salvar_chave('aaaaaaaa-0000-0000-0000-000000000001', 'claude', 'v2.k1.cifrado', '1234', 'claude-sonnet-5-5', 100000, null);
 select public.afirma((select cifrada from public.ia_ler_chave('aaaaaaaa-0000-0000-0000-000000000001', 'claude')) = 'v2.k1.cifrado', 'chave ativa é lida');
 select public.afirma((select count(*) from public.ia_ler_chave('bbbbbbbb-0000-0000-0000-000000000002', 'claude')) = 0, 'outra loja não enxerga a chave');
 select public.ia_registrar_uso('aaaaaaaa-0000-0000-0000-000000000001', 'claude', 500);
@@ -15,7 +15,7 @@ select public.afirma((select tokens_mes from public.ia_ler_chave('aaaaaaaa-0000-
 update public.loja_chaves_ia set mes_ref = date '2020-01-01' where loja_id = 'aaaaaaaa-0000-0000-0000-000000000001';
 select public.afirma((select tokens_mes from public.ia_ler_chave('aaaaaaaa-0000-0000-0000-000000000001', 'claude')) = 0, 'consumo zera na virada do mês');
 do $$ begin
-  begin perform public.ia_salvar_chave('aaaaaaaa-0000-0000-0000-000000000001', 'inventado', 'x', '1', null, null); raise exception 'aceitou';
+  begin perform public.ia_salvar_chave('aaaaaaaa-0000-0000-0000-000000000001', 'inventado', 'x', '1', null, null, null); raise exception 'aceitou';
   exception when check_violation then null; end;
 end $$;
 select public.afirma(true, 'provedor desconhecido é recusado');
@@ -61,7 +61,7 @@ set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
 select public.afirma((select count(*) from public.loja_plugins) = 1, 'RLS: só os plugins da própria loja');
 do $$ begin
-  begin perform public.ia_ler_chave('aaaaaaaa-0000-0000-0000-000000000001', 'claude'); raise exception 'aceitou';
+  begin perform public.ia_salvar_chave('aaaaaaaa-0000-0000-0000-000000000001', 'claude', 'x', '1', null, null, null); raise exception 'aceitou';
   exception when insufficient_privilege then null; end;
 end $$;
 select public.afirma(true, 'usuário logado não executa as funções de segredo');

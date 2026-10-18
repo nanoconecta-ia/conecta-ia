@@ -88,3 +88,56 @@ test("ferramentas: nenhuma ferramenta do agente escreve (catálogo é só leitur
   const nomes = FERRAMENTAS.map((x) => x.name);
   assert.ok(!nomes.some((n) => /grav|salv|publ|aprov|escrev|apag|delet|atualiz/.test(n)), nomes.join());
 });
+
+// --- Gemini e compatível com OpenAI (Llama) ---------------------------------------------------------
+test("gemini: functionCall -> functionResponse (devolve a parte original e usa o nome da ferramenta)", async () => {
+  const pedidos: { url: string; headers: any; corpo: any }[] = [];
+  const f = (async (url: string, init: RequestInit) => {
+    pedidos.push({ url, headers: init.headers, corpo: JSON.parse(String(init.body)) });
+    if (pedidos.length === 1) return resp({ usageMetadata: { totalTokenCount: 30 }, candidates: [{ content: { parts: [{ thought: true, text: "pensando" }, { functionCall: { name: "ver_produto", args: { sku: "80692" } }, thoughtSignature: "sig" }] } }] });
+    return resp({ usageMetadata: { totalTokenCount: 12 }, candidates: [{ content: { parts: [{ text: "Sem estoque." }] } }] });
+  }) as unknown as typeof fetch;
+  const r = await conversar({ provedor: "gemini", chave: "g-chave", modelo: "gemini-x", sistema: "S", mensagens: [{ role: "user", content: "e o 80692?" }], ferramentas: FERRAMENTAS, executar: async () => ({ estoque: 0 }), fetch: f });
+  assert.equal(r.texto, "Sem estoque."); assert.equal(r.tokens, 42); assert.deepEqual(r.ferramentasUsadas, ["ver_produto"]);
+  assert.match(pedidos[0].url, /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-x:generateContent$/);
+  assert.equal(pedidos[0].headers["x-goog-api-key"], "g-chave"); assert.ok(!pedidos[0].url.includes("g-chave"));
+  const decl = pedidos[0].corpo.tools[0].functionDeclarations;
+  assert.ok(!("parameters" in decl.find((d: any) => d.name === "resumo_loja")), "ferramenta sem parâmetros não envia schema vazio");
+  assert.ok("parameters" in decl.find((d: any) => d.name === "ver_produto"));
+  const c2 = pedidos[1].corpo.contents;
+  assert.equal(c2[1].role, "model"); assert.equal(c2[1].parts[0].thoughtSignature, "sig"); // parte original preservada
+  assert.equal(c2[2].role, "user"); assert.deepEqual(c2[2].parts[0].functionResponse, { name: "ver_produto", response: { resultado: { estoque: 0 } } });
+});
+
+test("gemini: sem candidatos (bloqueio) e chave inválida viram erros genéricos", async () => {
+  const vazio = (async () => resp({ candidates: [] })) as unknown as typeof fetch;
+  await assert.rejects(conversar({ provedor: "gemini", chave: "k", modelo: "m", sistema: "s", mensagens: [], ferramentas: [], executar: async () => 1, fetch: vazio }), (e: unknown) => e instanceof IaErro && e.status === 502);
+  const ruim = (async () => new Response('{"error":{"message":"API key not valid. segredo-xyz"}}', { status: 400 })) as unknown as typeof fetch;
+  await assert.rejects(conversar({ provedor: "gemini", chave: "k", modelo: "m", sistema: "s", mensagens: [], ferramentas: [], executar: async () => 1, fetch: ruim }), (e: unknown) => e instanceof IaErro && e.status === 401 && !e.message.includes("segredo-xyz"));
+});
+
+test("compatível OpenAI (Llama): tool_calls -> mensagens role=tool, URL e cabeçalho corretos", async () => {
+  const pedidos: { url: string; headers: any; corpo: any }[] = [];
+  const f = (async (url: string, init: RequestInit) => {
+    pedidos.push({ url, headers: init.headers, corpo: JSON.parse(String(init.body)) });
+    if (pedidos.length === 1) return resp({ usage: { total_tokens: 20 }, choices: [{ message: { content: null, tool_calls: [{ id: "call_1", type: "function", function: { name: "resumo_loja", arguments: "{}" } }] } }] });
+    return resp({ usage: { total_tokens: 9 }, choices: [{ message: { content: "4 produtos." } }] });
+  }) as unknown as typeof fetch;
+  const r = await conversar({ provedor: "compativel_openai", baseUrl: "https://api.groq.com/openai/v1/", chave: "gsk-1", modelo: "llama-x", sistema: "S", mensagens: [{ role: "user", content: "resumo" }], ferramentas: FERRAMENTAS, executar: async () => ({ produtos: 4 }), fetch: f });
+  assert.equal(r.texto, "4 produtos."); assert.equal(r.tokens, 29);
+  assert.equal(pedidos[0].url, "https://api.groq.com/openai/v1/chat/completions"); assert.equal(pedidos[0].headers.authorization, "Bearer gsk-1");
+  assert.equal(pedidos[0].corpo.messages[0].role, "system"); assert.equal(pedidos[0].corpo.tools[0].type, "function");
+  const m = pedidos[1].corpo.messages;
+  assert.equal(m.at(-2).tool_calls[0].id, "call_1"); assert.equal(m.at(-1).role, "tool"); assert.equal(m.at(-1).tool_call_id, "call_1");
+});
+
+test("compatível OpenAI: recusa endereço interno/http, argumentos inválidos viram {} sem quebrar", async () => {
+  const f = (async () => resp({ choices: [{ message: { content: "x" } }] })) as unknown as typeof fetch;
+  for (const base of ["http://api.exemplo.com/v1", "https://localhost/v1", "https://10.0.0.1/v1", "https://exemplo.com:8080/v1", undefined])
+    await assert.rejects(conversar({ provedor: "compativel_openai", baseUrl: base, chave: "k", modelo: "m", sistema: "s", mensagens: [], ferramentas: [], executar: async () => 1, fetch: f }), (e: unknown) => e instanceof IaErro && e.status === 400, String(base));
+  let n = 0;
+  const g = (async () => (++n === 1 ? resp({ choices: [{ message: { tool_calls: [{ id: "c", function: { name: "resumo_loja", arguments: "{quebrado" } }] } }] }) : resp({ choices: [{ message: { content: "ok" } }] }))) as unknown as typeof fetch;
+  let recebido: unknown = "nada";
+  const r = await conversar({ provedor: "compativel_openai", baseUrl: "https://a.exemplo.com/v1", chave: "k", modelo: "m", sistema: "s", mensagens: [], ferramentas: [], executar: async (_n, e) => { recebido = e; return 1; }, fetch: g });
+  assert.equal(r.texto, "ok"); assert.deepEqual(recebido, {});
+});
