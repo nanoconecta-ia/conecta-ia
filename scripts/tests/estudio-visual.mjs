@@ -41,6 +41,8 @@ try{
   await page.getByLabel('Tarefa para o agente').waitFor();assert.match(await page.getByLabel('Tarefa para o agente').inputValue(),/SKU 80692/);
   assert.equal(await page.getByRole('button',{name:'Pareamento ainda indisponível'}).isDisabled(),true);
   await page.screenshot({path:root+`evidencias-estudio/lateral-${width}-SIMULADO.png`,fullPage:true});
+  // Transferência opcional de miniatura SINTÉTICA para inspeção em workspace sem download de artefatos.
+  if(process.env.ESTUDIO_MINIATURAS==='1'&&(width===1440||width===390))console.log(`ESTUDIO_PREVIA_JPEG_${width}=`+(await page.screenshot({type:'jpeg',quality:35})).toString('base64'));
   await page.getByRole('button',{name:'Flutuante',exact:true}).click();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Flutuante sem overflow '+width);
   const box=await page.getByRole('complementary',{name:'Torre do agente'}).boundingBox();assert.ok(box.x>=0&&box.x+box.width<=width+1);assert.ok(box.y>=0&&box.y+box.height<=960+1);
