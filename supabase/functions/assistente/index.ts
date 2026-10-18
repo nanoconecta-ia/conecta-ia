@@ -2,6 +2,11 @@
 // Responde só com dados da própria loja (a RLS decide o acesso). Decidir grava via service role e registra auditoria.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { AJUDA_LOJISTA, intencaoLojista } from "../_shared/assistente/intencao.ts";
+import { decifrar } from "../_shared/cripto.ts";
+import { chaveiroPlataforma } from "../_shared/plataforma.ts";
+import { conversar, IaErro, type Mensagem } from "../_shared/ia/claude.ts";
+import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../_shared/ia/ferramentas.ts";
+import type { PluginRegistro } from "../_shared/ia/plugin.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -39,7 +44,41 @@ Deno.serve(async (req) => {
     return json({ ok: true, status: decisao });
   }
 
-  const texto = typeof c?.texto === "string" ? c.texto.slice(0, 300) : "";
+  const texto = typeof c?.texto === "string" ? c.texto.slice(0, 1000) : "";
+  if (!texto.trim()) return json({ erro: "Escreva sua pergunta." }, 400);
+
+  // Com chave de IA configurada: chat de verdade com ferramentas. Sem chave: respostas por palavras-chave (abaixo).
+  const sb = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  const { data: kRows } = await sb.rpc("ia_ler_chave", { p_loja: loja.id, p_provedor: "claude" });
+  const k = (kRows as { cifrada: string; modelo: string | null; limite: number | null; tokens_mes: number }[] | null)?.[0];
+  const chaveiro = k ? await chaveiroPlataforma(sb, (n) => Deno.env.get(n)) : undefined;
+  if (k && chaveiro) {
+    if (k.limite != null && k.tokens_mes >= k.limite) return json({ resposta: "O limite mensal de uso da IA desta loja foi atingido. Ajuste o limite em Integrações de IA ou aguarde o próximo mês.", ia: false });
+    const { data: plugs } = await usuario.from("loja_plugins").select("id, nome, tipo, url, capacidades, risco, ativo").eq("loja_id", loja.id);
+    const historico: Mensagem[] = (Array.isArray(c.historico) ? c.historico : []).slice(-10)
+      .filter((m: any) => m && (m.de === "eu" || m.de === "ia") && typeof m.texto === "string")
+      .map((m: any): Mensagem => ({ role: m.de === "eu" ? "user" : "assistant", content: m.texto.slice(0, 2000) }));
+    while (historico.length && historico[0].role !== "user") historico.shift();
+    const mensagens: Mensagem[] = [];
+    for (const m of [...historico, { role: "user", content: texto } as Mensagem]) { // a API exige alternância user/assistant
+      if (mensagens.length && mensagens[mensagens.length - 1].role === m.role) mensagens.pop();
+      mensagens.push(m);
+    }
+    try {
+      const r = await conversar({
+        chave: await decifrar(k.cifrada, chaveiro), modelo: k.modelo ?? "claude-sonnet-5-5", sistema: `${SISTEMA}\nLoja: ${loja.nome}.`, mensagens, ferramentas: FERRAMENTAS,
+        executar: (nome, entrada) => executarFerramenta(nome, entrada, {
+          usuario, lojaId: loja.id, plugins: (plugs ?? []) as PluginRegistro[],
+          credencial: async (pid) => { const { data } = await sb.rpc("plugin_credencial", { p_loja: loja.id, p_id: pid }); return typeof data === "string" ? await decifrar(data, chaveiro) : null; },
+        }),
+      });
+      await sb.rpc("ia_registrar_uso", { p_loja: loja.id, p_provedor: "claude", p_tokens: r.tokens });
+      await sb.from("auditoria").insert({ loja_id: loja.id, user_id: u.user.id, acao: "assistente.consulta", tabela: "ia", depois: { tokens: r.tokens, passos: r.passos, ferramentas: r.ferramentasUsadas } });
+      return json({ resposta: r.texto || "Não encontrei uma resposta. Pode reformular?", ia: true });
+    } catch (e) {
+      return json({ resposta: e instanceof IaErro ? e.message : "Não consegui responder agora.", ia: false });
+    }
+  }
   const q = (t: string, f?: (b: any) => any) => { const b = usuario.from(t).select("id", { count: "exact", head: true }).eq("loja_id", loja.id); return f ? f(b) : b; };
   switch (intencaoLojista(texto)) {
     case "resumo": {
