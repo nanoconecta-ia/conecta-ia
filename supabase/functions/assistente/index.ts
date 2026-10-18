@@ -49,8 +49,8 @@ Deno.serve(async (req) => {
 
   // Com chave de IA configurada: chat de verdade com ferramentas. Sem chave: respostas por palavras-chave (abaixo).
   const sb = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-  const { data: kRows } = await sb.rpc("ia_ler_chave", { p_loja: loja.id, p_provedor: "claude" });
-  const k = (kRows as { cifrada: string; modelo: string | null; limite: number | null; tokens_mes: number }[] | null)?.[0];
+  const { data: kRows } = await sb.rpc("ia_chave_ativa", { p_loja: loja.id });
+  const k = (kRows as { provedor: "claude" | "gemini" | "compativel_openai"; cifrada: string; modelo: string | null; limite: number | null; tokens_mes: number; base_url: string | null }[] | null)?.[0];
   const chaveiro = k ? await chaveiroPlataforma(sb, (n) => Deno.env.get(n)) : undefined;
   if (k && chaveiro) {
     if (k.limite != null && k.tokens_mes >= k.limite) return json({ resposta: "O limite mensal de uso da IA desta loja foi atingido. Ajuste o limite em Integrações de IA ou aguarde o próximo mês.", ia: false });
@@ -66,14 +66,14 @@ Deno.serve(async (req) => {
     }
     try {
       const r = await conversar({
-        chave: await decifrar(k.cifrada, chaveiro), modelo: k.modelo ?? "claude-sonnet-5-5", sistema: `${SISTEMA}\nLoja: ${loja.nome}.`, mensagens, ferramentas: FERRAMENTAS,
+        provedor: k.provedor, baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: k.modelo ?? (k.provedor === "gemini" ? "gemini-2.5-flash" : "claude-sonnet-5-5"), sistema: `${SISTEMA}\nLoja: ${loja.nome}.`, mensagens, ferramentas: FERRAMENTAS,
         executar: (nome, entrada) => executarFerramenta(nome, entrada, {
           usuario, lojaId: loja.id, plugins: (plugs ?? []) as PluginRegistro[],
           credencial: async (pid) => { const { data } = await sb.rpc("plugin_credencial", { p_loja: loja.id, p_id: pid }); return typeof data === "string" ? await decifrar(data, chaveiro) : null; },
         }),
       });
-      await sb.rpc("ia_registrar_uso", { p_loja: loja.id, p_provedor: "claude", p_tokens: r.tokens });
-      await sb.from("auditoria").insert({ loja_id: loja.id, user_id: u.user.id, acao: "assistente.consulta", tabela: "ia", depois: { tokens: r.tokens, passos: r.passos, ferramentas: r.ferramentasUsadas } });
+      await sb.rpc("ia_registrar_uso", { p_loja: loja.id, p_provedor: k.provedor, p_tokens: r.tokens });
+      await sb.from("auditoria").insert({ loja_id: loja.id, user_id: u.user.id, acao: "assistente.consulta", tabela: "ia", depois: { provedor: k.provedor, tokens: r.tokens, passos: r.passos, ferramentas: r.ferramentasUsadas } });
       return json({ resposta: r.texto || "Não encontrei uma resposta. Pode reformular?", ia: true });
     } catch (e) {
       return json({ resposta: e instanceof IaErro ? e.message : "Não consegui responder agora.", ia: false });

@@ -15,7 +15,9 @@ const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { sta
 const CAPACIDADES = ["consultar_bling", "enriquecer", "imagem", "taxonomia", "consultar_catalogo", "buscar_web"];
 const TIPOS = ["mcp", "api", "llm", "plugin_pull"];
 const RISCOS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-const MODELO_PADRAO = "claude-sonnet-5-5";
+const PROVEDORES = ["claude", "gemini", "compativel_openai"];
+// Modelos padrão conferem com a documentação pública na data do código; o lojista pode trocar. Compatível com OpenAI não tem padrão.
+const MODELO_PADRAO: Record<string, string> = { claude: "claude-sonnet-5-5", gemini: "gemini-2.5-flash" };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -43,33 +45,47 @@ Deno.serve(async (req) => {
 
   switch (c.acao) {
     case "salvar_chave": {
+      const provedor = texto(c.provedor, 30);
       const chave = texto(c.chave, 400);
-      const modelo = texto(c.modelo, 60) || MODELO_PADRAO;
+      const modelo = texto(c.modelo, 60) || MODELO_PADRAO[provedor] || "";
+      const base = texto(c.base_url, 300);
       const limite = c.limite_mensal_tokens == null || c.limite_mensal_tokens === "" ? null : Number(c.limite_mensal_tokens);
-      if (c.provedor !== "claude") return json({ erro: "Por enquanto só o provedor Claude está habilitado." }, 400);
-      if (chave.length < 20 || /\s/.test(chave)) return json({ erro: "Confira a chave copiada (sem espaços)." }, 400);
-      if (!/^[a-z0-9][a-z0-9._-]{2,59}$/.test(modelo)) return json({ erro: "Nome de modelo inválido." }, 400);
+      if (!PROVEDORES.includes(provedor)) return json({ erro: "Provedor não habilitado." }, 400);
+      if (chave.length < (provedor === "claude" ? 20 : 8) || /\s/.test(chave)) return json({ erro: "Confira a chave copiada (sem espaços)." }, 400);
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:/-]{2,79}$/.test(modelo)) return json({ erro: provedor === "compativel_openai" ? "Informe o nome do modelo (ex.: o Llama do seu provedor)." : "Nome de modelo inválido." }, 400);
+      if (provedor === "compativel_openai" && !urlPublicaSegura(base)) return json({ erro: "Informe o endereço da API em https público, sem porta, usuário nem parâmetros (?...)." }, 400);
       if (limite !== null && (!Number.isInteger(limite) || limite < 1000)) return json({ erro: "O limite mensal deve ser um número de tokens (mínimo 1000) ou ficar vazio." }, 400);
-      const { error } = await sb.rpc("ia_salvar_chave", { p_loja: lojaId, p_provedor: "claude", p_cifrada: await cifrar(chave, chaveiro), p_final: chave.slice(-4), p_modelo: modelo, p_limite: limite });
+      const { error } = await sb.rpc("ia_salvar_chave", { p_loja: lojaId, p_provedor: provedor, p_cifrada: await cifrar(chave, chaveiro), p_final: chave.slice(-4), p_modelo: modelo, p_limite: limite, p_base_url: provedor === "compativel_openai" ? base : null });
       if (error) return json({ erro: "Não foi possível salvar a chave." }, 500);
-      await auditar("ia.chave_salva", { provedor: "claude", final: chave.slice(-4), modelo, limite });
+      await auditar("ia.chave_salva", { provedor, final: chave.slice(-4), modelo, limite, base_url: provedor === "compativel_openai" ? base : undefined });
       return json({ ok: true });
     }
     case "testar_chave": {
-      const { data } = await sb.rpc("ia_ler_chave", { p_loja: lojaId, p_provedor: "claude" });
-      const k = (data as { cifrada: string; modelo: string }[] | null)?.[0];
-      if (!k) return json({ erro: "Nenhuma chave ativa. Salve a chave primeiro." }, 409);
+      const provedor = texto(c.provedor, 30);
+      if (!PROVEDORES.includes(provedor)) return json({ erro: "Provedor não habilitado." }, 400);
+      const { data } = await sb.rpc("ia_chave_ativa", { p_loja: lojaId, p_provedor: provedor });
+      const k = (data as { provedor: string; cifrada: string; modelo: string | null; base_url: string | null }[] | null)?.[0];
+      if (!k) return json({ erro: "Nenhuma chave ativa para este provedor. Salve a chave primeiro." }, 409);
       try {
-        const r = await conversar({ chave: await decifrar(k.cifrada, chaveiro), modelo: k.modelo ?? MODELO_PADRAO, sistema: "Responda apenas: ok", mensagens: [{ role: "user", content: "ping" }], ferramentas: [], executar: async () => null, maxTokens: 8 });
-        await sb.rpc("ia_registrar_uso", { p_loja: lojaId, p_provedor: "claude", p_tokens: r.tokens });
+        const r = await conversar({ provedor: provedor as "claude" | "gemini" | "compativel_openai", baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: k.modelo ?? MODELO_PADRAO[provedor] ?? "", sistema: "Responda apenas: ok", mensagens: [{ role: "user", content: "ping" }], ferramentas: [], executar: async () => null, maxTokens: 16 });
+        await sb.rpc("ia_registrar_uso", { p_loja: lojaId, p_provedor: provedor, p_tokens: r.tokens });
         return json({ ok: true });
       } catch (e) {
         return json({ ok: false, erro: e instanceof IaErro ? e.message : "Não foi possível testar a chave." });
       }
     }
     case "remover_chave": {
-      await sb.rpc("ia_desativar_chave", { p_loja: lojaId, p_provedor: "claude" });
-      await auditar("ia.chave_removida", { provedor: "claude" });
+      const provedor = texto(c.provedor, 30);
+      if (!PROVEDORES.includes(provedor)) return json({ erro: "Provedor não habilitado." }, 400);
+      await sb.rpc("ia_desativar_chave", { p_loja: lojaId, p_provedor: provedor });
+      await auditar("ia.chave_removida", { provedor });
+      return json({ ok: true });
+    }
+    case "definir_principal": {
+      const provedor = texto(c.provedor, 30);
+      const { data: ok } = await sb.rpc("ia_definir_principal", { p_loja: lojaId, p_provedor: provedor });
+      if (ok !== true) return json({ erro: "Salve a chave deste provedor antes de torná-lo o principal." }, 409);
+      await auditar("ia.principal_definido", { provedor });
       return json({ ok: true });
     }
     case "salvar_plugin": {
