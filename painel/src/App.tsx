@@ -16,6 +16,7 @@ import { Design } from "./paginas/Design.tsx";
 import { Imagens } from "./paginas/Imagens.tsx";
 import { VitrineDemo } from "./paginas/VitrineDemo.tsx";
 import { Loja } from "./paginas/Loja.tsx";
+import { Aparencia } from "./paginas/Aparencia.tsx";
 
 // Em domínio de cliente (fora do GitHub Pages/localhost) a raiz é a loja daquele domínio, resolvida pelo servidor.
 const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
@@ -27,6 +28,7 @@ const ITENS: [string, string][] = [
   ["/fila", "Fila de aprovação"],
   ["/taxonomia", "Taxonomia"],
   ["/assistente", "Assistente"],
+  ["/aparencia", "Aparência da loja"],
   ["/integracoes", "Integrações de IA"],
   ["/agentes", "Central de Agentes"],
   ["/imagens", "Imagens e SEO"],
@@ -70,6 +72,7 @@ export function App() {
           : caminho === "/fila" ? <Fila loja={loja} />
           : caminho === "/taxonomia" ? <Taxonomia loja={loja} />
           : caminho === "/assistente" ? <Assistente loja={loja} />
+          : caminho === "/aparencia" ? <Aparencia loja={loja} />
           : caminho === "/integracoes" ? <Integracoes loja={loja} />
           : caminho === "/agentes" ? <CentralAgentes />
           : caminho === "/imagens" ? <Imagens />

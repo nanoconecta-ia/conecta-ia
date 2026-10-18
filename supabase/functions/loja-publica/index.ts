@@ -2,6 +2,7 @@
 // A loja é resolvida NO SERVIDOR: por domínio verificado (DNS e SSL) ou pelo slug. Loja desconhecida/inativa => 404 genérico.
 // Só devolve produtos PUBLICADOS e campos públicos (sem custo, fornecedor ou id do ERP).
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.ts";
 import { montarVitrine, normalizarHost, opcoesVeiculo, produtosDoVeiculo, SLUG_RE, type Aplicacao } from "../_shared/loja/publica.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
@@ -68,5 +69,10 @@ Deno.serve(async (req) => {
     for (const i of imgs ?? []) { const s = porId.get(i.produto_id); if (s && !imagens.has(s)) imagens.set(s, i.url); }
   }
   const produtos = montarVitrine((linhas ?? []).map((l: Record<string, unknown>) => ({ ...(l as object), imagem: imagens.get(String(l.sku)) ?? null }) as never), loja.whatsapp);
-  return json({ loja: { nome: loja.nome, slug: loja.slug, modo_venda: loja.modo_venda }, produtos, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), categorias });
+  // tema da loja (cores/fonte/logo/ícone); sem tema salvo => perfil padrão. As variáveis CSS são calculadas aqui, de valores já validados.
+  const { data: tm } = await sb.from("loja_tema").select("cor_primaria, cor_destaque, cor_bloco, fonte, logo_url, icone_url").eq("loja_id", loja.id).maybeSingle();
+  const fonteTema = (FONTES as readonly string[]).includes(tm?.fonte) ? (tm!.fonte as Fonte) : "inter";
+  const cores = tm ? { primaria: tm.cor_primaria, destaque: tm.cor_destaque, bloco: tm.cor_bloco } : PERFIS.azul_conecta;
+  const tema = { variaveis: variaveisCss(cores, fonteTema), logo_url: tm?.logo_url ?? null, icone_url: tm?.icone_url ?? null };
+  return json({ loja: { nome: loja.nome, slug: loja.slug, modo_venda: loja.modo_venda }, tema, produtos, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), categorias });
 });
