@@ -8,8 +8,9 @@ alter table public.loja_chaves_ia drop constraint loja_chaves_ia_provedor_valido
 alter table public.loja_chaves_ia add constraint loja_chaves_ia_provedor_valido
   check (provedor in ('claude', 'gemini', 'compativel_openai', 'openai', 'deepseek'));
 
--- Substitui a versão de 6 argumentos: agora recebe base_url. O primeiro provedor salvo vira o principal.
-drop function public.ia_salvar_chave(uuid, text, text, text, text, bigint);
+-- Nova versão com base_url (7 argumentos). O primeiro provedor salvo vira o principal.
+-- A versão antiga de 6 argumentos continua no banco (só service_role a executa; ninguém a chama mais). Remover depois:
+--   drop function public.ia_salvar_chave(uuid, text, text, text, text, bigint);
 create function public.ia_salvar_chave(p_loja uuid, p_provedor text, p_cifrada text, p_final text, p_modelo text, p_limite bigint, p_base_url text)
 returns void language plpgsql security definer set search_path = '' as $$
 declare v_id uuid; v_tem boolean;
