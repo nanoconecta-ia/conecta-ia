@@ -1,9 +1,6 @@
 name: Painel (GitHub Pages)
 
 on:
-  push:
-    branches: [main]
-    paths: ["painel/**", ".github/workflows/painel-pages.yml"]
   workflow_dispatch:
 
 permissions:
