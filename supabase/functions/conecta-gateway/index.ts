@@ -4,7 +4,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { tratar, type Sessao } from "../_shared/pair/gateway.ts";
 import { dadosSupabase } from "../_shared/pair/gateway_dados.ts";
-import { chaveiroDoAmbiente } from "../_shared/cripto.ts";
+import { chaveiroPlataforma } from "../_shared/plataforma.ts";
+import { configuracaoPair } from "../_shared/pair/implantacao.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type, mcp-protocol-version, mcp-session-id", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 
@@ -13,8 +14,8 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || undefined;
   try {
-    const chaveCifra = chaveiroDoAmbiente((k) => Deno.env.get(k));
-    const ambiente = Deno.env.get("PAIR_AMBIENTE");
+    const chaveCifra = await chaveiroPlataforma(admin, (k) => Deno.env.get(k));
+    const { ambiente } = configuracaoPair((k) => Deno.env.get(k));
     const r = await tratar(
       { metodo: req.method, authorization: req.headers.get("Authorization"), corpo: await req.text(), ip },
       {

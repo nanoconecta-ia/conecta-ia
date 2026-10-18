@@ -1582,12 +1582,49 @@ function dadosSupabase(admin, agora = ()=>new Date(), bling) {
 return { dadosSupabase: dadosSupabase };
 })();
 
+// ---------- supabase/functions/_shared/plataforma.ts ----------
+const __m13 = (() => {
+const { chaveiroDoAmbiente: chaveiroDoAmbiente } = __m11;
+async function doVault(admin, nome) {
+    const { data } = await admin.rpc("plataforma_segredo", {
+        p_nome: nome
+    });
+    return typeof data === "string" && data ? data : undefined;
+}
+async function segredoEstado(admin, get) {
+    return get("ESTADO_SEGREDO") || await doVault(admin, "plataforma_estado_segredo");
+}
+async function chaveiroPlataforma(admin, get) {
+    return chaveiroDoAmbiente(get) ?? await doVault(admin, "plataforma_chave_cifra_k1");
+}
+
+return { segredoEstado: segredoEstado, chaveiroPlataforma: chaveiroPlataforma };
+})();
+
+// ---------- supabase/functions/_shared/pair/implantacao.ts ----------
+const __m14 = (() => {
+const PROJETO_CONECTA = "https://dsfzhsrudriqkumtlqwj.supabase.co";
+const PAINEL_CONECTA = "https://nanoconecta-ia.github.io/conecta-ia/";
+function configuracaoPair(get) {
+    const producao = get("SUPABASE_URL")?.replace(/\/$/, "") === PROJETO_CONECTA;
+    const definido = get("PAIR_AMBIENTE");
+    const ambiente = definido === "sintetico" || definido === "real" ? definido : !definido && producao ? "real" : "nao_validado";
+    return {
+        appUrl: get("APP_URL") || (producao ? PAINEL_CONECTA : undefined),
+        ambiente
+    };
+}
+
+return { PROJETO_CONECTA: PROJETO_CONECTA, PAINEL_CONECTA: PAINEL_CONECTA, configuracaoPair: configuracaoPair };
+})();
+
 // ---------- supabase/functions/conecta-gateway/index.ts ----------
 const __m0 = (() => {
 const { createClient: createClient } = __sdk;
 const { tratar: tratar } = __m1;
 const { dadosSupabase: dadosSupabase } = __m5;
-const { chaveiroDoAmbiente: chaveiroDoAmbiente } = __m11;
+const { chaveiroPlataforma: chaveiroPlataforma } = __m13;
+const { configuracaoPair: configuracaoPair } = __m14;
 const CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, content-type, mcp-protocol-version, mcp-session-id",
@@ -1604,8 +1641,8 @@ Deno.serve(async (req)=>{
     });
     const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || undefined;
     try {
-        const chaveCifra = chaveiroDoAmbiente((k)=>Deno.env.get(k));
-        const ambiente = Deno.env.get("PAIR_AMBIENTE");
+        const chaveCifra = await chaveiroPlataforma(admin, (k)=>Deno.env.get(k));
+        const { ambiente } = configuracaoPair((k)=>Deno.env.get(k));
         const r = await tratar({
             metodo: req.method,
             authorization: req.headers.get("Authorization"),

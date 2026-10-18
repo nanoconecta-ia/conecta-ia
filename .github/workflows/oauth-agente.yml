@@ -1,0 +1,37 @@
+name: OAuth do agente - preparação local
+on:
+  pull_request:
+    paths: ['.github/workflows/oauth-agente.yml']
+permissions:
+  contents: read
+jobs:
+  preparar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - name: Conferir runner padrão e repositório público
+        env:
+          PUBLICO: ${{ github.event.repository.private == false }}
+        run: |
+          test "$PUBLICO" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_ARCH" = X64
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with: {version: 2.81.3}
+      - name: Gerar arquivo pela CLI, sem projeto remoto
+        run: |
+          supabase --version
+          supabase migration --help
+          supabase migration new --help
+          mkdir -p "$RUNNER_TEMP/oauth-local"
+          supabase init --workdir "$RUNNER_TEMP/oauth-local"
+          supabase migration new oauth_agente --workdir "$RUNNER_TEMP/oauth-local"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          files=list((Path(os.environ['RUNNER_TEMP'])/'oauth-local/supabase/migrations').glob('*_oauth_agente.sql'))
+          assert len(files)==1
+          print('MIGRACAO_OAUTH='+files[0].name)
+          PY

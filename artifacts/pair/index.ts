@@ -329,10 +329,28 @@ async function encerrar(auth, ip, p) {
 return { tratarPair: tratarPair };
 })();
 
+// ---------- supabase/functions/_shared/pair/implantacao.ts ----------
+const __m5 = (() => {
+const PROJETO_CONECTA = "https://dsfzhsrudriqkumtlqwj.supabase.co";
+const PAINEL_CONECTA = "https://nanoconecta-ia.github.io/conecta-ia/";
+function configuracaoPair(get) {
+    const producao = get("SUPABASE_URL")?.replace(/\/$/, "") === PROJETO_CONECTA;
+    const definido = get("PAIR_AMBIENTE");
+    const ambiente = definido === "sintetico" || definido === "real" ? definido : !definido && producao ? "real" : "nao_validado";
+    return {
+        appUrl: get("APP_URL") || (producao ? PAINEL_CONECTA : undefined),
+        ambiente
+    };
+}
+
+return { PROJETO_CONECTA: PROJETO_CONECTA, PAINEL_CONECTA: PAINEL_CONECTA, configuracaoPair: configuracaoPair };
+})();
+
 // ---------- supabase/functions/pair/index.ts ----------
 const __m0 = (() => {
 const { createClient: createClient } = __sdk;
 const { tratarPair: tratarPair } = __m1;
+const { configuracaoPair: configuracaoPair } = __m5;
 const CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
@@ -342,7 +360,7 @@ Deno.serve(async (req)=>{
     if (req.method === "OPTIONS") return new Response("ok", {
         headers: CORS
     });
-    const appUrl = Deno.env.get("APP_URL");
+    const { appUrl } = configuracaoPair((k)=>Deno.env.get(k));
     if (!appUrl) return new Response(JSON.stringify({
         erro: "Pareamento ainda não configurado no servidor."
     }), {
