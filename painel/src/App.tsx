@@ -9,6 +9,7 @@ import { Contador } from "./paginas/Contador.tsx";
 import { Taxonomia } from "./paginas/Taxonomia.tsx";
 import { Fila } from "./paginas/Fila.tsx";
 import { Assistente } from "./paginas/Assistente.tsx";
+import { Integracoes } from "./paginas/Integracoes.tsx";
 import { ProdutoPublico } from "./paginas/ProdutoPublico.tsx";
 import { CentralAgentes } from "./paginas/CentralAgentes.tsx";
 import { Design } from "./paginas/Design.tsx";
@@ -21,6 +22,7 @@ const ITENS: [string, string][] = [
   ["/fila", "Fila de aprovação"],
   ["/taxonomia", "Taxonomia"],
   ["/assistente", "Assistente"],
+  ["/integracoes", "Integrações de IA"],
   ["/agentes", "Central de Agentes"],
   ["/imagens", "Imagens e SEO"],
   ["/design", "Design System"],
@@ -59,6 +61,7 @@ export function App() {
           : caminho === "/fila" ? <Fila loja={loja} />
           : caminho === "/taxonomia" ? <Taxonomia loja={loja} />
           : caminho === "/assistente" ? <Assistente loja={loja} />
+          : caminho === "/integracoes" ? <Integracoes loja={loja} />
           : caminho === "/agentes" ? <CentralAgentes />
           : caminho === "/imagens" ? <Imagens />
           : caminho === "/design" ? <Design />
