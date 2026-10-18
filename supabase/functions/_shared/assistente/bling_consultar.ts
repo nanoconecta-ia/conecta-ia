@@ -10,7 +10,7 @@ export const CONSULTAR_PRODUTO: Ferramenta = {
  input_schema: { type: "object", properties: { sku: { type: "string", minLength: 1, maxLength: 80 } }, required: ["sku"], additionalProperties: false },
 };
 export interface ContextoConsulta {
- usuario: any; admin: any; lojaId: string; userId: string; cfg: Config; simulado: boolean;
+ usuario: any; admin: any; lojaId: string; userId: string; conversaId: string; cfg: Config; simulado: boolean;
  chamadas: Record<string, unknown>[]; evidencias: Record<string, unknown>[];
 }
 const numero = (v: unknown): number | null => (typeof v === "number" || typeof v === "string" && v.trim() !== "") && Number.isFinite(Number(v)) ? Number(v) : null;
@@ -52,7 +52,7 @@ export async function consultarProduto(entrada: unknown, c: ContextoConsulta): P
  }
  const evidencia = { ferramenta: CONSULTAR_PRODUTO.name, origem, simulado: c.simulado, consultado_em: new Date().toISOString(), sincronizado_em: origem === "espelho" ? p.sincronizado_em : null, motivo, dados };
  const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(evidencia))))).map(b => b.toString(16).padStart(2, "0")).join("");
- const chamada = { ferramenta: CONSULTAR_PRODUTO.name, origem, status, ms: Date.now() - inicio, hash, simulado: c.simulado };
+ const chamada = { conversa_id: c.conversaId, ferramenta: CONSULTAR_PRODUTO.name, origem, status, ms: Date.now() - inicio, hash, simulado: c.simulado };
  // Falha na auditoria bloqueia a devolução ao modelo e à UI.
  const { error: auditError } = await c.admin.from("auditoria").insert({ loja_id: c.lojaId, user_id: c.userId, acao: "chat.bling_consulta", tabela: "produtos", depois: chamada });
  if (auditError) throw new Error("Não foi possível auditar a consulta.");

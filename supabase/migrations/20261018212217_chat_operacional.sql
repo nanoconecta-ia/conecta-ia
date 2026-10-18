@@ -35,7 +35,7 @@ insert into public.recursos_plataforma(codigo,grupo,nome,descricao,disponivel,at
  ('chat_consulta_bling','assistente','Consulta Bling no chat','Somente leitura, com origem explícita.',true,false),
  ('chat_leitura_administrativa','assistente','Leitura administrativa','Permissão explícita pela plataforma, motivo e auditoria.',true,false);
 create function private.chat_recurso(p_loja uuid,p_recurso text) returns boolean language sql stable security definer set search_path='' as $$
- select coalesce((select rp.disponivel and coalesce(lr.ativo,rp.ativo_padrao) from public.recursos_plataforma rp
+ select coalesce((select rp.disponivel and coalesce(lr.ativo,case when rp.codigo='chat_leitura_administrativa' then false else rp.ativo_padrao end) from public.recursos_plataforma rp
  left join public.loja_recursos lr on lr.recurso=rp.codigo and lr.loja_id=p_loja where rp.codigo=p_recurso),false)
 $$;
 create function private.chat_vinculo(p_loja uuid,p_user uuid) returns boolean language sql stable security definer set search_path='' as $$
@@ -110,7 +110,7 @@ begin
  tok:=gen_random_uuid();
  insert into public.mensagens(loja_id,user_id,conversa_id,papel,conteudo,idempotency_key,metadados)
  values(p_loja,p_user,c.id,'usuario',p_texto,p_idem,jsonb_build_object('provedor',p_provedor)) returning * into q;
- update public.conversas set turno_token=tok,turno_pergunta=q.id,turno_ate=now()+interval '15 minutes',atualizada_em=now() where id=c.id;
+ update public.conversas set turno_token=tok,turno_pergunta=q.id,turno_ate=now()+interval '15 minutes',atualizada_em=now(),titulo=left(regexp_replace(p_texto,'\s+',' ','g'),60) where id=c.id;
  insert into public.auditoria(loja_id,user_id,acao,tabela,depois) values(p_loja,p_user,'chat.turno_iniciado','mensagens',jsonb_build_object('conversa_id',c.id,'pergunta_id',q.id,'provedor',p_provedor));
  return jsonb_build_object('estado','novo','conversa_id',c.id,'pergunta_id',q.id,'turno_token',tok);
 end $$;

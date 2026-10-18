@@ -58,4 +58,26 @@ select public.afirma(public.chat_excluir((select (j->>'conversa_id')::uuid from 
 reset role;
 select public.afirma((select count(*)=0 from public.mensagens),'exclusão remove mensagens');
 select public.afirma(exists(select 1 from public.auditoria where acao='chat.excluido'),'auditoria preservada após exclusão');
+
+select public.afirma(not has_function_privilege('anon','public.chat_iniciar(uuid,uuid,uuid,text,text,text)','EXECUTE'),'anônimo não cria turno por RPC');
+select public.afirma(not has_function_privilege('authenticated','public.chat_responder(uuid,uuid,uuid,uuid,text,jsonb)','EXECUTE'),'usuário não forja resposta por RPC');
+select public.afirma((select chat_retencao_dias=180 from lojas where slug='chat-b'),'retenção inicial 180 dias');
+update public.recursos_plataforma set disponivel=false where codigo='chat_persistente';
+select public.afirma(not private.chat_recurso('aaaaaaaa-0000-0000-0000-000000000001','chat_persistente'),'desligamento global prevalece sobre a loja');
+update public.recursos_plataforma set disponivel=true where codigo='chat_persistente';
+delete from public.loja_recursos where recurso='chat_leitura_administrativa';
+update public.recursos_plataforma set ativo_padrao=true where codigo='chat_leitura_administrativa';
+select public.afirma(not private.chat_recurso('aaaaaaaa-0000-0000-0000-000000000001','chat_leitura_administrativa'),'leitura administrativa exige permissão individual por loja');
+set local role authenticated;
+select set_config('request.jwt.claims','{}',true);
+select public.afirma(not public.chat_excluir(gen_random_uuid()),'ausência de uid não exclui conversa');
+select public.afirma(not public.chat_definir_retencao('aaaaaaaa-0000-0000-0000-000000000001',null),'retenção nula negada');
+reset role;
+create temp table t2 as select public.chat_iniciar('aaaaaaaa-0000-0000-0000-000000000001','22222222-2222-2222-2222-222222222222',null,'Pergunta teste','idempotencia-nova-1','compativel_openai') j;
+do $$ begin begin perform public.chat_responder('aaaaaaaa-0000-0000-0000-000000000001','22222222-2222-2222-2222-222222222222',(select(j->>'pergunta_id')::uuid from t2),gen_random_uuid(),'forjada','{}'); raise exception 'aceitou'; exception when insufficient_privilege then null; end; end $$;
+select public.afirma((select count(*)=1 from public.mensagens),'token incorreto não grava resposta');
+do $$ begin begin update public.mensagens set conteudo='alterada'; raise exception 'aceitou'; exception when insufficient_privilege then null; end; end $$;
+select public.afirma(true,'mensagens imutáveis inclusive para serviço');
+do $$ begin begin insert into public.mensagens(loja_id,user_id,conversa_id,papel,conteudo,idempotency_key) values('bbbbbbbb-0000-0000-0000-000000000002','33333333-3333-3333-3333-333333333333',(select(j->>'conversa_id')::uuid from t2),'usuario','vazamento','idem-cruzada-1'); raise exception 'aceitou'; exception when foreign_key_violation then null; end; end $$;
+select public.afirma(true,'chave composta impede associar mensagem a conversa de outra loja');
 rollback;

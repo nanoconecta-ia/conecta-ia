@@ -1729,6 +1729,7 @@ async function consultarProduto(entrada, c) {
     };
     const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(evidencia))))).map((b)=>b.toString(16).padStart(2, "0")).join("");
     const chamada = {
+        conversa_id: c.conversaId,
         ferramenta: CONSULTAR_PRODUTO.name,
         origem,
         status,
@@ -1783,7 +1784,8 @@ async function atenderChat(c, ctx) {
             persistente: ativo("chat_persistente"),
             bling: ativo("chat_consulta_bling"),
             leitura_administrativa: ativo("chat_leitura_administrativa"),
-            retencao_dias: config.chat_retencao_dias
+            retencao_dias: config.chat_retencao_dias,
+            versao: "chat_operacional_v1"
         });
     }
     if (c.acao === "chat_excluir" && uuid(c.conversa_id)) {
@@ -1822,6 +1824,20 @@ async function atenderChat(c, ctx) {
             erro: "Leitura administrativa não permitida."
         }, 403) : resultado({
             mensagens: data
+        });
+    }
+    if (c.acao === "chat_comprovantes" && uuid(c.conversa_id)) {
+        const { data: propria, error: pe } = await usuario.from("conversas").select("id").eq("loja_id", loja.id).eq("user_id", userId).eq("id", c.conversa_id).maybeSingle();
+        if (pe || !propria) return resultado({
+            erro: "Conversa não encontrada."
+        }, 404);
+        const { data, error } = await usuario.from("auditoria").select("acao, depois, quando").eq("loja_id", loja.id).eq("user_id", userId).eq("depois->>conversa_id", c.conversa_id).order("quando", {
+            ascending: false
+        }).limit(100);
+        return error ? resultado({
+            erro: "Não foi possível verificar a auditoria."
+        }, 503) : resultado({
+            registros: data
         });
     }
     if (c.acao === "chat_listar") {
@@ -1907,6 +1923,7 @@ async function atenderChat(c, ctx) {
         ia: true,
         provedor,
         simulado,
+        ambiente: simulado ? "sintetico" : ctx.get("CHAT_AMBIENTE") === "real" ? "real" : "nao_validado",
         chamadas,
         evidencias,
         desfecho: "falhou"
@@ -1945,6 +1962,7 @@ async function atenderChat(c, ctx) {
         }
         if (mensagens.at(-1)?.content !== c.texto) throw new IaErro(503, "Histórico inconsistente; nenhuma chamada realizada.");
         modelo = modeloDaChave(k);
+        meta.host_provedor = provedor === "compativel_openai" ? new URL(k.base_url).hostname : provedor === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
         const r = await conversar({
             provedor,
             baseUrl: k.base_url ?? undefined,
@@ -1952,6 +1970,8 @@ async function atenderChat(c, ctx) {
             modelo,
             mensagens,
             sistema: `${SISTEMA}\nLoja: ${loja.nome}. Neste fluxo só existe bling_consultar_produto. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.`,
+            maxPassos: 3,
+            maxTokens: 768,
             ferramentas: ativo("chat_consulta_bling") ? [
                 CONSULTAR_PRODUTO
             ] : [],
@@ -1968,6 +1988,7 @@ async function atenderChat(c, ctx) {
                     admin,
                     lojaId: loja.id,
                     userId,
+                    conversaId: turno.conversa_id,
                     cfg: {
                         chaveCifra: chaveiro,
                         fetch: ctx.fetch

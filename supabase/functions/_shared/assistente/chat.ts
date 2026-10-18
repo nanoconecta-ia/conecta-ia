@@ -17,7 +17,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  const ativo = (codigo: string) => flags.some((r: any) => r.codigo === codigo && r.ativo === true);
  if (c.acao === "chat_config") {
   const { data: config, error } = await usuario.from("lojas").select("chat_retencao_dias").eq("id", loja.id).single();
-  return error ? resultado({ erro: "Preparação do histórico ainda não instalada." }, 503) : resultado({ persistente: ativo("chat_persistente"), bling: ativo("chat_consulta_bling"), leitura_administrativa: ativo("chat_leitura_administrativa"), retencao_dias: config.chat_retencao_dias });
+  return error ? resultado({ erro: "Preparação do histórico ainda não instalada." }, 503) : resultado({ persistente: ativo("chat_persistente"), bling: ativo("chat_consulta_bling"), leitura_administrativa: ativo("chat_leitura_administrativa"), retencao_dias: config.chat_retencao_dias, versao: "chat_operacional_v1" });
  }
  // Excluir e configurar continuam disponíveis quando o recurso é desligado.
  if (c.acao === "chat_excluir" && uuid(c.conversa_id)) {
@@ -32,6 +32,12 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  if (c.acao === "chat_admin" && uuid(c.conversa_id)) {
   const { data, error } = await usuario.rpc("chat_ler_como_administrador", { p_loja: loja.id, p_conversa: c.conversa_id, p_motivo: c.motivo, p_antes: c.antes ?? null, p_antes_id: c.antes_id ?? null });
   return error ? resultado({ erro: "Leitura administrativa não permitida." }, 403) : resultado({ mensagens: data });
+ }
+ if (c.acao === "chat_comprovantes" && uuid(c.conversa_id)) {
+  const { data: propria, error: pe } = await usuario.from("conversas").select("id").eq("loja_id", loja.id).eq("user_id", userId).eq("id", c.conversa_id).maybeSingle();
+  if (pe || !propria) return resultado({ erro: "Conversa não encontrada." }, 404);
+  const { data, error } = await usuario.from("auditoria").select("acao, depois, quando").eq("loja_id", loja.id).eq("user_id", userId).eq("depois->>conversa_id", c.conversa_id).order("quando", { ascending: false }).limit(100);
+  return error ? resultado({ erro: "Não foi possível verificar a auditoria." }, 503) : resultado({ registros: data });
  }
  if (c.acao === "chat_listar") {
   let q = usuario.from("conversas").select("id, titulo, atualizada_em").eq("loja_id", loja.id).eq("user_id", userId).order("atualizada_em", { ascending: false }).order("id", { ascending: false }).limit(50);
@@ -60,7 +66,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  let tokens = 0; let respostaId: string | undefined; let modelo: string | undefined;
  const simulado = ctx.get("CHAT_AMBIENTE") === "sintetico";
  let resposta = "Não consegui concluir esta pergunta."; let status = 200;
- const meta: Record<string, unknown> = { ia: true, provedor, simulado, chamadas, evidencias, desfecho: "falhou" };
+ const meta: Record<string, unknown> = { ia: true, provedor, simulado, ambiente: simulado ? "sintetico" : ctx.get("CHAT_AMBIENTE") === "real" ? "real" : "nao_validado", chamadas, evidencias, desfecho: "falhou" };
  try {
   const { data: limitado, error: le } = await admin.rpc("limite_chamada", { p_chave: `chat-ia:${loja.id}:${userId}`, p_max: 20, p_janela_s: 60 });
   if (le || limitado !== true) throw new IaErro(429, "Limite temporário de perguntas.");
@@ -83,13 +89,14 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   // A pergunta recém-gravada deve ser a última; UUID não define ordem temporal em empates.
   if (mensagens.at(-1)?.content !== c.texto) throw new IaErro(503, "Histórico inconsistente; nenhuma chamada realizada.");
   modelo = modeloDaChave(k);
+  meta.host_provedor = provedor === "compativel_openai" ? new URL(k.base_url).hostname : provedor === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
   const r = await conversar({ provedor, baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo, mensagens,
    sistema: `${SISTEMA}\nLoja: ${loja.nome}. Neste fluxo só existe bling_consultar_produto. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.`,
-   ferramentas: ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO] : [], fetch: ctx.fetch,
+   maxPassos: 3, maxTokens: 768, ferramentas: ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO] : [], fetch: ctx.fetch,
    onPasso: p => { tokens += p.tokens; respostaId = p.respostaId; modelo = p.modelo ?? modelo; },
    executar: async (nome, entrada) => {
     if (nome !== CONSULTAR_PRODUTO.name || !ativo("chat_consulta_bling")) throw new Error("Ferramenta não permitida.");
-    return consultarProduto(entrada, { usuario, admin, lojaId: loja.id, userId, cfg: { chaveCifra: chaveiro, fetch: ctx.fetch }, simulado, chamadas, evidencias });
+    return consultarProduto(entrada, { usuario, admin, lojaId: loja.id, userId, conversaId: turno.conversa_id, cfg: { chaveCifra: chaveiro, fetch: ctx.fetch }, simulado, chamadas, evidencias });
    },
   });
   resposta = r.texto || "O provedor não retornou texto.";

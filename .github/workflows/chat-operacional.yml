@@ -29,3 +29,15 @@ jobs:
           for arquivo in "$RUNNER_TEMP"/chat-migracao/supabase/migrations/*_chat_operacional.sql; do
             echo "MIGRACAO_GERADA=$(basename "$arquivo")"
           done
+
+  artefato-e-oauth:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - run: node --experimental-vm-modules scripts/gerar-autocontido.mjs --check
+      - run: node --experimental-vm-modules scripts/tests/chat-artefato.test.mjs
+      - run: node --experimental-vm-modules scripts/tests/oauth-operacional.test.mjs

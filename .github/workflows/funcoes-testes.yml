@@ -41,3 +41,4 @@ jobs:
       # Banco DESCARTÁVEL do runner (nunca o Supabase). Aplica stub + migrações e roda os testes SQL do Conecta Pair.
       - run: ./supabase/tests/rodar_local.sh
       - run: ./supabase/tests/conecta_pair_concorrencia.sh
+      - run: node scripts/tests/chat-concorrencia.mjs
