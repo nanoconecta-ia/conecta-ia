@@ -29,16 +29,17 @@ export function Assistente({ loja }: { loja: Loja }) {
   const [ocupado, setOcupado] = useState(false);
   const [provedores, setProvedores] = useState<OpcaoProvedor[]>([]);
   const [provedor, setProvedor] = useState<ProvedorChat | "">("");
+  const [carregandoChat, setCarregandoChat] = useState(true);
   const [carregando, setCarregando] = useState(true);
   const [erroConfig, setErroConfig] = useState("");
   const [aceitaEnvio, setAceitaEnvio] = useState(false);
   const lojaAtual = useRef(loja.id); lojaAtual.current = loja.id;
   const selecao = provedores.find((p) => p.id === provedor);
-  const podeEnviar = !carregando && !erroConfig && (!provedor || (selecao?.estado === "disponivel" && aceitaEnvio));
+  const podeEnviar = !carregandoChat && !carregando && !erroConfig && (!provedor || (selecao?.estado === "disponivel" && aceitaEnvio));
   useEffect(() => {
     let ativo = true;
     setConfig({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 }); setConversas([]); setConversaId(null); setRegistros([]); setRetentativa(null); setAdministrando(false); setErroHistorico("");
-    setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false);
+    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false);
     setMsgs([{ de: "ia", texto: "Olá! Posso consultar os dados desta loja. Escolha um provedor para conversar com IA." }]);
     supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao: "provedores" } })
       .then(({ data, error }) => {
@@ -52,10 +53,11 @@ export function Assistente({ loja }: { loja: Loja }) {
       }).catch(() => { if (ativo) { setErroConfig("Não foi possível verificar os provedores."); setCarregando(false); } });
     supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao: "chat_config" } }).then(({ data, error }) => {
       if (!ativo) return;
+      setCarregandoChat(false);
       if (error || !data || data.erro) { setErroHistorico("Histórico persistente ainda indisponível. O resumo local continua disponível."); return; }
       setConfig(data); setDias(data.retencao_dias);
       void listarConversas(false);
-    }).catch(() => { if (ativo) setErroHistorico("Não foi possível consultar o histórico."); });
+    }).catch(() => { if (ativo) { setCarregandoChat(false); setErroHistorico("Não foi possível consultar o histórico."); } });
     supabase.rpc("pode_administrar_loja", { p_loja_id: loja.id }).then(({ data, error }) => { if (ativo) setPodeAdministrar(!error && data === true); });
     return () => { ativo = false; };
   }, [loja.id]);
@@ -106,7 +108,7 @@ export function Assistente({ loja }: { loja: Loja }) {
     catch (e) { setErroHistorico(String(e)); } finally { setOcupado(false); }
   }
   async function enviar(t: string, repetir = false) {
-    if (!t.trim() || ocupado || !podeEnviar || administrando) return;
+    if (!t.trim() || ocupado || !podeEnviar || administrando || retentativa && !repetir) return;
     const lojaDoEnvio = loja.id;
     const persistente = !!provedor && config.persistente;
     const tentativa = repetir ? retentativa : null;
