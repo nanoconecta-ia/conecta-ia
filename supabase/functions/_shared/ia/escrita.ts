@@ -56,12 +56,13 @@ export async function proporAplicacao(admin: AdminRpc, lojaId: string, e: Record
 }
 
 export async function proporImagem(admin: AdminRpc, lojaId: string, e: Record<string, unknown>): Promise<unknown> {
-  const sku = txt(e.sku, 80), url = txt(e.url, 600), origem = txt(e.origem, 200);
+  const sku = txt(e.sku, 80), url = txt(e.url, 600), origem = txt(e.origem, 200), pagina = txt(e.pagina, 600);
   if (!sku || !url) return { erro: "Informe o SKU e o endereço da imagem." };
   if (!/^https:\/\//i.test(url)) return { erro: "A imagem precisa ser um endereço https." };
   const produtoId = await idDoSku(admin, lojaId, sku);
   if (!produtoId) return { erro: "Produto não encontrado nesta loja." };
-  const { error } = await admin.rpc("imagem_propor", { p_loja: lojaId, p_produto: produtoId, p_url: url, p_origem: origem || "busca_web", p_tipo: "ilustrativa" });
+  // cruzamento = o próprio SKU buscado (sinal disponível numa busca por texto; a Fila avisa que os direitos ainda não foram confirmados)
+  const { error } = await admin.rpc("imagem_propor", { p_loja: lojaId, p_produto: produtoId, p_url: url, p_origem: origem || "busca_web", p_sku: sku, p_pagina: pagina || null });
   if (error) return { erro: "Não foi possível propor a imagem." };
   return { ok: true, status: "a_confirmar", aviso: "A imagem entrou pendente de aprovação na Fila; direitos de uso ainda não confirmados." };
 }

@@ -2,7 +2,7 @@
 // Só lê produto PUBLICADO de loja ATIVA e só fatos APROVADOS. Sem confirmação => diz que não tem e leva ao WhatsApp.
 // Não menciona provedor de IA. Limites de tamanho na entrada.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { intencaoCliente, responderCliente } from "../_shared/assistente/intencao.ts";
+import { intencaoCliente, responderCliente } from "../_shared/intencoes.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json" } });

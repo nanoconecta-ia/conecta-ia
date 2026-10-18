@@ -1,7 +1,7 @@
 // Assistente do lojista (JWT do usuário). POST { loja_id, acao: "perguntar", texto } ou { loja_id, acao: "decidir", id, decisao: "aprovar"|"rejeitar" }.
 // Responde só com dados da própria loja (a RLS decide o acesso). Decidir grava via service role e registra auditoria.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { AJUDA_LOJISTA, intencaoLojista } from "../_shared/assistente/intencao.ts";
+import { AJUDA_LOJISTA, intencaoLojista } from "../_shared/intencoes.ts";
 import { decifrar } from "../_shared/cripto.ts";
 import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 import { conversar, IaErro, type Mensagem } from "../_shared/ia/claude.ts";
