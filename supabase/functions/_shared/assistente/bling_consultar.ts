@@ -20,7 +20,7 @@ export async function consultarProduto(entrada: unknown, c: ContextoConsulta): P
  if (!e || typeof e !== "object" || Object.keys(e).some(k => k !== "sku") || typeof e.sku !== "string" || !e.sku.trim() || e.sku.length > 80) throw new Error("Informe apenas um SKU válido.");
  if (c.chamadas.length >= 3) throw new Error("Limite de três consultas por turno.");
  const f = buscarFerramenta("bling.produtos.obter");
- if (!f || f.metodo !== "GET" || !podeExecutar(f, null).ok) throw new Error("Consulta indisponível.");
+ if (!f || !f.conferido || f.metodo !== "GET" || !podeExecutar(f, null).ok) throw new Error("Consulta indisponível.");
  // Revalidar flag em cada execução: desligamento vale mesmo com uma conversa em andamento.
  const { data: flags, error: flagError } = await c.usuario.from("recursos_efetivos").select("codigo, ativo").eq("loja_id", c.lojaId).eq("codigo", "chat_consulta_bling");
  if (flagError || !flags?.some((r: any) => r.ativo === true)) throw new Error("Consulta Bling desligada nesta loja.");

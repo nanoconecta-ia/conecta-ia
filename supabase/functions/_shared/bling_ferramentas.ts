@@ -17,9 +17,9 @@ export interface Ferramenta {
   conferido: boolean;
 }
 
-const leitura = (nome: string, caminho: string): Ferramenta => ({
+const leitura = (nome: string, caminho: string, conferido = false): Ferramenta => ({
   nome, metodo: "GET", caminho, risco: "LOW", ativa: true, exigeAprovacao: false,
-  exigeIdempotencyKey: false, retry: "leitura", timeoutMs: 20_000, conferido: false,
+  exigeIdempotencyKey: false, retry: "leitura", timeoutMs: 20_000, conferido,
 });
 const escrita = (nome: string, metodo: "POST" | "PUT" | "PATCH", caminho: string, risco: Risco): Ferramenta => ({
   nome, metodo, caminho, risco, ativa: false, exigeAprovacao: true,
@@ -28,7 +28,8 @@ const escrita = (nome: string, metodo: "POST" | "PUT" | "PATCH", caminho: string
 
 export const FERRAMENTAS: readonly Ferramenta[] = [
   leitura("bling.produtos.listar", "/produtos"),
-  leitura("bling.produtos.obter", "/produtos/{id}"),
+  // Conferido em 2026-10-18 no OpenAPI oficial developer.bling.com.br/referencia (GET /produtos/{idProduto}).
+  leitura("bling.produtos.obter", "/produtos/{id}", true),
   leitura("bling.categorias.listar", "/categorias/produtos"),
   leitura("bling.estoque.saldos", "/estoques/saldos"),
   leitura("bling.contatos.listar", "/contatos"),

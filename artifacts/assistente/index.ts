@@ -1356,7 +1356,7 @@ return { MSG_SO_LOJISTA: MSG_SO_LOJISTA, podeDecidir: podeDecidir };
 
 // ---------- supabase/functions/_shared/bling_ferramentas.ts ----------
 const __m16 = (() => {
-const leitura = (nome, caminho)=>({
+const leitura = (nome, caminho, conferido = false)=>({
         nome,
         metodo: "GET",
         caminho,
@@ -1366,7 +1366,7 @@ const leitura = (nome, caminho)=>({
         exigeIdempotencyKey: false,
         retry: "leitura",
         timeoutMs: 20_000,
-        conferido: false
+        conferido
     });
 const escrita = (nome, metodo, caminho, risco)=>({
         nome,
@@ -1382,7 +1382,7 @@ const escrita = (nome, metodo, caminho, risco)=>({
     });
 const FERRAMENTAS = [
     leitura("bling.produtos.listar", "/produtos"),
-    leitura("bling.produtos.obter", "/produtos/{id}"),
+    leitura("bling.produtos.obter", "/produtos/{id}", true),
     leitura("bling.categorias.listar", "/categorias/produtos"),
     leitura("bling.estoque.saldos", "/estoques/saldos"),
     leitura("bling.contatos.listar", "/contatos"),
@@ -1656,7 +1656,7 @@ async function consultarProduto(entrada, c) {
     if (!e || typeof e !== "object" || Object.keys(e).some((k)=>k !== "sku") || typeof e.sku !== "string" || !e.sku.trim() || e.sku.length > 80) throw new Error("Informe apenas um SKU válido.");
     if (c.chamadas.length >= 3) throw new Error("Limite de três consultas por turno.");
     const f = buscarFerramenta("bling.produtos.obter");
-    if (!f || f.metodo !== "GET" || !podeExecutar(f, null).ok) throw new Error("Consulta indisponível.");
+    if (!f || !f.conferido || f.metodo !== "GET" || !podeExecutar(f, null).ok) throw new Error("Consulta indisponível.");
     const { data: flags, error: flagError } = await c.usuario.from("recursos_efetivos").select("codigo, ativo").eq("loja_id", c.lojaId).eq("codigo", "chat_consulta_bling");
     if (flagError || !flags?.some((r)=>r.ativo === true)) throw new Error("Consulta Bling desligada nesta loja.");
     const { data: permitido, error: limiteErro } = await c.admin.rpc("limite_chamada", {

@@ -25,7 +25,7 @@ try{
   return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(body)});
  });
  await page.goto('http://127.0.0.1:4179/.chat-demo.html');
- await page.getByLabel('Minhas conversas',{exact:true}).waitFor();
+ try { await page.getByRole('button',{name:'Nova conversa',exact:true}).waitFor(); } catch (e) { console.error('Diagnóstico de fixture SIMULADA:',JSON.stringify({erros,html:(await page.locator('body').innerText()).slice(0,3000)})); throw e; }
  const enviar=page.getByRole('button',{name:'Enviar',exact:true});assert.equal(await enviar.isDisabled(),true);
  await page.getByLabel(/Enviar esta pergunta/).check();await page.getByLabel('Pergunte',{exact:true}).fill('Consulte SKU-DEMO');await enviar.click();
  await page.getByText('API Bling consultada',{exact:false}).waitFor();assert.equal(chamadas,1);assert.ok(await page.getByText('SIMULADO · API Bling consultada').isVisible());
