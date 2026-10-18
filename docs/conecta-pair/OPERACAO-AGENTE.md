@@ -18,7 +18,7 @@ Apenas `GET /produtos/{id}` é permitido. Renovação OAuth pode girar credencia
 
 Gerar com Node 24.19.0: `node --experimental-vm-modules scripts/gerar-pair.mjs`. Conferir com `--check`. Os diretórios `artifacts/pair` e `artifacts/conecta-gateway` contêm arquivo autocontido e manifesto SHA-256, com SDK Supabase fixo em 2.117.3. Evita-se o problema de bundling observado no assistente; nenhuma edição manual do gerado.
 
-A migração nova `20261019000002_pair_consulta_bling.sql` apenas substitui a allowlist privada de consentimentos, preservando ACLs e sessões. Não cria tabela. Depende da migração Pair `20261019000001_conecta_pair.sql`, ainda não implantada no último inventário de produção. O CI aplica todas as migrações somente em Postgres descartável. Não executar `db push` genérico: o histórico remoto do chat operacional usa versão distinta, registrada na entrega anterior.
+A migração nova `20261018230659_pair_consulta_bling.sql` apenas substitui a allowlist privada de consentimentos, preservando ACLs e sessões. Não cria tabela. Depende da migração Pair `20261018230657_conecta_pair.sql`, ainda não implantada no último inventário de produção. O CI aplica todas as migrações somente em Postgres descartável. Não executar `db push` genérico: o histórico remoto do chat operacional usa versão distinta, registrada na entrega anterior.
 
 Antes da implantação Pair, revisar o diff completo da migração original, inventariar dependências/ACLs remotas, guardar fontes atuais e checar `APP_URL`, chaveiro existente e ambiente sem expor valores. `pair` e `conecta-gateway` usam `verify_jwt=false` porque validam seus próprios desafios e sessões opacas. A aprovação e revogação do lojista continuam com JWT nativo e RPC; nunca fabricar JWT nem aprovar em nome do usuário.
 

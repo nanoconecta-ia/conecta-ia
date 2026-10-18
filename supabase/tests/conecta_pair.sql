@@ -1,4 +1,4 @@
--- Testa 20261019000001_conecta_pair.sql: pareamento, sessões e Central de Aprovações. Duas lojas fictícias; desfaz tudo.
+-- Testa 20261018230657_conecta_pair.sql: pareamento, sessões e Central de Aprovações. Duas lojas fictícias; desfaz tudo.
 -- Concorrência real (várias conexões): supabase/tests/conecta_pair_concorrencia.sh
 begin;
 create or replace function public.afirma(ok boolean, msg text) returns void language plpgsql as

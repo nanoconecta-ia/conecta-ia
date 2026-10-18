@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { aleatorioB64u, ESCOPOS, mmss, ROTULOS_ESCOPO, ROTULOS_TIPO_APROVACAO, segundosAte, sha256Hex } from "./pair.ts";
 
-const migracao = readFileSync(new URL("../../../supabase/migrations/20261019000001_conecta_pair.sql", import.meta.url), "utf8");
-const escoposMigracao = readFileSync(new URL("../../../supabase/migrations/20261019000002_pair_consulta_bling.sql", import.meta.url), "utf8");
+const migracao = readFileSync(new URL("../../../supabase/migrations/20261018230657_conecta_pair.sql", import.meta.url), "utf8");
+const escoposMigracao = readFileSync(new URL("../../../supabase/migrations/20261018230659_pair_consulta_bling.sql", import.meta.url), "utf8");
 
 test("escopos do painel = escopos da migração, todos com rótulo, nenhum aprova/executa/administra", () => {
   const bloco = /pair_escopos_validos\(\) returns text\[\][\s\S]*?array\[([\s\S]*?)\];/.exec(escoposMigracao)![1];
