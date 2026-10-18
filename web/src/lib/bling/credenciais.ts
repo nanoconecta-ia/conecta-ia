@@ -1,4 +1,5 @@
 import "server-only";
+import { oauthLegadoAtivo } from "./permissao";
 import { supabaseServico } from "@/lib/supabase/servico";
 import { cifrar, decifrar } from "./cripto";
 import { renovar, type TokensBling } from "./oauth";
@@ -6,6 +7,7 @@ import { configBling } from "./config";
 
 /** Grava tokens cifrados via RPC (schema private não é exposto). Só service_role. */
 export async function salvarTokens(lojaId: string, t: TokensBling) {
+  if (!oauthLegadoAtivo()) throw new Error("OAuth legado desativado.");
   const { error } = await supabaseServico().rpc("bling_salvar_credenciais", {
     p_loja_id: lojaId,
     p_access: cifrar(t.accessToken),
@@ -17,6 +19,7 @@ export async function salvarTokens(lojaId: string, t: TokensBling) {
 
 /** Access token válido da loja; renova (e regrava o novo par) se faltar menos de 2 min. */
 export async function accessTokenDaLoja(lojaId: string): Promise<string> {
+  if (!oauthLegadoAtivo()) throw new Error("OAuth legado desativado.");
   const s = supabaseServico();
   const { data, error } = await s.rpc("bling_ler_credenciais", { p_loja_id: lojaId });
   const row = Array.isArray(data) ? data[0] : data;

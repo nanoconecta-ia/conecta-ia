@@ -1,0 +1,60 @@
+{
+  "versao": 1,
+  "entrada": "supabase/functions/conecta-gateway/index.ts",
+  "externo": "npm:@supabase/supabase-js@2.117.3",
+  "artefato_sha256": "507258bef66bcec1c6ec374a9d36fe79d6d11d4e42f2d9dbc73d938e82fe37f5",
+  "fontes": [
+    {
+      "path": "supabase/functions/_shared/pair/escopos.ts",
+      "sha256": "4b6b38eb0373894fd3ccae92e2afff97ec361753f304e74b36396bb809fea53a"
+    },
+    {
+      "path": "supabase/functions/_shared/estado.ts",
+      "sha256": "ca773dccf24fee19ad71c8efc9f4751f46c08a12d502456bf96c3e3183b23419"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/cripto.ts",
+      "sha256": "a2515675da2df37ab795b40eee7850042769bda7d7ec6a18f129d1314ce29219"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/gateway.ts",
+      "sha256": "a4e7c74464faae692174c5c675f48eb8a2451c246b4ebc687e9365f765fb122f"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/escrita.ts",
+      "sha256": "06c2749c118a05ed918f0eb9bf7e62bf0bd12c48f9862ab0c757d11f4df08759"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_ferramentas.ts",
+      "sha256": "9ea444759ce88cc371ca7160e2493eec03ecd40c2409f2e4cfa619d458f2df44"
+    },
+    {
+      "path": "supabase/functions/_shared/cripto.ts",
+      "sha256": "0ce08b5db4d10007547d4c040fef8a6580be6879ef72fd3a800236824beb294c"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_token.ts",
+      "sha256": "cc0741c715b6cf29b4f55cf1d5a842d982b254f2c36499486d66993ca70dcae2"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_api.ts",
+      "sha256": "b4111a685e011d2d051d8f9d40d6a5e8a6fde2da8232c0871360f2e09ddbd8fb"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_armazem.ts",
+      "sha256": "af765b491093e16d2bbc41d8f9ac803b68a24d9312df71b1feb1f262a4f796fa"
+    },
+    {
+      "path": "supabase/functions/_shared/assistente/bling_consultar.ts",
+      "sha256": "4f8a9a7155d43e388a0246c9d84cf84786f9d57a64b109bcd6f4c00dd6b05311"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/gateway_dados.ts",
+      "sha256": "6fc009aaaf0b45a76bfc083deed11dba6fabbf8ee321d468132c375c0879210a"
+    },
+    {
+      "path": "supabase/functions/conecta-gateway/index.ts",
+      "sha256": "1cfd1ae1eaa45de2c0980b81b37133cf56860c094dcdb7b8e069b488e07d3699"
+    }
+  ]
+}

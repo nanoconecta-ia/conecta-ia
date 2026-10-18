@@ -1,4 +1,6 @@
-# Bling API v3 — fatos confirmados na documentação oficial
+# Bling API v3 — registro histórico do protótipo
+
+> OAuth deste documento é o protótipo `web/`, desativado por padrão. O fluxo em uso é o das Edge Functions e do `painel/`. Não ativar `WEB_OAUTH_LEGADO_ATIVO` em produção antes de migrar cifra, renovação com lease e configuração por loja; o merge não autoriza essa ativação.
 
 Fonte: developer.bling.com.br (referência colada pelo cliente em 2026-10-13). Nada aqui é inventado;
 o que a documentação não cobre fica marcado como **a confirmar**.

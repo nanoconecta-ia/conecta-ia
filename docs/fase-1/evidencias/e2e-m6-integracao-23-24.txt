@@ -1,0 +1,23 @@
+== Enriquecimento
+✔  EDITOR tenta APROVAR enriquecimento  → HTTP 403, estado do item = a_confirmar
+✔  …e o item continua a_confirmar
+✔  EDITOR tenta REJEITAR enriquecimento  → HTTP 403
+✔  lojista de OUTRA loja não decide na loja A  → HTTP 404
+✔  sem login → 401
+✔  LOJISTA aprova normalmente  → estado=aprovado
+✔  a decisão do lojista fica auditada com o usuário dele
+✔  LOJISTA rejeita normalmente
+✔  usuário autenticado SEM vínculo com a loja não decide  → HTTP 404
+✔  token inválido → 401  → HTTP 401
+✔  sem vínculo tampouco decide imagem  → HTTP 404
+
+== Imagens
+✔  EDITOR tenta APROVAR imagem  → HTTP 403, aprovada=f
+✔  lojista de OUTRA loja não decide imagem da loja A
+✔  LOJISTA aprova imagem normalmente
+
+== O que o editor continua podendo fazer
+✔  EDITOR continua conversando/consultando (sem chave de IA: resposta por palavras-chave)  → LOJA TESTE A: 1 produtos espelhados, 0 publicados, 0 itens aguardando sua aprovação.
+✔  EDITOR também não consegue aprovar escrevendo direto na tabela (REST)
+
+RESULTADO: 16/16 ok, 0 falha(s)

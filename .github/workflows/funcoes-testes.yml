@@ -1,0 +1,54 @@
+name: Testes das funções e do banco
+
+on:
+  push:
+    branches: [main]
+    paths: ["supabase/**", ".github/workflows/funcoes-testes.yml"]
+  pull_request:
+    paths: ["supabase/**", ".github/workflows/funcoes-testes.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  funcoes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Só testes puros (sem rede, sem Supabase, sem segredo). Deploy não faz parte deste fluxo.
+      - run: node --experimental-strip-types --test supabase/functions/_shared/*.test.ts supabase/functions/_shared/*/*.test.ts
+
+  banco:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      # Banco DESCARTÁVEL do runner (nunca o Supabase). Aplica stub + migrações e roda os testes SQL do Conecta Pair.
+      - run: ./supabase/tests/rodar_local.sh
+      - run: ./supabase/tests/conecta_pair_concorrencia.sh
+      - run: node scripts/tests/chat-concorrencia.mjs
+      - name: Validar reversão somente no banco descartável
+        env:
+          PGDATABASE: conecta_teste
+        run: |
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/chat-operacional/REVERSAO.sql
+          psql -XqAt -v ON_ERROR_STOP=1 <<'SQL'
+          do $$ begin
+            if to_regclass('public.conversas') is not null or to_regclass('public.mensagens') is not null or to_regclass('public.auditoria') is null then raise exception 'reversão inválida'; end if;
+          end $$;
+          SQL

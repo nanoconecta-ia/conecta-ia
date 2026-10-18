@@ -1,0 +1,62 @@
+name: Chat operacional - validação sem produção
+on:
+  pull_request:
+    paths: ['supabase/**', 'scripts/**', 'painel/**', 'sql/**', '.github/workflows/chat-operacional.yml']
+permissions:
+  contents: read
+concurrency:
+  group: chat-operacional-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contrato-migracao:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Conferir migração gerada pela CLI no bootstrap
+        run: test -s supabase/migrations/20261018212217_chat_operacional.sql
+
+  artefato-e-oauth:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - run: node --experimental-vm-modules scripts/gerar-autocontido.mjs --check
+      - run: node --experimental-vm-modules scripts/tests/chat-artefato.test.mjs
+      - run: node --experimental-vm-modules scripts/tests/oauth-operacional.test.mjs
+      - run: node scripts/tests/chat-guardas.test.mjs
+
+  demonstracao-390px:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - run: npm ci
+        working-directory: painel
+      - name: Conferir runner padrão e repositório público
+        env:
+          PUBLICO: ${{ github.event.repository.private == false }}
+        run: |
+          test "$PUBLICO" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_ARCH" = X64
+      - name: Navegador efêmero, sem alterar dependências do produto
+        working-directory: painel
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.56.1
+          npx playwright install chromium --with-deps
+      - run: node scripts/tests/chat-visual.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chat-390px-SIMULADO
+          path: evidencias-chat/chat-390-simulado.png
+          retention-days: 7
+          if-no-files-found: error
