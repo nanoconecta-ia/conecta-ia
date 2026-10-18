@@ -1,6 +1,6 @@
 # Agente externo e consulta Bling
 
-Estado em 18/10/2026: estúdio incorporado pelo PR #33; consulta do agente externo preparada nesta alteração. Não confundir a implantação anterior do chat interno com a implantação do Pair. Este documento não registra teste real do novo gateway.
+Estado em 18/10/2026: estúdio publicado, Pair v1 e gateway com OAuth implantados; migrações Pair e OAuth aplicadas. O consentimento do proprietário e a conexão do cliente ainda são necessários. Este documento não registra teste real do novo gateway. Evidências e versões: [PUBLICACAO-20261018.md](PUBLICACAO-20261018.md).
 
 ## O que esta alteração entrega
 
@@ -12,17 +12,17 @@ Apenas `GET /produtos/{id}` é permitido. Renovação OAuth pode girar credencia
 
 `pair.bling_consulta` registra loja/usuário/sessão/dispositivo, origem, hash da evidência, status e duração, sem texto do chat, dados fiscais ou segredos. O gateway também registra o desfecho e as chaves dos argumentos. Falha na auditoria bloqueia a entrega do resultado. Uma proposta pode já ter sido registrada se sua auditoria posterior falhar: isso não desfaz o pedido nem autoriza repetir escritas às cegas. A leitura Bling não grava produto.
 
-`PAIR_AMBIENTE=sintetico` identifica simulação; `real` permite evidência identificada como real; ausente ou outro valor gera `nao_validado`. O rótulo não prova a procedência sozinho: o aceite real exige chamada autenticada do cliente, origem API, identidade correspondente e auditoria verificável. Todos os testes automatizados desta alteração usam identidades e dados sintéticos.
+`PAIR_AMBIENTE=sintetico` identifica simulação; `real` permite evidência identificada como real. No projeto canônico Conecta, a ausência assume `real`; em outro projeto ou com valor inválido, gera `nao_validado`. O rótulo não prova a procedência sozinho: o aceite real exige chamada autenticada do cliente, origem API, identidade correspondente e auditoria verificável. Todos os testes automatizados desta alteração usam identidades e dados sintéticos.
 
 ## Artefatos e banco
 
 Gerar com Node 24.19.0: `node --experimental-vm-modules scripts/gerar-pair.mjs`. Conferir com `--check`. Os diretórios `artifacts/pair` e `artifacts/conecta-gateway` contêm arquivo autocontido e manifesto SHA-256, com SDK Supabase fixo em 2.117.3. Evita-se o problema de bundling observado no assistente; nenhuma edição manual do gerado.
 
-A migração nova `20261018230659_pair_consulta_bling.sql` apenas substitui a allowlist privada de consentimentos, preservando ACLs e sessões. Não cria tabela. Depende da migração Pair `20261018230657_conecta_pair.sql`, ainda não implantada no último inventário de produção. O CI aplica todas as migrações somente em Postgres descartável. Não executar `db push` genérico: o histórico remoto do chat operacional usa versão distinta, registrada na entrega anterior.
+A migração nova `20261018230659_pair_consulta_bling.sql` apenas substitui a allowlist privada de consentimentos, preservando ACLs e sessões. Não cria tabela. Depende da migração Pair `20261018230657_conecta_pair.sql`, implantada em 18/10/2026. O CI aplica todas as migrações somente em Postgres descartável. Não executar `db push` genérico: o histórico remoto do chat operacional usa versão distinta, registrada na entrega anterior.
 
 Antes da implantação Pair, revisar o diff completo da migração original, inventariar dependências/ACLs remotas, guardar fontes atuais e checar `APP_URL`, chaveiro existente e ambiente sem expor valores. `pair` e `conecta-gateway` usam `verify_jwt=false` porque validam seus próprios desafios e sessões opacas. A aprovação e revogação do lojista continuam com JWT nativo e RPC; nunca fabricar JWT nem aprovar em nome do usuário.
 
-O painel continua com `VITE_PAIR_ATIVO` desligado até a implantação e validação da sessão. Rollback inicial: desabilitar a flag Bling da loja, revogar sessões, manter histórico/auditoria e voltar a ocultar o Pair no build. Não remover tabelas para desfazer uma publicação.
+O painel publicado usa `VITE_PAIR_ATIVO=1`. Isso disponibiliza o fluxo de autorização; não cria sessão nem concede acesso por si só. Rollback inicial: desabilitar a flag Bling da loja, revogar sessões, manter histórico/auditoria e voltar a ocultar o Pair no build. Não remover tabelas para desfazer uma publicação.
 
 ## Conectar o cliente correto
 
@@ -38,7 +38,7 @@ bearer_token_env_var = "CONECTA_PAIR_TOKEN"
 
 A variável recebe o token completo `<token>.<sal>` no computador do operador. Respeitar expiração e revogação. Para token fixo, escolher sessão curta sem rotação; para rotação, o cliente precisa atualizar a variável e a conexão com o token novo. O servidor não revela as chaves Supabase/Bling.
 
-Para conectar diretamente este chat pelo ChatGPT, falta uma ponte OAuth compatível com o cliente: descoberta de recurso/servidor, registro aceito pelo cliente, autorização do lojista, PKCE S256, códigos de uso único, redirect URI exata, renovação/revogação e vínculo entre autorização e sessão Pair. Não desabilitar autenticação para contornar essa diferença. Antes de adicionar armazenamento, demonstrar se desafios e sessões Pair existentes podem guardar os campos necessários com integridade e expiração; não criar uma segunda fila.
+Para conectar este chat pelo ChatGPT, foi implementada a ponte OAuth descrita em [OAUTH-AGENTE.md](OAUTH-AGENTE.md): descoberta, registro público, autorização nativa por empresa, PKCE S256, códigos de uso único, redirect exato, renovação/revogação e vínculo com sessões Pair. Reutiliza as tabelas existentes. O proprietário precisa instalar o servidor MCP no cliente e concluir o consentimento; a instalação no ChatGPT real ainda precisa ser validada. Não desabilitar autenticação para contornar incompatibilidade.
 
 Referências oficiais verificadas em 18/10/2026: [MCP no Codex](https://developers.openai.com/codex/mcp/) e [MCP personalizado no ChatGPT](https://developers.openai.com/api/docs/guides/custom-mcp-server). A primeira documenta Bearer por variável; a segunda lista OAuth e acesso sem autenticação, não o token manual de Pair como fluxo OAuth.
 
