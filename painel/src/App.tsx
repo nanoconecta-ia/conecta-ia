@@ -10,6 +10,10 @@ import { Taxonomia } from "./paginas/Taxonomia.tsx";
 import { Fila } from "./paginas/Fila.tsx";
 import { Assistente } from "./paginas/Assistente.tsx";
 import { ProdutoPublico } from "./paginas/ProdutoPublico.tsx";
+import { CentralAgentes } from "./paginas/CentralAgentes.tsx";
+import { Design } from "./paginas/Design.tsx";
+import { Imagens } from "./paginas/Imagens.tsx";
+import { VitrineDemo } from "./paginas/VitrineDemo.tsx";
 
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
@@ -17,6 +21,9 @@ const ITENS: [string, string][] = [
   ["/fila", "Fila de aprovação"],
   ["/taxonomia", "Taxonomia"],
   ["/assistente", "Assistente"],
+  ["/agentes", "Central de Agentes"],
+  ["/imagens", "Imagens e SEO"],
+  ["/design", "Design System"],
   ["/bling", "Bling"],
   ["/contador", "Contador"],
 ];
@@ -27,6 +34,7 @@ export function App() {
   const lojas = useLojas(!!sessao);
 
   const pub = caminho.match(/^\/p\/([a-z0-9-]+)\/(.+)$/);
+  if (caminho === "/demo/vitrine") return <VitrineDemo />;
   if (pub) return <ProdutoPublico slug={pub[1]} sku={decodeURIComponent(pub[2])} />;
   if (sessao === undefined) return <p className="entrar suave">Carregando…</p>;
   if (recuperando || caminho === "/redefinir") return <Redefinir aoConcluir={() => { fimRecuperacao(); void supabase.auth.signOut().then(() => ir("/entrar?aviso=senha")); }} />;
@@ -51,6 +59,9 @@ export function App() {
           : caminho === "/fila" ? <Fila loja={loja} />
           : caminho === "/taxonomia" ? <Taxonomia loja={loja} />
           : caminho === "/assistente" ? <Assistente loja={loja} />
+          : caminho === "/agentes" ? <CentralAgentes />
+          : caminho === "/imagens" ? <Imagens />
+          : caminho === "/design" ? <Design />
           : caminho === "/bling" ? <Bling loja={loja} query={query} />
           : caminho === "/contador" ? <Contador loja={loja} />
           : <VisaoGeral loja={loja} />}
