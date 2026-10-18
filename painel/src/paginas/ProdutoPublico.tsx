@@ -1,34 +1,50 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
+import { useVoz } from "../lib/voz.ts";
+import { Esfera, type EstadoEsfera } from "../componentes/Esfera.tsx";
 
-/** Página pública do produto (#/p/<loja>/<sku>) com o assistente para o cliente. Só lê dado aprovado e publicado. */
+/** Página pública do produto (#/p/<loja>/<sku>) com o assistente para o cliente (texto ou voz). Só lê dado aprovado e publicado. */
 export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
   const [msgs, setMsgs] = useState<{ de: "eu" | "ia"; texto: string }[]>([]);
   const [texto, setTexto] = useState("");
   const [ocupado, setOcupado] = useState(false);
-  async function enviar(e: FormEvent) {
-    e.preventDefault();
-    const t = texto.trim(); if (!t) return;
+  const [lerAlto, setLerAlto] = useState(false);
+  const lerRef = useRef(lerAlto); lerRef.current = lerAlto;
+
+  async function perguntar(t: string) {
+    t = t.trim(); if (!t || ocupado) return;
     setMsgs((m) => [...m, { de: "eu", texto: t }]); setTexto(""); setOcupado(true);
+    let resposta = "Não consegui responder agora.";
     try {
       const r = await fetch(`${SUPABASE_URL}/functions/v1/vitrine-assistente`, {
         method: "POST", headers: { "Content-Type": "application/json", apikey: SUPABASE_CHAVE_PUBLICAVEL },
         body: JSON.stringify({ slug, sku, pergunta: t }),
       });
       const j = await r.json().catch(() => ({}));
-      setMsgs((m) => [...m, { de: "ia", texto: String(j.resposta ?? "Não consegui responder agora.") }]);
-    } catch { setMsgs((m) => [...m, { de: "ia", texto: "Não consegui responder agora." }]); }
-    setOcupado(false);
+      resposta = String(j.resposta ?? resposta);
+    } catch { /* mantém a mensagem padrão */ }
+    setMsgs((m) => [...m, { de: "ia", texto: resposta }]); setOcupado(false);
+    if (lerRef.current) voz.falar(resposta);
   }
+  const voz = useVoz((t, final) => { setTexto(t); if (final && t) void perguntar(t); });
+  const estado: EstadoEsfera = voz.ouvindo ? "ouvindo" : ocupado ? "pensando" : voz.falando ? "falando" : "parado";
+  const enviar = (e: FormEvent) => { e.preventDefault(); void perguntar(texto); };
+
   return (
     <main>
       <div className="cartao">
-        <h1>Tire suas dúvidas sobre esta peça</h1>
-        <p className="suave">Código <span className="mono">{sku}</span>. O assistente só informa dados confirmados pela loja.</p>
-        <div className="chat">{msgs.map((m, i) => <div key={i} className={`bolha ${m.de}`}>{m.texto}</div>)}</div>
+        <div className="agente"><Esfera estado={estado} tamanho={72} /><div><h1 style={{ margin: 0 }}>Tire suas dúvidas sobre esta peça</h1>
+          <p className="suave" style={{ margin: 0 }}>Código <span className="mono">{sku}</span>. O assistente só informa dados confirmados pela loja.</p></div></div>
+        <div className="chat" aria-live="polite">{msgs.map((m, i) => <div key={i} className={`bolha ${m.de}`}>{m.texto}</div>)}</div>
         <form onSubmit={enviar} style={{ maxWidth: "none" }}>
-          <label>Sua pergunta<input value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={300} placeholder="Ex.: serve no meu veículo? quanto custa?" /></label>
-          <div><button disabled={ocupado}>Perguntar</button></div>
+          <div className="linha-voz">
+            <label>Sua pergunta<input value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={300} placeholder="Ex.: serve no meu veículo? quanto custa?" /></label>
+            {voz.suporteMic && <button type="button" className="sec mic" aria-pressed={voz.ouvindo} aria-label={voz.ouvindo ? "Parar de ouvir" : "Perguntar por voz"} onClick={() => (voz.ouvindo ? voz.parar() : voz.ouvir())} disabled={ocupado}>🎤</button>}
+            <button disabled={ocupado}>Perguntar</button>
+          </div>
+          {voz.erro && <p className="msg-erro">{voz.erro}</p>}
+          {voz.suporteFala && <label className="linha" style={{ display: "flex" }}><input type="checkbox" style={{ width: "auto", minHeight: "auto" }} checked={lerAlto} onChange={(e) => { setLerAlto(e.target.checked); if (!e.target.checked) voz.calar(); }} /> Ler a resposta em voz alta</label>}
+          {voz.suporteMic && <p className="aviso-voz">A voz usa o reconhecimento do navegador; no Chrome o áudio é processado pelo Google. A loja não grava sua voz.</p>}
         </form>
       </div>
     </main>

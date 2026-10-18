@@ -3,7 +3,8 @@ import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 
 type Produto = { nome: string; sku: string; preco: number | null; em_estoque: boolean | null; marca: string | null; descricao: string | null; imagem: string | null; whatsapp: string | null; atualizado_em: string | null };
 type Veiculo = { modelo: string; motor: string | null; de: number | null; ate: number | null };
-type Resposta = { loja: { nome: string; slug: string; modo_venda: string }; produtos: Produto[]; total: number; pagina: number; por_pagina: number; veiculos: Veiculo[]; categorias: { nome: string; slug: string; total: number }[] };
+type Tema = { variaveis: Record<string, string>; logo_url: string | null; icone_url: string | null };
+type Resposta = { loja: { nome: string; slug: string; modo_venda: string }; tema: Tema; produtos: Produto[]; total: number; pagina: number; por_pagina: number; veiculos: Veiculo[]; categorias: { nome: string; slug: string; total: number }[] };
 type Filtros = { q: string; modelo: string; motor: string; ano: string; categoria: string; pagina: number };
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -36,6 +37,23 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
     return () => { vivo = false; };
   }, [slug, host, f]);
 
+  // Tema da loja: variáveis CSS calculadas e validadas no servidor; o navegador só aceita nomes --x e valores sem ; { } < > url(.
+  const estilo = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(dados?.tema?.variaveis ?? {})) if (/^--[a-z-]+$/.test(k) && typeof v === "string" && !/[;{}<>]|url\(/i.test(v)) out[k] = v;
+    return out;
+  }, [dados?.tema]);
+  useEffect(() => {
+    if (!dados) return;
+    document.title = dados.loja.nome;
+    const icone = dados.tema?.icone_url;
+    if (icone && icone.startsWith("https://")) {
+      let l = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+      if (!l) { l = document.createElement("link"); l.rel = "icon"; document.head.appendChild(l); }
+      l.href = icone;
+    }
+  }, [dados]);
+
   const modelos = useMemo(() => [...new Set(opcoes.map((v) => v.modelo))].sort(), [opcoes]);
   const motores = useMemo(() => [...new Set(opcoes.filter((v) => !f.modelo || v.modelo === f.modelo).map((v) => v.motor).filter(Boolean) as string[])].sort(), [opcoes, f.modelo]);
   const anos = useMemo(() => {
@@ -53,9 +71,11 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
   const paginas = dados ? Math.max(1, Math.ceil(dados.total / dados.por_pagina)) : 1;
 
   return (
-    <div className="vitrine">
+    <div className="vitrine" style={estilo}>
       <header className="v-topo">
-        <span className="v-nome">{dados?.loja.nome ?? "…"}</span>
+        {dados?.tema?.logo_url?.startsWith("https://")
+          ? <img className="v-logo" src={dados.tema.logo_url} alt={dados.loja.nome} />
+          : <span className="v-nome">{dados?.loja.nome ?? "…"}</span>}
         <form onSubmit={buscar} role="search" className="v-busca">
           <label className="sr">Buscar por peça, código, veículo ou fabricante</label>
           <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar peça, código ou veículo" maxLength={60} />

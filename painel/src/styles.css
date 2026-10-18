@@ -83,3 +83,32 @@ code,.mono { font-family:var(--mono); font-size:.88em; }
 .v-preco { font-size:1.3rem; font-weight:800; color:var(--texto); }
 .v-rodape { color:var(--suave); font-size:.85rem; text-align:center; padding-top:8px; }
 @media (min-width:720px) { .v-topo { grid-template-columns:auto 1fr; align-items:center; gap:24px; } .v-hero { padding:44px 36px; } }
+
+/* Esfera do agente: CSS puro. Núcleo = nuvem (3 manchas desfocadas em órbita); estados mudam velocidade, pulso e anel. */
+.esfera { --d:96px; width:var(--d); height:var(--d); flex:none; border-radius:50%; position:relative; overflow:hidden; isolation:isolate;
+  background:radial-gradient(circle at 32% 26%, #9fd3f2 0%, var(--marca) 42%, var(--grafite) 100%);
+  background:radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--marca) 45%, #fff) 0%, var(--marca) 42%, var(--grafite) 100%);
+  box-shadow:inset -8px -12px 24px rgba(0,0,0,.38), inset 6px 8px 18px rgba(255,255,255,.28), 0 8px 26px rgba(8,100,160,.35); }
+.esfera .nuvem { position:absolute; inset:14%; border-radius:50%; filter:blur(calc(var(--d) * .05)); animation:esf-gira var(--esf-gira,14s) linear infinite; }
+.esfera .nuvem i { position:absolute; border-radius:50%; background:radial-gradient(closest-side, #fff 0%, rgba(255,255,255,.75) 45%, rgba(255,255,255,0) 100%); mix-blend-mode:screen; }
+.esfera .nuvem i:nth-child(1) { width:62%; height:62%; left:2%; top:8%; animation:esf-vaga 7s ease-in-out infinite; }
+.esfera .nuvem i:nth-child(2) { width:54%; height:54%; right:0; bottom:6%; opacity:.9; animation:esf-vaga 9s ease-in-out -3s infinite reverse; }
+.esfera .nuvem i:nth-child(3) { width:38%; height:38%; left:34%; top:0; opacity:.65; background:radial-gradient(closest-side, var(--verde), transparent); animation:esf-vaga 11s ease-in-out -6s infinite; }
+.esfera .brilho { position:absolute; left:16%; top:10%; width:34%; height:22%; border-radius:50%; background:radial-gradient(closest-side, rgba(255,255,255,.7), transparent); transform:rotate(-24deg); }
+.esfera[data-estado="pensando"] { --esf-gira:3.2s; }
+.esfera[data-estado="ouvindo"] { animation:esf-anel 1.4s ease-out infinite; --esf-gira:7s; }
+.esfera[data-estado="falando"] { animation:esf-fala .55s ease-in-out infinite alternate; --esf-gira:6s; }
+@keyframes esf-gira { to { transform:rotate(360deg); } }
+@keyframes esf-vaga { 0%,100% { transform:translate(0,0) scale(1); } 50% { transform:translate(14%,-10%) scale(1.18); } }
+@keyframes esf-anel { 0% { box-shadow:inset -8px -12px 24px rgba(0,0,0,.38), inset 6px 8px 18px rgba(255,255,255,.28), 0 0 0 0 rgba(4,168,141,.55); } 100% { box-shadow:inset -8px -12px 24px rgba(0,0,0,.38), inset 6px 8px 18px rgba(255,255,255,.28), 0 0 0 18px rgba(4,168,141,0); } }
+@keyframes esf-fala { from { transform:scale(1); } to { transform:scale(1.07); } }
+.agente { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.agente .estado { color:var(--suave); font-size:.9rem; }
+button.mic { width:var(--alvo); padding:0; border-radius:50%; } button.mic[aria-pressed="true"] { background:var(--verde); color:var(--verde-texto); }
+.linha-voz { display:flex; gap:8px; align-items:end; } .linha-voz label { flex:1; }
+.aviso-voz { color:var(--suave); font-size:.82rem; margin:0; }
+
+.vitrine { font-family:var(--fonte); } .vitrine h1,.vitrine h2,.vitrine h3 { font-family:var(--titulo); }
+.v-logo { max-height:44px; max-width:220px; width:auto; height:auto; object-fit:contain; }
+
+.cartao h2 { margin-top:22px; }
