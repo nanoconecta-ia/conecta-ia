@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "ES2023", "module": "ESNext", "moduleResolution": "Bundler", "strict": true, "noEmit": true,
+    "allowImportingTsExtensions": true, "skipLibCheck": true, "lib": ["ES2023", "DOM", "DOM.Iterable"], "types": ["node"],
+    "typeRoots": ["../../painel/node_modules/@types"]
+  },
+  "include": [
+    "_shared/conector/**/*.ts", "_shared/seo/**/*.ts", "_shared/imagens/**/*.ts", "_shared/ia/adaptadores_stream.ts",
+    "conector-chat/index.ts", "conector-conversas/index.ts", "conector-aprovacoes/index.ts", "conector-chaves/index.ts", "conector-mcp/index.ts", "loja-seo/index.ts"
+  ]
+}

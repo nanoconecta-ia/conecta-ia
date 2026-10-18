@@ -42,13 +42,13 @@ insert into v select 'conv', public.agente_conversa_criar(:A, :U1, 'Cabeçote HR
 select public.afirma((select count(*) from public.agente_conversas) = 1, 'conversa criada');
 select public.espera_erro($$select public.agente_conversa_criar('aaaaaaaa-0000-0000-0000-00000000000a', '33333333-3333-3333-3333-333333333333', 'x', null, null)$$,
   'sem_permissao', 'quem não é da loja não cria conversa nela');
-select public.agente_mensagem_gravar(:A, (select val::uuid from v where k = 'conv'), :U1, 'user', '[{"type":"text","text":"organize o cabeçote"}]', null, null, null, null, null, 1);
-select public.agente_mensagem_gravar(:A, (select val::uuid from v where k = 'conv'), :U1, 'assistant', '[{"type":"text","text":"ok"}]', 'claude', 'claude-sonnet-5-5', 100, 20, 0.001, 1);
+select public.agente_mensagem_gravar(:A, (select val::uuid from v where k = 'conv'), :U1, 'user', '[{"type":"text","text":"organize o cabeçote"}]', null, null, null, null, 1);
+select public.agente_mensagem_gravar(:A, (select val::uuid from v where k = 'conv'), :U1, 'assistant', '[{"type":"text","text":"ok"}]', 'claude', 'claude-sonnet-5-5', 120, 0.001, 1);
 -- troca de modelo no meio: a conversa segue, a ordem não quebra e cada mensagem guarda quem respondeu
-select public.agente_mensagem_gravar(:A, (select val::uuid from v where k = 'conv'), :U1, 'assistant', '[{"type":"text","text":"continuo"}]', 'gemini', 'gemini-2.5-flash', 80, 10, 0.0002, 1);
+select public.agente_mensagem_gravar(:A, (select val::uuid from v where k = 'conv'), :U1, 'assistant', '[{"type":"text","text":"continuo"}]', 'gemini', 'gemini-2.5-flash', 90, 0.0002, 1);
 select public.afirma((select array_agg(seq order by seq) from public.agente_mensagens) = array[1,2,3], 'mensagens sequenciais mesmo trocando de provedor');
 select public.afirma((select count(distinct provedor) from public.agente_mensagens where provedor is not null) = 2, 'cada mensagem registra o provedor que respondeu');
-select public.espera_erro($$select public.agente_mensagem_gravar('aaaaaaaa-0000-0000-0000-00000000000a', (select val::uuid from v where k = 'conv'), '22222222-2222-2222-2222-222222222222', 'user', '[]', null, null, null, null, null, 1)$$,
+select public.espera_erro($$select public.agente_mensagem_gravar('aaaaaaaa-0000-0000-0000-00000000000a', (select val::uuid from v where k = 'conv'), '22222222-2222-2222-2222-222222222222', 'user', '[]', null, null, null, null, 1)$$,
   'conversa_nao_encontrada', 'outro usuário da mesma loja não escreve na conversa alheia');
 
 -- tarefa + proposta ficam quando a conversa é excluída

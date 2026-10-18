@@ -119,7 +119,7 @@ test("gateway + banco: ciclo da chave (criar, validar, usar, revogar) e ferramen
   assert.ok(Number(db.sql(`select count(*) from public.agente_chamadas_ferramenta where origem = 'gateway_mcp' and mcp_chave_id is not null`)) >= 4);
 
   // revogar corta o acesso na hora
-  const chaveId = db.sql(`select id from public.loja_mcp_chaves limit 1`);
+  const chaveId = db.sql(`select id from public.loja_mcp_chaves where loja_id = '${L}' limit 1`);
   assert.equal((await db.rpc("mcp_chave_revogar", { p_loja: L, p_chave: chaveId, p_user: U1 })).data, true);
   const depois = await tratarMcp(req(rpc("ping"), { authorization: `Bearer ${t}` }), p);
   assert.equal(depois.status, 401);

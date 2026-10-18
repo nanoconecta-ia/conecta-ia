@@ -53,15 +53,15 @@ end $$;
 
 -- Acrescenta mensagem com seq sequencial (trava a conversa) e registra o modelo que respondeu: trocar de modelo não quebra a ordem.
 create function public.agente_mensagem_gravar(p_loja uuid, p_conversa uuid, p_user uuid, p_papel public.agente_msg_papel, p_conteudo jsonb,
-  p_provedor text, p_modelo text, p_tokens_in int, p_tokens_out int, p_custo numeric, p_prompt_versao int)
+  p_provedor text, p_modelo text, p_tokens int, p_custo numeric, p_prompt_versao int)
 returns int language plpgsql security definer set search_path = '' as $$
 declare v_seq int;
 begin
   perform 1 from public.agente_conversas where id = p_conversa and loja_id = p_loja and user_id = p_user for update;
   if not found then raise exception 'conversa_nao_encontrada' using errcode = 'P0002'; end if;
   select coalesce(max(seq), 0) + 1 into v_seq from public.agente_mensagens where conversa_id = p_conversa;
-  insert into public.agente_mensagens (loja_id, conversa_id, seq, papel, conteudo, provedor, modelo, tokens_entrada, tokens_saida, custo_estimado, prompt_versao)
-  values (p_loja, p_conversa, v_seq, p_papel, p_conteudo, p_provedor, p_modelo, p_tokens_in, p_tokens_out, p_custo, p_prompt_versao);
+  insert into public.agente_mensagens (loja_id, conversa_id, seq, papel, conteudo, provedor, modelo, tokens, custo_estimado, prompt_versao)
+  values (p_loja, p_conversa, v_seq, p_papel, p_conteudo, p_provedor, p_modelo, p_tokens, p_custo, p_prompt_versao);
   update public.agente_conversas set atualizado_em = now(), provedor = coalesce(p_provedor, provedor), modelo = coalesce(p_modelo, modelo)
   where id = p_conversa;
   return v_seq;
@@ -76,6 +76,29 @@ begin
   get diagnostics v_n = row_count;
   if v_n = 1 then perform private.auditar(p_loja, p_user, 'agente.conversa.excluida', 'agente_conversas', jsonb_build_object('id', p_conversa), null); end if;
   return v_n = 1;
+end $$;
+
+
+create function public.agente_conversa_renomear(p_loja uuid, p_conversa uuid, p_user uuid, p_titulo text, p_projeto text) returns boolean
+language plpgsql security definer set search_path = '' as $$
+declare v_n int;
+begin
+  update public.agente_conversas set titulo = coalesce(nullif(left(trim(p_titulo), 120), ''), titulo), projeto = case when p_projeto is null then projeto else nullif(left(trim(p_projeto), 80), '') end, atualizado_em = now()
+  where id = p_conversa and loja_id = p_loja and user_id = p_user;
+  get diagnostics v_n = row_count;
+  return v_n = 1;
+end $$;
+
+-- Registra o anexo DEPOIS do upload (URL assinada emitida pelo servidor). O caminho precisa estar na pasta da loja e do usuário.
+create function public.agente_anexo_registrar(p_loja uuid, p_conversa uuid, p_user uuid, p_tipo text, p_nome text, p_mime text, p_bytes bigint, p_sha256 text, p_path text) returns uuid
+language plpgsql security definer set search_path = '' as $$
+declare v_id uuid;
+begin
+  perform 1 from public.agente_conversas where id = p_conversa and loja_id = p_loja and user_id = p_user;
+  if not found then raise exception 'conversa_nao_encontrada' using errcode = 'P0002'; end if;
+  if p_path !~ ('^' || p_loja::text || '/' || p_user::text || '/[A-Za-z0-9._-]{1,120}$') then raise exception 'caminho_invalido' using errcode = '22023'; end if;
+  insert into public.agente_anexos (loja_id, conversa_id, tipo, nome, mime, bytes, sha256, storage_path) values (p_loja, p_conversa, p_tipo, p_nome, p_mime, p_bytes, p_sha256, p_path) returning id into v_id;
+  return v_id;
 end $$;
 
 -- ------------------------------------------------------------ propostas
@@ -557,7 +580,7 @@ begin
     'divergencias', jsonb_build_object('valor', (select count(*) from public.produto_travas where loja_id = p_loja and estado = 'erro_divergencia'), 'filtro', 'produtos:divergencia'),
     'qualidade_seo', jsonb_build_object('valor', null, 'filtro', 'seo', 'observacao', 'ainda não medido'),
     'custo_por_agente_mes', coalesce((select jsonb_agg(jsonb_build_object('provedor', provedor, 'modelo', modelo, 'tokens', tokens, 'custo_estimado', custo))
-      from (select coalesce(provedor, 'n/d') provedor, coalesce(modelo, 'n/d') modelo, sum(coalesce(tokens_entrada, 0) + coalesce(tokens_saida, 0)) tokens, sum(custo_estimado) custo
+      from (select coalesce(provedor, 'n/d') provedor, coalesce(modelo, 'n/d') modelo, sum(coalesce(tokens, 0)) tokens, sum(custo_estimado) custo
             from public.agente_mensagens where loja_id = p_loja and papel = 'assistant' and criado_em >= date_trunc('month', now()) group by 1, 2) c), '[]'::jsonb)
   ) into v;
   return v;
@@ -572,7 +595,7 @@ begin
     'agente_proposta_item_adicionar', 'agente_proposta_enviar', 'agente_proposta_revisar', 'agente_proposta_decidir', 'agente_escrita_liberar',
     'agente_escrita_revogar', 'agente_proposta_iniciar_execucao', 'agente_proposta_validar', 'agente_simulacao_registrar', 'agente_aplicar_enriquecimento', 'agente_aplicar_publicacao', 'agente_operacao_abrir', 'agente_operacao_marcar_enviada',
     'agente_operacao_fechar', 'agente_operacao_reconciliar', 'agente_proposta_finalizar', 'produto_travar', 'produto_destravar',
-    'agente_tarefa_criar', 'agente_chamada_registrar', 'dashboard_operacional') loop
+    'agente_tarefa_criar', 'agente_chamada_registrar', 'agente_conversa_renomear', 'agente_anexo_registrar', 'dashboard_operacional') loop
     execute format('revoke all on function %s from public, anon, authenticated', f.sig);
     execute format('grant execute on function %s to service_role', f.sig);
   end loop;

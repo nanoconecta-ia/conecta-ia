@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
         if (ids.has(c.produto_id) && !mpns.has(c.produto_id)) mpns.set(c.produto_id, c.valor);
       const nosIds = [...new Set(linhas.map((p) => p.taxonomia_no_id).filter(Boolean))] as string[];
       const { data: nos } = nosIds.length ? await sb.from("taxonomia_nos").select("id, nome").eq("status", "aprovado").in("id", nosIds) : { data: [] as { id: string; nome: string }[] };
-      const nomeNo = new Map((nos ?? []).map((n: { id: string; nome: string }) => [n.id, n.nome]));
+      const nomeNo = new Map<string, string>((nos ?? []).map((n: { id: string; nome: string }) => [n.id, n.nome] as [string, string]));
       produtos = linhas.map((p) => ({
         sku: p.sku, nome: p.nome, descricao: p.descricao_curta, descricao_longa: longas.get(p.id) ?? null, marca: p.marca, gtin: p.gtin, mpn: mpns.get(p.id) ?? null,
         preco: p.preco == null ? null : Number(p.preco), estoque: p.estoque == null ? null : Number(p.estoque), publicado: p.publicado === true, situacao: p.situacao,

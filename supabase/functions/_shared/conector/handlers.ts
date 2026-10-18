@@ -88,7 +88,7 @@ export async function criarPropostaVersionada(c: ContextoFerramenta, o: { titulo
       p_risco: it.risco ?? buscarDefinicao(it.operacao)!.risco, p_idempotency_key: `${String(propostaId).slice(0, 8)}-${i}-${crypto.randomUUID().slice(0, 12)}` });
   }
   const env = await rpc(c, "agente_proposta_enviar", { p_loja: c.lojaId, p_proposta: propostaId });
-  return { proposta_id: propostaId, versao: env.versao, hash: env.hash, risco: env.risco, itens: resolvidos.length, aviso: "Nada foi alterado. O lojista precisa aprovar esta versão exata na Central de Inteligência." };
+  return { proposta_id: propostaId, titulo: o.titulo, versao: env.versao, hash: env.hash, risco: env.risco, itens: resolvidos.length, aviso: "Nada foi alterado. O lojista precisa aprovar esta versão exata na Central de Inteligência." };
 }
 
 export const HANDLERS: Record<string, Handler> = {

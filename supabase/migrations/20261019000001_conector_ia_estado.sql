@@ -38,9 +38,8 @@ create table public.agente_mensagens (
   conteudo jsonb not null,                 -- blocos no formato canônico (text / tool_use / tool_result)
   provedor text,
   modelo text,
-  tokens_entrada int check (tokens_entrada is null or tokens_entrada >= 0),
-  tokens_saida int check (tokens_saida is null or tokens_saida >= 0),
-  custo_estimado numeric(12, 6) check (custo_estimado is null or custo_estimado >= 0),
+  tokens int check (tokens is null or tokens >= 0),            -- total informado pelo provedor (entrada + saída)
+  custo_estimado numeric(12, 6) check (custo_estimado is null or custo_estimado >= 0),  -- null enquanto não houver tabela de preços confirmada
   prompt_versao int,
   criado_em timestamptz not null default now(),
   unique (conversa_id, seq),
@@ -282,20 +281,23 @@ create table public.provedor_capacidades (
   observacao text,
   primary key (provedor, capacidade)
 );
--- Semeado só com o que o código realmente faz hoje (adaptadores.ts): chat+tool_calling implementados nos três; o resto não.
+-- Semeado só com o que o código realmente faz hoje (adaptadores.ts / adaptadores_stream.ts): chat, tool_calling e streaming (este testado só com fixtures); o resto não.
 insert into public.provedor_capacidades (provedor, capacidade, situacao, observacao)
 select p, c, s, o from (values
-  ('claude', 'chat', 'implementado', 'Messages API, sem streaming'),
+  ('claude', 'chat', 'implementado', 'Messages API'),
+  ('claude', 'streaming', 'implementado', 'SSE implementado e testado só com fixtures; não testado contra o serviço real'),
   ('claude', 'tool_calling', 'implementado', null),
-  ('gemini', 'chat', 'implementado', 'generateContent, sem streaming'),
+  ('gemini', 'chat', 'implementado', 'generateContent'),
+  ('gemini', 'streaming', 'implementado', 'streamGenerateContent (SSE) testado só com fixtures; não testado contra o serviço real'),
   ('gemini', 'tool_calling', 'implementado', 'functionDeclarations'),
   ('compativel_openai', 'chat', 'implementado', 'chat/completions; cobre OpenAI, DeepSeek, Llama hospedado'),
+  ('compativel_openai', 'streaming', 'implementado', 'SSE implementado e testado só com fixtures; não testado contra o serviço real'),
   ('compativel_openai', 'tool_calling', 'implementado', 'depende de o modelo escolhido suportar ferramentas')
 ) v(p, c, s, o);
 insert into public.provedor_capacidades (provedor, capacidade, situacao, observacao)
 select p.provedor, c.capacidade, 'nao_implementado', 'Ainda não implementado no adaptador'
 from (values ('claude'), ('gemini'), ('compativel_openai')) p(provedor)
-cross join (values ('streaming'), ('visao'), ('audio_entrada'), ('geracao_imagem')) c(capacidade);
+cross join (values ('visao'), ('audio_entrada'), ('geracao_imagem')) c(capacidade);
 
 -- ============================================================ RLS e grants (leitura pelo painel; escrita só service_role)
 do $$
