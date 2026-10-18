@@ -86,7 +86,7 @@ Não existe controle irrestrito de desktop. Para operar aplicativos locais haver
 | Concorrência entre dispositivos | `conecta_pair_concorrencia.sh`: 8 e 12 conexões reais simultâneas para aprovar, resgatar, propor, decidir (aprovar×recusar), executar e versionar | ✔ (4 execuções) |
 | Operação recusada | SQL: recusada não executa (`estado_recusada`); TS executor: nada roda sem reivindicação | ✔ |
 
-Totais nesta branch: **133** verificações SQL, **16** asserções de concorrência real, **120** testes Node nas funções (40 do Pair, 11 dos contratos da Ordem Mestra, 69 pré-existentes), **9** testes do painel, `tsc --noEmit` e `vite build` limpos. UI conferida em Chromium 390 px (QR decodificado = URL; sem rolagem horizontal; HIGH pede a senha; decisão envia o hash exibido).
+Totais nesta branch: **137** verificações SQL, **16** asserções de concorrência real, **120** testes Node nas funções (40 do Pair, 11 dos contratos da Ordem Mestra, 69 pré-existentes), **9** testes do painel, `tsc --noEmit` e `vite build` limpos. UI conferida em Chromium 390 px (QR decodificado = URL; sem rolagem horizontal; HIGH pede a senha; decisão envia o hash exibido).
 
 ## 7. Limitações e riscos reais (leia antes de aprovar)
 

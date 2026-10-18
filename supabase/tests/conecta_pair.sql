@@ -168,6 +168,20 @@ select public.afirma(public.pair_validar(public.h('TOK-C2')) is null, 'sessão r
 select public.afirma((select public.pair_consultar(public.h('C2'), public.h('SEG-C2')) ->> 'revogada')::boolean, 'o solicitante descobre que foi revogado');
 select public.afirma((select public.pair_renovar(public.h('TOK-C2'), public.h('TOK-C2-novo')) ->> 'ok')::boolean is not true, 'sessão revogada não renova');
 
+-- visibilidade: só quem administra a loja hoje vê dispositivos/sessões
+select public.como('11111111-1111-1111-1111-111111111111');
+select public.afirma((select count(*) from public.pair_dispositivos) >= 1 and (select count(*) from public.pair_sessoes) >= 1, 'lojista vê os dispositivos e sessões da própria loja');
+select public.como('22222222-2222-2222-2222-222222222222');
+select public.afirma((select count(*) from public.pair_dispositivos) = 0 and (select count(*) from public.pair_sessoes) = 0, 'editor NÃO vê dispositivos nem sessões');
+select public.como('33333333-3333-3333-3333-333333333333');
+select public.afirma((select count(*) from public.pair_dispositivos) = 0 and (select count(*) from public.pair_sessoes) = 0, 'lojista de outra loja NÃO vê dispositivos nem sessões');
+select public.admin();
+update public.usuarios_loja set papel = 'editor' where user_id = '11111111-1111-1111-1111-111111111111';
+select public.como('11111111-1111-1111-1111-111111111111');
+select public.afirma((select count(*) from public.pair_dispositivos) = 0, 'quem aprovou e foi rebaixado deixa de ver os dispositivos');
+select public.admin();
+update public.usuarios_loja set papel = 'lojista' where user_id = '11111111-1111-1111-1111-111111111111';
+
 -- ===================================================================================================================
 -- D) Expirado, recusado, tentativas e concorrência sequencial
 select public.servidor(); select public.novo_desafio('C3');

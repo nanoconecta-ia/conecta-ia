@@ -565,10 +565,9 @@ grant select (id, loja_id, usuario_id, dispositivo_id, escopos, criado_em, expir
 grant select on public.aprovacoes to authenticated;
 grant select, insert, update, delete on public.pair_dispositivos, public.pair_sessoes, public.pair_desafios, public.aprovacoes to service_role;
 
-create policy pair_disp_ver on public.pair_dispositivos for select to authenticated
-  using (usuario_id = auth.uid() or private.administra_loja(loja_id, auth.uid()));
-create policy pair_sess_ver on public.pair_sessoes for select to authenticated
-  using (usuario_id = auth.uid() or private.administra_loja(loja_id, auth.uid()));
+-- Só quem administra a loja HOJE vê dispositivos e sessões (quem aprovou e depois perdeu o papel não vê mais).
+create policy pair_disp_ver on public.pair_dispositivos for select to authenticated using (private.administra_loja(loja_id, auth.uid()));
+create policy pair_sess_ver on public.pair_sessoes for select to authenticated using (private.administra_loja(loja_id, auth.uid()));
 create policy aprovacoes_ver on public.aprovacoes for select to authenticated using (private.pode_ver_loja(loja_id));
 
 revoke all on function public.pair_iniciar(text, text, text, text, text, text, text[], text[], int, int, boolean) from public, anon, authenticated;
