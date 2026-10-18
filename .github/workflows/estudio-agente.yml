@@ -1,0 +1,40 @@
+name: Estúdio do agente - revisão visual sintética
+on:
+  pull_request:
+    paths: ['painel/**', 'scripts/tests/estudio-visual.mjs', '.github/workflows/estudio-agente.yml']
+permissions:
+  contents: read
+concurrency:
+  group: estudio-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  visual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Conferir repositório público e runner padrão
+        env:
+          PUBLICO: ${{ github.event.repository.private == false }}
+        run: |
+          test "$PUBLICO" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - run: npm ci
+        working-directory: painel
+      - run: npm run build
+        working-directory: painel
+      - name: Browser efêmero do teste
+        working-directory: painel
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.56.1
+          npx playwright install chromium --with-deps
+      - run: node scripts/tests/estudio-visual.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: estudio-desktop-notebook-tablet-mobile-SIMULADO
+          path: evidencias-estudio/*.png
+          retention-days: 7
+          if-no-files-found: error

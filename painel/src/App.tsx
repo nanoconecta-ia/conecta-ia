@@ -4,6 +4,7 @@ import { useLojas, useSessao } from "./lib/dados.ts";
 import { ir, useRota } from "./lib/rota.ts";
 import { supabase } from "./supabase.ts";
 import { Entrar, Recuperar, Redefinir } from "./paginas/Acesso.tsx";
+import { EstudioAgente } from "./paginas/EstudioAgente.tsx";
 import { VisaoGeral } from "./paginas/VisaoGeral.tsx";
 import { Catalogo } from "./paginas/Catalogo.tsx";
 import { Bling } from "./paginas/Bling.tsx";
@@ -30,6 +31,7 @@ const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(wind
 const ITENS_PAIR: [string, string][] = [["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
+  ["/estudio", "Estúdio do agente"],
   ["/catalogo", "Catálogo"],
   ["/fila", "Fila de aprovação"],
   ["/taxonomia", "Taxonomia"],
@@ -81,7 +83,8 @@ export function App() {
       <main>
         {lojas === null ? <p className="suave">Carregando…</p> : !loja ? (
           <div className="cartao"><h1>Sem loja vinculada</h1><p className="suave">Seu login ainda não está ligado a uma loja. Peça ao suporte para vincular.</p></div>
-        ) : caminho === "/catalogo" ? <Catalogo loja={loja} />
+        ) : caminho === "/estudio" ? <EstudioAgente key={loja.id} loja={loja} />
+          : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />
           : PAIR_ATIVO && caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao.user.email ?? null} />
           : PAIR_ATIVO && caminho === "/dispositivos" ? <Dispositivos loja={loja} />
