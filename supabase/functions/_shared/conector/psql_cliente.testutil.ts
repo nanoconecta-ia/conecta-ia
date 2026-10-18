@@ -21,7 +21,8 @@ export function criarPsql(banco: string) {
   };
   const json = (texto: string) => { const r = sql(texto); return r ? JSON.parse(r) : null; };
 
-  const TABELAS_EM_LINHAS = new Set(["agente_proposta_iniciar_execucao", "agente_proposta_validar"]);
+  const retset = new Map<string, boolean>();
+  const devolveLinhas = (fn: string) => { if (!retset.has(fn)) retset.set(fn, sql(`select bool_or(p.proretset) from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public' and p.proname = ${aspas(fn)}`) === "t"); return retset.get(fn)!; };
   // Tipos dos parâmetros vêm do catálogo do Postgres (como o PostgREST faz): jsonb recebe JSON mesmo que o valor seja uma lista.
   const tipos = new Map<string, Record<string, string>>();
   const tiposDe = (fn: string): Record<string, string> => {
@@ -42,7 +43,7 @@ export function criarPsql(banco: string) {
     try {
       const t = tiposDe(fn);
       const a = Object.entries(args).map(([k, v]) => `${ident(k)} => ${tipado(v, t[k])}`).join(", ");
-      if (TABELAS_EM_LINHAS.has(fn)) return { data: json(`select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.${ident(fn)}(${a}) t`), error: null };
+      if (devolveLinhas(fn)) return { data: json(`select coalesce(jsonb_agg(to_jsonb(t)), '[]'::jsonb) from public.${ident(fn)}(${a}) t`), error: null };
       const r = sql(`select (public.${ident(fn)}(${a}))::text`);
       let data: unknown = r === "" ? null : r;
       if (typeof data === "string") { try { data = JSON.parse(data); } catch { /* texto/uuid */ } }
