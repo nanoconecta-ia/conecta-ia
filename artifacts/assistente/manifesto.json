@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "320fb41bb0ba70a213fd0e55f31afa470f1e6e3a4dda170adf51a908c8d7ba5f",
+  "artefato_sha256": "1edb395aac9e7778158cb79c7a447fd72b1a332a8806b576fcd8a76d1925bd5b",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -30,11 +30,11 @@
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores.ts",
-      "sha256": "286c5bbbf440c97d365e7aa7ba9eb438c56f7aaaba2f8f2cfbf91e37d76d88de"
+      "sha256": "cb617112f772f076b948127b1a1931b1bbf557309b9a51eec6c5b9954baa2d89"
     },
     {
       "path": "supabase/functions/_shared/ia/claude.ts",
-      "sha256": "6cb5aec36eb4466d34334eb8bfb1340f0dd7cb27a07606bee28c21e52e1adda7"
+      "sha256": "2355a336187f69d33084963c7127a8a70c134f1ca6cd41e5741f07d867fc8a8a"
     },
     {
       "path": "supabase/functions/_shared/ia/escrita.ts",
@@ -57,8 +57,32 @@
       "sha256": "36e54345454c0509d6d58512a81b34e25eb9de3df622370b9e439907ea1ce093"
     },
     {
+      "path": "supabase/functions/_shared/bling_ferramentas.ts",
+      "sha256": "617cd54c0d07d8a5cd0d9187b69052211e0541044ee79e23f27d24281cc89c20"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_token.ts",
+      "sha256": "cc0741c715b6cf29b4f55cf1d5a842d982b254f2c36499486d66993ca70dcae2"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_api.ts",
+      "sha256": "b4111a685e011d2d051d8f9d40d6a5e8a6fde2da8232c0871360f2e09ddbd8fb"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_armazem.ts",
+      "sha256": "af765b491093e16d2bbc41d8f9ac803b68a24d9312df71b1feb1f262a4f796fa"
+    },
+    {
+      "path": "supabase/functions/_shared/assistente/bling_consultar.ts",
+      "sha256": "62bc7ac1355001ece58ff9c50b2bddf16b165ba411fcf4223795f42fe10c5f44"
+    },
+    {
+      "path": "supabase/functions/_shared/assistente/chat.ts",
+      "sha256": "ff6bd7f4935a0c82552c38da274f48041a2198ba56c0dcd340efa20b3c001c68"
+    },
+    {
       "path": "supabase/functions/assistente/index.ts",
-      "sha256": "b1afcd7af61389a813d36260c2e92508adefa0cc2b2686da650fe1ea98660917"
+      "sha256": "f069c12f2104c5bedf5633ea51b4fd924f787a57a71e504604310fdbcb7768b7"
     }
   ]
 }

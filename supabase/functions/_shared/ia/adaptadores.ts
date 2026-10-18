@@ -6,7 +6,7 @@ import { urlPublicaSegura } from "./plugin.ts";
 
 export type ProvedorId = "claude" | "gemini" | "compativel_openai";
 export interface Chamada { chave: string; modelo: string; sistema: string; ferramentas: Ferramenta[]; maxTokens: number; baseUrl?: string; fetch?: typeof fetch }
-export interface Passo { blocos: Bloco[]; tokens: number }
+export interface Passo { blocos: Bloco[]; tokens: number; respostaId?: string; modelo?: string }
 
 const TEMPO_MS = 60_000;
 
@@ -36,9 +36,9 @@ export async function chamarClaude(c: Chamada, msgs: Mensagem[]): Promise<Passo>
   const j = await enviar(c.fetch ?? fetch, "https://api.anthropic.com/v1/messages",
     { "x-api-key": c.chave, "anthropic-version": "2023-06-01" },
     { model: c.modelo, max_tokens: c.maxTokens, system: c.sistema, messages: msgs, tools: c.ferramentas.length ? c.ferramentas : undefined }) as
-    { content?: Bloco[]; usage?: { input_tokens?: number; output_tokens?: number } };
+    { id?: string; model?: string; content?: Bloco[]; usage?: { input_tokens?: number; output_tokens?: number } };
   if (!Array.isArray(j.content)) throw new IaErro(502, "Resposta inesperada do provedor de IA.");
-  return { blocos: j.content, tokens: (j.usage?.input_tokens ?? 0) + (j.usage?.output_tokens ?? 0) };
+  return { respostaId: j.id, modelo: j.model, blocos: j.content, tokens: (j.usage?.input_tokens ?? 0) + (j.usage?.output_tokens ?? 0) };
 }
 
 // Gemini (Google AI Studio / Gemini API) ---------------------------------------------------------------
@@ -65,7 +65,7 @@ export async function chamarGemini(c: Chamada, msgs: Mensagem[]): Promise<Passo>
   const j = await enviar(c.fetch ?? fetch, `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(c.modelo)}:generateContent`,
     { "x-goog-api-key": c.chave },
     { systemInstruction: { parts: [{ text: c.sistema }] }, contents, tools: decl.length ? [{ functionDeclarations: decl }] : undefined, generationConfig: { maxOutputTokens: c.maxTokens } }) as
-    { candidates?: { content?: { parts?: ParteG[] } }[]; usageMetadata?: { totalTokenCount?: number } };
+    { responseId?: string; modelVersion?: string; candidates?: { content?: { parts?: ParteG[] } }[]; usageMetadata?: { totalTokenCount?: number } };
   const partes = j.candidates?.[0]?.content?.parts;
   if (!Array.isArray(partes)) throw new IaErro(502, "O provedor não devolveu resposta (o conteúdo pode ter sido bloqueado). Reformule a pergunta.");
   const blocos: Bloco[] = [];
@@ -78,7 +78,7 @@ export async function chamarGemini(c: Chamada, msgs: Mensagem[]): Promise<Passo>
       blocos.push({ type: "tool_use", id: `g${++n}`, name: fc.name, input: fc.args ?? {}, _g: p } as Bloco);
     }
   }
-  return { blocos, tokens: j.usageMetadata?.totalTokenCount ?? 0 };
+  return { respostaId: j.responseId, modelo: j.modelVersion, blocos, tokens: j.usageMetadata?.totalTokenCount ?? 0 };
 }
 
 // Compatível com OpenAI (Llama via Groq/Together/OpenRouter/llama.cpp/Ollama expostos em https, DeepSeek, OpenAI) ----------
@@ -97,8 +97,8 @@ export async function chamarOpenAI(c: Chamada, msgs: Mensagem[]): Promise<Passo>
   }
   const tools = c.ferramentas.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.input_schema } }));
   const j = await enviar(c.fetch ?? fetch, `${c.baseUrl.replace(/\/+$/, "")}/chat/completions`, { authorization: `Bearer ${c.chave}` },
-    { model: c.modelo, messages: m, max_tokens: c.maxTokens, tools: tools.length ? tools : undefined }) as
-    { choices?: { message?: { content?: string | null; tool_calls?: { id: string; function: { name: string; arguments?: string } }[] } }[]; usage?: { total_tokens?: number } };
+    { model: c.modelo, messages: m, ...(new URL(c.baseUrl).hostname === "api.openai.com" ? { max_completion_tokens: c.maxTokens } : { max_tokens: c.maxTokens }), tools: tools.length ? tools : undefined }) as
+    { id?: string; model?: string; choices?: { message?: { content?: string | null; tool_calls?: { id: string; function: { name: string; arguments?: string } }[] } }[]; usage?: { total_tokens?: number } };
   const msg = j.choices?.[0]?.message;
   if (!msg) throw new IaErro(502, "Resposta inesperada do provedor de IA.");
   const blocos: Bloco[] = [];
@@ -107,7 +107,7 @@ export async function chamarOpenAI(c: Chamada, msgs: Mensagem[]): Promise<Passo>
     let entrada: unknown = {}; try { entrada = JSON.parse(t.function.arguments || "{}"); } catch { /* argumentos inválidos: ferramenta recebe {} */ }
     blocos.push({ type: "tool_use", id: t.id, name: t.function.name, input: entrada });
   }
-  return { blocos, tokens: j.usage?.total_tokens ?? 0 };
+  return { respostaId: j.id, modelo: j.model, blocos, tokens: j.usage?.total_tokens ?? 0 };
 }
 
 export const ADAPTADORES: Record<ProvedorId, (c: Chamada, m: Mensagem[]) => Promise<Passo>> = { claude: chamarClaude, gemini: chamarGemini, compativel_openai: chamarOpenAI };

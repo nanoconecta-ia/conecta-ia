@@ -64,7 +64,7 @@ export async function renovarLoja(arm: Armazem, lojaId: string, cfg: Config, for
     let r: Response;
     try {
       r = await f(TOKEN_URL, {
-        method: "POST",
+        method: "POST", redirect: "manual",
         headers: {
           Authorization: "Basic " + btoa(`${app.client_id}:${clientSecret}`),
           "Content-Type": "application/x-www-form-urlencoded", Accept: "1.0", "enable-jwt": "1",
