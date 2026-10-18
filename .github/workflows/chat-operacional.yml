@@ -1,0 +1,31 @@
+name: Chat operacional - validação sem produção
+on:
+  pull_request:
+    paths: ['supabase/**', 'scripts/**', 'painel/**', 'sql/**', '.github/workflows/chat-operacional.yml']
+permissions:
+  contents: read
+concurrency:
+  group: chat-operacional-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contrato-migracao:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: 2.81.3
+      - name: Gerar nome com CLI oficial (somente diretório temporário)
+        if: hashFiles('supabase/migrations/*_chat_operacional.sql') == ''
+        run: |
+          supabase --help
+          supabase migration new --help
+          mkdir -p "$RUNNER_TEMP/chat-migracao"
+          supabase init --workdir "$RUNNER_TEMP/chat-migracao"
+          supabase migration new chat_operacional --workdir "$RUNNER_TEMP/chat-migracao"
+          for arquivo in "$RUNNER_TEMP"/chat-migracao/supabase/migrations/*_chat_operacional.sql; do
+            echo "MIGRACAO_GERADA=$(basename "$arquivo")"
+          done
