@@ -475,4 +475,21 @@ select public.afirma(private.risco_ordem('HIGH') = 3, 'o servidor (service_role)
 select public.admin();
 select public.afirma(not exists (select 1 from public.auditoria where depois ? 'forjado'), 'nenhuma linha de auditoria forjada');
 
+-- Permissão Bling explícita (migração 20261019000002). Reusa as sessões; não promove consentimentos antigos.
+select public.servidor();
+select public.novo_desafio('BLING-ESPELHO', 'agente_externo', array['produtos:ler', 'bling:consultar']);
+select public.como('11111111-1111-1111-1111-111111111111');
+select public.afirma((public.pair_aprovar('BLING-ESPELHO', 'aaaaaaaa-0000-0000-0000-000000000001', 'VER-BLING-ESPELHO', array['produtos:ler'], 15)->>'ok')::boolean, 'lojista pode recusar API e conceder só espelho');
+select public.servidor();
+select public.pair_consultar(public.h('BLING-ESPELHO'), public.h('SEG-BLING-ESPELHO'));
+select public.afirma(not (public.pair_validar(public.h('TOK-BLING-ESPELHO'), public.h('SAL-BLING-ESPELHO'))->'escopos' ? 'bling:consultar'), 'sessão sem consentimento não ganha API');
+select public.novo_desafio('BLING-API', 'agente_externo', array['bling:consultar']);
+select public.como('11111111-1111-1111-1111-111111111111');
+select public.afirma((public.pair_aprovar('BLING-API', 'aaaaaaaa-0000-0000-0000-000000000001', 'VER-BLING-API', array['bling:consultar'], 15)->>'ok')::boolean, 'lojista concede consulta API sem permissões de escrita');
+select public.espera_erro($$select private.pair_escopos_validos()$$, '42501');
+select public.servidor();
+select public.pair_consultar(public.h('BLING-API'), public.h('SEG-BLING-API'));
+select public.afirma(public.pair_validar(public.h('TOK-BLING-API'), public.h('SAL-BLING-API'))->'escopos' = '["bling:consultar"]'::jsonb, 'sessão conserva somente o consentimento exato');
+select public.afirma(public.pair_validar(public.h('TOK-BLING-API'), public.h('SAL-BLING-API'))->>'loja_id' = 'aaaaaaaa-0000-0000-0000-000000000001', 'loja vem do pareamento aprovado');
+
 rollback;

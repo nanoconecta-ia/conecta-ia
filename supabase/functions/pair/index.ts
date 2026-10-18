@@ -1,6 +1,6 @@
 // Conecta Pair — lado do solicitante (verify_jwt = false; a função valida tudo e limita taxa). POST { acao: iniciar|consultar|renovar|encerrar, ... }.
 // O lado do APROVADOR (pair_detalhe/pair_aprovar/pair_recusar/revogações) é chamado direto pelo painel com o JWT do lojista, via RPC.
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { tratarPair } from "../_shared/pair/servico.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };

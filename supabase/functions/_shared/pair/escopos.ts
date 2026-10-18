@@ -1,12 +1,13 @@
 // Escopos do Conecta Pair. A lista é a MESMA de private.pair_escopos_validos() na migração (um teste confere).
 // Nenhum escopo aprova, executa ou administra: o agente só LÊ e PROPÕE. Quem decide é o lojista, na Central de Aprovações.
 export const ESCOPOS = [
-  "produtos:ler", "enriquecimento:propor", "banners:propor", "categorias:propor", "paginas:propor",
+  "produtos:ler", "bling:consultar", "enriquecimento:propor", "banners:propor", "categorias:propor", "paginas:propor",
   "catalogo:propor", "campanhas:propor", "aprovacoes:ler", "tarefas:ler",
 ] as const;
 export type Escopo = typeof ESCOPOS[number];
 
 export const ROTULOS: Record<Escopo, string> = {
+  "bling:consultar": "Consultar produto na API Bling (somente leitura, com fallback identificado)",
   "produtos:ler": "Ver produtos da loja (nome, SKU, preço, estoque)",
   "enriquecimento:propor": "Sugerir dados técnicos (vão para a Fila de aprovação)",
   "banners:propor": "Sugerir banners (nada é publicado sem sua aprovação)",
