@@ -7,6 +7,7 @@ import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 import { conversar, IaErro, type Mensagem } from "../_shared/ia/claude.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../_shared/ia/ferramentas.ts";
 import type { PluginRegistro } from "../_shared/ia/plugin.ts";
+import { MSG_SO_LOJISTA, podeDecidir } from "../_shared/assistente/permissao.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +29,9 @@ Deno.serve(async (req) => {
   const lojaId = typeof c?.loja_id === "string" ? c.loja_id : "";
   const { data: loja } = await usuario.from("lojas").select("id, nome").eq("id", lojaId).maybeSingle();
   if (!loja) return json({ erro: "Loja não encontrada." }, 404);
+
+  // Aprovar/rejeitar muda dado que vai ao site: só quem ADMINISTRA a loja (lojista), nunca o editor. Conversar e consultar seguem abertos.
+  if ((c.acao === "decidir" || c.acao === "decidir_imagem") && !(await podeDecidir(usuario, loja.id))) return json({ erro: MSG_SO_LOJISTA }, 403);
 
   if (c.acao === "decidir") {
     const id = typeof c.id === "string" ? c.id : "";
