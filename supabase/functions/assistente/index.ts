@@ -1,12 +1,13 @@
 // Assistente do lojista (JWT do usuário). POST { loja_id, acao: "perguntar", texto } ou { loja_id, acao: "decidir", id, decisao: "aprovar"|"rejeitar" }.
 // Responde só com dados da própria loja (a RLS decide o acesso). Decidir grava via service role e registra auditoria.
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { AJUDA_LOJISTA, intencaoLojista } from "../_shared/intencoes.ts";
 import { decifrar } from "../_shared/cripto.ts";
 import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 import { conversar, IaErro, type Mensagem } from "../_shared/ia/claude.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../_shared/ia/ferramentas.ts";
 import type { PluginRegistro } from "../_shared/ia/plugin.ts";
+import { listarProvedores, modeloDaChave, validarProvedor } from "../_shared/assistente/provedores.ts";
 import { MSG_SO_LOJISTA, podeDecidir } from "../_shared/assistente/permissao.ts";
 
 const CORS = {
@@ -29,6 +30,13 @@ Deno.serve(async (req) => {
   const lojaId = typeof c?.loja_id === "string" ? c.loja_id : "";
   const { data: loja } = await usuario.from("lojas").select("id, nome").eq("id", lojaId).maybeSingle();
   if (!loja) return json({ erro: "Loja não encontrada." }, 404);
+
+  // Só metadados da loja visível ao JWT. Nenhum cofre, decriptação, teste de chave ou chamada ao provedor.
+  if (c.acao === "provedores") {
+    const { data, error } = await usuario.from("loja_chaves_ia")
+      .select("provedor, ativa, principal, modelo, base_url, limite_mensal_tokens, tokens_mes, mes_ref").eq("loja_id", loja.id);
+    return json({ provedores: listarProvedores(data ?? [], !!error), verificado: !error });
+  }
 
   // Aprovar/rejeitar muda dado que vai ao site: só quem ADMINISTRA a loja (lojista), nunca o editor. Conversar e consultar seguem abertos.
   if ((c.acao === "decidir" || c.acao === "decidir_imagem") && !(await podeDecidir(usuario, loja.id))) return json({ erro: MSG_SO_LOJISTA }, 403);
@@ -65,11 +73,20 @@ Deno.serve(async (req) => {
 
   // Com chave de IA configurada: chat de verdade com ferramentas. Sem chave: respostas por palavras-chave (abaixo).
   const sb = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-  const { data: kRows } = await sb.rpc("ia_chave_ativa", { p_loja: loja.id });
+  let provedor;
+  try { provedor = validarProvedor(c.provedor); }
+  catch { return json({ erro: "Provedor inválido.", codigo: "provedor_invalido" }, 400); }
+  const { data: kRows, error: erroChave } = c.sem_ia === true
+    ? { data: null, error: null }
+    : await sb.rpc("ia_chave_ativa", { p_loja: loja.id, ...(provedor ? { p_provedor: provedor } : {}) });
   const k = (kRows as { provedor: "claude" | "gemini" | "compativel_openai"; cifrada: string; modelo: string | null; limite: number | null; tokens_mes: number; base_url: string | null }[] | null)?.[0];
+  if (erroChave) return json({ erro: "Não foi possível consultar a configuração de IA.", codigo: "provedor_indisponivel" }, 503);
+  if (provedor && (!k || k.provedor !== provedor)) return json({ erro: "Este provedor não está configurado. Escolha outro em Integrações de IA.", codigo: "provedor_nao_configurado" }, 409);
+  if (k && !modeloDaChave(k)) return json({ erro: "Configure o modelo em Integrações de IA.", codigo: "provedor_indisponivel" }, 409);
   const chaveiro = k ? await chaveiroPlataforma(sb, (n) => Deno.env.get(n)) : undefined;
+  if (k && !chaveiro) return json({ erro: "O provedor está indisponível na configuração do servidor.", codigo: "provedor_indisponivel" }, 503);
   if (k && chaveiro) {
-    if (k.limite != null && k.tokens_mes >= k.limite) return json({ resposta: "O limite mensal de uso da IA desta loja foi atingido. Ajuste o limite em Integrações de IA ou aguarde o próximo mês.", ia: false });
+    if (k.limite != null && k.tokens_mes >= k.limite) return json({ erro: "O limite mensal deste provedor foi atingido. Ajuste em Integrações de IA ou escolha outro provedor.", codigo: "limite_ia" }, 429);
     const { data: plugs } = await usuario.from("loja_plugins").select("id, nome, tipo, url, capacidades, risco, ativo").eq("loja_id", loja.id);
     const { data: biRows } = await sb.rpc("busca_imagem_ler", { p_loja: loja.id });
     const bi = (biRows as { api_key_cifrada: string; cx: string }[] | null)?.[0];
@@ -85,17 +102,17 @@ Deno.serve(async (req) => {
     }
     try {
       const r = await conversar({
-        provedor: k.provedor, baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: k.modelo ?? (k.provedor === "gemini" ? "gemini-2.5-flash" : "claude-sonnet-5-5"), sistema: `${SISTEMA}\nLoja: ${loja.nome}.`, mensagens, ferramentas: FERRAMENTAS,
+        provedor: k.provedor, baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: modeloDaChave(k), sistema: `${SISTEMA}\nLoja: ${loja.nome}.`, mensagens, ferramentas: FERRAMENTAS,
         executar: (nome, entrada) => executarFerramenta(nome, entrada, {
           usuario, admin: sb, lojaId: loja.id, plugins: (plugs ?? []) as PluginRegistro[], buscaImagem,
           credencial: async (pid) => { const { data } = await sb.rpc("plugin_credencial", { p_loja: loja.id, p_id: pid }); return typeof data === "string" ? await decifrar(data, chaveiro) : null; },
         }),
       });
       await sb.rpc("ia_registrar_uso", { p_loja: loja.id, p_provedor: k.provedor, p_tokens: r.tokens });
-      await sb.from("auditoria").insert({ loja_id: loja.id, user_id: u.user.id, acao: "assistente.consulta", tabela: "ia", depois: { provedor: k.provedor, tokens: r.tokens, passos: r.passos, ferramentas: r.ferramentasUsadas } });
-      return json({ resposta: r.texto || "Não encontrei uma resposta. Pode reformular?", ia: true });
+      await sb.from("auditoria").insert({ loja_id: loja.id, user_id: u.user.id, acao: "assistente.consulta", tabela: "ia", depois: { provedor: k.provedor, modelo: modeloDaChave(k), tokens: r.tokens, passos: r.passos, ferramentas: r.ferramentasUsadas } });
+      return json({ resposta: r.texto || "Não encontrei uma resposta. Pode reformular?", ia: true, provedor: k.provedor, modelo: modeloDaChave(k) });
     } catch (e) {
-      return json({ resposta: e instanceof IaErro ? e.message : "Não consegui responder agora.", ia: false });
+      return json({ erro: e instanceof IaErro ? e.message : "Não consegui responder agora.", codigo: "provedor_indisponivel", provedor: k.provedor }, e instanceof IaErro && [429, 502, 504].includes(e.status) ? e.status : 502);
     }
   }
   const q = (t: string, f?: (b: any) => any) => { const b = usuario.from(t).select("id", { count: "exact", head: true }).eq("loja_id", loja.id); return f ? f(b) : b; };
@@ -124,3 +141,4 @@ Deno.serve(async (req) => {
     default: return json({ resposta: AJUDA_LOJISTA });
   }
 });
+
