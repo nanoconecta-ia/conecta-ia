@@ -25,6 +25,7 @@ jobs:
           supabase --version
           supabase migration --help
           supabase migration new --help
+          mkdir -p "$RUNNER_TEMP/oauth-local"
           supabase init --workdir "$RUNNER_TEMP/oauth-local"
           supabase migration new oauth_agente --workdir "$RUNNER_TEMP/oauth-local"
           python3 - <<'PY'
