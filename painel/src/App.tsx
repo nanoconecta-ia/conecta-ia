@@ -1,6 +1,7 @@
 import { AutorizarAgente } from "./paginas/AutorizarAgente.tsx";
 import { useEffect, useState } from "react";
-import { PAIR_ATIVO } from "./lib/flags.ts";
+import { CONECTOR_ATIVO, PAIR_ATIVO, ROTAS_DO_CONECTOR } from "./lib/flags.ts";
+import { montarMenu } from "./lib/visibilidade.ts";
 import { Assistente } from "./paginas/Assistente.tsx";
 import { useLojas, useSessao } from "./lib/dados.ts";
 import { ir, useRota } from "./lib/rota.ts";
@@ -57,7 +58,7 @@ const ITENS: [string, string][] = [
   ["/bling", "Bling"],
   ["/contador", "Contador"],
 ];
-const MENU: [string, string][] = PAIR_ATIVO ? [...ITENS.slice(0, 3), ...ITENS_PAIR, ...ITENS.slice(3)] : ITENS;
+const MENU: [string, string][] = montarMenu(ITENS, ITENS_PAIR, { pairAtivo: PAIR_ATIVO, conectorAtivo: CONECTOR_ATIVO }, ROTAS_DO_CONECTOR);
 
 export function App() {
   const { sessao, recuperando, fimRecuperacao } = useSessao();
@@ -86,7 +87,8 @@ export function App() {
   if (!demoAtivo && sessao && PAIR_ATIVO && caminho === "/autorizar-agente") return <AutorizarAgente codigo={query.get("c") ?? ""} />;
   if (!demoAtivo && sessao && PAIR_ATIVO && caminho === "/parear") return <ParearAprovador codigo={query.get("c") ?? ""} email={sessao?.user.email ?? null} />;
   const loja = demoAtivo ? demo?.lojaDemo ?? null : lojas?.[0] ?? null;
-  const larga = caminho === "/conector";
+  const bloqueada = !CONECTOR_ATIVO && (ROTAS_DO_CONECTOR.includes(caminho) || /^\/indicadores\//.test(caminho) || caminho === "/agentes"); // backend ainda não publicado
+  const larga = caminho === "/conector" && !bloqueada;
   const filtroInd = caminho.match(/^\/indicadores\/([a-z_:]+)$/);
   return (
     <>
@@ -104,7 +106,8 @@ export function App() {
       <main>
         {!demoAtivo && lojas === null ? <p className="suave">Carregando…</p> : !loja ? (
           <div className="cartao"><h1>Sem loja vinculada</h1><p className="suave">Seu login ainda não está ligado a uma loja. Peça ao suporte para vincular.</p></div>
-        ) : caminho === "/estudio" ? <EstudioAgente key={loja.id} loja={loja} />
+        ) : bloqueada ? <VisaoGeral loja={loja} />
+          : caminho === "/estudio" ? <EstudioAgente key={loja.id} loja={loja} />
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />
           : PAIR_ATIVO && caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao?.user.email ?? null} />
