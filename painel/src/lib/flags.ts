@@ -7,3 +7,7 @@ export const PAIR_ATIVO: boolean = (import.meta as { env?: Record<string, string
 // Ficam escondidas até o build de um ambiente que já os tenha: VITE_CONECTOR_ATIVO=1 npm run build.
 export const CONECTOR_ATIVO: boolean = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_CONECTOR_ATIVO === "1";
 export const ROTAS_DO_CONECTOR = ["/conector", "/central", "/indicadores", "/studio", "/gateway"];
+
+// Backup do cadastro do Bling (tabelas bling_snapshot_* e função bling-backup) ainda NÃO estão em produção.
+// Fica escondido até o build de um ambiente que já os tenha: VITE_BACKUP_ATIVO=1 npm run build.
+export const BACKUP_ATIVO: boolean = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_BACKUP_ATIVO === "1";
