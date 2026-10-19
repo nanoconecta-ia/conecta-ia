@@ -32,4 +32,16 @@ select public.recusa($$insert into public.sistemas_mecanicos (nivel, nome, orige
 select public.afirma((select count(*) from public.sistemas_mecanicos where nivel = 1 and icone is null) = 0, 'todo sistema de nível 1 da semente tem ícone');
 select public.afirma((select public.icone_do_sistema(id) from public.sistemas_mecanicos where nivel = 3 and nome like 'Jogo de Juntas%') = 'motor', 'subcategoria herda o ícone do sistema pai');
 select public.afirma((select public.icone_do_sistema(gen_random_uuid())) = 'outros', 'sem ícone em toda a cadeia cai em "outros", nunca vazio');
+insert into public.modelos (id, montadora_id, nome, categoria) values ('a1000000-0000-0000-0000-0000000000d1', 'a0000000-0000-0000-0000-0000000000d1', 'ModeloDoc', 'van');
+insert into public.geracoes (id, modelo_id, ordem) values ('a2000000-0000-0000-0000-0000000000d1', 'a1000000-0000-0000-0000-0000000000d1', 1);
+insert into public.versoes (id, geracao_id, mercado, nome_comercial) values ('a3000000-0000-0000-0000-0000000000d1', 'a2000000-0000-0000-0000-0000000000d1', 'BR', 'VersaoDoc');
+select public.recusa($$insert into public.identificadores_oficiais (versao_id, orgao, tipo, valor, fonte_id)
+  values ('a3000000-0000-0000-0000-0000000000d1', 'senatran', 'marca_modelo', 'X', null)$$, 'identificador oficial sem documento de origem é recusado');
+select public.recusa($$insert into public.identificadores_oficiais (versao_id, orgao, tipo, valor, fonte_id)
+  values ('a3000000-0000-0000-0000-0000000000d1', 'orgao_inventado', 'marca_modelo', 'X', 'f0000000-0000-0000-0000-0000000000d1')$$, 'órgão fora da lista é recusado');
+select public.recusa($$insert into public.identificadores_oficiais (versao_id, orgao, tipo, valor, fonte_id, status)
+  values ('a3000000-0000-0000-0000-0000000000d1', 'inmetro', 'registro', 'Y', 'f0000000-0000-0000-0000-0000000000d1', 'aprovado')$$, 'aprovar sem data de verificação é recusado');
+insert into public.identificadores_oficiais (versao_id, orgao, tipo, valor, fonte_id)
+  values ('a3000000-0000-0000-0000-0000000000d1', 'senatran', 'marca_modelo', 'VALOR FICTÍCIO', 'f0000000-0000-0000-0000-0000000000d1');
+select public.afirma((select status from public.identificadores_oficiais limit 1) = 'a_confirmar', 'identificador novo nasce a confirmar');
 rollback;

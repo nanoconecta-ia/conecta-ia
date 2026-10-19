@@ -97,3 +97,25 @@ begin
     insert into public.sistemas_mecanicos (nivel, pai_id, nome, origem) values (3, n2, r.c, s) on conflict do nothing;
   end loop;
 end $$;
+
+-- Identidade OFICIAL do veículo (como consta no órgão de registro/fiscalização). A aplicação de uma peça é por VERSÃO do veículo:
+-- compartilhar o motor (ex.: D4CB em HR e K2500) NÃO prova que a peça serve em ambos; o código e a geração do motor mudam por modelo.
+create table public.identificadores_oficiais (
+  id uuid primary key default gen_random_uuid(),
+  versao_id uuid not null references public.versoes(id) on delete cascade,
+  orgao text not null check (orgao in ('senatran', 'detran', 'inmetro', 'abnt', 'montadora', 'outro')),
+  tipo text not null check (length(btrim(tipo)) > 0),                -- ex.: marca/modelo registrado, código marca/modelo, prefixo do chassi, registro
+  valor text not null check (length(btrim(valor)) > 0),              -- exatamente como no documento; nunca deduzido
+  fonte_id uuid not null references public.fontes(id),               -- documento de origem obrigatório
+  verificado_em timestamptz,
+  status public.status_enriquecimento not null default 'a_confirmar',
+  criado_em timestamptz not null default now(),
+  check (status <> 'aprovado' or verificado_em is not null),
+  unique (versao_id, orgao, tipo, valor)
+);
+create index on public.identificadores_oficiais (versao_id);
+alter table public.identificadores_oficiais enable row level security;
+revoke all on public.identificadores_oficiais from anon, authenticated;
+grant select, insert, update, delete on public.identificadores_oficiais to service_role;
+grant select on public.identificadores_oficiais to authenticated;
+create policy identificadores_oficiais_ver on public.identificadores_oficiais for select to authenticated using (true);
