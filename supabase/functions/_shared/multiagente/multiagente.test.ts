@@ -32,18 +32,26 @@ test("planejamento mínimo: só as tarefas necessárias, com motivo das puladas"
 });
 
 test("pesquisas independentes rodam em paralelo; com concorrência 1 viram série", async () => {
-  const cs = ["a", "b", "c", "d"].map((i) => lento(i, 80));
-  const custos = custosEmMemoria(10);
-  const t0 = Date.now();
-  const par = await pesquisar(cs, { sku: "S", oem: [] }, { agora: "t", concorrencia: 4, custos });
-  const dPar = Date.now() - t0;
-  const t1 = Date.now();
-  await pesquisar(cs, { sku: "S", oem: [] }, { agora: "t", concorrencia: 1, custos });
-  const dSer = Date.now() - t1;
+  // Determinístico: mede quantas buscas estavam em andamento ao mesmo tempo, não o relógio (que oscila no CI).
+  const medir = () => {
+    const est = { ativas: 0, pico: 0 };
+    const cs = ["a", "b", "c", "d"].map((i) => lento(i, 30, {
+      buscar: async () => {
+        est.ativas++; est.pico = Math.max(est.pico, est.ativas);
+        await new Promise((ok) => setTimeout(ok, 30));
+        est.ativas--;
+        return [{ fonte: `https://${i}.invalid/x`, tipo_fonte: "fornecedor", dados: { oem: ["20910-4AU07"] } }];
+      },
+    }));
+    return { est, cs };
+  };
+  const p = medir();
+  const par = await pesquisar(p.cs, { sku: "S", oem: [] }, { agora: "t", concorrencia: 4, custos: custosEmMemoria(10) });
+  const s = medir();
+  await pesquisar(s.cs, { sku: "S", oem: [] }, { agora: "t", concorrencia: 1, custos: custosEmMemoria(10) });
   assert.equal(par.evidencias.length, 4);
-  // relativo, não absoluto: sob carga (CI) os dois tempos sobem juntos. O piso da série é físico (4 × 80 ms de espera nunca dura menos).
-  assert.ok(dSer >= 300, `série levou ${dSer} ms`);
-  assert.ok(dPar * 2 < dSer, `paralelo ${dPar} ms deveria ser menos da metade da série ${dSer} ms`);
+  assert.equal(p.est.pico, 4, "com concorrência 4, as quatro buscas se sobrepõem");
+  assert.equal(s.est.pico, 1, "com concorrência 1, nunca há duas buscas ao mesmo tempo");
   assert.deepEqual(par.evidencias.map((e) => e.fonte), [...par.evidencias.map((e) => e.fonte)].sort(), "ordem estável apesar do paralelismo");
 });
 
