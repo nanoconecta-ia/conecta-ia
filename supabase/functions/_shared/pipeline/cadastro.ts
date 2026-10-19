@@ -48,7 +48,11 @@ export function montarCadastro(sku: string, entrada: EntradaBling, ext: Extracao
   const oem = ext.codigos_oem.map((c) => attr(c.normalizado, fonteBling, "cadastro", c.confianca));
   for (const c of ext.codigos_oem.filter((x) => x.confianca === "baixa")) pend.push(`código ${c.normalizado}: sem separador nem rótulo, confirmar se é da montadora`);
   const aplicacoes: Cadastro["aplicacoes"] = [];
-  for (const ev of evidencias) for (const a of ev.dados.aplicacoes ?? []) aplicacoes.push(attr(a, ev.fonte, ev.tipo_fonte, ev.nao_confiavel ? "baixa" : "media"));
+  const excluidos = new Set(ext.excluido.motores.map((m) => m.toUpperCase().replace(/[^0-9A-Z]/g, "")));
+  for (const ev of evidencias) for (const a of ev.dados.aplicacoes ?? []) {
+    if (a.motor && excluidos.has(a.motor.toUpperCase().replace(/[^0-9A-Z]/g, ""))) { pend.push(`fonte ${ev.fonte} afirma aplicação no motor ${a.motor}, que o cadastro exclui (NÃO SE APLICA): não incluída`); continue; }
+    aplicacoes.push(attr(a, ev.fonte, ev.tipo_fonte, ev.nao_confiavel ? "baixa" : "media"));
+  }
   if (aplicacoes.length === 0) pend.push("sem aplicação por versão do veículo confirmada");
   const nsa = ext.nao_se_aplica ? attr(ext.nao_se_aplica, fonteBling, "bling") : null;
   if (!nsa) pend.push("sem bloco NÃO SE APLICA");

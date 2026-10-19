@@ -12,24 +12,24 @@ import { enriquecer } from "./enriquecedor.ts";
 import { auditar, type Auditoria } from "./auditor.ts";
 import { criarLimitador, criarLimiteTaxa, somar, type CapacidadeId, type PortaCustos, type RegistroCusto } from "./custos.ts";
 
-export interface DepsMultiagente extends DepsPipeline { catalogo: PortaCatalogo; custos: PortaCustos; concorrencia?: number; concorrenciaItens?: number; classificadorLLM?: ClassificadorLLM; limiteTaxa?: ReturnType<typeof criarLimiteTaxa> }
+export interface DepsMultiagente extends DepsPipeline { /** "serie_completa" = controle do experimento: todas as tarefas sempre, sem planejamento mínimo. */ modo?: "planejado" | "serie_completa"; catalogo: PortaCatalogo; custos: PortaCustos; concorrencia?: number; concorrenciaItens?: number; classificadorLLM?: ClassificadorLLM; limiteTaxa?: ReturnType<typeof criarLimiteTaxa> }
 export interface Tarefa { id: string; capacidade: CapacidadeId; dependeDe: string[]; motivo: string }
 export interface Plano { tarefas: Tarefa[]; puladas: { capacidade: CapacidadeId; motivo: string }[] }
 export interface ResumoMultiagente { sku: string; estado: string; plano: Plano; auditoria: Auditoria; custos: ReturnType<typeof somar>; registros: RegistroCusto[]; duracao_ms: number; adiados: { id: string; motivo: string }[] }
 
 /** Planeja SOMENTE o necessário. Cada tarefa pulada fica registrada com o motivo (auditável). */
-export function planejar(entrada: EntradaPipeline & { categoria_definida?: boolean }, ident: Identificacao, conectores: ConectorPesquisa[]): Plano {
+export function planejar(entrada: EntradaPipeline & { categoria_definida?: boolean }, ident: Identificacao, conectores: ConectorPesquisa[], o: { forcarTudo?: boolean } = {}): Plano {
   const tarefas: Tarefa[] = [{ id: "identificar", capacidade: "identificador", dependeDe: [], motivo: "sempre: reconhece SKU, OEM, GTIN, marca e duplicidades" }];
   const puladas: Plano["puladas"] = [];
   const elegiveis = conectores.filter((c) => c.autorizado);
-  const temId = ident.codigos_oem.length > 0 || !!ident.gtin?.valido;
+  const temId = o.forcarTudo || ident.codigos_oem.length > 0 || !!ident.gtin?.valido;
   const pesq: string[] = [];
   if (!elegiveis.length) puladas.push({ capacidade: "pesquisador", motivo: "nenhum conector autorizado" });
   else if (!temId) puladas.push({ capacidade: "pesquisador", motivo: "sem identificador pesquisável (OEM ou GTIN válido): pesquisar por nome geraria compatibilidade presumida" });
   else for (const c of elegiveis) { tarefas.push({ id: `pesquisar:${c.id}`, capacidade: "pesquisador", dependeDe: ["identificar"], motivo: "independente das demais fontes: roda em paralelo" }); pesq.push(`pesquisar:${c.id}`); }
-  if (entrada.categoria_definida) puladas.push({ capacidade: "taxonomista", motivo: "categoria já definida e aprovada" });
+  if (entrada.categoria_definida && !o.forcarTudo) puladas.push({ capacidade: "taxonomista", motivo: "categoria já definida e aprovada" });
   else tarefas.push({ id: "classificar", capacidade: "taxonomista", dependeDe: ["identificar"], motivo: "sem categoria na árvore fechada; independente da pesquisa" });
-  if (!ident.extracao.aplicacao.veiculos_citados.length && !pesq.length) puladas.push({ capacidade: "compatibilidade", motivo: "sem veículo no cadastro e sem evidência externa" });
+  if (!o.forcarTudo && !ident.extracao.aplicacao.veiculos_citados.length && !pesq.length) puladas.push({ capacidade: "compatibilidade", motivo: "sem veículo no cadastro e sem evidência externa" });
   else tarefas.push({ id: "compatibilidade", capacidade: "compatibilidade", dependeDe: ["identificar", ...pesq], motivo: "avalia aplicação por versão, motor e período" });
   tarefas.push({ id: "enriquecer", capacidade: "enriquecedor", dependeDe: ["classificar", "compatibilidade"].filter((d) => tarefas.some((t) => t.id === d)), motivo: "monta o cadastro só com dado que tem fonte" });
   tarefas.push({ id: "auditar", capacidade: "auditor", dependeDe: ["enriquecer"], motivo: "sempre: evidências, conflitos, riscos e permissões antes do lojista" });
@@ -49,10 +49,7 @@ export async function processarItemMultiagente(porta: PortaPipeline, deps: DepsM
 
   const [ident, dId] = await cronometrar(() => identificar(sku, e, deps.catalogo, deps.homologados ?? {}));
   await reg({ capacidade: "identificador", tarefa: "identificar", tipo: "deterministica", duracao_ms: dId });
-  const plano = planejar(e, ident, deps.conectores);
-  let it = await porta.avancar(item, "normalizado", { motivo: "texto normalizado e extraído", resultado: { extracao: ident.extracao } });
-  it = await porta.avancar(it, "identificado", { motivo: "peça identificada (marca da peça ≠ montadora do veículo)", resultado: { identificacao: { sku, marca_da_peca: ident.marca_da_peca, montadoras_citadas: ident.montadoras_citadas, classe_peca: ident.classe_peca, gtin_valido: ident.gtin ? ident.gtin.valido : null, codigos_oem: ident.codigos_oem, ambiguidades: ident.ambiguidades, duplicidades: ident.duplicidades } } });
-
+  const plano = planejar(e, ident, deps.conectores, { forcarTudo: deps.modo === "serie_completa" });
   const limiteTaxa = deps.limiteTaxa ?? criarLimiteTaxa();
   const vazia: ResultadoPesquisa = { evidencias: [], ignorados: [], falhas: [], adiados: [], ambiguas: [], tentados: 0 };
   const querPesquisa = plano.tarefas.some((t) => t.capacidade === "pesquisador");
@@ -64,6 +61,10 @@ export async function processarItemMultiagente(porta: PortaPipeline, deps: DepsM
   ]);
   if (querTax && !regs.some((r) => r.capacidade === "taxonomista")) await reg({ capacidade: "taxonomista", tarefa: "classificar:regra", tipo: "deterministica", duracao_ms: dTax });
   if (querPesquisa && pesq.tentados > 0 && pesq.tentados === pesq.falhas.length) throw new Error(`todos os conectores falharam: ${pesq.falhas.map((f) => `${f.id}: ${f.erro}`).join("; ")}`);
+
+  if (querPesquisa && pesq.tentados === 0 && pesq.adiados.length > 0) throw new Error("orçamento da loja esgotado: a pesquisa necessária foi adiada e o item permanece na fila (não segue sem evidências)");
+  let it = await porta.avancar(item, "normalizado", { motivo: "texto normalizado e extraído", resultado: { extracao: ident.extracao } });
+  it = await porta.avancar(it, "identificado", { motivo: "peça identificada (marca da peça ≠ montadora do veículo)", resultado: { identificacao: { sku, marca_da_peca: ident.marca_da_peca, montadoras_citadas: ident.montadoras_citadas, classe_peca: ident.classe_peca, gtin_valido: ident.gtin ? ident.gtin.valido : null, codigos_oem: ident.codigos_oem, ambiguidades: ident.ambiguidades, duplicidades: ident.duplicidades } } });
 
   const evidencias: Evidencia[] = [evidenciaDoCadastro(sku, ident.extracao, e.bling, agora), ...pesq.evidencias];
   it = await porta.avancar(it, "pesquisado", { motivo: `${pesq.evidencias.length} evidência(s) externa(s) em ${dPesq} ms`, resultado: { evidencias, pesquisa: { ignorados: pesq.ignorados, falhas: pesq.falhas, adiados: pesq.adiados, ambiguas: pesq.ambiguas } } });

@@ -195,18 +195,23 @@ test("auditor bloqueia e o item vai para revisão humana como conflito 'auditori
   void id;
 });
 
-test("orçamento esgotado: pesquisa paga é adiada, o item segue com o que tem e o auditor avisa", { skip }, async () => {
+test("orçamento esgotado: a pesquisa necessária é adiada e o item PERMANECE NA FILA (não segue para aprovação sem evidência)", { skip }, async () => {
   const porta = portaPipeline(rpc as any, LOJA);
   const { custosRpc } = await import("./custos.ts");
   const id = await porta.criar("MA-P4", { nome: "Junta fictícia 4", descricao: "Hyundai HR D4CB. OEM 20910-4AU07.", marca: "X" } as any, "ma-p4-0001");
   await db.sql(`update public.pipeline_orcamentos set limite_usd = 0 where loja_id = '${LOJA}'`);
   const cara = lento("fonte-paga", 5, { custo_usd: 0.04 });
   const r = await processarFilaMultiagente(porta, depsBase([cara], { custos: custosRpc(rpc as any, LOJA, id) }), 5);
-  const resumo = r.resumos.find((x) => x.sku === "MA-P4")!;
-  assert.equal(resumo.adiados.length, 1);
-  assert.match(resumo.adiados[0].motivo, /orçamento/);
-  assert.ok(resumo.auditoria.avisos.some((a) => /orçamento da loja esgotado/.test(a)));
-  assert.equal(resumo.estado, "aguardando_aprovacao");
+  assert.equal(r.resumos.find((x) => x.sku === "MA-P4"), undefined, "o item não chegou ao lojista");
+  assert.equal(r.falhas.length >= 1, true);
+  assert.match(r.falhas.find((f) => f.item === id)!.erro, /orçamento da loja esgotado/);
+  const item = await porta.obter(id);
+  assert.equal(item.estado, "entrada", "continua na fila, sem transição gravada");
+  assert.equal(item.tentativas, 1, "a tentativa foi contada (recuo)");
+  // com orçamento de volta, o mesmo item é processado normalmente
+  await db.sql(`update public.pipeline_orcamentos set limite_usd = 1 where loja_id = '${LOJA}'; update public.pipeline_itens set proxima_tentativa = now() - interval '1 second', reservado_ate = null where id = '${id}'`);
+  const r2 = await processarFilaMultiagente(porta, depsBase([cara], { custos: custosRpc(rpc as any, LOJA, id) }), 5);
+  assert.equal(r2.resumos.find((x) => x.sku === "MA-P4")?.estado, "aguardando_aprovacao");
 });
 
 test("isolamento: o item e o custo de uma loja não aparecem na outra", { skip }, async () => {
