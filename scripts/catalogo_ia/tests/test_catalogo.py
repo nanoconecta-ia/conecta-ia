@@ -47,13 +47,16 @@ class Extracao(unittest.TestCase):
     def test_anos_nao_sao_expandidos(self):
         anos = self.e["aplicacao"]["anos_informados"]
         self.assertIn({"inicio": 2013, "fim": None, "em_aberto": True, "trecho": "2013+"}, anos)
-        self.assertTrue(all(a["inicio"] in (2012, 2013) for a in anos))
+        self.assertEqual([a["inicio"] for a in anos], [2013])  # 2012 está no NÃO SE APLICA
+        self.assertEqual([a["inicio"] for a in self.e["excluido"]["anos_informados"]], [2012])
         self.assertEqual(anos_informados("ano 2014"), [{"inicio": 2014, "fim": None, "em_aberto": False, "trecho": "2014"}])
 
     def test_motor_emissao_veiculos_como_escritos(self):
         ap = self.e["aplicacao"]
-        self.assertEqual(ap["motores"], ["D4CB", "D4BH", "4D56"])
-        self.assertEqual(ap["emissoes"], ["Euro 5", "Euro 3"])
+        self.assertEqual(ap["motores"], ["D4CB"])  # D4BH e 4D56 estão no NÃO SE APLICA: exclusão, não aplicação
+        self.assertEqual(ap["emissoes"], ["Euro 5"])
+        self.assertEqual(self.e["excluido"]["motores"], ["D4BH", "4D56"])
+        self.assertEqual(self.e["excluido"]["emissoes"], ["Euro 3"])
         for v in ("Hyundai", "Kia", "HR", "K2500", "Bongo"):
             self.assertIn(v, ap["veiculos_citados"])
         self.assertNotIn("Sorento", ap["veiculos_citados"])
@@ -165,3 +168,18 @@ class Llm(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Golden(unittest.TestCase):
+    """Os mesmos casos são conferidos pelo TypeScript (pipeline/extracao.test.ts): os dois não podem divergir."""
+    def test_casos(self):
+        casos = json.loads((Path(__file__).parent / "golden_extracao.json").read_text(encoding="utf-8"))
+        for c in casos:
+            e = extrair(c["sku"], c["nome"], c["descricao"], c["marca"], c["gtin"])
+            x = c["esperado"]
+            self.assertEqual([[o["normalizado"], o["confianca"]] for o in e["codigos_oem"]], x["oem"], c["id"])
+            self.assertEqual(e["aplicacao"]["motores"], x["motores"], c["id"])
+            self.assertEqual(e["aplicacao"]["emissoes"], x["emissoes"], c["id"])
+            self.assertEqual([[a["inicio"], a["fim"], a["em_aberto"]] for a in e["aplicacao"]["anos_informados"]], x["anos"], c["id"])
+            self.assertEqual(e["nao_se_aplica"], x["nao_se_aplica"], c["id"])
+            self.assertEqual(e["excluido"]["motores"], x["excluido"]["motores"], c["id"])

@@ -1,0 +1,230 @@
+[
+ {
+  "id": "sku_80692_real",
+  "sku": "80692",
+  "nome": "Jogo de Juntas Completo do Motor HR / K2500 2.5 16V D4CB Euro 5 c/ Retentores SABó",
+  "descricao": "<p>APLICAçãO: Hyundai HR 2.5 16V Turbo Diesel D4CB Euro V (2013+) e Kia Bongo K2500 2.5 16V Turbo Diesel D4CB Euro V (2013+). Jogo completo de juntas e vedação do motor com retentores e junta de cabeçote. Códigos OEM/Cruzados: SABó 80692, 20910-4AU07, 15105605RS. Procedência Nacional (Garantidor: SABó). NãO SE APLICA: Motores 2.5 8V Euro III D4BH/4D56 até 2012.</p>",
+  "marca": "SABó",
+  "gtin": "7891252806921",
+  "esperado": {
+   "oem": [
+    [
+     "20910-4AU07",
+     "media"
+    ],
+    [
+     "15105-605RS",
+     "baixa"
+    ]
+   ],
+   "motores": [
+    "D4CB"
+   ],
+   "emissoes": [
+    "Euro 5"
+   ],
+   "veiculos": [
+    "Hyundai",
+    "Kia",
+    "HR",
+    "Bongo",
+    "K2500"
+   ],
+   "anos": [
+    [
+     2013,
+     null,
+     true
+    ]
+   ],
+   "nao_se_aplica": "Motores 2.5 8V Euro III D4BH/4D56 até 2012.",
+   "gtin_valido": true,
+   "excluido": {
+    "motores": [
+     "D4BH",
+     "4D56"
+    ],
+    "emissoes": [
+     "Euro 3"
+    ],
+    "anos": [
+     [
+      2012,
+      null,
+      false
+     ]
+    ]
+   }
+  }
+ },
+ {
+  "id": "ano_isolado",
+  "sku": "X1",
+  "nome": "Kit embreagem",
+  "descricao": "Kit embreagem da hr 2.5 euro 5 ano 2014 marca valeo codigo 411004h000",
+  "marca": "Valeo",
+  "gtin": "",
+  "esperado": {
+   "oem": [
+    [
+     "41100-4H000",
+     "baixa"
+    ]
+   ],
+   "motores": [],
+   "emissoes": [
+    "Euro 5"
+   ],
+   "veiculos": [
+    "HR"
+   ],
+   "anos": [
+    [
+     2014,
+     null,
+     false
+    ]
+   ],
+   "nao_se_aplica": null,
+   "gtin_valido": null,
+   "excluido": {
+    "motores": [],
+    "emissoes": [],
+    "anos": []
+   }
+  }
+ },
+ {
+  "id": "oem_rotulado_e_nao",
+  "sku": "X2",
+  "nome": "Junta",
+  "descricao": "OEM 20910-4AU07 e tambem 15105605RS Hyundai",
+  "marca": "",
+  "gtin": "7891252806922",
+  "esperado": {
+   "oem": [
+    [
+     "20910-4AU07",
+     "media"
+    ],
+    [
+     "15105-605RS",
+     "media"
+    ]
+   ],
+   "motores": [],
+   "emissoes": [],
+   "veiculos": [
+    "Hyundai"
+   ],
+   "anos": [],
+   "nao_se_aplica": null,
+   "gtin_valido": false,
+   "excluido": {
+    "motores": [],
+    "emissoes": [],
+    "anos": []
+   }
+  }
+ },
+ {
+  "id": "faixa_de_anos",
+  "sku": "X3",
+  "nome": "Filtro",
+  "descricao": "Serve de 2010-2015 no Kia Bongo K2500 D4CB Euro III. NÃO SE APLICA: Motor 4D56 antes de 2009. Veja manual.",
+  "marca": "",
+  "gtin": "",
+  "esperado": {
+   "oem": [],
+   "motores": [
+    "D4CB"
+   ],
+   "emissoes": [
+    "Euro 3"
+   ],
+   "veiculos": [
+    "Kia",
+    "Bongo",
+    "K2500"
+   ],
+   "anos": [
+    [
+     2010,
+     2015,
+     false
+    ]
+   ],
+   "nao_se_aplica": "Motor 4D56 antes de 2009",
+   "gtin_valido": null,
+   "excluido": {
+    "motores": [
+     "4D56"
+    ],
+    "emissoes": [],
+    "anos": [
+     [
+      2009,
+      null,
+      false
+     ]
+    ]
+   }
+  }
+ },
+ {
+  "id": "sem_descricao",
+  "sku": "CI001086",
+  "nome": "BOMBA OLEO HR/K2500 2.5 16V 13/ D4CB EURO V",
+  "descricao": "",
+  "marca": " MARCA: TRIM GO",
+  "gtin": "",
+  "esperado": {
+   "oem": [],
+   "motores": [
+    "D4CB"
+   ],
+   "emissoes": [
+    "Euro 5"
+   ],
+   "veiculos": [
+    "HR",
+    "K2500"
+   ],
+   "anos": [],
+   "nao_se_aplica": null,
+   "gtin_valido": null,
+   "excluido": {
+    "motores": [],
+    "emissoes": [],
+    "anos": []
+   }
+  }
+ },
+ {
+  "id": "html_e_gtin_com_letra",
+  "sku": "X4",
+  "nome": "Retentor",
+  "descricao": "<p>Aplicação&nbsp;Hyundai &amp; Kia</p><p>NAO SE APLICA: Euro IV.</p>",
+  "marca": "",
+  "gtin": "78912A2806921",
+  "esperado": {
+   "oem": [],
+   "motores": [],
+   "emissoes": [],
+   "veiculos": [
+    "Hyundai",
+    "Kia"
+   ],
+   "anos": [],
+   "nao_se_aplica": "Euro IV.",
+   "gtin_valido": false,
+   "excluido": {
+    "motores": [],
+    "emissoes": [
+     "Euro 4"
+    ],
+    "anos": []
+   }
+  }
+ }
+]

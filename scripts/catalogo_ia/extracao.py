@@ -45,29 +45,36 @@ def veiculos_citados(texto: str) -> list[str]:
     return [v for v in _VEICULOS if re.search(rf"(?<![A-Z0-9]){re.escape(v.upper())}(?![A-Z0-9])", t)]
 
 
-def nao_se_aplica(texto: str) -> str | None:
+def separar_nao_se_aplica(texto: str) -> tuple[str, str | None]:
+    """Separa a cláusula 'NÃO SE APLICA: ...' do resto. O que ela cita é EXCLUSÃO, nunca aplicação."""
     m = re.search(r"n[aã]o se aplica\s*:?\s*(.+?)(?:\.\s|$)", re.sub(r"[ãÃ]", "a", texto), re.I)
     if not m:
-        return None
-    ini = m.start(1)
-    return texto[ini:ini + len(m.group(1))].strip()
+        return texto, None
+    return (texto[:m.start()] + " " + texto[m.end():]).strip(), texto[m.start(1):m.end(1)].strip()
+
+
+def nao_se_aplica(texto: str) -> str | None:
+    return separar_nao_se_aplica(texto)[1]
 
 
 def extrair(sku: str, nome: str, descricao: str, marca: str = "", gtin: str = "") -> dict:
-    """Une nome + descrição (sem HTML) e extrai o que dá para provar pelo texto."""
+    """Une nome + descrição (sem HTML) e extrai o que dá para provar pelo texto.
+    Motor, emissão e ano só contam como APLICAÇÃO fora da cláusula NÃO SE APLICA; dentro dela são exclusões."""
     desc = sem_html(descricao)
     texto = f"{nome}. {desc}".strip()
+    texto_aplicacao, nsa = separar_nao_se_aplica(texto)
     return {
         "sku": sku,
-        "codigos_oem": [c.__dict__ for c in candidatos_oem(texto)],
+        "codigos_oem": [c.__dict__ for c in candidatos_oem(texto_aplicacao)],
         "marca_fabricante": marca.strip() or None,
         "gtin": {"valor": gtin, "valido": gtin_valido(gtin)} if gtin else None,
         "aplicacao": {
-            "veiculos_citados": veiculos_citados(texto),
-            "motores": motores(texto),
-            "emissoes": emissoes(texto),
-            "anos_informados": anos_informados(texto),
+            "veiculos_citados": veiculos_citados(texto_aplicacao),
+            "motores": motores(texto_aplicacao),
+            "emissoes": emissoes(texto_aplicacao),
+            "anos_informados": anos_informados(texto_aplicacao),
         },
-        "nao_se_aplica": nao_se_aplica(desc),
+        "nao_se_aplica": nsa,
+        "excluido": {"motores": motores(nsa or ""), "emissoes": emissoes(nsa or ""), "anos_informados": anos_informados(nsa or "")},
         "texto_fonte": texto,
     }
