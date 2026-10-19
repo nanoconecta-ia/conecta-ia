@@ -173,3 +173,13 @@ test("página do produto: aplicações aprovadas e ficha técnica aparecem escap
   assert.equal(html.match(/<h3>Marca&lt;A&gt;<\/h3>/g)?.length, 1, "agrupa por montadora, escapado");
   assert.ok(html.includes("espessura: 1.2 mm") && html.includes("&lt;b&gt;Não reutilizar&lt;/b&gt;") && !html.includes("<b>Não"));
 });
+
+test("JSON-LD: política de devolução, garantia e peça-de-veículo só com dado real cadastrado/aprovado", () => {
+  const sem = jsonLdProduto(loja({ politicas: { ...politicas, arrependimento_dias: null, garantia_legal_dias: null } }), prod()) as Record<string, any>;
+  assert.ok(sem && !("warranty" in sem) && !("isAccessoryOrSparePartFor" in sem) && !("hasMerchantReturnPolicy" in (sem.offers ?? {})), "sem dado, sem propriedade");
+  const l = loja();
+  const com = jsonLdProduto(l, prod({ aplicacoes: [{ montadora: "A", modelo: "B", versao: "C", periodo_inicio: 2014, periodo_fim: null }] })) as Record<string, any>;
+  assert.equal(com.offers.hasMerchantReturnPolicy.merchantReturnDays, 7);
+  assert.equal(com.warranty.durationOfWarranty.value, 90);
+  assert.equal(com.isAccessoryOrSparePartFor[0].name, "A B C (2014–em linha)");
+});

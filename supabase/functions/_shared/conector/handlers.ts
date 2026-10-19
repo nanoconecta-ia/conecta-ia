@@ -1,6 +1,7 @@
 // Handlers das ferramentas ATIVAS do registro. Cada um recebe a entrada já validada pelo esquema e o contexto da loja.
 // Nenhum handler escreve no Bling: as ferramentas "preparar_*" só montam PROPOSTA; quem escreve é o executor, depois da aprovação.
 import { MAPA_CAMPOS, montarCorpoProduto } from "./bling_campos.ts";
+import { interpretarConsulta, type Vocabulario } from "../consulta/interpretar.ts";
 import type { PortaDados } from "./dados.ts";
 import type { PortaBling } from "./porta_bling.ts";
 import type { Rpc } from "./executor.ts";
@@ -104,6 +105,7 @@ export const HANDLERS: Record<string, Handler> = {
   "engenharia.intercambio.listar": (e, c) => rpc(c, "intercambio_da_peca", { p_codigo: e.codigo, p_apenas_aprovados: e.incluir_a_confirmar !== true }),
   "engenharia.bula.verificar": (e, c) => rpc(c, "bula_tecnica_do_sku", { p_loja: c.lojaId, p_sku: e.sku }),
   "engenharia.loja.filtros": (_e, c) => rpc(c, "filtros_da_vitrine", { p_loja: c.lojaId }),
+  "engenharia.consulta.interpretar": async (e, c) => interpretarConsulta(String(e.texto), (await rpc(c, "vocabulario_de_busca", {})) as Vocabulario),
   "conecta.enriquecimento.pendentes": (e, c) => c.dados.itensPendentes(e.limite),
   "conecta.travas.consultar": (e, c) => c.dados.travas({ produtoId: e.produto_id, sku: e.sku }),
   "conecta.proposta.estado": (e, c) => c.dados.propostaEstado(e.proposta_id),

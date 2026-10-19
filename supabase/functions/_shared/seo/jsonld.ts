@@ -43,7 +43,18 @@ export function jsonLdProduto(loja: LojaSeo, p: ProdutoSeo): Record<string, unkn
   if (principal) o.image = [principal.url, ...imgs.filter((i) => i.url !== principal.url).map((i) => i.url)].slice(0, 10);
   const preco = precoFmt(p.preco), disp = disponibilidade(p.estoque);
   // Oferta só com preço real; availability só com estoque real. Sem um deles, a oferta inteira é omitida.
-  if (preco && disp) o.offers = { "@type": "Offer", url, price: preco, priceCurrency: "BRL", availability: DISP[disp], seller: { "@type": "Organization", name: loja.nome } };
+  const dias = loja.politicas?.arrependimento_dias;
+  if (preco && disp) {
+    const oferta: Record<string, unknown> = { "@type": "Offer", url, price: preco, priceCurrency: "BRL", availability: DISP[disp], seller: { "@type": "Organization", name: loja.nome } };
+    // Só com o prazo que o lojista cadastrou; nunca presumido.
+    if (Number.isInteger(dias) && dias! > 0) oferta.hasMerchantReturnPolicy = { "@type": "MerchantReturnPolicy", applicableCountry: "BR", returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow", merchantReturnDays: dias };
+    o.offers = oferta;
+  }
+  const gar = loja.politicas?.garantia_legal_dias;
+  if (Number.isInteger(gar) && gar! > 0) o.warranty = { "@type": "WarrantyPromise", durationOfWarranty: { "@type": "QuantitativeValue", value: gar, unitCode: "DAY" } };
+  // Veículos onde a peça tem aplicação APROVADA por versão (vem do banco já filtrada); sem aplicação aprovada, a propriedade não existe.
+  const apl = (p.aplicacoes ?? []).slice(0, 10);
+  if (apl.length) o.isAccessoryOrSparePartFor = apl.map((a) => ({ "@type": "Product", name: `${a.montadora} ${a.modelo} ${a.versao}${a.periodo_inicio ? ` (${a.periodo_inicio}–${a.periodo_fim ?? "em linha"})` : ""}` }));
   return o;
 }
 /** Todos os blocos da página de produto (já sem nulos). */
