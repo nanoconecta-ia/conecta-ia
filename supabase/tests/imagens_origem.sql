@@ -18,6 +18,11 @@ end $$;
 select public.afirma(true, 'ilustrativa aprovada exige cruzamento de código');
 insert into public.produto_imagens (id, produto_id, loja_id, url, tipo, aprovada, origem, url_original, licenca_tipo, cruzamento_tipo, cruzamento_valor, confianca, fundo_branco)
   values ('aaaaaaaa-3333-0000-0000-000000000001','aaaaaaaa-1111-0000-0000-000000000001','aaaaaaaa-0000-0000-0000-000000000001','https://cdn.nosso.test/p.jpg','ilustrativa',true,'catalogo','https://ex.test/p','publica_web','oem','235104A710',0.9,true);
+-- regra da migração 20261019000005: aprovada NÃO basta; sem direitos de uso confirmados a vitrine não enxerga
+set local role anon;
+select public.afirma((select count(*) from public.produto_imagens) = 0, 'sem direitos de uso confirmados a vitrine não vê a imagem');
+reset role;
+update public.produto_imagens set direitos_confirmados_em = now(), direitos_confirmados_por = 'aaaaaaaa-9999-0000-0000-000000000001', direitos_referencia = 'termo do fabricante 2026/001';
 set local role anon;
 select public.afirma((select count(*) from public.produto_imagens) = 1, 'anon vê imagem ilustrativa aprovada');
 do $$ begin

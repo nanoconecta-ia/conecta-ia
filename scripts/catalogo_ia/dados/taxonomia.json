@@ -1,0 +1,19 @@
+{
+  "_origem": "material do dono 2026-10-19; espelha a semente de supabase/migrations/20261019000002 (status: proposta)",
+  "Motor": {
+    "Componentes do Cabeçote": ["Cabeçote Completo", "Comando", "Válvulas", "Tuchos"],
+    "Bloco e Parte Baixa": ["Bloco Completo", "Virabrequim", "Bielas", "Pistões com Anéis"],
+    "Juntas e Vedação": ["Jogo de Juntas", "Junta de Cabeçote", "Junta Coletor", "Retentores"],
+    "Distribuição e Sincronismo": ["Kit Corrente", "Correia Dentada", "Tensores", "Polias"]
+  },
+  "Injeção e Alimentação": {
+    "Sistema Common Rail": ["Bico Injetor", "Bomba de Alta Pressão", "Flauta", "Válvula DRV"],
+    "Turboalimentação": ["Turbina Completa", "Conjunto Rotativo", "Válvula Wastegate"]
+  },
+  "Arrefecimento": {
+    "Circulação e Controle": ["Bomba d'Água", "Válvula Termostática", "Radiador", "Hélice Viscosa"]
+  },
+  "Suspensão e Freios": {
+    "Articulações e Hidráulica": ["Bandeja", "Pivô", "Servo Freio", "Bomba de Vácuo", "Pinça"]
+  }
+}

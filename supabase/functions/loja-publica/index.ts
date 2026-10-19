@@ -65,7 +65,8 @@ Deno.serve(async (req) => {
   if (skus.length) {
     const { data: ids } = await sb.from("produtos").select("id, sku").eq("loja_id", loja.id).in("sku", skus);
     const porId = new Map((ids ?? []).map((p: { id: string; sku: string }) => [p.id, p.sku]));
-    const { data: imgs } = await sb.from("produto_imagens").select("produto_id, url, principal, ordem").eq("loja_id", loja.id).eq("aprovada", true).in("produto_id", [...porId.keys()]).order("principal", { ascending: false }).order("ordem");
+    // view da migração 20261019000005: só imagem aprovada, sem retirada e com direitos de uso confirmados (nunca url_original)
+    const { data: imgs } = await sb.from("imagens_publicaveis").select("produto_id, url, principal, ordem").eq("loja_id", loja.id).in("produto_id", [...porId.keys()]).order("principal", { ascending: false }).order("ordem");
     for (const i of imgs ?? []) { const s = porId.get(i.produto_id); if (s && !imagens.has(s)) imagens.set(s, i.url); }
   }
   const produtos = montarVitrine((linhas ?? []).map((l: Record<string, unknown>) => ({ ...(l as object), imagem: imagens.get(String(l.sku)) ?? null }) as never), loja.whatsapp);

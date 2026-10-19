@@ -1,0 +1,39 @@
+name: Conector IA (testes)
+
+on:
+  pull_request:
+    paths: ["supabase/**", "painel/**", "scripts/**", ".github/workflows/conector-testes.yml"]
+  push:
+    branches: [main]
+    paths: ["supabase/**", "painel/**", "scripts/**", ".github/workflows/conector-testes.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: painel/package-lock.json
+      - run: npm ci
+        working-directory: painel
+      - name: Testes (SQL, TypeScript, tipos, empacotamento, painel)
+        run: supabase/tests/rodar_tudo.sh ci_tudo
