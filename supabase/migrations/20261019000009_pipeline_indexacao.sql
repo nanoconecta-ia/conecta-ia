@@ -69,7 +69,7 @@ create table public.pipeline_conflitos (
   id uuid primary key default gen_random_uuid(),
   item_id uuid not null,
   loja_id uuid not null,
-  tipo text not null check (tipo in ('aplicacao', 'oem', 'gtin', 'medidas', 'bling_vs_enriquecimento')),
+  tipo text not null check (tipo in ('aplicacao', 'oem', 'gtin', 'medidas', 'bling_vs_enriquecimento', 'auditoria')),
   campo text not null,
   lado_a jsonb not null,                              -- {valor, fonte}
   lado_b jsonb not null,

@@ -5,7 +5,7 @@ export interface AplicacaoEvidencia { modelo: string; motor?: string; ano_inicio
 export interface DadosEvidencia { oem?: string[]; gtin?: string; aplicacoes?: AplicacaoEvidencia[]; peso_kg?: number; marca?: string; nome?: string }
 export interface Evidencia { fonte: string; tipo_fonte: TipoFonte; consultado_em: string; dados: DadosEvidencia; nao_confiavel?: boolean; alertas?: number }
 export interface LadoConflito { valor: unknown; fonte: string; tipo_fonte: TipoFonte }
-export interface Conflito { tipo: "aplicacao" | "oem" | "gtin" | "medidas" | "bling_vs_enriquecimento"; campo: string; lado_a: LadoConflito; lado_b: LadoConflito; sugestao?: string }
+export interface Conflito { tipo: "aplicacao" | "oem" | "gtin" | "medidas" | "bling_vs_enriquecimento" | "auditoria"; campo: string; lado_a: LadoConflito; lado_b: LadoConflito; sugestao?: string }
 
 const PESO: Record<TipoFonte, number> = { oficial: 3, bling: 2, fornecedor: 2, inferida: 1 };
 const normOem = (c: string) => c.toUpperCase().replace(/[^0-9A-Z]/g, "");
