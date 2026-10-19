@@ -106,6 +106,7 @@ export const HANDLERS: Record<string, Handler> = {
   "engenharia.bula.verificar": (e, c) => rpc(c, "bula_tecnica_do_sku", { p_loja: c.lojaId, p_sku: e.sku }),
   "engenharia.loja.filtros": (_e, c) => rpc(c, "filtros_da_vitrine", { p_loja: c.lojaId }),
   "engenharia.consulta.interpretar": async (e, c) => interpretarConsulta(String(e.texto), (await rpc(c, "vocabulario_de_busca", {})) as Vocabulario),
+  "engenharia.loja.condicoes": (e, c) => rpc(c, "condicoes_comerciais", { p_loja: c.lojaId, p_cep: e.cep ?? null }),
   "conecta.enriquecimento.pendentes": (e, c) => c.dados.itensPendentes(e.limite),
   "conecta.travas.consultar": (e, c) => c.dados.travas({ produtoId: e.produto_id, sku: e.sku }),
   "conecta.proposta.estado": (e, c) => c.dados.propostaEstado(e.proposta_id),

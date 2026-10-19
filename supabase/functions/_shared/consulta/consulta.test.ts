@@ -74,3 +74,17 @@ test("resposta: sem produto, diz NÃO CONFIRMADO (não 'incompatível') e manté
   const sem = montarRespostaConsulta(interpretarConsulta("junta do cabeçote UtilX 2011", voc, 2026), [], null);
   assert.match(sem.mensagem, /NÃO CONFIRMADO/);
 });
+
+test("resposta: prazo/frete/pagamento só aparecem quando cadastrados; frete sem valor é 'a calcular', nunca grátis", () => {
+  const i = interpretarConsulta("junta do cabeçote UtilX 2011", voc, 2026);
+  const base = { nome: "Loja T", arrependimento_dias: 7, garantia_legal_dias: 90, entrega_texto: null, garantia_texto: null, troca_devolucao_texto: null };
+  const achado = [{ sku: "JG-1", nome: "Junta", preco: 100, estoque: 2 }];
+  const com = montarRespostaConsulta(i, achado, { ...base, formas_pagamento: ["pix", "cartao_credito (até 6x)"],
+    entrega_cep: { tipo: "transportadora", prazo_dias_min: 2, prazo_dias_max: 4, valor_frete: null, frete_a_calcular: true, frete_gratis_acima: null } });
+  assert.match(com.mensagem, /Entrega para o seu CEP: 2 a 4 dias \(frete a calcular\)/);
+  assert.match(com.mensagem, /Pagamento: pix, cartao_credito/);
+  assert.ok(!com.lacunas.some((l) => l.includes("pagamento")));
+  const sem = montarRespostaConsulta(i, achado, base);
+  assert.ok(!/Entrega para o seu CEP|Pagamento:/.test(sem.mensagem));
+  assert.ok(sem.lacunas.some((l) => l.includes("pagamento")));
+});
