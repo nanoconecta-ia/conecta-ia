@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 53 ferramentas — 32 ativas, 17 planejadas, 4 desligadas.
+Resumo: 54 ferramentas — 33 ativas, 17 planejadas, 4 desligadas.
 
 ## Grupo: conecta
 
@@ -158,6 +158,7 @@ Resumo: 53 ferramentas — 32 ativas, 17 planejadas, 4 desligadas.
 | `engenharia.intercambio.listar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `codigo*:string` `incluir_a_confirmar:boolean` |
 | `engenharia.bula.verificar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
 | `engenharia.loja.filtros` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | — |
+| `engenharia.consulta.interpretar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `texto*:string` |
 | `engenharia.oem.pesquisar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `texto:string` |
 | `engenharia.cruzados.verificar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
 | `engenharia.fabricantes.identificar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
@@ -195,6 +196,9 @@ Resumo: 53 ferramentas — 32 ativas, 17 planejadas, 4 desligadas.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`engenharia.loja.filtros`** — Filtros da vitrine calculados do dado aprovado: categorias com ícone, montadoras e fabricantes dos produtos publicados com estoque.
   - *Verificação:* Só publicado, com estoque e ligação aprovada.
+  - *Recuperação:* Repetir a leitura; é segura.
+- **`engenharia.consulta.interpretar`** — Interpreta uma pergunta de cliente em linguagem natural (ex.: 'qual é o motor para o HR 2011?'): reconhece veículo, ano e peça SÓ pelo cadastro, e devolve o que falta perguntar. Não inventa modelo nem peça; ambiguidade vira pergunta.
+  - *Verificação:* Vocabulário vem do banco; termos desconhecidos ficam em nao_reconhecido.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`engenharia.oem.pesquisar`** — Pesquisa código OEM em fontes autorizadas.
   - *Verificação:* Cada resultado traz fonte e data.
