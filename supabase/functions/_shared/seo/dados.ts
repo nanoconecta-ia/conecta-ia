@@ -19,7 +19,13 @@ export interface ProdutoSeo {
   categoria: string | null; imagens: ImagemPublica[];
   /** Sempre false enquanto o mapeamento do campo `condicao` do Bling não for conferido: a condição nunca é publicada. */
   condicao_ok?: boolean;
+  /** Só aplicações APROVADAS por versão (rpc aplicacoes_publicas_do_produto). Vazio/ausente => bloco não aparece. */
+  aplicacoes?: AplicacaoPublica[];
+  /** Só medidas e contraindicações APROVADAS (rpc bula_tecnica_do_sku). */
+  bula?: { medidas: { nome: string; valor: number; unidade: string }[]; contraindicacoes: { tipo: string; texto: string }[] };
 }
+
+export interface AplicacaoPublica { montadora: string; modelo: string; versao: string; periodo_inicio: number | null; periodo_fim: number | null; restricoes?: string | null }
 
 /** Produto visível e indexável: publicado, ativo no ERP, com nome e SKU. Despublicado/ausente/incompleto => fora de sitemap e feed. */
 export const produtoIndexavel = (p: ProdutoSeo): boolean => p.publicado === true && p.situacao === "A" && !!p.nome?.trim() && !!p.sku?.trim();

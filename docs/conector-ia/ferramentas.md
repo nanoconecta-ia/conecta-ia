@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 50 ferramentas — 29 ativas, 17 planejadas, 4 desligadas.
+Resumo: 53 ferramentas — 32 ativas, 17 planejadas, 4 desligadas.
 
 ## Grupo: conecta
 
@@ -155,6 +155,9 @@ Resumo: 50 ferramentas — 29 ativas, 17 planejadas, 4 desligadas.
 | `engenharia.duplicidade.detectar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `gtin:string` `nome:string` |
 | `engenharia.compartilhamento.sugerir` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `codigo*:string` `incluir_a_confirmar:boolean` |
 | `engenharia.loja.pecas_do_veiculo` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `versao_id*:string` `ano:integer` |
+| `engenharia.intercambio.listar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `codigo*:string` `incluir_a_confirmar:boolean` |
+| `engenharia.bula.verificar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
+| `engenharia.loja.filtros` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | — |
 | `engenharia.oem.pesquisar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `texto:string` |
 | `engenharia.cruzados.verificar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
 | `engenharia.fabricantes.identificar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
@@ -183,6 +186,15 @@ Resumo: 50 ferramentas — 29 ativas, 17 planejadas, 4 desligadas.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`engenharia.loja.pecas_do_veiculo`** — Peças da loja (publicadas, com estoque) com aplicação aprovada para uma versão de veículo, opcionalmente num ano.
   - *Verificação:* Cruza grafo do veículo com produto_pecas_ref aprovado.
+  - *Recuperação:* Repetir a leitura; é segura.
+- **`engenharia.intercambio.listar`** — Lista a MESMA peça fabricada por outras marcas (relação direta, sem transitividade), com fabricante, papel (sistemista, fabricante de motor...), tipo de relação e evidência. Referência cruzada não prova equivalência.
+  - *Verificação:* ref_cruzada com fonte; só aprovado por padrão.
+  - *Recuperação:* Repetir a leitura; é segura.
+- **`engenharia.bula.verificar`** — Bula técnica do SKU: medidas exigidas para a família (mm, espessura, altura...) que estão aprovadas ou faltando, e contraindicações de montagem aprovadas. Sem a bula completa a peça não é 'pronta'; medida nunca é inventada.
+  - *Verificação:* Medida aprovada exige fonte e valor.
+  - *Recuperação:* Repetir a leitura; é segura.
+- **`engenharia.loja.filtros`** — Filtros da vitrine calculados do dado aprovado: categorias com ícone, montadoras e fabricantes dos produtos publicados com estoque.
+  - *Verificação:* Só publicado, com estoque e ligação aprovada.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`engenharia.oem.pesquisar`** — Pesquisa código OEM em fontes autorizadas.
   - *Verificação:* Cada resultado traz fonte e data.

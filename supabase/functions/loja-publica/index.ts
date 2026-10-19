@@ -46,6 +46,9 @@ Deno.serve(async (req) => {
   const { data: nos } = nosIds.length ? await sb.from("taxonomia_nos").select("id, nome, slug").in("id", nosIds) : { data: [] as { id: string; nome: string; slug: string }[] };
   const categorias = (nos ?? []).map((n: { id: string; nome: string; slug: string }) => ({ nome: n.nome, slug: n.slug, total: (pub ?? []).filter((p: { taxonomia_no_id: string | null }) => p.taxonomia_no_id === n.id).length }));
 
+  // filtros calculados do dado aprovado (categorias com ícone, montadoras, fabricantes); falha aqui não derruba a vitrine
+  const { data: filtros } = await sb.rpc("filtros_da_vitrine", { p_loja: loja.id });
+
   let consulta = sb.from("produtos").select("nome, sku, preco, estoque, marca, descricao_curta, sincronizado_em", { count: "exact" })
     .eq("loja_id", loja.id).eq("publicado", true).order("nome").range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1);
   if (busca) consulta = consulta.or(`nome.ilike.%${busca}%,sku.ilike.%${busca}%`);
@@ -75,5 +78,5 @@ Deno.serve(async (req) => {
   const fonteTema = (FONTES as readonly string[]).includes(tm?.fonte) ? (tm!.fonte as Fonte) : "inter";
   const cores = tm ? { primaria: tm.cor_primaria, destaque: tm.cor_destaque, bloco: tm.cor_bloco } : PERFIS.azul_conecta;
   const tema = { variaveis: variaveisCss(cores, fonteTema), logo_url: tm?.logo_url ?? null, icone_url: tm?.icone_url ?? null };
-  return json({ loja: { nome: loja.nome, slug: loja.slug, modo_venda: loja.modo_venda }, tema, produtos, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), categorias });
+  return json({ loja: { nome: loja.nome, slug: loja.slug, modo_venda: loja.modo_venda }, tema, produtos, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), categorias, filtros: filtros ?? null });
 });
