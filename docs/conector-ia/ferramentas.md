@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 48 ferramentas — 24 ativas, 20 planejadas, 4 desligadas.
+Resumo: 48 ferramentas — 27 ativas, 17 planejadas, 4 desligadas.
 
 ## Grupo: conecta
 
@@ -152,11 +152,11 @@ Resumo: 48 ferramentas — 24 ativas, 20 planejadas, 4 desligadas.
 | `conecta.codigo.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `tipo*:string` `valor*:string` `fonte*:string` `confianca:number` |
 | `conecta.aplicacao.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `modelo*:string` `motorizacao:string` `ano_inicial:integer` `ano_final:integer` `fonte*:string` `confianca:number` |
 | `engenharia.taxonomia.buscar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `texto*:string` |
-| `engenharia.duplicidade.detectar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `gtin:string` `nome:string` |
+| `engenharia.duplicidade.detectar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `gtin:string` `nome:string` |
 | `engenharia.oem.pesquisar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `texto:string` |
-| `engenharia.cruzados.verificar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
+| `engenharia.cruzados.verificar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
 | `engenharia.fabricantes.identificar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
-| `engenharia.aplicacoes.validar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
+| `engenharia.aplicacoes.validar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` `ano:integer` |
 | `engenharia.genealogia.organizar` | planejada | propor | MEDIUM | não | sim | sim | não | chave | `sku*:string` `relacoes*:array` |
 | `engenharia.taxonomia.construir` | planejada | propor | MEDIUM | não | sim | sim | não | chave | `nos*:array` |
 | `engenharia.classificacao.propor` | planejada | propor | LOW | não | sim | sim | não | chave | `sku*:string` `no_id:string` `fonte*:string` |
@@ -173,20 +173,20 @@ Resumo: 48 ferramentas — 24 ativas, 20 planejadas, 4 desligadas.
 - **`engenharia.taxonomia.buscar`** — Busca nós da taxonomia de autopeças por texto.
   - *Verificação:* Leitura de taxonomia_nos.
   - *Recuperação:* Repetir a leitura; é segura.
-- **`engenharia.duplicidade.detectar`** — Detecta possível duplicidade por SKU, GTIN ou nome no espelho.
-  - *Verificação:* Comparação no espelho.
+- **`engenharia.duplicidade.detectar`** — Detecta CANDIDATOS a duplicidade por SKU, GTIN ou nome (sem acento e sem pontuação) no espelho. Sem filtro, varre a loja. Não mescla nada.
+  - *Verificação:* Comparação no espelho; variações do mesmo pai não contam.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`engenharia.oem.pesquisar`** — Pesquisa código OEM em fontes autorizadas.
   - *Verificação:* Cada resultado traz fonte e data.
   - *Recuperação:* Repetir a leitura; é segura.
-- **`engenharia.cruzados.verificar`** — Verifica códigos cruzados sem presumir equivalência por transitividade.
+- **`engenharia.cruzados.verificar`** — Lista os códigos cruzados DIRETOS das peças ligadas ao SKU, com status e evidência. Sem transitividade; ausência de relação = não confirmado.
   - *Verificação:* Relação técnica com fonte.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`engenharia.fabricantes.identificar`** — Identifica e classifica o fabricante da peça.
   - *Verificação:* Fonte registrada.
   - *Recuperação:* Repetir a leitura; é segura.
-- **`engenharia.aplicacoes.validar`** — Valida aplicações veiculares propostas contra fontes.
-  - *Verificação:* Fonte registrada.
+- **`engenharia.aplicacoes.validar`** — Valida aplicações do SKU por VERSÃO do veículo no mercado BR, opcionalmente para um ano. Devolve confirmada ou nao_confirmada, nunca incompatível.
+  - *Verificação:* Fonte e verificação registradas.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`engenharia.genealogia.organizar`** — Propõe relações da genealogia automotiva (montadora → … → componente) com procedência.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.

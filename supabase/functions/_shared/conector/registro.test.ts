@@ -131,3 +131,15 @@ test("busca direta por OEM: ferramenta de leitura ativa, com código obrigatóri
   assert.ok(validar(f.entrada, {}).length > 0, "sem código é recusado");
   assert.equal(validar(f.entrada, { codigo: "20910-4AU07" }).length, 0);
 });
+
+test("ferramentas de verificação: ativas, somente leitura e com entrada validada", () => {
+  for (const id of ["engenharia.duplicidade.detectar", "engenharia.cruzados.verificar", "engenharia.aplicacoes.validar"]) {
+    const f = buscarDefinicao(id)!;
+    assert.equal(f.estado, "ativa", id);
+    assert.equal(f.permissao, "leitura", id);
+  }
+  assert.ok(validar(buscarDefinicao("engenharia.cruzados.verificar")!.entrada, {}).length > 0, "sku obrigatório");
+  assert.equal(validar(buscarDefinicao("engenharia.aplicacoes.validar")!.entrada, { sku: "80692", ano: 2018 }).length, 0);
+  assert.ok(validar(buscarDefinicao("engenharia.aplicacoes.validar")!.entrada, { sku: "80692", ano: "2018" }).length > 0, "ano precisa ser número");
+  assert.equal(validar(buscarDefinicao("engenharia.duplicidade.detectar")!.entrada, {}).length, 0, "sem filtro = varredura da loja");
+});
