@@ -28,4 +28,8 @@ insert into public.documentos_tecnicos (escopo_tabela, escopo_id, sistema_id, ti
 select public.afirma((select count(*) from public.documentos_tecnicos where publicavel) = 0, 'documento novo nasce não publicável e a confirmar');
 select public.recusa($$insert into public.documentos_tecnicos (escopo_tabela, escopo_id, tipo, titulo, fonte_id)
   values ('tabela_qualquer', 'a0000000-0000-0000-0000-0000000000d1', 'outro', 'x', 'f0000000-0000-0000-0000-0000000000d1')$$, 'escopo fora da lista é recusado');
+select public.recusa($$insert into public.sistemas_mecanicos (nivel, nome, origem, icone) values (1, 'IconeRuim', 'teste', 'http://externo/logo.png')$$, 'ícone fora da lista (imagem de terceiros) é recusado');
+select public.afirma((select count(*) from public.sistemas_mecanicos where nivel = 1 and icone is null) = 0, 'todo sistema de nível 1 da semente tem ícone');
+select public.afirma((select public.icone_do_sistema(id) from public.sistemas_mecanicos where nivel = 3 and nome like 'Jogo de Juntas%') = 'motor', 'subcategoria herda o ícone do sistema pai');
+select public.afirma((select public.icone_do_sistema(gen_random_uuid())) = 'outros', 'sem ícone em toda a cadeia cai em "outros", nunca vazio');
 rollback;

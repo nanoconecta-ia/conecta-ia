@@ -9,6 +9,8 @@ create table public.sistemas_mecanicos (
   pai_id uuid references public.sistemas_mecanicos(id) on delete restrict,
   nome text not null check (length(btrim(nome)) > 0),
   ordem int not null default 0,
+  icone text check (icone in ('motor', 'injecao', 'arrefecimento', 'suspensao', 'freios', 'direcao', 'eletrica', 'sensores', 'filtros',
+    'transmissao', 'embreagem', 'escapamento', 'iluminacao', 'carroceria', 'acessorios', 'lubrificantes', 'outros')),   -- nome de um ícone da biblioteca do painel, nunca imagem de terceiros
   origem text not null check (length(btrim(origem)) > 0),                         -- de onde veio (material do dono, Bling da loja...)
   status text not null default 'proposta' check (status in ('proposta', 'aprovada', 'aposentada')),
   criado_em timestamptz not null default now(),
@@ -26,6 +28,18 @@ begin
 end $$;
 create trigger sistemas_mecanicos_nivel before insert or update on public.sistemas_mecanicos
   for each row execute function private.confere_nivel_sistema();
+
+-- Ícone efetivo: o do próprio sistema ou, se não tiver, o do ancestral mais próximo (a loja nunca mostra categoria sem ícone).
+create function public.icone_do_sistema(p_id uuid) returns text language sql stable set search_path = '' as $$
+  with recursive subida as (
+    select id, pai_id, icone, 0 as d from public.sistemas_mecanicos where id = p_id
+    union all
+    select s.id, s.pai_id, s.icone, subida.d + 1 from public.sistemas_mecanicos s join subida on s.id = subida.pai_id
+  )
+  select coalesce((select icone from subida where icone is not null order by d limit 1), 'outros')
+$$;
+revoke all on function public.icone_do_sistema(uuid) from public, anon;
+grant execute on function public.icone_do_sistema(uuid) to authenticated, service_role;
 
 create table public.documentos_tecnicos (
   id uuid primary key default gen_random_uuid(),
@@ -76,7 +90,8 @@ begin
   ) v(a, b, c) loop
     s := 'material do dono 2026-10-19';
     select id into n1 from public.sistemas_mecanicos where nivel = 1 and lower(nome) = lower(r.a);
-    if n1 is null then insert into public.sistemas_mecanicos (nivel, nome, origem) values (1, r.a, s) returning id into n1; end if;
+    if n1 is null then insert into public.sistemas_mecanicos (nivel, nome, origem, icone) values (1, r.a, s,
+      case r.a when 'Motor' then 'motor' when 'Injeção e Alimentação' then 'injecao' when 'Arrefecimento' then 'arrefecimento' when 'Suspensão e Freios' then 'suspensao' end) returning id into n1; end if;
     select id into n2 from public.sistemas_mecanicos where nivel = 2 and pai_id = n1 and lower(nome) = lower(r.b);
     if n2 is null then insert into public.sistemas_mecanicos (nivel, pai_id, nome, origem) values (2, n1, r.b, s) returning id into n2; end if;
     insert into public.sistemas_mecanicos (nivel, pai_id, nome, origem) values (3, n2, r.c, s) on conflict do nothing;
