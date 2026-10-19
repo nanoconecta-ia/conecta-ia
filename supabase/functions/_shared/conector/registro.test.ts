@@ -121,3 +121,13 @@ test("cripto: token tem 256 bits, formato reconhecível e hash estável", async 
   assert.notEqual(gerarToken().token, token);
   assert.equal(await sha256Hex("abc"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
 });
+
+test("busca direta por OEM: ferramenta de leitura ativa, com código obrigatório e exposta ao gateway", () => {
+  const f = buscarDefinicao("engenharia.oem.buscar")!;
+  assert.ok(f, "registrada");
+  assert.equal(f.permissao, "leitura");
+  assert.equal(f.estado, "ativa");
+  assert.ok(f.exposicao.mcp);
+  assert.ok(validar(f.entrada, {}).length > 0, "sem código é recusado");
+  assert.equal(validar(f.entrada, { codigo: "20910-4AU07" }).length, 0);
+});

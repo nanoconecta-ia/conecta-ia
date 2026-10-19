@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 47 ferramentas — 23 ativas, 20 planejadas, 4 desligadas.
+Resumo: 48 ferramentas — 24 ativas, 20 planejadas, 4 desligadas.
 
 ## Grupo: conecta
 
@@ -148,6 +148,7 @@ Resumo: 47 ferramentas — 23 ativas, 20 planejadas, 4 desligadas.
 
 | Id | Estado | Permissão | Risco | Aprovação | Chat | MCP | Simulação | Idempotência | Entrada |
 |---|---|---|---|---|---|---|---|---|---|
+| `engenharia.oem.buscar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `codigo*:string` `incluir_a_confirmar:boolean` |
 | `conecta.codigo.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `tipo*:string` `valor*:string` `fonte*:string` `confianca:number` |
 | `conecta.aplicacao.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `modelo*:string` `motorizacao:string` `ano_inicial:integer` `ano_final:integer` `fonte*:string` `confianca:number` |
 | `engenharia.taxonomia.buscar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `texto*:string` |
@@ -160,6 +161,9 @@ Resumo: 47 ferramentas — 23 ativas, 20 planejadas, 4 desligadas.
 | `engenharia.taxonomia.construir` | planejada | propor | MEDIUM | não | sim | sim | não | chave | `nos*:array` |
 | `engenharia.classificacao.propor` | planejada | propor | LOW | não | sim | sim | não | chave | `sku*:string` `no_id:string` `fonte*:string` |
 
+- **`engenharia.oem.buscar`** — Busca direta por código OEM: DNA da peça (classe, fabricante, fonte), aplicações por VERSÃO do veículo, modelo do motor, referências cruzadas diretas e SKUs da loja. Só dado aprovado, salvo pedido.
+  - *Verificação:* Leitura do catálogo técnico global; nada é deduzido quando não há registro.
+  - *Recuperação:* Repetir a leitura; é segura.
 - **`conecta.codigo.propor`** — Propõe um código de referência (OEM/fabricante/cruzado) com fonte.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.

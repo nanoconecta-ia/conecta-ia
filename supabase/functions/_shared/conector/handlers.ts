@@ -95,6 +95,7 @@ export const HANDLERS: Record<string, Handler> = {
   "conecta.catalogo.resumo": (_e, c) => c.dados.resumo(),
   "conecta.catalogo.listar": (e, c) => c.dados.listarProdutos({ apenasNaoPublicados: e.apenas_nao_publicados === true, busca: e.busca, limite: e.limite }),
   "conecta.catalogo.ver": (e, c) => c.dados.verProduto(e.sku),
+  "engenharia.oem.buscar": (e, c) => rpc(c, "dna_por_codigo_oem", { p_loja: c.lojaId, p_codigo: e.codigo, p_apenas_aprovados: e.incluir_a_confirmar !== true }),
   "conecta.enriquecimento.pendentes": (e, c) => c.dados.itensPendentes(e.limite),
   "conecta.travas.consultar": (e, c) => c.dados.travas({ produtoId: e.produto_id, sku: e.sku }),
   "conecta.proposta.estado": (e, c) => c.dados.propostaEstado(e.proposta_id),
