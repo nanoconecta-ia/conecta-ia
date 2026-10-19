@@ -32,12 +32,13 @@ import type { Loja as LojaTipo } from "./lib/dados.ts";
 import { ParearAprovador, ParearSolicitante } from "./paginas/Parear.tsx";
 import { Aprovacoes } from "./paginas/Aprovacoes.tsx";
 import { Dispositivos } from "./paginas/Dispositivos.tsx";
+import { MeuAgente } from "./paginas/MeuAgente.tsx";
 
 // Em domínio de cliente (fora do GitHub Pages/localhost) a raiz é a loja daquele domínio, resolvida pelo servidor.
 const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
 const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(window.location.hostname) ? window.location.hostname : null;
 
-const ITENS_PAIR: [string, string][] = [["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
+const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], ["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
   ["/conector", "Conector IA"],
@@ -111,6 +112,7 @@ export function App() {
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />
           : PAIR_ATIVO && caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao?.user.email ?? null} />
+          : PAIR_ATIVO && caminho === "/meu-agente" ? <MeuAgente />
           : PAIR_ATIVO && caminho === "/dispositivos" ? <Dispositivos loja={loja} />
           : caminho === "/taxonomia" ? <Taxonomia loja={loja} />
           : caminho === "/conector" ? <ConectorIA loja={loja} query={query} />
