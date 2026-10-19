@@ -217,3 +217,33 @@ test("isolamento: o item e o custo de uma loja não aparecem na outra", { skip }
   await assert.rejects(portaPipeline(rpc as any, OUTRA).avancar({ id: itemA, versao: 1 } as any, "normalizado"), /inexistente nesta loja/);
   assert.equal(linhas(`select count(*)::int as n from public.pipeline_custos where loja_id = '${OUTRA}'`)[0].n, 0);
 });
+
+test("aprendizagem: regra ativa do lojista vale primeiro, mas só se o destino existir na árvore fechada", async () => {
+  const custos = custosEmMemoria(1);
+  const regra = { chave: "kit de juntas", valor: { familia: "Junta de Cabeçote" }, versao: 2 };
+  const a = await classificar("KIT DE JUNTAS HR D4CB", "", { custos, regrasAprendidas: [regra] });
+  assert.equal(a.classificacao?.origem, "aprendida");
+  assert.equal(a.classificacao?.familia, "Junta de Cabeçote");
+  assert.equal(a.classificacao?.regra_versao, 2);
+  const semRegra = await classificar("KIT DE JUNTAS HR D4CB", "", { custos });
+  assert.equal(semRegra.classificacao?.origem, "regra", "sem a regra aprendida, vale a regra-base");
+  const invalida = await classificar("KIT DE JUNTAS HR D4CB", "", { custos, regrasAprendidas: [{ chave: "kit de juntas", valor: { familia: "Categoria Que Nao Existe" }, versao: 3 }] });
+  assert.equal(invalida.classificacao?.origem, "regra", "destino fora da árvore: a regra aprendida é ignorada, não inventa categoria");
+  const outraChave = await classificar("BANDEJA DIANTEIRA", "", { custos, regrasAprendidas: [regra] });
+  assert.equal(outraChave.classificacao?.familia, "Bandeja");
+});
+
+test("aprendizagem: termo candidato e proposta a partir de correção (não ativa nada)", async () => {
+  const { termoCandidato } = await import("./taxonomista.ts");
+  const { proporRegraDeCorrecao } = await import("./aprendizagem.ts");
+  assert.equal(termoCandidato("*** KIT DE JUNTAS COMPLETO HR 2.5 D4CB"), "kit juntas");
+  const chamadas: any[] = [];
+  const rpc = async (fn: string, args: any) => { chamadas.push({ fn, args }); return { data: "id-1", error: null }; };
+  const id = await proporRegraDeCorrecao(rpc as any, "L", { nomeProduto: "KIT DE JUNTAS HR", destino: { sistema: "Motor", subsistema: "Juntas e Vedação", familia: "Jogo de Juntas" }, decisaoId: "dec-9", sku: "S1" });
+  assert.equal(id, "id-1");
+  assert.deepEqual(chamadas.map((c) => c.fn), ["aprendizado_propor"], "só propõe; ativar é do lojista");
+  assert.equal(chamadas[0].args.p_por, "agente");
+  assert.equal(chamadas[0].args.p_origem, "correcao_aprovada");
+  assert.match(chamadas[0].args.p_fonte, /correção aprovada dec-9/);
+  assert.equal(await proporRegraDeCorrecao(rpc as any, "L", { nomeProduto: "HR 2.5", destino: { sistema: "Motor", subsistema: "x", familia: "y" }, decisaoId: "d", sku: "S" }), null, "termo curto demais não gera regra");
+});
