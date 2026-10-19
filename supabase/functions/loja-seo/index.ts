@@ -81,6 +81,15 @@ Deno.serve(async (req) => {
         atualizado_em: p.sincronizado_em, categoria: nomeNo.get(p.taxonomia_no_id) ?? null, imagens: imagens.get(p.id) ?? [],
       }));
     }
+    // Página de produto: aplicações e ficha técnica APROVADAS (rpc só devolve aprovado). Falha aqui não derruba a página.
+    if (skuAlvo && produtos.length === 1 && produtos[0].sku) {
+      const alvo = produtos[0];
+      const { data: ap } = await sb.rpc("aplicacoes_publicas_do_produto", { p_loja: l.id, p_sku: alvo.sku });
+      if (Array.isArray(ap?.aplicacoes)) alvo.aplicacoes = ap.aplicacoes;
+      const { data: bu } = await sb.rpc("bula_tecnica_do_sku", { p_loja: l.id, p_sku: alvo.sku });
+      const pecas = Array.isArray(bu?.pecas) ? bu.pecas : [];
+      alvo.bula = { medidas: pecas.flatMap((x: { medidas: { nome: string; valor: number; unidade: string }[] }) => x.medidas), contraindicacoes: pecas.flatMap((x: { contraindicacoes: { tipo: string; texto: string }[] }) => x.contraindicacoes) };
+    }
     const r = responderSeo(caminho, loja, produtos);
     return req.method === "HEAD" ? new Response(null, { status: r.status, headers: r.cabecalhos }) : resposta(r);
   } catch {

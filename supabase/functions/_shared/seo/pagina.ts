@@ -24,6 +24,28 @@ function casca(loja: LojaSeo, head: string, corpo: string): string {
   return `<!doctype html>\n<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">\n${head}\n<style>body{font-family:system-ui,sans-serif;margin:0 auto;max-width:48rem;padding:1rem;line-height:1.5}img{max-width:100%;height:auto}footer{margin-top:2rem;font-size:.9rem}</style></head>\n<body><header><a href="/">${esc(loja.nome)}</a></header>\n${corpo}\n${rodape}</body></html>\n`;
 }
 
+const periodo = (a: { periodo_inicio: number | null; periodo_fim: number | null }) =>
+  a.periodo_inicio ? `${a.periodo_inicio}–${a.periodo_fim ?? "em linha"}` : "período a confirmar";
+
+/** Aplicações aprovadas, agrupadas por montadora ▸ modelo. Sem aplicação aprovada não há bloco: ausência é "não confirmado", nunca "serve". */
+export function blocoAplicacoes(p: ProdutoSeo): string {
+  const l = p.aplicacoes ?? [];
+  if (!l.length) return "";
+  const porMontadora = new Map<string, string[]>();
+  for (const a of l) (porMontadora.get(a.montadora) ?? porMontadora.set(a.montadora, []).get(a.montadora)!).push(`<li>${esc(a.modelo)} — ${esc(a.versao)} (${esc(periodo(a))})${a.restricoes ? ` · ${esc(a.restricoes)}` : ""}</li>`);
+  const grupos = [...porMontadora].map(([m, itens]) => `<h3>${esc(m)}</h3><ul>${itens.join("")}</ul>`).join("");
+  return `<section><h2>Aplicações confirmadas</h2>${grupos}<p>Confira o seu veículo antes de comprar; em dúvida, fale com o atendente.</p></section>`;
+}
+
+/** Medidas e contraindicações aprovadas. Nunca mostra medida sem fonte (a view só entrega aprovadas). */
+export function blocoBula(p: ProdutoSeo): string {
+  const b = p.bula;
+  if (!b || (!b.medidas.length && !b.contraindicacoes.length)) return "";
+  const med = b.medidas.length ? `<h3>Medidas</h3><ul>${b.medidas.map((m) => `<li>${esc(m.nome)}: ${esc(String(m.valor))} ${esc(m.unidade)}</li>`).join("")}</ul>` : "";
+  const con = b.contraindicacoes.length ? `<h3>Contraindicações de montagem</h3><ul>${b.contraindicacoes.map((c) => `<li>${esc(c.texto)}</li>`).join("")}</ul>` : "";
+  return `<section><h2>Ficha técnica</h2>${med}${con}</section>`;
+}
+
 export function paginaProdutoHtml(loja: LojaSeo, p: ProdutoSeo): string {
   const m = metadadosProduto(loja, p);
   const blocos = blocosProduto(loja, p).map(scriptJsonLd).join("\n");
@@ -35,7 +57,7 @@ export function paginaProdutoHtml(loja: LojaSeo, p: ProdutoSeo): string {
     p.marca ? `<p>Marca: ${esc(p.marca)}</p>` : "", `<p>Código: ${esc(p.sku)}</p>`,
     img ? `<figure><img src="${esc(img.url)}" alt="${esc(img.alt_texto || `${p.nome} (cód. ${p.sku})`)}"${img.largura_px && img.altura_px ? ` width="${img.largura_px}" height="${img.altura_px}"` : ""}>${ROTULO_IMAGEM[img.tipo] ? `<figcaption>${ROTULO_IMAGEM[img.tipo]}</figcaption>` : ""}</figure>` : "",
     preco ? `<p>Preço: ${esc(moeda(preco))}</p>` : "", disp ? `<p>${disp === "in_stock" ? "Em estoque" : "Indisponível no momento"}</p>` : "",
-    desc ? `<p>${esc(desc)}</p>` : "", `</article></main>`,
+    desc ? `<p>${esc(desc)}</p>` : "", blocoAplicacoes(p), blocoBula(p), `</article></main>`,
   ].filter(Boolean).join("\n");
   return casca(loja, `${tagsHead(m)}\n${blocos}`, corpo);
 }

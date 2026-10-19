@@ -161,3 +161,15 @@ test("produtoIndexavel: exige publicado, ativo, nome e SKU", () => {
   assert.ok(produtoIndexavel(prod()));
   for (const o of [{ publicado: false }, { situacao: "I" }, { nome: " " }, { sku: "" }] as Partial<ProdutoSeo>[]) assert.ok(!produtoIndexavel(prod(o)));
 });
+
+test("página do produto: aplicações aprovadas e ficha técnica aparecem escapadas; sem dado aprovado não há bloco", () => {
+  const vazio = paginaProdutoHtml(loja(), prod());
+  assert.ok(!vazio.includes("Aplicações confirmadas") && !vazio.includes("Ficha técnica"), "sem aplicação nem medida aprovada, nenhum bloco (ausência = não confirmado)");
+  const html = paginaProdutoHtml(loja(), prod({
+    aplicacoes: [{ montadora: "Marca<A>", modelo: "Util", versao: "BR", periodo_inicio: 2014, periodo_fim: null }, { montadora: "Marca<A>", modelo: "Util2", versao: "BR", periodo_inicio: null, periodo_fim: null }],
+    bula: { medidas: [{ nome: "espessura", valor: 1.2, unidade: "mm" }], contraindicacoes: [{ tipo: "montagem", texto: "<b>Não reutilizar</b> parafusos" }] },
+  }));
+  assert.ok(html.includes("Aplicações confirmadas") && html.includes("2014–em linha") && html.includes("período a confirmar"));
+  assert.equal(html.match(/<h3>Marca&lt;A&gt;<\/h3>/g)?.length, 1, "agrupa por montadora, escapado");
+  assert.ok(html.includes("espessura: 1.2 mm") && html.includes("&lt;b&gt;Não reutilizar&lt;/b&gt;") && !html.includes("<b>Não"));
+});
