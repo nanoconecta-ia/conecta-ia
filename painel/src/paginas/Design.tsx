@@ -1,3 +1,6 @@
+import { ICONES, TIPOS_VEICULO } from "../lib/icones.ts";
+import { IconePeca } from "../componentes/IconePeca.tsx";
+
 // Guia vivo do Design System: mostra os tokens e componentes reais, para todas as telas compartilharem o mesmo padrão.
 const CORES: [string, string][] = [["--fundo", "Fundo"], ["--cartao", "Cartão"], ["--realce", "Realce"], ["--borda", "Borda"], ["--texto", "Texto"], ["--suave", "Texto suave"], ["--marca", "Azul (primário)"], ["--marca-forte", "Azul forte"], ["--verde", "Verde (sucesso/WhatsApp)"], ["--grafite", "Grafite"], ["--ok", "OK"], ["--atencao", "Atenção"], ["--erro", "Erro"]];
 
@@ -19,6 +22,18 @@ export function Design() {
         <p style={{ fontFamily: "var(--titulo)", fontSize: "1.6rem", margin: 0 }}>Títulos e números grandes</p>
         <p style={{ margin: "4px 0" }}>Corpo de texto, rótulos e botões.</p>
         <p className="mono" style={{ margin: 0 }}>SKU CI001086 · NCM 8409.99.49 · 2026-10-17 12:00</p>
+      </div>
+      <div className="cartao">
+        <h2>Ícones da plataforma</h2>
+        <p className="suave">Desenho próprio, traço + preenchimento suave. O agente usa o slug da taxonomia para escolher o ícone; sem slug conhecido, cai no nome e depois no genérico.</p>
+        <h3>Peças e categorias</h3>
+        <div className="galeria-icones">{Object.keys(ICONES).filter((k) => !TIPOS_VEICULO.some((t) => t.chave === k)).map((k) => (
+          <figure key={k}><IconePeca nome={k} tamanho={48} /><figcaption className="mono">{k}</figcaption></figure>
+        ))}</div>
+        <h3>Tipos de veículo</h3>
+        <div className="galeria-icones">{TIPOS_VEICULO.map((t) => (
+          <figure key={t.chave}><IconePeca nome={t.chave} tamanho={64} /><figcaption>{t.rotulo}</figcaption></figure>
+        ))}</div>
       </div>
       <div className="cartao">
         <h2>Componentes</h2>
