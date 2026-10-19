@@ -1,6 +1,6 @@
 // GET ?code&state (redirecionado pelo Bling). Valida o state, troca o código por tokens NO SERVIDOR,
 // cifra e grava via RPC (só service_role). Não registra nem devolve token algum.
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { verificarEstado } from "../_shared/estado.ts";
 import { cifrar, decifrar } from "../_shared/cripto.ts";
 import { chaveiroPlataforma, segredoEstado } from "../_shared/plataforma.ts";
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
   let tokens: { access_token?: string; refresh_token?: string; expires_in?: number };
   try {
     const r = await fetch("https://www.bling.com.br/Api/v3/oauth/token", {
-      method: "POST",
+      method: "POST", redirect: "manual", signal: AbortSignal.timeout(15_000),
       headers: {
         Authorization: "Basic " + btoa(`${clientId}:${clientSecret}`),
         "Content-Type": "application/x-www-form-urlencoded",
@@ -61,12 +61,12 @@ Deno.serve(async (req) => {
   } catch {
     return voltar("erro=troca");
   }
-  if (!tokens.access_token || !tokens.refresh_token || !tokens.expires_in) return voltar("erro=troca");
+  if (typeof tokens.access_token !== "string" || !tokens.access_token || typeof tokens.refresh_token !== "string" || !tokens.refresh_token || typeof tokens.expires_in !== "number" || !Number.isFinite(tokens.expires_in) || tokens.expires_in <= 0 || tokens.expires_in > 31536000) return voltar("erro=troca");
 
   // Identidade da conta: o CNPJ da conta Bling que autorizou precisa ser o cadastrado para a loja. Divergiu => nada é salvo.
   try {
     const r = await fetch("https://api.bling.com.br/Api/v3/empresas/me/dados-basicos", {
-      headers: { Authorization: `Bearer ${tokens.access_token}`, Accept: "application/json", "enable-jwt": "1" },
+      redirect: "manual", headers: { Authorization: `Bearer ${tokens.access_token}`, Accept: "application/json", "enable-jwt": "1" },
       signal: AbortSignal.timeout(15_000),
     });
     const j = r.ok ? await r.json().catch(() => null) : null;

@@ -1,0 +1,38 @@
+== Enriquecimento
+✔  EDITOR tenta APROVAR enriquecimento  → HTTP 403, estado do item = a_confirmar
+✔  …e o item continua a_confirmar
+✔  EDITOR tenta REJEITAR enriquecimento  → HTTP 403
+✔  lojista de OUTRA loja não decide na loja A  → HTTP 404
+✔  sem login → 401
+✔  LOJISTA aprova normalmente  → estado=aprovado
+✔  a decisão do lojista fica auditada com o usuário dele
+✔  LOJISTA rejeita normalmente
+✔  usuário autenticado SEM vínculo com a loja não decide  → HTTP 404
+✔  token inválido → 401  → HTTP 401
+✔  sem vínculo tampouco decide imagem  → HTTP 404
+
+== Imagens
+✔  EDITOR tenta APROVAR imagem  → HTTP 403, aprovada=f
+✔  lojista de OUTRA loja não decide imagem da loja A
+✔  LOJISTA aprova imagem normalmente
+
+== O que o editor continua podendo fazer
+✔  EDITOR continua conversando/consultando (sem chave de IA: resposta por palavras-chave)  → LOJA TESTE A: 1 produtos espelhados, 0 publicados, 0 itens aguardando sua aprovação.
+✔  EDITOR também não consegue aprovar escrevendo direto na tabela (REST)
+
+== Seletor de provedores (artefato gerado, RLS real)
+✔  sem nenhuma chave: 3 provedores, todos não configurados  → ["GPT:nao_configurado","Gemini:nao_configurado","Claude:nao_configurado"]
+✔  EDITOR enxerga o estado: GPT disponível (api.openai.com)
+✔  Claude com limite mensal atingido → indisponível  → Limite mensal atingido.
+✔  Gemini da loja A não configurado (a chave é da loja B)
+✔  a resposta não contém segredo nem final da chave
+✔  lojista de OUTRA loja não lista os provedores da loja A
+✔  sem login → 401 também em 'provedores'
+✔  escolher provedor NÃO configurado não troca de fornecedor (409)  → HTTP 409
+✔  provedor fora do enum → 400
+✔  sem_ia=true responde pelo resumo local, sem chamar IA
+✔  limite mensal atingido → 429 com código limite_ia (ramo realmente exercitado), sem cair em outro  → HTTP 429 limite_ia
+✔  chave ilegível → erro de indisponibilidade, sem resposta de outro provedor e sem vazar segredo  → HTTP 502 provedor_indisponivel
+✔  sem escolha explícita usa o PRINCIPAL (GPT) e não troca para outro quando ele falha  → HTTP 502 provedor_indisponivel
+
+RESULTADO: 29/29 ok, 0 falha(s)

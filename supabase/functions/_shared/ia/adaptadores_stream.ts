@@ -129,12 +129,12 @@ export const chamarClaudeStream: AdaptadorStream = async (c, msgs, aoTexto, sina
   try {
     const blocos: (Bloco | undefined)[] = [];
     const parcial: Record<number, string> = {};
-    let tin = 0, tout = 0, fim = false;
+    let tin = 0, tout = 0, fim = false, respostaId: string | undefined, modelo: string | undefined;
     for await (const ev of eventos) {
       const j = json(ev.data);
       if (!j || typeof j !== "object") continue;
       switch (j.type ?? ev.event) {
-        case "message_start": tin = j.message?.usage?.input_tokens ?? 0; tout = j.message?.usage?.output_tokens ?? 0; break;
+        case "message_start": respostaId = j.message?.id; modelo = j.message?.model; tin = j.message?.usage?.input_tokens ?? 0; tout = j.message?.usage?.output_tokens ?? 0; break;
         case "content_block_start": {
           const b = j.content_block;
           if (b?.type === "text") { blocos[j.index] = { type: "text", text: b.text ?? "" }; if (b.text) aoTexto(b.text); }
@@ -159,7 +159,7 @@ export const chamarClaudeStream: AdaptadorStream = async (c, msgs, aoTexto, sina
       }
     }
     if (!fim) throw interrompida();
-    return { blocos: blocos.filter((b): b is Bloco => !!b && !(b.type === "text" && b.text === "")), tokens: tin + tout };
+    return { blocos: blocos.filter((b): b is Bloco => !!b && !(b.type === "text" && b.text === "")), tokens: tin + tout, respostaId, modelo };
   } finally { encerrar(); }
 };
 
@@ -183,13 +183,14 @@ export const chamarOpenAIStream: AdaptadorStream = async (c, msgs, aoTexto, sina
   const { eventos, encerrar } = await abrirEventos(c, `${c.baseUrl.replace(/\/+$/, "")}/chat/completions`, { authorization: `Bearer ${c.chave}` },
     { model: c.modelo, messages: m, max_tokens: c.maxTokens, tools: tools.length ? tools : undefined, stream: true, stream_options: { include_usage: true } }, sinal);
   try {
-    let texto = "", tokens = 0, terminou = false;
+    let texto = "", tokens = 0, terminou = false, respostaId: string | undefined, modelo: string | undefined;
     const chamadas = new Map<number, { id?: string; nome: string; args: string }>();
     for await (const ev of eventos) {
       if (ev.data.trim() === "[DONE]") { terminou = true; break; }
       const j = json(ev.data);
       if (!j || typeof j !== "object") continue;
       if (j.error) throw erroDeEvento(j.error.type, j.error.code);
+      respostaId ??= j.id; modelo ??= j.model;
       if (j.usage?.total_tokens != null) tokens = j.usage.total_tokens;
       const ch = j.choices?.[0];
       if (!ch) continue;
@@ -211,7 +212,7 @@ export const chamarOpenAIStream: AdaptadorStream = async (c, msgs, aoTexto, sina
     for (const [i, t] of [...chamadas.entries()].sort((a, b) => a[0] - b[0])) {
       blocos.push({ type: "tool_use", id: t.id ?? `t${i}`, name: t.nome, input: (t.args.trim() ? json(t.args) : {}) ?? {} });
     }
-    return { blocos, tokens };
+    return { blocos, tokens, respostaId, modelo };
   } finally { encerrar(); }
 };
 
@@ -242,11 +243,12 @@ export const chamarGeminiStream: AdaptadorStream = async (c, msgs, aoTexto, sina
     { systemInstruction: { parts: [{ text: c.sistema }] }, contents, tools: decl.length ? [{ functionDeclarations: decl }] : undefined, generationConfig: { maxOutputTokens: c.maxTokens } }, sinal);
   try {
     const blocos: Bloco[] = [];
-    let n = 0, tokens = 0, viuPartes = false, textoAtual: Extract<Bloco, { type: "text" }> | null = null;
+    let n = 0, tokens = 0, respostaId: string | undefined, modelo: string | undefined, viuPartes = false, textoAtual: Extract<Bloco, { type: "text" }> | null = null;
     for await (const ev of eventos) {
       const j = json(ev.data);
       if (!j || typeof j !== "object") continue;
       if (j.error) throw erroDeEvento(j.error.status, j.error.code);
+      respostaId ??= j.responseId; modelo ??= j.modelVersion;
       if (j.usageMetadata?.totalTokenCount != null) tokens = j.usageMetadata.totalTokenCount;
       const partes = j.candidates?.[0]?.content?.parts;
       if (!Array.isArray(partes)) continue;
@@ -265,7 +267,7 @@ export const chamarGeminiStream: AdaptadorStream = async (c, msgs, aoTexto, sina
       }
     }
     if (!viuPartes) throw new IaErro(502, "O provedor não devolveu resposta (o conteúdo pode ter sido bloqueado). Reformule a pergunta.");
-    return { blocos, tokens };
+    return { blocos, tokens, respostaId, modelo };
   } finally { encerrar(); }
 };
 

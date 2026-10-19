@@ -1,0 +1,88 @@
+name: M5 - Supabase local (manual, dados sintéticos)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: m5-supabase-local
+  cancel-in-progress: false
+jobs:
+  m5:
+    # Runner padrão hospedado, repo público: sem minutos cobrados. Não selecionar runner larger/self-hosted.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SUPABASE_TELEMETRY_DISABLED: '1'
+      DO_NOT_TRACK: '1'
+    steps:
+      - name: Conferir visibilidade e runner antes de instalar/iniciar o stack
+        env:
+          PUBLICO: ${{ github.event.repository.private == false }}
+        run: |
+          test "$PUBLICO" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_OS" = Linux
+          test "$RUNNER_ARCH" = X64
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          # Lê o parser exato do #23, sem alterar o PR ou incorporar sua migração inteira.
+          ref: 65ac98c0961285cccbde2901edb9d231a8c97031
+          path: .m5-reference
+          sparse-checkout: supabase/migrations/20261019000001_conecta_pair.sql
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
+        with:
+          version: 2.81.3
+      - name: Descobrir comandos da versão fixada
+        run: |
+          supabase --version
+          supabase --help
+          supabase init --help
+          supabase start --help
+          supabase status --help
+          supabase functions serve --help
+          supabase stop --help
+      - name: Gerar e verificar artefato + guardas M5
+        run: |
+          node --experimental-vm-modules scripts/gerar-autocontido.mjs --check
+          node scripts/tests/m5-seguranca.test.mjs
+      - name: Inicializar fixture isolada (não copia migrações/agendamentos do produto)
+        run: |
+          mkdir .m5-local
+          supabase init --workdir .m5-local
+          node scripts/m5/preparar.mjs .m5-local .m5-reference/supabase/migrations/20261019000001_conecta_pair.sql
+      - name: Subir GoTrue, PostgREST e edge-runtime locais
+        run: |
+          supabase start --workdir .m5-local > "$RUNNER_TEMP/m5-start.log" 2>&1
+          supabase status --workdir .m5-local -o json > "$RUNNER_TEMP/m5-status.json"
+          chmod 600 "$RUNNER_TEMP/m5-status.json"
+          supabase functions serve --workdir .m5-local > "$RUNNER_TEMP/m5-functions.log" 2>&1 &
+          for tentativa in {1..60}; do
+            if curl --silent --fail http://127.0.0.1:54321/functions/v1/m5-eco >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          echo 'Edge-runtime local não ficou pronto; logs locais não são publicados para evitar tokens.' >&2
+          exit 1
+      - name: Experimentos reais locais (inclui espera de 310 s no refresh)
+        run: node scripts/m5/executar.mjs "$RUNNER_TEMP/m5-status.json" "$RUNNER_TEMP/m5-resultados.json"
+      - name: Evidências sanitizadas (sem tokens ou logs brutos)
+        if: always()
+        run: |
+          if test -f "$RUNNER_TEMP/m5-resultados.json"; then
+            cat "$RUNNER_TEMP/m5-resultados.json" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'M5 sem evidência de execução completa; verificar etapa que falhou.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo 'OAuth e gateway de nuvem permanecem pendentes. M5 local não autoriza publicação.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Encerrar stack descartável e apagar credenciais locais
+        if: always()
+        run: |
+          supabase stop --workdir .m5-local --no-backup || true
+          rm -f "$RUNNER_TEMP/m5-status.json" "$RUNNER_TEMP/m5-start.log" "$RUNNER_TEMP/m5-functions.log"

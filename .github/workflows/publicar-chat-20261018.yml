@@ -1,0 +1,60 @@
+name: Publicação pontual do chat aprovado em 2026-10-18
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publicar-chat-20261018.yml']
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    # O evento deve sair exatamente da main em que o PR #31 foi integrado.
+    # Depois deste merge, a condição fica falsa: não reativa deploy automático.
+    if: github.event.before == '59bf88a997b7747bab3416761fe83d5a2531cfb7'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+    steps:
+      - name: Conferir runner gratuito e repositório público
+        env:
+          PUBLICO: ${{ github.event.repository.private == false }}
+        run: |
+          test "$PUBLICO" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_ARCH" = X64
+      - uses: actions/checkout@v4
+        with:
+          ref: 59bf88a997b7747bab3416761fe83d5a2531cfb7
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+          cache-dependency-path: painel/package-lock.json
+      - run: npm ci
+        working-directory: painel
+      - run: npm test
+        working-directory: painel
+      - run: npm run build
+        working-directory: painel
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: painel/dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.implantar.outputs.page_url }}
+    steps:
+      - id: implantar
+        uses: actions/deploy-pages@v4

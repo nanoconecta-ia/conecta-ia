@@ -1,0 +1,32 @@
+{
+  "versao": 1,
+  "entrada": "supabase/functions/pair/index.ts",
+  "externo": "npm:@supabase/supabase-js@2.117.3",
+  "artefato_sha256": "6695e1ef063df7e61c6765d0f9ea8e02962eb6c23a957473a1a795ab09fca2d7",
+  "fontes": [
+    {
+      "path": "supabase/functions/_shared/estado.ts",
+      "sha256": "ca773dccf24fee19ad71c8efc9f4751f46c08a12d502456bf96c3e3183b23419"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/cripto.ts",
+      "sha256": "a2515675da2df37ab795b40eee7850042769bda7d7ec6a18f129d1314ce29219"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/escopos.ts",
+      "sha256": "4b6b38eb0373894fd3ccae92e2afff97ec361753f304e74b36396bb809fea53a"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/servico.ts",
+      "sha256": "b34430c4621e6535a792f125dd09e27b752e4e08a85a8742163b8507267db414"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/implantacao.ts",
+      "sha256": "b9051d28828454c682c22b718df9477491a427256a957461a6aafca785598e80"
+    },
+    {
+      "path": "supabase/functions/pair/index.ts",
+      "sha256": "8df7cb0de978a3c09e14d81ee5c3aee9a2e58d8a0f38f1833bf5f4730b15ae68"
+    }
+  ]
+}

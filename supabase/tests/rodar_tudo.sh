@@ -5,7 +5,7 @@
 # "insufficient_privilege"); ficam fora desta barra até serem revisados, e isso está registrado em docs/conector-ia/testes.md.
 set -uo pipefail
 cd "$(dirname "$0")/../.."
-BASE_CONHECIDAS="fiscal loja_politicas revisoes_bula_contador taxonomia_codigos"
+BASE_CONHECIDAS="fiscal loja_politicas revisoes_bula_contador taxonomia_codigos bling_renovacao"
 sqls=()
 for t in supabase/tests/*.sql; do
   n=$(basename "$t" .sql); [ "$n" = "stub_supabase" ] && continue
@@ -15,10 +15,11 @@ done
 BANCO="${1:-t_tudo}"
 status=0
 echo "== SQL (${#sqls[@]} arquivos)"
-(cd supabase && tests/rodar_local.sh "$BANCO" "${sqls[@]}") || status=1
+(cd supabase && DB="$BANCO" tests/rodar_local.sh "${sqls[@]}") || status=1
 echo "== TypeScript contra Postgres local"
-CONECTOR_TEST_DB="$BANCO" node --experimental-strip-types --test --test-concurrency=1 $(find supabase/functions -name '*.test.ts' | sort) 2>&1 | grep -E "^# (tests|pass|fail|skipped)|^not ok" || true
-CONECTOR_TEST_DB="$BANCO" node --experimental-strip-types --test --test-concurrency=1 $(find supabase/functions -name '*.test.ts' | sort) >/dev/null 2>&1 || status=1
+saida_ts=$(CONECTOR_TEST_DB="$BANCO" node --experimental-strip-types --test --test-concurrency=1 $(find supabase/functions -name '*.test.ts' | sort) 2>&1); st_ts=$?
+echo "$saida_ts" | grep -E "^# (tests|pass|fail|skipped)|^not ok"
+[ $st_ts -eq 0 ] || status=1
 echo "== Tipos estritos (shim do Deno)"
 (cd supabase/functions && ../../painel/node_modules/.bin/tsc -p tsconfig.check.json) || status=1
 echo "== Empacotamento das funções (sem imports relativos)"

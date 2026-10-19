@@ -4,5 +4,5 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 BANCO="${1:-t_aceitacao}"
-tests/rodar_local.sh "$BANCO" >/dev/null 2>&1
+DB="$BANCO" tests/rodar_local.sh tests/stub_supabase.sql >/dev/null 2>&1
 CONECTOR_TEST_DB="$BANCO" node --experimental-strip-types --test --test-concurrency=1 functions/_shared/conector/*.test.ts

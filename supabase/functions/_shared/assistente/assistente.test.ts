@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { intencaoCliente, intencaoLojista, responderCliente, type ProdutoPublico } from "./intencao.ts";
+import { intencaoCliente, intencaoLojista, responderCliente, type ProdutoPublico } from "../intencoes.ts";
 
 test("lojista: reconhece a intenção e cai em ajuda quando não entende", () => {
   assert.equal(intencaoLojista("O que está pendente para aprovar?"), "pendentes");

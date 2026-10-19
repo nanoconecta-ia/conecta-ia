@@ -13,6 +13,7 @@ export function Fila({ loja }: { loja: Loja }) {
   const [imagens, setImagens] = useState<Imagem[] | null>(null);
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState("");
+  const [podeDecidir, setPodeDecidir] = useState<boolean | null>(null);
   const carregar = () => {
     supabase.from("produto_enriquecimento").select("id, campo, valor, fonte, confianca, produtos(sku, nome)")
       .eq("loja_id", loja.id).eq("status", "a_confirmar").order("criado_em", { ascending: false }).limit(200)
@@ -22,23 +23,27 @@ export function Fila({ loja }: { loja: Loja }) {
       .then(({ data }) => setImagens((data ?? []) as unknown as Imagem[]));
   };
   useEffect(() => { void carregar(); }, [loja.id]);
+  // Só o lojista decide; o editor vê a fila mas os botões ficam desligados (o servidor também recusa).
+  useEffect(() => { supabase.rpc("pode_administrar_loja", { p_loja_id: loja.id }).then(({ data }) => setPodeDecidir(data === true)); }, [loja.id]);
+  const negado = (error: unknown) => (error as { context?: { status?: number } } | null)?.context?.status === 403;
 
   async function decidir(id: string, decisao: "aprovar" | "rejeitar") {
     setOcupado(id); setErro("");
     const { error } = await supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao: "decidir", id, decisao } });
     setOcupado("");
-    if (error) setErro("Não foi possível registrar a decisão."); else void carregar();
+    if (error) setErro(negado(error) ? "Só o responsável (lojista) da loja pode aprovar ou rejeitar." : "Não foi possível registrar a decisão."); else void carregar();
   }
   async function decidirImagem(id: string, decisao: "aprovar" | "rejeitar") {
     setOcupado(id); setErro("");
     const { error } = await supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao: "decidir_imagem", id, decisao } });
     setOcupado("");
-    if (error) setErro("Não foi possível registrar a decisão."); else void carregar();
+    if (error) setErro(negado(error) ? "Só o responsável (lojista) da loja pode aprovar ou rejeitar." : "Não foi possível registrar a decisão."); else void carregar();
   }
   return (
     <div className="cartao">
       <h1>Fila de aprovação</h1>
       <p className="suave">Cada dado mostra de onde veio e com que confiança. Nada vai para o site nem para o Bling sem a sua decisão.</p>
+      {podeDecidir === false && <p className="suave">Você pode acompanhar a fila, mas só o responsável (lojista) da loja aprova ou rejeita.</p>}
       {erro && <p className="msg-erro">{erro}</p>}
       {itens === null ? <p className="suave">Carregando…</p> : itens.length === 0 ? <p className="suave">Nada aguardando aprovação.</p> : (
         <div className="rolagem"><table>
@@ -49,8 +54,8 @@ export function Fila({ loja }: { loja: Loja }) {
               <td>{i.campo}</td><td>{texto(i.valor)}</td>
               <td className="suave mono">{i.fonte ?? "—"}</td><td>{i.confianca != null ? `${Math.round(i.confianca * 100)}%` : "—"}</td>
               <td className="linha">
-                <button disabled={ocupado === i.id || !i.fonte} onClick={() => void decidir(i.id, "aprovar")}>Aprovar</button>
-                <button className="perigo" disabled={ocupado === i.id} onClick={() => void decidir(i.id, "rejeitar")}>Rejeitar</button>
+                <button disabled={ocupado === i.id || !i.fonte || podeDecidir !== true} onClick={() => void decidir(i.id, "aprovar")}>Aprovar</button>
+                <button className="perigo" disabled={ocupado === i.id || podeDecidir !== true} onClick={() => void decidir(i.id, "rejeitar")}>Rejeitar</button>
               </td>
             </tr>))}</tbody>
         </table></div>
@@ -66,8 +71,8 @@ export function Fila({ loja }: { loja: Loja }) {
               <p><span className="mono">{img.produtos?.sku ?? "sem SKU"}</span><br /><span className="suave">{img.produtos?.nome}</span></p>
               <p className="suave">{img.origem ?? "—"}</p>
               <div className="linha">
-                <button disabled={ocupado === img.id} onClick={() => void decidirImagem(img.id, "aprovar")}>Aprovar</button>
-                <button className="perigo" disabled={ocupado === img.id} onClick={() => void decidirImagem(img.id, "rejeitar")}>Rejeitar</button>
+                <button disabled={ocupado === img.id || podeDecidir !== true} onClick={() => void decidirImagem(img.id, "aprovar")}>Aprovar</button>
+                <button className="perigo" disabled={ocupado === img.id || podeDecidir !== true} onClick={() => void decidirImagem(img.id, "rejeitar")}>Rejeitar</button>
               </div>
             </div>
           ))}

@@ -1,0 +1,29 @@
+name: OAuth do agente - cliente MCP e segurança
+on:
+  pull_request:
+    paths: ['supabase/**', 'painel/**', 'scripts/tests/oauth-*.mjs', '.github/workflows/oauth-agente.yml']
+permissions:
+  contents: read
+jobs:
+  validar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - name: Conferir runner padrão e repositório público
+        env:
+          PUBLICO: ${{ github.event.repository.private == false }}
+        run: |
+          test "$PUBLICO" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_ARCH" = X64
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - run: node supabase/functions/_shared/pair/oauth.test.ts
+      - name: SDK MCP efêmero para OAuth em loopback
+        run: npm install --prefix "$RUNNER_TEMP/mcp" --no-save --package-lock=false @modelcontextprotocol/sdk@1.32.0
+      - name: Discovery, registro, PKCE, renovação e revogação com SDK real
+        env:
+          MCP_SDK_DIR: ${{ runner.temp }}/mcp/node_modules/@modelcontextprotocol/sdk
+        run: node scripts/tests/oauth-mcp-sdk.mjs

@@ -9,6 +9,7 @@ export interface Opcoes {
   chave: string; modelo: string; sistema: string; mensagens: Mensagem[]; ferramentas: Ferramenta[];
   executar(nome: string, entrada: unknown): Promise<unknown>;
   fetch?: typeof fetch; maxPassos?: number; maxTokens?: number; limiteResultado?: number;
+  onPasso?: (p: { tokens: number; respostaId?: string; modelo?: string }) => void;
   provedor?: "claude" | "gemini" | "compativel_openai"; baseUrl?: string;
   /** Texto de resposta do modelo, assim que existir (delta de streaming ou o bloco do passo, quando o adaptador não faz streaming). */
   aoTexto?(delta: string): void;
@@ -17,7 +18,7 @@ export interface Opcoes {
   /** Adaptador com streaming; se ausente, usa o adaptador comum do provedor. */
   adaptadorStream?: (c: Chamada, msgs: Mensagem[], aoTexto: (delta: string) => void, sinal?: AbortSignal) => Promise<Passo>;
 }
-export interface Resposta { texto: string; tokens: number; passos: number; ferramentasUsadas: string[] }
+export interface Resposta { texto: string; tokens: number; passos: number; ferramentasUsadas: string[]; respostaId?: string; modelo?: string }
 
 export const VERSAO_API = "2023-06-01";
 
@@ -35,10 +36,11 @@ export async function conversar(o: Opcoes): Promise<Resposta> {
     const r = o.adaptadorStream && o.aoTexto ? await o.adaptadorStream(chamada, msgs, o.aoTexto, o.sinal) : await adaptador(chamada, msgs);
     if (!(o.adaptadorStream && o.aoTexto)) for (const b of r.blocos) if (b.type === "text" && b.text) o.aoTexto?.(b.text);
     tokens += r.tokens;
+    o.onPasso?.({ tokens: r.tokens, respostaId: r.respostaId, modelo: r.modelo });
     const usos = r.blocos.filter((b): b is Extract<Bloco, { type: "tool_use" }> => b.type === "tool_use");
     if (usos.length === 0) {
       const texto = r.blocos.filter((b): b is Extract<Bloco, { type: "text" }> => b.type === "text").map((b) => b.text).join("\n").trim();
-      return { texto, tokens, passos: passo, ferramentasUsadas: usadas };
+      return { texto, tokens, passos: passo, ferramentasUsadas: usadas, respostaId: r.respostaId, modelo: r.modelo };
     }
 
     msgs.push({ role: "assistant", content: r.blocos });

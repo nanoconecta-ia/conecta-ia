@@ -1,0 +1,38 @@
+name: Pair e gateway - artefatos sem produção
+on:
+  pull_request:
+    paths: ['supabase/**', 'scripts/gerar*.mjs', 'scripts/tests/pair-*.mjs', 'artifacts/**', '.github/workflows/pair-gateway.yml']
+permissions:
+  contents: read
+jobs:
+  artefatos:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - name: Conferir runner padrão e repositório público
+        env:
+          PUBLICO: ${{ github.event.repository.private == false }}
+        run: |
+          test "$PUBLICO" = true
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          test "$RUNNER_ARCH" = X64
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - run: node --experimental-vm-modules scripts/gerar-pair.mjs --check
+      - run: node --experimental-vm-modules scripts/tests/pair-artefato.test.mjs
+      - name: SDK MCP efêmero para teste de protocolo em loopback
+        run: npm install --prefix "$RUNNER_TEMP/mcp" --no-save --package-lock=false @modelcontextprotocol/sdk@1.32.0
+      - name: Cliente MCP real com sessão e dados sintéticos
+        env:
+          MCP_SDK_DIR: ${{ runner.temp }}/mcp/node_modules/@modelcontextprotocol/sdk
+        run: node scripts/tests/pair-mcp-sdk.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pair-gateway-autocontidos
+          path: |
+            artifacts/pair/
+            artifacts/conecta-gateway/
+          retention-days: 7
+          if-no-files-found: error
