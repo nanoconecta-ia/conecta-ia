@@ -130,3 +130,15 @@ button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(
 .galeria-icones { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); margin: 8px 0 16px; }
 .galeria-icones figure { margin: 0; display: grid; justify-items: center; gap: 6px; padding: 12px 6px 8px; border: 1px solid var(--borda); border-radius: 12px; background: var(--cartao); }
 .galeria-icones figcaption { font-size: .74rem; color: var(--suave); text-align: center; overflow-wrap: anywhere; }
+
+/* ===== agente lateral (dock) ===== */
+.agente-botao { gap: 8px; color: #fff; border-color: rgba(255,255,255,.35); min-height: 40px; padding: 6px 14px; }
+.agente-botao[aria-pressed="true"] { background: color-mix(in srgb, var(--verde) 25%, transparent); border-color: var(--verde); }
+.dock-agente { position: fixed; z-index: 7; top: 56px; bottom: 32px; right: 0; width: min(100vw, 420px); display: grid; grid-template-rows: auto 1fr; background: var(--fundo); border-left: 1px solid color-mix(in srgb, var(--marca) 50%, var(--borda)); box-shadow: -24px 0 60px rgba(0,0,0,.3); }
+.dock-agente[hidden] { display: none; }
+.dock-topo { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: linear-gradient(180deg, var(--grafite-2), var(--grafite)); color: #fff; }
+.dock-topo .suave { color: #b9c8d6; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock-topo button { color: #fff; border-color: rgba(255,255,255,.35); }
+.dock-corpo { overflow: auto; padding: 12px; display: grid; gap: 12px; align-content: start; }
+@media (min-width: 1100px) { .layout--dock main { margin-right: 424px; width: auto; } .layout--dock { min-width: 0; } }
+@media (max-width: 560px) { .agente-botao span { display: none; } }

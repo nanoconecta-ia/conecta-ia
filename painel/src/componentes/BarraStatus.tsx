@@ -8,7 +8,7 @@ export function BarraStatus({ loja, tela, demo }: { loja: string | null; tela: s
       <span className="mono">{loja ?? "sem loja"}</span>
       <span className="sep" aria-hidden="true">/</span>
       <span>{tela}</span>
-      <span className="direita suave"><kbd>Ctrl</kbd>+<kbd>K</kbd> comandos</span>
+      <span className="direita suave"><kbd>Ctrl</kbd>+<kbd>K</kbd> comandos · <kbd>Ctrl</kbd>+<kbd>J</kbd> agente</span>
     </footer>
   );
 }
