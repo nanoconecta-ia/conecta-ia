@@ -1,6 +1,6 @@
 import { AutorizarAgente } from "./paginas/AutorizarAgente.tsx";
 import { useEffect, useState } from "react";
-import { CONECTOR_ATIVO, PAIR_ATIVO, ROTAS_DO_CONECTOR } from "./lib/flags.ts";
+import { BACKUP_ATIVO, CONECTOR_ATIVO, PAIR_ATIVO, ROTAS_DO_CONECTOR } from "./lib/flags.ts";
 import { montarMenu } from "./lib/visibilidade.ts";
 import { Assistente } from "./paginas/Assistente.tsx";
 import { useLojas, useSessao } from "./lib/dados.ts";
@@ -33,6 +33,7 @@ import { ParearAprovador, ParearSolicitante } from "./paginas/Parear.tsx";
 import { Aprovacoes } from "./paginas/Aprovacoes.tsx";
 import { Dispositivos } from "./paginas/Dispositivos.tsx";
 import { MeuAgente } from "./paginas/MeuAgente.tsx";
+import { Backup } from "./paginas/Backup.tsx";
 
 // Em domínio de cliente (fora do GitHub Pages/localhost) a raiz é a loja daquele domínio, resolvida pelo servidor.
 const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
@@ -59,7 +60,8 @@ const ITENS: [string, string][] = [
   ["/bling", "Bling"],
   ["/contador", "Contador"],
 ];
-const MENU: [string, string][] = montarMenu(ITENS, ITENS_PAIR, { pairAtivo: PAIR_ATIVO, conectorAtivo: CONECTOR_ATIVO }, ROTAS_DO_CONECTOR);
+const MENU_BASE: [string, string][] = montarMenu(ITENS, ITENS_PAIR, { pairAtivo: PAIR_ATIVO, conectorAtivo: CONECTOR_ATIVO }, ROTAS_DO_CONECTOR);
+const MENU: [string, string][] = BACKUP_ATIVO ? MENU_BASE.flatMap((i) => (i[0] === "/bling" ? [i, ["/backup", "Backup do Bling"] as [string, string]] : [i])) : MENU_BASE;
 
 export function App() {
   const { sessao, recuperando, fimRecuperacao } = useSessao();
@@ -127,6 +129,7 @@ export function App() {
           : caminho === "/integracoes" ? <Integracoes loja={loja} />
           : caminho === "/imagens" ? <Imagens />
           : caminho === "/design" ? <Design />
+          : BACKUP_ATIVO && caminho === "/backup" ? <Backup loja={loja} />
           : caminho === "/bling" ? <Bling loja={loja} query={query} />
           : caminho === "/contador" ? <Contador loja={loja} />
           : <VisaoGeral loja={loja} />}

@@ -23,7 +23,7 @@ echo "$saida_ts" | grep -E "^# (tests|pass|fail|skipped)|^not ok"
 echo "== Tipos estritos (shim do Deno)"
 (cd supabase/functions && ../../painel/node_modules/.bin/tsc -p tsconfig.check.json) || status=1
 echo "== Empacotamento das funções (sem imports relativos)"
-for f in conector-chat conector-conversas conector-aprovacoes conector-chaves conector-mcp loja-seo; do node scripts/empacotar-funcao.mjs "$f" "/tmp/bundles/$f/index.ts" >/dev/null || { echo "FALHOU: $f"; status=1; }; done
+for f in conector-chat conector-conversas conector-aprovacoes conector-chaves conector-mcp loja-seo bling-backup; do node scripts/empacotar-funcao.mjs "$f" "/tmp/bundles/$f/index.ts" >/dev/null || { echo "FALHOU: $f"; status=1; }; done
 echo "== Catálogo IA (Python)"
 python3 -m unittest scripts.catalogo_ia.tests.test_catalogo 2>&1 | tail -3 | grep -E "^(OK|FAILED)"; python3 -m unittest scripts.catalogo_ia.tests.test_catalogo >/dev/null 2>&1 || status=1
 echo "== Painel"
