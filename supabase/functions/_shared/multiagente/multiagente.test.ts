@@ -41,8 +41,9 @@ test("pesquisas independentes rodam em paralelo; com concorrência 1 viram séri
   await pesquisar(cs, { sku: "S", oem: [] }, { agora: "t", concorrencia: 1, custos });
   const dSer = Date.now() - t1;
   assert.equal(par.evidencias.length, 4);
-  assert.ok(dPar < 200, `paralelo levou ${dPar} ms`);
+  // relativo, não absoluto: sob carga (CI) os dois tempos sobem juntos. O piso da série é físico (4 × 80 ms de espera nunca dura menos).
   assert.ok(dSer >= 300, `série levou ${dSer} ms`);
+  assert.ok(dPar * 2 < dSer, `paralelo ${dPar} ms deveria ser menos da metade da série ${dSer} ms`);
   assert.deepEqual(par.evidencias.map((e) => e.fonte), [...par.evidencias.map((e) => e.fonte)].sort(), "ordem estável apesar do paralelismo");
 });
 
