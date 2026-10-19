@@ -32,6 +32,8 @@ jobs:
           # O pareamento por QR (Conecta Pair) já está em produção (funções pair e conecta-gateway; migrações conecta_pair e oauth_agente).
           # Sem esta flag o painel publicado esconde Aprovações, Dispositivos e o QR. Igual aos workflows de publicação pontual.
           VITE_PAIR_ATIVO: '1'
+          # Backup do cadastro do Bling (migração bling_snapshots e função bling-backup já em produção). Sem a flag a tela /backup fica oculta.
+          VITE_BACKUP_ATIVO: '1'
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
