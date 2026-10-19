@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 54 ferramentas — 33 ativas, 17 planejadas, 4 desligadas.
+Resumo: 55 ferramentas — 34 ativas, 17 planejadas, 4 desligadas.
 
 ## Grupo: conecta
 
@@ -159,6 +159,7 @@ Resumo: 54 ferramentas — 33 ativas, 17 planejadas, 4 desligadas.
 | `engenharia.bula.verificar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
 | `engenharia.loja.filtros` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | — |
 | `engenharia.consulta.interpretar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `texto*:string` |
+| `engenharia.loja.condicoes` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `cep:string` |
 | `engenharia.oem.pesquisar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `texto:string` |
 | `engenharia.cruzados.verificar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
 | `engenharia.fabricantes.identificar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
@@ -199,6 +200,9 @@ Resumo: 54 ferramentas — 33 ativas, 17 planejadas, 4 desligadas.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`engenharia.consulta.interpretar`** — Interpreta uma pergunta de cliente em linguagem natural (ex.: 'qual é o motor para o HR 2011?'): reconhece veículo, ano e peça SÓ pelo cadastro, e devolve o que falta perguntar. Não inventa modelo nem peça; ambiguidade vira pergunta.
   - *Verificação:* Vocabulário vem do banco; termos desconhecidos ficam em nao_reconhecido.
+  - *Recuperação:* Repetir a leitura; é segura.
+- **`engenharia.loja.condicoes`** — Condições comerciais APROVADAS da loja (formas de pagamento e regra de entrega por CEP). Sem cadastro devolve lacunas e pede o CEP; nunca promete prazo, frete ou pagamento que a loja não cadastrou.
+  - *Verificação:* Só o que o lojista cadastrou e aprovou.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`engenharia.oem.pesquisar`** — Pesquisa código OEM em fontes autorizadas.
   - *Verificação:* Cada resultado traz fonte e data.

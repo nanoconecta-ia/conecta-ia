@@ -25,6 +25,7 @@ import { Imagens } from "./paginas/Imagens.tsx";
 import { VitrineDemo } from "./paginas/VitrineDemo.tsx";
 import { Loja } from "./paginas/Loja.tsx";
 import { Aparencia } from "./paginas/Aparencia.tsx";
+import { Condicoes } from "./paginas/Condicoes.tsx";
 import { DEMO } from "./lib/modo.ts";
 import type { Loja as LojaTipo } from "./lib/dados.ts";
 import { ParearAprovador, ParearSolicitante } from "./paginas/Parear.tsx";
@@ -48,6 +49,7 @@ const ITENS: [string, string][] = [
   ["/fila", "Fila de aprovação"],
   ["/taxonomia", "Taxonomia"],
   ["/aparencia", "Aparência da loja"],
+  ["/condicoes", "Pagamento e entrega"],
   ["/integracoes", "Integrações de IA"],
   ["/gateway", "Gateway MCP/API"],
   ["/imagens", "Imagens e SEO"],
@@ -116,6 +118,7 @@ export function App() {
           : caminho === "/gateway" ? <GatewayMCP loja={loja} />
           : caminho === "/assistente" ? <Assistente key={loja.id} loja={loja} />
           : caminho === "/aparencia" ? <Aparencia loja={loja} />
+          : caminho === "/condicoes" ? <Condicoes loja={loja} />
           : caminho === "/integracoes" ? <Integracoes loja={loja} />
           : caminho === "/imagens" ? <Imagens />
           : caminho === "/design" ? <Design />
