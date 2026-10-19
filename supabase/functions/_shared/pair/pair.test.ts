@@ -146,6 +146,11 @@ function ambiente(s: Sessao | null, opcoes: { limite?: (c: string) => boolean; d
     obterProduto: async (loja, sku) => { chamadasDados.push({ metodo: "obterProduto", loja, args: sku }); return sku === "P1" ? { nome: "Pastilha", sku } : null; },
     skuParaId: async (loja, sku) => { chamadasDados.push({ metodo: "skuParaId", loja, args: sku }); return sku === "P1" ? "id-p1" : null; },
     proporEnriquecimento: async (loja, a) => { chamadasDados.push({ metodo: "proporEnriquecimento", loja, args: a }); return { ok: true, status: "a_confirmar" }; },
+    consultarPeca: async (loja, termo) => { chamadasDados.push({ metodo: "consultarPeca", loja, args: termo }); return { produtos_da_loja: [] }; },
+    proporCodigo: async (loja, a) => { chamadasDados.push({ metodo: "proporCodigo", loja, args: a }); return { ok: true, status: "a_confirmar" }; },
+    proporAplicacao: async (loja, a) => { chamadasDados.push({ metodo: "proporAplicacao", loja, args: a }); return { ok: true, status: "a_confirmar" }; },
+    proporImagem: async (loja, a) => { chamadasDados.push({ metodo: "proporImagem", loja, args: a }); return { ok: true, status: "a_confirmar" }; },
+    proporBula: async (loja, a) => { chamadasDados.push({ metodo: "proporBula", loja, args: a }); return { ok: true, status: "rascunho" }; },
     proporAprovacao: async (p) => { propostas.push(p); return { id: "ap-1", versao: 1, hash_proposta: "h".repeat(64), estado: "pendente" }; },
     aprovacoesPendentes: async (loja, l) => { chamadasDados.push({ metodo: "aprovacoesPendentes", loja, args: l }); return []; },
     statusTarefa: async (loja, id) => { chamadasDados.push({ metodo: "statusTarefa", loja, args: id }); return null; },
@@ -207,9 +212,9 @@ test("gateway: initialize negocia a versão do protocolo e instrui o modelo a tr
 });
 test("gateway: tools/list mostra só o que o escopo da sessão permite", async () => {
   const nomes = async (escopos: string[]) => ((await chamar(ambiente(sessao(escopos)), rpc("tools/list"))).corpo as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name).sort();
-  assert.deepEqual(await nomes(["produtos:ler"]), ["conecta.get_product", "conecta.list_products"]);
+  assert.deepEqual(await nomes(["produtos:ler"]), ["conecta.get_part_by_code", "conecta.get_product", "conecta.list_products"]);
   assert.deepEqual(await nomes([]), []);
-  assert.equal((await nomes([...ESCOPOS])).length, 7);
+  assert.equal((await nomes([...ESCOPOS])).length, 12);
 });
 test("gateway: ferramenta sem o escopo é NEGADA, auditada e não toca os dados", async () => {
   const a = ambiente(sessao(["produtos:ler"]));
@@ -323,6 +328,9 @@ test("gateway: cada chamada revalida a sessão no banco (revogação vale na pr�
 test("gateway: o catálogo NÃO tem ferramenta que aprove, execute, publique, altere preço/estoque ou grave no Bling", () => {
   for (const f of FERRAMENTAS) {
     assert.match(f.nome, /^conecta\.(list_|get_|propose_|bling_consultar_produto$)/, f.nome);
+    // regra do sistema: o agente nunca apaga nota fiscal nem o cadastro espelhado do Bling; não existe ferramenta nem escopo para isso
+    assert.doesNotMatch(f.nome + " " + f.escopo, /delete|remove|destroy|excluir|apagar|nfe|nota|invoice|emit|cancel/i, f.nome);
+    assert.equal(f.inputSchema.type, "object");
     assert.doesNotMatch(f.nome + f.descricao.split(".")[0], /approve|execute|publish|delete|price|stock/i, f.nome);
     assert.ok(ESCOPOS.includes(f.escopo), f.nome);
     assert.equal(f.somenteLeitura, !f.nome.includes("propose_"), `${f.nome}: leitura x proposta`);
@@ -431,4 +439,33 @@ test("gateway: falha de auditoria bloqueia dados, negações, argumentos inváli
     assert.doesNotMatch(JSON.stringify(r), /Pastilha|segredo|auditoria secreta/);
     if (modo === "negado" || modo === "invalido") assert.equal(a.chamadasDados.length,0);
   }
+});
+
+test("gateway: o lojista consulta por SKU, EAN ou código OEM e o agente propõe código, aplicação, imagem e bula (sempre propostas, loja da sessão)", async () => {
+  const a = ambiente(sessao([...ESCOPOS]));
+  assert.equal(resultado(await chamar(a, tool("conecta.get_part_by_code", { termo: "20910-4AU07" }))).isError, undefined);
+  assert.deepEqual(a.chamadasDados.find((c) => c.metodo === "consultarPeca"), { metodo: "consultarPeca", loja: LOJA_A, args: "20910-4AU07" });
+  assert.equal(resultado(await chamar(a, tool("conecta.propose_code", { sku: "P1", tipo: "oem", valor: "20910-4AU07", fonte: "catálogo do fabricante" }))).isError, undefined);
+  assert.equal(resultado(await chamar(a, tool("conecta.propose_application", { sku: "P1", modelo: "UtilX", motorizacao: "2.5 16V", ano_inicial: 2014, fonte: "catálogo" }))).isError, undefined);
+  assert.equal(resultado(await chamar(a, tool("conecta.propose_image", { sku: "P1", url: "https://cdn.exemplo.com/foto.jpg", origem: "fornecedor" }))).isError, undefined);
+  assert.equal(resultado(await chamar(a, tool("conecta.propose_bula", { sku: "P1", medidas: { espessura: { valor: 1.2, unidade: "mm" } }, fonte: "manual de oficina" }))).isError, undefined);
+  for (const m of ["proporCodigo", "proporAplicacao", "proporImagem", "proporBula"]) assert.equal(a.chamadasDados.find((c) => c.metodo === m)?.loja, LOJA_A, `${m} usa a loja da sessão`);
+});
+test("gateway: proposta sem fonte é recusada antes de chegar aos dados; tipo de código inválido também", async () => {
+  const a = ambiente(sessao([...ESCOPOS]));
+  assert.equal(resultado(await chamar(a, tool("conecta.propose_code", { sku: "P1", tipo: "oem", valor: "ABC123" }))).isError, true);
+  assert.equal(resultado(await chamar(a, tool("conecta.propose_code", { sku: "P1", tipo: "sku", valor: "ABC123", fonte: "x" }))).isError, true);
+  assert.equal(resultado(await chamar(a, tool("conecta.propose_bula", { sku: "P1", medidas: { espessura: { valor: 1, unidade: "mm" } } }))).isError, true);
+  assert.equal(a.chamadasDados.filter((c) => c.metodo.startsWith("propor")).length, 0);
+});
+test("gateway: sem o escopo de proposta o agente só lê (propose_code negado e auditado)", async () => {
+  const a = ambiente(sessao(["produtos:ler"]));
+  const r = resultado(await chamar(a, tool("conecta.propose_code", { sku: "P1", tipo: "oem", valor: "ABC123", fonte: "x" })));
+  assert.equal(r.isError, true); assert.match(r.content[0].text, /enriquecimento:propor/);
+  assert.equal(a.auditoria[0].resultado, "negado");
+});
+test("gateway: as instruções entregues ao agente trazem as regras do sistema (nunca apagar nota fiscal nem o espelho, fonte, pausa, versão do veículo)", async () => {
+  const a = ambiente(sessao([...ESCOPOS]));
+  const r = (await chamar(a, rpc("initialize", { protocolVersion: "2025-06-18" }))).corpo as { result: { instructions: string } };
+  for (const trecho of [/nunca apaga notas fiscais/, /cadastro espelhado do Bling/, /pausou o cadastro autom/, /VERSÃO do veículo/, /fonte/i, /SKU, EAN, código OEM/]) assert.match(r.result.instructions, trecho);
 });

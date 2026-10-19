@@ -143,3 +143,7 @@ test("ferramentas de verificação: ativas, somente leitura e com entrada valida
   assert.ok(validar(buscarDefinicao("engenharia.aplicacoes.validar")!.entrada, { sku: "80692", ano: "2018" }).length > 0, "ano precisa ser número");
   assert.equal(validar(buscarDefinicao("engenharia.duplicidade.detectar")!.entrada, {}).length, 0, "sem filtro = varredura da loja");
 });
+
+test("regra do sistema: nenhuma ferramenta apaga nota fiscal nem o cadastro espelhado do Bling", () => {
+  for (const f of FERRAMENTAS_CONECTOR) assert.doesNotMatch(f.id, /excluir|apagar|delete|remov|destroy|\.nfe\.|nota_fiscal/i, f.id);
+});
