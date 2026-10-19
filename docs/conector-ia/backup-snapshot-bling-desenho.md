@@ -1,6 +1,6 @@
 # Backup / snapshot do Bling dentro do Conecta: desenho para aprovação
 
-Estado: **proposta, nada criado**. Pela regra do projeto, tabelas e migrações só depois de aprovação.
+Estado (2026-10-19): **implementado no repositório (PR #53) e testado; NÃO aplicado em produção**. O dono aprovou o desenho. Aplicar a migração, publicar a função e ligar a tela exigem autorização específica, um passo por vez.
 Fonte do formato: planilha de exportação de produtos do próprio Bling (59 colunas, `produtos_2026-10-19-19-25-35.csv`).
 
 ## Objetivo
@@ -76,3 +76,22 @@ Regra mantida: o Conecta **não grava no Bling sozinho**. Alteração = proposta
 - Formato exato aceito na importação para **Grupo de Tags/Tags** e **Categoria do produto** (caminho "Pai > Filho"? separador?). Testar com 1 produto.
 - Se o Bling importa pelo **ID** (a planilha traz ID) para atualizar produto existente.
 - Contatos e categorias: pedir as planilhas modelo correspondentes.
+
+## O que foi implementado (PR #53)
+- Migração `20261019000019_bling_snapshots.sql`: `bling_snapshots`, `bling_snapshot_produtos`, `bling_snapshot_categorias`, `bling_snapshot_contatos`; RLS só para o administrador da loja (o editor não lê, porque há custo e fornecedor); funções `bling_snapshot_iniciar/gravar/concluir/podar` só para service_role; a poda nunca apaga o último backup completo. Teste: `supabase/tests/bling_snapshots.sql` (19 verificações).
+- `_shared/bling_snapshot.ts`: as 59 colunas do Bling, formatação no padrão do Bling (vírgula decimal, ponto de milhar), CSV, hash estável, comparação snapshot x Bling e a coleta (`executarBackup`) com portas só de leitura, orçamento de tempo e estados completo/parcial/falhou. 12 testes.
+- Função `bling-backup`: cron diário, "executar" (administrador, 4 por hora) e "csv" (a partir do que já está guardado, funciona com o Bling fora do ar).
+- Tela "Backup do Bling" (`/backup`), escondida por `VITE_BACKUP_ATIVO=1`: lista, "Fazer backup agora", "Baixar CSV". 4 testes.
+- Prompt do agente (`PROMPT_PADRAO`, regras 8g e 8h): fatos confirmados do Bling, limites das ferramentas, como ler uma negativa e uso do backup.
+
+## Para colocar em produção (cada passo com autorização específica)
+1. Aplicar a migração 0019 (cria tabelas novas; não altera nada existente).
+2. Gerar a versão autocontida de `bling-backup` (`node scripts/empacotar-funcao.mjs bling-backup`) e publicar com `verify_jwt = false`.
+3. Agendar o cron diário (mesmo segredo `x-cron-segredo` da `bling-sync`).
+4. Republicar o painel com `VITE_BACKUP_ATIVO=1`.
+5. Primeiro backup manual e conferência do CSV.
+
+## Limites conhecidos
+- Os caminhos da API do Bling para vínculos de fornecedor (`/produtos/fornecedores`), contatos e categorias estão marcados "conferido: false": a documentação oficial não pôde ser aberta do ambiente de desenvolvimento. O primeiro backup real mostra se estão certos.
+- O formato exato de **Categoria do produto** em subcategorias (nome só ou "Pai > Filho") e o de **Tags** no CSV ainda precisam de teste de importação com 1 produto. O CSV sai com o nome da categoria.
+- Se o backup ficar parcial (muitos produtos, tempo esgotado), a próxima rodada faz um novo snapshot; a retomada incremental fica para uma etapa seguinte.
