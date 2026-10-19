@@ -37,6 +37,8 @@ export function compararEvidencias(evs: Evidencia[]): Conflito[] {
           if (ia && ib) {
             const fa = x.ano_fim ?? 9999, fb = y.ano_fim ?? 9999;
             if (fa < ib || fb < ia) out.push({ tipo: "aplicacao", campo: `periodo (${x.modelo})`, lado_a: lado(a, `${ia}-${x.ano_fim ?? ""}`), lado_b: lado(b, `${ib}-${y.ano_fim ?? ""}`), sugestao: sugestao(a, b) });
+            // períodos que se tocam mas começam em anos diferentes (ex.: 2013 x 2014) também divergem: é o erro de ano-modelo que gera peça errada
+            else if (ia !== ib) out.push({ tipo: "aplicacao", campo: `inicio do periodo (${x.modelo})`, lado_a: lado(a, ia), lado_b: lado(b, ib), sugestao: sugestao(a, b) });
           }
         }
       }

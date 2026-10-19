@@ -20,8 +20,11 @@ test("aplicação conflitante: mesmo modelo com motores diferentes ou períodos 
   assert.ok(compararEvidencias([a, b]).some((c) => c.campo.startsWith("motor")));
   const c = ev("outra", "fornecedor", { aplicacoes: [{ modelo: "HR", motor: "D4CB", ano_inicio: 2005, ano_fim: 2008 }] });
   assert.ok(compararEvidencias([a, c]).some((x) => x.campo.startsWith("periodo")));
-  const d = ev("ok", "fornecedor", { aplicacoes: [{ modelo: "HR", motor: "D4CB", ano_inicio: 2015, ano_fim: 2020 }] });
-  assert.equal(compararEvidencias([a, d]).length, 0, "períodos que se tocam e mesmo motor: sem conflito");
+  const d = ev("ok", "fornecedor", { aplicacoes: [{ modelo: "HR", motor: "D4CB", ano_inicio: 2014, ano_fim: 2020 }] });
+  assert.equal(compararEvidencias([a, d]).length, 0, "mesmo motor e mesmo início de período: sem conflito");
+  const e = ev("catalogo-2013", "oficial", { aplicacoes: [{ modelo: "HR", motor: "D4CB", ano_inicio: 2013 }] });
+  const cf = compararEvidencias([e, a]);
+  assert.ok(cf.some((x) => x.campo.startsWith("inicio do periodo")), "2013 x 2014 com períodos que se tocam é conflito (erro de ano-modelo)");
 });
 
 test("Bling x enriquecimento: GTIN e peso divergentes viram conflito, nunca são sobrescritos", () => {
