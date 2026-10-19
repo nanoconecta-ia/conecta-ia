@@ -1,4 +1,4 @@
-# Publicação do essencial (proposta, aguardando autorização)
+# Publicação do essencial (APLICADA em 2026-10-19, só banco)
 
 Projeto de destino: **conecta-ia**, ref `dsfzhsrudriqkumtlqwj` (sa-east-1). Nunca o ref do NanoShell IA.
 
@@ -34,3 +34,12 @@ Antes: backup/branch do banco. Depois, se preciso: `drop function` das 11 funç�
 
 ## Como validar depois
 Conferir `list_migrations`, `get_advisors` (segurança) e uma consulta de cada função com o service role.
+
+## Resultado da aplicação (2026-10-19, ~11:28–11:31 UTC)
+Autorizada pelo dono para este conjunto exato (0002, 0007, 0008, 0011, 0013, 0014, 0015), sem Edge Function. Aplicada no projeto `dsfzhsrudriqkumtlqwj` com `apply_migration`, uma por vez, na ordem.
+- Antes: conferi que nenhuma tabela, coluna ou função do conjunto já existia e que todas as colunas usadas existem em produção.
+- Depois (consultas só de leitura): 7 migrações registradas; 20 sistemas mecânicos semeados, todos `proposta` (material do dono); 12 funções criadas, **nenhuma** executável por `anon` ou `authenticated`; 6 tabelas novas com RLS; `pecas_ref` (9) e `produtos` (4) inalterados; nenhum fabricante classificado nem versão com regime (nada inventado); vocabulário com 10 modelos e 49 famílias de peça.
+- Advisors de segurança: nenhum achado novo vindo deste conjunto. Os achados que existem já vinham de antes (funções `pair_*`, `chat_*`, `aprovacao_decidir` executáveis por usuário logado; `pg_net` em `public`; proteção contra senha vazada desligada) e **não foram tocados**: merecem decisão à parte.
+- Atenção: a ferramenta de aplicação gravou versões próprias (`20261019112811…20261019113045`) diferentes dos nomes de arquivo do repositório (`20261019000002…`). Um futuro `supabase db push` precisa ser reconciliado com isso antes de ser usado.
+- Não há backup automático no plano gratuito; a reversão é manual (itens acima) e nenhum dado existente foi alterado.
+- Continua fora: Edge Functions (a vitrine e o agente ainda não usam essas funções), migrações `agente_*`, imagens e bucket.
