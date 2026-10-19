@@ -35,21 +35,7 @@ select public.afirma(public.candidatas_por_compartilhamento('12') ? 'erro', 'có
 insert into public.pecas_aplicacoes_tecnicas (peca_id, versao_id, periodo_inicio, fonte_id, verificado_em, status) values ('a6000000-0000-0000-0000-0000000000c1', 'a3000000-0000-0000-0000-0000000000c2', 2014, 'f0000000-0000-0000-0000-0000000000f3', now(), 'aprovado');
 select public.afirma(jsonb_array_length(public.candidatas_por_compartilhamento('55555-5BV55')->'candidatas') = 0, 'com a aplicação aprovada na versão B ela deixa de ser hipótese');
 
--- (2) chassi
-select public.afirma((public.veiculo_por_chassi('ABC123456EF789012')->>'valido')::boolean, 'chassi de 17 caracteres válido');
-select public.afirma(not (public.veiculo_por_chassi('ABC12345')->>'valido')::boolean, 'chassi curto é recusado');
-select public.afirma(not (public.veiculo_por_chassi('ABC12345OEF789012')->>'valido')::boolean, 'chassi com O/I/Q é recusado');
-select public.afirma(public.veiculo_por_chassi('abc 123456-ef789012')->>'wmi' = 'ABC', 'aceita minúsculas, espaço e hífen');
-select public.afirma(public.veiculo_por_chassi('ABC123456EF789012')->'ano_modelo_candidatos' @> '2014'::jsonb, 'o caractere E do 10º lugar indica ano-modelo 2014 (candidato)');
-select public.afirma(jsonb_array_length(public.veiculo_por_chassi('ABC123456EF789012')->'candidatos') = 0, 'sem prefixo registrado, o veículo NÃO é identificado (nada de tabela de memória)');
-insert into public.identificadores_oficiais (versao_id, orgao, tipo, valor, fonte_id, verificado_em, status) values
-  ('a3000000-0000-0000-0000-0000000000c1', 'montadora', 'vin_wmi_vds', 'ABC123', 'f0000000-0000-0000-0000-0000000000f3', now(), 'aprovado'),
-  ('a3000000-0000-0000-0000-0000000000c2', 'montadora', 'vin_wmi_vds', 'XYZ999', 'f0000000-0000-0000-0000-0000000000f3', now(), 'a_confirmar');
-select public.afirma(public.veiculo_por_chassi('ABC123456EF789012')->'candidatos'->0->'veiculo'->>'modelo' = 'UtilA', 'com o prefixo registrado e aprovado o veículo é identificado');
-select public.afirma(jsonb_array_length(public.veiculo_por_chassi('XYZ999456EF789012')->'candidatos') = 0, 'prefixo ainda a confirmar não identifica por padrão');
-select public.afirma(jsonb_array_length(public.veiculo_por_chassi('XYZ999456EF789012', false)->'candidatos') = 1, 'pedindo, aparece rotulado pelo status');
-
--- (3) catálogo da loja por veículo
+-- (2) catálogo da loja por veículo
 insert into public.lojas (id, nome, slug) values ('c9000000-0000-0000-0000-0000000000a1', 'Loja BV', 'bv-a'), ('c9000000-0000-0000-0000-0000000000b2', 'Outra BV', 'bv-b');
 insert into public.produtos (id, loja_id, bling_id, sku, nome, preco, estoque, publicado) values
   ('c8000000-0000-0000-0000-000000000001', 'c9000000-0000-0000-0000-0000000000a1', 'b1', 'BV-1', 'Peça publicada', 100, 5, true),

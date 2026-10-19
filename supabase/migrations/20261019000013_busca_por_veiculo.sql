@@ -1,5 +1,5 @@
 -- Busca por veículo, 100% gratuita e offline: (1) compartilhamento de componentes entre montadoras parceiras como HIPÓTESE a verificar,
--- (2) leitura do chassi (VIN) cruzada com o que o lojista registrou a partir do CRLV, (3) catálogo da loja filtrado pelo veículo.
+-- (2) catálogo da loja filtrado pelo veículo. Leitura de chassi/placa ficou FORA deste plano (depende de base pública/Detran): branch plano/leitura-por-chassi.
 -- Nada aqui consulta serviço externo, raspa site nem usa dado pessoal do dono do veículo.
 
 -- (1) Onde mais uma peça PODERIA servir porque a versão compartilha o motor com uma versão onde ela está aprovada.
@@ -31,30 +31,6 @@ begin
   return jsonb_build_object('codigo_normalizado', v_norm, 'candidatas', v_res, 'aviso', 'Hipóteses a verificar. Nenhuma vira aplicação, anúncio ou "serve" sem fonte própria da versão.');
 end $$;
 
--- (2) Chassi (VIN): estrutura + ano-modelo (indicação) + cruzamento com os prefixos de chassi REGISTRADOS pelo lojista (identificadores_oficiais). Sem tabela de fabricantes de memória.
-create function public.veiculo_por_chassi(p_vin text, p_apenas_aprovados boolean default true) returns jsonb language plpgsql stable security definer set search_path = '' as $$
-declare v text := upper(regexp_replace(coalesce(p_vin, ''), '[\s\-]', '', 'g')); c10 text; anos int[] := '{}'; i int; letras text := 'ABCDEFGHJKLMNPRSTVWXY123456789'; v_cand jsonb;
-begin
-  if length(v) <> 17 then return jsonb_build_object('valido', false, 'erro', 'O chassi tem 17 caracteres.'); end if;
-  if v !~ '^[A-HJ-NPR-Z0-9]{17}$' then return jsonb_build_object('valido', false, 'erro', 'Chassi com caractere inválido (I, O e Q não existem).'); end if;
-  c10 := substr(v, 10, 1);
-  i := position(c10 in letras);
-  if i > 0 then
-    for a in 0..2 loop
-      if (1980 + (i - 1) + 30 * a) <= extract(year from now())::int + 1 then anos := anos || (1980 + (i - 1) + 30 * a); end if;
-    end loop;
-  end if;
-  select coalesce(jsonb_agg(jsonb_build_object('situacao', 'candidata', 'prefixo_registrado', io.valor, 'tipo', io.tipo, 'status', io.status,
-      'veiculo', jsonb_build_object('versao_id', ve.id, 'montadora', ma.nome, 'modelo', mo.nome, 'geracao', g.ordem, 'versao', ve.nome_comercial, 'mercado', ve.mercado))), '[]'::jsonb)
-    into v_cand
-    from public.identificadores_oficiais io join public.versoes ve on ve.id = io.versao_id join public.geracoes g on g.id = ve.geracao_id join public.modelos mo on mo.id = g.modelo_id join public.montadoras ma on ma.id = mo.montadora_id
-    where io.tipo in ('vin_wmi', 'vin_wmi_vds', 'prefixo_chassi') and length(io.valor) between 3 and 9 and v like upper(regexp_replace(io.valor, '[\s\-]', '', 'g')) || '%'
-      and (not p_apenas_aprovados or io.status = 'aprovado');
-  return jsonb_build_object('valido', true, 'wmi', substr(v, 1, 3), 'vds', substr(v, 4, 6), 'vis', substr(v, 10, 8), 'ano_modelo_codigo', c10, 'ano_modelo_candidatos', to_jsonb(anos),
-    'planta_codigo', substr(v, 11, 1), 'candidatos', v_cand,
-    'aviso', 'O 10º caractere costuma indicar o ANO-MODELO (pode diferir do ano de fabricação): confira no CRLV. O veículo só é identificado se o prefixo deste chassi estiver registrado e aprovado com documento; sem registro, escolha montadora, modelo e motor.');
-end $$;
-
 -- (3) O que a loja vende e serve neste veículo e ano: SÓ aplicação aprovada, produto publicado e ligado à peça aprovada. Base "motor" vem avisada.
 create function public.pecas_da_loja_para_veiculo(p_loja uuid, p_versao uuid, p_ano int default null) returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare v_graf jsonb; v_itens jsonb;
@@ -72,5 +48,5 @@ begin
     'aviso', 'Mostra só o que tem aplicação aprovada para esta versão. Ausência significa NÃO CONFIRMADO para o veículo: ofereça o atendente.');
 end $$;
 
-revoke all on function public.candidatas_por_compartilhamento(text, boolean), public.veiculo_por_chassi(text, boolean), public.pecas_da_loja_para_veiculo(uuid, uuid, int) from public, anon, authenticated;
-grant execute on function public.candidatas_por_compartilhamento(text, boolean), public.veiculo_por_chassi(text, boolean), public.pecas_da_loja_para_veiculo(uuid, uuid, int) to service_role;
+revoke all on function public.candidatas_por_compartilhamento(text, boolean), public.pecas_da_loja_para_veiculo(uuid, uuid, int) from public, anon, authenticated;
+grant execute on function public.candidatas_por_compartilhamento(text, boolean), public.pecas_da_loja_para_veiculo(uuid, uuid, int) to service_role;

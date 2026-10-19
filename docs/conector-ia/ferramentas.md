@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 51 ferramentas — 30 ativas, 17 planejadas, 4 desligadas.
+Resumo: 50 ferramentas — 29 ativas, 17 planejadas, 4 desligadas.
 
 ## Grupo: conecta
 
@@ -154,7 +154,6 @@ Resumo: 51 ferramentas — 30 ativas, 17 planejadas, 4 desligadas.
 | `engenharia.taxonomia.buscar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `texto*:string` |
 | `engenharia.duplicidade.detectar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `gtin:string` `nome:string` |
 | `engenharia.compartilhamento.sugerir` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `codigo*:string` `incluir_a_confirmar:boolean` |
-| `engenharia.veiculo.por_chassi` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `vin*:string` |
 | `engenharia.loja.pecas_do_veiculo` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `versao_id*:string` `ano:integer` |
 | `engenharia.oem.pesquisar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `texto:string` |
 | `engenharia.cruzados.verificar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
@@ -181,9 +180,6 @@ Resumo: 51 ferramentas — 30 ativas, 17 planejadas, 4 desligadas.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`engenharia.compartilhamento.sugerir`** — A partir de um código OEM já aprovado, sugere OUTROS veículos que usam o mesmo motor (ex.: montadoras parceiras). Resultado é HIPÓTESE: compartilhar motor não prova que a peça serve; nunca vira anúncio sem prova para a versão.
   - *Verificação:* Só aplicações aprovadas como ponto de partida; cada candidata exige prova.
-  - *Recuperação:* Repetir a leitura; é segura.
-- **`engenharia.veiculo.por_chassi`** — Decodifica o chassi (VIN) offline e procura candidatos só em prefixos oficiais cadastrados e aprovados. Gratuito, sem serviço de placa; informativo.
-  - *Verificação:* Estrutura do VIN + prefixos aprovados em identificadores_oficiais.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`engenharia.loja.pecas_do_veiculo`** — Peças da loja (publicadas, com estoque) com aplicação aprovada para uma versão de veículo, opcionalmente num ano.
   - *Verificação:* Cruza grafo do veículo com produto_pecas_ref aprovado.

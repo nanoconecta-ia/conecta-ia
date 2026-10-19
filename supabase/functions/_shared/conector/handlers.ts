@@ -100,7 +100,6 @@ export const HANDLERS: Record<string, Handler> = {
   "engenharia.aplicacoes.validar": (e, c) => rpc(c, "validar_aplicacoes_do_sku", { p_loja: c.lojaId, p_sku: e.sku, p_ano: e.ano ?? null }),
   "engenharia.oem.buscar": (e, c) => rpc(c, "dna_por_codigo_oem", { p_loja: c.lojaId, p_codigo: e.codigo, p_apenas_aprovados: e.incluir_a_confirmar !== true }),
   "engenharia.compartilhamento.sugerir": (e, c) => rpc(c, "candidatas_por_compartilhamento", { p_codigo: e.codigo, p_apenas_aprovados: e.incluir_a_confirmar !== true }),
-  "engenharia.veiculo.por_chassi": (e, c) => rpc(c, "veiculo_por_chassi", { p_vin: e.vin, p_apenas_aprovados: true }),
   "engenharia.loja.pecas_do_veiculo": (e, c) => rpc(c, "pecas_da_loja_para_veiculo", { p_loja: c.lojaId, p_versao: e.versao_id, p_ano: e.ano ?? null }),
   "conecta.enriquecimento.pendentes": (e, c) => c.dados.itensPendentes(e.limite),
   "conecta.travas.consultar": (e, c) => c.dados.travas({ produtoId: e.produto_id, sku: e.sku }),
