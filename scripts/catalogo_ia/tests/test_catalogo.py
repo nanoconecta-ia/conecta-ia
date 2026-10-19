@@ -6,6 +6,7 @@ from pathlib import Path
 from scripts.catalogo_ia.classificacao import carregar_taxonomia, classe_da_peca, taxonomia_valida
 from scripts.catalogo_ia.cli import processar
 from scripts.catalogo_ia.extracao import anos_informados, extrair
+from scripts.catalogo_ia.periodos import confere_anos
 from scripts.catalogo_ia.llm import extrair_com_llm
 from scripts.catalogo_ia.oem import candidatos_oem, gtin_valido
 
@@ -64,6 +65,33 @@ class Extracao(unittest.TestCase):
         cods = {c["normalizado"]: c["confianca"] for c in self.e["codigos_oem"]}
         self.assertIn("20910-4AU07", cods)
         self.assertEqual(cods.get("15105-605RS"), "baixa")  # código Sabó com a mesma forma: não é confirmado como Hyundai
+
+
+class Periodos(unittest.TestCase):
+    ANO = [{"inicio": 2013, "fim": None, "em_aberto": True, "trecho": "2013+"}]
+
+    def test_sem_evento_o_ano_fica_a_confirmar(self):
+        self.assertTrue(any("sem evidência" in p for p in confere_anos(self.ANO, None)))
+        self.assertTrue(any("sem evidência" in p for p in confere_anos(self.ANO, [{"tipo": "lancamento_mundial", "ano": 2011, "fonte": "x"}])))
+
+    def test_evento_sem_fonte_nao_conta(self):
+        self.assertTrue(confere_anos(self.ANO, [{"tipo": "inicio_importacao", "ano": 2012}]))
+
+    def test_ano_anterior_ao_inicio_no_brasil(self):
+        p = confere_anos(self.ANO, [{"tipo": "inicio_comercializacao_br", "ano": 2014, "fonte": "doc"}])
+        self.assertTrue(any("anterior ao início no Brasil (2014)" in x for x in p))
+
+    def test_dentro_do_periodo_comprovado(self):
+        ev = [{"tipo": "inicio_importacao", "ano": 2012, "fonte": "doc"}]
+        self.assertEqual(confere_anos(self.ANO, ev), [])
+
+    def test_aberto_passa_do_fim(self):
+        ev = [{"tipo": "inicio_importacao", "ano": 2012, "fonte": "d"}, {"tipo": "fim_importacao", "ano": 2020, "fonte": "d"}]
+        self.assertTrue(any("passa do fim" in x for x in confere_anos(self.ANO, ev)))
+
+    def test_pipeline_marca_pendencia_de_ano(self):
+        s = processar([{"sku": "80692", "nome": "x", "descricao": "Hyundai HR D4CB (2013+)", "marca": "SABó"}])[0]
+        self.assertTrue(any("sem evidência do início" in p for p in s["pendencias"]))
 
 
 class Classe(unittest.TestCase):

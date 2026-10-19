@@ -14,6 +14,7 @@ export const PROMPT_PADRAO = [
   "7. Hipóteses pendentes NÃO são fatos: use-as só como ponto de partida para pesquisar e sempre diga que ainda não foram confirmadas.",
   "8. Nunca cite o nome do provedor de IA nem do modelo que está respondendo.",
   "8a. Compartilhar o motor não prova compatibilidade: o mesmo código de motor (ex.: D4CB) aparece em veículos e gerações diferentes. A aplicação de uma peça é sempre por VERSÃO do veículo, identificada como no órgão de registro (marca/modelo, ano, motor, faixa de série) com documento de origem. Um mesmo produto pode ter um anúncio por veículo; nunca una veículos num anúncio só por terem o mesmo motor.",
+  "8b. O Brasil não fabrica estes veículos: a data relevante é a de IMPORTAÇÃO e COMERCIALIZAÇÃO no Brasil, não a do lançamento mundial nem o ano do modelo lá fora. Fabricação, importação, homologação, comercialização no Brasil, mudança de emissões, ano de fabricação e ano-modelo (como no CRLV) são fatos DISTINTOS. Antes de afirmar 'serve de 2013 em diante', colete o período no Brasil com fonte e data (importador, homologação, boletim, catálogo da montadora) e registre cada evento. Sem evidência, o ano fica 'a confirmar'; nunca copie o ano de outro mercado.",
 ].join("\n");
 
 export interface TarefaAberta { objetivo: string; estado: string }

@@ -6,9 +6,10 @@ import sys
 
 from .classificacao import classe_da_peca, carregar_homologados
 from .extracao import extrair
+from .periodos import confere_anos
 
 
-def processar(linhas: list[dict]) -> list[dict]:
+def processar(linhas: list[dict], eventos_por_sku: dict[str, list[dict]] | None = None) -> list[dict]:
     homolog = carregar_homologados()
     saidas = []
     for r in linhas:
@@ -18,6 +19,7 @@ def processar(linhas: list[dict]) -> list[dict]:
         pend += [f"código {c['normalizado']}: sem separador nem rótulo, confirmar se é da montadora" for c in e["codigos_oem"] if c["confianca"] == "baixa"]
         if e["gtin"] and not e["gtin"]["valido"]:
             pend.append("GTIN com dígito verificador inválido")
+        pend += confere_anos(e["aplicacao"]["anos_informados"], (eventos_por_sku or {}).get(e["sku"]))
         if not e["nao_se_aplica"]:
             pend.append("sem bloco NÃO SE APLICA")
         pend.append("taxonomia não atribuída (precisa de classificação aprovada)")
