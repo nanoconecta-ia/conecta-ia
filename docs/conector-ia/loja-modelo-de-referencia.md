@@ -26,3 +26,27 @@ Uso: **só a estrutura e a organização**. Nada de texto, imagem, preço ou dad
 
 ## Padrão de título sugerido (campos reais do cadastro)
 `[Peça] [Veículo] [Motor] [Versão/sigla] [Período com fonte] [Complemento] [Marca] [Código]` — só com campos que tenham dado confirmado; o que faltar é omitido, nunca completado.
+
+---
+
+# Exemplo 2 — agregador de catálogos genuínos (EPC), página "Hyundai Parts Catalog R/V"
+
+Fonte: texto da página colado pelo dono em 2026-10-19. Só estrutura; os dados do catálogo são de terceiros e licenciados, **não entram** no Conecta.IA sem licença (`fontes.licenciada`).
+
+## O que a página mostra e o que adotamos
+| Observação | Adoção no Conecta.IA |
+|---|---|
+| Catálogo com **código de edição** (`HYUNDAI202404`) | Toda consulta a catálogo de montadora grava a **edição** em `fontes.versao`. Catálogo muda; a fonte precisa dizer de qual edição veio. |
+| A mesma linha de modelo aparece **por mercado**: `DOM` (Coreia), `GEN` (exportação geral), `EUR`, `HMA` (EUA), `HAC` (Canadá), `MES`, `CIS`, `AUS`, `HMI` (Índia) | **Mercado é dimensão obrigatória** da aplicação (`versoes.mercado`). Uma linha de catálogo de outro mercado **não vale** para o Brasil sem evidência de qual código de mercado o Brasil segue. Para registrar o código do catálogo: `identificadores_oficiais` com `orgao='montadora'`, `tipo='regiao_catalogo'`, `valor`, fonte e edição. |
+| Linhas com **período de produção por mercado** e **planta** no nome (ex.: "CRETA 17 (BRAZIL PLANT)") | Confirma que planta e mercado mudam o período e a peça. Entra como evento por versão (`eventos_veiculo`) com fonte. A planta fica no nome/descrição da geração até ser preciso um campo próprio (**proposta, não aplicada**). |
+| O mesmo veículo com **nomes diferentes** em mercados diferentes (ex.: "H-100", "Porter", "HR") | `relacoes_tecnicas` tipo `mesmo_veiculo_outro_nome`, **somente com fonte**. Não afirmo que HR = H-100 sem catálogo que prove. |
+| A lista **não traz o HR nem o Bongo/K2500** | Esse catálogo é de outra família de veículos; utilitários comerciais provavelmente estão em outro catálogo, e o Kia é outra marca. Fica como lacuna a pesquisar. |
+| Seletor de **marca**, depois catálogo, depois lista filtrável (total: N especificações) | Mesmo fluxo do filtro da loja: montadora ▸ modelo ▸ mercado/ano ▸ versão. |
+| Área da conta com **Garagem** (veículos salvos), Pedidos, Favoritos | **"Minha garagem"** na loja: o cliente salva o veículo uma vez e a busca já filtra por ele. Resolve parte da busca por placa **sem serviço de terceiros**. |
+| Páginas: Sobre, Contato, FAQ, Políticas, Termos, Notícias, Artigos | Mesma lista institucional da loja (já prevista), com FAQ e artigos para SEO. |
+| Rodapé com razão social do operador | Razão social e CNPJ da loja no rodapé. |
+
+## Consequências práticas para o agente
+1. Ao usar qualquer catálogo (EPC), registrar: edição, mercado (código do catálogo), período e, se houver, planta.
+2. Nunca copiar linha de catálogo de EUR/HMA/etc. para um veículo vendido no Brasil.
+3. O "mesmo nome de modelo" em mercados diferentes pode ter motor, norma de emissões e peças diferentes: a aplicação é sempre por **versão + mercado**.
