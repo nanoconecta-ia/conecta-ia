@@ -595,6 +595,7 @@ return { chamarClaude: chamarClaude, chamarGemini: chamarGemini, chamarOpenAI: c
 // ---------- supabase/functions/_shared/ia/claude.ts ----------
 const __m5 = (() => {
 const { ADAPTADORES: ADAPTADORES } = __m6;
+const { IaErro: IaErro } = __m7;
 
 const VERSAO_API = "2023-06-01";
 async function conversar(o) {
@@ -607,7 +608,8 @@ async function conversar(o) {
     let tokens = 0;
     const usadas = [];
     for(let passo = 1; passo <= maxPassos; passo++){
-        const r = await adaptador({
+        if (o.sinal?.aborted) throw new IaErro(499, "cancelado");
+        const chamada = {
             chave: o.chave,
             modelo: o.modelo,
             sistema: o.sistema,
@@ -615,7 +617,11 @@ async function conversar(o) {
             maxTokens: o.maxTokens ?? 1024,
             baseUrl: o.baseUrl,
             fetch: o.fetch
-        }, msgs);
+        };
+        const r = o.adaptadorStream && o.aoTexto ? await o.adaptadorStream(chamada, msgs, o.aoTexto, o.sinal) : await adaptador(chamada, msgs);
+        if (!(o.adaptadorStream && o.aoTexto)) {
+            for (const b of r.blocos)if (b.type === "text" && b.text) o.aoTexto?.(b.text);
+        }
         tokens += r.tokens;
         o.onPasso?.({
             tokens: r.tokens,
