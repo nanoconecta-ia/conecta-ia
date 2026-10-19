@@ -12,6 +12,10 @@ export interface ConectorPesquisa {
   acesso: AcessoConector;
   /** O dono/contrato autorizou este conector (termos da fonte, chave de API). Sem isso ele não é chamado. */
   autorizado: boolean;
+  /** Custo estimado por chamada em USD (0 = gratuito). Entra no orçamento da loja antes da chamada. */
+  custo_usd?: number;
+  /** Intervalo mínimo entre chamadas a esta fonte, em ms (limite de requisições da fonte). */
+  intervalo_min_ms?: number;
   buscar(consulta: Consulta, sinal?: AbortSignal): Promise<ResultadoBruto[]>;
 }
 export interface RelatorioConectores { evidencias: Evidencia[]; ignorados: { id: string; motivo: string }[]; falhas: { id: string; erro: string }[]; tentados: number }

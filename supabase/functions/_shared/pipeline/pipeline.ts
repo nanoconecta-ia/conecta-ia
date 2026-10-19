@@ -6,6 +6,7 @@ import { compararEvidencias, type Conflito, type Evidencia } from "./comparacao.
 import { aplicacoesDeExtracao, consultarConectores, type ConectorPesquisa } from "./conectores.ts";
 import { montarCadastro, type Cadastro, type EntradaBling } from "./cadastro.ts";
 import { confereAnos, type EventoBrasil } from "./periodos.ts";
+import { classeDaPeca, montadorasCitadas } from "./identificacao.ts";
 
 export type Rpc = (fn: string, args: Record<string, unknown>) => Promise<{ data: any; error: { message: string } | null }>;
 export type EstadoPipeline = "entrada" | "normalizado" | "identificado" | "pesquisado" | "comparado" | "conflito" | "validado" | "enriquecido" | "aguardando_aprovacao" | "aprovado" | "sincronizando" | "sincronizado" | "rejeitado" | "falhou";
@@ -51,19 +52,7 @@ export interface DepsPipeline {
   confirmarSincronizacao?(propostaId: string): Promise<{ confirmado: boolean; evidencia: unknown }>;
 }
 
-const MONTADORAS = ["Hyundai", "Kia", "Toyota", "Mitsubishi", "Nissan", "Ford", "Fiat", "Volkswagen", "Chevrolet", "Mercedes-Benz"];
-const semAcento = (s: string) => s.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
-
-function classeDaPeca(marca: string | null, texto: string, homologados: Record<string, string>) {
-  const m = semAcento(marca ?? "").replace(/^marca\s*:\s*/, "");
-  if (!m) return { classe: "a_confirmar", evidencia: null, pendencia: "marca ausente" };
-  const declara = ["genuina", "genuino", "original hyundai", "original kia"].some((p) => semAcento(texto).includes(p));
-  if (["hyundai", "kia", "mobis", "hyundai mobis"].includes(m) && declara) return { classe: "genuina", evidencia: `marca '${marca}' e o texto declara peça genuína`, pendencia: "confirmar no catálogo da montadora" };
-  if (homologados[m]) return { classe: "oem", evidencia: homologados[m], pendencia: null };
-  return { classe: "a_confirmar", evidencia: null, pendencia: `marca '${marca}' sem fonte que a classifique (OEM ou reposição)` };
-}
-
-function evidenciaDoCadastro(sku: string, ext: Extracao, bling: EntradaBling | undefined, agora: string): Evidencia {
+export function evidenciaDoCadastro(sku: string, ext: Extracao, bling: EntradaBling | undefined, agora: string): Evidencia {
   const ap = aplicacoesDeExtracao(ext);
   return {
     fonte: `bling:${sku}`, tipo_fonte: "bling", consultado_em: agora,
@@ -86,7 +75,7 @@ export async function executarPasso(porta: PortaPipeline, deps: DepsPipeline, it
       const ext: Extracao = r.extracao;
       const homologados = deps.homologados ?? {};
       const classe = classeDaPeca(ext.marca_fabricante, ext.texto_fonte, homologados);
-      const montadoras = MONTADORAS.filter((m) => new RegExp(`(?<![A-Za-z])${m}(?![A-Za-z])`, "i").test(ext.texto_fonte));
+      const montadoras = montadorasCitadas(ext.texto_fonte);
       const ident = {
         sku, marca_da_peca: ext.marca_fabricante, montadoras_citadas: montadoras, classe_peca: classe,
         gtin_valido: ext.gtin ? ext.gtin.valido : null, codigos_oem: ext.codigos_oem,
