@@ -69,7 +69,7 @@ create table public.pipeline_conflitos (
   id uuid primary key default gen_random_uuid(),
   item_id uuid not null,
   loja_id uuid not null,
-  tipo text not null check (tipo in ('aplicacao', 'oem', 'bling_vs_enriquecimento')),
+  tipo text not null check (tipo in ('aplicacao', 'oem', 'gtin', 'medidas', 'bling_vs_enriquecimento')),
   campo text not null,
   lado_a jsonb not null,                              -- {valor, fonte}
   lado_b jsonb not null,
@@ -191,6 +191,11 @@ begin
   return jsonb_build_object('estado', v.estado, 'tentativas', v.tentativas, 'proxima_tentativa', v.proxima_tentativa);
 end $$;
 
+create function public.pipeline_obter(p_loja uuid, p_item uuid) returns jsonb language sql stable security definer set search_path = '' as $$
+  select to_jsonb(i) || jsonb_build_object('conflitos_abertos', (select count(*) from public.pipeline_conflitos c where c.item_id = i.id and not c.resolvido))
+  from public.pipeline_itens i where i.id = p_item and i.loja_id = p_loja
+$$;
+
 alter table public.pipeline_transicoes enable row level security;
 alter table public.pipeline_itens enable row level security;
 alter table public.pipeline_historico enable row level security;
@@ -203,7 +208,7 @@ create policy pipeline_historico_ver on public.pipeline_historico for select to 
 create policy pipeline_conflitos_ver on public.pipeline_conflitos for select to authenticated using (private.pode_ver_loja(loja_id));
 revoke all on function public.pipeline_criar(uuid, text, uuid, jsonb, text), public.pipeline_avancar(uuid, uuid, text, int, text, uuid, text, jsonb, jsonb, uuid),
   public.pipeline_registrar_conflito(uuid, uuid, text, text, jsonb, jsonb), public.pipeline_resolver_conflito(uuid, uuid, uuid, text),
-  public.pipeline_reservar(uuid, int, int, int), public.pipeline_falhar(uuid, uuid, text, int), private.pipeline_e_lojista(uuid, uuid) from public, anon, authenticated;
+  public.pipeline_reservar(uuid, int, int, int), public.pipeline_falhar(uuid, uuid, text, int), public.pipeline_obter(uuid, uuid), private.pipeline_e_lojista(uuid, uuid) from public, anon, authenticated;
 grant execute on function public.pipeline_criar(uuid, text, uuid, jsonb, text), public.pipeline_avancar(uuid, uuid, text, int, text, uuid, text, jsonb, jsonb, uuid),
   public.pipeline_registrar_conflito(uuid, uuid, text, text, jsonb, jsonb), public.pipeline_resolver_conflito(uuid, uuid, uuid, text),
-  public.pipeline_reservar(uuid, int, int, int), public.pipeline_falhar(uuid, uuid, text, int) to service_role;
+  public.pipeline_reservar(uuid, int, int, int), public.pipeline_falhar(uuid, uuid, text, int), public.pipeline_obter(uuid, uuid) to service_role;
