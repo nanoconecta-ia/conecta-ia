@@ -34,6 +34,14 @@ import { Aprovacoes } from "./paginas/Aprovacoes.tsx";
 import { Dispositivos } from "./paginas/Dispositivos.tsx";
 import { MeuAgente } from "./paginas/MeuAgente.tsx";
 import { Backup } from "./paginas/Backup.tsx";
+import { agruparMenu } from "./lib/navegacao.ts";
+import { PaletaComandos } from "./componentes/PaletaComandos.tsx";
+import { BarraStatus } from "./componentes/BarraStatus.tsx";
+import { Icone } from "./componentes/Icone.tsx";
+import { LogoConecta } from "./componentes/LogoConecta.tsx";
+import { SeletorTema } from "./componentes/SeletorTema.tsx";
+import { DockAgente } from "./componentes/DockAgente.tsx";
+import "./shell.css";
 
 // Em domínio de cliente (fora do GitHub Pages/localhost) a raiz é a loja daquele domínio, resolvida pelo servidor.
 const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
@@ -75,6 +83,21 @@ export function App() {
     try { const r = sessionStorage.getItem("conecta:retorno"); if (r && /^#\/(?:parear|autorizar-agente)(?:\?|$)/.test(r)) { sessionStorage.removeItem("conecta:retorno"); window.location.hash = r; } } catch { /* sem storage */ }
   }, [sessao]);
 
+  const [paleta, setPaleta] = useState(false);
+  const [recolhido, setRecolhido] = useState(() => { try { return localStorage.getItem("conecta:menu") === "recolhido"; } catch { return false; } });
+  const alternarMenu = () => setRecolhido((r) => { try { localStorage.setItem("conecta:menu", r ? "aberto" : "recolhido"); } catch { /* sem storage */ } return !r; });
+  const [agente, setAgente] = useState(false);
+  useEffect(() => { // Ctrl/⌘+K abre a paleta de comandos; Ctrl/⌘+J abre o agente lateral, em qualquer tela do painel
+    const h = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === "k") { e.preventDefault(); setPaleta((p) => !p); }
+      else if (k === "j") { e.preventDefault(); setAgente((a) => !a); }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, []);
+
   const lojaSlug = caminho.match(/^\/loja\/([a-z0-9-]{2,63})$/);
   if (lojaSlug) return <Loja slug={lojaSlug[1]} />;
   if (hostCliente && !caminho.startsWith("/p/")) return <Loja host={hostCliente} />;
@@ -92,19 +115,31 @@ export function App() {
   const loja = demoAtivo ? demo?.lojaDemo ?? null : lojas?.[0] ?? null;
   const bloqueada = !CONECTOR_ATIVO && (ROTAS_DO_CONECTOR.includes(caminho) || /^\/indicadores\//.test(caminho) || caminho === "/agentes"); // backend ainda não publicado
   const larga = caminho === "/conector" && !bloqueada;
+  const paginaDeChat = caminho === "/assistente" || (caminho === "/conector" && !bloqueada); // já são o próprio chat: sem painel duplicado
+  const dockAberto = agente && !!loja && !demoAtivo && !paginaDeChat;
   const filtroInd = caminho.match(/^\/indicadores\/([a-z_:]+)$/);
   return (
     <>
       {demo && <div className="faixa-demo" role="status">{demo.FAIXA}</div>}
       <header className="topo">
-        <div className="marca"><i>C</i><div>Conecta.IA<small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
+        <div className="marca"><LogoConecta tamanho={34} /><div>Conecta.IA<small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
+        <button className="busca-topo" onClick={() => setPaleta(true)} aria-label="Abrir paleta de comandos"><Icone nome="busca" tamanho={16} /><span>Buscar tela…</span><kbd>Ctrl K</kbd></button>
+        {!!loja && !demoAtivo && !paginaDeChat && <button className="sec agente-botao" onClick={() => setAgente((a) => !a)} aria-pressed={agente} aria-label="Agente lateral (Ctrl J)"><Icone nome="agentes" tamanho={16} /><span>Agente</span></button>}
+        <SeletorTema />
         <button className="sec" onClick={() => void supabase.auth.signOut()} disabled={demoAtivo}>Sair</button>
       </header>
-      <div className={`layout ${larga ? "layout--larga" : ""}`}>
+      <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
+      <div className={`layout ${larga ? "layout--larga" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""}`}>
       <nav className="menu" aria-label="Menu principal">
-        {MENU.map(([c, t]) => (
-          <a key={c} href={`#${c}`} className={caminho === c ? "ativo" : ""} aria-current={caminho === c ? "page" : undefined}>{t}</a>
+        {agruparMenu(MENU).map((g) => (
+          <div key={g.id} className="menu-grupo" role="group" aria-label={g.titulo}>
+            <span className="menu-titulo"><Icone nome={g.id} tamanho={16} /><b>{g.titulo}</b></span>
+            {g.itens.map(([c, t]) => (
+              <a key={c} href={`#${c}`} title={t} className={caminho === c ? "ativo" : ""} aria-current={caminho === c ? "page" : undefined}><span>{t}</span></a>
+            ))}
+          </div>
         ))}
+        <button className="sec menu-recolher" onClick={alternarMenu} aria-pressed={recolhido} aria-label={recolhido ? "Expandir menu" : "Recolher menu"}><Icone nome="recolher" tamanho={16} /></button>
       </nav>
       <main>
         {!demoAtivo && lojas === null ? <p className="suave">Carregando…</p> : !loja ? (
@@ -135,6 +170,8 @@ export function App() {
           : <VisaoGeral loja={loja} />}
       </main>
       </div>
+      {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} />}
+      <BarraStatus loja={loja ? loja.nome : null} tela={MENU.find((i) => i[0] === caminho)?.[1] ?? "Visão geral"} demo={demoAtivo} />
     </>
   );
 }

@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
+import { IconePeca } from "../componentes/IconePeca.tsx";
+import { iconeDaCategoria } from "../lib/icones.ts";
+import { vistaDaArea } from "../lib/vistas.ts";
+import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
 
 type Produto = { nome: string; sku: string; preco: number | null; em_estoque: boolean | null; marca: string | null; descricao: string | null; imagem: string | null; whatsapp: string | null; atualizado_em: string | null };
 type Veiculo = { modelo: string; motor: string | null; de: number | null; ate: number | null };
@@ -19,6 +23,7 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
   // as opções da busca por veículo vêm da 1ª resposta sem filtro, para a cascata não encolher ao escolher
   const [opcoes, setOpcoes] = useState<Veiculo[]>([]);
   const [categorias, setCategorias] = useState<Resposta["categorias"]>([]);
+  const [area, setArea] = useState(""); // área escolhida nos blocos: mantém a vista explodida aberta enquanto o cliente escolhe a peça
 
   useEffect(() => {
     let vivo = true;
@@ -84,6 +89,7 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
       </header>
 
       <section className="v-hero">
+        <span className="v-hero-selo mono">catálogo técnico · aplicação comprovada</span>
         <h1>Encontre a peça correta</h1>
         <p>Busca técnica com aplicação comprovada e catálogo organizado.</p>
         <a className="botao verde" href="#catalogo" onClick={(e) => { e.preventDefault(); document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" }); }}>Explorar catálogo</a>
@@ -103,10 +109,23 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
       )}
 
       {categorias.length > 0 && (
-        <nav className="v-categorias" aria-label="Categorias">
-          <button className={!f.categoria ? "" : "sec"} onClick={() => mudar({ categoria: "" })}>Todas</button>
-          {categorias.map((c) => <button key={c.slug} className={f.categoria === c.slug ? "" : "sec"} onClick={() => mudar({ categoria: c.slug })}>{c.nome} ({c.total})</button>)}
+        <nav className="v-tiles" aria-label="Categorias">
+          <button className={`v-tile ${!f.categoria ? "ativo" : ""}`} aria-pressed={!f.categoria} onClick={() => { setArea(""); mudar({ categoria: "" }); }}>
+            <IconePeca nome="todas" tamanho={52} /><span>Todas</span>
+          </button>
+          {categorias.map((c) => (
+            <button key={c.slug} className={`v-tile ${f.categoria === c.slug ? "ativo" : ""}`} aria-pressed={f.categoria === c.slug} onClick={() => { setArea(c.slug); mudar({ categoria: c.slug }); }}>
+              <IconePeca nome={iconeDaCategoria(c.slug, c.nome)} tamanho={52} /><span>{c.nome}</span><small className="mono">{c.total}</small>
+            </button>
+          ))}
         </nav>
+      )}
+
+      {vistaDaArea(area) && (
+        <section className="v-cartao v-vista" aria-label="Vista explodida da categoria">
+          <h2 className="v-caixa">Escolha a peça</h2>
+          <VistaExplodida vista={vistaDaArea(area)!} ativo={f.categoria} aoEscolher={(slug) => { mudar({ categoria: slug }); document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" }); }} />
+        </section>
       )}
 
       <section id="catalogo" aria-live="polite">
