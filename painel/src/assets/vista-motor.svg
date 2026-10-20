@@ -1,0 +1,30 @@
+<svg preserveAspectRatio="xMidYMid meet" viewBox="0 0 760 720" role="img" aria-label="Motor em vista explodida com cinco peças numeradas: juntas, cabeçote, pistões, bloco e cárter">
+<ellipse cx="370" cy="700" rx="160" ry="12" fill="#000" opacity=".35"/>
+<g stroke="#8095A7" stroke-width="1.2" stroke-dasharray="2 6" opacity=".7"><path d="M240 77V165M410 162V250M500 117V205M240 201V375M410 286V460M500 241V415M240 455V575M410 540V660M500 495V615"/></g>
+<!-- cárter -->
+<path d="M330 530L500 615L410 660L240 575Z" fill="url(#gT)"/><path d="M240 575L410 660V686L240 601Z" fill="url(#gL)"/><path d="M410 660L500 615V641L410 686Z" fill="url(#gR)"/>
+<path d="M330 546L470 616L410 646L270 576Z" fill="#000" opacity=".16"/><circle cx="368" cy="594" r="5" fill="#2B343C"/>
+<!-- bloco -->
+<path d="M330 330L500 415L410 460L240 375Z" fill="url(#gT)"/><path d="M240 375L410 460V540L240 455Z" fill="url(#gL)"/><path d="M410 460L500 415V495L410 540Z" fill="url(#gR)"/>
+<path d="M250 392L400 467M250 410L400 485M250 428L400 503" stroke="#000" stroke-opacity=".25" stroke-width="2"/>
+<ellipse cx="306" cy="363" rx="21" ry="10.5" fill="url(#bore)"/><ellipse cx="349" cy="384" rx="21" ry="10.5" fill="url(#bore)"/><ellipse cx="391" cy="406" rx="21" ry="10.5" fill="url(#bore)"/><ellipse cx="434" cy="427" rx="21" ry="10.5" fill="url(#bore)"/>
+<!-- pistões -->
+<g stroke="#2B343C" stroke-width="1">
+<path d="M292 325V345a14 7 0 0 0 28 0V325z" fill="url(#cil)"/><ellipse cx="306" cy="325" rx="14" ry="7" fill="url(#gT)"/><path d="M292 333a14 7 0 0 0 28 0M292 338a14 7 0 0 0 28 0" fill="none"/>
+<path d="M335 346V366a14 7 0 0 0 28 0V346z" fill="url(#cil)"/><ellipse cx="349" cy="346" rx="14" ry="7" fill="url(#gT)"/><path d="M335 354a14 7 0 0 0 28 0M335 359a14 7 0 0 0 28 0" fill="none"/>
+<path d="M377 368V388a14 7 0 0 0 28 0V368z" fill="url(#cil)"/><ellipse cx="391" cy="368" rx="14" ry="7" fill="url(#gT)"/><path d="M377 376a14 7 0 0 0 28 0M377 381a14 7 0 0 0 28 0" fill="none"/>
+<path d="M420 389V409a14 7 0 0 0 28 0V389z" fill="url(#cil)"/><ellipse cx="434" cy="389" rx="14" ry="7" fill="url(#gT)"/><path d="M420 397a14 7 0 0 0 28 0M420 402a14 7 0 0 0 28 0" fill="none"/>
+</g>
+<!-- cabeçote -->
+<path d="M330 120L500 205L410 250L240 165Z" fill="url(#gT)"/><path d="M240 165L410 250V286L240 201Z" fill="url(#gL)"/><path d="M410 250L500 205V241L410 286Z" fill="url(#gR)"/>
+<ellipse cx="306" cy="153" rx="8" ry="4" fill="#20272D"/><ellipse cx="349" cy="174" rx="8" ry="4" fill="#20272D"/><ellipse cx="391" cy="196" rx="8" ry="4" fill="#20272D"/><ellipse cx="434" cy="217" rx="8" ry="4" fill="#20272D"/>
+<path d="M250 212L400 287M250 226L400 301" stroke="#000" stroke-opacity=".25" stroke-width="2"/>
+<!-- tampa de válvulas -->
+<path d="M330 20L500 105L410 150L240 65Z" fill="url(#aT)"/><path d="M240 65L410 150V162L240 77Z" fill="url(#aL)"/><path d="M410 150L500 105V117L410 162Z" fill="url(#aR)"/>
+<path d="M303 33L473 118M267 51L437 136" stroke="#7A3316" stroke-opacity=".55" stroke-width="2"/><ellipse cx="368" cy="85" rx="16" ry="8" fill="#2B343C"/><ellipse cx="368" cy="84" rx="12" ry="6" fill="url(#gT)"/>
+<!-- chamadas -->
+<g stroke="currentColor" stroke-width="1"><path d="M500 111H560M500 223H560M448 399H560M500 455H560M500 628H560"/></g>
+<g fill="#E58A5E"><circle cx="572" cy="111" r="12"/><circle cx="572" cy="223" r="12"/><circle cx="572" cy="399" r="12"/><circle cx="572" cy="455" r="12"/><circle cx="572" cy="628" r="12"/></g>
+<g fill="#1B1916" font-family="JetBrains Mono, monospace" font-size="12" font-weight="500" text-anchor="middle"><text x="572" y="115.5">1</text><text x="572" y="227.5">2</text><text x="572" y="403.5">3</text><text x="572" y="459.5">4</text><text x="572" y="632.5">5</text></g>
+<g fill="currentColor" font-family="Inter, sans-serif" font-size="13.5" font-weight="500"><text x="590" y="116">Juntas e retentores</text><text x="590" y="228">Cabeçote e válvulas</text><text x="590" y="404">Pistões e anéis</text><text x="590" y="460">Motor completo</text><text x="590" y="633">Bomba de óleo</text></g>
+</svg>

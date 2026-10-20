@@ -12,10 +12,13 @@ export function Esfera({ estado = "ocioso", tamanho = 96, comRotulo = false }: {
   const ativo = e === "falando" ? true : ESTADO_ATIVO[e];
   return (
     <div className="esfera-bloco">
-      <div className="esfera" data-estado={e} data-ativo={ativo ? "true" : "false"} style={{ ["--d" as string]: `${tamanho}px` }} role="img" aria-label={`Conector IA: ${rotulo}`}>
-        <span className="nuvem" aria-hidden="true"><i /><i /><i /></span>
-        <span className="brilho" aria-hidden="true" />
-      </div>
+      <span className="esfera-caixa">
+        <div className="esfera" data-estado={e} data-ativo={ativo ? "true" : "false"} style={{ ["--d" as string]: `${tamanho}px` }} role="img" aria-label={`Conector IA: ${rotulo}`}>
+          <span className="nuvem" aria-hidden="true"><i /><i /><i /></span>
+          <span className="brilho" aria-hidden="true" />
+        </div>
+        <span className="orbita" aria-hidden="true"><b /><b /><b /></span>
+      </span>
       {comRotulo && <span className="esfera-rotulo">{rotulo}</span>}
     </div>
   );

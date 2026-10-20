@@ -4,6 +4,8 @@ import type { Loja } from "../lib/dados.ts";
 import { caminhoAte, contar, montarArvore, type No, type NoComTotais } from "../lib/arvore.ts";
 import { iconeDaCategoria } from "../lib/icones.ts";
 import { IconePeca } from "../componentes/IconePeca.tsx";
+import { vistaDaArea } from "../lib/vistas.ts";
+import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
 
 type Dados = { nos: No[]; produtos: Map<string, number>; bling: Map<string, number> };
 
@@ -61,7 +63,7 @@ export function Taxonomia({ loja }: { loja: Loja }) {
     <div className="janela" aria-label="Arquitetura espelhada">
       <div className="janela-barra">
         <span className="janela-pontos" aria-hidden="true"><i /><i /><i /></span>
-        <span className="janela-aba"><IconePeca nome="motor" tamanho={16} /> Espelho do ERP</span>
+        <span className="janela-aba"><IconePeca nome="motor" tamanho={18} /> Espelho do ERP</span>
         <code className="janela-endereco">conecta.ia/espelho/{loja.perfil_ramo}{trilha.map((t) => `/${t.slug}`).join("")}</code>
       </div>
       <div className="janela-corpo">
@@ -85,6 +87,9 @@ export function Taxonomia({ loja }: { loja: Loja }) {
                     <dt>Categorias do Bling ligadas</dt><dd>{atual.categoriasBling}</dd>
                     <dt>Subcategorias</dt><dd>{atual.filhos.length}</dd>
                   </dl>
+                  {vistaDaArea(trilha[0]?.slug) && (
+                    <VistaExplodida vista={vistaDaArea(trilha[0]?.slug)!} ativo={atual.slug} aoEscolher={(slug) => { const n = dados?.nos.find((x) => x.slug === slug); if (n) setSel(n.id); }} />
+                  )}
                   <p className="aviso-discreto">Só leitura. Quando falta um nó, o agente propõe um novo e você aprova na fila.</p>
                 </>
               ) : <p className="suave">Escolha uma área para ver as subcategorias e o que está ligado ao Bling.</p>}

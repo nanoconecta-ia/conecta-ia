@@ -1,4 +1,7 @@
-import { IconePeca } from "../componentes/IconePeca.tsx";
+import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
+import { TIPOS_VEICULO } from "../lib/icones.ts";
+import { VISTAS } from "../lib/vistas.ts";
+import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
 import { iconeDaCategoria } from "../lib/icones.ts";
 
 // DEMONSTRAÇÃO da loja pública com itens FICTÍCIOS (nenhum dado real da Mobis, nenhum preço real).
@@ -20,9 +23,17 @@ export function VitrineDemo() {
         <p>Itens fictícios para mostrar o visual da vitrine. Produto incompleto não é publicado.</p>
       </section>
       <nav className="v-tiles" aria-label="Categorias">
-        <button className="v-tile ativo" aria-pressed="true"><IconePeca nome="peca" tamanho={44} /><span>Todas</span></button>
-        {CATEGORIAS.map(([slug, nome]) => <button key={slug} className="v-tile" aria-pressed="false"><IconePeca nome={iconeDaCategoria(slug, nome)} tamanho={44} /><span>{nome}</span></button>)}
+        <button className="v-tile ativo" aria-pressed="true"><IconePeca nome="todas" tamanho={52} /><span>Todas</span></button>
+        {CATEGORIAS.map(([slug, nome]) => <button key={slug} className="v-tile" aria-pressed="false"><IconePeca nome={iconeDaCategoria(slug, nome)} tamanho={52} /><span>{nome}</span></button>)}
       </nav>
+      <section className="v-cartao" aria-label="Tipo de veículo">
+        <h2 className="v-caixa">Qual é o seu veículo?</h2>
+        <div className="v-tipos">{TIPOS_VEICULO.map((t, i) => <button key={t.chave} className={`v-tipo ${i === 3 ? "ativo" : ""}`} aria-pressed={i === 3}><IconeVeiculo tipo={t} largura={120} /><span>{t.rotulo}</span></button>)}</div>
+      </section>
+      <section className="v-cartao v-vista" aria-label="Vista explodida da categoria">
+        <h2 className="v-caixa">Escolha a peça</h2>
+        <VistaExplodida vista={VISTAS[0]} aoEscolher={() => undefined} />
+      </section>
       <div className="v-grade">{ITENS.map((i) => (
         <article key={i.sku} className="v-produto">
           <div className="v-foto">foto da peça</div>
