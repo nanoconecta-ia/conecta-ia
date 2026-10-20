@@ -71,7 +71,24 @@ export function montarVitrine(linhas: LinhaProduto[], whatsapp: string | null, u
   return out;
 }
 
-export interface Aplicacao { produto_id: string; modelo: string; motorizacao: string | null; ano_inicial: number | null; ano_final: number | null }
+export interface Aplicacao { produto_id: string; modelo: string; motorizacao: string | null; ano_inicial: number | null; ano_final: number | null; categoria?: string | null }
+
+/** Tipos de veículo da vitrine e as categorias de `modelos` que cada um cobre (utilitário=SUV, van=furgão). */
+export const TIPOS_VEICULO: Record<string, string[]> = {
+  passeio: ["passeio"], suv: ["suv", "utilitario"], furgao: ["furgao", "van"], picape: ["picape"], caminhao: ["caminhao"], moto: ["moto"],
+};
+export const tipoDaCategoria = (c: string | null | undefined): string | null => Object.entries(TIPOS_VEICULO).find(([, cs]) => cs.includes(c ?? ""))?.[0] ?? null;
+/** Quantos produtos publicados têm aplicação aprovada ligada a modelo de cada tipo. Sem ligação ao cadastro técnico, não classifica. */
+export function tiposDoVeiculo(apls: Aplicacao[]): { tipo: string; total: number }[] {
+  const por = new Map<string, Set<string>>();
+  for (const a of apls) { const t = tipoDaCategoria(a.categoria); if (t) por.set(t, (por.get(t) ?? new Set()).add(a.produto_id)); }
+  return Object.keys(TIPOS_VEICULO).filter((t) => por.has(t)).map((tipo) => ({ tipo, total: por.get(tipo)!.size }));
+}
+/** Ids de produto com aplicação aprovada em modelo do tipo escolhido (chave inválida => ninguém). */
+export function produtosDoTipo(apls: Aplicacao[], tipo: string): Set<string> {
+  const cats = Object.hasOwn(TIPOS_VEICULO, tipo) ? TIPOS_VEICULO[tipo] : [];
+  return new Set(apls.filter((a) => cats.includes(a.categoria ?? "")).map((a) => a.produto_id));
+}
 /** O ano cai no intervalo (aberto quando falta um dos lados)? Sem nenhum limite informado, NÃO confirma. */
 export function anoNoIntervalo(ano: number, ini: number | null, fim: number | null): boolean {
   if (ini == null && fim == null) return false;

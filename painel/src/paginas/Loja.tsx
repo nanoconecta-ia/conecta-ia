@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
-import { IconePeca } from "../componentes/IconePeca.tsx";
-import { iconeDaCategoria } from "../lib/icones.ts";
+import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
+import { iconeDaCategoria, TIPOS_VEICULO } from "../lib/icones.ts";
 import { vistaDaArea } from "../lib/vistas.ts";
 import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
 
 type Produto = { nome: string; sku: string; preco: number | null; em_estoque: boolean | null; marca: string | null; descricao: string | null; imagem: string | null; whatsapp: string | null; atualizado_em: string | null };
 type Veiculo = { modelo: string; motor: string | null; de: number | null; ate: number | null };
 type Tema = { variaveis: Record<string, string>; logo_url: string | null; icone_url: string | null };
-type Resposta = { loja: { nome: string; slug: string; modo_venda: string }; tema: Tema; produtos: Produto[]; total: number; pagina: number; por_pagina: number; veiculos: Veiculo[]; categorias: { nome: string; slug: string; total: number }[] };
-type Filtros = { q: string; modelo: string; motor: string; ano: string; categoria: string; pagina: number };
+type Resposta = { loja: { nome: string; slug: string; modo_venda: string }; tema: Tema; produtos: Produto[]; total: number; pagina: number; por_pagina: number; veiculos: Veiculo[]; tipos?: { tipo: string; total: number }[]; categorias: { nome: string; slug: string; total: number }[] };
+type Filtros = { q: string; modelo: string; motor: string; ano: string; categoria: string; tipo: string; pagina: number };
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const VAZIO: Filtros = { q: "", modelo: "", motor: "", ano: "", categoria: "", pagina: 1 };
+const VAZIO: Filtros = { q: "", modelo: "", motor: "", ano: "", categoria: "", tipo: "", pagina: 1 };
 
 /** Loja pública de um cliente: resolvida pelo servidor (nome na URL ou domínio do cliente). Só mostra produto publicado e dado real. */
 export function Loja({ slug, host }: { slug?: string; host?: string }) {
@@ -23,6 +23,7 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
   // as opções da busca por veículo vêm da 1ª resposta sem filtro, para a cascata não encolher ao escolher
   const [opcoes, setOpcoes] = useState<Veiculo[]>([]);
   const [categorias, setCategorias] = useState<Resposta["categorias"]>([]);
+  const [tipos, setTipos] = useState<{ tipo: string; total: number }[]>([]);
   const [area, setArea] = useState(""); // área escolhida nos blocos: mantém a vista explodida aberta enquanto o cliente escolhe a peça
 
   useEffect(() => {
@@ -30,7 +31,7 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
     setEstado("carregando");
     fetch(`${SUPABASE_URL}/functions/v1/loja-publica`, {
       method: "POST", headers: { "Content-Type": "application/json", apikey: SUPABASE_CHAVE_PUBLICAVEL },
-      body: JSON.stringify({ slug, host, q: f.q || undefined, modelo: f.modelo || undefined, motor: f.motor || undefined, ano: f.ano ? Number(f.ano) : undefined, categoria: f.categoria || undefined, pagina: f.pagina }),
+      body: JSON.stringify({ slug, host, q: f.q || undefined, modelo: f.modelo || undefined, motor: f.motor || undefined, ano: f.ano ? Number(f.ano) : undefined, categoria: f.categoria || undefined, tipo: f.tipo || undefined, pagina: f.pagina }),
     }).then(async (r) => {
       if (!vivo) return;
       if (r.status === 404) { setEstado("naoachada"); return; }
@@ -38,6 +39,7 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
       setDados(j); setEstado("ok");
       if (!f.modelo && !f.motor && !f.ano) setOpcoes(j.veiculos);
       if (!f.categoria) setCategorias(j.categorias);
+      if (!f.tipo) setTipos(j.tipos ?? []);
     }).catch(() => vivo && setEstado("erro"));
     return () => { vivo = false; };
   }, [slug, host, f]);
@@ -108,6 +110,18 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
         </section>
       )}
 
+      {tipos.length > 0 && (
+        <section className="v-cartao" aria-label="Tipo de veículo">
+          <h2 className="v-caixa">Qual é o seu veículo?</h2>
+          <div className="v-tipos">
+            {TIPOS_VEICULO.filter((t) => tipos.some((x) => x.tipo === t.chave)).map((t) => (
+              <button key={t.chave} className={`v-tipo ${f.tipo === t.chave ? "ativo" : ""}`} aria-pressed={f.tipo === t.chave} onClick={() => mudar({ tipo: f.tipo === t.chave ? "" : t.chave })}>
+                <IconeVeiculo tipo={t} largura={120} /><span>{t.rotulo}</span><small className="mono">{tipos.find((x) => x.tipo === t.chave)?.total}</small>
+              </button>))}
+          </div>
+        </section>
+      )}
+
       {categorias.length > 0 && (
         <nav className="v-tiles" aria-label="Categorias">
           <button className={`v-tile ${!f.categoria ? "ativo" : ""}`} aria-pressed={!f.categoria} onClick={() => { setArea(""); mudar({ categoria: "" }); }}>
@@ -132,8 +146,8 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
         {estado === "carregando" && !dados && <p className="suave">Carregando catálogo…</p>}
         {estado === "erro" && <div className="v-cartao"><p>Não foi possível carregar o catálogo agora. Tente de novo em instantes.</p></div>}
         {dados && dados.produtos.length === 0 && (
-          <div className="v-cartao"><h2>{f.q || f.modelo || f.categoria ? "Nenhuma peça encontrada" : "Catálogo em preparação"}</h2>
-            <p className="suave">{f.q || f.modelo || f.categoria ? "Tente outros termos ou limpe os filtros." : "Esta loja ainda não publicou produtos. Volte em breve."}</p></div>
+          <div className="v-cartao"><h2>{f.q || f.modelo || f.categoria || f.tipo ? "Nenhuma peça encontrada" : "Catálogo em preparação"}</h2>
+            <p className="suave">{f.q || f.modelo || f.categoria || f.tipo ? "Tente outros termos ou limpe os filtros." : "Esta loja ainda não publicou produtos. Volte em breve."}</p></div>
         )}
         <div className="v-grade">
           {dados?.produtos.map((p) => (
