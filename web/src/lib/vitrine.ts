@@ -48,3 +48,18 @@ export function linkWhatsapp(loja: LojaPublica, p: Produto, url: string) {
   const texto = `Olá! Tenho interesse em: ${p.nome ?? ""}\nReferência: ${p.sku ?? "—"}\nCódigo: ${p.bling_id}\n${url}`;
   return `https://wa.me/${loja.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`;
 }
+
+export type BannerOferta = { id: string; produto_id: string; sku: string; nome: string; preco: number | null; chamada: string | null; fim: string | null; flash: boolean };
+
+/** Banners de oferta no ar (loja_banners): só produto publicado e dentro do período. Falha na leitura não derruba a vitrine. */
+export async function bannersDaLoja(lojaId: string): Promise<BannerOferta[]> {
+  const { data, error } = await supabaseServico().rpc("banners_da_vitrine", { p_loja: lojaId });
+  return error || !Array.isArray(data) ? [] : (data as BannerOferta[]);
+}
+
+/** WhatsApp do banner: mesma mensagem do produto, mais a origem do clique (ref) para a loja saber que veio da oferta. */
+export function linkWhatsappBanner(loja: LojaPublica, b: BannerOferta, url: string) {
+  if (!loja.whatsapp) return null;
+  const texto = `Olá! Tenho interesse em: ${b.nome}\nReferência: ${b.sku}\n${url}\nref: ${b.flash ? "banner-flash" : "banner"}`;
+  return `https://wa.me/${loja.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`;
+}

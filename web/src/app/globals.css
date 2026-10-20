@@ -27,3 +27,16 @@
 
 html { background: var(--color-fundo); color: var(--color-texto); }
 body { font-family: var(--font-sans); min-height: 100dvh; }
+
+/* Banners de oferta da vitrine */
+.banner-oferta { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid var(--color-borda); border-radius: 8px; background: var(--color-card); overflow: hidden; }
+.banner-texto h2 { font-size: 1.15rem; font-weight: 700; }
+.banner-preco { font-family: var(--font-mono); font-weight: 700; font-size: 1.25rem; }
+.banner-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.banner-ver, .banner-wa { padding: 8px 14px; border-radius: 6px; font-weight: 600; text-decoration: none; min-height: 40px; display: inline-flex; align-items: center; }
+.banner-ver { background: var(--color-marca); color: var(--color-marca-texto); }
+.banner-wa { border: 1px solid var(--color-borda); color: var(--color-texto); }
+.banner-etiqueta { position: absolute; top: 0; left: 0; padding: 2px 10px; background: var(--color-erro); color: #fff; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.banner-flash { border-color: var(--color-erro); padding-top: 28px; animation: banner-pulso 1.6s ease-in-out infinite; }
+@keyframes banner-pulso { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 18px 2px color-mix(in oklch, var(--color-erro) 55%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .banner-flash { animation: none; } }

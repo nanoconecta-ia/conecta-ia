@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { CartaoProduto } from "@/components/CartaoProduto";
 import { Vazio } from "@/components/ui";
-import { catalogoPublico, lojaPorSlug } from "@/lib/vitrine";
+import { BannerOferta } from "@/components/BannerOferta";
+import { bannersDaLoja, catalogoPublico, lojaPorSlug } from "@/lib/vitrine";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -15,12 +16,13 @@ export default async function Vitrine({ params }: Props) {
   const { slug } = await params;
   const loja = await lojaPorSlug(slug);
   if (!loja) notFound();
-  const itens = await catalogoPublico(loja.id);
+  const [itens, banners] = await Promise.all([catalogoPublico(loja.id), bannersDaLoja(loja.id)]);
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
       <header className="mb-5 flex items-center justify-between border-b border-borda pb-3">
         <h1 className="text-xl font-semibold sm:text-2xl">{loja.nome}</h1>
       </header>
+      {banners.map((b) => <BannerOferta key={b.id} loja={loja} banner={b} />)}
       {itens.length === 0 ? (
         <Vazio titulo="Catálogo em preparação" />
       ) : (

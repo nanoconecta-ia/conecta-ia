@@ -1,6 +1,6 @@
 import { AutorizarAgente } from "./paginas/AutorizarAgente.tsx";
 import { useEffect, useState } from "react";
-import { BACKUP_ATIVO, CONECTOR_ATIVO, PAIR_ATIVO, ROTAS_DO_CONECTOR } from "./lib/flags.ts";
+import { BACKUP_ATIVO, BANNERS_ATIVO, CONECTOR_ATIVO, PAIR_ATIVO, ROTAS_DO_CONECTOR } from "./lib/flags.ts";
 import { montarMenu } from "./lib/visibilidade.ts";
 import { Assistente } from "./paginas/Assistente.tsx";
 import { useLojas, useSessao } from "./lib/dados.ts";
@@ -9,6 +9,7 @@ import { supabase } from "./supabase.ts";
 import { Entrar, Recuperar, Redefinir } from "./paginas/Acesso.tsx";
 import { EstudioAgente } from "./paginas/EstudioAgente.tsx";
 import { VisaoGeral } from "./paginas/VisaoGeral.tsx";
+import { Banners } from "./paginas/Banners.tsx";
 import { Catalogo } from "./paginas/Catalogo.tsx";
 import { Bling } from "./paginas/Bling.tsx";
 import { Contador } from "./paginas/Contador.tsx";
@@ -69,7 +70,8 @@ const ITENS: [string, string][] = [
   ["/contador", "Contador"],
 ];
 const MENU_BASE: [string, string][] = montarMenu(ITENS, ITENS_PAIR, { pairAtivo: PAIR_ATIVO, conectorAtivo: CONECTOR_ATIVO }, ROTAS_DO_CONECTOR);
-const MENU: [string, string][] = BACKUP_ATIVO ? MENU_BASE.flatMap((i) => (i[0] === "/bling" ? [i, ["/backup", "Backup do Bling"] as [string, string]] : [i])) : MENU_BASE;
+const MENU_BACKUP: [string, string][] = BACKUP_ATIVO ? MENU_BASE.flatMap((i) => (i[0] === "/bling" ? [i, ["/backup", "Backup do Bling"] as [string, string]] : [i])) : MENU_BASE;
+const MENU: [string, string][] = BANNERS_ATIVO ? MENU_BACKUP.flatMap((i) => (i[0] === "/aparencia" ? [i, ["/banners", "Banners de oferta"] as [string, string]] : [i])) : MENU_BACKUP;
 
 export function App() {
   const { sessao, recuperando, fimRecuperacao } = useSessao();
@@ -160,6 +162,7 @@ export function App() {
           : caminho === "/gateway" ? <GatewayMCP loja={loja} />
           : caminho === "/assistente" ? <Assistente key={loja.id} loja={loja} />
           : caminho === "/aparencia" ? <Aparencia loja={loja} />
+          : BANNERS_ATIVO && caminho === "/banners" ? <Banners loja={loja} />
           : caminho === "/condicoes" ? <Condicoes loja={loja} />
           : caminho === "/integracoes" ? <Integracoes loja={loja} />
           : caminho === "/imagens" ? <Imagens />

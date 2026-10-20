@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { anoNoIntervalo, linkWhatsapp, montarVitrine, normalizarHost, opcoesVeiculo, produtosDoVeiculo, SLUG_RE, textoSimples } from "./publica.ts";
+import { anoNoIntervalo, linkWhatsapp, mensagemWhatsapp, montarBanners, montarVitrine, normalizarHost, opcoesVeiculo, produtosDoVeiculo, SLUG_RE, textoSimples } from "./publica.ts";
 
 test("normalizarHost: minúsculas, sem porta nem ponto final; recusa lixo", () => {
   assert.equal(normalizarHost("WWW.MobisAutoParts.com.br:443"), "www.mobisautoparts.com.br");
@@ -56,4 +56,23 @@ test("produtosDoVeiculo: combina modelo, motor e ano; sem filtro devolve todos",
   assert.deepEqual([...produtosDoVeiculo(a, { modelo: "HR", ano: 2010 })], ["p2"]);
   assert.equal(produtosDoVeiculo(a, { modelo: "Hilux" }).size, 0);
   assert.equal(opcoesVeiculo([...a, a[0]]).length, 3);
+});
+
+test("mensagemWhatsapp: nome, código, link do produto e marca de origem opcionais", () => {
+  assert.equal(mensagemWhatsapp("Junta", "80692"), "Olá! Tenho interesse em Junta (cód. 80692).");
+  const m = mensagemWhatsapp("Motor", "CI1", { url: "https://loja.com.br/produto/CI1", origem: "banner-flash" });
+  assert.ok(m.includes("https://loja.com.br/produto/CI1") && m.endsWith("ref: banner-flash"));
+  assert.ok(!mensagemWhatsapp("x", "y", { origem: "Ruim Com Espaço!" }).includes("ref:"));
+});
+
+test("montarBanners: preço do espelho, flash só se marcado, sem nome/SKU não sai, link com origem", () => {
+  const b = montarBanners([
+    { sku: "CI1", nome: "Motor parcial", preco: "18900.000000", chamada: " Só hoje ", fim: "2026-10-30T00:00:00Z", flash: true },
+    { sku: "CI2", nome: "Filtro", preco: 20, chamada: null, fim: null, flash: false },
+    { sku: null, nome: "Sem SKU", preco: 1, chamada: null, fim: null, flash: false },
+  ], "11912345678", (sku) => `https://loja.com.br/produto/${sku}`);
+  assert.deepEqual(b.map((x) => x.sku), ["CI1", "CI2"]);
+  assert.equal(b[0].preco, 18900); assert.equal(b[0].chamada, "Só hoje"); assert.ok(b[0].flash && !b[1].flash);
+  assert.ok(decodeURIComponent(b[0].whatsapp!).includes("ref: banner-flash") && decodeURIComponent(b[1].whatsapp!).includes("ref: banner"));
+  assert.equal(montarBanners([{ sku: "A", nome: "B", preco: 1, chamada: null, fim: null, flash: false }], null, () => null)[0].whatsapp, null);
 });
