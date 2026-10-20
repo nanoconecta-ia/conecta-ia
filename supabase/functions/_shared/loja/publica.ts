@@ -111,3 +111,16 @@ export function opcoesVeiculo(apls: Aplicacao[]) {
     .filter((v, i, arr) => arr.findIndex((o) => o.modelo === v.modelo && o.motor === v.motor && o.de === v.de && o.ate === v.ate) === i)
     .slice(0, 500);
 }
+
+export interface FichaVeiculo { modelo: string; motor: string | null; de: number | null; ate: number | null; tipo: string | null }
+/** Aplicações APROVADAS de um produto, sem repetir, para a ficha automática. Tipo só quando ligado ao cadastro técnico. */
+export function veiculosDaFicha(apls: Aplicacao[], produtoId: string): FichaVeiculo[] {
+  const vistos = new Set<string>(); const out: FichaVeiculo[] = [];
+  for (const a of apls) {
+    if (a.produto_id !== produtoId) continue;
+    const chave = `${a.modelo}|${a.motorizacao}|${a.ano_inicial}|${a.ano_final}`;
+    if (vistos.has(chave)) continue; vistos.add(chave);
+    out.push({ modelo: a.modelo, motor: a.motorizacao, de: a.ano_inicial, ate: a.ano_final, tipo: tipoDaCategoria(a.categoria) });
+  }
+  return out.slice(0, 40);
+}

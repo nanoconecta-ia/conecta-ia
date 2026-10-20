@@ -184,3 +184,16 @@ button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(
 .grade-form label { display:grid; gap:4px; font-weight:500; min-width:0; }
 a.botao-link { display:inline-flex; align-items:center; padding:8px 14px; border:1px solid var(--borda); border-radius:var(--raio); color:var(--texto); text-decoration:none; font-weight:500; min-height:40px; }
 a.botao-link:hover { background:var(--realce); }
+
+/* Ficha automática do produto */
+.ficha { border: 1px solid var(--borda); border-radius: var(--raio); background: var(--cartao, #fff); overflow: hidden; margin-bottom: 16px; }
+.ficha-topo { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #0b0d10; color: #fff; }
+.ficha-marca { font-family: var(--fonte-display, inherit); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.ficha-codigo { display: grid; justify-items: end; } .ficha-codigo small { opacity: .7; letter-spacing: .12em; }
+.ficha-corpo { display: grid; gap: 16px; padding: 16px; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .ficha-corpo { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); } }
+.ficha-foto { display: grid; place-items: center; min-height: 180px; border: 1px solid var(--borda); border-radius: var(--raio); overflow: hidden; } .ficha-foto img { max-width: 100%; height: auto; }
+.ficha-texto h1 { margin: 0; font-size: 1.5rem; } .ficha-texto h2 { font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; margin: 14px 0 4px; }
+.ficha-veiculo { margin: 2px 0; color: #c8161d; font-weight: 700; font-size: 1.15rem; } .ficha-spec { margin: 2px 0; }
+.ficha-texto ul { margin: 0; padding-left: 18px; } .ficha-tipos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+a.ficha-wa { display: block; text-align: center; padding: 12px; background: #1f9d55; color: #fff; font-weight: 700; text-decoration: none; }

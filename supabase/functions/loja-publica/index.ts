@@ -4,7 +4,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.ts";
 import { urlProduto } from "../_shared/seo/url.ts";
-import { montarBanners, montarVitrine, normalizarHost, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
+import { montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -71,6 +71,14 @@ Deno.serve(async (req) => {
   }
   const { data: linhas, count } = await consulta;
 
+  // Ficha do produto (página do produto): pedido com { sku } devolve as aplicações aprovadas daquele produto publicado
+  const skuFicha = typeof c?.sku === "string" && c.sku.length <= 80 && !/[\u0000-\u001F\u007F]/.test(c.sku) ? c.sku : "";
+  let ficha: { veiculos: ReturnType<typeof veiculosDaFicha> } | null = null;
+  if (skuFicha) {
+    const { data: alvo } = await sb.from("produtos").select("id").eq("loja_id", loja.id).eq("publicado", true).eq("sku", skuFicha).maybeSingle();
+    if (alvo) ficha = { veiculos: veiculosDaFicha(apls, alvo.id as string) };
+  }
+
   // imagem principal aprovada de cada produto da página
   const skus = (linhas ?? []).map((l: { sku: string | null }) => l.sku).filter(Boolean) as string[];
   const imagens = new Map<string, string>();
@@ -90,5 +98,5 @@ Deno.serve(async (req) => {
   const fonteTema = (FONTES as readonly string[]).includes(tm?.fonte) ? (tm!.fonte as Fonte) : "inter";
   const cores = tm ? { primaria: tm.cor_primaria, destaque: tm.cor_destaque, bloco: tm.cor_bloco } : PERFIS.azul_conecta;
   const tema = { variaveis: variaveisCss(cores, fonteTema), logo_url: tm?.logo_url ?? null, icone_url: tm?.icone_url ?? null };
-  return json({ loja: { nome: loja.nome, slug: loja.slug, modo_venda: loja.modo_venda }, tema, produtos, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), categorias, filtros: filtros ?? null });
+  return json({ loja: { nome: loja.nome, slug: loja.slug, modo_venda: loja.modo_venda }, tema, produtos, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
 });

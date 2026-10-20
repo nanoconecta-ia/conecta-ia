@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { anoNoIntervalo, linkWhatsapp, mensagemWhatsapp, montarBanners, montarVitrine, produtosDoTipo, tiposDoVeiculo, tipoDaCategoria, normalizarHost, opcoesVeiculo, produtosDoVeiculo, SLUG_RE, textoSimples } from "./publica.ts";
+import { anoNoIntervalo, linkWhatsapp, mensagemWhatsapp, montarBanners, montarVitrine, produtosDoTipo, tiposDoVeiculo, veiculosDaFicha, tipoDaCategoria, normalizarHost, opcoesVeiculo, produtosDoVeiculo, SLUG_RE, textoSimples } from "./publica.ts";
 
 test("normalizarHost: minúsculas, sem porta nem ponto final; recusa lixo", () => {
   assert.equal(normalizarHost("WWW.MobisAutoParts.com.br:443"), "www.mobisautoparts.com.br");
@@ -88,4 +88,15 @@ test("tipo de veículo: utilitário=SUV, van=furgão; só aplicação ligada ao 
   assert.deepEqual([...produtosDoTipo(apls, "furgao")].sort(), ["a", "b"]);
   assert.equal(produtosDoTipo(apls, "constructor").size, 0); assert.equal(produtosDoTipo(apls, "moto").size, 0);
   assert.equal(tipoDaCategoria("utilitario"), "suv"); assert.equal(tipoDaCategoria("xyz"), null);
+});
+
+test("veiculosDaFicha: só o produto pedido, sem repetição, com tipo quando ligado ao cadastro", () => {
+  const apls: any[] = [
+    { produto_id: "a", modelo: "HR", motorizacao: "2.5", ano_inicial: 2010, ano_final: null, categoria: "van" },
+    { produto_id: "a", modelo: "HR", motorizacao: "2.5", ano_inicial: 2010, ano_final: null, categoria: "van" },
+    { produto_id: "a", modelo: "Texto", motorizacao: null, ano_inicial: null, ano_final: null, categoria: null },
+    { produto_id: "b", modelo: "Outro", motorizacao: null, ano_inicial: null, ano_final: null, categoria: "moto" },
+  ];
+  assert.deepEqual(veiculosDaFicha(apls, "a"), [{ modelo: "HR", motor: "2.5", de: 2010, ate: null, tipo: "furgao" }, { modelo: "Texto", motor: null, de: null, ate: null, tipo: null }]);
+  assert.deepEqual(veiculosDaFicha(apls, "zzz"), []);
 });
