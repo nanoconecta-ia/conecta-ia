@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { proporAplicacao, proporCodigo, proporEnriquecimento, proporImagem } from "./escrita.ts";
+import { proporAplicacao, proporCodigo, proporBanner, proporEnriquecimento, proporImagem } from "./escrita.ts";
 
 function admin(produtoId: string | null, falhaRpc = false) {
   const chamadas: { fn: string; args: unknown }[] = [];
@@ -46,4 +46,17 @@ test("proporImagem: exige https; aviso sobre direitos ainda não confirmados", a
 test("falha na gravação vira mensagem, não exceção", async () => {
   const r: any = await proporEnriquecimento(admin("p1", true), "L1", { sku: "80692", campo: "marca_peca", valor: "x", fonte: "f" });
   assert.ok(r.erro);
+});
+
+test("proporBanner: só rascunho, estilo e datas validados, produto da loja", async () => {
+  const a = admin("p1");
+  const r: any = await proporBanner(a, "L1", { sku: "CI003696", estilo: "flash", chamada: " Só hoje ", fim: "2026-11-01T00:00:00Z" });
+  assert.equal(r.ok, true); assert.equal(r.status, "rascunho");
+  const args: any = a.chamadas[0].args;
+  assert.equal(a.chamadas[0].fn, "banner_propor"); assert.equal(args.p_chamada, "Só hoje"); assert.equal(args.p_estilo, "flash"); assert.ok(!("p_ativo" in args));
+  assert.ok((await proporBanner(a, "L1", { sku: "x", estilo: "piscante" }) as any).erro.includes("Estilo"));
+  assert.ok((await proporBanner(a, "L1", { sku: "x", inicio: "ontem" }) as any).erro.includes("Data"));
+  assert.ok((await proporBanner(a, "L1", { sku: "x", inicio: "2026-11-02T00:00:00Z", fim: "2026-11-01T00:00:00Z" }) as any).erro.includes("fim"));
+  assert.ok((await proporBanner(admin(null), "L1", { sku: "x" }) as any).erro.includes("não encontrado"));
+  assert.ok((await proporBanner(admin("p1", true), "L1", { sku: "x" }) as any).erro);
 });

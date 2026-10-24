@@ -66,3 +66,21 @@ export async function proporImagem(admin: AdminRpc, lojaId: string, e: Record<st
   if (error) return { erro: "Não foi possível propor a imagem." };
   return { ok: true, status: "a_confirmar", aviso: "A imagem entrou pendente de aprovação na Fila; direitos de uso ainda não confirmados." };
 }
+
+export const ESTILOS_BANNER = ["auto", "padrao", "flash"] as const;
+const dataIso = (v: unknown) => { if (typeof v !== "string" || !v) return null; const d = new Date(v); return Number.isNaN(d.getTime()) ? undefined : d.toISOString(); };
+
+/** Propõe um banner de oferta para um produto: entra como RASCUNHO invisível. O lojista publica no painel; preço e nome vêm sempre do Bling. */
+export async function proporBanner(admin: AdminRpc, lojaId: string, e: Record<string, unknown>): Promise<unknown> {
+  const sku = txt(e.sku, 80), chamada = txt(e.chamada, 80), estilo = txt(e.estilo, 10) || "auto";
+  if (!sku) return { erro: "Informe o SKU do produto." };
+  if (!(ESTILOS_BANNER as readonly string[]).includes(estilo)) return { erro: `Estilo inválido. Use: ${ESTILOS_BANNER.join(", ")}.` };
+  const inicio = dataIso(e.inicio), fim = dataIso(e.fim);
+  if (inicio === undefined || fim === undefined) return { erro: "Data inválida. Use o formato ISO (2026-10-30T12:00:00Z)." };
+  if (inicio && fim && fim <= inicio) return { erro: "O fim precisa ser depois do início." };
+  const produtoId = await idDoSku(admin, lojaId, sku);
+  if (!produtoId) return { erro: "Produto não encontrado nesta loja." };
+  const { data, error } = await admin.rpc("banner_propor", { p_loja: lojaId, p_produto: produtoId, p_estilo: estilo, p_chamada: chamada || null, p_inicio: inicio, p_fim: fim });
+  if (error) return { erro: "Não foi possível registrar o rascunho (talvez haja rascunhos demais pendentes)." };
+  return { ok: true, banner_id: data, status: "rascunho", aviso: "Rascunho criado, invisível no site. O lojista publica na aba Banners; produto da área Motor sai como oferta relâmpago no modo automático." };
+}

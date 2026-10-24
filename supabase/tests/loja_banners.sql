@@ -43,6 +43,14 @@ update public.produtos set publicado=false where id='dddddddd-0000-0000-0000-000
 select public.afirma((select count(*) from jsonb_array_elements(public.banners_da_vitrine('aaaaaaaa-0000-0000-0000-000000000001'))) = 0, 'despublicar o produto tira o banner do ar');
 select public.afirma((select count(*) from jsonb_array_elements(public.banners_da_vitrine('bbbbbbbb-0000-0000-0000-000000000002'))) = 0, 'loja B não vê banner da loja A');
 
+-- agente propõe: sempre rascunho invisível, com limite de rascunhos
+select public.banner_propor('aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000002','flash','  Só hoje ', null, null) as id \gset
+select public.afirma((select not ativo and chamada = 'Só hoje' from public.loja_banners where id = :'id'), 'banner proposto nasce rascunho e com chamada aparada');
+select public.afirma((select count(*) from jsonb_array_elements(public.banners_da_vitrine('aaaaaaaa-0000-0000-0000-000000000001')) e where e->>'sku'='CI2') = 0, 'rascunho proposto não aparece na vitrine');
+do $$ begin begin perform public.banner_propor('aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000002','piscante',null,null,null); raise exception 'passou';
+  exception when sqlstate '22023' then null; end; end $$;
+select public.afirma(true, 'estilo inválido é recusado');
+
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"11111111-1111-1111-1111-111111111111"}',true);
 select public.afirma((select count(*) from public.loja_banners) > 0, 'lojista A vê os banners da própria loja');
@@ -52,4 +60,7 @@ select public.afirma(true, 'lojista A não grava banner na loja B');
 do $$ begin begin perform public.banners_da_vitrine('aaaaaaaa-0000-0000-0000-000000000001'); raise exception 'passou';
   exception when insufficient_privilege then null; end; end $$;
 select public.afirma(true, 'leitura pública só pela função de servidor');
+do $$ begin begin perform public.banner_propor('aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000002','auto',null,null,null); raise exception 'passou';
+  exception when insufficient_privilege then null; end; end $$;
+select public.afirma(true, 'só o servidor propõe banner');
 rollback;

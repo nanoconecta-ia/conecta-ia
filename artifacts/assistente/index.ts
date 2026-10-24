@@ -833,8 +833,55 @@ async function proporImagem(admin, lojaId, e) {
         aviso: "A imagem entrou pendente de aprovação na Fila; direitos de uso ainda não confirmados."
     };
 }
+const ESTILOS_BANNER = [
+    "auto",
+    "padrao",
+    "flash"
+];
+const dataIso = (v)=>{
+    if (typeof v !== "string" || !v) return null;
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+};
+async function proporBanner(admin, lojaId, e) {
+    const sku = txt(e.sku, 80), chamada = txt(e.chamada, 80), estilo = txt(e.estilo, 10) || "auto";
+    if (!sku) return {
+        erro: "Informe o SKU do produto."
+    };
+    if (!ESTILOS_BANNER.includes(estilo)) return {
+        erro: `Estilo inválido. Use: ${ESTILOS_BANNER.join(", ")}.`
+    };
+    const inicio = dataIso(e.inicio), fim = dataIso(e.fim);
+    if (inicio === undefined || fim === undefined) return {
+        erro: "Data inválida. Use o formato ISO (2026-10-30T12:00:00Z)."
+    };
+    if (inicio && fim && fim <= inicio) return {
+        erro: "O fim precisa ser depois do início."
+    };
+    const produtoId = await idDoSku(admin, lojaId, sku);
+    if (!produtoId) return {
+        erro: "Produto não encontrado nesta loja."
+    };
+    const { data, error } = await admin.rpc("banner_propor", {
+        p_loja: lojaId,
+        p_produto: produtoId,
+        p_estilo: estilo,
+        p_chamada: chamada || null,
+        p_inicio: inicio,
+        p_fim: fim
+    });
+    if (error) return {
+        erro: "Não foi possível registrar o rascunho (talvez haja rascunhos demais pendentes)."
+    };
+    return {
+        ok: true,
+        banner_id: data,
+        status: "rascunho",
+        aviso: "Rascunho criado, invisível no site. O lojista publica na aba Banners; produto da área Motor sai como oferta relâmpago no modo automático."
+    };
+}
 
-return { CAMPOS_ENRIQUECIMENTO: CAMPOS_ENRIQUECIMENTO, TIPOS_CODIGO: TIPOS_CODIGO, proporEnriquecimento: proporEnriquecimento, proporCodigo: proporCodigo, proporAplicacao: proporAplicacao, proporImagem: proporImagem };
+return { CAMPOS_ENRIQUECIMENTO: CAMPOS_ENRIQUECIMENTO, TIPOS_CODIGO: TIPOS_CODIGO, proporEnriquecimento: proporEnriquecimento, proporCodigo: proporCodigo, proporAplicacao: proporAplicacao, proporImagem: proporImagem, ESTILOS_BANNER: ESTILOS_BANNER, proporBanner: proporBanner };
 })();
 
 // ---------- supabase/functions/_shared/ia/google.ts ----------
