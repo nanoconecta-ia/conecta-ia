@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { anoNoIntervalo, linkWhatsapp, mensagemWhatsapp, montarBanners, montarVitrine, normalizarHost, opcoesVeiculo, produtosDoVeiculo, SLUG_RE, textoSimples } from "./publica.ts";
+import { anoNoIntervalo, linkWhatsapp, mensagemWhatsapp, montarBanners, montarVitrine, produtosDoTipo, tiposDoVeiculo, tipoDaCategoria, normalizarHost, opcoesVeiculo, produtosDoVeiculo, SLUG_RE, textoSimples } from "./publica.ts";
 
 test("normalizarHost: minúsculas, sem porta nem ponto final; recusa lixo", () => {
   assert.equal(normalizarHost("WWW.MobisAutoParts.com.br:443"), "www.mobisautoparts.com.br");
@@ -75,4 +75,17 @@ test("montarBanners: preço do espelho, flash só se marcado, sem nome/SKU não 
   assert.equal(b[0].preco, 18900); assert.equal(b[0].chamada, "Só hoje"); assert.ok(b[0].flash && !b[1].flash);
   assert.ok(decodeURIComponent(b[0].whatsapp!).includes("ref: banner-flash") && decodeURIComponent(b[1].whatsapp!).includes("ref: banner"));
   assert.equal(montarBanners([{ sku: "A", nome: "B", preco: 1, chamada: null, fim: null, flash: false }], null, () => null)[0].whatsapp, null);
+});
+
+test("tipo de veículo: utilitário=SUV, van=furgão; só aplicação ligada ao cadastro classifica", () => {
+  const apls: any[] = [
+    { produto_id: "a", modelo: "HR", motorizacao: null, ano_inicial: null, ano_final: null, categoria: "van" },
+    { produto_id: "b", modelo: "K2500", motorizacao: null, ano_inicial: null, ano_final: null, categoria: "picape" },
+    { produto_id: "b", modelo: "HR", motorizacao: null, ano_inicial: null, ano_final: null, categoria: "furgao" },
+    { produto_id: "c", modelo: "Texto livre", motorizacao: null, ano_inicial: null, ano_final: null, categoria: null },
+  ];
+  assert.deepEqual(tiposDoVeiculo(apls), [{ tipo: "furgao", total: 2 }, { tipo: "picape", total: 1 }]);
+  assert.deepEqual([...produtosDoTipo(apls, "furgao")].sort(), ["a", "b"]);
+  assert.equal(produtosDoTipo(apls, "constructor").size, 0); assert.equal(produtosDoTipo(apls, "moto").size, 0);
+  assert.equal(tipoDaCategoria("utilitario"), "suv"); assert.equal(tipoDaCategoria("xyz"), null);
 });
