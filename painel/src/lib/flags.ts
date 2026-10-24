@@ -11,3 +11,7 @@ export const ROTAS_DO_CONECTOR = ["/conector", "/central", "/indicadores", "/stu
 // Backup do cadastro do Bling (tabelas bling_snapshot_* e função bling-backup) ainda NÃO estão em produção.
 // Fica escondido até o build de um ambiente que já os tenha: VITE_BACKUP_ATIVO=1 npm run build.
 export const BACKUP_ATIVO: boolean = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_BACKUP_ATIVO === "1";
+
+// Banners de oferta (tabela loja_banners e função banners_da_vitrine) ainda NÃO estão em produção.
+// Fica escondido até o build de um ambiente que já os tenha: VITE_BANNERS_ATIVO=1 npm run build.
+export const BANNERS_ATIVO: boolean = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_BANNERS_ATIVO === "1";

@@ -27,15 +27,37 @@ export function textoSimples(s: string | null | undefined, max = 240): string | 
   return t ? t.slice(0, max) : null;
 }
 
-export function linkWhatsapp(numero: string | null | undefined, nome: string, sku: string): string | null {
+/** Mensagem pronta para o WhatsApp da loja: nome, código e, quando a loja tem domínio ativo, o link do produto. `origem` marca de onde veio o clique (ex.: banner). */
+export function mensagemWhatsapp(nome: string, sku: string, opcoes: { url?: string | null; origem?: string } = {}): string {
+  const linhas = [`Olá! Tenho interesse em ${nome} (cód. ${sku}).`];
+  if (opcoes.url) linhas.push(opcoes.url);
+  if (opcoes.origem && /^[a-z0-9-]{1,30}$/.test(opcoes.origem)) linhas.push(`ref: ${opcoes.origem}`);
+  return linhas.join("\n");
+}
+
+export function linkWhatsapp(numero: string | null | undefined, nome: string, sku: string, opcoes: { url?: string | null; origem?: string } = {}): string | null {
   let d = (numero ?? "").replace(/\D/g, "");
   if (d.length === 10 || d.length === 11) d = "55" + d; // DDD + número => acrescenta o país
   if (!/^55\d{10,11}$/.test(d)) return null;
-  return `https://wa.me/${d}?text=${encodeURIComponent(`Olá! Tenho interesse em ${nome} (cód. ${sku}).`)}`;
+  return `https://wa.me/${d}?text=${encodeURIComponent(mensagemWhatsapp(nome, sku, opcoes))}`;
+}
+
+export interface LinhaBanner { sku: string | null; nome: string | null; preco: number | string | null; chamada: string | null; fim: string | null; flash: boolean | null }
+export interface BannerVitrine { sku: string; nome: string; preco: number | null; chamada: string | null; fim: string | null; flash: boolean; whatsapp: string | null; url: string | null }
+/** Banners no ar para a vitrine. Preço é o do espelho do Bling (nunca digitado). Sem nome ou SKU o banner não sai. */
+export function montarBanners(linhas: LinhaBanner[], whatsapp: string | null, urlDoProduto: (sku: string) => string | null): BannerVitrine[] {
+  const out: BannerVitrine[] = [];
+  for (const l of linhas) {
+    if (!l.nome || !l.sku) continue;
+    const url = urlDoProduto(l.sku);
+    out.push({ sku: l.sku, nome: l.nome, preco: num(l.preco), chamada: l.chamada?.trim() || null, fim: l.fim, flash: l.flash === true, url,
+      whatsapp: linkWhatsapp(whatsapp, l.nome, l.sku, { url, origem: l.flash ? "banner-flash" : "banner" }) });
+  }
+  return out;
 }
 
 /** Linhas sem nome ou SKU não aparecem (produto incompleto não é publicado). */
-export function montarVitrine(linhas: LinhaProduto[], whatsapp: string | null): ProdutoVitrine[] {
+export function montarVitrine(linhas: LinhaProduto[], whatsapp: string | null, urlDoProduto: (sku: string) => string | null = () => null): ProdutoVitrine[] {
   const out: ProdutoVitrine[] = [];
   for (const l of linhas) {
     if (!l.nome || !l.sku) continue;
@@ -43,7 +65,7 @@ export function montarVitrine(linhas: LinhaProduto[], whatsapp: string | null): 
     out.push({
       nome: l.nome, sku: l.sku, preco: num(l.preco), em_estoque: est == null ? null : est > 0,
       marca: l.marca, descricao: textoSimples(l.descricao_curta), imagem: l.imagem ?? null,
-      whatsapp: linkWhatsapp(whatsapp, l.nome, l.sku), atualizado_em: l.sincronizado_em ?? l.atualizado_em ?? null,
+      whatsapp: linkWhatsapp(whatsapp, l.nome, l.sku, { url: urlDoProduto(l.sku) }), atualizado_em: l.sincronizado_em ?? l.atualizado_em ?? null,
     });
   }
   return out;
