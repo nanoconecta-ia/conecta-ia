@@ -198,3 +198,12 @@ a.botao-link:hover { background:var(--realce); }
 .ficha-veiculo { margin: 2px 0; color: #c8161d; font-weight: 700; font-size: 1.15rem; } .ficha-spec { margin: 2px 0; }
 .ficha-texto ul { margin: 0; padding-left: 18px; } .ficha-tipos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 a.ficha-wa { display: block; text-align: center; padding: 12px; background: #1f9d55; color: #fff; font-weight: 700; text-decoration: none; }
+
+/* Assistente como conversa: cabeçalho compacto, configurações recolhidas e compositor fixo no rodapé (acima da barra de status e da área segura) */
+.chat-tela { display: grid; gap: 10px; }
+.chat-tela .agente { gap: 10px; flex-wrap: nowrap; } .chat-tela .agente h1 { font-size: 1.1rem; }
+.chat-config, .chat-voz-aviso { border: 1px solid var(--borda); border-radius: var(--raio); padding: 4px 10px; }
+.chat-config summary, .chat-voz-aviso summary { cursor: pointer; font-weight: 600; min-height: 36px; display: flex; align-items: center; }
+.chat-config[open] { display: grid; gap: 10px; padding-bottom: 10px; }
+.chat-voz-aviso summary { font-weight: 500; font-size: .85rem; min-height: 32px; }
+.chat-compositor { position: sticky; bottom: calc(32px + env(safe-area-inset-bottom, 0px)); z-index: 2; display: grid; gap: 6px; padding: 8px 0 4px; background: var(--cartao, var(--fundo)); border-top: 1px solid var(--borda); }

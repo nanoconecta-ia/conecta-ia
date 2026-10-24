@@ -50,6 +50,15 @@ try {
   verifica(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'assistente no celular sem rolagem horizontal');
   const campo = p.getByLabel(/Pergunte/).first();
   verifica(await campo.count() > 0 && await campo.isVisible().catch(() => false), 'campo de mensagem visível no celular');
+  // interface em modo conversa: compositor visível sem rolar, esfera discreta, configurações recolhidas, consentimento nunca marcado sozinho
+  const dim = await p.evaluate(() => { const c = document.querySelector('.chat-compositor'); const e = document.querySelector('.esfera'); const cfg = document.querySelector('.chat-config'); const r = c?.getBoundingClientRect(); const barra = document.querySelector('.barra-status')?.getBoundingClientRect(); return { compositorBase: r ? Math.round(r.bottom) : null, barraTopo: barra ? Math.round(barra.top) : null, esfera: e ? Math.round(e.getBoundingClientRect().width) : null, configAberta: cfg ? cfg.hasAttribute('open') : null, consentimentoMarcado: [...document.querySelectorAll('.chat-compositor input[type=checkbox]')].some((i) => i.checked && /Enviar esta pergunta/.test(i.closest('label')?.textContent ?? '')) }; });
+  verifica(dim.compositorBase !== null && dim.compositorBase <= dim.barraTopo + 1, `compositor visível na primeira tela, acima da barra inferior (base ${dim.compositorBase}px, barra em ${dim.barraTopo}px)`);
+  verifica(dim.esfera !== null && dim.esfera <= 48, `esfera discreta no cabeçalho (${dim.esfera}px)`);
+  verifica(dim.configAberta === false, 'configurações e conversas recolhidas por padrão');
+  verifica(dim.consentimentoMarcado === false, 'consentimento de envio ao provedor nunca vem marcado');
+  await p.getByText('Configurações e conversas').click(); verifica(await p.getByLabel('Modelo de IA').isVisible(), 'seletor de modelo acessível ao abrir as configurações');
+  await p.getByText('Configurações e conversas').click();
+  await p.screenshot({ path: `${SAIDA}/assistente-conversa-celular.png` });
   // movimento visível de verdade: duas capturas da esfera com 2,5 s de intervalo precisam ser diferentes
   const caixaEsfera = p.locator('.esfera-caixa').first();
   const foto = async () => createHash('sha1').update(await caixaEsfera.screenshot()).digest('hex');
@@ -58,9 +67,16 @@ try {
   await caixaEsfera.screenshot({ path: `${SAIDA}/esfera-repouso-t2.png` });
   // a barra fixa de baixo não pode cobrir o fim do conteúdo quando a página rola até o fim
   await p.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-  const sobreposicao = await p.evaluate(() => { const barra = document.querySelector('.barra-status'); const ultimo = [...document.querySelectorAll('main *')].filter((e) => e.getBoundingClientRect().height > 0).map((e) => e.getBoundingClientRect().bottom).reduce((a, b) => Math.max(a, b), 0); return { barraTopo: barra ? Math.round(barra.getBoundingClientRect().top) : null, fimDoConteudo: Math.round(ultimo) }; });
-  verifica(sobreposicao.barraTopo === null || sobreposicao.fimDoConteudo <= sobreposicao.barraTopo + 1, `barra inferior não cobre o fim do conteúdo (barra em ${sobreposicao.barraTopo}px, conteúdo termina em ${sobreposicao.fimDoConteudo}px)`);
+  const sobreposicao = await p.evaluate(() => { const barra = document.querySelector('.barra-status'); const oculto = (e) => { const d = e.closest('details:not([open])'); return !!d && e !== d && !e.closest('summary'); }; const vis = [...document.querySelectorAll('main *')].filter((e) => e.getBoundingClientRect().height > 0 && !oculto(e)).map((e) => ({ e, b: e.getBoundingClientRect().bottom })).sort((x, y) => y.b - x.b)[0]; return { barraTopo: barra ? Math.round(barra.getBoundingClientRect().top) : null, fimDoConteudo: Math.round(vis?.b ?? 0), quem: vis ? vis.e.tagName + '.' + String(vis.e.className).slice(0, 30) : '' }; });
+  verifica(sobreposicao.barraTopo === null || sobreposicao.fimDoConteudo <= sobreposicao.barraTopo + 1, `barra inferior não cobre o fim do conteúdo (barra em ${sobreposicao.barraTopo}px, conteúdo termina em ${sobreposicao.fimDoConteudo}px, elemento ${sobreposicao.quem})`);
   await p.screenshot({ path: `${SAIDA}/assistente-celular.png`, fullPage: true });
+  await p.context().close();
+
+  // 1b) desktop: o compositor também fica no rodapé e a conversa ocupa a área principal
+  p = await novaPagina(1280, 800); await ir(p, '/assistente'); await p.getByRole('img', { name: /Conector IA/ }).first().waitFor();
+  const d = await p.evaluate(() => ({ overflowX: document.documentElement.scrollWidth > innerWidth, compositor: !!document.querySelector('.chat-compositor'), base: Math.round(document.querySelector('.chat-compositor').getBoundingClientRect().bottom), barra: Math.round(document.querySelector('.barra-status').getBoundingClientRect().top) }));
+  verifica(!d.overflowX && d.compositor && d.base <= d.barra + 1, `desktop: sem rolagem horizontal e compositor acima da barra (${d.base}px / ${d.barra}px)`);
+  await p.screenshot({ path: `${SAIDA}/assistente-conversa-desktop.png` });
   await p.context().close();
 
   // 2) prefers-reduced-motion: sem movimento (a preferência do aparelho é respeitada)
