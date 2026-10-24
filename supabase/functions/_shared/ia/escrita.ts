@@ -12,10 +12,13 @@ export interface AdminRpc { rpc: (fn: string, args: Record<string, unknown>) => 
 const txt = (v: unknown, max = 500) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const conf = (v: unknown) => (typeof v === "number" && v >= 0 && v <= 1 ? v : null);
 
-async function idDoSku(admin: AdminRpc, lojaId: string, sku: string): Promise<string | null> {
-  const { data } = await admin.from("produtos").select("id").eq("loja_id", lojaId).eq("sku", sku).maybeSingle();
-  return data?.id ?? null;
+/** SKU não é chave única: o mesmo código pode existir em dois registros do Bling. Mais de um => ambíguo, nunca escolhe um deles. */
+async function idDoSku(admin: AdminRpc, lojaId: string, sku: string): Promise<string | "ambiguo" | null> {
+  const { data } = await admin.from("produtos").select("id").eq("loja_id", lojaId).eq("sku", sku).limit(2);
+  const linhas = (data ?? []) as { id: string }[];
+  return linhas.length > 1 ? "ambiguo" : linhas[0]?.id ?? null;
 }
+const MSG_AMBIGUO = { erro: "Este SKU aparece em mais de um produto do Bling. Resolva a duplicidade (conflito de identidade) antes de propor alterações." };
 
 export async function proporEnriquecimento(admin: AdminRpc, lojaId: string, e: Record<string, unknown>): Promise<unknown> {
   const sku = txt(e.sku, 80), campo = txt(e.campo, 40), fonte = txt(e.fonte, 400);
@@ -24,6 +27,7 @@ export async function proporEnriquecimento(admin: AdminRpc, lojaId: string, e: R
   if (!fonte) return { erro: "Informe a fonte (URL ou documento) de onde veio o dado. Sem fonte, não posso propor." };
   if (e.valor == null || e.valor === "") return { erro: "Informe o valor proposto." };
   const produtoId = await idDoSku(admin, lojaId, sku);
+  if (produtoId === "ambiguo") return MSG_AMBIGUO;
   if (!produtoId) return { erro: "Produto não encontrado nesta loja." };
   const { error } = await admin.rpc("enriquecimento_propor", { p_loja: lojaId, p_produto: produtoId, p_campo: campo, p_valor: JSON.stringify(e.valor), p_fonte: fonte, p_confianca: conf(e.confianca) });
   if (error) return { erro: "Não foi possível registrar a proposta (talvez já exista um valor aprovado para este campo)." };
@@ -36,6 +40,7 @@ export async function proporCodigo(admin: AdminRpc, lojaId: string, e: Record<st
   if (!(TIPOS_CODIGO as readonly string[]).includes(tipo)) return { erro: `Tipo não reconhecido. Use um de: ${TIPOS_CODIGO.join(", ")}.` };
   if (!fonte) return { erro: "Informe a fonte de onde veio o código." };
   const produtoId = await idDoSku(admin, lojaId, sku);
+  if (produtoId === "ambiguo") return MSG_AMBIGUO;
   if (!produtoId) return { erro: "Produto não encontrado nesta loja." };
   const { error } = await admin.rpc("codigo_propor", { p_loja: lojaId, p_produto: produtoId, p_tipo: tipo, p_valor: valor, p_fonte: fonte, p_confianca: conf(e.confianca) });
   if (error) return { erro: "Não foi possível registrar o código (talvez já exista)." };
@@ -49,6 +54,7 @@ export async function proporAplicacao(admin: AdminRpc, lojaId: string, e: Record
   if (!fonte) return { erro: "Informe a fonte da aplicação (catálogo, manual, cruzamento de código)." };
   if (ini != null && fim != null && fim < ini) return { erro: "O ano final não pode ser antes do ano inicial." };
   const produtoId = await idDoSku(admin, lojaId, sku);
+  if (produtoId === "ambiguo") return MSG_AMBIGUO;
   if (!produtoId) return { erro: "Produto não encontrado nesta loja." };
   const { error } = await admin.rpc("aplicacao_propor", { p_loja: lojaId, p_produto: produtoId, p_modelo: modelo, p_motorizacao: motor || null, p_ano_inicial: ini, p_ano_final: fim, p_fonte: fonte, p_confianca: conf(e.confianca) });
   if (error) return { erro: "Não foi possível registrar a aplicação." };
@@ -60,6 +66,7 @@ export async function proporImagem(admin: AdminRpc, lojaId: string, e: Record<st
   if (!sku || !url) return { erro: "Informe o SKU e o endereço da imagem." };
   if (!/^https:\/\//i.test(url)) return { erro: "A imagem precisa ser um endereço https." };
   const produtoId = await idDoSku(admin, lojaId, sku);
+  if (produtoId === "ambiguo") return MSG_AMBIGUO;
   if (!produtoId) return { erro: "Produto não encontrado nesta loja." };
   // cruzamento = o próprio SKU buscado (sinal disponível numa busca por texto; a Fila avisa que os direitos ainda não foram confirmados)
   const { error } = await admin.rpc("imagem_propor", { p_loja: lojaId, p_produto: produtoId, p_url: url, p_origem: origem || "busca_web", p_sku: sku, p_pagina: pagina || null });

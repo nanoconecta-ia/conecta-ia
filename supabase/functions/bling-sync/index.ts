@@ -69,6 +69,11 @@ function portasDaLoja(admin: any, lojaId: string, chaveCifra: Chaveiro): PortasS
         if (error) throw new Error("falha ao gravar o espelho");
       }
     },
+    // Identidade = ID do Bling na loja; SKU repetido/vazio vira conflito (despublica e bloqueia publicar). Falha aqui é registrada, nunca derruba a sincronização.
+    async reconciliarIdentidade() {
+      const { error } = await admin.rpc("produtos_reconciliar_identidade", { p_loja: lojaId });
+      if (error) throw new Error("rpc produtos_reconciliar_identidade indisponível");
+    },
     async marcarAusentes(ids) {
       for (let i = 0; i < ids.length; i += 200) {
         await admin.from("produtos").update({ situacao: "ausente", publicado: false }).eq("loja_id", lojaId).in("bling_id", ids.slice(i, i + 200));

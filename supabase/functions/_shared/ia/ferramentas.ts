@@ -4,6 +4,7 @@ import type { Ferramenta } from "./claude.ts";
 import { chamarPlugin, type PluginRegistro } from "./plugin.ts";
 import { CAMPOS_ENRIQUECIMENTO, proporAplicacao, proporCodigo, proporEnriquecimento, proporImagem, TIPOS_CODIGO, type AdminRpc } from "./escrita.ts";
 import { buscarImagens } from "./google.ts";
+import { classificarSku, erroSku } from "../produto_sku.ts";
 
 export const SISTEMA = [
   "Você é a Genesis IA, assistente do lojista no Conecta.IA. Responda em português do Brasil, de forma curta e objetiva.",
@@ -62,8 +63,10 @@ export async function executarFerramenta(nome: string, entrada: unknown, c: Cont
     }
     case "ver_produto": {
       const sku = txt(e.sku);
-      const { data: p } = await c.usuario.from("produtos").select("id, nome, sku, preco, estoque, marca, gtin, descricao_curta, peso_kg, situacao, publicado").eq("loja_id", c.lojaId).eq("sku", sku).maybeSingle();
-      if (!p) return { erro: "Produto não encontrado nesta loja." };
+      const { data: linhas } = await c.usuario.from("produtos").select("id, nome, sku, preco, estoque, marca, gtin, descricao_curta, peso_kg, situacao, publicado").eq("loja_id", c.lojaId).eq("sku", sku).limit(2);
+      const r = classificarSku<any>(linhas);
+      if (r.estado !== "ok") return erroSku(r);
+      const p = r.produto;
       const { id, ...resto } = p;
       const falta: string[] = [];
       if (!p.sku) falta.push("SKU"); if (!p.preco) falta.push("preço"); if (!p.descricao_curta) falta.push("descrição");

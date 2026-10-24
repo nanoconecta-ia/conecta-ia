@@ -1,13 +1,15 @@
 // Porta de leitura do Conector IA sobre o banco. TODA consulta é escopada pela loja AQUI (não depende do chamador lembrar).
 // Implementação com cliente estilo supabase-js (service_role no servidor). Os testes rodam esta mesma implementação sobre
 // um cliente que fala SQL com um Postgres local, para provar nomes de colunas e filtros contra o esquema real.
+import { classificarSku, erroSku, type ResultadoSku } from "../produto_sku.ts";
 export interface ClienteDados { from(tabela: string): any }
+export interface ProdutoLocal { id: string; bling_id: string; sku: string; nome: string | null; publicado: boolean }
 
 export interface PortaDados {
   resumo(): Promise<{ produtos: number; publicados: number; aguardando_aprovacao: number }>;
   listarProdutos(o: { apenasNaoPublicados?: boolean; busca?: string; limite?: number }): Promise<unknown[]>;
   verProduto(sku: string): Promise<Record<string, unknown> | { erro: string }>;
-  produtoPorSku(sku: string): Promise<{ id: string; bling_id: string; sku: string; nome: string | null; publicado: boolean } | null>;
+  produtoPorSku(sku: string): Promise<ResultadoSku<ProdutoLocal>>;
   itensPendentes(limite?: number): Promise<unknown[]>;
   buscarTaxonomia(texto: string): Promise<unknown[]>;
   statusBling(): Promise<unknown>;
@@ -38,9 +40,11 @@ export function dadosSupabase(c: ClienteDados, lojaId: string): PortaDados {
       return (await q).data ?? [];
     },
     async verProduto(sku) {
-      const { data: p } = await c.from("produtos").select("id, nome, sku, preco, estoque, marca, gtin, descricao_curta, peso_kg, situacao, publicado, categoria_bling_id, taxonomia_no_id")
-        .eq("loja_id", lojaId).eq("sku", sku).maybeSingle();
-      if (!p) return { erro: "Produto não encontrado nesta loja." };
+      const { data } = await c.from("produtos").select("id, nome, sku, preco, estoque, marca, gtin, descricao_curta, peso_kg, situacao, publicado, categoria_bling_id, taxonomia_no_id")
+        .eq("loja_id", lojaId).eq("sku", sku).limit(2);
+      const r = classificarSku<any>(data);
+      if (r.estado !== "ok") return erroSku(r);
+      const p = r.produto;
       const { id, ...resto } = p;
       const falta: string[] = [];
       if (!p.sku) falta.push("SKU"); if (!p.preco) falta.push("preço"); if (!p.descricao_curta) falta.push("descrição");
@@ -49,8 +53,8 @@ export function dadosSupabase(c: ClienteDados, lojaId: string): PortaDados {
       return { ...resto, itens_aprovados: aprovados, faltando_para_publicar: falta };
     },
     async produtoPorSku(sku) {
-      const { data } = await c.from("produtos").select("id, bling_id, sku, nome, publicado").eq("loja_id", lojaId).eq("sku", sku).maybeSingle();
-      return data ?? null;
+      const { data } = await c.from("produtos").select("id, bling_id, sku, nome, publicado").eq("loja_id", lojaId).eq("sku", sku).limit(2);
+      return classificarSku<ProdutoLocal>(data);
     },
     async itensPendentes(limite) {
       return (await c.from("produto_enriquecimento").select("campo, valor, fonte, confianca, coletado_em").eq("loja_id", lojaId).eq("status", "a_confirmar").limit(lim(limite))).data ?? [];
@@ -65,7 +69,11 @@ export function dadosSupabase(c: ClienteDados, lojaId: string): PortaDados {
     },
     async travas(o) {
       let produtoId = o.produtoId;
-      if (!produtoId && o.sku) produtoId = (await dados.produtoPorSku(o.sku))?.id;
+      if (!produtoId && o.sku) {
+        const r = await dados.produtoPorSku(o.sku);
+        if (r.estado === "ambiguo") return erroSku(r);
+        if (r.estado === "ok") produtoId = r.produto.id;
+      }
       if (!produtoId) return { erro: "Informe produto_id ou sku de um produto desta loja." };
       const { data } = await c.from("produto_travas").select("estado, motivo, alterado_em").eq("loja_id", lojaId).eq("produto_id", produtoId).maybeSingle();
       return data ?? { estado: "liberado_propostas", motivo: null };
@@ -78,8 +86,10 @@ export function dadosSupabase(c: ClienteDados, lojaId: string): PortaDados {
       return { ...p, itens, aprovacao: ap };
     },
     async prontoPublicacao(o) {
-      const { data: p } = await c.from("produtos").select("id, sku, preco, descricao_curta, situacao").eq("loja_id", lojaId).eq("sku", o.sku).maybeSingle();
-      if (!p) return { erro: "Produto não encontrado nesta loja." };
+      const { data } = await c.from("produtos").select("id, sku, preco, descricao_curta, situacao").eq("loja_id", lojaId).eq("sku", o.sku).limit(2);
+      const r = classificarSku<any>(data);
+      if (r.estado !== "ok") return erroSku(r);
+      const p = r.produto;
       const faltando: string[] = [];
       if (p.situacao !== "A") faltando.push("produto ativo");
       if (!p.sku) faltando.push("sku"); if (p.preco == null) faltando.push("preço");
