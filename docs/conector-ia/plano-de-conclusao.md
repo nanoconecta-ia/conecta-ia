@@ -106,3 +106,28 @@ Legenda: **Código** = escrito e testado; **Homologado** = ensaiado em ambiente 
 6. Teste ponta a ponta: Bling → espelho → agente → proposta → aprovação (sem escrita no Bling).
 7. **Segunda autorização expressa** para produção, uma etapa por vez: migrações → funções → painel.
 8. Depois: ficha completa (características com fonte), WhatsApp automático e escrita no Bling (cada uma com desenho e autorização própria).
+
+## 9. Achados da revisão independente (GPT, 2026-10-24, somente leitura) e checklist
+
+Fonte: comentário `GPT — revisão técnica` no PR #62. Registrado aqui; **nada foi aplicado**.
+
+| # | Achado | Estado | Ação / evidência |
+|---|---|---|---|
+| 1 | `private.eh_membro` e `private.auditar` não existem em produção (0 linhas em `pg_proc`) | confirmado por 2 leituras independentes | A `mcp_gateway_chaves` **nunca** antes da `conector_ia_rpcs` (ordem do item 1) |
+| 2 | Advisor Supabase: 6 INFO `rls_enabled_no_policy` (inclui tabelas `private`) | a avaliar | Conferir caso a caso se é intencional (tabela só do servidor) antes de homologar |
+| 3 | Advisor: 1 WARN `extension_in_public` (`pg_net`) | a avaliar | Extensão instalada pela plataforma; decisão do proprietário se mover de schema |
+| 4 | Advisor: 17 WARN `authenticated_security_definer_function_executable` | a revisar | Revisar grants e checagens internas função a função, **sem revogação indiscriminada**. As funções novas desta rodada (`banners_da_vitrine`, `banner_propor`, `produtos_reconciliar_identidade`, `mcp_chave_*`) revogam `public/anon/authenticated` e liberam só `service_role` (testado nas suítes) |
+| 5 | Advisor: 1 WARN `auth_leaked_password_protection` | decisão do proprietário | Configuração do Auth no painel do Supabase; não alterada |
+| 6 | Leituras por SKU com `maybeSingle` sem mensagem de ambiguidade | **pendente** | Próxima etapa em código: `conector/dados.ts`, `pair/gateway_dados.ts`, `ia/ferramentas.ts`, `vitrine-assistente`, com teste de SKU repetido |
+| 7 | Atomicidade da despublicação e da resolução de conflitos (PR #63) | verificado por leitura do código | `produtos_reconciliar_identidade` é **uma função plpgsql = uma transação**: inserção/atualização de conflitos, resolução e despublicação ocorrem juntas ou nenhuma. Falha no meio desfaz tudo. O sync chama a função depois de gravar e, se ela falhar, registra em `sync_erros` sem desfazer o espelho. Teste direcionado a adicionar: simular erro no meio e confirmar que nada fica pela metade |
+| 8 | RLS e permissões `service_role` das novas tabelas/funções | testado | `produto_conflitos`: RLS ligada, leitura só da própria loja, escrita só do servidor (suíte `identidade_produto_sku`, 22 verificações) |
+| 9 | Compatibilidade dos scripts na ordem de migração | testado local | 39 suítes em PostgreSQL 17.11 aplicam na ordem do repositório; **não** equivale à homologação no Supabase |
+| 10 | 949 verificações locais ≠ homologação em Supabase | reconhecido | Item 1 da lista "O que falta" permanece bloqueante |
+
+Checklist antes de pedir qualquer publicação (cada item exige aprovação do proprietário, separada):
+- [ ] Ambiente de homologação com Auth, Storage, Vault e `pg_cron` (decisão financeira ou máquina `mobis`)
+- [ ] Achados 2, 3, 4 e 5 avaliados e decididos
+- [ ] Achado 6 corrigido e testado
+- [ ] Teste de atomicidade da reconciliação (achado 7)
+- [ ] Revisão do GPT sobre ordem das migrações, `mcp_gateway_chaves` e identidade (#63)
+- [ ] Autorização por etapa: migrações → funções → painel
