@@ -1,0 +1,56 @@
+name: Publicação autorizada do design em 2026-10-24
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publicar-design-20261024.yml']
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    # Publicação única autorizada pelo proprietário em 24/10/2026.
+    # Fixa o código revisado e não habilita publicação automática futura.
+    if: github.event.before == '796f60fd5df36ff2963b605e0c5d79cb15cdbb4c'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 796f60fd5df36ff2963b605e0c5d79cb15cdbb4c
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: painel/package-lock.json
+      - run: npm ci
+        working-directory: painel
+      - run: npm test
+        working-directory: painel
+      - run: npm run build
+        working-directory: painel
+        env:
+          VITE_PAIR_ATIVO: '1'
+          VITE_BACKUP_ATIVO: '1'
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: painel/dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.implantar.outputs.page_url }}
+    steps:
+      - id: implantar
+        uses: actions/deploy-pages@v4
