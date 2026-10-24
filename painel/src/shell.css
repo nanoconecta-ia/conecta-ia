@@ -132,7 +132,7 @@ button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(
 .galeria-icones figcaption { font-size: .74rem; color: var(--suave); text-align: center; overflow-wrap: anywhere; }
 
 /* ===== agente lateral (dock) ===== */
-.agente-botao { gap: 8px; color: #fff; border-color: rgba(255,255,255,.35); min-height: 40px; padding: 6px 14px; }
+.agente-botao { gap: 8px; color: #fff; border-color: rgba(255,255,255,.35); min-height: 44px; min-width: 44px; padding: 6px 14px; }
 .agente-botao[aria-pressed="true"] { background: color-mix(in srgb, var(--verde) 25%, transparent); border-color: var(--verde); }
 .dock-agente { position: fixed; z-index: 7; top: 56px; bottom: 32px; right: 0; width: min(100vw, 420px); display: grid; grid-template-rows: auto 1fr; background: var(--fundo); border-left: 1px solid color-mix(in srgb, var(--marca) 50%, var(--borda)); box-shadow: -24px 0 60px rgba(0,0,0,.3); }
 .dock-agente[hidden] { display: none; }
@@ -172,7 +172,8 @@ button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(
 .esfera-caixa .orbita b { position:absolute; border-radius:50%; background:var(--ciano); box-shadow:0 0 10px var(--ciano); width:5px; height:5px; left:50%; top:0; }
 .esfera-caixa .orbita b:nth-child(2) { left:100%; top:52%; width:4px; height:4px; background:var(--marca); box-shadow:0 0 8px var(--marca); }
 .esfera-caixa .orbita b:nth-child(3) { left:26%; top:94%; width:3px; height:3px; background:#ffe3a8; box-shadow:0 0 6px #ffe3a8; }
-.esfera-caixa:has(.esfera[data-ativo="false"]) .orbita { animation-play-state:paused; }
+.esfera-caixa:has(.esfera[data-ativo="false"]:not([data-estado="ocioso"])) .orbita { animation-play-state:paused; }
+.esfera-caixa:has(.esfera[data-estado="ocioso"]) .orbita { animation-duration:36s; }
 @media (prefers-reduced-motion:reduce) { .esfera-caixa .orbita, .v-tipo { animation:none !important; transition:none !important; } }
 .galeria-veiculos { grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); }
 .galeria-vistas { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); align-items:start; margin-top:8px; }
