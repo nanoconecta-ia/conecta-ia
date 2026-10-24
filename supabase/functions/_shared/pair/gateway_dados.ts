@@ -3,21 +3,23 @@
 import { proporAplicacao, proporCodigo, proporEnriquecimento, proporImagem, type AdminRpc } from "../ia/escrita.ts";
 import { consultarProduto } from "../assistente/bling_consultar.ts";
 import type { Config } from "../bling_token.ts";
+import { classificarSku, erroSku } from "../produto_sku.ts";
 import type { Dados, PropostaAprovacao } from "./gateway.ts";
 
 const seguro = (s: string) => s.replace(/[%,()*\\]/g, " "); // vai para filtro .or(): sem caracteres de sintaxe
 const COLUNAS_PRODUTO = "nome, sku, preco, estoque, marca, publicado, situacao";
 
 export function dadosSupabase(admin: AdminRpc, agora: () => Date = () => new Date(), bling?: { cfg: Config; ambiente: "real" | "sintetico" | "nao_validado" }): Dados {
-  async function idDoSku(loja: string, sku: string): Promise<string | null> {
-    const { data } = await admin.from("produtos").select("id").eq("loja_id", loja).eq("sku", sku).maybeSingle();
-    return data?.id ?? null;
+  async function idDoSku(loja: string, sku: string): Promise<string | "ambiguo" | null> {
+    const { data } = await admin.from("produtos").select("id").eq("loja_id", loja).eq("sku", sku).limit(2);
+    const r = classificarSku<{ id: string }>(data);
+    return r.estado === "ok" ? r.produto.id : r.estado === "ambiguo" ? "ambiguo" : null;
   }
   /** Se o lojista pausou o cadastro automático deste produto, nenhuma proposta passa (o banco também recusa, por gatilho). */
   async function pausado(loja: string, sku: unknown): Promise<{ erro: string } | null> {
     if (typeof sku !== "string" || !sku) return null;
     const id = await idDoSku(loja, sku);
-    if (!id) return null;
+    if (!id || id === "ambiguo") return null; // ambíguo: as ferramentas de escrita recusam por conta própria
     const { data } = await admin.from("produto_automacao").select("pausado").eq("loja_id", loja).eq("produto_id", id).maybeSingle();
     return data?.pausado === true ? { erro: "O lojista pausou o cadastro automático deste produto. Não proponha nada nele; avise que está pausado." } : null;
   }
@@ -40,8 +42,11 @@ export function dadosSupabase(admin: AdminRpc, agora: () => Date = () => new Dat
       return data ?? [];
     },
     async obterProduto(loja, sku) {
-      const { data: p } = await admin.from("produtos").select(`id, ${COLUNAS_PRODUTO}, gtin, descricao_curta, peso_kg`).eq("loja_id", loja).eq("sku", sku).maybeSingle();
-      if (!p) return null;
+      const { data: linhas } = await admin.from("produtos").select(`id, ${COLUNAS_PRODUTO}, gtin, descricao_curta, peso_kg`).eq("loja_id", loja).eq("sku", sku).limit(2);
+      const r = classificarSku<any>(linhas);
+      if (r.estado === "ambiguo") return erroSku(r);
+      if (r.estado !== "ok") return null;
+      const p = r.produto;
       const { id, ...resto } = p;
       const falta: string[] = [];
       if (!p.preco) falta.push("preço"); if (!p.descricao_curta) falta.push("descrição"); if (!p.marca) falta.push("marca"); if (!p.gtin) falta.push("GTIN"); if (!p.peso_kg) falta.push("peso");
@@ -61,6 +66,7 @@ export function dadosSupabase(admin: AdminRpc, agora: () => Date = () => new Dat
       const bloqueio = await pausado(loja, a.sku);
       if (bloqueio) return bloqueio;
       const id = await idDoSku(loja, String(a.sku ?? ""));
+      if (id === "ambiguo") return erroSku({ estado: "ambiguo" });
       if (!id) return { erro: "Produto não encontrado nesta loja." };
       const { data, error } = await admin.rpc("bula_propor", { p_loja: loja, p_produto: id, p_medidas: a.medidas, p_contra: Array.isArray(a.contraindicacoes) ? a.contraindicacoes.map(String) : [], p_fonte: String(a.fonte ?? "") });
       if (error) return { erro: "Não foi possível registrar a bula (verifique as medidas: cada uma precisa de valor numérico e unidade; bula já aprovada não é alterada)." };

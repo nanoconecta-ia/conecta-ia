@@ -1780,21 +1780,51 @@ async function consultarProduto(entrada, c) {
 return { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, consultarProduto: consultarProduto };
 })();
 
+// ---------- supabase/functions/_shared/produto_sku.ts ----------
+const __m13 = (() => {
+function classificarSku(linhas) {
+    const n = linhas?.length ?? 0;
+    if (n === 0) return {
+        estado: "nao_encontrado"
+    };
+    if (n > 1) return {
+        estado: "ambiguo"
+    };
+    return {
+        estado: "ok",
+        produto: linhas[0]
+    };
+}
+const MSG_NAO_ENCONTRADO = "Produto não encontrado nesta loja.";
+const MSG_SKU_AMBIGUO = "Este SKU aparece em mais de um produto do Bling. Resolva a duplicidade (conflito de identidade) antes de continuar.";
+const erroSku = (r)=>r.estado === "ambiguo" ? {
+        erro: MSG_SKU_AMBIGUO,
+        motivo: "sku_ambiguo"
+    } : {
+        erro: MSG_NAO_ENCONTRADO,
+        motivo: "nao_encontrado"
+    };
+
+return { classificarSku: classificarSku, MSG_NAO_ENCONTRADO: MSG_NAO_ENCONTRADO, MSG_SKU_AMBIGUO: MSG_SKU_AMBIGUO, erroSku: erroSku };
+})();
+
 // ---------- supabase/functions/_shared/pair/gateway_dados.ts ----------
 const __m5 = (() => {
 const { proporAplicacao: proporAplicacao, proporCodigo: proporCodigo, proporEnriquecimento: proporEnriquecimento, proporImagem: proporImagem } = __m6;
 const { consultarProduto: consultarProduto } = __m7;
+const { classificarSku: classificarSku, erroSku: erroSku } = __m13;
 const seguro = (s)=>s.replace(/[%,()*\\]/g, " ");
 const COLUNAS_PRODUTO = "nome, sku, preco, estoque, marca, publicado, situacao";
 function dadosSupabase(admin, agora = ()=>new Date(), bling) {
     async function idDoSku(loja, sku) {
-        const { data } = await admin.from("produtos").select("id").eq("loja_id", loja).eq("sku", sku).maybeSingle();
-        return data?.id ?? null;
+        const { data } = await admin.from("produtos").select("id").eq("loja_id", loja).eq("sku", sku).limit(2);
+        const r = classificarSku(data);
+        return r.estado === "ok" ? r.produto.id : r.estado === "ambiguo" ? "ambiguo" : null;
     }
     async function pausado(loja, sku) {
         if (typeof sku !== "string" || !sku) return null;
         const id = await idDoSku(loja, sku);
-        if (!id) return null;
+        if (!id || id === "ambiguo") return null;
         const { data } = await admin.from("produto_automacao").select("pausado").eq("loja_id", loja).eq("produto_id", id).maybeSingle();
         return data?.pausado === true ? {
             erro: "O lojista pausou o cadastro automático deste produto. Não proponha nada nele; avise que está pausado."
@@ -1830,8 +1860,11 @@ function dadosSupabase(admin, agora = ()=>new Date(), bling) {
             return data ?? [];
         },
         async obterProduto (loja, sku) {
-            const { data: p } = await admin.from("produtos").select(`id, ${COLUNAS_PRODUTO}, gtin, descricao_curta, peso_kg`).eq("loja_id", loja).eq("sku", sku).maybeSingle();
-            if (!p) return null;
+            const { data: linhas } = await admin.from("produtos").select(`id, ${COLUNAS_PRODUTO}, gtin, descricao_curta, peso_kg`).eq("loja_id", loja).eq("sku", sku).limit(2);
+            const r = classificarSku(linhas);
+            if (r.estado === "ambiguo") return erroSku(r);
+            if (r.estado !== "ok") return null;
+            const p = r.produto;
             const { id, ...resto } = p;
             const falta = [];
             if (!p.preco) falta.push("preço");
@@ -1866,6 +1899,9 @@ function dadosSupabase(admin, agora = ()=>new Date(), bling) {
             const bloqueio = await pausado(loja, a.sku);
             if (bloqueio) return bloqueio;
             const id = await idDoSku(loja, String(a.sku ?? ""));
+            if (id === "ambiguo") return erroSku({
+                estado: "ambiguo"
+            });
             if (!id) return {
                 erro: "Produto não encontrado nesta loja."
             };
@@ -1986,7 +2022,7 @@ return { dadosSupabase: dadosSupabase };
 })();
 
 // ---------- supabase/functions/_shared/plataforma.ts ----------
-const __m13 = (() => {
+const __m14 = (() => {
 const { chaveiroDoAmbiente: chaveiroDoAmbiente } = __m11;
 async function doVault(admin, nome) {
     const { data } = await admin.rpc("plataforma_segredo", {
@@ -2005,7 +2041,7 @@ return { segredoEstado: segredoEstado, chaveiroPlataforma: chaveiroPlataforma };
 })();
 
 // ---------- supabase/functions/_shared/pair/implantacao.ts ----------
-const __m14 = (() => {
+const __m15 = (() => {
 const PROJETO_CONECTA = "https://dsfzhsrudriqkumtlqwj.supabase.co";
 const PAINEL_CONECTA = "https://nanoconecta-ia.github.io/conecta-ia/";
 function configuracaoPair(get) {
@@ -2022,7 +2058,7 @@ return { PROJETO_CONECTA: PROJETO_CONECTA, PAINEL_CONECTA: PAINEL_CONECTA, confi
 })();
 
 // ---------- supabase/functions/_shared/pair/oauth.ts ----------
-const __m15 = (() => {
+const __m16 = (() => {
 const { b64u: b64u, unb64u: unb64u } = __m4;
 const { aleatorioB64u: aleatorioB64u, sha256Hex: sha256Hex, separarToken: separarToken } = __m3;
 const { ESCOPOS: ESCOPOS } = __m2;
@@ -2309,9 +2345,9 @@ const __m0 = (() => {
 const { createClient: createClient } = __sdk;
 const { tratar: tratar } = __m1;
 const { dadosSupabase: dadosSupabase } = __m5;
-const { chaveiroPlataforma: chaveiroPlataforma, segredoEstado: segredoEstado } = __m13;
-const { configuracaoPair: configuracaoPair } = __m14;
-const { tratarOAuth: tratarOAuth, desafioOAuth: desafioOAuth } = __m15;
+const { chaveiroPlataforma: chaveiroPlataforma, segredoEstado: segredoEstado } = __m14;
+const { configuracaoPair: configuracaoPair } = __m15;
+const { tratarOAuth: tratarOAuth, desafioOAuth: desafioOAuth } = __m16;
 const CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, content-type, mcp-protocol-version, mcp-session-id",

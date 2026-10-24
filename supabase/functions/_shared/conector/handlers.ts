@@ -69,7 +69,11 @@ export async function criarPropostaVersionada(c: ContextoFerramenta, o: { titulo
     const def = buscarDefinicao(it.operacao);
     if (!def || def.permissao !== "executar") { erros.push(`item ${i}: operação '${it.operacao}' não é executável`); continue; }
     let produtoId = it.produto_id;
-    if (!produtoId && it.sku) produtoId = (await c.dados.produtoPorSku(it.sku))?.id;
+    if (!produtoId && it.sku) {
+      const r = await c.dados.produtoPorSku(it.sku);
+      if (r.estado === "ambiguo") { erros.push(`item ${i}: SKU ${it.sku} aparece em mais de um produto do Bling (conflito de identidade)`); continue; }
+      if (r.estado === "ok") produtoId = r.produto.id;
+    }
     if (!produtoId && it.operacao !== "bling.categorias.criar") { erros.push(`item ${i}: produto não encontrado nesta loja`); continue; }
     if (it.operacao === "bling.produtos.alterar" || it.operacao === "bling.produtos.criar") {
       const m = montarCorpoProduto(it.depois);
@@ -160,8 +164,9 @@ export const HANDLERS: Record<string, Handler> = {
       return [k, v === undefined || v === "" || v === 0 ? null : (mp.tipo === "id_numerico" ? String(v) : v)];
     }));
     const local = await c.dados.produtoPorSku(e.sku);
+    if (local.estado === "ambiguo") return { erro: "Este SKU aparece em mais de um produto do Bling. Resolva a duplicidade (conflito de identidade) antes de propor alterações.", motivo: "sku_ambiguo" };
     return criarPropostaVersionada(c, { titulo: `Atualizar ${campos.join(", ")} de ${e.sku} no Bling`, itens: [{
-      produto_id: local?.id, sku: e.sku, operacao: "bling.produtos.alterar", alvo: String(r.produto.id), campos, antes, depois: e.campos, fontes: e.fontes,
+      produto_id: local.estado === "ok" ? local.produto.id : undefined, sku: e.sku, operacao: "bling.produtos.alterar", alvo: String(r.produto.id), campos, antes, depois: e.campos, fontes: e.fontes,
       validacoes: [`produto lido no Bling em ${new Date().toISOString()}`, "corpo montado e validado contra a lista de campos permitidos"] }] });
   },
 };

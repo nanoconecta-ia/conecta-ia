@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "04881972e4ad4c9458f62c6ba231c5d5ea60a71d328a57cc32d1e9ea6b00884c",
+  "artefato_sha256": "1e64185cc907a32830b2f5c49c02b27416757566239f5151afa5b2c8c9db060e",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -45,8 +45,12 @@
       "sha256": "21cf58db274bda777a2ea76c5cd5b06dd9f81d06cb2ab99a88cdc15ea7034646"
     },
     {
+      "path": "supabase/functions/_shared/produto_sku.ts",
+      "sha256": "96e380c4778ab3ccc14193d539c33cf75b3b04522c22c220f53ba2e48230cdab"
+    },
+    {
       "path": "supabase/functions/_shared/ia/ferramentas.ts",
-      "sha256": "9caac83a5ed6e9666a7e59f82350c12a763b01d1cba9bbb20b3a91b3f37dfbd9"
+      "sha256": "f1de16661264cd25cb876ac884057af78889de8e5b818e3c65bdb8c1cf2f096f"
     },
     {
       "path": "supabase/functions/_shared/assistente/provedores.ts",
