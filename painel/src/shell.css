@@ -50,7 +50,7 @@ a.indicador:hover, .indicador:hover { transform: translateY(-2px); box-shadow: 0
 .numero { background: linear-gradient(120deg, var(--texto), color-mix(in srgb, var(--marca) 75%, var(--texto))); -webkit-background-clip: text; background-clip: text; color: transparent; }
 @supports not (background-clip: text) { .numero { color: var(--texto); background: none; } }
 h1 { letter-spacing: -.02em; }
-button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(.conv-titulo):not(.prop-item):not(.v-tile):not(.esp-no):not(.v-tipo):not(.vista-ponto) { background: linear-gradient(180deg, color-mix(in srgb, var(--marca) 92%, #fff), var(--marca)); box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 2px 8px color-mix(in srgb, var(--marca) 30%, transparent); }
+button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(.conv-titulo):not(.prop-item):not(.v-tile):not(.esp-no):not(.v-tipo):not(.vista-ponto):not(.vista-item) { background: linear-gradient(180deg, color-mix(in srgb, var(--marca) 92%, #fff), var(--marca)); box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 2px 8px color-mix(in srgb, var(--marca) 30%, transparent); }
 
 /* paleta de comandos */
 .paleta { border: 1px solid color-mix(in srgb, var(--marca) 50%, var(--borda)); border-radius: 16px; padding: 0; width: min(92vw, 560px); margin: 12vh auto 0; background: var(--cartao); color: var(--texto); box-shadow: 0 24px 80px rgba(0,0,0,.45), 0 0 0 1px color-mix(in srgb, var(--verde) 20%, transparent); overflow: hidden; }
@@ -162,6 +162,12 @@ button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(
 .vista-ponto { position:absolute; width:34px; height:34px; min-height:0; padding:0; transform:translate(-50%,-50%); border-radius:50%; background:transparent; border:2px solid transparent; box-shadow:none; }
 .vista-ponto:hover:not(:disabled), .vista-ponto:focus-visible { background:color-mix(in srgb, var(--marca) 22%, transparent); border-color:var(--marca); }
 .vista-ponto.ativo { background:color-mix(in srgb, var(--marca) 30%, transparent); border-color:var(--marca); box-shadow:0 0 0 4px color-mix(in srgb, var(--marca) 22%, transparent); }
+.vista-lista { list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+.vista-item { min-height:44px; padding:8px 14px; background:transparent; border:1px solid var(--borda); color:var(--texto); font-weight:500; box-shadow:none; }
+.vista-item .mono { color:var(--marca); font-weight:700; margin-right:4px; }
+.vista-item:hover:not(:disabled), .vista-item:focus-visible { background:color-mix(in srgb, var(--marca) 14%, transparent); border-color:var(--marca); }
+.vista-item.ativo { background:color-mix(in srgb, var(--marca) 26%, transparent); border-color:var(--marca); }
+@media (max-width:640px) { .vista-ponto { width:44px; height:44px; } .vista-lista { flex-direction:column; align-items:stretch; } .vista-lista li { display:flex; } .vista-item { text-align:left; width:100%; } }
 .vista figcaption { font-family:var(--mono); font-size:.78rem; color:var(--suave); text-align:center; }
 .v-tipos { display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); }
 .v-tipo { flex-direction:column; gap:6px; min-height:104px; padding:12px 8px 8px; background:var(--cartao); color:var(--texto); border:1px solid var(--borda); box-shadow:var(--sombra); font-weight:600; font-size:.88rem; transition:transform .15s, border-color .15s; }
