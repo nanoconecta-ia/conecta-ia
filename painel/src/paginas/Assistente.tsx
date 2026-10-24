@@ -141,7 +141,7 @@ export function Assistente({ loja }: { loja: Loja }) {
 
   return (
     <div className="cartao chat-tela">
-      <div className="agente"><Esfera estado={estado} tamanho={44} /><div><h1 style={{ margin: 0 }}>Assistente</h1><span className="estado" aria-live="polite">{{ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" }[estado]}</span></div></div>
+      <div className="agente"><Esfera estado={estado} tamanho={44} /><div><h1 style={{ margin: 0 }}>Assistente</h1><span className="estado" aria-live="polite">{{ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" }[estado]}</span></div>{(config.persistente || conversas.length > 0) && <button className="sec" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova}>Nova conversa</button>}</div>
       <details className="chat-config"><summary>Configurações e conversas</summary>
       <label>Modelo de IA<select value={provedor} disabled={ocupado || carregando || !!erroConfig || !!retentativa || administrando} onChange={(e) => { setProvedor(e.target.value as ProvedorChat | ""); setAceitaEnvio(false); }}>
         <option value="">Resumo local (sem IA externa)</option>
@@ -151,7 +151,7 @@ export function Assistente({ loja }: { loja: Loja }) {
       <p className="suave">{provedor ? "Se o provedor falhar, escolha outro; não há troca automática." : "Só consultas por palavras-chave, sem enviar a um provedor de IA."} {config.persistente && provedor ? ` Histórico privado no servidor, com retenção de ${config.retencao_dias} dias por mensagem.` : " Histórico temporário nesta tela."}</p>
       {(config.persistente || conversas.length > 0) && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <label style={{ flex: "1 1 220px" }}>Minhas conversas<select value={administrando ? "" : conversaId ?? ""} disabled={ocupado} onChange={e => e.target.value ? void abrir(e.target.value) : nova()}><option value="">Nova conversa</option>{conversas.map(c => <option key={c.id} value={c.id}>{c.titulo}</option>)}</select></label>
-        <button className="sec" disabled={ocupado} onClick={nova}>Nova conversa</button>
+        
         {maisConversas && <button className="sec" disabled={ocupado} onClick={() => void listarConversas(true)}>Mais conversas</button>}
         {conversaId && !administrando && <button className="sec" disabled={ocupado} onClick={() => void excluir()}>Excluir conversa</button>}
       </div>}
