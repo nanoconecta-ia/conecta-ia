@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 55 ferramentas — 34 ativas, 17 planejadas, 4 desligadas.
+Resumo: 56 ferramentas — 35 ativas, 17 planejadas, 4 desligadas.
 
 ## Grupo: conecta
 
@@ -22,6 +22,7 @@ Resumo: 55 ferramentas — 34 ativas, 17 planejadas, 4 desligadas.
 | `conecta.proposta.criar` | ativa | propor | MEDIUM | não | sim | sim | sim | chave | `titulo*:string` `resumo:string` `lote:boolean` `itens*:array` |
 | `conecta.enriquecimento.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `campo*:string` `valor*:string` `fonte*:string` `confianca:number` |
 | `conecta.imagem.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `url*:string` `origem:string` `pagina:string` |
+| `conecta.banner.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `estilo:string` `chamada:string` `inicio:string` `fim:string` |
 | `conecta.imagem.buscar_web` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `consulta*:string` |
 | `conecta.plugins.listar` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | — |
 | `conecta.plugins.chamar` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `plugin*:string` `capacidade*:string` `entrada:object` |
@@ -60,6 +61,9 @@ Resumo: 55 ferramentas — 34 ativas, 17 planejadas, 4 desligadas.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
 - **`conecta.imagem.propor`** — Propõe uma imagem candidata para o produto (pendente de aprovação; direitos ainda não confirmados).
+  - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
+  - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
+- **`conecta.banner.propor`** — Propõe um banner de oferta para um produto publicado: cria só um RASCUNHO invisível; o lojista publica no painel. Preço e nome vêm do Bling. Produto da área Motor sai como oferta relâmpago no estilo automático.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
 - **`conecta.imagem.buscar_web`** — Busca imagens candidatas na web (não salva nada).

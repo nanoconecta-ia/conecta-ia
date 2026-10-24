@@ -6,7 +6,7 @@ import type { PortaDados } from "./dados.ts";
 import type { PortaBling } from "./porta_bling.ts";
 import type { Rpc } from "./executor.ts";
 import { buscarDefinicao } from "./registro.ts";
-import { proporAplicacao, proporCodigo, proporEnriquecimento, proporImagem, type AdminRpc } from "../ia/escrita.ts";
+import { proporAplicacao, proporBanner, proporCodigo, proporEnriquecimento, proporImagem, type AdminRpc } from "../ia/escrita.ts";
 import { chamarPlugin, type PluginRegistro } from "../ia/plugin.ts";
 import { buscarImagens } from "../ia/google.ts";
 
@@ -119,6 +119,7 @@ export const HANDLERS: Record<string, Handler> = {
   "conecta.codigo.propor": (e, c) => proporCodigo(c.admin, c.lojaId, e),
   "conecta.aplicacao.propor": (e, c) => proporAplicacao(c.admin, c.lojaId, e),
   "conecta.imagem.propor": (e, c) => proporImagem(c.admin, c.lojaId, e),
+  "conecta.banner.propor": (e, c) => proporBanner(c.admin, c.lojaId, e),
   "conecta.imagem.buscar_web": async (e, c) => {
     if (!c.buscaImagem) return { erro: "Busca de imagens não configurada. Cole a chave do Google em Integrações de IA." };
     try { return { candidatas: await buscarImagens(c.buscaImagem.chave, c.buscaImagem.cx, String(e.consulta ?? ""), c.fetch) }; }
