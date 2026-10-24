@@ -74,3 +74,70 @@ test("sem mudança não regrava nem busca detalhe; orçamento de tempo interromp
   const r2 = await sincronizar("L", h2.p, 20_000);
   assert.equal(r2.completo, false); assert.ok(r2.gravados > 0 && r2.gravados < 300);
 });
+
+// --- Identidade do produto: ID do Bling dentro da loja; SKU repetido/vazio nunca trava a sincronização ---
+function portasIdentidade(itens: ItemLista[], opc: { falhaSeContem?: string; ex?: Existente[]; falhaReconciliar?: boolean } = {}) {
+  const gravadas: LinhaProduto[] = []; const erros: { m: string; d?: Record<string, unknown> }[] = []; let reconciliou = 0; let t = AGORA;
+  const p: PortasSync = {
+    listarPagina: async (pg, lim) => ({ itens: itens.slice((pg - 1) * lim, pg * lim) }),
+    detalhe: async (id) => { const it = itens.find((i) => i.id === id)!; return { codigo: it.codigo, nome: it.nome, preco: it.preco, situacao: it.situacao }; },
+    existentes: async () => opc.ex ?? [],
+    gravar: async (l) => { if (opc.falhaSeContem && l.some((x) => x.bling_id === opc.falhaSeContem)) throw new Error("violação"); gravadas.push(...l); },
+    marcarAusentes: async () => {}, registrarErro: async (m, d) => { erros.push({ m, d }); },
+    reconciliarIdentidade: async () => { reconciliou++; if (opc.falhaReconciliar) throw new Error("rpc fora do ar"); },
+    espera: async (ms) => { t += ms; }, agora: () => t,
+  };
+  return { p, gravadas, erros, get reconciliou() { return reconciliou; } };
+}
+const A = (id: number, codigo: string | undefined, extra: Partial<ItemLista> = {}): ItemLista => ({ id, codigo, nome: `N${id}`, preco: 1, situacao: "A", ...extra });
+
+test("SKU repetido: os dois registros chegam ao espelho (cada um com seu ID do Bling) e a identidade é reconciliada", async () => {
+  const h = portasIdentidade([A(1, "03044-BREF"), A(2, "03044-BREF"), A(3, "OK")]);
+  const r = await sincronizar("L", h.p);
+  assert.deepEqual(h.gravadas.map((l) => l.bling_id).sort(), ["1", "2", "3"]);
+  assert.equal(r.gravados, 3); assert.equal(r.completo, true); assert.equal(h.reconciliou, 1);
+  assert.deepEqual(h.gravadas.filter((l) => l.sku === "03044-BREF").map((l) => l.bling_id), ["1", "2"], "nenhum registro foi descartado nem fundido");
+});
+
+test("registro problemático é isolado: os demais do lote são gravados e o erro fica registrado", async () => {
+  const h = portasIdentidade([A(1, "X"), A(2, "Y"), A(3, "Z")], { falhaSeContem: "2" });
+  const r = await sincronizar("L", h.p);
+  assert.deepEqual(h.gravadas.map((l) => l.bling_id).sort(), ["1", "3"]); assert.equal(r.gravados, 2); assert.equal(r.isolados, 1); assert.equal(r.completo, true);
+  assert.ok(h.erros.some((e) => e.m.includes("isolado") && e.d?.bling_id === "2"));
+  assert.equal(h.reconciliou, 1);
+});
+
+test("SKU vazio: o produto é espelhado com SKU nulo (não publica) e não quebra nada", async () => {
+  const h = portasIdentidade([A(1, ""), A(2, undefined), A(3, "OK")]);
+  const r = await sincronizar("L", h.p);
+  assert.equal(r.gravados, 3); assert.deepEqual(h.gravadas.filter((l) => l.sku === null).map((l) => l.bling_id), ["1", "2"]);
+});
+
+test("alteração de SKU no Bling é detectada pelo ID (busca o detalhe e regrava a mesma linha)", async () => {
+  const e: Existente = { bling_id: "1", sku: "ANTIGO", nome: "N1", preco: 1, estoque: null, situacao: "A", sincronizado_em: new Date(AGORA).toISOString() };
+  assert.equal(precisaDetalhe(A(1, "NOVO"), e, AGORA), true);
+  const h = portasIdentidade([A(1, "NOVO")], { ex: [e] });
+  await sincronizar("L", h.p);
+  assert.deepEqual(h.gravadas.map((l) => [l.bling_id, l.sku]), [["1", "NOVO"]]);
+});
+
+test("reprocessar sem mudança não regrava, mas continua reconciliando (idempotente)", async () => {
+  const ex: Existente[] = [1, 2].map((i) => ({ bling_id: String(i), sku: "IGUAL", nome: `N${i}`, preco: 1, estoque: null, situacao: "A", sincronizado_em: new Date(AGORA).toISOString() }));
+  const h = portasIdentidade([A(1, "IGUAL"), A(2, "IGUAL")], { ex });
+  const r = await sincronizar("L", h.p);
+  assert.equal(r.gravados, 0); assert.equal(h.gravadas.length, 0); assert.equal(h.reconciliou, 1); assert.equal(r.completo, true);
+});
+
+test("falha ao reconciliar nunca derruba a sincronização", async () => {
+  const h = portasIdentidade([A(1, "X")], { falhaReconciliar: true });
+  const r = await sincronizar("L", h.p);
+  assert.equal(r.completo, true); assert.equal(r.gravados, 1);
+  assert.ok(h.erros.some((e) => e.m.includes("identidade")));
+});
+
+test("lojas diferentes com o mesmo SKU: cada linha carrega a própria loja (isolamento)", async () => {
+  const h1 = portasIdentidade([A(1, "MESMO")]); const h2 = portasIdentidade([A(1, "MESMO")]);
+  await sincronizar("LOJA-1", h1.p); await sincronizar("LOJA-2", h2.p);
+  assert.equal(h1.gravadas[0].loja_id, "LOJA-1"); assert.equal(h2.gravadas[0].loja_id, "LOJA-2");
+  assert.equal(h1.gravadas[0].bling_id, h2.gravadas[0].bling_id);
+});

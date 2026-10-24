@@ -4,6 +4,7 @@ import type { Loja } from "../lib/dados.ts";
 import { mensagemVisibilidade, type RespostaVisibilidade } from "../lib/visibilidade.ts";
 import { alternar, alternarTodos, erroAutomacao, mensagemAutomacao, textoLote } from "../lib/automacao.ts";
 
+type Conflito = { bling_id: string; motivo: "sku_duplicado" | "sku_vazio"; sku: string | null; original: { nome?: string | null } | null };
 type Produto = { id: string; sku: string | null; nome: string | null; preco: number | null; estoque: number | null; publicado: boolean };
 const brl = (v: number | null) => (v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
 
@@ -13,11 +14,15 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [pausados, setPausados] = useState<Set<string>>(new Set());
+  const [conflitos, setConflitos] = useState<Conflito[]>([]);
   const carregar = useCallback(async () => {
     const { data } = await supabase.from("produtos").select("id, sku, nome, preco, estoque, publicado").eq("loja_id", loja.id).order("nome").limit(100);
     setItens((data ?? []) as Produto[]);
     const { data: pz } = await supabase.from("produto_automacao").select("produto_id").eq("loja_id", loja.id).eq("pausado", true);
     setPausados(new Set((pz ?? []).map((x: { produto_id: string }) => x.produto_id)));
+    // conflitos de identidade (SKU repetido ou vazio): a tabela só existe depois da migração; sem ela a lista fica vazia
+    const { data: cf } = await supabase.from("produto_conflitos").select("bling_id, motivo, sku, original").eq("loja_id", loja.id).eq("estado", "aberto").limit(50);
+    setConflitos((cf ?? []) as Conflito[]);
   }, [loja.id]);
   useEffect(() => { void carregar(); }, [carregar]);
 
@@ -25,7 +30,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
     setOcupado(p.id); setMsg(null);
     const { data, error } = await supabase.rpc("produto_visibilidade", { p_produto: p.id, p_publicar: publicar });
     setOcupado(null);
-    if (error) setMsg({ ok: false, texto: error.code === "42501" ? "Só o lojista da loja pode mostrar ou ocultar produtos." : "Não foi possível atualizar o produto." });
+    if (error) setMsg({ ok: false, texto: error.code === "42501" ? "Só o lojista da loja pode mostrar ou ocultar produtos." : error.message?.includes("identidade_ambigua") ? "Este produto tem SKU repetido ou vazio no Bling. Corrija o código no Bling e sincronize de novo; enquanto isso ele não pode aparecer no site." : "Não foi possível atualizar o produto." });
     else { setMsg(mensagemVisibilidade(data as RespostaVisibilidade, publicar)); void carregar(); }
   }
 
@@ -46,6 +51,12 @@ export function Catalogo({ loja }: { loja: Loja }) {
       <p className="suave">Espelho somente leitura do Bling: o cadastro vem do ERP e não é editado aqui. O produto só aparece na loja quando você clica em <strong>Mostrar no site</strong>, e pode ocultá-lo quando quiser. Produto incompleto não pode ser mostrado.</p>
       <p className="suave">Para reforçar a qualidade do cadastro, marque um produto ou vários e use <strong>Parar cadastro automático</strong>: nenhum agente propõe dados neles até você retomar. O Bling continua sendo a fonte e nada é apagado.</p>
       {msg && <p className={msg.ok ? "msg-ok" : "msg-erro"} role="status">{msg.texto}</p>}
+      {conflitos.length > 0 && (
+        <div className="aviso" role="status">
+          <strong>{conflitos.length} produto(s) com identidade ambígua</strong>: SKU repetido ou vazio no Bling. Ficam fora do site até você corrigir o código no Bling (a identidade é o ID do Bling).
+          <ul>{conflitos.map((c) => <li key={`${c.bling_id}-${c.motivo}`}><span className="mono">{c.sku ?? "sem SKU"}</span> · {c.original?.nome ?? "sem nome"} · {c.motivo === "sku_duplicado" ? "SKU repetido" : "SKU vazio"}</li>)}</ul>
+        </div>
+      )}
       {selecionados.size > 0 && (
         <div className="linha" role="group" aria-label="Ações para os produtos selecionados">
           <strong>{textoLote(selecionados.size)} selecionado(s)</strong>

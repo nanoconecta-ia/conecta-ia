@@ -52,22 +52,43 @@ export interface PortasSync {
   detalhe(id: number): Promise<Detalhe | null>;
   existentes(): Promise<Existente[]>;
   gravar(linhas: LinhaProduto[]): Promise<void>;
+  /** Opcional: confere identidade (SKU repetido/vazio) depois de gravar. Falha aqui nunca derruba a sincronização. */
+  reconciliarIdentidade?(): Promise<void>;
   marcarAusentes(blingIds: string[]): Promise<void>; // só chamado com a listagem COMPLETA
   registrarErro(mensagem: string, detalhe?: Record<string, unknown>): Promise<void>;
   espera(ms: number): Promise<void>;
   agora(): number;
 }
-export interface ResultadoSync { paginas: number; vistos: number; gravados: number; detalhes: number; ausentes: number; completo: boolean; erro?: string }
+export interface ResultadoSync { paginas: number; vistos: number; gravados: number; detalhes: number; ausentes: number; completo: boolean; erro?: string; isolados?: number }
 
 const LIMITE = 100, INTERVALO_MS = 350; // ~3 req/s por conta
 
+/** Sincroniza e, ao fim (completa ou não), reconcilia a identidade. A identidade do produto é o ID do Bling dentro da loja; SKU nunca é chave. */
 export async function sincronizar(lojaId: string, p: PortasSync, orcamentoMs = 100_000): Promise<ResultadoSync> {
+  const r = await sincronizarCorpo(lojaId, p, orcamentoMs);
+  if (p.reconciliarIdentidade) {
+    try { await p.reconciliarIdentidade(); }
+    catch (e) { await p.registrarErro("falha ao conferir identidade dos produtos", { motivo: String(e instanceof Error ? e.message : e).slice(0, 200) }); }
+  }
+  return r;
+}
+
+async function sincronizarCorpo(lojaId: string, p: PortasSync, orcamentoMs: number): Promise<ResultadoSync> {
   const ini = p.agora();
-  const r: ResultadoSync = { paginas: 0, vistos: 0, gravados: 0, detalhes: 0, ausentes: 0, completo: false };
+  const r: ResultadoSync = { paginas: 0, vistos: 0, gravados: 0, detalhes: 0, ausentes: 0, completo: false, isolados: 0 };
   const ex = new Map((await p.existentes()).map((e) => [e.bling_id, e]));
   const vistos = new Set<string>();
   let lote: LinhaProduto[] = [];
-  const descarregar = async () => { if (lote.length) { await p.gravar(lote); r.gravados += lote.length; lote = []; } };
+  // Um registro problemático não pode travar os demais: se o lote falha, grava um a um e isola só quem falhou (nada é perdido nem apagado).
+  const descarregar = async () => {
+    if (!lote.length) return;
+    const atual = lote; lote = [];
+    try { await p.gravar(atual); r.gravados += atual.length; return; } catch { /* cai para a gravação individual */ }
+    for (const linha of atual) {
+      try { await p.gravar([linha]); r.gravados++; }
+      catch { r.isolados = (r.isolados ?? 0) + 1; await p.registrarErro("produto isolado: falha ao gravar o registro", { bling_id: linha.bling_id, sku: linha.sku }); }
+    }
+  };
 
   for (let pagina = 1; ; pagina++) {
     if (p.agora() - ini > orcamentoMs) { await descarregar(); return r; } // sem timeout: retoma na próxima rodada

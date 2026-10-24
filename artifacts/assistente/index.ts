@@ -701,9 +701,13 @@ const TIPOS_CODIGO = [
 const txt = (v, max = 500)=>typeof v === "string" ? v.trim().slice(0, max) : "";
 const conf = (v)=>typeof v === "number" && v >= 0 && v <= 1 ? v : null;
 async function idDoSku(admin, lojaId, sku) {
-    const { data } = await admin.from("produtos").select("id").eq("loja_id", lojaId).eq("sku", sku).maybeSingle();
-    return data?.id ?? null;
+    const { data } = await admin.from("produtos").select("id").eq("loja_id", lojaId).eq("sku", sku).limit(2);
+    const linhas = data ?? [];
+    return linhas.length > 1 ? "ambiguo" : linhas[0]?.id ?? null;
 }
+const MSG_AMBIGUO = {
+    erro: "Este SKU aparece em mais de um produto do Bling. Resolva a duplicidade (conflito de identidade) antes de propor alterações."
+};
 async function proporEnriquecimento(admin, lojaId, e) {
     const sku = txt(e.sku, 80), campo = txt(e.campo, 40), fonte = txt(e.fonte, 400);
     if (!sku) return {
@@ -719,6 +723,7 @@ async function proporEnriquecimento(admin, lojaId, e) {
         erro: "Informe o valor proposto."
     };
     const produtoId = await idDoSku(admin, lojaId, sku);
+    if (produtoId === "ambiguo") return MSG_AMBIGUO;
     if (!produtoId) return {
         erro: "Produto não encontrado nesta loja."
     };
@@ -751,6 +756,7 @@ async function proporCodigo(admin, lojaId, e) {
         erro: "Informe a fonte de onde veio o código."
     };
     const produtoId = await idDoSku(admin, lojaId, sku);
+    if (produtoId === "ambiguo") return MSG_AMBIGUO;
     if (!produtoId) return {
         erro: "Produto não encontrado nesta loja."
     };
@@ -783,6 +789,7 @@ async function proporAplicacao(admin, lojaId, e) {
         erro: "O ano final não pode ser antes do ano inicial."
     };
     const produtoId = await idDoSku(admin, lojaId, sku);
+    if (produtoId === "ambiguo") return MSG_AMBIGUO;
     if (!produtoId) return {
         erro: "Produto não encontrado nesta loja."
     };
@@ -813,6 +820,7 @@ async function proporImagem(admin, lojaId, e) {
         erro: "A imagem precisa ser um endereço https."
     };
     const produtoId = await idDoSku(admin, lojaId, sku);
+    if (produtoId === "ambiguo") return MSG_AMBIGUO;
     if (!produtoId) return {
         erro: "Produto não encontrado nesta loja."
     };
