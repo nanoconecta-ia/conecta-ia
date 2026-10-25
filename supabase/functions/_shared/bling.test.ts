@@ -69,7 +69,7 @@ test("sem app cadastrado: pede para informar no painel, sem chamar o Bling", asy
 test("refresh inválido (400/401) => expirada com mensagem de reconectar, sem apagar nada e liberando a reserva", async () => {
   const { arm, estado } = await armazemFalso(10);
   const r = await renovarLoja(arm, "L", { ...cfgBase, agora: () => AGORA, fetch: (async () => resp(400, { error: "invalid_grant" })) as typeof fetch });
-  assert.equal(r, "reconectar"); assert.equal(estado.status, "expirada"); assert.match(estado.erro!, /Reconecte/);
+  assert.equal(r, "reconectar"); assert.equal(estado.status, "expirada"); assert.match(estado.erro!, /Reconecte/); assert.match(estado.erro!, /HTTP (400|401)/); assert.doesNotMatch(estado.erro!, /token/i);
   assert.equal(estado.reservado, false);
 });
 

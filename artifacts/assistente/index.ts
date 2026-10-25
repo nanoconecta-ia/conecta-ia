@@ -1482,7 +1482,9 @@ async function renovarLoja(arm, lojaId, cfg, forcar = false) {
             return "falha_temporaria";
         }
         if (r.status === 400 || r.status === 401) {
-            await arm.marcar(lojaId, "expirada", "Acesso ao Bling expirou. Reconecte no painel.");
+            const corpo = await r.json().catch(()=>null);
+            const codigo = typeof corpo?.error === "string" && /^(invalid_grant|invalid_client|invalid_request|unauthorized_client)$/.test(corpo.error) ? `, ${corpo.error}` : "";
+            await arm.marcar(lojaId, "expirada", `Autorização do Bling expirou ou foi revogada (HTTP ${r.status}${codigo}). Reconecte no painel.`);
             await arm.liberar(lojaId, por);
             return "reconectar";
         }
