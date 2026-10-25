@@ -25,3 +25,10 @@ test("mais de 3 modelos viram 'e outros'", () => {
   const f = montarFicha(p, ["A", "B", "C", "D"].map((m) => ({ modelo: m, motor: null, de: null, ate: null, tipo: null })));
   assert.equal(f.veiculos, "A / B / C e outros");
 });
+
+test("montarFicha: características aprovadas passam inalteradas; sem elas a lista é vazia (nada inventado)", () => {
+  const p = { nome: "Bomba", sku: "S1", marca: null, preco: null, descricao: null, imagem: null, whatsapp: null };
+  assert.deepEqual(montarFicha(p, []).caracteristicas, []);
+  const c = [{ rotulo: "Peso", valor: "5 kg", fonte: "fabricante.com.br", coletado_em: "2026-10-20" }];
+  assert.deepEqual(montarFicha(p, [], c).caracteristicas, c);
+});

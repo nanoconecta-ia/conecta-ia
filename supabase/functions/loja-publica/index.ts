@@ -4,7 +4,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.ts";
 import { urlProduto } from "../_shared/seo/url.ts";
-import { montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
+import { caracteristicasDaFicha, montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao, type LinhaEnriquecimento } from "../_shared/loja/publica.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -73,10 +73,13 @@ Deno.serve(async (req) => {
 
   // Ficha do produto (página do produto): pedido com { sku } devolve as aplicações aprovadas daquele produto publicado
   const skuFicha = typeof c?.sku === "string" && c.sku.length <= 80 && !/[\u0000-\u001F\u007F]/.test(c.sku) ? c.sku : "";
-  let ficha: { veiculos: ReturnType<typeof veiculosDaFicha> } | null = null;
+  let ficha: { veiculos: ReturnType<typeof veiculosDaFicha>; caracteristicas: ReturnType<typeof caracteristicasDaFicha> } | null = null;
   if (skuFicha) {
     const { data: alvo } = await sb.from("produtos").select("id").eq("loja_id", loja.id).eq("publicado", true).eq("sku", skuFicha).maybeSingle();
-    if (alvo) ficha = { veiculos: veiculosDaFicha(apls, alvo.id as string) };
+    if (alvo) {
+      const { data: enr } = await sb.from("produto_enriquecimento").select("campo, valor, fonte, coletado_em, status").eq("loja_id", loja.id).eq("produto_id", alvo.id).eq("status", "aprovado");
+      ficha = { veiculos: veiculosDaFicha(apls, alvo.id as string), caracteristicas: caracteristicasDaFicha((enr ?? []) as LinhaEnriquecimento[]) };
+    }
   }
 
   // imagem principal aprovada de cada produto da página

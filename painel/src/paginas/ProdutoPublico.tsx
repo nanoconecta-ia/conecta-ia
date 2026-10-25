@@ -3,7 +3,7 @@ import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { useVoz } from "../lib/voz.ts";
 import { Esfera, type EstadoEsfera } from "../componentes/Esfera.tsx";
 import { FichaProduto } from "../componentes/FichaProduto.tsx";
-import type { FichaProduto as Produto, FichaVeiculo } from "../lib/ficha.ts";
+import type { FichaProduto as Produto, FichaVeiculo, FichaCaracteristica } from "../lib/ficha.ts";
 
 /** Página pública do produto (#/p/<loja>/<sku>) com o assistente para o cliente (texto ou voz). Só lê dado aprovado e publicado. */
 export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
@@ -12,14 +12,14 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
   const [ocupado, setOcupado] = useState(false);
   const [lerAlto, setLerAlto] = useState(false);
   const lerRef = useRef(lerAlto); lerRef.current = lerAlto;
-  const [ficha, setFicha] = useState<{ produto: Produto; veiculos: FichaVeiculo[] } | null>(null);
+  const [ficha, setFicha] = useState<{ produto: Produto; veiculos: FichaVeiculo[]; caracteristicas: FichaCaracteristica[] } | null>(null);
   useEffect(() => {
     let vivo = true;
     fetch(`${SUPABASE_URL}/functions/v1/loja-publica`, {
       method: "POST", headers: { "Content-Type": "application/json", apikey: SUPABASE_CHAVE_PUBLICAVEL }, body: JSON.stringify({ slug, sku, q: sku }),
     }).then((r) => r.json()).then((j) => {
       const produto = (j?.produtos ?? []).find((p: Produto) => p.sku === sku);
-      if (vivo && produto && j?.ficha) setFicha({ produto, veiculos: j.ficha.veiculos ?? [] });
+      if (vivo && produto && j?.ficha) setFicha({ produto, veiculos: j.ficha.veiculos ?? [], caracteristicas: j.ficha.caracteristicas ?? [] });
     }).catch(() => undefined); // sem ficha, a página segue só com o assistente
     return () => { vivo = false; };
   }, [slug, sku]);
@@ -45,7 +45,7 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
 
   return (
     <main>
-      {ficha && <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} />}
+      {ficha && <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} caracteristicas={ficha.caracteristicas} />}
       <div className="cartao">
         <div className="agente"><Esfera estado={estado} tamanho={72} /><div><h1 style={{ margin: 0 }}>Tire suas dúvidas sobre esta peça</h1>
           <p className="suave" style={{ margin: 0 }}>Código <span className="mono">{sku}</span>. O assistente só informa dados confirmados pela loja.</p></div></div>

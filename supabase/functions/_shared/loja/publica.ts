@@ -124,3 +124,31 @@ export function veiculosDaFicha(apls: Aplicacao[], produtoId: string): FichaVeic
   }
   return out.slice(0, 40);
 }
+
+export interface Caracteristica { rotulo: string; valor: string; fonte: string; coletado_em: string }
+export interface LinhaEnriquecimento { campo: string; valor: unknown; fonte: string | null; coletado_em: string | null; status: string }
+const ROTULOS_CARACTERISTICA: Record<string, string> = { marca_peca: "Marca da peça", peso_kg: "Peso", dimensoes: "Dimensões" };
+/** Só o host da fonte vai para a vitrine (nunca o caminho nem parâmetros da URL); documento sem URL vira "documento do fornecedor". */
+export function fonteVisivel(fonte: string): string {
+  try { const u = new URL(fonte); return u.protocol === "https:" || u.protocol === "http:" ? u.hostname.replace(/^www\./, "") : "documento do fornecedor"; }
+  catch { return "documento do fornecedor"; }
+}
+function valorTexto(campo: string, v: unknown): string | null {
+  if (campo === "peso_kg") { const n = typeof v === "number" ? v : Number(v); return Number.isFinite(n) && n > 0 ? `${n.toLocaleString("pt-BR", { maximumFractionDigits: 3 })} kg` : null; }
+  if (campo === "dimensoes" && v && typeof v === "object") {
+    const d = v as Record<string, unknown>; const med = [d.altura, d.largura, d.profundidade].map(Number);
+    return med.every((x) => Number.isFinite(x) && x > 0) ? `${med.join(" × ")} cm (A × L × P)` : null;
+  }
+  return typeof v === "string" ? textoSimples(v, 120) : null;
+}
+/** Características da ficha: SOMENTE enriquecimento aprovado, com fonte e data. Sem fonte/data ou sem valor válido, não aparece. */
+export function caracteristicasDaFicha(linhas: LinhaEnriquecimento[]): Caracteristica[] {
+  const out: Caracteristica[] = [];
+  for (const l of linhas) {
+    const rotulo = ROTULOS_CARACTERISTICA[l.campo];
+    if (!rotulo || l.status !== "aprovado" || !l.fonte || !l.coletado_em) continue;
+    const valor = valorTexto(l.campo, l.valor);
+    if (valor) out.push({ rotulo, valor, fonte: fonteVisivel(l.fonte), coletado_em: l.coletado_em.slice(0, 10) });
+  }
+  return out;
+}
