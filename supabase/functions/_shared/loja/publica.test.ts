@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { anoNoIntervalo, linkWhatsapp, mensagemWhatsapp, montarBanners, montarVitrine, produtosDoTipo, tiposDoVeiculo, veiculosDaFicha, tipoDaCategoria, normalizarHost, opcoesVeiculo, produtosDoVeiculo, SLUG_RE, textoSimples } from "./publica.ts";
+import { anoNoIntervalo, caracteristicasDaFicha, fonteVisivel, linkWhatsapp, mensagemWhatsapp, montarBanners, montarVitrine, produtosDoTipo, tiposDoVeiculo, veiculosDaFicha, tipoDaCategoria, normalizarHost, opcoesVeiculo, produtosDoVeiculo, SLUG_RE, textoSimples } from "./publica.ts";
 
 test("normalizarHost: minúsculas, sem porta nem ponto final; recusa lixo", () => {
   assert.equal(normalizarHost("WWW.MobisAutoParts.com.br:443"), "www.mobisautoparts.com.br");
@@ -99,4 +99,26 @@ test("veiculosDaFicha: só o produto pedido, sem repetição, com tipo quando li
   ];
   assert.deepEqual(veiculosDaFicha(apls, "a"), [{ modelo: "HR", motor: "2.5", de: 2010, ate: null, tipo: "furgao" }, { modelo: "Texto", motor: null, de: null, ate: null, tipo: null }]);
   assert.deepEqual(veiculosDaFicha(apls, "zzz"), []);
+});
+
+test("caracteristicasDaFicha: só aprovado com fonte e data; host da fonte, nunca a URL inteira; valor inválido some", () => {
+  const ok = { status: "aprovado", fonte: "https://www.fabricante.com.br/catalogo?token=abc#x", coletado_em: "2026-10-20T10:00:00Z" };
+  const r = caracteristicasDaFicha([
+    { ...ok, campo: "peso_kg", valor: 5 },
+    { ...ok, campo: "dimensoes", valor: { altura: 10, largura: 20, profundidade: 30 } },
+    { ...ok, campo: "marca_peca", valor: "<b>Sabó</b>" },
+    { ...ok, campo: "peso_kg", valor: 0 },                       // zero = não informado
+    { ...ok, campo: "descricao_longa", valor: "x" },             // fora da lista exibível
+    { ...ok, campo: "marca_peca", valor: "Pendente", status: "a_confirmar" },
+    { ...ok, campo: "marca_peca", valor: "Sem fonte", fonte: null },
+    { ...ok, campo: "marca_peca", valor: "Sem data", coletado_em: null },
+  ]);
+  assert.deepEqual(r.map((x) => [x.rotulo, x.valor, x.fonte, x.coletado_em]), [
+    ["Peso", "5 kg", "fabricante.com.br", "2026-10-20"],
+    ["Dimensões", "10 × 20 × 30 cm (A × L × P)", "fabricante.com.br", "2026-10-20"],
+    ["Marca da peça", "Sabó", "fabricante.com.br", "2026-10-20"],
+  ]);
+  assert.ok(!JSON.stringify(r).includes("token=abc"));
+  assert.equal(fonteVisivel("planilha-do-fornecedor.pdf"), "documento do fornecedor");
+  assert.equal(fonteVisivel("javascript:alert(1)"), "documento do fornecedor");
 });
