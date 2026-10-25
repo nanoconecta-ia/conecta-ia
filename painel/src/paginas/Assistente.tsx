@@ -6,6 +6,8 @@ import { Esfera, type EstadoEsfera } from "../componentes/Esfera.tsx";
 import { MensagemRetratil } from "../componentes/MensagemRetratil.tsx";
 import { Retratil } from "../componentes/Retratil.tsx";
 import { mensagemRecolhida } from "../lib/retratil.ts";
+import { interpretar, textoAjuda, type Comando, type Item } from "../lib/comandosNL.ts";
+import { avaliar, coletar } from "../lib/avaliarLayout.ts";
 import { escolherInicial, erroAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 
 type Evidencia = { origem: string; simulado: boolean; consultado_em: string; sincronizado_em?: string; motivo?: string; dados: { sku?: string; nome?: string; preco?: number | null; estoque?: number | null } };
@@ -14,7 +16,10 @@ type Conversa = { id: string; titulo: string; atualizada_em: string };
 type Registro = { id: string; papel: string; conteudo: string; criada_em: string; metadados?: { evidencias?: Evidencia[]; simulado?: boolean } };
 const SUGESTOES = ["Resumo da loja", "O que está pendente?", "Produtos incompletos", "Bling conectado?"];
 
-export function Assistente({ loja }: { loja: Loja }) {
+const espera = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** `menu` e `aoNavegar` ligam o agente às telas do painel: ele abre, em sequência, o que o lojista pedir (só telas do menu da loja). */
+export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[]; aoNavegar?: (rota: string) => void }) {
   const [msgs, setMsgs] = useState<Msg[]>([{ de: "ia", texto: "Olá! Posso resumir a loja, mostrar o que aguarda aprovação e o que falta para publicar. Para conversar com IA e usar plugins, configure um provedor em Integrações de IA." }]);
   const [config, setConfig] = useState({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 });
   const [conversas, setConversas] = useState<Conversa[]>([]);
@@ -35,6 +40,26 @@ export function Assistente({ loja }: { loja: Loja }) {
     setModoMsgs("auto");
     setAbertas((a) => { const n = new Set(modoMsgs === "expandir" ? msgs.map((_, k) => k) : a); if (recolhida) n.add(i); else n.delete(i); return n; });
   };
+  const [acaoLocal, setAcaoLocal] = useState<{ estado: EstadoEsfera; texto: string } | null>(null);
+  async function comandoLocal(t: string, cmd: Exclude<Comando, { tipo: "nenhum" }>) {
+    setMsgs((m) => [...m, { de: "eu", texto: t }]); setTexto("");
+    const dizer = (texto: string) => setMsgs((m) => [...m, { de: "ia", texto }]);
+    try {
+      if (cmd.tipo === "ajuda") { dizer(menu ? textoAjuda(menu) : "Posso resumir a loja e mostrar o que está pendente."); return; }
+      if (cmd.tipo === "avaliar_layout") {
+        setAcaoLocal({ estado: "consultando_ferramentas", texto: "Medindo o layout desta tela…" }); await espera(450);
+        dizer(avaliar(coletar()).resumo); return;
+      }
+      const nomes = cmd.passos.map((p) => p[1]);
+      dizer(`Certo, vou abrir: ${nomes.join(" → ")}.${cmd.naoEntendido.length ? ` Não encontrei no seu menu: ${cmd.naoEntendido.join(", ")}.` : ""}`);
+      for (const [rota, titulo] of cmd.passos) {
+        setAcaoLocal({ estado: "executando", texto: `Abrindo ${titulo}…` });
+        aoNavegar?.(rota); window.dispatchEvent(new CustomEvent("nano:guia", { detail: { rota, titulo } }));
+        await espera(1300);
+      }
+      dizer(`Pronto: abri ${nomes.join(", depois ")}. Você está em ${nomes.at(-1)}. Quer que eu avalie o layout desta tela ou abra outra?`);
+    } finally { setAcaoLocal(null); }
+  }
   const [texto, setTexto] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [esq, setEsq] = useState(false), [dir, setDir] = useState(false); // abas laterais retráteis (conversas / modelo e privacidade)
@@ -121,6 +146,7 @@ export function Assistente({ loja }: { loja: Loja }) {
     catch (e) { setErroHistorico(String(e)); } finally { setOcupado(false); }
   }
   async function enviar(t: string, repetir = false) {
+    if (!repetir && menu && t.trim() && !ocupado && !acaoLocal && !administrando && !retentativa) { const cmd = interpretar(t, menu); if (cmd.tipo !== "nenhum") { await comandoLocal(t, cmd); return; } }
     if (!t.trim() || ocupado || !podeEnviar || administrando || retentativa && !repetir) return;
     const lojaDoEnvio = loja.id;
     const persistente = !!provedor && config.persistente;
@@ -149,7 +175,7 @@ export function Assistente({ loja }: { loja: Loja }) {
   useEffect(() => { setAbertas(new Set()); setModoMsgs("auto"); }, [conversaId]);
   useEffect(() => { fim.current?.scrollIntoView({ block: "end", behavior: "smooth" }); }, [msgs.length]);
 
-  const estado: EstadoEsfera = voz.ouvindo ? "ouvindo" : ocupado ? "pensando" : voz.falando ? "falando" : "parado";
+  const estado: EstadoEsfera = acaoLocal ? acaoLocal.estado : voz.ouvindo ? "ouvindo" : ocupado ? "pensando" : voz.falando ? "falando" : "parado";
   const onSubmit = (e: FormEvent) => { e.preventDefault(); void enviar(texto); };
   const alternarFala = () => { const v = !lerAlto; setLerAlto(v); gravarPreferenciaFala(v); if (!v) voz.calar(); };
 
@@ -176,11 +202,11 @@ export function Assistente({ loja }: { loja: Loja }) {
       <div className="agente">
         <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Conversas" onClick={() => { setEsq((v) => !v); if (estreito()) setDir(false); }}>☰<span> Conversas</span></button>
         <Esfera estado={estado} tamanho={estado === "parado" ? 40 : 56} />
-        <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite">{{ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" }[estado]}</span></div>
+        <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite">{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span></div>
         {(config.persistente || conversas.length > 0) && <button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span className="rot-longo">Nova conversa</span><span className="rot-curto" aria-hidden="true">＋ Nova</span></button>}
         <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}>⚙<span> Modelo</span></button>
       </div>
-      {estado !== "parado" && <div className="faixa-acao" role="status" data-estado={estado}><span className="faixa-pulso" aria-hidden="true" />{{ ouvindo: "Ouvindo você…", pensando: "Consultando o modelo e os dados da loja…", falando: "Lendo a resposta em voz alta…", parado: "" }[estado]}{estado === "falando" && <button type="button" className="mini sec" onClick={voz.calar}>Parar</button>}</div>}
+      {estado !== "parado" && <div className="faixa-acao" role="status" data-estado={estado}><span className="faixa-pulso" aria-hidden="true" />{acaoLocal?.texto ?? { ouvindo: "Ouvindo você…", pensando: "Consultando o modelo e os dados da loja…", falando: "Lendo a resposta em voz alta…" }[estado as string] ?? ""}{estado === "falando" && <button type="button" className="mini sec" onClick={voz.calar}>Parar</button>}</div>}
       {carregando && <p role="status">Verificando provedores…</p>}
       {erroConfig && <p role="alert" className="msg-erro">{erroConfig}</p>}
       {erroHistorico && <p role="status">{erroHistorico}</p>}
@@ -188,7 +214,7 @@ export function Assistente({ loja }: { loja: Loja }) {
       {retentativa && <div><p>Recupere a mesma pergunta para verificar se o turno terminou. Isso preserva a chave de idempotência.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Recuperar pergunta</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button></div>}
       {msgs.length > 3 && <div className="chat-ferramentas"><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button><small className="suave">{msgs.length} mensagens</small></div>}
       <div className="chat" aria-live="polite">{msgs.map((m, i) => <MensagemRetratil key={i} m={m} recolhida={mensagemRecolhida(i, msgs.length, abertas, modoMsgs)} onAlternar={() => alternarMsg(i)} />)}<div ref={fim} /></div>
-      <Retratil id="atalhos" titulo="Atalhos" resumo="perguntas rápidas" aberto={msgs.length < 2}><p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p></Retratil>
+      <Retratil id="atalhos" titulo="Atalhos" resumo="perguntas rápidas" aberto={msgs.length < 2} recolherQuando={msgs.length >= 3}><p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p></Retratil>
       <div className="chat-compositor">
       {selecao && <label className="consentimento" style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.</label>}
       {selecao?.motivo && <p role="status">{selecao.motivo}</p>}

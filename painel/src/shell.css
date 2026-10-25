@@ -276,3 +276,41 @@ button.bolha-linha, button.bolha-linha:hover:not(:disabled) { color: var(--texto
 .abas .nova-conv { min-height: 40px; padding: 4px 12px; } .abas .nova-conv .rot-curto { display: none; }
 @container abas (max-width: 520px) { .abas .nova-conv .rot-longo { display: none; } .abas .nova-conv .rot-curto { display: inline; } }
 .abas .retratil-corpo { padding-top: 4px; padding-bottom: 8px; }
+
+/* ===== Balão do Nano.ia: esfera de design pesado, arrastável, acompanha o lojista; janela espaçosa em notebook e smartphone ===== */
+html button.balao-genesis { color: #fff; left: 0; top: 0; right: auto; bottom: auto; height: 68px; min-height: 68px; padding: 6px 18px 6px 8px; gap: 10px; touch-action: none; user-select: none;
+  transition: left .65s cubic-bezier(.2,.9,.25,1.1), top .65s cubic-bezier(.2,.9,.25,1.1), box-shadow .3s, border-color .3s;
+  background: radial-gradient(120% 160% at 20% 0%, color-mix(in srgb, var(--ciano) 22%, var(--grafite-2)) 0%, var(--grafite) 70%); border: 1px solid color-mix(in srgb, var(--ciano) 45%, var(--borda));
+  box-shadow: 0 14px 36px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.06) inset, 0 0 28px color-mix(in srgb, var(--ciano) 28%, transparent); cursor: grab; backdrop-filter: blur(8px); }
+.balao-genesis.balao-arrastando { transition: none; cursor: grabbing; box-shadow: 0 22px 48px rgba(0,0,0,.55), 0 0 36px color-mix(in srgb, var(--ciano) 40%, transparent); }
+.balao-genesis[data-lado="esq"] { flex-direction: row; } .balao-genesis[data-lado="dir"] { flex-direction: row-reverse; padding: 6px 8px 6px 18px; }
+.balao-texto { display: grid; text-align: left; line-height: 1.15; } .balao-texto b { font-size: .98rem; } .balao-texto small { font-weight: 400; opacity: .8; max-width: 17ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.balao-guia { border-color: var(--verde); box-shadow: 0 14px 36px rgba(0,0,0,.45), 0 0 0 4px color-mix(in srgb, var(--verde) 35%, transparent), 0 0 34px color-mix(in srgb, var(--verde) 55%, transparent); }
+.balao-pulo { animation: balao-pulo .7s ease-out; } @keyframes balao-pulo { 30% { transform: translateY(-14px) scale(1.06); } 60% { transform: translateY(0) scale(.98); } }
+.balao-genesis:focus-visible { outline: 3px solid var(--verde); outline-offset: 3px; }
+/* esfera de peso: aura giratória, vidro, núcleo luminoso, reflexo e sombra no chão */
+.esfera-caixa[data-peso="true"] .aura { position: absolute; inset: -26%; border-radius: 50%; pointer-events: none; filter: blur(7px); opacity: .6;
+  background: conic-gradient(from 0deg, transparent 0 12%, var(--ciano) 24%, transparent 40%, var(--marca) 62%, transparent 78%, var(--verde) 90%, transparent); animation: esf-gira 7s linear infinite; }
+.esfera-caixa[data-peso="true"][data-estado="interpretando"] .aura, .esfera-caixa[data-peso="true"][data-estado="executando"] .aura, .esfera-caixa[data-peso="true"][data-estado="consultando_ferramentas"] .aura { animation-duration: 1.8s; opacity: .9; }
+.esfera-caixa[data-peso="true"][data-ativo="false"]:not([data-estado="ocioso"]) .aura { animation-play-state: paused; }
+.esfera-caixa[data-peso="true"] .esfera { box-shadow: inset -10px -14px 26px rgba(0,0,0,.5), inset 7px 9px 18px rgba(255,255,255,.34), 0 0 0 2px rgba(255,255,255,.12), 0 10px 26px rgba(0,0,0,.5); }
+.esfera .vidro { position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(155deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.08) 38%, rgba(255,255,255,0) 52%, rgba(0,0,0,.22) 100%); mix-blend-mode: soft-light; pointer-events: none; }
+.esfera .nucleo { position: absolute; left: 50%; top: 52%; width: 34%; height: 34%; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, #fff 0%, color-mix(in srgb, var(--esf-cor, var(--ciano)) 70%, #fff) 35%, transparent 72%); filter: blur(1px); animation: nucleo-pulsa 3.2s ease-in-out infinite; }
+.esfera[data-ativo="true"] .nucleo, .esfera[data-estado="interpretando"] .nucleo, .esfera[data-estado="escutando"] .nucleo { animation-duration: .9s; }
+@keyframes nucleo-pulsa { 0%,100% { opacity: .55; transform: translate(-50%, -50%) scale(.85); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); } }
+.esfera-caixa[data-peso="true"] .sombra-chao { position: absolute; left: 12%; right: 12%; bottom: -12%; height: 10%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.45), transparent); filter: blur(2px); }
+@media (prefers-reduced-motion: reduce) { .esfera-caixa[data-peso="true"] .aura, .esfera .nucleo, .balao-pulo { animation: none !important; } .balao-genesis { transition: none; } }
+
+/* janela do agente: espaçosa; segue o lado do balão; "Ampliar" ocupa quase a tela; no smartphone vira uma folha de tela quase cheia */
+.dock-agente { width: min(calc(100vw - 32px), 460px); height: min(78vh, 760px); bottom: 96px; transition: width .3s, height .3s; }
+[data-balao="esq"] .dock-agente { right: auto; left: 16px; }
+.dock-agente[data-ampliado="true"] { width: min(calc(100vw - 32px), 980px); height: min(88vh, 900px); right: 16px; bottom: 96px; } [data-balao="esq"] .dock-agente[data-ampliado="true"] { left: 16px; }
+.dock-topo .mini { margin-left: 0; } .dock-topo .suave { margin-right: auto; }
+@media (max-width: 560px) {
+  .dock-agente, .dock-agente[data-ampliado="true"] { left: 6px; right: 6px; width: auto; top: 58px; bottom: 6px; height: auto; border-radius: 14px; padding-bottom: env(safe-area-inset-bottom); }
+  .dock-agente[data-aberto="true"] ~ .balao-genesis { display: none; }
+  .balao-texto small { max-width: 13ch; }
+}
+
+html button.balao-genesis:hover:not(:disabled) { background: radial-gradient(120% 160% at 20% 0%, color-mix(in srgb, var(--ciano) 30%, var(--grafite-2)) 0%, var(--grafite) 70%); }
+.dock-topo .sec, .dock-topo .sec:hover:not(:disabled) { color: #fff; border-color: rgba(255,255,255,.45); background: transparent; } .dock-topo .sec:hover:not(:disabled) { background: rgba(255,255,255,.14); }

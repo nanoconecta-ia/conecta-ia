@@ -161,7 +161,7 @@ export function App() {
           : caminho === "/indicadores" ? <Indicadores loja={loja} />
           : caminho === "/studio" ? <Studio loja={loja} query={query} />
           : caminho === "/gateway" ? <GatewayMCP loja={loja} />
-          : caminho === "/assistente" ? <Assistente key={loja.id} loja={loja} />
+          : caminho === "/assistente" ? <Assistente key={loja.id} loja={loja} menu={MENU} aoNavegar={ir} />
           : caminho === "/aparencia" ? <Aparencia loja={loja} />
           : BANNERS_ATIVO && caminho === "/banners" ? <Banners loja={loja} />
           : caminho === "/condicoes" ? <Condicoes loja={loja} />
@@ -174,7 +174,7 @@ export function App() {
           : <VisaoGeral loja={loja} />}
       </main>
       </div>
-      {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} />}
+      {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} menu={MENU} aoNavegar={ir} />}
       {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis aberto={dockAberto} aoAlternar={() => setAgente((a) => !a)} />}
       <BarraStatus loja={loja ? loja.nome : null} tela={MENU.find((i) => i[0] === caminho)?.[1] ?? "Visão geral"} demo={demoAtivo} />
     </>
