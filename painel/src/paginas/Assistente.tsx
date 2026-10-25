@@ -175,6 +175,7 @@ export function Assistente({ loja }: { loja: Loja }) {
         </div>
         {voz.erro && <p className="msg-erro">{voz.erro}</p>}
         {voz.suporteFala && <label className="linha" style={{ display: "flex" }}><input type="checkbox" style={{ width: "auto", minHeight: "auto" }} checked={lerAlto} onChange={alternarFala} /> Ler as respostas em voz alta</label>}
+        {voz.suporteFala && lerAlto && voz.vozes.length > 1 && <label>Voz<select value={voz.vozEscolhida ?? ""} onChange={(e) => voz.escolherVozPreferida(e.target.value || null)}><option value="">Automática (a mais natural disponível)</option>{voz.vozes.map((v) => <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>)}</select></label>}
         {(voz.suporteMic || voz.suporteFala) && <p className="aviso-voz">A voz usa o reconhecimento do próprio navegador; no Chrome o áudio é processado pelo Google. O Conecta.IA não guarda o áudio; o texto segue a política de histórico indicada acima.</p>}
         {!voz.suporteMic && <p className="aviso-voz">Este navegador não oferece microfone para sites. Use o campo de texto.</p>}
       </form>
