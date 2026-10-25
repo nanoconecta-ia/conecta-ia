@@ -1,4 +1,4 @@
-// Testes de aceitação do Gênesis (diretriz, item 9). Rodam o código de PRODUÇÃO (despacho, handlers, executor, dados)
+// Testes de aceitação do Nano.ia (diretriz, item 9). Rodam o código de PRODUÇÃO (despacho, handlers, executor, dados)
 // contra um Postgres LOCAL com todas as migrações. Os provedores de LLM e o Bling são simulados por fetch/porta; o banco NÃO.
 // Rodar: supabase/tests/rodar_aceitacao.sh   (sem CONECTOR_TEST_DB os testes são ignorados, p.ex. fora do ambiente local).
 import { test } from "node:test";
@@ -25,7 +25,7 @@ const emitir = (sql: string) => db.sql(sql);
 
 const ctx = (extra: Partial<ContextoDespacho> = {}): ContextoDespacho => ({
   origem: "chat", lojaId: A, userId: U1, dados: dadosSupabase(db as any, A), rpc: db.rpc as any, admin: db as any, bling,
-  agente: { nome: "Gênesis", provedor: "compativel_openai", modelo: "modelo-de-teste", promptVersao: 1 }, ...extra,
+  agente: { nome: "Nano.ia", provedor: "compativel_openai", modelo: "modelo-de-teste", promptVersao: 1 }, ...extra,
 });
 const sobreescreverBlingAtivo = (id: string) => { const d = buscarDefinicao(id); return d && id.startsWith("bling.") && d.permissao === "executar" ? { ...d, estado: "ativa" as const } : d; };
 const hashDe = (id: string) => db.sql(`select hash from public.agente_propostas where id = '${id}'`);
@@ -46,14 +46,14 @@ test("preparação: loja, produtos e Bling simulado", { skip }, () => {
   emitir(`insert into public.usuarios_loja (loja_id, user_id, papel) values ('${A}', '${U1}', 'lojista'), ('${A}', '${U2}', 'editor')`);
   for (let n = 1; n <= 7; n++) {
     emitir(`insert into public.produtos (loja_id, bling_id, sku, nome, preco, estoque, situacao) values ('${A}', '${700 + n}', '${sku(n)}', 'Produto de teste ${n}', ${100 + n}, 3, 'A')`);
-    // O Bling simulado traz também campos que o Gênesis NUNCA pode ver ou alterar (custo, fornecedor, fiscal).
+    // O Bling simulado traz também campos que o Nano.ia NUNCA pode ver ou alterar (custo, fornecedor, fiscal).
     bling.semear(String(700 + n), { codigo: sku(n), nome: `Produto de teste ${n}`, preco: 100 + n, situacao: "A", precoCusto: 55.5, fornecedor: { id: 9 }, tributacao: { ncm: "8409.91.99" } });
   }
   assert.equal(db.sql(`select count(*) from public.produtos`), "7");
 });
 
 // ---------------------------------------------------------------------------------------------------- 1. LLM chama ferramenta real
-test("1a. modelo compatível com OpenAI (GPT) consulta uma ferramenta REAL do Gênesis e o resultado vem do banco", { skip }, async () => {
+test("1a. modelo compatível com OpenAI (GPT) consulta uma ferramenta REAL do Nano.ia e o resultado vem do banco", { skip }, async () => {
   const pedidos: any[] = [];
   const passos = [
     { choices: [{ message: { content: null, tool_calls: [{ id: "c1", function: { name: "conecta__catalogo__ver", arguments: JSON.stringify({ sku: sku(1) }) } }] } }], usage: { total_tokens: 50 } },
@@ -61,7 +61,7 @@ test("1a. modelo compatível com OpenAI (GPT) consulta uma ferramenta REAL do G�
   ];
   let i = 0;
   const fetchFalso = (async (_u: string, init: RequestInit) => { pedidos.push(JSON.parse(String(init.body))); return new Response(JSON.stringify(passos[i++])); }) as typeof fetch;
-  const r = await conversar({ chave: "chave-de-teste", modelo: "modelo-de-teste", sistema: "Você é o Gênesis.", mensagens: [{ role: "user", content: "o que falta no TESTE-001?" }],
+  const r = await conversar({ chave: "chave-de-teste", modelo: "modelo-de-teste", sistema: "Você é o Nano.ia.", mensagens: [{ role: "user", content: "o que falta no TESTE-001?" }],
     ferramentas: ferramentasParaLlm("chat"), executar: executorParaLlm(ctx()), fetch: fetchFalso, provedor: "compativel_openai", baseUrl: "https://api.exemplo-llm.com/v1" });
   assert.deepEqual(r.ferramentasUsadas, ["conecta__catalogo__ver"]);
   const resultadoDaFerramenta = pedidos[1].messages.find((m: any) => m.role === "tool").content;

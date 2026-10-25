@@ -1,4 +1,4 @@
-# Modelo de autorização do Gênesis
+# Modelo de autorização do Nano.ia
 
 Princípio: **autonomia controlada**. Quanto maior o risco, menor a autonomia. O agente propõe; uma pessoa autenticada decide; um executor
 separado faz; o banco revalida tudo e registra evidência. Nenhuma camada confia na anterior.

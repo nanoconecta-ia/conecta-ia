@@ -1,4 +1,4 @@
-// Cliente das Edge Functions do Gênesis (contrato em docs/conector-ia/api-contratos.md). Sem DOM nem supabase-js: testável no Node.
+// Cliente das Edge Functions do Nano.ia (contrato em docs/conector-ia/api-contratos.md). Sem DOM nem supabase-js: testável no Node.
 import { SUPABASE_CHAVE_PUBLICAVEL, SUPABASE_URL } from "../config.ts";
 import { jsonDe, lerSSE, type EventoSSE } from "./sse.ts";
 
@@ -23,7 +23,7 @@ export interface ManipuladoresChat {
 /** Mensagem honesta por status HTTP. 404 = a função ainda não foi implantada neste ambiente. */
 export function mensagemDeStatus(status: number, erroServidor?: string): string {
   if (erroServidor && status !== 401) return erroServidor;   // o servidor já devolve a mensagem em português
-  if (status === 404) return "O Gênesis ainda não está disponível neste ambiente (a função não foi implantada). Nada foi enviado nem gravado.";
+  if (status === 404) return "O Nano.ia ainda não está disponível neste ambiente (a função não foi implantada). Nada foi enviado nem gravado.";
   if (status === 401) return "Sua sessão expirou. Entre de novo.";
   if (status === 403) return erroServidor || "Você não tem permissão para esta ação nesta loja.";
   if (status === 409) return erroServidor || "A proposta mudou. Revise e decida sobre a versão atual.";
@@ -31,7 +31,7 @@ export function mensagemDeStatus(status: number, erroServidor?: string): string 
   if (status === 503) return erroServidor || "Nenhum provedor de IA ativo. Cadastre uma chave em Integrações de IA.";
   return erroServidor || "Não foi possível concluir. Tente de novo.";
 }
-export const MENSAGEM_REDE = "Sem conexão com o servidor do Gênesis. Verifique a internet; nada foi enviado.";
+export const MENSAGEM_REDE = "Sem conexão com o servidor do Nano.ia. Verifique a internet; nada foi enviado.";
 
 const urlFuncao = (nome: string) => `${SUPABASE_URL}/functions/v1/${nome}`;
 const cabecalhos = (token: string) => ({ "Content-Type": "application/json", apikey: SUPABASE_CHAVE_PUBLICAVEL, Authorization: `Bearer ${token}` });
@@ -75,7 +75,7 @@ export async function enviarMensagem(p: ParametrosChat, token: string, m: Manipu
     await lerSSE(r, (e) => despachar(e, m), sinal);
   } catch (e) {
     if ((e as { name?: string }).name === "AbortError" || sinal?.aborted) return;
-    throw new Error("A conexão com o Gênesis caiu no meio da resposta. O que já chegou foi mantido.");
+    throw new Error("A conexão com o Nano.ia caiu no meio da resposta. O que já chegou foi mantido.");
   }
 }
 

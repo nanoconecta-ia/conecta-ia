@@ -1,4 +1,4 @@
-// Cola das Edge Functions do Gênesis (somente Deno; nunca importada pelos testes). Autentica a PESSOA (JWT do Supabase),
+// Cola das Edge Functions do Nano.ia (somente Deno; nunca importada pelos testes). Autentica a PESSOA (JWT do Supabase),
 // confere que é membro da loja e monta os clientes. A lógica de negócio está em acoes.ts/chat.ts, testada contra o banco.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decifrar } from "../cripto.ts";

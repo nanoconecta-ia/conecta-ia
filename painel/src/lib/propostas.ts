@@ -1,4 +1,4 @@
-// Regras de apresentação e de decisão das propostas do Gênesis (espelham o que o banco impõe; o banco é quem manda).
+// Regras de apresentação e de decisão das propostas do Nano.ia (espelham o que o banco impõe; o banco é quem manda).
 import type { Risco } from "./chat.ts";
 
 export type EstadoProposta = "rascunho" | "pendente" | "aprovada" | "rejeitada" | "expirada" | "invalidada" | "executando" | "executada" | "parcial" | "falhou" | "cancelada";
