@@ -28,6 +28,9 @@ export function Assistente({ loja }: { loja: Loja }) {
   const [retentativa, setRetentativa] = useState<{ texto: string; chave: string; provedor: ProvedorChat; conversa: string | null } | null>(null);
   const [texto, setTexto] = useState("");
   const [ocupado, setOcupado] = useState(false);
+  const [esq, setEsq] = useState(false), [dir, setDir] = useState(false); // abas laterais retráteis (conversas / modelo e privacidade)
+  const caixa = useRef<HTMLDivElement>(null);
+  const estreito = () => (caixa.current?.clientWidth ?? 0) < 820; // em tela estreita as abas são gavetas sobrepostas: só uma por vez
   const [provedores, setProvedores] = useState<OpcaoProvedor[]>([]);
   const [provedor, setProvedor] = useState<ProvedorChat | "">("");
   const [carregandoChat, setCarregandoChat] = useState(true);
@@ -141,32 +144,42 @@ export function Assistente({ loja }: { loja: Loja }) {
   const alternarFala = () => { const v = !lerAlto; setLerAlto(v); gravarPreferenciaFala(v); if (!v) voz.calar(); };
 
   return (
-    <div className="cartao">
-      <div className="agente"><Esfera estado={estado} /><div><h1 style={{ margin: 0 }}>Assistente</h1><span className="estado" aria-live="polite">{{ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" }[estado]}</span></div></div>
-      <label>Modelo de IA<select value={provedor} disabled={ocupado || carregando || !!erroConfig || !!retentativa || administrando} onChange={(e) => { setProvedor(e.target.value as ProvedorChat | ""); setAceitaEnvio(false); }}>
-        <option value="">Resumo local (sem IA externa)</option>
-        {provedores.map((p) => <option key={p.id} value={p.id} disabled={p.estado !== "disponivel"}>{p.nome}{p.modelo ? ` · ${p.modelo}` : ""} — {ESTADO_PROVEDOR[p.estado]}</option>)}
-      </select></label>
+    <div className="abas-caixa" ref={caixa}>
+    <div className="cartao chat-tela abas" data-esq={esq ? "aberto" : "fechado"} data-dir={dir ? "aberto" : "fechado"}>
+      {(esq || dir) && <button type="button" className="abas-fundo" aria-label="Fechar painel lateral" onClick={() => { setEsq(false); setDir(false); }} />}
+      <aside className="aba aba-esq" id="aba-conversas" aria-label="Conversas">
+        <div className="aba-topo"><strong>Conversas</strong><button type="button" className="sec mini" onClick={() => setEsq(false)} aria-label="Recolher conversas">Recolher</button></div>
+        <div className="aba-corpo">
+        {!(config.persistente || conversas.length > 0) && <p className="suave">Ainda não há conversas salvas. Elas aparecem aqui quando o histórico privado estiver ativo.</p>}
+        {(config.persistente || conversas.length > 0) && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <label style={{ flex: "1 1 220px" }}>Minhas conversas<select value={administrando ? "" : conversaId ?? ""} disabled={ocupado} onChange={e => e.target.value ? void abrir(e.target.value) : nova()}><option value="">Nova conversa</option>{conversas.map(c => <option key={c.id} value={c.id}>{c.titulo}</option>)}</select></label>
+          
+          {maisConversas && <button className="sec" disabled={ocupado} onClick={() => void listarConversas(true)}>Mais conversas</button>}
+          {conversaId && !administrando && <button className="sec" disabled={ocupado} onClick={() => void excluir()}>Excluir conversa</button>}
+        </div>}
+        {conversaId && <p className="suave" style={{ overflowWrap: "anywhere" }}>Código da conversa: {conversaId}{administrando ? " · Leitura administrativa auditada" : ""}</p>}
+        {podeAdministrar && <details><summary>Retenção e acesso administrativo</summary><p>A auditoria tem política própria e não é excluída junto com as conversas.</p><label>Retenção em dias (7–730)<input type="number" min={7} max={730} value={dias} onChange={e => setDias(Number(e.target.value))} /></label><button className="sec" disabled={ocupado} onClick={() => void reter()}>Salvar retenção</button>
+        {config.leitura_administrativa && <><p>Somente conversas desta empresa. Cada consulta registra usuário, motivo e conversa na auditoria.</p><label>Código da conversa<input value={adminId} onChange={e => setAdminId(e.target.value)} /></label><label>Motivo administrativo<input value={motivo} maxLength={300} onChange={e => setMotivo(e.target.value)} /></label><button className="sec" disabled={ocupado || motivo.trim().length < 10 || !adminId} onClick={() => void abrir(adminId, false, true)}>Consultar e auditar acesso</button></>}</details>}
+        </div>
+      </aside>
+      <section className="abas-centro" aria-label="Conversa com o Nano.ia">
+      <div className="agente">
+        <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Conversas" onClick={() => { setEsq((v) => !v); if (estreito()) setDir(false); }}>☰<span> Conversas</span></button>
+        <Esfera estado={estado} tamanho={36} />
+        <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite">{{ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" }[estado]}</span></div>
+        {(config.persistente || conversas.length > 0) && <button className="sec" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova}>Nova conversa</button>}
+        <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}>⚙<span> Modelo</span></button>
+      </div>
       {carregando && <p role="status">Verificando provedores…</p>}
       {erroConfig && <p role="alert" className="msg-erro">{erroConfig}</p>}
-      <p className="suave">Os estados refletem a configuração e o limite de uso; a API será consultada somente ao enviar.</p>
-      {selecao && <label style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.</label>}
-      {selecao?.motivo && <p role="status">{selecao.motivo}</p>}
-      <p className="suave">{provedor ? "Se o provedor falhar, escolha outro; não há troca automática." : "Só consultas por palavras-chave, sem enviar a um provedor de IA."} {config.persistente && provedor ? ` Histórico privado no servidor, com retenção de ${config.retencao_dias} dias por mensagem.` : " Histórico temporário nesta tela."}</p>
-      {(config.persistente || conversas.length > 0) && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <label style={{ flex: "1 1 220px" }}>Minhas conversas<select value={administrando ? "" : conversaId ?? ""} disabled={ocupado} onChange={e => e.target.value ? void abrir(e.target.value) : nova()}><option value="">Nova conversa</option>{conversas.map(c => <option key={c.id} value={c.id}>{c.titulo}</option>)}</select></label>
-        <button className="sec" disabled={ocupado} onClick={nova}>Nova conversa</button>
-        {maisConversas && <button className="sec" disabled={ocupado} onClick={() => void listarConversas(true)}>Mais conversas</button>}
-        {conversaId && !administrando && <button className="sec" disabled={ocupado} onClick={() => void excluir()}>Excluir conversa</button>}
-      </div>}
-      {conversaId && <p className="suave" style={{ overflowWrap: "anywhere" }}>Código da conversa: {conversaId}{administrando ? " · Leitura administrativa auditada" : ""}</p>}
-      {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
       {erroHistorico && <p role="status">{erroHistorico}</p>}
+      {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
       {retentativa && <div><p>Recupere a mesma pergunta para verificar se o turno terminou. Isso preserva a chave de idempotência.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Recuperar pergunta</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button></div>}
-      {podeAdministrar && <details><summary>Retenção e acesso administrativo</summary><p>A auditoria tem política própria e não é excluída junto com as conversas.</p><label>Retenção em dias (7–730)<input type="number" min={7} max={730} value={dias} onChange={e => setDias(Number(e.target.value))} /></label><button className="sec" disabled={ocupado} onClick={() => void reter()}>Salvar retenção</button>
-      {config.leitura_administrativa && <><p>Somente conversas desta empresa. Cada consulta registra usuário, motivo e conversa na auditoria.</p><label>Código da conversa<input value={adminId} onChange={e => setAdminId(e.target.value)} /></label><label>Motivo administrativo<input value={motivo} maxLength={300} onChange={e => setMotivo(e.target.value)} /></label><button className="sec" disabled={ocupado || motivo.trim().length < 10 || !adminId} onClick={() => void abrir(adminId, false, true)}>Consultar e auditar acesso</button></>}</details>}
       <div className="chat" aria-live="polite">{msgs.map((m, i) => <div key={i} className={`bolha ${m.de}`}>{m.texto}{m.simulado === true && <strong> · RESPOSTA SIMULADA</strong>}{m.evidencias?.map((ev, n) => <EvidenciaProduto key={n} ev={ev as EvidenciaBusca} />)}</div>)}<div ref={fim} /></div>
       <p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p>
+      <div className="chat-compositor">
+      {selecao && <label style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.</label>}
+      {selecao?.motivo && <p role="status">{selecao.motivo}</p>}
       <form onSubmit={onSubmit} style={{ maxWidth: "none" }}>
         <div className="linha-voz">
           <label>Pergunte<input value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={1000} /></label>
@@ -174,11 +187,25 @@ export function Assistente({ loja }: { loja: Loja }) {
           <button disabled={ocupado || !podeEnviar || administrando || !!retentativa}>Enviar</button>
         </div>
         {voz.erro && <p className="msg-erro">{voz.erro}</p>}
+        {!voz.suporteMic && <p className="aviso-voz">Este navegador não oferece microfone para sites. Use o campo de texto.</p>}
+      </form>
+      </div>
+      </section>
+      <aside className="aba aba-dir" id="aba-modelo" aria-label="Modelo e privacidade">
+        <div className="aba-topo"><strong>Modelo e privacidade</strong><button type="button" className="sec mini" onClick={() => setDir(false)} aria-label="Recolher modelo e privacidade">Recolher</button></div>
+        <div className="aba-corpo">
+        <label>Modelo de IA<select value={provedor} disabled={ocupado || carregando || !!erroConfig || !!retentativa || administrando} onChange={(e) => { setProvedor(e.target.value as ProvedorChat | ""); setAceitaEnvio(false); }}>
+          <option value="">Resumo local (sem IA externa)</option>
+          {provedores.map((p) => <option key={p.id} value={p.id} disabled={p.estado !== "disponivel"}>{p.nome}{p.modelo ? ` · ${p.modelo}` : ""} — {ESTADO_PROVEDOR[p.estado]}</option>)}
+        </select></label>
+        <p className="suave">Os estados refletem a configuração e o limite de uso; a API será consultada somente ao enviar.</p>
+        <p className="suave">{provedor ? "Se o provedor falhar, escolha outro; não há troca automática." : "Só consultas por palavras-chave, sem enviar a um provedor de IA."} {config.persistente && provedor ? ` Histórico privado no servidor, com retenção de ${config.retencao_dias} dias por mensagem.` : " Histórico temporário nesta tela."}</p>
         {voz.suporteFala && <label className="linha" style={{ display: "flex" }}><input type="checkbox" style={{ width: "auto", minHeight: "auto" }} checked={lerAlto} onChange={alternarFala} /> Ler as respostas em voz alta</label>}
         {voz.suporteFala && lerAlto && voz.vozes.length > 1 && <label>Voz<select value={voz.vozEscolhida ?? ""} onChange={(e) => voz.escolherVozPreferida(e.target.value || null)}><option value="">Automática (a mais natural disponível)</option>{voz.vozes.map((v) => <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>)}</select></label>}
         {(voz.suporteMic || voz.suporteFala) && <p className="aviso-voz">A voz usa o reconhecimento do próprio navegador; no Chrome o áudio é processado pelo Google. O Conecta.IA não guarda o áudio; o texto segue a política de histórico indicada acima.</p>}
-        {!voz.suporteMic && <p className="aviso-voz">Este navegador não oferece microfone para sites. Use o campo de texto.</p>}
-      </form>
+        </div>
+      </aside>
+    </div>
     </div>
   );
 }

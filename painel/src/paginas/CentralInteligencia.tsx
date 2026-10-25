@@ -15,7 +15,7 @@ type ItemExec = { item_id: string; operacao: string; estado: "confirmada" | "fal
 type Relatorio = { tipo: "simulado"; itens: ItemSim[]; aviso: string; semeado_de: string[] } | { tipo: "executado"; itens: ItemExec[]; estado_final: string };
 const ROTULO_OP = { pendente: "Pendente", enviada: "Enviada, sem confirmação", confirmada: "Confirmada por leitura", falhou: "Falhou", desconhecida: "Resultado desconhecido" } as const;
 
-/** Central de Inteligência: propostas do Conector IA com antes/depois, fontes, risco, aprovação versionada, trava e relatório de execução. */
+/** Central de Inteligência: propostas do Nano.ia com antes/depois, fontes, risco, aprovação versionada, trava e relatório de execução. */
 export function CentralInteligencia({ loja, query }: { loja: Loja; query: URLSearchParams }) {
   const fonte = useFonte();
   const estadoQ = query.get("estado"); const propostaQ = query.get("proposta");
@@ -87,7 +87,7 @@ export function CentralInteligencia({ loja, query }: { loja: Loja; query: URLSea
     <div className="central">
       <div className="cartao">
         <h1>Central de Inteligência</h1>
-        <p className="suave">Tudo que o Conector IA quer alterar passa por aqui: você vê o antes e o depois, as fontes e o risco, e decide sobre a <strong>versão exata</strong> da proposta.</p>
+        <p className="suave">Tudo que o Nano.ia quer alterar passa por aqui: você vê o antes e o depois, as fontes e o risco, e decide sobre a <strong>versão exata</strong> da proposta.</p>
         <p className="aviso" role="note"><strong>Escrita real no Bling: DESLIGADA nesta fase.</strong> As execuções são simuladas; nenhum cadastro real do Bling é alterado.</p>
         <div className="linha" role="group" aria-label="Filtrar por estado">
           {FILTROS.map(([v, t]) => <button key={v || "todas"} className={filtro === v ? "" : "sec"} aria-pressed={filtro === v} onClick={() => { setFiltro(v); ir(`/central${v ? `?estado=${v}` : ""}`); setSel(null); }}>{t}</button>)}
@@ -109,7 +109,7 @@ export function CentralInteligencia({ loja, query }: { loja: Loja; query: URLSea
         <div className="detalhe-prop">
           {!sel ? <div className="cartao"><p className="suave">Escolha uma proposta para ver o antes e o depois.</p></div>
             : D === undefined ? <div className="cartao"><p className="suave">Carregando…</p></div>
-            : D === null ? <div className="cartao"><p className="msg-erro">Não foi possível ler esta proposta (ela pode não existir ou o banco ainda não tem as tabelas do Conector IA).</p></div> : (
+            : D === null ? <div className="cartao"><p className="msg-erro">Não foi possível ler esta proposta (ela pode não existir ou o banco ainda não tem as tabelas do Nano.ia).</p></div> : (
             <>
               <div className="cartao">
                 <div className="linha" style={{ justifyContent: "space-between" }}><h2 style={{ margin: 0 }}>{D.proposta.titulo}</h2><span className="linha"><SeloProposta estado={D.proposta.estado} /><SeloRisco risco={D.proposta.risco} /></span></div>

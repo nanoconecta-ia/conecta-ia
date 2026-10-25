@@ -1,4 +1,4 @@
-// Chat do Conector IA (SSE). NÃO IMPLANTADA nesta fase. verify_jwt = true. Contrato: docs/conector-ia/api-contratos.md.
+// Chat do Nano.ia (SSE). NÃO IMPLANTADA nesta fase. verify_jwt = true. Contrato: docs/conector-ia/api-contratos.md.
 // Escolha de modelo por conversa, memória persistente, ferramentas pelo Policy Engine, streaming de eventos, cancelamento pelo cliente.
 import { executarTurno, type EventoChat } from "../_shared/conector/chat.ts";
 import { portasChatSupabase } from "../_shared/conector/chat_portas.ts";
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
     adaptadorStream: (p) => ADAPTADORES_STREAM[p],
     contexto: (conversaId) => ({
       origem: "chat", lojaId: s.lojaId, userId: s.userId, dados: dadosSupabase(s.admin, s.lojaId), rpc: (fn, args) => s.admin.rpc(fn, args), admin: s.admin, bling, conversaId,
-      agente: { nome: "Conector IA" }, plugins: (plugs ?? []) as PluginRegistro[], buscaImagem,
+      agente: { nome: "Nano.ia" }, plugins: (plugs ?? []) as PluginRegistro[], buscaImagem,
       credencialPlugin: async (pid) => { const { data } = await s.admin.rpc("plugin_credencial", { p_loja: s.lojaId, p_id: pid }); return typeof data === "string" ? await decifrar(data) : null; },
     }),
   });

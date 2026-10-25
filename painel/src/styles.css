@@ -117,7 +117,11 @@ code,.mono { font-family:var(--mono); font-size:.88em; }
 .esfera .nuvem i:nth-child(3) { width:38%; height:38%; left:34%; top:0; opacity:.65; background:radial-gradient(closest-side, var(--verde), transparent); animation:esf-vaga 11s ease-in-out -6s infinite; }
 .esfera .brilho { position:absolute; left:16%; top:10%; width:34%; height:22%; border-radius:50%; background:radial-gradient(closest-side, rgba(255,255,255,.7), transparent); transform:rotate(-24deg); }
 .esfera { background:radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--esf-cor, var(--marca)) 45%, #fff) 0%, var(--esf-cor, var(--marca)) 42%, var(--grafite) 100%); transition:background .4s; }
-.esfera[data-ativo="false"] .nuvem, .esfera[data-ativo="false"] .nuvem i { animation-play-state:paused; }
+/* Estados "parados" de verdade (aprovação pendente, concluído, erro, bloqueado) congelam a nuvem. O repouso (ocioso) NÃO congela:
+   fica um movimento lento e discreto, para a esfera parecer viva sem simular atividade de IA (as cores e a velocidade dos estados ativos continuam só por evento real). */
+.esfera[data-ativo="false"]:not([data-estado="ocioso"]) .nuvem, .esfera[data-ativo="false"]:not([data-estado="ocioso"]) .nuvem i { animation-play-state:paused; }
+.esfera[data-estado="ocioso"] { --esf-gira:42s; animation:esf-respira 7s ease-in-out infinite; }
+@keyframes esf-respira { 0%,100% { transform:scale(1); } 50% { transform:scale(1.025); } }
 .esfera[data-estado="escutando"], .esfera[data-estado="ouvindo"] { --esf-cor:var(--verde); --esf-gira:7s; animation:esf-anel 1.4s ease-out infinite; }
 .esfera[data-estado="interpretando"] { --esf-gira:3.2s; }
 .esfera[data-estado="consultando_ferramentas"] { --esf-cor:var(--ciano); --esf-gira:2.6s; }
@@ -149,7 +153,7 @@ button.mic { width:var(--alvo); padding:0; border-radius:50%; } button.mic[aria-
 
 .cartao h2 { margin-top:22px; }
 
-/* ===== Conector IA (chat 3 painéis, Central, Indicadores, Studio, Gateway) ===== */
+/* ===== Nano.ia (chat 3 painéis, Central, Indicadores, Studio, Gateway) ===== */
 .faixa-demo { background:#b42318; color:#fff; text-align:center; font-weight:700; padding:6px 12px; font-size:.9rem; }
 .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 .aviso { background:color-mix(in srgb, var(--atencao) 12%, var(--cartao)); border:1px solid var(--atencao); border-radius:10px; padding:8px 12px; margin:6px 0; color:var(--texto); font-size:.93rem; }
@@ -282,3 +286,27 @@ main > .cartao { min-width:0; }
 fieldset { border:1px solid var(--borda); border-radius:var(--raio); padding:10px 14px; }
 
 .lista-simples { list-style:none; padding:0; margin:12px 0; display:grid; gap:12px; } .lista-simples li { border:1px solid var(--borda); border-radius:10px; padding:12px; display:grid; gap:8px; }
+/* ===== taxonomia: sincronia com o Bling ===== */
+.sinc-bling { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--borda); display: grid; gap: 10px; }
+.sinc-resumo { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.sinc-resumo li { border: 1px solid var(--borda); border-left-width: 4px; border-radius: var(--raio); padding: 8px 12px; display: grid; background: var(--cartao); }
+.sinc-resumo li b { font-size: 1.4rem; line-height: 1.1; }
+.sinc-resumo li span { font-size: .85rem; color: var(--suave); }
+.sinc-resumo .ok { border-left-color: var(--verde, #0a8f6a); } .sinc-resumo .atencao { border-left-color: #c58a00; } .sinc-resumo .erro { border-left-color: #b3261e; }
+.sinc-bling details { border: 1px solid var(--borda); border-radius: var(--raio); padding: 4px 12px 10px; }
+.sinc-bling summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.sinc-lista { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 4px; }
+/* ===== vitrine: guia de filtros, passos numerados e filtros ativos ===== */
+.v-guia { background: var(--cartao); border: 1px solid var(--borda); border-radius: var(--raio); padding: 14px 16px; box-shadow: var(--sombra); display: grid; gap: 8px; }
+.v-guia-titulo { margin: 0; font-weight: 700; }
+.v-guia ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 720px) { .v-guia ol { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.v-guia li button { width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 10px; text-align: left; min-height: 48px; font-weight: 500; }
+.v-guia li b, .v-passo { display: inline-grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--marca, #b8472b); color: #fff; font-size: .85rem; letter-spacing: 0; }
+.v-passo { margin-right: 6px; }
+.v-caixa-solto { margin: 4px 2px 8px; }
+.v-ativos { display: grid; gap: 8px; margin: 0 0 12px; }
+.v-ativos ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.v-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 4px 12px; border-radius: 999px; border-color: var(--marca, #b8472b); }
+.v-chip span { color: var(--suave); }
+.v-chip i { font-style: normal; font-weight: 700; }

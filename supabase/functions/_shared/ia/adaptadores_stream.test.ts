@@ -29,7 +29,7 @@ function fetchCom(r: () => Response | Promise<Response>) {
 }
 const ev = (obj: unknown, nome?: string) => `${nome ? `event: ${nome}\n` : ""}data: ${JSON.stringify(obj)}\n\n`;
 const chamada = (f: typeof fetch, extra: Partial<ChamadaStream> = {}): ChamadaStream => ({
-  chave: CHAVE, modelo: "modelo-x", sistema: "Você é o Conector IA.", maxTokens: 256, fetch: f, baseUrl: "https://api.exemplo-llm.com/v1",
+  chave: CHAVE, modelo: "modelo-x", sistema: "Você é o Nano.ia.", maxTokens: 256, fetch: f, baseUrl: "https://api.exemplo-llm.com/v1",
   ferramentas: [{ name: "buscar", description: "busca", input_schema: { type: "object", properties: { q: { type: "string" } }, required: ["q"] } }], ...extra,
 });
 const msgs: Mensagem[] = [{ role: "user", content: "olá" }];
