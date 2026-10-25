@@ -175,3 +175,9 @@ test("conversar: corte por tamanho/bloqueio do provedor marca a resposta como IN
   const ok = await conversar({ provedor: "gemini", chave: "k", modelo: "m", sistema: "s", mensagens: [], ferramentas: [], executar: async () => ({}), fetch: (async () => resp({ candidates: [{ finishReason: "STOP", content: { parts: [{ text: "fim" }] } }] })) as unknown as typeof fetch });
   assert.equal(ok.completa, true); assert.equal(ok.parada, undefined);
 });
+
+test("persona: o agente se chama Nano.ia (nunca Genesis), fala natural e específico, sem expor provedor", async () => {
+  const { SISTEMA } = await import("./ferramentas.ts");
+  assert.match(SISTEMA, /Nano\.ia/); assert.doesNotMatch(SISTEMA, /g[eê]nesis|g[eê]nese/i);
+  assert.match(SISTEMA, /ESPEC[ÍI]FICO/); assert.match(SISTEMA, /natural/i); assert.match(SISTEMA, /Nunca cite o nome do provedor/);
+});
