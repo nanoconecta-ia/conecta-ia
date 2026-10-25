@@ -1,4 +1,4 @@
-# Contratos de ferramentas do Conector IA
+# Contratos de ferramentas do Nano.ia
 
 > **Gerado** por `scripts/gerar-docs-ferramentas.ts` a partir de `supabase/functions/_shared/conector/registro.ts`. Não edite: altere o registro e gere de novo.
 
@@ -254,7 +254,7 @@ Resumo: 55 ferramentas — 34 ativas, 17 planejadas, 4 desligadas.
 
 ## Campos do produto no Bling
 
-Pode ser **alterado** pelo Conector IA (somente após aprovação e com a escrita liberada): `nome`, `descricaoCurta`, `descricaoComplementar`, `marca`, `gtin`, `pesoLiquido`, `pesoBruto`, `dimensoes`, `categoria`.
+Pode ser **alterado** pelo Nano.ia (somente após aprovação e com a escrita liberada): `nome`, `descricaoCurta`, `descricaoComplementar`, `marca`, `gtin`, `pesoLiquido`, `pesoBruto`, `dimensoes`, `categoria`.
 **Nunca** é lido para o LLM nem alterado: `tributacao`, `ncm`, `cest`, `fornecedor`, `fornecedores`, `precoCusto`, `precoCompra`, `preco`, `estoque`, `codigo`, `situacao`, `formato`.
 
 | Campo Conecta.IA | Caminho no Bling | Tipo | Conferido na documentação oficial |

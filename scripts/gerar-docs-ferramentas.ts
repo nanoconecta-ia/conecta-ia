@@ -11,7 +11,7 @@ const campos = (s: JsonSchema) => {
 };
 const sim = (b: boolean) => (b ? "sim" : "não");
 const grupos = ["conecta", "bling", "engenharia", "desenvolvimento"] as const;
-let md = `# Contratos de ferramentas do Conector IA
+let md = `# Contratos de ferramentas do Nano.ia
 
 > **Gerado** por \`scripts/gerar-docs-ferramentas.ts\` a partir de \`supabase/functions/_shared/conector/registro.ts\`. Não edite: altere o registro e gere de novo.
 
@@ -32,7 +32,7 @@ for (const g of grupos) {
 md += `
 ## Campos do produto no Bling
 
-Pode ser **alterado** pelo Conector IA (somente após aprovação e com a escrita liberada): ${(CAMPOS_BLING_PERMITIDOS as readonly string[]).map((c) => `\`${c}\``).join(", ")}.
+Pode ser **alterado** pelo Nano.ia (somente após aprovação e com a escrita liberada): ${(CAMPOS_BLING_PERMITIDOS as readonly string[]).map((c) => `\`${c}\``).join(", ")}.
 **Nunca** é lido para o LLM nem alterado: ${(CAMPOS_BLING_PROIBIDOS as readonly string[]).map((c) => `\`${c}\``).join(", ")}.
 
 | Campo Conecta.IA | Caminho no Bling | Tipo | Conferido na documentação oficial |

@@ -1,4 +1,4 @@
-// Policy Engine do Conector IA: guardião único. Nenhuma ferramenta roda sem passar por aqui.
+// Policy Engine do Nano.ia: guardião único. Nenhuma ferramenta roda sem passar por aqui.
 // Puro e determinístico. Ordem das regras = ordem de severidade; a primeira que nega encerra.
 import type { ContextoPolicy, DefinicaoFerramenta, ResultadoPolicy } from "./tipos.ts";
 import { ORDEM_RISCO } from "./tipos.ts";

@@ -1,4 +1,4 @@
-// Chat do Conector IA: memória persistente, troca de modelo sem perder estado, fallback, limite, cancelamento e eventos da esfera.
+// Chat do Nano.ia: memória persistente, troca de modelo sem perder estado, fallback, limite, cancelamento e eventos da esfera.
 // Provedores de LLM simulados por fetch; banco REAL local (migrações aplicadas).
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -62,7 +62,7 @@ const ge = (text: string | null, tool?: { nome: string; args: unknown }) => ({ c
 function portas(fetchFalso: typeof fetch, userId = U) {
   return portasChatSupabase({
     admin: db as any, lojaId: L, userId, nomeLoja: "Loja do chat", decifrar: async (c) => "chave-" + c, fetch: fetchFalso,
-    contexto: (conversaId) => ({ origem: "chat", lojaId: L, userId, dados: dadosSupabase(db as any, L), rpc: db.rpc as any, admin: db as any, bling, conversaId, agente: { nome: "Conector IA", modelo: "teste" } }),
+    contexto: (conversaId) => ({ origem: "chat", lojaId: L, userId, dados: dadosSupabase(db as any, L), rpc: db.rpc as any, admin: db as any, bling, conversaId, agente: { nome: "Nano.ia", modelo: "teste" } }),
   });
 }
 async function turno(pedido: Parameters<typeof executarTurno>[0], p: ReturnType<typeof portas>, sinal?: AbortSignal) {
@@ -110,7 +110,7 @@ test("turno 2 (troca para Gemini na MESMA conversa): histórico e estado operaci
   assert.equal(estados(ev).at(-1), "aguardando_aprovacao");
   assert.equal(db.sql(`select string_agg(distinct provedor, ',' order by provedor) from public.agente_mensagens where conversa_id = '${conversaId}' and papel = 'assistant'`), "compativel_openai,gemini");
   assert.equal(db.sql(`select provedor from public.agente_conversas where id = '${conversaId}'`), "gemini", "a conversa lembra o modelo escolhido");
-  assert.equal(db.sql(`select agente || '|' || coalesce(conversa_id::text, '') from public.agente_propostas where id = '${prop.id}'`), `Conector IA|${conversaId}`);
+  assert.equal(db.sql(`select agente || '|' || coalesce(conversa_id::text, '') from public.agente_propostas where id = '${prop.id}'`), `Nano.ia|${conversaId}`);
 });
 
 test("turno 3 (volta ao GPT): o prompt agora carrega a proposta pendente criada no turno anterior (continuidade entre modelos)", { skip }, async () => {
