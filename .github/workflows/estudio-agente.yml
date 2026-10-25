@@ -1,7 +1,7 @@
 name: Estúdio do agente - revisão visual sintética
 on:
   pull_request:
-    paths: ['painel/**', 'scripts/tests/estudio-visual.mjs', 'scripts/tests/oauth-consentimento-visual.mjs', '.github/workflows/estudio-agente.yml']
+    paths: ['painel/**', 'scripts/tests/estudio-visual.mjs', 'scripts/tests/oauth-consentimento-visual.mjs', 'scripts/tests/pwa-instalavel.mjs', '.github/workflows/estudio-agente.yml']
 permissions:
   contents: read
 concurrency:
@@ -32,6 +32,7 @@ jobs:
           npm install --no-save --package-lock=false @playwright/test@1.56.1
           npx playwright install chromium --with-deps
       - run: node scripts/tests/estudio-visual.mjs
+      - run: node scripts/tests/pwa-instalavel.mjs
       - run: node scripts/tests/oauth-consentimento-visual.mjs
         env:
           ESTUDIO_MINIATURAS: '1'
