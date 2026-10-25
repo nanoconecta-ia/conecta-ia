@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 55 ferramentas — 34 ativas, 17 planejadas, 4 desligadas.
+Resumo: 54 ferramentas — 34 ativas, 16 planejadas, 4 desligadas.
 
 ## Grupo: conecta
 
@@ -26,7 +26,6 @@ Resumo: 55 ferramentas — 34 ativas, 17 planejadas, 4 desligadas.
 | `conecta.plugins.listar` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | — |
 | `conecta.plugins.chamar` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `plugin*:string` `capacidade*:string` `entrada:object` |
 | `conhecimento.buscar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `texto*:string` `tipo:string` `limite:integer` |
-| `conecta.banners.gerenciar` | planejada | propor | LOW | não | sim | sim | não | chave | `tipo*:string` `produto_id:string` |
 | `conecta.fabricante.pagina_preparar` | planejada | propor | LOW | não | sim | sim | não | chave | `fabricante*:string` |
 | `conecta.seo.verificar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `produto_id:string` |
 | `conecta.enriquecimento.definir` | ativa | executar | MEDIUM | sim | não | não | sim | chave | `sku*:string` `campos*:object` |
@@ -74,9 +73,6 @@ Resumo: 55 ferramentas — 34 ativas, 17 planejadas, 4 desligadas.
 - **`conhecimento.buscar`** — Recupera conhecimento técnico com fonte e versão (documentação, validado ou hipótese), sem misturar os tipos.
   - *Verificação:* Cada item traz tipo, fonte, versão e status.
   - *Recuperação:* Repetir a leitura; é segura.
-- **`conecta.banners.gerenciar`** — Prepara banner promocional ou de fabricante (prévia). Geração de imagem é capacidade independente e ainda não configurada.
-  - *Verificação:* Prévia revisada pelo lojista.
-  - *Recuperação:* Descartar a prévia.
 - **`conecta.fabricante.pagina_preparar`** — Prepara a página de um fabricante com dados aprovados.
   - *Verificação:* Prévia revisada.
   - *Recuperação:* Descartar.
