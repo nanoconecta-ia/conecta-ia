@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Markdown } from "./Markdown.tsx";
 import { EvidenciaProduto, type EvidenciaBusca } from "./EvidenciaProduto.tsx";
 import { comecoDaLonga, ehLonga, resumoEvidencia, resumoLinha } from "../lib/retratil.ts";
 
@@ -19,7 +20,7 @@ export function MensagemRetratil({ m, recolhida, onAlternar }: { m: MensagemChat
   return (
     <div className={`bolha ${m.de}`}>
       <div className="bolha-topo"><b>{quem}</b><button type="button" className="mini sec" aria-expanded onClick={onAlternar} aria-label="Recolher esta mensagem">Recolher</button></div>
-      {longa ? comecoDaLonga(m.texto) : m.texto}
+      {m.de === "ia" ? <Markdown texto={longa ? comecoDaLonga(m.texto) : m.texto} /> : (longa ? comecoDaLonga(m.texto) : m.texto)}
       {ehLonga(m.texto) && <button type="button" className="mini sec mais" onClick={() => setCompleta((v) => !v)}>{completa ? "Mostrar menos" : "Mostrar mais"}</button>}
       {m.simulado === true && <strong> · RESPOSTA SIMULADA</strong>}
       {m.evidencias?.map((ev, n) => (

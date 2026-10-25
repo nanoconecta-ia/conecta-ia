@@ -28,7 +28,7 @@ try{
    else if(c.acao==='chat_config')body={persistente:true,bling:true,leitura_administrativa:false,retencao_dias:180};
    else if(c.acao==='chat_listar')body={conversas:[]};
    else if(c.acao==='chat_perguntar'){n++;await new Promise(r=>setTimeout(r,n===1?1200:150));
-    body={resposta:n===2?LONGA:`Resposta ${n} da Nano.ia.`,conversa_id:C,simulado:true,evidencias:n===2?[{origem:'api_bling',simulado:true,consultado_em:'2026-10-25T00:00:00Z',dados:{nome:'Produto SIMULADO',sku:'SKU-DEMO',preco:10,estoque:1},total_candidatos:3,candidatos:[],fontes:[],conclusao:{ausencia_nos_filtros_pesquisados:false,api_completa:true,apenas_espelho:false,autoriza_criacao:false,aviso:'x'}}]:[]};}
+    body={resposta:n===2?LONGA:n===4?'**Achei** o kit *833333*:\n\n* **SKU 5112** excluído\n* **SKU 833333** excluído\n\nResposta 4 da Nano.ia.':`Resposta ${n} da Nano.ia.`,conversa_id:C,simulado:true,evidencias:n===2?[{origem:'api_bling',simulado:true,consultado_em:'2026-10-25T00:00:00Z',dados:{nome:'Produto SIMULADO',sku:'SKU-DEMO',preco:10,estoque:1},total_candidatos:3,candidatos:[],fontes:[],conclusao:{ausencia_nos_filtros_pesquisados:false,api_completa:true,apenas_espelho:false,autoriza_criacao:false,aviso:'x'}}]:[]};}
    else return route.abort();
    return route.fulfill({status:200,contentType:'application/json',headers:{...h,'access-control-allow-origin':'*'},body:JSON.stringify(body)});
   });
@@ -49,6 +49,8 @@ try{
   const total=await page.locator('.bolha, .bolha-linha').count();
   assert.equal(await page.locator('.bolha').count(),2,'só as 2 últimas abertas');assert.equal(await page.locator('.bolha-linha').count(),total-2);
   await mkdir(root+'evidencias-chat',{recursive:true});await page.screenshot({path:root+`evidencias-chat/assistente-retratil-recolhido-${largura}.png`});
+  // markdown do agente renderizado (negrito, itálico, lista), sem asteriscos crus
+  const ultima=page.locator('.bolha.ia').last();assert.ok(await ultima.locator('strong', {hasText:'Achei'}).count()>=1);assert.equal(await ultima.locator('li').count(),2);assert.ok(!(await ultima.innerText()).includes('**'),'sem asteriscos crus');
   // abrir uma antiga à mão, recolher tudo, expandir tudo
   await page.locator('.bolha-linha').first().click();assert.equal(await page.locator('.bolha').count(),3);
   await page.getByRole('button',{name:'Recolher tudo'}).click();assert.equal(await page.locator('.bolha').count(),0);
