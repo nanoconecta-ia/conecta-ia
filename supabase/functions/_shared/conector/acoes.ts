@@ -19,7 +19,7 @@ const ok = (corpo: Record<string, unknown> = {}): Resposta => ({ status: 200, co
 const TRADUCOES: [RegExp, number, string][] = [
   [/versao_ou_hash_divergente/, 409, "A proposta mudou desde que você a abriu. Abra a versão atual e aprove de novo."],
   [/proposta_nao_pendente/, 409, "Esta proposta já foi decidida, expirou ou foi substituída."],
-  [/proposta_expirada/, 409, "A proposta expirou. Peça uma nova ao Conector IA."],
+  [/proposta_expirada/, 409, "A proposta expirou. Peça uma nova ao Nano.ia."],
   [/sem_permissao/, 403, "Você não tem permissão para esta ação nesta loja."],
   [/confirmacao_explicita_obrigatoria/, 422, "Risco alto: confirme explicitamente para aprovar."],
   [/nada_aprovavel/, 422, "Nenhum item pode ser aprovado: produtos travados ou fora do escopo."],
@@ -58,7 +58,7 @@ export async function acaoAprovacoes(c: Record<string, any>, h: Humano, d: DepsA
         if (!uuid(c.proposta_id) || !Number.isInteger(c.versao) || !/^[0-9a-f]{64}$/.test(String(c.hash)) || !["aprovada", "rejeitada"].includes(c.decisao)) return erro(400, "Informe proposta_id, versao, hash e decisao (aprovada ou rejeitada).");
         if (c.itens !== undefined && !uuids(c.itens)) return erro(400, "itens deve ser uma lista de ids.");
         const r = await rpcOu(d, "agente_proposta_decidir", { p_loja: h.lojaId, p_proposta: c.proposta_id, p_versao: c.versao, p_hash: c.hash, p_user: h.userId, p_decisao: c.decisao, p_itens: c.itens ?? null, p_confirmacao_explicita: c.confirmacao_explicita === true });
-        return r?.ok === false ? erro(409, "A proposta expirou. Peça uma nova ao Conector IA.", "proposta_expirada") : ok(r ?? {});
+        return r?.ok === false ? erro(409, "A proposta expirou. Peça uma nova ao Nano.ia.", "proposta_expirada") : ok(r ?? {});
       }
       case "revisar": {
         if (!uuid(c.proposta_id)) return erro(400, "Informe proposta_id.");

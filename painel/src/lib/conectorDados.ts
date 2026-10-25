@@ -1,4 +1,4 @@
-// Acesso a dados do Conector IA. Leituras diretas pelo Supabase (a RLS decide o que cada pessoa vê) e ações pelas Edge Functions
+// Acesso a dados do Nano.ia. Leituras diretas pelo Supabase (a RLS decide o que cada pessoa vê) e ações pelas Edge Functions
 // do contrato. Em desenvolvimento com ?demo=1 a fonte troca para fixtures (lib/demo.ts), que nem entram no pacote de produção.
 import { supabase } from "../supabase.ts";
 import { DEMO } from "./modo.ts";

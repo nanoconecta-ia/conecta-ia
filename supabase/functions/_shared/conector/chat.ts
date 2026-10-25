@@ -1,4 +1,4 @@
-// Turno de chat do Conector IA: persistência, escolha/troca de modelo, memória e estado operacional, ferramentas pelo Policy Engine,
+// Turno de chat do Nano.ia: persistência, escolha/troca de modelo, memória e estado operacional, ferramentas pelo Policy Engine,
 // eventos para a esfera/streaming. Puro e injetável (portas); a Edge Function conector-chat só liga as portas ao Supabase.
 // O estado pertence ao Conecta.IA: trocar GPT/Gemini/Claude não apaga conversa, tarefa, proposta nem auditoria.
 import { conversar, IaErro, type Mensagem } from "../ia/claude.ts";
@@ -57,7 +57,7 @@ export async function executarTurno(pedido: PedidoTurno, portas: PortasChat, emi
     if (texto.length > MAX_TEXTO) { e("erro", { mensagem: `Mensagem grande demais (máximo ${MAX_TEXTO} caracteres).` }); estado("erro"); return; }
 
     const ativos = await portas.provedores();
-    if (ativos.length === 0) { e("erro", { mensagem: "Nenhum provedor de IA ativo. Cadastre uma chave em Integrações de IA para conversar com o Conector IA." }); estado("erro"); return; }
+    if (ativos.length === 0) { e("erro", { mensagem: "Nenhum provedor de IA ativo. Cadastre uma chave em Integrações de IA para conversar com o Nano.ia." }); estado("erro"); return; }
 
     let conv: ConversaSalva | null = null;
     if (pedido.conversaId) {
