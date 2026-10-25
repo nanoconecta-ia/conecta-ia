@@ -12,7 +12,7 @@ let browser;
 try{
  for(let i=0;i<100;i++){try{if((await fetch(base+'/')).ok)break}catch{}await new Promise(r=>setTimeout(r,100))}
  browser=await chromium.launch({headless:true});
- for(const [largura,altura] of [[390,844],[1280,800]]){
+ for(const [largura,altura] of [[300,640],[360,740],[390,844],[1280,800]]){
   const context=await browser.newContext({viewport:{width:largura,height:altura}});
   const page=await context.newPage(),erros=[];
   page.on('pageerror',e=>erros.push(e.message));
@@ -60,9 +60,11 @@ try{
   await dock.getByText(/Layout de ".*" a \d+ px/).waitFor();
   await campo.fill('o que você sabe fazer?');await enviar.click();await dock.getByText(/Telas disponíveis para você/).waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'sem rolagem horizontal');
+  const passaDaBorda=await page.evaluate(()=>{const d=document.querySelector('#dock-agente').getBoundingClientRect();return [...document.querySelectorAll('#dock-agente *')].filter(e=>!e.closest('.aba')&&e.getBoundingClientRect().width>0&&(e.getBoundingClientRect().right>d.right+1||e.getBoundingClientRect().left<d.left-1)).map(e=>e.tagName+'.'+e.className)});
+  assert.deepEqual(passaDaBorda,[],`nada na janela do agente passa da borda a ${largura}px`);
   await mkdir(root+'evidencias-chat',{recursive:true});await page.screenshot({path:root+`evidencias-chat/nano-guia-${largura}.png`});
   assert.deepEqual(erros,[]);
   await context.close();
  }
- console.log('nano-guia-visual ok (390px e 1280px: balão arrastável, janela espaçosa, navegação em sequência por linguagem natural, avaliação de layout)');
+ console.log('nano-guia-visual ok (300, 360, 390 e 1280px: balão arrastável, janela espaçosa, navegação em sequência por linguagem natural, avaliação de layout)');
 }finally{await browser?.close();servidor.kill()}
