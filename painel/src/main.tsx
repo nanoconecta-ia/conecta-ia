@@ -14,3 +14,8 @@ createRoot(document.getElementById("raiz")!).render(
     <App />
   </StrictMode>,
 );
+
+// App instalável: registra o service worker só no build de produção (em desenvolvimento ele atrapalharia o recarregamento).
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => { navigator.serviceWorker.register("./sw.js").catch(() => { /* sem service worker o site continua funcionando; só não abre offline */ }); });
+}
