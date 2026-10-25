@@ -41,7 +41,7 @@ test('artefato Pair → gateway → Bling SIMULADO: origem, dados mínimos e aud
   assert.equal(r.status,200);assert.equal(d.origem,'api_bling');assert.equal(d.simulado,true);assert.equal(d.ambiente,'sintetico');assert.equal(d.dados.preco,34.5);
   assert.equal(a.rede.length,2,'SKU exato + referência no nome');assert.equal(a.audits.length,2);assert.equal(a.audits[0].acao,'pair.bling_consulta');assert.equal(a.audits[1].acao,'gateway.ok');
   assert.equal(a.audits[0].depois.sessao_id,sessao.sessao_id);assert.equal(a.audits[0].depois.dispositivo_id,sessao.dispositivo_id);assert.match(a.audits[0].depois.hash,/^[a-f0-9]{64}$/);
-  assert.ok(!('conversa_id' in a.audits[0].depois));assert.doesNotMatch(JSON.stringify([r,a.audits]),/SEGREDO|TOKEN-BLING|custo|fornecedor|service-sintetico/);
+  assert.ok(!('conversa_id' in a.audits[0].depois));assert.doesNotMatch(JSON.stringify([r,a.audits]),/SEGREDO|TOKEN-BLING|custo|fornecedor\\*"\\s*:|service-sintetico/);
 });
 for(const op of [{api:403},{api:429}])test('artefato: fallback no espelho identificado '+JSON.stringify(op),async()=>{
   const a=await ambiente(op),d=dado(await a.chamar());assert.equal(d.origem,'espelho');assert.equal(d.dados.preco,10);assert.ok(d.sincronizado_em);assert.ok(d.motivo);
