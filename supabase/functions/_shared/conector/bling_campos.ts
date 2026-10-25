@@ -1,4 +1,4 @@
-// Mapeamento Conecta.IA -> campos de produto do Bling (somente o que o Conector IA pode ALTERAR) e conferência pós-escrita.
+// Mapeamento Conecta.IA -> campos de produto do Bling (somente o que o Nano.ia pode ALTERAR) e conferência pós-escrita.
 // Nada fiscal, de preço, custo, fornecedor, estoque ou SKU entra aqui. `conferido: false` = ainda não confirmado na
 // documentação oficial do Bling (developer.bling.com.br); a escrita real continua desligada até essa conferência.
 import { CAMPOS_BLING_PROIBIDOS } from "./registro.ts";

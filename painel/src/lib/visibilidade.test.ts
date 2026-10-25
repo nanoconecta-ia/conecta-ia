@@ -13,7 +13,7 @@ test("mensagem: sucesso e erro de rede", () => {
   assert.equal(mensagemVisibilidade(null, true).ok, false);
 });
 test("menu: itens que dependem do conector somem enquanto o backend não está publicado", () => {
-  const itens: [string, string][] = [["/", "Visão geral"], ["/conector", "Conector IA"], ["/catalogo", "Catálogo"], ["/studio", "Studio"]];
+  const itens: [string, string][] = [["/", "Visão geral"], ["/conector", "Nano.ia"], ["/catalogo", "Catálogo"], ["/studio", "Studio"]];
   const pair: [string, string][] = [["/aprovacoes", "Aprovações"]];
   const dep = ["/conector", "/studio"];
   assert.deepEqual(montarMenu(itens, pair, { pairAtivo: false, conectorAtivo: false }, dep).map(([c]) => c), ["/", "/catalogo"]);

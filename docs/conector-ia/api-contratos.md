@@ -1,4 +1,4 @@
-# Conector IA — contratos de API (Fase 1, desenho)
+# Nano.ia — contratos de API (Fase 1, desenho)
 
 Tudo abaixo é **proposta de desenvolvimento**: nenhuma Edge Function foi implantada e nenhuma migração foi aplicada em produção.
 Todas as funções recebem `Authorization: Bearer <JWT do usuário>` (exceto `conector-mcp`, que usa chave MCP por loja) e respondem

@@ -27,7 +27,12 @@ const escrita = (nome: string, metodo: "POST" | "PUT" | "PATCH", caminho: string
 });
 
 export const FERRAMENTAS: readonly Ferramenta[] = [
-  leitura("bling.produtos.listar", "/produtos"),
+  // GET /produtos (somente leitura). Conferido no OpenAPI OFICIAL em 2026-10-25, verificação independente do dono (PowerShell no computador mobis, HTTP 200 em
+  // https://developer.bling.com.br/referencia; script reference-7ix34KV4.js -> https://developer.bling.com.br/build/assets/openapi-DA9aa7wN.json, info.version 3.0):
+  // criterio (inteiro 1..5: 1 últimos, 2 ativos, 3 inativos, 4 excluídos, 5 todos), nome (string), codigos[] (array de SKU), gtins[] (array de GTIN/EAN).
+  // Proveniência: leitura feita pelo dono/ChatGPT; este ambiente de desenvolvimento NÃO acessa developer.bling.com.br. Também confirmado por chamadas reais do conector Bling (2026-10-25).
+  // O OpenAPI lista PATCH /produtos/{idProduto}; isso NÃO habilita escrita (as ferramentas de escrita continuam desligadas e conferido=false).
+  leitura("bling.produtos.listar", "/produtos", true),
   // Conferido em 2026-10-18 no OpenAPI oficial developer.bling.com.br/referencia (GET /produtos/{idProduto}).
   leitura("bling.produtos.obter", "/produtos/{id}", true),
   leitura("bling.categorias.listar", "/categorias/produtos"),

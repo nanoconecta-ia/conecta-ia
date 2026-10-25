@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { aReconciliar, compararCampos, corpoDecisao, exigeConfirmacao, itensAprovaveis, podeDecidir, prazo, resumoOperacoes, type ItemProposta, type Proposta } from "./propostas.ts";
 
-const P = (o: Partial<Proposta> = {}): Proposta => ({ id: "p1", loja_id: "l1", solicitante_user: "u1", agente: "Conector IA", provedor: "claude", modelo: "m", titulo: "Enriquecer", resumo: null, risco: "MEDIUM", versao: 3, lote: false, estado: "pendente", hash: "h".repeat(64), expira_em: new Date(Date.now() + 3_600_000).toISOString(), criado_em: "2026-10-19T00:00:00Z", enviado_em: null, decidido_em: null, ...o });
+const P = (o: Partial<Proposta> = {}): Proposta => ({ id: "p1", loja_id: "l1", solicitante_user: "u1", agente: "Nano.ia", provedor: "claude", modelo: "m", titulo: "Enriquecer", resumo: null, risco: "MEDIUM", versao: 3, lote: false, estado: "pendente", hash: "h".repeat(64), expira_em: new Date(Date.now() + 3_600_000).toISOString(), criado_em: "2026-10-19T00:00:00Z", enviado_em: null, decidido_em: null, ...o });
 const I = (o: Partial<ItemProposta> = {}): ItemProposta => ({ id: "i1", proposta_id: "p1", produto_id: "pr1", ordem: 0, operacao: "conecta.enriquecimento.definir", alvo: null, campos: ["marca_peca"], antes: { marca_peca: null }, depois: { marca_peca: "Sabó" }, fontes: [{ url: "https://x.com" }], validacoes: [], risco: "MEDIUM", estado: "pendente", motivo: null, ...o });
 
 test("propostas: comparação antes/depois mostra '—' para vazio e marca o que mudou", () => {

@@ -1,4 +1,4 @@
-// Porta de leitura do Conector IA sobre o banco. TODA consulta é escopada pela loja AQUI (não depende do chamador lembrar).
+// Porta de leitura do Nano.ia sobre o banco. TODA consulta é escopada pela loja AQUI (não depende do chamador lembrar).
 // Implementação com cliente estilo supabase-js (service_role no servidor). Os testes rodam esta mesma implementação sobre
 // um cliente que fala SQL com um Postgres local, para provar nomes de colunas e filtros contra o esquema real.
 export interface ClienteDados { from(tabela: string): any }

@@ -4,6 +4,7 @@ import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
 import { iconeDaCategoria, TIPOS_VEICULO } from "../lib/icones.ts";
 import { vistaDaArea } from "../lib/vistas.ts";
 import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
+import { chipsDeFiltro, removerFiltro, textoResultado } from "../lib/filtrosLoja.ts";
 
 type Produto = { nome: string; sku: string; preco: number | null; em_estoque: boolean | null; marca: string | null; descricao: string | null; imagem: string | null; whatsapp: string | null; atualizado_em: string | null };
 type Veiculo = { modelo: string; motor: string | null; de: number | null; ate: number | null };
@@ -70,6 +71,8 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
     return [...set].sort((a, b) => b - a);
   }, [opcoes, f.modelo, f.motor]);
 
+  const chips = chipsDeFiltro(f, (k) => TIPOS_VEICULO.find((t) => t.chave === k)?.rotulo ?? null, (slug) => categorias.find((c) => c.slug === slug)?.nome ?? null);
+  const irPara = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   const buscar = (e: FormEvent) => { e.preventDefault(); setF({ ...f, q: busca.trim(), pagina: 1 }); document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" }); };
   const mudar = (p: Partial<Filtros>) => setF((x) => ({ ...x, ...p, pagina: 1 }));
 
@@ -97,9 +100,31 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
         <a className="botao verde" href="#catalogo" onClick={(e) => { e.preventDefault(); document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" }); }}>Explorar catálogo</a>
       </section>
 
+      <nav className="v-guia" aria-label="Como encontrar sua peça">
+        <p className="v-guia-titulo">Como encontrar sua peça em 3 passos</p>
+        <ol>
+          <li><button type="button" className="sec" onClick={() => irPara("passo-tipo")}><b>1</b><span>Escolha o tipo do seu veículo</span></button></li>
+          <li><button type="button" className="sec" onClick={() => irPara("busca-veiculo")}><b>2</b><span>Informe modelo, motor e ano</span></button></li>
+          <li><button type="button" className="sec" onClick={() => irPara("passo-categoria")}><b>3</b><span>Toque na categoria da peça</span></button></li>
+        </ol>
+        <p className="suave">Cada escolha reduz a lista abaixo. Os filtros ativos aparecem acima dos produtos e você remove com um toque.</p>
+      </nav>
+
+      {tipos.length > 0 && (
+        <section className="v-cartao" id="passo-tipo" aria-labelledby="titulo-tipo">
+          <h2 id="titulo-tipo" className="v-caixa"><b className="v-passo">1</b> Qual é o tipo do seu veículo?</h2>
+          <div className="v-tipos">
+            {TIPOS_VEICULO.filter((t) => tipos.some((x) => x.tipo === t.chave)).map((t) => (
+              <button key={t.chave} className={`v-tipo ${f.tipo === t.chave ? "ativo" : ""}`} aria-pressed={f.tipo === t.chave} onClick={() => mudar({ tipo: f.tipo === t.chave ? "" : t.chave })}>
+                <IconeVeiculo tipo={t} largura={120} /><span>{t.rotulo}</span><small className="mono">{tipos.find((x) => x.tipo === t.chave)?.total}</small>
+              </button>))}
+          </div>
+        </section>
+      )}
+
       {opcoes.length > 0 && (
         <section className="v-cartao" aria-labelledby="busca-veiculo">
-          <h2 id="busca-veiculo" className="v-caixa">Busca por veículo</h2>
+          <h2 id="busca-veiculo" className="v-caixa"><b className="v-passo">2</b> Busca por veículo: modelo, motor e ano</h2>
           <div className="v-cascata">
             <label>Modelo<select value={f.modelo} onChange={(e) => mudar({ modelo: e.target.value, motor: "", ano: "" })}><option value="">Todos</option>{modelos.map((m) => <option key={m}>{m}</option>)}</select></label>
             <label>Motor<select value={f.motor} disabled={!motores.length} onChange={(e) => mudar({ motor: e.target.value, ano: "" })}><option value="">Todos</option>{motores.map((m) => <option key={m}>{m}</option>)}</select></label>
@@ -110,19 +135,9 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
         </section>
       )}
 
-      {tipos.length > 0 && (
-        <section className="v-cartao" aria-label="Tipo de veículo">
-          <h2 className="v-caixa">Qual é o seu veículo?</h2>
-          <div className="v-tipos">
-            {TIPOS_VEICULO.filter((t) => tipos.some((x) => x.tipo === t.chave)).map((t) => (
-              <button key={t.chave} className={`v-tipo ${f.tipo === t.chave ? "ativo" : ""}`} aria-pressed={f.tipo === t.chave} onClick={() => mudar({ tipo: f.tipo === t.chave ? "" : t.chave })}>
-                <IconeVeiculo tipo={t} largura={120} /><span>{t.rotulo}</span><small className="mono">{tipos.find((x) => x.tipo === t.chave)?.total}</small>
-              </button>))}
-          </div>
-        </section>
-      )}
-
       {categorias.length > 0 && (
+        <section id="passo-categoria" aria-labelledby="titulo-categoria">
+        <h2 id="titulo-categoria" className="v-caixa v-caixa-solto"><b className="v-passo">3</b> Qual peça você procura? Toque na categoria</h2>
         <nav className="v-tiles" aria-label="Categorias">
           <button className={`v-tile ${!f.categoria ? "ativo" : ""}`} aria-pressed={!f.categoria} onClick={() => { setArea(""); mudar({ categoria: "" }); }}>
             <IconePeca nome="todas" tamanho={52} /><span>Todas</span>
@@ -133,6 +148,7 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
             </button>
           ))}
         </nav>
+        </section>
       )}
 
       {vistaDaArea(area) && (
@@ -143,6 +159,17 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
       )}
 
       <section id="catalogo" aria-live="polite">
+        {dados && (
+          <div className="v-ativos" role="status">
+            <strong>{textoResultado(dados.total, chips.length)}</strong>
+            {chips.length > 0 && (
+              <ul aria-label="Filtros ativos">
+                {chips.map((c) => <li key={c.chave}><button type="button" className="sec v-chip" onClick={() => { if (c.chave === "q") setBusca(""); if (c.chave === "categoria") setArea(""); mudar(removerFiltro(c.chave)); }} aria-label={`Remover filtro ${c.rotulo}: ${c.valor}`}><span>{c.rotulo}:</span> {c.valor} <i aria-hidden="true">✕</i></button></li>)}
+                <li><button type="button" className="sec mini" onClick={() => { setBusca(""); setArea(""); setF(VAZIO); }}>Limpar tudo</button></li>
+              </ul>
+            )}
+          </div>
+        )}
         {estado === "carregando" && !dados && <p className="suave">Carregando catálogo…</p>}
         {estado === "erro" && <div className="v-cartao"><p>Não foi possível carregar o catálogo agora. Tente de novo em instantes.</p></div>}
         {dados && dados.produtos.length === 0 && (
