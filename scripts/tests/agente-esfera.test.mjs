@@ -44,21 +44,23 @@ try {
 
   // 1) Esfera em repouso no celular: precisa ter movimento discreto
   let p = await novaPagina(390, 844); await ir(p, '/assistente');
-  await p.getByRole('img', { name: /Conector IA/ }).first().waitFor();
+  await p.getByRole('img', { name: /Nano.ia/ }).first().waitFor();
   const m = await movimento(p);
   verifica(m.rodando > 0, `esfera em repouso (celular) tem animação rodando: ${m.rodando} de ${m.total}`);
   verifica(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'assistente no celular sem rolagem horizontal');
   const campo = p.getByLabel(/Pergunte/).first();
   verifica(await campo.count() > 0 && await campo.isVisible().catch(() => false), 'campo de mensagem visível no celular');
   // interface em modo conversa: compositor visível sem rolar, esfera discreta, configurações recolhidas, consentimento nunca marcado sozinho
-  const dim = await p.evaluate(() => { const c = document.querySelector('.chat-compositor'); const e = document.querySelector('.esfera'); const cfg = document.querySelector('.chat-config'); const r = c?.getBoundingClientRect(); const barra = document.querySelector('.barra-status')?.getBoundingClientRect(); return { compositorBase: r ? Math.round(r.bottom) : null, barraTopo: barra ? Math.round(barra.top) : null, esfera: e ? Math.round(e.getBoundingClientRect().width) : null, configAberta: cfg ? cfg.hasAttribute('open') : null, consentimentoMarcado: [...document.querySelectorAll('.chat-compositor input[type=checkbox]')].some((i) => i.checked && /Enviar esta pergunta/.test(i.closest('label')?.textContent ?? '')) }; });
+  const dim = await p.evaluate(() => { const c = document.querySelector('.chat-compositor'); const e = document.querySelector('.esfera'); const abas = document.querySelector('.abas'); const r = c?.getBoundingClientRect(); const barra = document.querySelector('.barra-status')?.getBoundingClientRect(); return { compositorBase: r ? Math.round(r.bottom) : null, barraTopo: barra ? Math.round(barra.top) : null, esfera: e ? Math.round(e.getBoundingClientRect().width) : null, configAberta: abas ? (abas.dataset.esq === 'aberto' || abas.dataset.dir === 'aberto') : null, consentimentoMarcado: [...document.querySelectorAll('.chat-compositor input[type=checkbox]')].some((i) => i.checked && /Enviar esta pergunta/.test(i.closest('label')?.textContent ?? '')) }; });
   verifica(dim.compositorBase !== null && dim.compositorBase <= dim.barraTopo + 1, `compositor visível na primeira tela, acima da barra inferior (base ${dim.compositorBase}px, barra em ${dim.barraTopo}px)`);
   verifica(dim.esfera !== null && dim.esfera <= 48, `esfera discreta no cabeçalho (${dim.esfera}px)`);
-  verifica(dim.configAberta === false, 'configurações e conversas recolhidas por padrão');
+  verifica(dim.configAberta === false, 'abas laterais (conversas e modelo) recolhidas por padrão');
   verifica(dim.consentimentoMarcado === false, 'consentimento de envio ao provedor nunca vem marcado');
-  await p.getByText('Configurações e conversas').click(); verifica(await p.getByLabel('Modelo de IA').isVisible(), 'seletor de modelo acessível ao abrir as configurações');
-  await p.getByText('Configurações e conversas').click();
-  await p.screenshot({ path: `${SAIDA}/assistente-conversa-celular.png` });
+  await p.getByRole('button', { name: 'Modelo e privacidade' }).click(); await p.waitForTimeout(350); verifica(await p.getByLabel('Modelo de IA').isVisible(), 'seletor de modelo acessível ao abrir a aba lateral'); await p.screenshot({ path: `${SAIDA}/assistente-aba-modelo-celular.png` });
+  await p.getByRole('button', { name: 'Recolher modelo e privacidade' }).click();
+  await p.getByRole('button', { name: 'Conversas', exact: true }).click(); await p.waitForTimeout(350); verifica(await p.getByRole('complementary', { name: 'Conversas' }).isVisible(), 'aba de conversas abre'); await p.screenshot({ path: `${SAIDA}/assistente-aba-conversas-celular.png` });
+  await p.getByRole('button', { name: 'Recolher conversas' }).click();
+  await p.waitForTimeout(350); await p.screenshot({ path: `${SAIDA}/assistente-conversa-celular.png` });
   // movimento visível de verdade: duas capturas da esfera com 2,5 s de intervalo precisam ser diferentes
   const caixaEsfera = p.locator('.esfera-caixa').first();
   const foto = async () => createHash('sha1').update(await caixaEsfera.screenshot()).digest('hex');
@@ -73,14 +75,16 @@ try {
   await p.context().close();
 
   // 1b) desktop: o compositor também fica no rodapé e a conversa ocupa a área principal
-  p = await novaPagina(1280, 800); await ir(p, '/assistente'); await p.getByRole('img', { name: /Conector IA/ }).first().waitFor();
+  p = await novaPagina(1280, 800); await ir(p, '/assistente'); await p.getByRole('img', { name: /Nano.ia/ }).first().waitFor();
   const d = await p.evaluate(() => ({ overflowX: document.documentElement.scrollWidth > innerWidth, compositor: !!document.querySelector('.chat-compositor'), base: Math.round(document.querySelector('.chat-compositor').getBoundingClientRect().bottom), barra: Math.round(document.querySelector('.barra-status').getBoundingClientRect().top) }));
   verifica(!d.overflowX && d.compositor && d.base <= d.barra + 1, `desktop: sem rolagem horizontal e compositor acima da barra (${d.base}px / ${d.barra}px)`);
+  await p.getByRole('button', { name: 'Conversas', exact: true }).click(); await p.getByRole('button', { name: 'Modelo e privacidade' }).click(); await p.waitForTimeout(350);
+  verifica(await p.getByRole('complementary', { name: 'Modelo e privacidade' }).isVisible(), 'desktop: aba de modelo abre ao lado da conversa'); await p.screenshot({ path: `${SAIDA}/assistente-abas-desktop.png` });
   await p.screenshot({ path: `${SAIDA}/assistente-conversa-desktop.png` });
   await p.context().close();
 
   // 2) prefers-reduced-motion: sem movimento (a preferência do aparelho é respeitada)
-  p = await novaPagina(390, 844, true); await ir(p, '/assistente'); await p.getByRole('img', { name: /Conector IA/ }).first().waitFor();
+  p = await novaPagina(390, 844, true); await ir(p, '/assistente'); await p.getByRole('img', { name: /Nano.ia/ }).first().waitFor();
   const r = await movimento(p); verifica(r.rodando === 0, `com movimento reduzido nada anima: ${r.rodando} rodando`);
   const cx = p.locator('.esfera-caixa').first(); const g1 = createHash('sha1').update(await cx.screenshot()).digest('hex'); await p.waitForTimeout(1500);
   verifica(g1 === createHash('sha1').update(await cx.screenshot()).digest('hex'), 'com movimento reduzido a esfera fica estática (preferência respeitada)');
@@ -97,11 +101,11 @@ try {
   const botao = p.getByRole('button', { name: /Agente lateral/ });
   verifica(await botao.isVisible(), 'botão do agente visível no celular (tela de catálogo)');
   const caixa = await botao.boundingBox(); verifica(!!caixa && caixa.x >= 0 && caixa.x + caixa.width <= 390 && caixa.width >= 40 && caixa.height >= 40, `botão do agente dentro da tela e com alvo de toque grande (${caixa && Math.round(caixa.width)}x${caixa && Math.round(caixa.height)})`);
-  await botao.click(); await p.getByRole('complementary', { name: 'Agente' }).waitFor();
-  verifica(await p.getByRole('complementary', { name: 'Agente' }).isVisible(), 'agente abre');
+  await botao.click(); await p.getByRole('complementary', { name: 'Nano.ia', exact: true }).waitFor();
+  verifica(await p.getByRole('complementary', { name: 'Nano.ia', exact: true }).isVisible(), 'agente abre');
   await p.screenshot({ path: `${SAIDA}/agente-aberto-celular.png` });
   await p.keyboard.press('Escape');
-  verifica(!(await p.getByRole('complementary', { name: 'Agente' }).isVisible()), 'agente fecha com Esc');
+  verifica(!(await p.getByRole('complementary', { name: 'Nano.ia', exact: true }).isVisible()), 'agente fecha com Esc');
   await p.context().close();
 
   // 4) Na página do assistente o agente é a própria página: há um atalho claro para voltar/abrir?

@@ -202,10 +202,36 @@ a.botao-link:hover { background:var(--realce); }
 a.ficha-wa { display: block; text-align: center; padding: 12px; background: #1f9d55; color: #fff; font-weight: 700; text-decoration: none; }
 
 /* Assistente como conversa: cabeçalho compacto, configurações recolhidas e compositor fixo no rodapé (acima da barra de status e da área segura) */
-.chat-tela { display: grid; gap: 10px; }
-.chat-tela .agente { gap: 10px; flex-wrap: nowrap; } .chat-tela .agente h1 { font-size: 1.1rem; }
-.chat-config, .chat-voz-aviso { border: 1px solid var(--borda); border-radius: var(--raio); padding: 4px 10px; }
-.chat-config summary, .chat-voz-aviso summary { cursor: pointer; font-weight: 600; min-height: 36px; display: flex; align-items: center; }
-.chat-config[open] { display: grid; gap: 10px; padding-bottom: 10px; }
-.chat-voz-aviso summary { font-weight: 500; font-size: .85rem; min-height: 32px; }
-.chat-compositor { position: sticky; bottom: calc(32px + env(safe-area-inset-bottom, 0px)); z-index: 2; display: grid; gap: 6px; padding: 8px 0 4px; background: var(--cartao, var(--fundo)); border-top: 1px solid var(--borda); }
+
+/* ===== Nano.ia / Assistente: conversa em primeiro lugar, com abas laterais retráteis (conversas e modelo/privacidade) ===== */
+.abas-caixa { container: abas / inline-size; height: calc(100dvh - 182px); min-height: 420px; }
+@media (min-width: 960px) { .abas-caixa { height: calc(100dvh - 128px); } }
+.dock-agente .dock-corpo:has(.abas-caixa) { padding: 0; overflow: hidden; display: block; }
+.dock-agente .abas-caixa { height: 100%; min-height: 0; }
+.abas { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); height: 100%; padding: 8px; gap: 8px; overflow: hidden; }
+.abas-centro { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; }
+.abas-centro > * { flex: none; }
+.abas-centro > .chat { flex: 1 1 auto; overflow-y: auto; min-height: 120px; align-content: start; }
+.abas .agente { gap: 8px; flex-wrap: nowrap; }
+.abas .agente h1 { font-size: 1.05rem; }
+.abas .agente-titulo { min-width: 0; display: grid; }
+.abas .agente-titulo .estado { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.abas .ic-aba { min-height: 44px; min-width: 44px; padding: 6px 10px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.abas .chat-compositor { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--borda); }
+.aba { position: absolute; top: 0; bottom: 0; z-index: 3; width: min(88%, 330px); display: flex; flex-direction: column; background: var(--cartao, var(--fundo)); border: 1px solid var(--borda); box-shadow: 0 0 40px rgba(0,0,0,.25); visibility: hidden; transition: transform .2s, visibility .2s; }
+.aba-esq { left: 0; transform: translateX(-105%); border-radius: 0 var(--raio) var(--raio) 0; }
+.aba-dir { right: 0; transform: translateX(105%); border-radius: var(--raio) 0 0 var(--raio); }
+.abas[data-esq="aberto"] .aba-esq, .abas[data-dir="aberto"] .aba-dir { transform: none; visibility: visible; }
+.aba-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--borda); }
+.aba-corpo { padding: 12px; display: grid; gap: 10px; align-content: start; overflow-y: auto; min-height: 0; }
+.abas-fundo { position: absolute; inset: 0; z-index: 2; background: rgba(8,16,24,.5); border: 0; border-radius: 0; padding: 0; min-height: 0; }
+.abas-fundo:hover:not(:disabled) { background: rgba(8,16,24,.5); }
+@container abas (max-width: 460px) { .abas .ic-aba span { display: none; } }
+@container abas (min-width: 820px) {
+  .abas[data-esq="aberto"] { grid-template-columns: 260px minmax(0, 1fr); }
+  .abas[data-dir="aberto"] { grid-template-columns: minmax(0, 1fr) 300px; }
+  .abas[data-esq="aberto"][data-dir="aberto"] { grid-template-columns: 260px minmax(0, 1fr) 300px; }
+  .aba { position: static; width: auto; transform: none; visibility: visible; box-shadow: none; display: none; border-radius: var(--raio); }
+  .abas[data-esq="aberto"] .aba-esq, .abas[data-dir="aberto"] .aba-dir { display: flex; }
+  .abas-fundo { display: none; }
+}
