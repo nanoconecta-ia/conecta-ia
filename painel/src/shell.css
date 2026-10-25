@@ -314,3 +314,26 @@ html button.balao-genesis { color: #fff; left: 0; top: 0; right: auto; bottom: a
 
 html button.balao-genesis:hover:not(:disabled) { background: radial-gradient(120% 160% at 20% 0%, color-mix(in srgb, var(--ciano) 30%, var(--grafite-2)) 0%, var(--grafite) 70%); }
 .dock-topo .sec, .dock-topo .sec:hover:not(:disabled) { color: #fff; border-color: rgba(255,255,255,.45); background: transparent; } .dock-topo .sec:hover:not(:disabled) { background: rgba(255,255,255,.14); }
+
+/* ===== Janela do Nano.ia em celular estreito / texto grande: nada passa da borda (min-width:auto dos filhos de flex/grid empurrava o conteúdo) ===== */
+.dock-agente { grid-template-columns: minmax(0, 1fr); max-width: 100vw; }
+.dock-agente, .dock-agente .dock-corpo, .dock-agente .abas-caixa, .dock-agente .abas, .dock-agente .abas-centro, .dock-agente .abas-centro > *, .dock-agente .agente, .dock-agente form, .dock-agente .chat-compositor, .dock-agente .linha-voz, .dock-agente .retratil, .dock-agente .retratil-cabecote { min-width: 0; max-width: 100%; box-sizing: border-box; }
+.dock-topo { flex-wrap: wrap; row-gap: 6px; }
+.dock-topo strong { flex: none; } .dock-topo .suave { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock-topo .mini { flex: none; }
+.dock-agente .agente { flex-wrap: wrap; row-gap: 6px; }
+.dock-agente .agente-titulo { flex: 1 1 8ch; }
+.dock-agente .linha-voz { display: flex; gap: 8px; align-items: end; } .dock-agente .linha-voz > label { flex: 1 1 0; min-width: 0; } .dock-agente .linha-voz input { min-width: 0; width: 100%; }
+.dock-agente .linha-voz > button { flex: none; }
+.dock-agente .linha { flex-wrap: wrap; }
+.dock-agente .retratil-titulo { flex: none; } .dock-agente .retratil-resumo { min-width: 0; }
+.dock-agente .chat { overflow-x: hidden; } .dock-agente .bolha, .dock-agente .bolha-linha { max-width: 100%; overflow-wrap: anywhere; }
+@media (max-width: 400px) { .dock-agente .retratil-resumo { display: none; } .dock-agente .consentimento { font-size: .78rem; } }
+/* barra superior em celular estreito / texto grande: o nome da loja e os botões encolhem em vez de empurrar a tela para o lado */
+@media (max-width: 420px) {
+  .topo { gap: 6px; padding-left: 8px; padding-right: 8px; }
+  .topo .marca { min-width: 0; flex: 0 1 auto; } .topo .marca > div { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 12ch; } .topo .marca small { display: none; }
+  .topo > button.sec { padding: 4px 10px; min-width: 0; }
+}
+.dock-agente .chat, .abas .chat { grid-template-columns: minmax(0, 1fr); }
+.bolha-linha { min-width: 0; overflow: hidden; }
