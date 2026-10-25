@@ -44,7 +44,8 @@ try{
   await page.getByText('Resposta 1 da Nano.ia.').waitFor();await faixa.waitFor({state:'detached'});
   assert.equal(await page.locator('.esfera').first().getAttribute('data-estado'),'ocioso');
   // 2) mais três perguntas: as mensagens antigas viram uma linha, só as 2 últimas ficam abertas
-  for(const t of ['segunda','terceira','quarta']){await campo.fill(t);await enviar.click();await page.getByText(/^Resposta \d da Nano\.ia\.$|Achei três registros/).last().waitFor();await page.waitForTimeout(250);}
+  let esperado=3; // saudação + 1ª pergunta + 1ª resposta
+  for(const t of ['segunda','terceira','quarta']){await campo.fill(t);await enviar.click();esperado+=2;await page.waitForFunction(n=>document.querySelectorAll('.bolha, .bolha-linha').length===n,esperado);await page.locator('.faixa-acao').waitFor({state:'detached'});}
   const total=await page.locator('.bolha, .bolha-linha').count();
   assert.equal(await page.locator('.bolha').count(),2,'só as 2 últimas abertas');assert.equal(await page.locator('.bolha-linha').count(),total-2);
   await mkdir(root+'evidencias-chat',{recursive:true});await page.screenshot({path:root+`evidencias-chat/assistente-retratil-recolhido-${largura}.png`});
