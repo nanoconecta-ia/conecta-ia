@@ -282,3 +282,17 @@ main > .cartao { min-width:0; }
 fieldset { border:1px solid var(--borda); border-radius:var(--raio); padding:10px 14px; }
 
 .lista-simples { list-style:none; padding:0; margin:12px 0; display:grid; gap:12px; } .lista-simples li { border:1px solid var(--borda); border-radius:10px; padding:12px; display:grid; gap:8px; }
+/* ===== vitrine: guia de filtros, passos numerados e filtros ativos ===== */
+.v-guia { background: var(--cartao); border: 1px solid var(--borda); border-radius: var(--raio); padding: 14px 16px; box-shadow: var(--sombra); display: grid; gap: 8px; }
+.v-guia-titulo { margin: 0; font-weight: 700; }
+.v-guia ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 720px) { .v-guia ol { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.v-guia li button { width: 100%; display: flex; align-items: center; justify-content: flex-start; gap: 10px; text-align: left; min-height: 48px; font-weight: 500; }
+.v-guia li b, .v-passo { display: inline-grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--marca, #b8472b); color: #fff; font-size: .85rem; letter-spacing: 0; }
+.v-passo { margin-right: 6px; }
+.v-caixa-solto { margin: 4px 2px 8px; }
+.v-ativos { display: grid; gap: 8px; margin: 0 0 12px; }
+.v-ativos ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.v-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 4px 12px; border-radius: 999px; border-color: var(--marca, #b8472b); }
+.v-chip span { color: var(--suave); }
+.v-chip i { font-style: normal; font-weight: 700; }
