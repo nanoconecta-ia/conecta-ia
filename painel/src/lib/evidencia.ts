@@ -2,7 +2,7 @@
 export type SituacaoProduto = "ativo" | "inativo" | "excluido" | "ausente_do_espelho" | "desconhecida";
 export interface CandidatoEv { id: string; sku: string | null; nome: string | null; situacao: SituacaoProduto; preco: number | null; estoque: number | null; achado_por: string[]; origem: "api_bling" | "espelho"; no_espelho: boolean; sincronizado_em: string | null }
 export interface FonteEv { origem: "api_bling" | "espelho"; consulta: string; consultada: boolean; completa: boolean; total: number; paginas: number; motivo: string | null }
-export interface ConclusaoEv { ausencia_no_erp_comprovada: boolean; api_completa: boolean; apenas_espelho: boolean; autoriza_criacao: false; aviso: string }
+export interface ConclusaoEv { escopo?: { filtros_executados: string[]; campos_cobertos: string[]; campos_nao_cobertos: string[] }; ausencia_nos_filtros_pesquisados: boolean; api_completa: boolean; apenas_espelho: boolean; autoriza_criacao: false; aviso: string }
 
 const SITUACAO: Record<SituacaoProduto, string> = { ativo: "Ativo", inativo: "Inativo", excluido: "Excluído", ausente_do_espelho: "Ausente do espelho", desconhecida: "Situação desconhecida" };
 const ACHADO: Record<string, string> = { sku_exato: "SKU exato", referencia_no_nome: "referência no nome/código", gtin: "GTIN" };
@@ -26,6 +26,6 @@ export function selosCandidato(c: CandidatoEv): string[] {
 }
 /** Texto fixo sobre o que a busca prova. Nunca diz "não existe" sem a conclusão do servidor. */
 export function resumoConclusao(c: ConclusaoEv): string {
-  const ausencia = c.ausencia_no_erp_comprovada ? "Ausência no ERP: comprovada pela API (inclui excluídos)." : "Ausência no ERP: NÃO comprovada.";
+  const ausencia = c.ausencia_nos_filtros_pesquisados ? "Zero resultados nos filtros pesquisados (API, inclui excluídos). Não é prova universal de ausência no ERP." : "Ausência no ERP: NÃO comprovada.";
   return `${ausencia} Criação de cadastro autorizada por esta busca: não.`;
 }

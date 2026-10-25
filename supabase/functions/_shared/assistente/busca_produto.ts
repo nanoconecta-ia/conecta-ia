@@ -9,7 +9,9 @@ export interface Candidato {
   achado_por: Achado[]; origem: "api_bling" | "espelho"; no_espelho: boolean; sincronizado_em: string | null;
 }
 export interface Fonte { origem: "api_bling" | "espelho"; consulta: string; consultada: boolean; completa: boolean; total: number; paginas: number; motivo: string | null }
-export interface Conclusao { ausencia_no_erp_comprovada: boolean; api_completa: boolean; apenas_espelho: boolean; autoriza_criacao: false; aviso: string }
+/** Escopo REAL do que foi pesquisado. Ausência vale só para estes filtros/campos; nunca é prova universal de ausência no ERP. */
+export interface Escopo { filtros_executados: Achado[]; campos_cobertos: string[]; campos_nao_cobertos: string[]; filtro_nome_aplicado: boolean; gtin_aplicado: boolean; criterio: "todos" | "ativos"; prova_universal: false }
+export interface Conclusao { escopo: Escopo; ausencia_nos_filtros_pesquisados: boolean; api_completa: boolean; apenas_espelho: boolean; autoriza_criacao: false; aviso: string }
 export interface ResultadoBusca { termo: string; incluir_excluidos: boolean; total_candidatos: number; truncado: boolean; candidatos: Candidato[]; fontes: Fonte[]; conclusao: Conclusao }
 export interface LinhaEspelho { bling_id: string; sku: string | null; nome: string | null; preco: unknown; estoque: unknown; situacao: string | null; sincronizado_em: string | null }
 export interface PortasBusca {
@@ -120,11 +122,15 @@ export async function buscarProduto(entrada: { termo: string; incluirExcluidos?:
   const todos = [...porId.values()].sort((a, b) => ORDEM[a.situacao] - ORDEM[b.situacao] || Number(b.achado_por.includes("sku_exato")) - Number(a.achado_por.includes("sku_exato")) || (a.sku ?? "").localeCompare(b.sku ?? "") || a.id.localeCompare(b.id));
   const apiOk = apiCompleta && fontes.filter((f) => f.origem === "api_bling").every((f) => f.completa);
   const ausencia = apiOk && incluir && todos.length === 0;
+  const executados = planoApi(termo, incluir).map((q) => q.chave);
+  const escopo: Escopo = { filtros_executados: executados, criterio: incluir ? "todos" : "ativos", filtro_nome_aplicado: executados.includes("referencia_no_nome"), gtin_aplicado: executados.includes("gtin"),
+    campos_cobertos: ["SKU (código) exato", ...(executados.includes("referencia_no_nome") ? ["nome"] : []), ...(executados.includes("gtin") ? ["GTIN/EAN"] : [])],
+    campos_nao_cobertos: ["descrição", "marca/fabricante", "código do fornecedor", ...(executados.includes("referencia_no_nome") ? [] : ["nome (termo com menos de 3 caracteres: filtro por nome não executado)"]), ...(executados.includes("gtin") ? [] : ["GTIN/EAN (termo não é um GTIN válido)"])], prova_universal: false };
   let aviso: string;
   if (!apiOk) aviso = "A API do Bling NÃO foi consultada por completo (veja `fontes`). O espelho só tem produtos ATIVOS sincronizados: ausência no espelho NÃO prova ausência no ERP. Não afirme que o produto não existe e não crie cadastro com base nesta busca.";
   else if (!incluir) aviso = "Busca na API só entre produtos ATIVOS: não prova ausência de excluídos nem inativos. Não crie cadastro com base nesta busca.";
-  else if (todos.length === 0) aviso = "Nenhum registro encontrado na API do Bling para este código (SKU, referência no nome, GTIN), incluindo excluídos. Isso NÃO autoriza criar cadastro: a criação é outro fluxo, com aprovação.";
+  else if (todos.length === 0) aviso = `Nenhum registro encontrado na API do Bling nos filtros pesquisados (${escopo.campos_cobertos.join(", ")}), incluindo excluídos. NÃO foram cobertos: ${escopo.campos_nao_cobertos.join(", ")}. Isso NÃO é prova de que o produto não existe no ERP e NÃO autoriza criar cadastro: a criação é outro fluxo, com aprovação.`;
   else aviso = "Candidatos de fontes diferentes. Situação excluído/inativo não é equivalência: compare histórico antes de escolher. GTIN repetido indica conflito de cadastro e não prova, sozinho, que sejam a mesma peça nem peças diferentes. Esta busca NÃO autoriza criar cadastro.";
   return { termo, incluir_excluidos: incluir, total_candidatos: todos.length, truncado: todos.length > MAX_CANDIDATOS, candidatos: todos.slice(0, MAX_CANDIDATOS), fontes,
-    conclusao: { ausencia_no_erp_comprovada: ausencia, api_completa: apiOk, apenas_espelho: !fontes.some((f) => f.origem === "api_bling" && f.consultada), autoriza_criacao: false, aviso } };
+    conclusao: { escopo, ausencia_nos_filtros_pesquisados: ausencia, api_completa: apiOk, apenas_espelho: !fontes.some((f) => f.origem === "api_bling" && f.consultada), autoriza_criacao: false, aviso } };
 }

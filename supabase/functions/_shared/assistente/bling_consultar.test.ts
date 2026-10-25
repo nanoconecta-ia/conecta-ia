@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { consultarProduto } from "./bling_consultar.ts";
+import { consultarProduto, LIMITE_MODELO } from "./bling_consultar.ts";
 import { cifrar } from "../cripto.ts";
 
 const chave = btoa("q".repeat(32));
@@ -68,21 +68,21 @@ test("PRODUTO EXCLUÍDO que não está no espelho é encontrado pela API e decla
   const r: any = await consultarProduto({ codigo: "5112" }, a.ctx);
   assert.equal(r.candidatos.length, 1); const c = r.candidatos[0];
   assert.equal(c.situacao, "excluido"); assert.equal(c.no_espelho, false); assert.equal(c.origem, "api_bling"); assert.equal(c.estoque, 1);
-  assert.equal(r.conclusao.ausencia_no_erp_comprovada, false); assert.match(r.conclusao.aviso, /excluído\/inativo não é equivalência/);
+  assert.equal(r.conclusao.ausencia_nos_filtros_pesquisados, false); assert.match(r.conclusao.aviso, /excluído\/inativo não é equivalência/);
 });
 
 test("nada encontrado com a API completa: ausência comprovada, mas NUNCA autoriza criar", async () => {
   const a = ambiente({ espelho: [], itens: [] });
   const r: any = await consultarProduto({ codigo: "ZZ-NAO-EXISTE" }, a.ctx);
-  assert.equal(r.candidatos.length, 0); assert.equal(r.conclusao.ausencia_no_erp_comprovada, true); assert.equal(r.conclusao.autoriza_criacao, false);
-  assert.equal(a.audits.length, 1); assert.equal(a.audits[0].depois && (a.audits[0].depois as any).ausencia_no_erp_comprovada, true);
+  assert.equal(r.candidatos.length, 0); assert.equal(r.conclusao.ausencia_nos_filtros_pesquisados, true); assert.equal(r.conclusao.autoriza_criacao, false);
+  assert.equal(a.audits.length, 1); assert.equal(a.audits[0].depois && (a.audits[0].depois as any).ausencia_nos_filtros_pesquisados, true);
 });
 
 for (const status of [403, 429]) test(`API fora (${status}) e nada no espelho: NÃO lança "não encontrado" e NÃO afirma ausência no ERP`, async () => {
   const a = ambiente({ espelho: [], status });
   const r: any = await consultarProduto({ codigo: "833333" }, a.ctx);
   assert.equal(r.candidatos.length, 0); assert.equal(r.origem, "espelho");
-  assert.equal(r.conclusao.ausencia_no_erp_comprovada, false); assert.equal(r.conclusao.apenas_espelho, true); assert.equal(r.conclusao.autoriza_criacao, false);
+  assert.equal(r.conclusao.ausencia_nos_filtros_pesquisados, false); assert.equal(r.conclusao.apenas_espelho, true); assert.equal(r.conclusao.autoriza_criacao, false);
   assert.match(r.conclusao.aviso, /NÃO foi consultada por completo/); assert.ok(r.motivo);
 });
 
@@ -124,4 +124,42 @@ test("falha de auditoria impede entregar dado ao modelo", async () => {
 test("limite por turno impede quarta consulta", async () => {
   const a = ambiente(); for (let n = 0; n < 3; n++) await consultarProduto({ sku: "SKU-1" }, a.ctx);
   const antes = a.calls.length; await assert.rejects(consultarProduto({ sku: "SKU-1" }, a.ctx), /três/); assert.equal(a.calls.length, antes);
+});
+
+test("resultado grande: o modelo recebe JSON VÁLIDO com fontes, conclusao, total e lista parcial; a UI guarda a lista completa", async () => {
+  const itens = Array.from({ length: 50 }, (_, i) => ({ id: 9000 + i, codigo: `COD-${i}`, nome: `833333 KIT EMBREAGEM ${"x".repeat(180)} ${i}`, situacao: i % 2 ? "E" : "A", preco: 10 + i, estoque: { saldoVirtualTotal: i } }));
+  const a = ambiente({ espelho: [], itens });
+  const r: any = await consultarProduto({ codigo: "833333" }, a.ctx);
+  const completo = a.ctx.evidencias[0] as any;
+  assert.ok(JSON.stringify(completo).length > 6000, "a evidência completa passa de 6.000 caracteres");
+  assert.equal(completo.candidatos.length, 50, "a UI mantém a lista completa");
+  const modelo = JSON.stringify(r); assert.ok(modelo.length <= LIMITE_MODELO);
+  const volta = JSON.parse(modelo);
+  assert.equal(volta.lista_parcial, true); assert.equal(volta.total_candidatos, 50); assert.ok(volta.candidatos_omitidos > 0); assert.equal(volta.candidatos.length + volta.candidatos_omitidos, 50);
+  assert.equal(volta.conclusao.autoriza_criacao, false); assert.ok(volta.conclusao.escopo.campos_nao_cobertos.length > 0); assert.ok(volta.fontes.length >= 2); assert.match(volta.aviso_lista, /PARCIAL/);
+  // o laço de conversa também não pode cortar o JSON no meio
+  const { reduzirJson } = await import("../ia/reducao.ts");
+  const gigante = { ...volta, candidatos: Array.from({ length: 200 }, (_, i) => ({ id: i, nome: "y".repeat(100) })) };
+  const red = JSON.parse(reduzirJson(gigante, 6000));
+  assert.ok(JSON.stringify(red).length <= 6000); assert.equal(red._reducao.truncado, true); assert.ok(red._reducao.omitidos.candidatos > 0);
+  assert.equal(red.conclusao.autoriza_criacao, false); assert.equal(red.total_candidatos, 50); assert.ok(red.fontes);
+});
+
+test("escopo da ausência: referência só fora de nome/SKU NÃO é coberta; zero resultado não é prova universal", async () => {
+  // o produto existe no ERP só com a referência no campo do fabricante/descrição: os filtros (SKU, nome) não o veem
+  const a = ambiente({ espelho: [], itens: [{ id: 1, codigo: "OUTRO", nome: "KIT DE EMBREAGEM", situacao: "A", marca: "VALEO", descricao: "REF 833333" }] });
+  const r: any = await consultarProduto({ codigo: "833333" }, a.ctx);
+  assert.equal(r.candidatos.length, 0);
+  assert.equal(r.conclusao.ausencia_nos_filtros_pesquisados, true); assert.equal(r.conclusao.escopo.prova_universal, false); assert.equal(r.conclusao.autoriza_criacao, false);
+  assert.deepEqual(r.conclusao.escopo.filtros_executados, ["sku_exato", "referencia_no_nome"]);
+  for (const campo of ["descrição", "marca/fabricante", "código do fornecedor"]) assert.ok(r.conclusao.escopo.campos_nao_cobertos.includes(campo));
+  assert.match(r.conclusao.aviso, /NÃO é prova de que o produto não existe/);
+});
+
+test("termo curto (<3): filtro por nome não roda e o escopo declara isso", async () => {
+  const a = ambiente({ espelho: [], itens: [] });
+  const r: any = await consultarProduto({ codigo: "A7" }, a.ctx);
+  assert.deepEqual(r.conclusao.escopo.filtros_executados, ["sku_exato"]); assert.equal(r.conclusao.escopo.filtro_nome_aplicado, false);
+  assert.ok(r.conclusao.escopo.campos_nao_cobertos.some((c: string) => /menos de 3 caracteres/.test(c)));
+  assert.ok(a.calls.every((x) => !x.url.includes("nome=")), "nenhuma consulta por nome com termo curto"); assert.equal(r.conclusao.autoriza_criacao, false);
 });

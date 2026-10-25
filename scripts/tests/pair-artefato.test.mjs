@@ -48,7 +48,7 @@ for(const op of [{api:403},{api:429}])test('artefato: fallback no espelho identi
 });
 test('artefato: identidade divergente (id da API ≠ id do espelho) vira DOIS candidatos, sem fundir nem escolher',async()=>{
   const a=await ambiente({identidade:false}),d=dado(await a.chamar());
-  assert.equal(d.candidatos.length,2);assert.equal(new Set(d.candidatos.map(c=>c.id)).size,2);assert.equal(d.conclusao.autoriza_criacao,false);assert.equal(d.conclusao.ausencia_no_erp_comprovada,false);
+  assert.equal(d.candidatos.length,2);assert.equal(new Set(d.candidatos.map(c=>c.id)).size,2);assert.equal(d.conclusao.autoriza_criacao,false);assert.equal(d.conclusao.ausencia_nos_filtros_pesquisados,false);
 });
 for(const op of [{escopos:['produtos:ler']},{revogada:true},{flag:false},{chaveAusente:true}])test('artefato: negativa sem API '+JSON.stringify(op),async()=>{
   const a=await ambiente(op),r=await a.chamar();assert.ok(r.status===401||r.corpo.result.isError);assert.equal(a.rede.length,0);

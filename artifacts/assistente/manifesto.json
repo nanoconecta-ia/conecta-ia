@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "8f9eb156e15e612030aa77600af43b64783dcdccc012f5a713bd7d1b289adacd",
+  "artefato_sha256": "2f7c8b775ee4629db9ddc782e07852d1808946a26033892ec186223218bc98ac",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -21,6 +21,10 @@
       "sha256": "5b49bd8a52937b9560bf4161a58bcda5ee80d7f598f98236ef4a32effcd93619"
     },
     {
+      "path": "supabase/functions/_shared/ia/reducao.ts",
+      "sha256": "a19f56f001113dd6276afaff82d0a2e71347c2be31eafeda00ff00a589618f76"
+    },
+    {
       "path": "supabase/functions/_shared/ia/tipos.ts",
       "sha256": "328b8823617e4be35687cd8e41f9605cf0e2f634b9323871d0755ca2a59b2dc3"
     },
@@ -34,7 +38,7 @@
     },
     {
       "path": "supabase/functions/_shared/ia/claude.ts",
-      "sha256": "479b9d1f6ba8ca9b0f8ea7c9a70d5a49400d1acea4808be98f70a14a7557a825"
+      "sha256": "139f2e35bb4447393f9bceef849017881a82a835a019ee2a259f4f04c501971d"
     },
     {
       "path": "supabase/functions/_shared/ia/escrita.ts",
@@ -58,7 +62,7 @@
     },
     {
       "path": "supabase/functions/_shared/bling_ferramentas.ts",
-      "sha256": "073eae55f84c5666ec91736604432b3a47c3a68111dc3d5191b701cf73d3f95c"
+      "sha256": "654e203abdcd1d92acf9627764a2d9935a1557d8e0c01491a232dd468f4658b9"
     },
     {
       "path": "supabase/functions/_shared/bling_token.ts",
@@ -74,15 +78,15 @@
     },
     {
       "path": "supabase/functions/_shared/assistente/busca_produto.ts",
-      "sha256": "40230d545de45f7fa88f080f2b1c9b87562d135985c4a1133a9289ac43301c6b"
+      "sha256": "e4f2e6d872e1ee085af87c43e57c92546be76f67b201870e1784c3cd715c4d91"
     },
     {
       "path": "supabase/functions/_shared/assistente/bling_consultar.ts",
-      "sha256": "ca0f9afa98f3830f9f8fe523738d96025a25ea8d53bc24fe999d52443ad102b8"
+      "sha256": "d6ad9661072a222daf154829a07c68cb70e364e08d9d3f4f2401a55d72929ab9"
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "50be782e531d0440819c6538678ec8a61c852d2dd5f03840d6a9de3359081532"
+      "sha256": "0aff7661fa8b90de333896209ae05852f838da5d54e7854b4398626466180575"
     },
     {
       "path": "supabase/functions/assistente/index.ts",

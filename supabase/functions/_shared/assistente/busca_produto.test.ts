@@ -70,7 +70,7 @@ test("SKU interno 5112: um candidato, excluído, com o saldo da API", async () =
 test("nenhum candidato ativo: todos aparecem como excluídos e a ausência NÃO é declarada", async () => {
   const r = await buscarProduto({ termo: "833333" }, ports(api()));
   assert.equal(r.candidatos.filter((c) => c.situacao === "ativo").length, 0);
-  assert.equal(r.conclusao.ausencia_no_erp_comprovada, false);
+  assert.equal(r.conclusao.ausencia_nos_filtros_pesquisados, false);
   assert.match(r.conclusao.aviso, /excluído\/inativo não é equivalência/);
 });
 
@@ -78,7 +78,7 @@ test("API indisponível (403): sem candidato no espelho, a resposta NÃO afirma 
   const a = api([], { falha: 403 });
   const r = await buscarProduto({ termo: "833333" }, ports(a));
   assert.equal(r.total_candidatos, 0);
-  assert.equal(r.conclusao.ausencia_no_erp_comprovada, false); assert.equal(r.conclusao.api_completa, false); assert.equal(r.conclusao.apenas_espelho, true);
+  assert.equal(r.conclusao.ausencia_nos_filtros_pesquisados, false); assert.equal(r.conclusao.api_completa, false); assert.equal(r.conclusao.apenas_espelho, true);
   assert.equal(r.conclusao.autoriza_criacao, false);
   assert.match(r.conclusao.aviso, /NÃO foi consultada por completo/);
   const f = r.fontes.find((x) => x.origem === "api_bling")!; assert.equal(f.consultada, false); assert.equal(f.motivo, "reconectar_bling");
@@ -90,7 +90,7 @@ test("timeout da API vira 'tempo_esgotado' e o produto do espelho aparece com or
   const r = await buscarProduto({ termo: "833333" }, ports(api([], { erro: true }), esp));
   assert.equal(r.fontes.find((x) => x.origem === "api_bling")!.motivo, "tempo_esgotado");
   const c = r.candidatos[0]; assert.equal(c.origem, "espelho"); assert.equal(c.situacao, "ativo"); assert.equal(c.sincronizado_em, "2026-10-25T11:06:00Z");
-  assert.equal(r.conclusao.ausencia_no_erp_comprovada, false);
+  assert.equal(r.conclusao.ausencia_nos_filtros_pesquisados, false);
 });
 
 test("espelho + API: o mesmo produto vira UM candidato, com campos da API e marcado no_espelho", async () => {
@@ -108,7 +108,7 @@ test("paginação: mais de uma página é lida; passou do limite de páginas, de
   const f = r.fontes.find((x) => x.consulta === "referencia_no_nome")!;
   assert.equal(f.paginas, 3); assert.equal(f.completa, false); assert.equal(f.motivo, "paginas_limite_atingido");
   assert.equal(r.total_candidatos, 300); assert.equal(r.truncado, true); assert.equal(r.candidatos.length, MAX_CANDIDATOS);
-  assert.equal(r.conclusao.api_completa, false); assert.equal(r.conclusao.ausencia_no_erp_comprovada, false);
+  assert.equal(r.conclusao.api_completa, false); assert.equal(r.conclusao.ausencia_nos_filtros_pesquisados, false);
   const dois = await buscarProduto({ termo: "833333" }, ports(api([], { paginas: { cod: [[]], nome: [cheia(100, 1), cheia(20, 500)] } })));
   assert.equal(dois.total_candidatos, 120); assert.equal(dois.fontes.find((x) => x.consulta === "referencia_no_nome")!.completa, true);
 });
@@ -116,11 +116,11 @@ test("paginação: mais de uma página é lida; passou do limite de páginas, de
 test("ausência só é comprovada com a API completa e critério 'todos'; mesmo assim NÃO autoriza criar", async () => {
   const a = api([]);
   const r = await buscarProduto({ termo: "ZZ-INEXISTENTE-1" }, ports(a));
-  assert.equal(r.conclusao.ausencia_no_erp_comprovada, true); assert.equal(r.conclusao.autoriza_criacao, false);
+  assert.equal(r.conclusao.ausencia_nos_filtros_pesquisados, true); assert.equal(r.conclusao.autoriza_criacao, false);
   assert.match(r.conclusao.aviso, /NÃO autoriza criar cadastro/);
   assert.ok(a.chamadas.every((c) => c.includes("criterio=5")), "inclui excluídos");
   const so = await buscarProduto({ termo: "ZZ-INEXISTENTE-1", incluirExcluidos: false }, ports(api([])));
-  assert.equal(so.conclusao.ausencia_no_erp_comprovada, false); assert.match(so.conclusao.aviso, /ATIVOS/);
+  assert.equal(so.conclusao.ausencia_nos_filtros_pesquisados, false); assert.match(so.conclusao.aviso, /ATIVOS/);
 });
 
 test("termo inválido ou com caracteres de injeção é recusado sem tocar em API nem espelho", async () => {

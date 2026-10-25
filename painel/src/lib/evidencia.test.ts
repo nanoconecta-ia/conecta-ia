@@ -16,7 +16,7 @@ test("fonte não consultada ou incompleta é dita com o motivo; nunca vira 'sem 
   assert.match(linhaFonte({ origem: "espelho", consulta: "x", consultada: true, completa: true, total: 1, paginas: 1, motivo: null }), /Espelho do Conecta \(só produtos ativos sincronizados\): 1 resultado\(s\) em 1 página\(s\)$/);
 });
 test("conclusão: ausência só aparece como comprovada quando o servidor disse; criação sempre 'não'", () => {
-  const base: ConclusaoEv = { ausencia_no_erp_comprovada: false, api_completa: false, apenas_espelho: true, autoriza_criacao: false, aviso: "" };
+  const base: ConclusaoEv = { ausencia_nos_filtros_pesquisados: false, api_completa: false, apenas_espelho: true, autoriza_criacao: false, aviso: "" };
   assert.match(resumoConclusao(base), /Ausência no ERP: NÃO comprovada\. Criação de cadastro autorizada por esta busca: não\./);
-  assert.match(resumoConclusao({ ...base, ausencia_no_erp_comprovada: true, api_completa: true }), /comprovada pela API \(inclui excluídos\)/);
+  assert.match(resumoConclusao({ ...base, ausencia_nos_filtros_pesquisados: true, api_completa: true }), /filtros pesquisados/);
 });

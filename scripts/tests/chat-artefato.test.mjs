@@ -62,8 +62,8 @@ test('artefato: ferramenta solicitada que FALHA não vira "executada": ferrament
 });
 test('artefato: API do Bling fora e produto fora do espelho: consulta concluída SEM afirmar ausência, proveniência e conclusão no resultado e na auditoria',async()=>{
  const a=await ambiente({blingStatus:403,semEspelho:true});const r=await a.perguntar();const m=a.final.p_meta;
- eq(m.ferramentas,['bling_consultar_produto']);assert.equal(m.chamadas.length,1);assert.equal(m.chamadas[0].ausencia_no_erp_comprovada,false);assert.equal(m.chamadas[0].candidatos,0);
- const ev=r.body.evidencias[0];assert.equal(ev.origem,'espelho');assert.equal(ev.conclusao.ausencia_no_erp_comprovada,false);assert.equal(ev.conclusao.apenas_espelho,true);assert.equal(ev.conclusao.autoriza_criacao,false);
+ eq(m.ferramentas,['bling_consultar_produto']);assert.equal(m.chamadas.length,1);assert.equal(m.chamadas[0].ausencia_nos_filtros_pesquisados,false);assert.equal(m.chamadas[0].candidatos,0);
+ const ev=r.body.evidencias[0];assert.equal(ev.origem,'espelho');assert.equal(ev.conclusao.ausencia_nos_filtros_pesquisados,false);assert.equal(ev.conclusao.apenas_espelho,true);assert.equal(ev.conclusao.autoriza_criacao,false);
  assert.ok(ev.fontes.some(f=>f.origem==='api_bling'&&f.consultada===false&&f.motivo==='reconectar_bling'));
  assert.match(a.rede.at(-1).op.body,/autoriza_criacao/);
  assert.equal(m.tentativas[0].ok,true);assert.equal(m.completa,true);

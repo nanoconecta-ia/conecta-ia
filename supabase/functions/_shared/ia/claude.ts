@@ -1,5 +1,6 @@
 // Laço de conversa com ferramentas (tool use), independente de provedor (ver adaptadores.ts). Portas injetáveis: testável sem rede.
 // Nunca registra a chave nem o corpo de erro do provedor. Conteúdo de ferramentas é DADO, nunca instrução.
+import { reduzirJson } from "./reducao.ts";
 import { ADAPTADORES, type Chamada, type Parada, type Passo } from "./adaptadores.ts";
 import { IaErro, type Bloco, type Ferramenta, type Mensagem } from "./tipos.ts";
 export { IaErro } from "./tipos.ts";
@@ -50,8 +51,8 @@ export async function conversar(o: Opcoes): Promise<Resposta> {
     for (const u of usos) {
       usadas.push(u.name);
       try {
-        const saida = JSON.stringify(await o.executar(u.name, u.input)); concluidas.push(u.name);
-        resultados.push({ type: "tool_result", tool_use_id: u.id, content: saida.length > limite ? saida.slice(0, limite) + '…[cortado]' : saida });
+        const saida = reduzirJson(await o.executar(u.name, u.input), limite); concluidas.push(u.name);
+        resultados.push({ type: "tool_result", tool_use_id: u.id, content: saida });
       } catch (e) {
         const motivo = e instanceof Error ? e.message.slice(0, 300) : "falha na ferramenta"; falhas.push({ nome: u.name, motivo: motivo.slice(0, 120) });
         resultados.push({ type: "tool_result", tool_use_id: u.id, is_error: true, content: `FERRAMENTA NÃO CONCLUÍDA: ${motivo} Nada foi verificado; não afirme ausência, execução ou resultado.` });
