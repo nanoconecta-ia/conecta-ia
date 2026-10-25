@@ -286,6 +286,16 @@ main > .cartao { min-width:0; }
 fieldset { border:1px solid var(--borda); border-radius:var(--raio); padding:10px 14px; }
 
 .lista-simples { list-style:none; padding:0; margin:12px 0; display:grid; gap:12px; } .lista-simples li { border:1px solid var(--borda); border-radius:10px; padding:12px; display:grid; gap:8px; }
+/* ===== taxonomia: sincronia com o Bling ===== */
+.sinc-bling { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--borda); display: grid; gap: 10px; }
+.sinc-resumo { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.sinc-resumo li { border: 1px solid var(--borda); border-left-width: 4px; border-radius: var(--raio); padding: 8px 12px; display: grid; background: var(--cartao); }
+.sinc-resumo li b { font-size: 1.4rem; line-height: 1.1; }
+.sinc-resumo li span { font-size: .85rem; color: var(--suave); }
+.sinc-resumo .ok { border-left-color: var(--verde, #0a8f6a); } .sinc-resumo .atencao { border-left-color: #c58a00; } .sinc-resumo .erro { border-left-color: #b3261e; }
+.sinc-bling details { border: 1px solid var(--borda); border-radius: var(--raio); padding: 4px 12px 10px; }
+.sinc-bling summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.sinc-lista { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 4px; }
 /* ===== vitrine: guia de filtros, passos numerados e filtros ativos ===== */
 .v-guia { background: var(--cartao); border: 1px solid var(--borda); border-radius: var(--raio); padding: 14px 16px; box-shadow: var(--sombra); display: grid; gap: 8px; }
 .v-guia-titulo { margin: 0; font-weight: 700; }

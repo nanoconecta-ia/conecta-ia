@@ -31,6 +31,7 @@ try{
    assert.equal(u.searchParams.get('loja_id'),'eq.'+L);assert.equal(u.searchParams.get('aprovada'),'eq.true');assert.equal(u.searchParams.get('produto_id'),'eq.produto-sintetico');body=[];
   }else if(u.pathname==='/rest/v1/taxonomia_nos')body=[{id:'no1',pai_id:null,nome:'Classificação DEMO',slug:'demo',ordem:1}];
   else if(u.pathname==='/rest/v1/bling_categoria_taxonomia')body=[];
+  else if(u.pathname==='/rest/v1/bling_categorias'){assert.equal(u.searchParams.get('loja_id'),'eq.'+L);body=[];}
   else throw Error('Endpoint inesperado '+u.pathname);
   return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(body)});
  });
@@ -53,7 +54,7 @@ try{
   await page.keyboard.press('Escape');assert.equal(await page.getByRole('button',{name:'Abrir agente',exact:false}).getAttribute('aria-expanded'),'false');
   await page.getByRole('button',{name:'Browser remoto',exact:false}).click();await page.getByRole('heading',{name:'Sessão de browser ainda não conectada'}).waitFor();
   await page.getByRole('button',{name:'Voltar à área integrada'}).click();
-  await page.getByRole('button',{name:'Taxonomia',exact:true}).click();await page.getByText('Classificação DEMO',{exact:false}).waitFor();
+  await page.getByRole('button',{name:'Taxonomia',exact:true}).click();await page.getByRole('button',{name:'Classificação DEMO'}).waitFor();
   await page.getByRole('button',{name:'Imagens',exact:true}).click();await page.getByText('Nenhuma imagem aprovada disponível para este produto.').waitFor();
   await page.getByRole('button',{name:'SEO técnico',exact:true}).click();await page.getByRole('heading',{name:'SEO técnico do produto'}).waitFor();
   await page.emulateMedia({reducedMotion:'reduce'});await page.getByRole('button',{name:'Abrir agente',exact:false}).click();assert.equal(await page.getByRole('complementary',{name:'Torre do agente'}).evaluate(el=>getComputedStyle(el).animationName),'none');await page.keyboard.press('Escape');
