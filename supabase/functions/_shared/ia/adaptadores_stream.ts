@@ -8,7 +8,7 @@
 // produção, rodar uma chamada real por provedor e comparar o Passo com o do adaptador não-streaming.
 import { IaErro, type Bloco, type Mensagem } from "./tipos.ts";
 import { urlPublicaSegura } from "./plugin.ts";
-import type { Chamada, Passo, ProvedorId } from "./adaptadores.ts";
+import { paradaClaude, paradaGemini, paradaOpenAI, type Chamada, type Parada, type Passo, type ProvedorId } from "./adaptadores.ts";
 
 export type ChamadaStream = Chamada & { inatividadeMs?: number };
 export type AoTexto = (delta: string) => void;
@@ -129,7 +129,7 @@ export const chamarClaudeStream: AdaptadorStream = async (c, msgs, aoTexto, sina
   try {
     const blocos: (Bloco | undefined)[] = [];
     const parcial: Record<number, string> = {};
-    let tin = 0, tout = 0, fim = false, respostaId: string | undefined, modelo: string | undefined;
+    let tin = 0, tout = 0, fim = false, respostaId: string | undefined, modelo: string | undefined, parada: Parada | undefined;
     for await (const ev of eventos) {
       const j = json(ev.data);
       if (!j || typeof j !== "object") continue;
@@ -152,14 +152,14 @@ export const chamarClaudeStream: AdaptadorStream = async (c, msgs, aoTexto, sina
           if (bl?.type === "tool_use") { const acc = (parcial[j.index] ?? "").trim(); (bl as { input: unknown }).input = acc ? (json(acc) ?? {}) : {}; }
           break;
         }
-        case "message_delta": tout = j.usage?.output_tokens ?? tout; break;
+        case "message_delta": tout = j.usage?.output_tokens ?? tout; parada = paradaClaude(j.delta?.stop_reason) ?? parada; break;
         case "message_stop": fim = true; break;
         case "error": throw erroDeEvento(j.error?.type, j.error?.code);
         default: break; // ping etc.
       }
     }
     if (!fim) throw interrompida();
-    return { blocos: blocos.filter((b): b is Bloco => !!b && !(b.type === "text" && b.text === "")), tokens: tin + tout, respostaId, modelo };
+    return { blocos: blocos.filter((b): b is Bloco => !!b && !(b.type === "text" && b.text === "")), tokens: tin + tout, respostaId, modelo, parada };
   } finally { encerrar(); }
 };
 
@@ -183,7 +183,7 @@ export const chamarOpenAIStream: AdaptadorStream = async (c, msgs, aoTexto, sina
   const { eventos, encerrar } = await abrirEventos(c, `${c.baseUrl.replace(/\/+$/, "")}/chat/completions`, { authorization: `Bearer ${c.chave}` },
     { model: c.modelo, messages: m, max_tokens: c.maxTokens, tools: tools.length ? tools : undefined, stream: true, stream_options: { include_usage: true } }, sinal);
   try {
-    let texto = "", tokens = 0, terminou = false, respostaId: string | undefined, modelo: string | undefined;
+    let texto = "", tokens = 0, terminou = false, respostaId: string | undefined, modelo: string | undefined, parada: Parada | undefined;
     const chamadas = new Map<number, { id?: string; nome: string; args: string }>();
     for await (const ev of eventos) {
       if (ev.data.trim() === "[DONE]") { terminou = true; break; }
@@ -204,7 +204,7 @@ export const chamarOpenAIStream: AdaptadorStream = async (c, msgs, aoTexto, sina
         if (typeof tc.function?.arguments === "string") atual.args += tc.function.arguments;
         chamadas.set(i, atual);
       }
-      if (ch.finish_reason) terminou = true;
+      if (ch.finish_reason) { terminou = true; parada = paradaOpenAI(ch.finish_reason) ?? parada; }
     }
     if (!terminou) throw interrompida();
     const blocos: Bloco[] = [];
@@ -212,7 +212,7 @@ export const chamarOpenAIStream: AdaptadorStream = async (c, msgs, aoTexto, sina
     for (const [i, t] of [...chamadas.entries()].sort((a, b) => a[0] - b[0])) {
       blocos.push({ type: "tool_use", id: t.id ?? `t${i}`, name: t.nome, input: (t.args.trim() ? json(t.args) : {}) ?? {} });
     }
-    return { blocos, tokens, respostaId, modelo };
+    return { blocos, tokens, respostaId, modelo, parada };
   } finally { encerrar(); }
 };
 
@@ -243,13 +243,14 @@ export const chamarGeminiStream: AdaptadorStream = async (c, msgs, aoTexto, sina
     { systemInstruction: { parts: [{ text: c.sistema }] }, contents, tools: decl.length ? [{ functionDeclarations: decl }] : undefined, generationConfig: { maxOutputTokens: c.maxTokens } }, sinal);
   try {
     const blocos: Bloco[] = [];
-    let n = 0, tokens = 0, respostaId: string | undefined, modelo: string | undefined, viuPartes = false, textoAtual: Extract<Bloco, { type: "text" }> | null = null;
+    let n = 0, tokens = 0, respostaId: string | undefined, modelo: string | undefined, parada: Parada | undefined, viuPartes = false, textoAtual: Extract<Bloco, { type: "text" }> | null = null;
     for await (const ev of eventos) {
       const j = json(ev.data);
       if (!j || typeof j !== "object") continue;
       if (j.error) throw erroDeEvento(j.error.status, j.error.code);
       respostaId ??= j.responseId; modelo ??= j.modelVersion;
       if (j.usageMetadata?.totalTokenCount != null) tokens = j.usageMetadata.totalTokenCount;
+      parada = paradaGemini(j.candidates?.[0]?.finishReason) ?? parada;
       const partes = j.candidates?.[0]?.content?.parts;
       if (!Array.isArray(partes)) continue;
       viuPartes = true;
@@ -267,7 +268,7 @@ export const chamarGeminiStream: AdaptadorStream = async (c, msgs, aoTexto, sina
       }
     }
     if (!viuPartes) throw new IaErro(502, "O provedor não devolveu resposta (o conteúdo pode ter sido bloqueado). Reformule a pergunta.");
-    return { blocos, tokens, respostaId, modelo };
+    return { blocos, tokens, respostaId, modelo, parada };
   } finally { encerrar(); }
 };
 

@@ -9,6 +9,7 @@
 //  * Ferramentas de escrita só PROPÕEM (a_confirmar / Central de Aprovações). Nenhuma aprova, executa ou altera produtos no Bling.
 //  * O modelo nunca recebe credencial do Supabase ou do Bling; erros internos viram mensagem genérica.
 //  * Toda chamada (ok, negada, inválida, com erro) gera auditoria com usuário, loja, sessão, dispositivo e ferramenta.
+import { reduzirJson } from "../ia/reducao.ts";
 import { ehEscopo, type Escopo } from "./escopos.ts";
 import { HASH_RE, separarToken, sha256Hex } from "./cripto.ts";
 
@@ -247,7 +248,7 @@ async function auditarSeguro(p: Portas, e: EventoAuditoria): Promise<boolean> {
 }
 const texto = (obj: unknown, isError = false) => {
   let t = typeof obj === "string" ? obj : JSON.stringify(obj);
-  if (t.length > MAX_SAIDA) t = t.slice(0, MAX_SAIDA) + "…[cortado]";
+  if (t.length > MAX_SAIDA) t = reduzirJson(typeof obj === "string" ? { texto: obj } : obj, MAX_SAIDA);
   return { content: [{ type: "text", text: t }], ...(isError ? { isError: true } : {}) };
 };
 
