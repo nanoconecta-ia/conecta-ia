@@ -6,18 +6,21 @@ const LEGADO: Record<string, EstadoAgente> = { parado: "ocioso", ouvindo: "escut
 
 /** Esfera do agente em CSS puro. O estado vem do que está acontecendo de verdade (eventos do servidor, microfone, voz): nunca é simulado.
  *  Com prefers-reduced-motion não há movimento; a cor e o texto do estado continuam informando. */
-export function Esfera({ estado = "ocioso", tamanho = 96, comRotulo = false }: { estado?: EstadoEsfera; tamanho?: number; comRotulo?: boolean }) {
+export function Esfera({ estado = "ocioso", tamanho = 96, comRotulo = false, peso = false }: { estado?: EstadoEsfera; tamanho?: number; comRotulo?: boolean; peso?: boolean }) {
   const e: EstadoAgente | "falando" = estado === "falando" ? "falando" : (LEGADO[estado] ?? (estado as EstadoAgente));
   const rotulo = e === "falando" ? "Falando" : ROTULO_ESTADO[e];
   const ativo = e === "falando" ? true : ESTADO_ATIVO[e];
   return (
     <div className="esfera-bloco">
-      <span className="esfera-caixa">
+      <span className="esfera-caixa" data-peso={peso ? "true" : undefined} data-estado={e} data-ativo={ativo ? "true" : "false"}>
+        {peso && <span className="aura" aria-hidden="true" />}
         <div className="esfera" data-estado={e} data-ativo={ativo ? "true" : "false"} style={{ ["--d" as string]: `${tamanho}px` }} role="img" aria-label={`Nano.ia: ${rotulo}`}>
           <span className="nuvem" aria-hidden="true"><i /><i /><i /></span>
           <span className="brilho" aria-hidden="true" />
+          {peso && <><span className="vidro" aria-hidden="true" /><span className="nucleo" aria-hidden="true" /></>}
         </div>
         <span className="orbita" aria-hidden="true"><b /><b /><b /></span>
+        {peso && <span className="sombra-chao" aria-hidden="true" />}
       </span>
       {comRotulo && <span className="esfera-rotulo">{rotulo}</span>}
     </div>

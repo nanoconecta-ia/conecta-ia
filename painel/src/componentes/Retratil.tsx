@@ -1,13 +1,14 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 const cn = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(" ");
 
 /** Bloco retrátil padrão do painel: cabeçote minimizável que abre na vertical (altura) ou na horizontal (vira uma trilha lateral).
  *  O estado aberto/fechado é lembrado por navegador (`id`); sem armazenamento, usa `aberto` como inicial. */
-export function Retratil({ id, titulo, resumo, aberto = true, orientacao = "vertical", status, children, className }: {
+export function Retratil({ id, titulo, resumo, aberto = true, orientacao = "vertical", status, recolherQuando, children, className }: {
   id: string; titulo: string; resumo?: string; aberto?: boolean; orientacao?: "vertical" | "horizontal";
-  status?: "go" | "warn" | "stop"; children: ReactNode; className?: string;
+  status?: "go" | "warn" | "stop"; recolherQuando?: boolean; children: ReactNode; className?: string;
 }) {
   const [on, setOn] = useState(() => { try { const v = localStorage.getItem(`conecta:retratil:${id}`); return v === null ? aberto : v === "1"; } catch { return aberto; } });
+  useEffect(() => { if (recolherQuando) setOn(false); }, [recolherQuando]); // recolhe sozinho (sem gravar a preferência) quando o contexto pede espaço
   const alternar = () => setOn((v) => { try { localStorage.setItem(`conecta:retratil:${id}`, v ? "0" : "1"); } catch { /* sem armazenamento */ } return !v; });
   const painel = `retratil-${id}`;
   return (
