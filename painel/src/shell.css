@@ -134,13 +134,15 @@ button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(
 /* ===== agente lateral (dock) ===== */
 .agente-botao { gap: 8px; color: #fff; border-color: rgba(255,255,255,.35); min-height: 40px; padding: 6px 14px; }
 .agente-botao[aria-pressed="true"] { background: color-mix(in srgb, var(--verde) 25%, transparent); border-color: var(--verde); }
-.dock-agente { position: fixed; z-index: 7; top: 56px; bottom: 32px; right: 0; width: min(100vw, 420px); display: grid; grid-template-rows: auto 1fr; background: var(--fundo); border-left: 1px solid color-mix(in srgb, var(--marca) 50%, var(--borda)); box-shadow: -24px 0 60px rgba(0,0,0,.3); }
+.dock-agente { position: fixed; z-index: 8; right: 16px; bottom: 96px; width: min(calc(100vw - 32px), 400px); height: min(70vh, 640px); display: grid; grid-template-rows: auto 1fr; overflow: hidden; background: var(--fundo); border: 1px solid color-mix(in srgb, var(--marca) 50%, var(--borda)); border-radius: 16px; box-shadow: 0 24px 60px rgba(0,0,0,.35); }
+.balao-genesis { position: fixed; z-index: 9; right: 16px; bottom: 44px; display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 6px 16px 6px 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--marca) 60%, var(--borda)); background: linear-gradient(180deg, var(--grafite-2), var(--grafite)); color: #fff; font-weight: 600; box-shadow: 0 10px 28px rgba(0,0,0,.35); cursor: pointer; }
+.balao-genesis[aria-expanded="true"] { border-color: var(--verde); }
+@media (max-width: 560px) { .dock-agente { right: 8px; left: 8px; width: auto; bottom: 92px; height: min(72vh, 640px); } }
 .dock-agente[hidden] { display: none; }
 .dock-topo { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: linear-gradient(180deg, var(--grafite-2), var(--grafite)); color: #fff; }
 .dock-topo .suave { color: #cfc6b6; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dock-topo button { color: #fff; border-color: rgba(255,255,255,.35); }
 .dock-corpo { overflow: auto; padding: 12px; display: grid; gap: 12px; align-content: start; }
-@media (min-width: 1100px) { .layout--dock main { margin-right: 424px; width: auto; } .layout--dock { min-width: 0; } }
 @media (max-width: 560px) { .agente-botao span { display: none; } }
 /* janela dentro de painéis estreitos (Estúdio do Agente): nunca estoura a largura da página */
 .janela, .janela-corpo, .esp-colunas { min-width: 0; max-width: 100%; }
