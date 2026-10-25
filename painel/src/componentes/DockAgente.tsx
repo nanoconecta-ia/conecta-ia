@@ -15,8 +15,8 @@ export function DockAgente({ loja, aberto, aoFechar }: { loja: Loja; aberto: boo
   }, [aberto, aoFechar]);
   if (!montado) return null;
   return (
-    <aside className="dock-agente" data-aberto={aberto} aria-label="Agente" hidden={!aberto}>
-      <div className="dock-topo"><strong>Agente</strong><span className="suave">{loja.nome}</span><button className="sec mini" onClick={aoFechar} aria-label="Fechar agente">Fechar</button></div>
+    <aside id="dock-agente" className="dock-agente" data-aberto={aberto} aria-label="Gênesis" hidden={!aberto}>
+      <div className="dock-topo"><strong>Gênesis</strong><span className="suave">{loja.nome}</span><button className="sec mini" onClick={aoFechar} aria-label="Fechar o Gênesis">Fechar</button></div>
       <div className="dock-corpo"><Assistente key={loja.id} loja={loja} /></div>
     </aside>
   );

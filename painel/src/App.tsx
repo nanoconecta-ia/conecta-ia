@@ -42,6 +42,7 @@ import { Icone } from "./componentes/Icone.tsx";
 import { LogoConecta } from "./componentes/LogoConecta.tsx";
 import { SeletorTema } from "./componentes/SeletorTema.tsx";
 import { DockAgente } from "./componentes/DockAgente.tsx";
+import { BalaoGenesis } from "./componentes/BalaoGenesis.tsx";
 import "./shell.css";
 
 // Em domínio de cliente (fora do GitHub Pages/localhost) a raiz é a loja daquele domínio, resolvida pelo servidor.
@@ -174,6 +175,7 @@ export function App() {
       </main>
       </div>
       {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} />}
+      {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis aberto={dockAberto} aoAlternar={() => setAgente((a) => !a)} />}
       <BarraStatus loja={loja ? loja.nome : null} tela={MENU.find((i) => i[0] === caminho)?.[1] ?? "Visão geral"} demo={demoAtivo} />
     </>
   );
