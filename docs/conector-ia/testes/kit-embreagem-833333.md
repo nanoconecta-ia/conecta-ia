@@ -31,31 +31,32 @@ O GTIN aparece em **8 registros**, não em 3. Dois deles (`89096`, "104108-2 KIT
 | **8173252121** | **833333** | Kit Embreagem 254mm(...) Hyundai Hr/K2500 Euro 5 Original 833333 | VALIO (errada; o texto do cadastro diz VALEO) | Real Moto (**833333**) | 1453,52 / 1453,52 | 1950 | 0 / 0 | **3 internas** | 10,277 kg / 15x45x45 | KT | descrição: "2013-2021"; local P01; CEST vazio; origem 2; condição 1; frete grátis; 3 itens/caixa |
 | **16622651374** | **833333** | (mesmo nome do anterior) | VALIO | **nenhum** | 0 / 0 | 1950 | 0 / 0 | 0 | 10,277 kg / 0x0x0 | UN | descrição curta com resíduo `&lt;`; **condição 0, origem 0**; sem CEST |
 | 7538741982 | 4891 | KIT EMBREAGEM 254MM(...) HYUNDAI HR KIA BONGO EURO 5 ORIGINAL 833333 | VALIO | Real Moto (06276300718) | 808,73 / 1017,86 | 2200 | 0 / 0 | 0 | 10 kg / 45x45x12 | CJ | CEST 01.075.00; origem 2 |
-| 16514593039 | 833333/1 | Kit Embreagem 254mm(...) Hyundai Hr/K2500 Euro 5 | n/c | n/c | n/c | n/c | 0 | n/c | n/c | n/c | só listagem |
+| 16514593039 | 833333/1 | Kit Embreagem 254mm(...) Hyundai Hr/K2500 Euro 5 | VALIO | Real Moto (**833333**) | 1453,52 / 1453,52 | 1650 | 0 / 0 | **3 internas** | 10,277 kg / 15x45x45 | KT | lido em detalhe: mesmo peso, dimensões e textos do `8173252121`; local P01; NCM 8708.93.00, CEST vazio, origem 2, condição 1, frete grátis. **Não é, necessariamente, um registro pior** que o `8173252121` |
 | 16622651373 | 833333/1 | (idem) | n/c | n/c | n/c | n/c | 0 | n/c | n/c | n/c | só listagem |
-| 16559870756 | 89096 | 104108-2 KIT EMBREAGEM - EAT | n/c | n/c | n/c | n/c | 0 | n/c | n/c | n/c | GTIN repetido; nome/SKU diferentes: **conflito de cadastro a esclarecer** |
-| 16622651026 | 89096 | (idem) | n/c | n/c | n/c | n/c | 0 | n/c | n/c | n/c | GTIN repetido; nome/SKU diferentes: **conflito de cadastro a esclarecer** |
+| 16559870756 | 89096 | 104108-2 KIT EMBREAGEM - EAT | VALIO | **POLIPECAS** (89096) | 3673,66 / 3673,66 | 6300 | 0 / 0 | **1 interna** | 10,277 kg / 15x45x45 | KT | lido em detalhe: nome "EAT", mas descrição curta e observações trazem **VALEO / 833333 / Kit Embreagem 254MM**; CEST 01.075.00, origem 2, condição 1. **Conflito de identidade/conteúdo legado** a esclarecer |
+| 16622651026 | 89096 | 104108-2 KIT EMBREAGEM - EAT | VALIO | **nenhum** | 0 / 0 | 6300 | 0 / 0 | 0 | 10,277 kg / 0x0x0 | UN | lido em detalhe: nome "EAT" com descrição curta do kit Valeo 833333 (texto cortado), sem observações, sem fornecedor/fotos; condição 0, origem 0. **Conflito de identidade/conteúdo legado** |
 
-`n/c` = não consultado em detalhe (só listagem). Fornecedor: `listProductSuppliers` devolveu **0 vínculos** para 12753970402 e 8173252121 (o fornecedor consta só no campo embutido do produto).
+`n/c` = não consultado em detalhe (só listagem; resta apenas `16622651373`, 833333/1). Fornecedor: `listProductSuppliers` devolveu **0 vínculos** para 12753970402 e 8173252121 (o fornecedor consta só no campo embutido do produto).
 
 **Histórico que não foi possível verificar:** pedidos de compra do fornecedor Real Moto (`idFornecedor 1169097084`) retornaram **0 pedidos**; o conector não filtra venda/NF por produto. Vendas, notas de entrada e movimentações de estoque **não foram comparados** (lacuna). O dono pode ver "Movimentação do produto" no Bling para os IDs 12753970402, 8173252121 e 16622651374.
 
-Indícios (**inferência, não prova**): os IDs `16622651026`, `…373` e `…374` são consecutivos, o que sugere uma operação em lote que **copiou** `89096`, `833333/1` e `833333`; o `16622651374` seria cópia empobrecida do `8173252121` (condição/origem zeradas, sem fornecedor/fotos).
+Indícios (**inferência, não prova**): os IDs `16622651026`, `…373` e `…374` são consecutivos, o que sugere uma operação em lote; não há prova de qual registro é origem de qual. Os registros `16514593039` e `8173252121` têm o mesmo peso, dimensões e textos e ambos têm fornecedor e fotos: **um não é, necessariamente, pior que o outro**. Os registros com nome "EAT" (`16559870756`, `16622651026`) carregam marca VALIO e texto Valeo/833333 mas outro fornecedor/SKU/preço. Isso **reforça o conflito de identidade e de conteúdo legado**, sem prova física de peça distinta.
 
-## 3. Escolha do canônico (para decisão do dono; **nenhuma ação executada**)
+## 3. Canônico: **não escolhido** (decisão do dono; **nenhuma ação executada**)
 
-Critérios: identidade interna, vínculos operacionais, evidência de saldo, qualidade do cadastro, risco.
-- **Proposta: `12753970402` (SKU interno 5112)** como registro canônico a ser reativado **somente se** o histórico de vendas/compras/NF confirmar. Motivos: é o **único com saldo físico (1)**; o SKU `5112` segue o padrão de **SKU interno** (como `4891`), e o `833333` é a **referência do fabricante**, que deve ficar em campo próprio (código do fabricante), nunca como SKU interno obrigatório; tem fornecedor e custo com o mesmo código de fornecedor do `4891`; mantém NCM/CEST/origem coerentes. Fraquezas: sem marca, fotos, peso.
-- **`8173252121`**: melhor **fonte de conteúdo** (3 fotos internas, peso, dimensões, textos), mas com marca errada, SKU = referência do fabricante e aplicação legada; usar como **evidência a confirmar**, não fundir.
-- **`16622651374`** e os demais: **não reativar** (cópias/duplicatas prováveis).
+Esta auditoria **não indica registro canônico**. Saldo isolado (o `12753970402` é o único com saldo físico 1) **não** é critério suficiente: o saldo pode refletir apenas a última movimentação, e os registros com mais conteúdo (fotos, peso, dimensões, fornecedor) estão sem saldo. A escolha depende de **histórico de movimentação, vendas, compras e NF** de cada ID, que **não foi comparado** (lacuna) e que o dono pode ver em "Movimentação do produto" no Bling.
 
-**Risco concreto ao reativar:** usar `833333` como SKU de **um** registro **não** é, por si, duplicação, se não houver outro registro **ativo** com o mesmo SKU. O risco é **ativar duplicados sem controle**: `833333` está em **dois** registros excluídos (8173252121 e 16622651374); reativar ambos repetiria SKU ativo e **derrubaria o lote do `bling-sync` em produção** (índice único `(loja_id, sku)`), porque a correção de identidade (PR #63) **não está implantada**. Regra: reativar **no máximo um** registro por SKU e conferir antes que não haja outro ativo com o mesmo SKU.
+Observações neutras para a decisão: o SKU `5112` segue o padrão de SKU interno (como `4891`), e `833333` é a **referência do fabricante**, que deve ficar em campo próprio e não ser SKU interno obrigatório; `8173252121` e `16514593039` são os mais completos em conteúdo (3 fotos, peso, dimensões, textos); `16622651374` e `16622651026` são os mais empobrecidos (sem fornecedor/fotos, condição e origem zeradas). Nada disso é equivalência nem prova de duplicata.
 
-Registro de auditoria da escolha (a ser gravado quando houver ferramenta ativa): `idempotency_key = cadastro:kit-embreagem-833333:bling-12753970402:v1` (chave interna, não o GTIN nem o código do fabricante).
+**Risco concreto ao reativar:** usar `833333` como SKU de **um** registro **não** é, por si, duplicação, se não houver outro registro **ativo** com o mesmo SKU. O risco é **ativar duplicados sem controle**: `833333` está em **dois** registros excluídos (8173252121 e 16622651374) e `833333/1` em outros dois; reativar ambos repetiria SKU ativo e **derrubaria o lote do `bling-sync` em produção** (índice único `(loja_id, sku)`), porque a correção de identidade (PR #63) **não está implantada**. Regra: reativar **no máximo um** registro por SKU e conferir antes que não haja outro ativo com o mesmo SKU.
+
+Registro de auditoria da escolha (a ser gravado quando o dono decidir e houver ferramenta ativa): a `idempotency_key` deve usar o ID Bling escolhido, por exemplo `cadastro:kit-embreagem-833333:bling-<id escolhido>:v1` (chave interna, não o GTIN nem o código do fabricante).
 
 ## 4. Rascunho de cadastro, campo a campo (nada aplicado)
 
 Legenda de status: **confirmado** (lido por mim no Bling) · **verificado pelo ChatGPT** (lido na fonte primária pelo web do ChatGPT, URL abaixo, 2026-10-25; **não** lido pelo ambiente do Claude) · **legado** (cadastro antigo) · **a confirmar** · **vazio**.
+
+A coluna "Valor anterior" usa o `12753970402` apenas como **base de comparação**; isso não é escolha do registro canônico (seção 3).
 
 Fonte primária (ChatGPT, 2026-10-25): https://catalogoexpresso.com.br/valeo/detalhes?cw_filtros=PCs%3C%212%21%3E833333%3C%21TAB%21%3E&cw_produtoAtivo=CodigoProduto%3C%212%21%3E18793&retornaJSON=true
 
@@ -85,13 +86,13 @@ Fonte primária (ChatGPT, 2026-10-25): https://catalogoexpresso.com.br/valeo/det
 Divergências entre registros a **resolver pelo dono** (não mescladas): preço 1500 × 1950 × 2200; custo 1043,05 × 1453,52 × 1017,86; CEST preenchido × vazio; origem 2 × 0; unidade KT × CJ × UN.
 
 ## 5. Verificação por releitura
-- **Bling:** os 3 registros e o 4891 foram relidos por `getProduct`; todos seguem `situacao = E` (nada foi alterado).
+- **Bling:** os registros `12753970402`, `8173252121`, `16622651374`, `4891`, `16514593039`, `16559870756` e `16622651026` foram lidos/relidos por `getProduct`; todos seguem `situacao = E` (nada foi alterado).
 - **Espelho do Conecta:** 0 linhas dos IDs/SKUs deste teste (produção, SELECT).
 - **Releitura pós-alteração:** **não aplicável**, pois não houve alteração.
 
 ## 6. Entrega do teste
 - **Resultado:** auditoria concluída; **teste pelo Nano.ia não executado por bloqueio real** (seção 1).
-- **ID reaproveitado:** nenhum (proposta: 12753970402, condicionada ao histórico).
+- **ID reaproveitado:** nenhum; **canônico não escolhido** (depende do histórico de movimentação).
 - **Alterações efetivas:** nenhuma.
 - **Lacunas:** histórico de vendas/NF/movimentação; peso, dimensões e fotos; códigos Valeo de disco/platô/rolamento (vazios na fonte); conversões OEM (só orientativas). A fonte primária **foi lida pelo ChatGPT**, não pelo ambiente do Claude (host bloqueado, 403).
 - **Para destravar sem ampliar permissões:** (1) o dono decide o canônico após ver o histórico no Bling; (2) autorização separada para **ferramenta de reativação/atualização** com teste em mock, Policy Engine e auditoria; (3) **deploy do #83** (busca com proveniência) e novo teste real do Nano com os 8 candidatos, antes de qualquer cadastro; (4) deploy do #63 antes de reativar qualquer registro com SKU repetido; (5) backend do Nano.ia em homologação para o fluxo completo pelo agente. (Liberar o host do catálogo no ambiente de nuvem só é necessário se o Claude precisar reler a fonte; não é pré-requisito para corrigir a busca.)
