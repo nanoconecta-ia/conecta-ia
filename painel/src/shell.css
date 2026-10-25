@@ -337,3 +337,4 @@ html button.balao-genesis:hover:not(:disabled) { background: radial-gradient(120
 }
 .dock-agente .chat, .abas .chat { grid-template-columns: minmax(0, 1fr); }
 .bolha-linha { min-width: 0; overflow: hidden; }
+.voz-escolha { display: grid; gap: 4px; } .voz-escolha select { min-width: 0; max-width: 100%; } .voz-escolha small { overflow-wrap: anywhere; }
