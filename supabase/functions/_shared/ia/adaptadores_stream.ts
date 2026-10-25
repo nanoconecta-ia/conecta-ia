@@ -6,7 +6,7 @@
 // ATENÇÃO — verificação: tudo aqui foi testado SOMENTE com corpos SSE falsos (fixtures escritas a partir do formato documentado
 // de cada API) e fetch simulado. NÃO foi testado contra o serviço real de nenhum provedor (não há chave). Antes de ligar em
 // produção, rodar uma chamada real por provedor e comparar o Passo com o do adaptador não-streaming.
-import { IaErro, type Bloco, type Mensagem } from "./tipos.ts";
+import { IaErro, temAnexo, type Bloco, type Mensagem } from "./tipos.ts";
 import { urlPublicaSegura } from "./plugin.ts";
 import { paradaClaude, paradaGemini, paradaOpenAI, type Chamada, type Parada, type Passo, type ProvedorId } from "./adaptadores.ts";
 
@@ -228,6 +228,7 @@ export const chamarGeminiStream: AdaptadorStream = async (c, msgs, aoTexto, sina
     for (const b of m.content) {
       if (b.type === "text") parts.push({ text: b.text });
       else if (b.type === "tool_use") { nomeDe.set(b.id, b.name); parts.push((b as { _g?: ParteG })._g ?? { functionCall: { name: b.name, args: b.input ?? {} } }); }
+      else if (b.type === "anexo") throw new IaErro(400, "Anexos não são suportados neste fluxo.");
       else {
         let resposta: unknown = b.content; try { resposta = JSON.parse(b.content); } catch { /* texto */ }
         parts.push({ functionResponse: { name: nomeDe.get(b.tool_use_id) ?? "ferramenta", response: b.is_error ? { erro: resposta } : { resultado: resposta } } });
@@ -272,4 +273,6 @@ export const chamarGeminiStream: AdaptadorStream = async (c, msgs, aoTexto, sina
   } finally { encerrar(); }
 };
 
-export const ADAPTADORES_STREAM: Record<ProvedorId, AdaptadorStream> = { claude: chamarClaudeStream, gemini: chamarGeminiStream, compativel_openai: chamarOpenAIStream };
+/** Anexos (imagem/PDF) só existem no fluxo sem streaming do Assistente; aqui recusamos em vez de descartar em silêncio. */
+const recusaAnexo = (a: AdaptadorStream): AdaptadorStream => async (c, msgs, aoTexto, sinal) => { if (temAnexo(msgs)) throw new IaErro(400, "Anexos não são suportados neste fluxo."); return a(c, msgs, aoTexto, sinal); };
+export const ADAPTADORES_STREAM: Record<ProvedorId, AdaptadorStream> = { claude: recusaAnexo(chamarClaudeStream), gemini: recusaAnexo(chamarGeminiStream), compativel_openai: recusaAnexo(chamarOpenAIStream) };

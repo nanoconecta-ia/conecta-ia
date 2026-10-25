@@ -8,10 +8,11 @@ import { Retratil } from "../componentes/Retratil.tsx";
 import { mensagemRecolhida } from "../lib/retratil.ts";
 import { interpretar, textoAjuda, type Comando, type Item } from "../lib/comandosNL.ts";
 import { avaliar, coletar } from "../lib/avaliarLayout.ts";
+import { CHAT_ACEITA, CHAT_MAX_ANEXOS, prepararArquivo, rotuloBytes, validarSelecao, type AnexoChat } from "../lib/anexosChat.ts";
 import { escolherInicial, erroAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 
 type Evidencia = { origem: string; simulado: boolean; consultado_em: string; sincronizado_em?: string; motivo?: string; dados: { sku?: string; nome?: string; preco?: number | null; estoque?: number | null } };
-type Msg = { de: "eu" | "ia"; texto: string; evidencias?: Evidencia[]; simulado?: boolean };
+type Msg = { de: "eu" | "ia"; texto: string; anexos?: string[]; evidencias?: Evidencia[]; simulado?: boolean };
 type Conversa = { id: string; titulo: string; atualizada_em: string };
 type Registro = { id: string; papel: string; conteudo: string; criada_em: string; metadados?: { evidencias?: Evidencia[]; simulado?: boolean } };
 const SUGESTOES = ["Resumo da loja", "O que está pendente?", "Produtos incompletos", "Bling conectado?"];
@@ -72,6 +73,9 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [erroConfig, setErroConfig] = useState("");
   const [aceitaEnvio, setAceitaEnvio] = useState(false);
   const lojaAtual = useRef(loja.id); lojaAtual.current = loja.id;
+  const [anexos, setAnexos] = useState<AnexoChat[]>([]);
+  const [erroAnexo, setErroAnexo] = useState("");
+  const entradaArquivo = useRef<HTMLInputElement>(null);
   const selecao = provedores.find((p) => p.id === provedor);
   const podeEnviar = !carregandoChat && !carregando && !erroConfig && (!provedor || (selecao?.estado === "disponivel" && aceitaEnvio));
   useEffect(() => {
@@ -156,11 +160,13 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     const conv = tentativa ? tentativa.conversa : conversaId;
     if (repetir && (!tentativa || provedor !== tentativa.provedor)) return;
     const historico = msgsRef.current.slice(1);
-    if (!repetir) setMsgs(m => [...m, { de: "eu", texto: t }]);
+    const anexosEnvio = repetir ? [] : anexos;
+    if (!repetir) setMsgs(m => [...m, { de: "eu", texto: t, ...(anexosEnvio.length ? { anexos: anexosEnvio.map((a) => a.nome) } : {}) }]);
+    setAnexos([]); setErroAnexo("");
     setTexto(""); setOcupado(true); setErroHistorico("");
     if (persistente && prov) setRetentativa({ texto: t, chave, provedor: prov, conversa: conv });
     try {
-      const data = await chamada(persistente ? "chat_perguntar" : "perguntar", { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio } : { historico }), ...(prov ? { provedor: prov } : { sem_ia: true }) });
+      const data = await chamada(persistente ? "chat_perguntar" : "perguntar", { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio } : { historico }), ...(prov ? { provedor: prov } : { sem_ia: true }), ...(anexosEnvio.length ? { anexos: anexosEnvio.map(({ nome, tipo, dados }) => ({ nome, tipo, dados })) } : {}) });
       if (lojaAtual.current !== lojaDoEnvio) return;
       const resposta = String(data.resposta ?? "");
       setMsgs(m => [...m, { de: "ia", texto: resposta, evidencias: data.evidencias, simulado: data.simulado }]);
@@ -169,6 +175,16 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       if (lerAltoRef.current) voz.falar(resposta);
     } catch (e) { if (lojaAtual.current === lojaDoEnvio) setErroHistorico(String(e)); }
     finally { if (lojaAtual.current === lojaDoEnvio) setOcupado(false); }
+  }
+  async function escolherArquivos(lista: FileList | null) {
+    const arquivos = Array.from(lista ?? []); if (entradaArquivo.current) entradaArquivo.current.value = "";
+    setErroAnexo(""); const pdfOk = provedor !== "compativel_openai"; let atual = [...anexos];
+    for (const f of arquivos) {
+      const erro = validarSelecao(f, atual, pdfOk); if (erro) { setErroAnexo(erro); break; }
+      try { const a = await prepararArquivo(f); const e2 = validarSelecao({ name: a.nome, type: a.tipo, size: a.bytes }, atual, pdfOk); if (e2) { setErroAnexo(e2); break; } atual = [...atual, a]; }
+      catch { setErroAnexo(`Não consegui ler "${f.name}".`); break; }
+    }
+    setAnexos(atual);
   }
   // microfone: o texto vai aparecendo no campo; quando a fala termina, envia sozinho
   const voz = useVoz((t, final) => { setTexto(t); if (final && t) void enviar(t); });
@@ -216,10 +232,14 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       <div className="chat" aria-live="polite">{msgs.map((m, i) => <MensagemRetratil key={i} m={m} recolhida={mensagemRecolhida(i, msgs.length, abertas, modoMsgs)} onAlternar={() => alternarMsg(i)} />)}<div ref={fim} /></div>
       <Retratil id="atalhos" titulo="Atalhos" resumo="perguntas rápidas" aberto={msgs.length < 2} recolherQuando={msgs.length >= 3}><p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p></Retratil>
       <div className="chat-compositor">
-      {selecao && <label className="consentimento" style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.</label>}
+      {selecao && <Retratil id="consentimento" titulo="Privacidade do envio" resumo={aceitaEnvio ? "autorizado" : "autorize para enviar"} status={aceitaEnvio ? "go" : "warn"} recolherQuando={aceitaEnvio}><label className="consentimento" style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.{anexos.length > 0 && " Os anexos desta pergunta também são enviados."}</label></Retratil>}
       {selecao?.motivo && <p role="status">{selecao.motivo}</p>}
       <form onSubmit={onSubmit} style={{ maxWidth: "none" }}>
+        {anexos.length > 0 && <ul className="anexos-lista" aria-label="Anexos desta pergunta">{anexos.map((a, i) => <li key={`${a.nome}-${i}`}><span className="anexo-nome" title={a.nome}>{a.tipo.startsWith("image/") ? "🖼" : "📄"} {a.nome}</span><span className="suave">{rotuloBytes(a.bytes)}</span><button type="button" className="sec mini" aria-label={`Remover ${a.nome}`} onClick={() => setAnexos((l) => l.filter((_, k) => k !== i))}>✕</button></li>)}</ul>}
+        {erroAnexo && <p role="alert" className="msg-erro">{erroAnexo}</p>}
         <div className="linha-voz">
+          <input ref={entradaArquivo} type="file" hidden multiple accept={CHAT_ACEITA} onChange={(e) => void escolherArquivos(e.target.files)} />
+          <button type="button" className="sec mic" aria-label="Anexar imagem ou arquivo" title={provedor ? `Anexar imagem, PDF, TXT ou CSV (até ${CHAT_MAX_ANEXOS})` : "Escolha um modelo de IA para anexar arquivos"} disabled={ocupado || !provedor || administrando || anexos.length >= CHAT_MAX_ANEXOS} onClick={() => entradaArquivo.current?.click()}>📎</button>
           <label>Pergunte<input value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={1000} /></label>
           {voz.suporteMic && <button type="button" className="sec mic" aria-pressed={voz.ouvindo} aria-label={voz.ouvindo ? "Parar de ouvir" : "Falar com o assistente"} onClick={() => (voz.ouvindo ? voz.parar() : voz.ouvir())} disabled={ocupado}>🎤</button>}
           {voz.suporteFala && <button type="button" className="sec mic" aria-pressed={lerAlto} aria-label={lerAlto ? "Desligar a leitura das respostas em voz alta" : "Ler as respostas em voz alta"} title={lerAlto ? "Leitura em voz alta ligada" : "Leitura em voz alta desligada"} onClick={alternarFala}>{lerAlto ? "🔊" : "🔈"}</button>}
