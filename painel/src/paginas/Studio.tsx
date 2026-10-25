@@ -49,7 +49,7 @@ export function Studio({ loja, query }: { loja: Loja; query: URLSearchParams }) 
     <>
       <div className="cartao">
         <h1>Studio de produtos e banners</h1>
-        <p className="suave">A área de trabalho do Gênesis para um produto. O cadastro vem do Bling e não é editado aqui; a prévia da página pública usa <strong>somente dados aprovados</strong>.</p>
+        <p className="suave">A área de trabalho do Nano.ia para um produto. O cadastro vem do Bling e não é editado aqui; a prévia da página pública usa <strong>somente dados aprovados</strong>.</p>
         <label>Produto<input type="search" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome ou SKU" /></label>
         <ul className="fontes achados" aria-label="Resultados">{achados.slice(0, 8).map((p) => <li key={p.id}><button className={`sec mini-texto ${p.id === produtoId ? "sel" : ""}`} onClick={() => ir(`/studio?produto=${p.id}`)}><span className="mono">{p.sku ?? "sem SKU"}</span> {p.nome}</button></li>)}</ul>
       </div>

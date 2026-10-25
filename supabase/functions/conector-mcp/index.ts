@@ -1,4 +1,4 @@
-// Gateway MCP do Gênesis (Edge Function). NÃO IMPLANTADA nesta fase. verify_jwt = false: a autenticação é a chave MCP por loja
+// Gateway MCP do Nano.ia (Edge Function). NÃO IMPLANTADA nesta fase. verify_jwt = false: a autenticação é a chave MCP por loja
 // (hash sha256 no banco, escopos, expiração, revogação). O cliente externo nunca recebe service_role nem token do Bling.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { tratarMcp, type PortasGateway } from "../_shared/conector/gateway.ts";

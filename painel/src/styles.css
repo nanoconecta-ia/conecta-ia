@@ -149,7 +149,7 @@ button.mic { width:var(--alvo); padding:0; border-radius:50%; } button.mic[aria-
 
 .cartao h2 { margin-top:22px; }
 
-/* ===== Gênesis (chat 3 painéis, Central, Indicadores, Studio, Gateway) ===== */
+/* ===== Nano.ia (chat 3 painéis, Central, Indicadores, Studio, Gateway) ===== */
 .faixa-demo { background:#b42318; color:#fff; text-align:center; font-weight:700; padding:6px 12px; font-size:.9rem; }
 .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 .aviso { background:color-mix(in srgb, var(--atencao) 12%, var(--cartao)); border:1px solid var(--atencao); border-radius:10px; padding:8px 12px; margin:6px 0; color:var(--texto); font-size:.93rem; }

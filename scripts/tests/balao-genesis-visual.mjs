@@ -1,4 +1,4 @@
-// Balão flutuante do Gênesis em qualquer tela do painel (390px e desktop). Sessão e rede 100% SINTÉTICAS; nada sai para produção.
+// Balão flutuante do Nano.ia em qualquer tela do painel (390px e desktop). Sessão e rede 100% SINTÉTICAS; nada sai para produção.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
@@ -29,15 +29,15 @@ try{
    return route.fulfill({status:200,contentType:'application/json',headers:h,body:u.pathname.includes('/rest/v1/')?'[]':'{}'});
   });
   await page.goto(`${base}/#/catalogo`);
-  const balao=page.getByRole('button',{name:'Abrir o Gênesis'});await balao.waitFor();
+  const balao=page.getByRole('button',{name:'Abrir o Nano.ia'});await balao.waitFor();
   const caixa=await balao.boundingBox();
   assert.ok(caixa.x+caixa.width<=largura&&caixa.y+caixa.height<=altura,`balão dentro da tela a ${largura}px`);
   await balao.click();
   const dock=page.locator('#dock-agente');await dock.waitFor({state:'visible'});
   const d=await dock.boundingBox();
-  assert.ok(d.x>=0&&d.x+d.width<=largura&&d.y>=0&&d.y+d.height<=altura,`janela do Gênesis cabe a ${largura}px`);
+  assert.ok(d.x>=0&&d.x+d.width<=largura&&d.y>=0&&d.y+d.height<=altura,`janela do Nano.ia cabe a ${largura}px`);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'sem rolagem horizontal');
-  await page.getByRole('button',{name:'Fechar o Gênesis'}).first().click();
+  await page.getByRole('button',{name:'Fechar o Nano.ia'}).first().click();
   await dock.waitFor({state:'hidden'});
   await balao.click();await page.keyboard.press('Escape');await dock.waitFor({state:'hidden'});
   assert.deepEqual(erros,[]);

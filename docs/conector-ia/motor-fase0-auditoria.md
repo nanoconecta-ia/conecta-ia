@@ -6,8 +6,8 @@ Legenda: **EXISTENTE** (há no repositório ou em produção) · **FUNCIONAL** (
 
 ## 0. Estado de produção (leitura)
 - 1 loja, 4 produtos (todos com categoria órfã 1072643), 1 conexão Bling, 0 produtos publicados, 0 enriquecimentos, 0 peças ligadas a produto, 0 aprovações, 0 conversas, **0 chaves de IA ativas**, 49 nós de taxonomia, 16 fontes, 10 montadoras/10 modelos/10 motores, 0 versões de veículo.
-- 39 migrações aplicadas (até `20261018232515`); nenhuma da branch do Gênesis está aplicada.
-- 15 Edge Functions ativas (bling-*, assistente, agente, pair, conecta-gateway, loja-publica, loja-tema, ia-config…); as do Gênesis (`conector-*`, `loja-seo`) **não** estão publicadas.
+- 39 migrações aplicadas (até `20261018232515`); nenhuma da branch do Nano.ia está aplicada.
+- 15 Edge Functions ativas (bling-*, assistente, agente, pair, conecta-gateway, loja-publica, loja-tema, ia-config…); as do Nano.ia (`conector-*`, `loja-seo`) **não** estão publicadas.
 - **RLS ligada em 76 de 76 tabelas.** Única sem política: `pair_desafios` (negar tudo; acesso só pelo servidor).
 
 ## 1. Matriz por capacidade
