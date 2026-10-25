@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "f07c9efd083bf7f911dd5609673df9f8828eb183974dcc45786d0ef9cbc0bd6a",
+  "artefato_sha256": "3b4e4c419cc6d7eac72d505b8f3f05764b6288d77560e3b69713508941baf2ca",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -21,6 +21,10 @@
       "sha256": "5b49bd8a52937b9560bf4161a58bcda5ee80d7f598f98236ef4a32effcd93619"
     },
     {
+      "path": "supabase/functions/_shared/ia/reducao.ts",
+      "sha256": "a19f56f001113dd6276afaff82d0a2e71347c2be31eafeda00ff00a589618f76"
+    },
+    {
       "path": "supabase/functions/_shared/ia/tipos.ts",
       "sha256": "328b8823617e4be35687cd8e41f9605cf0e2f634b9323871d0755ca2a59b2dc3"
     },
@@ -30,11 +34,11 @@
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores.ts",
-      "sha256": "cb617112f772f076b948127b1a1931b1bbf557309b9a51eec6c5b9954baa2d89"
+      "sha256": "9a5153ced93ae629cfcb373e6943365bfea9b7f49d80086c6e7d0f534b9299ba"
     },
     {
       "path": "supabase/functions/_shared/ia/claude.ts",
-      "sha256": "2a56cd86d59002c85acf1a26d4062e2a912c683a8bf39d0053a38c857e5ad518"
+      "sha256": "139f2e35bb4447393f9bceef849017881a82a835a019ee2a259f4f04c501971d"
     },
     {
       "path": "supabase/functions/_shared/ia/escrita.ts",
@@ -46,7 +50,7 @@
     },
     {
       "path": "supabase/functions/_shared/ia/ferramentas.ts",
-      "sha256": "70772d573ecbc354ad8b44bcf2a93ec4a9449c0eeaf57e5db5cf4b25e5af7fe8"
+      "sha256": "eb1389c695726feec2c3fb8e7300e84488b3f3bb9761529c8ff20cc9dc0e5840"
     },
     {
       "path": "supabase/functions/_shared/assistente/provedores.ts",
@@ -58,7 +62,7 @@
     },
     {
       "path": "supabase/functions/_shared/bling_ferramentas.ts",
-      "sha256": "9ea444759ce88cc371ca7160e2493eec03ecd40c2409f2e4cfa619d458f2df44"
+      "sha256": "654e203abdcd1d92acf9627764a2d9935a1557d8e0c01491a232dd468f4658b9"
     },
     {
       "path": "supabase/functions/_shared/bling_token.ts",
@@ -73,12 +77,16 @@
       "sha256": "af765b491093e16d2bbc41d8f9ac803b68a24d9312df71b1feb1f262a4f796fa"
     },
     {
+      "path": "supabase/functions/_shared/assistente/busca_produto.ts",
+      "sha256": "d90c56940898662850e2eae5af6195fd65b8a3ee1d7a288258d5130314b6cda2"
+    },
+    {
       "path": "supabase/functions/_shared/assistente/bling_consultar.ts",
-      "sha256": "4f8a9a7155d43e388a0246c9d84cf84786f9d57a64b109bcd6f4c00dd6b05311"
+      "sha256": "b362430572124c2aa7e56097b757d040a26f700da8a5a7d3dd96dbde48d1f539"
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "5482e2a46b725afc330aff89f1bae72848e22e87ae7529067c41224320a1bc53"
+      "sha256": "0aff7661fa8b90de333896209ae05852f838da5d54e7854b4398626466180575"
     },
     {
       "path": "supabase/functions/assistente/index.ts",
