@@ -6,8 +6,10 @@ import { iconeDaCategoria } from "../lib/icones.ts";
 import { IconePeca } from "../componentes/IconePeca.tsx";
 import { vistaDaArea } from "../lib/vistas.ts";
 import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
+import { SincroniaBling } from "../componentes/SincroniaBling.tsx";
+import { conferir, type CategoriaBling, type Ligacao } from "../lib/taxonomiaBling.ts";
 
-type Dados = { nos: No[]; produtos: Map<string, number>; bling: Map<string, number> };
+type Dados = { nos: No[]; produtos: Map<string, number>; bling: Map<string, number>; categoriasBling: CategoriaBling[]; ligacoes: Ligacao[] };
 
 function Coluna({ titulo, itens, ativoId, aoEscolher }: { titulo: string; itens: NoComTotais[]; ativoId: string | null; aoEscolher: (n: NoComTotais) => void }) {
   return (
@@ -38,21 +40,25 @@ export function Taxonomia({ loja }: { loja: Loja }) {
   useEffect(() => {
     let vivo = true;
     void (async () => {
-      const [n, p, b] = await Promise.all([
+      const [n, p, b, cb] = await Promise.all([
         supabase.from("taxonomia_nos").select("id, pai_id, nome, slug, ordem").eq("perfil_ramo", loja.perfil_ramo).order("ordem").order("nome"),
         supabase.from("produtos").select("taxonomia_no_id").eq("loja_id", loja.id).not("taxonomia_no_id", "is", null).limit(10000),
-        supabase.from("bling_categoria_taxonomia").select("taxonomia_no_id").eq("loja_id", loja.id),
+        supabase.from("bling_categoria_taxonomia").select("bling_categoria_id, taxonomia_no_id").eq("loja_id", loja.id),
+        supabase.from("bling_categorias").select("bling_id, nome, pai_bling_id").eq("loja_id", loja.id).limit(2000),
       ]);
       if (!vivo) return;
       setDados({
         nos: (n.data ?? []) as No[],
         produtos: contar((p.data ?? []) as { taxonomia_no_id: string }[], (x) => x.taxonomia_no_id),
         bling: contar((b.data ?? []) as { taxonomia_no_id: string }[], (x) => x.taxonomia_no_id),
+        categoriasBling: (cb.data ?? []) as CategoriaBling[],
+        ligacoes: (b.data ?? []) as Ligacao[],
       });
     })();
     return () => { vivo = false; };
   }, [loja.id, loja.perfil_ramo]);
 
+  const conferencia = useMemo(() => (dados ? conferir(dados.nos, dados.categoriasBling, dados.ligacoes) : null), [dados]);
   const raizes = useMemo(() => (dados ? montarArvore(dados.nos, dados.produtos, dados.bling) : []), [dados]);
   const trilha = useMemo(() => caminhoAte(raizes, sel), [raizes, sel]);
   const atual = trilha.at(-1) ?? null;
@@ -96,6 +102,7 @@ export function Taxonomia({ loja }: { loja: Loja }) {
             </aside>
           </div>
         )}
+        {conferencia && <SincroniaBling c={conferencia} />}
       </div>
     </div>
   );
