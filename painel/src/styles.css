@@ -282,3 +282,8 @@ main > .cartao { min-width:0; }
 fieldset { border:1px solid var(--borda); border-radius:var(--raio); padding:10px 14px; }
 
 .lista-simples { list-style:none; padding:0; margin:12px 0; display:grid; gap:12px; } .lista-simples li { border:1px solid var(--borda); border-radius:10px; padding:12px; display:grid; gap:8px; }
+.orcamento .orc-lista { list-style: none; margin: .75rem 0; padding: 0; display: grid; gap: .5rem; }
+.orcamento .orc-lista li { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borda, currentColor); padding-bottom: .5rem; }
+.orcamento .orc-acoes { display: flex; gap: .5rem; align-items: end; }
+.orcamento .orc-acoes input { width: 4.5rem; min-height: 44px; }
+.orcamento button, .orcamento .botao { min-height: 44px; }

@@ -3,6 +3,7 @@ import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { useVoz } from "../lib/voz.ts";
 import { Esfera, type EstadoEsfera } from "../componentes/Esfera.tsx";
 import { FichaProduto } from "../componentes/FichaProduto.tsx";
+import { Orcamento } from "../componentes/Orcamento.tsx";
 import type { FichaProduto as Produto, FichaVeiculo } from "../lib/ficha.ts";
 
 /** Página pública do produto (#/p/<loja>/<sku>) com o assistente para o cliente (texto ou voz). Só lê dado aprovado e publicado. */
@@ -46,6 +47,7 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
   return (
     <main>
       {ficha && <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} />}
+      {ficha && <Orcamento slug={slug} produto={ficha.produto} />}
       <div className="cartao">
         <div className="agente"><Esfera estado={estado} tamanho={72} /><div><h1 style={{ margin: 0 }}>Tire suas dúvidas sobre esta peça</h1>
           <p className="suave" style={{ margin: 0 }}>Código <span className="mono">{sku}</span>. O assistente só informa dados confirmados pela loja.</p></div></div>
