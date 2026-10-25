@@ -21,6 +21,7 @@ const MOTIVOS: Record<string, string> = {
 
 export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
   const [status, setStatus] = useState("…");
+  const [motivo, setMotivo] = useState<string | null>(null);
   const [configurado, setConfigurado] = useState<boolean | null>(null);
   const [editando, setEditando] = useState(false);
   const [clientId, setClientId] = useState("");
@@ -33,7 +34,7 @@ export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
   const [sincMsg, setSincMsg] = useState("");
 
   const carregar = () => {
-    supabase.from("bling_conexoes").select("status, ultimo_sync_ok_em").eq("loja_id", loja.id).maybeSingle().then(({ data }) => { setStatus(data?.status ?? "pendente"); setUltimoSync(data?.ultimo_sync_ok_em ?? null); });
+    supabase.from("bling_conexoes").select("status, ultimo_sync_ok_em, ultimo_erro").eq("loja_id", loja.id).maybeSingle().then(({ data }) => { setStatus(data?.status ?? "pendente"); setMotivo(data?.status === "conectada" ? null : data?.ultimo_erro ?? null); setUltimoSync(data?.ultimo_sync_ok_em ?? null); });
     supabase.rpc("bling_app_configurado", { p_loja_id: loja.id }).then(({ data }) => setConfigurado(data === true));
   };
   useEffect(carregar, [loja.id, query]);
@@ -70,7 +71,8 @@ export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
       <h1>Conexão com o Bling</h1>
       <p><span className={`selo ${conectada ? "ok" : "atencao"}`}>{conectada ? "Conectada" : "Não conectada"}</span>{" "}
         {configurado && <span className="selo ok">App cadastrado</span>}</p>
-      {query.get("ok") && <p className="msg-ok">Conexão concluída.</p>}
+      {!conectada && motivo && <p className="msg-erro">{motivo}</p>}
+      {query.get("ok") &&<p className="msg-ok">Conexão concluída.</p>}
       {query.get("erro") && <p className="msg-erro">{MOTIVOS[query.get("erro") ?? ""] ?? "Não foi possível conectar. Confira o cadastro do app e tente de novo."}</p>}
       {erro && <p className="msg-erro">{erro}</p>}
 
