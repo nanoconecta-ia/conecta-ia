@@ -132,7 +132,7 @@ button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(
 .galeria-icones figcaption { font-size: .74rem; color: var(--suave); text-align: center; overflow-wrap: anywhere; }
 
 /* ===== agente lateral (dock) ===== */
-.agente-botao { gap: 8px; color: #fff; border-color: rgba(255,255,255,.35); min-height: 40px; padding: 6px 14px; }
+.agente-botao { gap: 8px; color: #fff; border-color: rgba(255,255,255,.35); min-height: 44px; min-width: 44px; padding: 6px 14px; }
 .agente-botao[aria-pressed="true"] { background: color-mix(in srgb, var(--verde) 25%, transparent); border-color: var(--verde); }
 .dock-agente { position: fixed; z-index: 8; right: 16px; bottom: 96px; width: min(calc(100vw - 32px), 400px); height: min(70vh, 640px); display: grid; grid-template-rows: auto 1fr; overflow: hidden; background: var(--fundo); border: 1px solid color-mix(in srgb, var(--marca) 50%, var(--borda)); border-radius: 16px; box-shadow: 0 24px 60px rgba(0,0,0,.35); }
 .balao-genesis { position: fixed; z-index: 9; right: 16px; bottom: 44px; display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 6px 16px 6px 8px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--marca) 60%, var(--borda)); background: linear-gradient(180deg, var(--grafite-2), var(--grafite)); color: #fff; font-weight: 600; box-shadow: 0 10px 28px rgba(0,0,0,.35); cursor: pointer; }
@@ -174,7 +174,8 @@ button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(
 .esfera-caixa .orbita b { position:absolute; border-radius:50%; background:var(--ciano); box-shadow:0 0 10px var(--ciano); width:5px; height:5px; left:50%; top:0; }
 .esfera-caixa .orbita b:nth-child(2) { left:100%; top:52%; width:4px; height:4px; background:var(--marca); box-shadow:0 0 8px var(--marca); }
 .esfera-caixa .orbita b:nth-child(3) { left:26%; top:94%; width:3px; height:3px; background:#ffe3a8; box-shadow:0 0 6px #ffe3a8; }
-.esfera-caixa:has(.esfera[data-ativo="false"]) .orbita { animation-play-state:paused; }
+.esfera-caixa:has(.esfera[data-ativo="false"]:not([data-estado="ocioso"])) .orbita { animation-play-state:paused; }
+.esfera-caixa:has(.esfera[data-estado="ocioso"]) .orbita { animation-duration:36s; }
 @media (prefers-reduced-motion:reduce) { .esfera-caixa .orbita, .v-tipo { animation:none !important; transition:none !important; } }
 .galeria-veiculos { grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); }
 .galeria-vistas { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); align-items:start; margin-top:8px; }
@@ -199,3 +200,38 @@ a.botao-link:hover { background:var(--realce); }
 .ficha-veiculo { margin: 2px 0; color: #c8161d; font-weight: 700; font-size: 1.15rem; } .ficha-spec { margin: 2px 0; }
 .ficha-texto ul { margin: 0; padding-left: 18px; } .ficha-tipos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 a.ficha-wa { display: block; text-align: center; padding: 12px; background: #1f9d55; color: #fff; font-weight: 700; text-decoration: none; }
+
+/* Assistente como conversa: cabeçalho compacto, configurações recolhidas e compositor fixo no rodapé (acima da barra de status e da área segura) */
+
+/* ===== Nano.ia / Assistente: conversa em primeiro lugar, com abas laterais retráteis (conversas e modelo/privacidade) ===== */
+.abas-caixa { container: abas / inline-size; height: calc(100dvh - 182px); min-height: 420px; }
+@media (min-width: 960px) { .abas-caixa { height: calc(100dvh - 128px); } }
+.dock-agente .dock-corpo:has(.abas-caixa) { padding: 0; overflow: hidden; display: block; }
+.dock-agente .abas-caixa { height: 100%; min-height: 0; }
+.abas { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); height: 100%; padding: 8px; gap: 8px; overflow: hidden; }
+.abas-centro { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; }
+.abas-centro > * { flex: none; }
+.abas-centro > .chat { flex: 1 1 auto; overflow-y: auto; min-height: 120px; align-content: start; }
+.abas .agente { gap: 8px; flex-wrap: nowrap; }
+.abas .agente h1 { font-size: 1.05rem; }
+.abas .agente-titulo { min-width: 0; display: grid; }
+.abas .agente-titulo .estado { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.abas .ic-aba { min-height: 44px; min-width: 44px; padding: 6px 10px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.abas .chat-compositor { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--borda); }
+.aba { position: absolute; top: 0; bottom: 0; z-index: 3; width: min(88%, 330px); display: flex; flex-direction: column; background: var(--cartao, var(--fundo)); border: 1px solid var(--borda); box-shadow: 0 0 40px rgba(0,0,0,.25); visibility: hidden; transition: transform .2s, visibility .2s; }
+.aba-esq { left: 0; transform: translateX(-105%); border-radius: 0 var(--raio) var(--raio) 0; }
+.aba-dir { right: 0; transform: translateX(105%); border-radius: var(--raio) 0 0 var(--raio); }
+.abas[data-esq="aberto"] .aba-esq, .abas[data-dir="aberto"] .aba-dir { transform: none; visibility: visible; }
+.aba-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--borda); }
+.aba-corpo { padding: 12px; display: grid; gap: 10px; align-content: start; overflow-y: auto; min-height: 0; }
+.abas-fundo { position: absolute; inset: 0; z-index: 2; background: rgba(8,16,24,.5); border: 0; border-radius: 0; padding: 0; min-height: 0; }
+.abas-fundo:hover:not(:disabled) { background: rgba(8,16,24,.5); }
+@container abas (max-width: 460px) { .abas .ic-aba span { display: none; } }
+@container abas (min-width: 820px) {
+  .abas[data-esq="aberto"] { grid-template-columns: 260px minmax(0, 1fr); }
+  .abas[data-dir="aberto"] { grid-template-columns: minmax(0, 1fr) 300px; }
+  .abas[data-esq="aberto"][data-dir="aberto"] { grid-template-columns: 260px minmax(0, 1fr) 300px; }
+  .aba { position: static; width: auto; transform: none; visibility: visible; box-shadow: none; display: none; border-radius: var(--raio); }
+  .abas[data-esq="aberto"] .aba-esq, .abas[data-dir="aberto"] .aba-dir { display: flex; }
+  .abas-fundo { display: none; }
+}
