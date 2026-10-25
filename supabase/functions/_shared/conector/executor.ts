@@ -1,4 +1,4 @@
-// Executor do Conector IA: só roda o que foi APROVADO (o banco revalida aprovação, hash, prazo, trava e liberação em
+// Executor do Gênesis: só roda o que foi APROVADO (o banco revalida aprovação, hash, prazo, trava e liberação em
 // agente_proposta_iniciar_execucao). Para cada item: abre a tentativa, passa pelo Policy Engine, escreve pela porta,
 // LÊ DE VOLTA e só então confirma. Timeout/5xx em escrita => "desconhecida" (nunca "falhou" e nunca repetir às cegas).
 import { buscarDefinicao } from "./registro.ts";

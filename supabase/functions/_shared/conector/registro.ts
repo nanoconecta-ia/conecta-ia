@@ -1,4 +1,4 @@
-// Registro central de ferramentas do Conector IA (Tool Registry). O que não está aqui não existe.
+// Registro central de ferramentas do Gênesis (Tool Registry). O que não está aqui não existe.
 // Chat, gateway MCP e executor consultam ESTE catálogo; o Policy Engine decide sobre ele (policy.ts).
 // Regras: LLM nunca recebe o MCP do Bling cru; escrita externa só pelo executor, após aprovação humana;
 // "ativa" significa handler implementado E testado — o resto é contrato (planejada) ou está travado (desligada).
@@ -12,7 +12,7 @@ const livre: JsonSchema = { type: "object" };
 const lista = (items: JsonSchema, maxItems = 50): JsonSchema => ({ type: "array", items, maxItems });
 const fonte = obj({ url: txt("endereço da fonte", 500), documento: txt("nome do documento", 200), versao: txt("versão da fonte", 60), consultado_em: txt("data (ISO)", 40) });
 
-/** Campos do produto no Bling que o Conector IA PODE alterar (nunca fiscal, preço, custo, fornecedor, estoque, SKU). conferido:false até a conferência na documentação oficial. */
+/** Campos do produto no Bling que o Gênesis PODE alterar (nunca fiscal, preço, custo, fornecedor, estoque, SKU). conferido:false até a conferência na documentação oficial. */
 export const CAMPOS_BLING_PERMITIDOS = ["nome", "descricaoCurta", "descricaoComplementar", "marca", "gtin", "pesoLiquido", "pesoBruto", "dimensoes", "categoria"] as const;
 export const CAMPOS_BLING_PROIBIDOS = ["tributacao", "ncm", "cest", "fornecedor", "fornecedores", "precoCusto", "precoCompra", "preco", "estoque", "codigo", "situacao", "formato"] as const;
 

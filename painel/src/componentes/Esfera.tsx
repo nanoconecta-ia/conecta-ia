@@ -1,6 +1,6 @@
 import { ESTADO_ATIVO, ROTULO_ESTADO, type EstadoAgente } from "../lib/estadoAgente.ts";
 
-/** Estados antigos (loja pública e assistente do cliente) continuam valendo; os 12 do Conector IA vêm de lib/estadoAgente. */
+/** Estados antigos (loja pública e assistente do cliente) continuam valendo; os 12 do Gênesis vêm de lib/estadoAgente. */
 export type EstadoEsfera = EstadoAgente | "parado" | "ouvindo" | "pensando" | "falando";
 const LEGADO: Record<string, EstadoAgente> = { parado: "ocioso", ouvindo: "escutando", pensando: "interpretando" };
 
@@ -13,7 +13,7 @@ export function Esfera({ estado = "ocioso", tamanho = 96, comRotulo = false }: {
   return (
     <div className="esfera-bloco">
       <span className="esfera-caixa">
-        <div className="esfera" data-estado={e} data-ativo={ativo ? "true" : "false"} style={{ ["--d" as string]: `${tamanho}px` }} role="img" aria-label={`Conector IA: ${rotulo}`}>
+        <div className="esfera" data-estado={e} data-ativo={ativo ? "true" : "false"} style={{ ["--d" as string]: `${tamanho}px` }} role="img" aria-label={`Gênesis: ${rotulo}`}>
           <span className="nuvem" aria-hidden="true"><i /><i /><i /></span>
           <span className="brilho" aria-hidden="true" />
         </div>

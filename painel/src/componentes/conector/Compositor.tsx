@@ -47,13 +47,13 @@ export function Compositor({ texto, aoTexto, enviando, aoEnviar, aoCancelar, ane
       )}
       {erroAnexo && <p className="msg-erro" role="alert">{erroAnexo}</p>}
       <div className="linha-comp">
-        <label className="sr" htmlFor="msg-conector">Mensagem para o Conector IA</label>
+        <label className="sr" htmlFor="msg-conector">Mensagem para o Gênesis</label>
         <textarea id="msg-conector" rows={1} maxLength={4000} value={texto} onChange={(e) => aoTexto(e.target.value)} onKeyDown={teclas}
-          placeholder="Peça algo ao Conector IA…" disabled={semProvedor} />
+          placeholder="Peça algo ao Gênesis…" disabled={semProvedor} />
         <div className="botoes-comp">
           <input ref={entrada} type="file" accept={ACEITA} multiple hidden onChange={(e) => escolher(e.target.files)} />
           <button type="button" className="sec ic" onClick={() => entrada.current?.click()} aria-label="Anexar imagem ou documento" disabled={enviando || semProvedor}>📎</button>
-          {voz.suporteMic && <button type="button" className="sec ic mic" aria-pressed={voz.ouvindo} aria-label={voz.ouvindo ? "Parar de ouvir" : "Falar com o Conector IA"} onClick={() => (voz.ouvindo ? voz.parar() : voz.ouvir())} disabled={enviando || semProvedor}>🎤</button>}
+          {voz.suporteMic && <button type="button" className="sec ic mic" aria-pressed={voz.ouvindo} aria-label={voz.ouvindo ? "Parar de ouvir" : "Falar com o Gênesis"} onClick={() => (voz.ouvindo ? voz.parar() : voz.ouvir())} disabled={enviando || semProvedor}>🎤</button>}
           {enviando ? <button type="button" className="perigo" onClick={aoCancelar}>Cancelar</button> : <button disabled={semProvedor || (!texto.trim() && anexos.length === 0)}>Enviar</button>}
         </div>
       </div>
@@ -74,7 +74,7 @@ export function Compositor({ texto, aoTexto, enviando, aoEnviar, aoCancelar, ane
           </div>
         </details>
       </div>
-      {semProvedor && <p className="aviso">Nenhum provedor de IA ativo. <a href="#/integracoes">Cadastre uma chave em Integrações de IA</a> para conversar com o Conector IA.</p>}
+      {semProvedor && <p className="aviso">Nenhum provedor de IA ativo. <a href="#/integracoes">Cadastre uma chave em Integrações de IA</a> para conversar com o Gênesis.</p>}
       <Visualizador url={ampliada?.url ?? null} legenda={ampliada?.nome ?? ""} aoFechar={() => setAmpliada(null)} />
     </form>
   );

@@ -81,7 +81,7 @@ export async function criarPropostaVersionada(c: ContextoFerramenta, o: { titulo
 
   const tarefaId = c.tarefaId ?? await rpc(c, "agente_tarefa_criar", { p_loja: c.lojaId, p_user: c.userId, p_conversa: c.conversaId ?? null, p_objetivo: o.titulo });
   const propostaId = await rpc(c, "agente_proposta_criar", { p_loja: c.lojaId, p_user: c.userId, p_tarefa: tarefaId, p_conversa: c.conversaId ?? null,
-    p_agente: c.agente?.nome ?? "Conector IA", p_provedor: c.agente?.provedor ?? null, p_modelo: c.agente?.modelo ?? null, p_prompt_versao: c.agente?.promptVersao ?? null,
+    p_agente: c.agente?.nome ?? "Gênesis", p_provedor: c.agente?.provedor ?? null, p_modelo: c.agente?.modelo ?? null, p_prompt_versao: c.agente?.promptVersao ?? null,
     p_titulo: o.titulo, p_resumo: o.resumo ?? null, p_lote: o.lote ?? resolvidos.length > 1 });
   for (const [i, it] of resolvidos.entries()) {
     await rpc(c, "agente_proposta_item_adicionar", { p_loja: c.lojaId, p_proposta: propostaId, p_produto: it.produto_id ?? null, p_operacao: it.operacao, p_alvo: it.alvo ?? null,

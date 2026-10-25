@@ -15,7 +15,7 @@ const L = "eeeeeeee-0000-0000-0000-00000000000e", U = "66666666-6666-6666-6666-6
 const bling = new BlingMock();
 const deps = (extra = {}) => ({ rpc: db.rpc as any, dados: db as any, blingLeitura: bling, ...extra });
 const lojista = { userId: U, lojaId: L }, editor = { userId: ED, lojaId: L };
-const ctx = () => ({ origem: "chat" as const, lojaId: L, userId: U, dados: dadosSupabase(db as any, L), rpc: db.rpc as any, admin: db as any, bling, agente: { nome: "Conector IA" } });
+const ctx = () => ({ origem: "chat" as const, lojaId: L, userId: U, dados: dadosSupabase(db as any, L), rpc: db.rpc as any, admin: db as any, bling, agente: { nome: "Gênesis" } });
 const prod = (sku: string) => db.sql(`select id from public.produtos where sku = '${sku}'`);
 const hashDe = (id: string) => db.sql(`select hash from public.agente_propostas where id = '${id}'`);
 

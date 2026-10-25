@@ -1,4 +1,4 @@
-// Conversas e anexos do Conector IA. NÃO IMPLANTADA nesta fase. verify_jwt = true.
+// Conversas e anexos do Gênesis. NÃO IMPLANTADA nesta fase. verify_jwt = true.
 // Anexos: bucket privado 'agente-anexos'; o navegador só recebe URL assinada de upload/download emitida aqui.
 import { acaoConversas } from "../_shared/conector/acoes.ts";
 import { autenticar, json } from "../_shared/conector/edge.ts";

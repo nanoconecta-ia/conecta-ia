@@ -1,4 +1,4 @@
-// Contratos das ferramentas do Conector IA (Tool Registry do agente). Fonte única do que cada ferramenta pode ler/gravar,
+// Contratos das ferramentas do Gênesis (Tool Registry do agente). Fonte única do que cada ferramenta pode ler/gravar,
 // com que risco e se exige aprovação. NÃO executa nada: só descreve e é conferido por teste contra o código real
 // (ia/ferramentas.ts e bling_ferramentas.ts). "planejada" = ainda não existe; não conta como funcionalidade pronta.
 import { FERRAMENTAS as FERRAMENTAS_BLING, type Risco } from "../bling_ferramentas.ts";

@@ -14,7 +14,7 @@ Nada aqui foi aplicado em produção. As migrações estão na branch e são tes
 ## Novo nesta branch (propostas de migração, em ordem)
 | Migração | O que cria |
 |---|---|
-| `…0001` a `…0008` (PR #39) | estado do Conector IA, RPCs, chaves do gateway, imagens, **árvore de sistemas com ícone, documentação técnica, identidade oficial do veículo**, **busca por código OEM**, **ferramentas de verificação** |
+| `…0001` a `…0008` (PR #39) | estado do Gênesis, RPCs, chaves do gateway, imagens, **árvore de sistemas com ícone, documentação técnica, identidade oficial do veículo**, **busca por código OEM**, **ferramentas de verificação** |
 | `20261019000009_pipeline_indexacao.sql` (este PR) | **máquina de estados**, **histórico imutável**, **conflitos entre fontes** e **fila com recuo** |
 
 ## Máquina de estados do pipeline (por produto e loja)

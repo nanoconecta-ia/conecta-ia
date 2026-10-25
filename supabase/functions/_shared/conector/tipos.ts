@@ -1,4 +1,4 @@
-// Contratos centrais do Conector IA. Tudo aqui é puro (sem rede, sem Deno), para rodar igual no Edge e nos testes.
+// Contratos centrais do Gênesis. Tudo aqui é puro (sem rede, sem Deno), para rodar igual no Edge e nos testes.
 export type Risco = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 export const ORDEM_RISCO: Record<Risco, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
 export const maiorRisco = (a: Risco, b: Risco): Risco => (ORDEM_RISCO[a] >= ORDEM_RISCO[b] ? a : b);

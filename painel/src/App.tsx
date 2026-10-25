@@ -51,7 +51,7 @@ const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(wind
 const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], ["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
-  ["/conector", "Conector IA"],
+  ["/conector", "Gênesis"],
   ["/central", "Central de Inteligência"],
   ["/indicadores", "Indicadores"],
   ["/studio", "Studio de produtos"],

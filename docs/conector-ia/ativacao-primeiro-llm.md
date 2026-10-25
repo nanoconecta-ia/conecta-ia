@@ -14,7 +14,7 @@ Qualquer um dos três serve ao mesmo registro de ferramentas. Recomendação par
 ## Passos
 1. *Integrações de IA* → cadastrar a chave → **Testar chave** (chama o provedor de verdade).
 2. Definir **limite mensal de tokens** (ex.: 200 mil) para o piloto.
-3. Abrir o **Conector IA** → verificar no seletor que só aparece o provedor com chave ativa e que "streaming" aparece conforme `provedor_capacidades` (implementado, testado só com fixtures → confirmar na prática).
+3. Abrir o **Gênesis** → verificar no seletor que só aparece o provedor com chave ativa e que "streaming" aparece conforme `provedor_capacidades` (implementado, testado só com fixtures → confirmar na prática).
 4. **Teste de fumaça (somente leitura)** — esperado entre parênteses:
    - "Resumo da loja" (chama `conecta__catalogo__resumo`; números iguais ao painel);
    - "O que falta no produto 80692?" (chama `conecta__catalogo__ver`; lista de campos faltantes bate com o cadastro);

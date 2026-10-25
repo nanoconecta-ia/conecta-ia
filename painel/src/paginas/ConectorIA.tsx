@@ -17,7 +17,7 @@ import { gravarPreferenciaFala, lerPreferenciaFala, useVoz } from "../lib/voz.ts
 const SUGESTOES = ["Resumo da loja", "O que está pendente?", "Quais produtos estão incompletos?", "Organize o cadastro de um produto"];
 const uid = () => crypto.randomUUID();
 
-/** Conector IA: chat persistente com streaming, ferramentas, cartões de aprovação e contexto operacional. */
+/** Gênesis: chat persistente com streaming, ferramentas, cartões de aprovação e contexto operacional. */
 export function ConectorIA({ loja, query }: { loja: Loja; query: URLSearchParams }) {
   const fonte = useFonte();
   const [conversas, setConversas] = useState<Conversa[] | null>(null);
@@ -134,11 +134,11 @@ export function ConectorIA({ loja, query }: { loja: Loja; query: URLSearchParams
       {(esqAberta || dirAberta) && <button className="fundo-painel" aria-label="Fechar painel" onClick={() => { setEsqAberta(false); setDirAberta(false); }} />}
       <PainelConversas conversas={conversas} ativaId={ativaId} documentos={documentos} emAnalise={emAnalise} aoNova={nova} aoSelecionar={(id) => void selecionar(id)}
         aoExcluir={excluir} aoRenomear={renomear} aoEscolherProduto={(id) => { setProdutoId(id); setDirAberta(true); setCtxVisivel(true); }} aoFechar={() => setEsqAberta(false)} />
-      <section className="centro" aria-label="Conversa com o Conector IA">
+      <section className="centro" aria-label="Conversa com o Gênesis">
         <header className="cab-chat">
           <button className="sec so-estreito" onClick={() => setEsqAberta(true)} aria-label="Abrir conversas">☰ Conversas</button>
           <Esfera estado={estado} tamanho={48} />
-          <div className="cab-texto"><h1>Conector IA</h1><span className="estado" role="status" aria-live="polite">{ROTULO_ESTADO[estado]}</span></div>
+          <div className="cab-texto"><h1>Gênesis</h1><span className="estado" role="status" aria-live="polite">{ROTULO_ESTADO[estado]}</span></div>
           <div className="linha cab-acoes">
             {voz.suporteFala && <label className="linha marcar-linha"><input type="checkbox" checked={lerAlto} onChange={(e) => { setLerAlto(e.target.checked); gravarPreferenciaFala(e.target.checked); if (!e.target.checked) voz.calar(); }} /> <span>Ler respostas</span></label>}
             <button className="sec so-estreito" onClick={() => setDirAberta(true)}>Contexto</button>

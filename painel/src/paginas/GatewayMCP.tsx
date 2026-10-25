@@ -46,10 +46,10 @@ export function GatewayMCP({ loja }: { loja: Loja }) {
     <>
       <div className="cartao">
         <h1>Gateway multiagente (MCP/API)</h1>
-        <p className="suave">Permite que um cliente externo autorizado use as ferramentas do Conector IA. Cada chave é <strong>só desta loja</strong>, tem escopos limitados, validade e pode ser revogada. Nenhum cliente recebe <code>service_role</code>, token do Bling nem acesso administrativo, e <strong>nenhuma chave pode aprovar ou executar</strong>: quem decide é você, na Central de Inteligência.</p>
+        <p className="suave">Permite que um cliente externo autorizado use as ferramentas do Gênesis. Cada chave é <strong>só desta loja</strong>, tem escopos limitados, validade e pode ser revogada. Nenhum cliente recebe <code>service_role</code>, token do Bling nem acesso administrativo, e <strong>nenhuma chave pode aprovar ou executar</strong>: quem decide é você, na Central de Inteligência.</p>
       </div>
       <div className="grade tres">
-        <div className="cartao"><h2>1. LLM via API do provedor</h2><p className="suave">O Conector IA chama Claude, Gemini ou um modelo compatível com OpenAI usando a <strong>chave que você cadastrou</strong> em Integrações de IA. O custo é do seu provedor.</p></div>
+        <div className="cartao"><h2>1. LLM via API do provedor</h2><p className="suave">O Gênesis chama Claude, Gemini ou um modelo compatível com OpenAI usando a <strong>chave que você cadastrou</strong> em Integrações de IA. O custo é do seu provedor.</p></div>
         <div className="cartao"><h2>2. Cliente externo autorizado</h2><p className="suave">Um app de IA seu se conecta ao endereço abaixo com uma chave desta página e chama as ferramentas permitidas pelo escopo. Depende de o cliente suportar MCP ou chamadas HTTP.</p></div>
         <div className="cartao"><h2>3. Plugins e serviços externos</h2><p className="suave">Serviços integrados <strong>um a um</strong> em Integrações de IA (risco, capacidades e teste próprios). Assinaturas e plugins do ChatGPT <strong>não</strong> são transferidos automaticamente para cá.</p></div>
       </div>

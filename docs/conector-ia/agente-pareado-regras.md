@@ -18,7 +18,7 @@ CONECTA.IA (central de agentes)
 |---|---|
 | Vinculação por QR | em produção (`pair`, painel Dispositivos) |
 | Vinculação por OAuth | em produção (`oauth_agente`, consentimento por empresa com PKCE) |
-| Vinculação por Conector (MCP remoto) | gateway `conecta-gateway` em produção; o gateway do Conector IA (`conector-mcp`) está só no repositório |
+| Vinculação por Conector (MCP remoto) | gateway `conecta-gateway` em produção; o gateway do Gênesis (`conector-mcp`) está só no repositório |
 | ChatGPT, Claude, Gemini | "quando suportado": o suporte a conector MCP remoto depende de cada plataforma e **não foi testado com nenhuma delas** |
 | Gateway: identidade, permissões, auditoria | em produção (sessão por token, escopo por ferramenta, auditoria de toda chamada) |
 | Bling ERP / Catálogo IA / Site | Bling só leitura; Catálogo IA recebe propostas; o site mostra só o aprovado e visível |
