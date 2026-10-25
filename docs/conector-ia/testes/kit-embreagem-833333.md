@@ -1,6 +1,6 @@
 # Teste supervisionado: KIT DE EMBREAGEM 254MM (PLATÔ/DISCO/ROLAMENTO) · 833333 · VALEO
 
-Data da leitura: **2026-10-25**. Responsável pela leitura: **Claude (manual, via conector Bling desta sessão, somente leitura)**. Isto **não** é prova de autonomia do Nano.ia (ver seção 1).
+Data da leitura: **2026-10-25**. Leitura do Bling: **Claude (manual, via conector Bling desta sessão, somente leitura)**. Leitura da fonte primária (catálogo Valeo): **verificada pelo ChatGPT pelo web do ChatGPT em 2026-10-25** (URL na seção 4); **não foi lida pelo ambiente do Claude** (host bloqueado, 403). Isto **não** é prova de autonomia do Nano.ia (ver seção 1).
 Nada foi gravado no Bling nem no Conecta. Nenhum produto foi criado, reativado, excluído ou fundido.
 
 ## 1. Runtime: o que o Nano.ia pode fazer hoje (lido do código e do banco)
@@ -15,11 +15,15 @@ Nada foi gravado no Bling nem no Conecta. Nenhum produto foi criado, reativado, 
 | Os registros deste teste estão no espelho do Conecta? | **Não** (SELECT em produção: 0 linhas para os 6 IDs e SKUs 833333/5112/4891/833333/1/89096). O sync espelha só produtos ativos. |
 | Backend do Nano.ia completo (`conector-chat`) | **Não implantado** (0 tabelas `agente_*`; funções ausentes). |
 
-**Consequência:** o teste **não pôde ser executado pelo Nano.ia**: (a) o agente publicado não enxerga produto excluído; (b) o Nano completo não está no ar; (c) não existe ferramenta de reativação nem de escrita ligada. Registro isto como **bloqueio real**; não há sucesso simulado.
+**Teste real do Nano publicado (executado pelo ChatGPT no painel, conversa `f7ebb5aa-d43f-40e9-9c2b-b4c54a060951`, mensagem `caca3884-a95f-4853-81fc-7228cf009e40`, Gemini `gemini-3.6-flash`):** o agente respondeu "Produto não encontrado na API do Bling nesta data" e "Nenhum registro/ID foi localizado no ERP". **É um falso negativo**: a ferramenta só olha o espelho (que não tem excluídos) e nunca consultou a API; a mensagem ficou com `ferramentas=["bling_consultar_produto"]` mas `chamadas=[]` e `evidencias=[]` (ferramenta *solicitada*, não executada) e terminou **truncada** em "Preço, Custo e Estoque: Mantidos como".
+
+**Correção em desenvolvimento: PR #83** (busca por SKU interno, referência do fabricante e GTIN, no espelho e na API, incluindo excluídos e paginação, com proveniência; contrato de falha e truncamento auditado). **Enquanto o #83 não estiver implantado e retestado, nenhuma ausência encontrada pelo Nano pode embasar cadastro.**
+
+**Consequência:** o teste do cadastro **não pôde ser concluído pelo Nano.ia**: (a) o agente publicado não enxerga produto excluído e afirmou ausência sem verificar; (b) o Nano completo não está no ar; (c) não existe ferramenta de reativação nem de escrita ligada. Registro isto como **bloqueio real**; não há sucesso simulado.
 
 ## 2. Auditoria dos registros com o GTIN 3276428333335 (leitura Bling, todos `situacao = E` excluído)
 
-O GTIN aparece em **8 registros**, não em 3. Dois deles (`89096`, "104108-2 KIT EMBREAGEM - EAT") são **outra peça** com o mesmo GTIN: **GTIN não é chave de identidade confiável aqui.**
+O GTIN aparece em **8 registros**, não em 3. Dois deles (`89096`, "104108-2 KIT EMBREAGEM - EAT") têm **SKU e nome diferentes** e repetem o mesmo GTIN. Isso comprova **conflito no cadastro** (o GTIN é repetido); **o nome sozinho não prova que sejam peças fisicamente diferentes nem incompatíveis**, e o GTIN repetido também não prova que sejam a mesma peça. Conclusão: **GTIN, sozinho, não serve de chave de identidade aqui**; a equivalência precisa de evidência (catálogo, medidas, histórico).
 
 | ID Bling | SKU | Nome | Marca | Fornecedor (cód.) | Compra / custo | Preço | Saldo (físico/virtual) | Fotos | Peso / dim. | Unid. | Observação |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -29,8 +33,8 @@ O GTIN aparece em **8 registros**, não em 3. Dois deles (`89096`, "104108-2 KIT
 | 7538741982 | 4891 | KIT EMBREAGEM 254MM(...) HYUNDAI HR KIA BONGO EURO 5 ORIGINAL 833333 | VALIO | Real Moto (06276300718) | 808,73 / 1017,86 | 2200 | 0 / 0 | 0 | 10 kg / 45x45x12 | CJ | CEST 01.075.00; origem 2 |
 | 16514593039 | 833333/1 | Kit Embreagem 254mm(...) Hyundai Hr/K2500 Euro 5 | n/c | n/c | n/c | n/c | 0 | n/c | n/c | n/c | só listagem |
 | 16622651373 | 833333/1 | (idem) | n/c | n/c | n/c | n/c | 0 | n/c | n/c | n/c | só listagem |
-| 16559870756 | 89096 | 104108-2 KIT EMBREAGEM - EAT | n/c | n/c | n/c | n/c | 0 | n/c | n/c | n/c | **outra peça**, mesmo GTIN |
-| 16622651026 | 89096 | (idem) | n/c | n/c | n/c | n/c | 0 | n/c | n/c | n/c | **outra peça**, mesmo GTIN |
+| 16559870756 | 89096 | 104108-2 KIT EMBREAGEM - EAT | n/c | n/c | n/c | n/c | 0 | n/c | n/c | n/c | GTIN repetido; nome/SKU diferentes: **conflito de cadastro a esclarecer** |
+| 16622651026 | 89096 | (idem) | n/c | n/c | n/c | n/c | 0 | n/c | n/c | n/c | GTIN repetido; nome/SKU diferentes: **conflito de cadastro a esclarecer** |
 
 `n/c` = não consultado em detalhe (só listagem). Fornecedor: `listProductSuppliers` devolveu **0 vínculos** para 12753970402 e 8173252121 (o fornecedor consta só no campo embutido do produto).
 
@@ -45,30 +49,33 @@ Critérios: identidade interna, vínculos operacionais, evidência de saldo, qua
 - **`8173252121`**: melhor **fonte de conteúdo** (3 fotos internas, peso, dimensões, textos), mas com marca errada, SKU = referência do fabricante e aplicação legada; usar como **evidência a confirmar**, não fundir.
 - **`16622651374`** e os demais: **não reativar** (cópias/duplicatas prováveis).
 
-**Risco concreto ao reativar:** `833333` está em **dois** registros (8173252121 e 16622651374). Reativar ambos, ou usar `833333` como SKU, repetiria SKU ativo e **derrubaria o lote do `bling-sync` em produção** (índice único `(loja_id, sku)`), porque a correção de identidade (PR #63) **não está implantada**. Nunca reativar os dois.
+**Risco concreto ao reativar:** usar `833333` como SKU de **um** registro **não** é, por si, duplicação, se não houver outro registro **ativo** com o mesmo SKU. O risco é **ativar duplicados sem controle**: `833333` está em **dois** registros excluídos (8173252121 e 16622651374); reativar ambos repetiria SKU ativo e **derrubaria o lote do `bling-sync` em produção** (índice único `(loja_id, sku)`), porque a correção de identidade (PR #63) **não está implantada**. Regra: reativar **no máximo um** registro por SKU e conferir antes que não haja outro ativo com o mesmo SKU.
 
 Registro de auditoria da escolha (a ser gravado quando houver ferramenta ativa): `idempotency_key = cadastro:kit-embreagem-833333:bling-12753970402:v1` (chave interna, não o GTIN nem o código do fabricante).
 
 ## 4. Rascunho de cadastro, campo a campo (nada aplicado)
 
-Legenda de status: **confirmado** (lido por mim no Bling) · **informado** (vem do pedido/fonte primária, **não verificado por mim**: o host do catálogo é bloqueado neste ambiente, 403) · **legado** (vem do cadastro antigo) · **a confirmar** · **vazio**.
+Legenda de status: **confirmado** (lido por mim no Bling) · **verificado pelo ChatGPT** (lido na fonte primária pelo web do ChatGPT, URL abaixo, 2026-10-25; **não** lido pelo ambiente do Claude) · **legado** (cadastro antigo) · **a confirmar** · **vazio**.
+
+Fonte primária (ChatGPT, 2026-10-25): https://catalogoexpresso.com.br/valeo/detalhes?cw_filtros=PCs%3C%212%21%3E833333%3C%21TAB%21%3E&cw_produtoAtivo=CodigoProduto%3C%212%21%3E18793&retornaJSON=true
 
 | Campo | Valor anterior (12753970402) | Valor proposto | Evidência (fonte, data) | Status |
 |---|---|---|---|---|
 | SKU interno | 5112 | **5112 (manter)** | Bling, 2026-10-25 | confirmado |
-| Referência do fabricante | (no nome) | 833333 | Bling (nome/obs. dos registros), 2026-10-25; catálogo (informado) | confirmado no Bling; catálogo informado |
-| GTIN | 3276428333335 | 3276428333335 (manter) | Bling (8 registros), 2026-10-25; catálogo (informado) | confirmado (Bling) |
-| Marca | vazia | **VALEO** | texto "MARCA VALEO" no cadastro 8173252121 (campo marca = VALIO, errado); catálogo (informado) | informado/legado; **corrigir VALIO→VALEO só com aprovação** |
+| Referência do fabricante | (no nome) | 833333 | Bling (nome/obs. dos registros), 2026-10-25; catálogo (verificado pelo ChatGPT) | confirmado no Bling; verificado pelo ChatGPT |
+| GTIN | 3276428333335 | 3276428333335 (manter) | Bling (8 registros, conflito de cadastro), 2026-10-25; catálogo (verificado pelo ChatGPT) | confirmado (Bling) e verificado pelo ChatGPT |
+| Marca | vazia | **VALEO** | texto "MARCA VALEO" no cadastro 8173252121 (campo marca = VALIO, errado); catálogo (verificado pelo ChatGPT) | verificado pelo ChatGPT; **corrigir VALIO→VALEO só com aprovação** |
 | Nome | 833333 KIT EMBREAGEM 254MM(PLATODISCOROLAM) | Kit de Embreagem 254 mm (Platô + Disco + Rolamento) · 833333 · Valeo | pedido do proprietário | proposto |
-| Composição | — | Platô + Disco + Rolamento | catálogo (informado) | informado |
-| Diâmetro disco / platô | — | 254 mm / 254 mm | catálogo (informado); "254MM" no cadastro legado | informado |
-| Estrias | — | 23 | catálogo (informado) | informado |
-| Código do disco / do platô | — | HD-175 / HDC-138 | catálogo (informado) | informado |
-| Observação técnica | — | Rebaixo 5 mm | catálogo (informado) | informado |
-| Aplicação 1 | — | Hyundai HR Euro 5 2.5 turbo, MT, 2012> | catálogo (informado) | informado (sem ano final, sem código de motor, sem nº de válvulas) |
-| Aplicação 2 | — | Kia Bongo Euro 5 P-7 2.5, MT, 2013> | catálogo (informado) | informado |
+| Composição | — | Platô + Disco + Rolamento | catálogo (verificado pelo ChatGPT) | verificado pelo ChatGPT |
+| Diâmetro disco / platô | — | 254 mm / 254 mm | catálogo (verificado pelo ChatGPT); "254MM" no cadastro legado | verificado pelo ChatGPT |
+| Estrias | — | 23 | catálogo (verificado pelo ChatGPT) | verificado pelo ChatGPT |
+| Tecnologia do disco / do platô | — | HD-175 / HDC-138 | catálogo, campos "Tecnologia Disco" e "Tecnologia Platô" (verificado pelo ChatGPT) | verificado pelo ChatGPT. **São tecnologias, não códigos de componente.** |
+| Código Valeo do disco / do platô / do rolamento | — | (vazio) | catálogo: os três campos "Código Valeo Disco/Platô/Rolamento" estão **vazios** (verificado pelo ChatGPT) | **vazio**; não preencher com HD-175/HDC-138 |
+| Observação técnica | — | Rebaixo 5 mm | catálogo (verificado pelo ChatGPT) | verificado pelo ChatGPT |
+| Aplicação 1 | — | Hyundai HR Euro 5 2.5 turbo, MT, 2012> | catálogo (verificado pelo ChatGPT) | verificado pelo ChatGPT (sem ano final, sem código de motor, sem nº de válvulas) |
+| Aplicação 2 | — | Kia Bongo Euro 5 P-7 2.5, MT, 2013> | catálogo (verificado pelo ChatGPT) | verificado pelo ChatGPT |
 | Aplicação legada | — | "2013–2021" (Hyundai HR 2.5L Turbo Euro V; Kia Bongo) | descrição complementar de 8173252121 | **legado: divergência registrada, não mesclada** |
-| Conversões OEM | — | (vazio) | catálogo: orientativas, não provam aplicação | vazio |
+| Conversões OEM | — | (vazio no cadastro) | catálogo: conversões **orientativas**, não provam aplicação por si | vazio (não promover a aplicação) |
 | Peso | 0 | 10,277 kg | 8173252121 e 16622651374 (legado; 4891 diz 10 kg) | **a confirmar** (pesar o kit) |
 | Dimensões | 0x0x0 | 15x45x45 cm | 8173252121 (legado; 4891 diz 45x45x12) | **a confirmar** (medir) |
 | Fotos | 0 | 3 internas do 8173252121 | Bling (links temporários), 2026-10-25 | **a confirmar** (conferir se são deste kit e direitos) |
@@ -86,5 +93,5 @@ Divergências entre registros a **resolver pelo dono** (não mescladas): preço 
 - **Resultado:** auditoria concluída; **teste pelo Nano.ia não executado por bloqueio real** (seção 1).
 - **ID reaproveitado:** nenhum (proposta: 12753970402, condicionada ao histórico).
 - **Alterações efetivas:** nenhuma.
-- **Lacunas:** fonte primária não lida por mim (host bloqueado, 403); histórico de vendas/NF/movimentação; peso, dimensões e fotos; conversões OEM.
-- **Para destravar sem ampliar permissões:** (1) o dono decide o canônico após ver o histórico no Bling; (2) autorização separada para **ferramenta de reativação/atualização** com teste em mock, Policy Engine e auditoria; (3) liberar o host do catálogo no ambiente de nuvem (**catalogoexpresso.com.br**, Network access) para eu ler a fonte; (4) deploy do #63 antes de reativar qualquer registro com SKU repetido; (5) backend do Nano.ia em homologação para o teste pelo agente.
+- **Lacunas:** histórico de vendas/NF/movimentação; peso, dimensões e fotos; códigos Valeo de disco/platô/rolamento (vazios na fonte); conversões OEM (só orientativas). A fonte primária **foi lida pelo ChatGPT**, não pelo ambiente do Claude (host bloqueado, 403).
+- **Para destravar sem ampliar permissões:** (1) o dono decide o canônico após ver o histórico no Bling; (2) autorização separada para **ferramenta de reativação/atualização** com teste em mock, Policy Engine e auditoria; (3) **deploy do #83** (busca com proveniência) e novo teste real do Nano com os 8 candidatos, antes de qualquer cadastro; (4) deploy do #63 antes de reativar qualquer registro com SKU repetido; (5) backend do Nano.ia em homologação para o fluxo completo pelo agente. (Liberar o host do catálogo no ambiente de nuvem só é necessário se o Claude precisar reler a fonte; não é pré-requisito para corrigir a busca.)
