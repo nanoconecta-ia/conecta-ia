@@ -3,7 +3,7 @@ import { Markdown } from "./Markdown.tsx";
 import { EvidenciaProduto, type EvidenciaBusca } from "./EvidenciaProduto.tsx";
 import { comecoDaLonga, ehLonga, resumoEvidencia, resumoLinha } from "../lib/retratil.ts";
 
-export type MensagemChat = { de: "eu" | "ia"; texto: string; evidencias?: unknown[]; simulado?: boolean };
+export type MensagemChat = { de: "eu" | "ia"; texto: string; anexos?: string[]; evidencias?: unknown[]; simulado?: boolean };
 
 /** Uma mensagem do chat que recolhe numa linha (as antigas), mostra só o começo quando é longa e guarda a evidência da consulta numa seção retrátil. */
 export function MensagemRetratil({ m, recolhida, onAlternar }: { m: MensagemChat; recolhida: boolean; onAlternar: () => void }) {
@@ -21,6 +21,7 @@ export function MensagemRetratil({ m, recolhida, onAlternar }: { m: MensagemChat
     <div className={`bolha ${m.de}`}>
       <div className="bolha-topo"><b>{quem}</b><button type="button" className="mini sec" aria-expanded onClick={onAlternar} aria-label="Recolher esta mensagem">Recolher</button></div>
       {m.de === "ia" ? <Markdown texto={longa ? comecoDaLonga(m.texto) : m.texto} /> : (longa ? comecoDaLonga(m.texto) : m.texto)}
+      {m.anexos?.length ? <p className="anexos-enviados">{m.anexos.map((n) => `📎 ${n}`).join("  ")}</p> : null}
       {ehLonga(m.texto) && <button type="button" className="mini sec mais" onClick={() => setCompleta((v) => !v)}>{completa ? "Mostrar menos" : "Mostrar mais"}</button>}
       {m.simulado === true && <strong> · RESPOSTA SIMULADA</strong>}
       {m.evidencias?.map((ev, n) => (

@@ -37,10 +37,16 @@ const textoDe = (c: string | Bloco[]) => typeof c === "string" ? c : c.filter((b
 const pareceVazio = (s: Record<string, unknown> | undefined) => !s || !s.properties || Object.keys(s.properties as object).length === 0;
 
 // Claude (Messages API) ------------------------------------------------------------------------------
+/** Anexos do usuário no formato da Messages API (imagem e PDF em base64). */
+const paraClaude = (msgs: Mensagem[]) => msgs.map((m) => typeof m.content === "string" ? m : {
+  ...m, content: m.content.map((b) => b.type !== "anexo" ? b : b.mime === "application/pdf"
+    ? { type: "document", source: { type: "base64", media_type: b.mime, data: b.dados } }
+    : { type: "image", source: { type: "base64", media_type: b.mime, data: b.dados } }),
+});
 export async function chamarClaude(c: Chamada, msgs: Mensagem[]): Promise<Passo> {
   const j = await enviar(c.fetch ?? fetch, "https://api.anthropic.com/v1/messages",
     { "x-api-key": c.chave, "anthropic-version": "2023-06-01" },
-    { model: c.modelo, max_tokens: c.maxTokens, system: c.sistema, messages: msgs, tools: c.ferramentas.length ? c.ferramentas : undefined }) as
+    { model: c.modelo, max_tokens: c.maxTokens, system: c.sistema, messages: paraClaude(msgs), tools: c.ferramentas.length ? c.ferramentas : undefined }) as
     { id?: string; model?: string; content?: Bloco[]; stop_reason?: string; usage?: { input_tokens?: number; output_tokens?: number } };
   if (!Array.isArray(j.content)) throw new IaErro(502, "Resposta inesperada do provedor de IA.");
   return { respostaId: j.id, modelo: j.model, blocos: j.content, tokens: (j.usage?.input_tokens ?? 0) + (j.usage?.output_tokens ?? 0), parada: paradaClaude(j.stop_reason) };
@@ -55,6 +61,7 @@ export async function chamarGemini(c: Chamada, msgs: Mensagem[]): Promise<Passo>
     const parts: ParteG[] = [];
     for (const b of m.content) {
       if (b.type === "text") parts.push({ text: b.text });
+      else if (b.type === "anexo") parts.push({ inlineData: { mimeType: b.mime, data: b.dados } });
       else if (b.type === "tool_use") { nomeDe.set(b.id, b.name); parts.push((b as { _g?: ParteG })._g ?? { functionCall: { name: b.name, args: b.input ?? {} } }); }
       else {
         let resposta: unknown = b.content; try { resposta = JSON.parse(b.content); } catch { /* texto */ }
@@ -97,7 +104,11 @@ export async function chamarOpenAI(c: Chamada, msgs: Mensagem[]): Promise<Passo>
       m.push({ role: "assistant", content: textoDe(x.content) || null, ...(usos.length ? { tool_calls: usos.map((u) => ({ id: u.id, type: "function", function: { name: u.name, arguments: JSON.stringify(u.input ?? {}) } })) } : {}) });
     } else {
       for (const b of x.content) if (b.type === "tool_result") m.push({ role: "tool", tool_call_id: b.tool_use_id, content: b.content });
-      const t = textoDe(x.content); if (t) m.push({ role: "user", content: t });
+      const t = textoDe(x.content);
+      const imgs = x.content.filter((b): b is Extract<Bloco, { type: "anexo" }> => b.type === "anexo");
+      if (imgs.some((i) => !i.mime.startsWith("image/"))) throw new IaErro(400, "Este provedor aceita só imagens e texto como anexo (PDF não).");
+      if (imgs.length) m.push({ role: "user", content: [...(t ? [{ type: "text", text: t }] : []), ...imgs.map((i) => ({ type: "image_url", image_url: { url: `data:${i.mime};base64,${i.dados}` } }))] });
+      else if (t) m.push({ role: "user", content: t });
     }
   }
   const tools = c.ferramentas.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.input_schema } }));

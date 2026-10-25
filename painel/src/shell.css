@@ -338,3 +338,14 @@ html button.balao-genesis:hover:not(:disabled) { background: radial-gradient(120
 .dock-agente .chat, .abas .chat { grid-template-columns: minmax(0, 1fr); }
 .bolha-linha { min-width: 0; overflow: hidden; }
 .voz-escolha { display: grid; gap: 4px; } .voz-escolha select { min-width: 0; max-width: 100%; } .voz-escolha small { overflow-wrap: anywhere; }
+
+/* anexos do chat */
+.anexos-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; min-width: 0; }
+.anexos-lista li { display: flex; gap: 8px; align-items: center; min-width: 0; padding: 4px 8px; border: 1px solid var(--borda); border-radius: 8px; }
+.anexos-lista .anexo-nome { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.anexos-lista li > * { flex: none; } .anexos-lista li > .anexo-nome { flex: 1 1 0; }
+.anexos-enviados { margin: 4px 0 0; font-size: .82rem; overflow-wrap: anywhere; opacity: .85; }
+.abas .linha-voz { display: flex; gap: 6px; align-items: end; min-width: 0; max-width: 100%; }
+.abas .linha-voz > label { flex: 1 1 0; min-width: 0; } .abas .linha-voz input:not([type=file]) { min-width: 0; width: 100%; }
+.abas .linha-voz > button { flex: none; padding-left: 10px; padding-right: 10px; }
+.abas .abas-centro, .abas .abas-centro > *, .abas form, .abas .chat-compositor { min-width: 0; max-width: 100%; box-sizing: border-box; }
