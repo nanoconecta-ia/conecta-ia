@@ -228,6 +228,7 @@ export const chamarGeminiStream: AdaptadorStream = async (c, msgs, aoTexto, sina
     for (const b of m.content) {
       if (b.type === "text") parts.push({ text: b.text });
       else if (b.type === "tool_use") { nomeDe.set(b.id, b.name); parts.push((b as { _g?: ParteG })._g ?? { functionCall: { name: b.name, args: b.input ?? {} } }); }
+      else if (b.type === "anexo") throw new IaErro(400, "Anexos não são suportados neste fluxo.");
       else {
         let resposta: unknown = b.content; try { resposta = JSON.parse(b.content); } catch { /* texto */ }
         parts.push({ functionResponse: { name: nomeDe.get(b.tool_use_id) ?? "ferramenta", response: b.is_error ? { erro: resposta } : { resultado: resposta } } });
