@@ -3,7 +3,9 @@ import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { gravarPreferenciaFala, lerPreferenciaFala, useVoz } from "../lib/voz.ts";
 import { Esfera, type EstadoEsfera } from "../componentes/Esfera.tsx";
-import { EvidenciaProduto, type EvidenciaBusca } from "../componentes/EvidenciaProduto.tsx";
+import { MensagemRetratil } from "../componentes/MensagemRetratil.tsx";
+import { Retratil } from "../componentes/Retratil.tsx";
+import { mensagemRecolhida } from "../lib/retratil.ts";
 import { escolherInicial, erroAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 
 type Evidencia = { origem: string; simulado: boolean; consultado_em: string; sincronizado_em?: string; motivo?: string; dados: { sku?: string; nome?: string; preco?: number | null; estoque?: number | null } };
@@ -26,6 +28,13 @@ export function Assistente({ loja }: { loja: Loja }) {
   const [dias, setDias] = useState(180);
   const [podeAdministrar, setPodeAdministrar] = useState(false);
   const [retentativa, setRetentativa] = useState<{ texto: string; chave: string; provedor: ProvedorChat; conversa: string | null } | null>(null);
+  const [abertas, setAbertas] = useState<Set<number>>(new Set());
+  const [modoMsgs, setModoMsgs] = useState<"auto" | "recolher" | "expandir">("auto");
+  const alternarMsg = (i: number) => {
+    const recolhida = mensagemRecolhida(i, msgs.length, abertas, modoMsgs);
+    setModoMsgs("auto");
+    setAbertas((a) => { const n = new Set(modoMsgs === "expandir" ? msgs.map((_, k) => k) : a); if (recolhida) n.add(i); else n.delete(i); return n; });
+  };
   const [texto, setTexto] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [esq, setEsq] = useState(false), [dir, setDir] = useState(false); // abas laterais retráteis (conversas / modelo e privacidade)
@@ -137,6 +146,7 @@ export function Assistente({ loja }: { loja: Loja }) {
   }
   // microfone: o texto vai aparecendo no campo; quando a fala termina, envia sozinho
   const voz = useVoz((t, final) => { setTexto(t); if (final && t) void enviar(t); });
+  useEffect(() => { setAbertas(new Set()); setModoMsgs("auto"); }, [conversaId]);
   useEffect(() => { fim.current?.scrollIntoView({ block: "end", behavior: "smooth" }); }, [msgs.length]);
 
   const estado: EstadoEsfera = voz.ouvindo ? "ouvindo" : ocupado ? "pensando" : voz.falando ? "falando" : "parado";
@@ -165,20 +175,22 @@ export function Assistente({ loja }: { loja: Loja }) {
       <section className="abas-centro" aria-label="Conversa com o Nano.ia">
       <div className="agente">
         <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Conversas" onClick={() => { setEsq((v) => !v); if (estreito()) setDir(false); }}>☰<span> Conversas</span></button>
-        <Esfera estado={estado} tamanho={36} />
+        <Esfera estado={estado} tamanho={estado === "parado" ? 40 : 56} />
         <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite">{{ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" }[estado]}</span></div>
-        {(config.persistente || conversas.length > 0) && <button className="sec" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova}>Nova conversa</button>}
+        {(config.persistente || conversas.length > 0) && <button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span className="rot-longo">Nova conversa</span><span className="rot-curto" aria-hidden="true">＋ Nova</span></button>}
         <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}>⚙<span> Modelo</span></button>
       </div>
+      {estado !== "parado" && <div className="faixa-acao" role="status" data-estado={estado}><span className="faixa-pulso" aria-hidden="true" />{{ ouvindo: "Ouvindo você…", pensando: "Consultando o modelo e os dados da loja…", falando: "Lendo a resposta em voz alta…", parado: "" }[estado]}{estado === "falando" && <button type="button" className="mini sec" onClick={voz.calar}>Parar</button>}</div>}
       {carregando && <p role="status">Verificando provedores…</p>}
       {erroConfig && <p role="alert" className="msg-erro">{erroConfig}</p>}
       {erroHistorico && <p role="status">{erroHistorico}</p>}
       {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
       {retentativa && <div><p>Recupere a mesma pergunta para verificar se o turno terminou. Isso preserva a chave de idempotência.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Recuperar pergunta</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button></div>}
-      <div className="chat" aria-live="polite">{msgs.map((m, i) => <div key={i} className={`bolha ${m.de}`}>{m.texto}{m.simulado === true && <strong> · RESPOSTA SIMULADA</strong>}{m.evidencias?.map((ev, n) => <aside key={n} style={{ marginTop: 8, padding: 8, border: "1px solid currentColor", borderRadius: 6, overflowWrap: "anywhere" }}><strong>{ev.simulado ? "SIMULADO · " : ""}{ev.origem === "api_bling" ? "API Bling consultada" : "Espelho sincronizado"}</strong><p>{ev.dados.nome} · SKU {ev.dados.sku}</p><p>Preço: {ev.dados.preco == null ? "não informado" : `R$ ${ev.dados.preco.toFixed(2)}`} · Estoque: {ev.dados.estoque ?? "não informado"}</p><small>Consulta: {new Date(ev.consultado_em).toLocaleString()}{ev.sincronizado_em ? ` · Sincronização: ${new Date(ev.sincronizado_em).toLocaleString()}` : ""}{ev.motivo ? ` · Alternativa usada: ${ev.motivo}` : ""}</small></aside>)}</div>)}<div ref={fim} /></div>
-      <p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p>
+      {msgs.length > 3 && <div className="chat-ferramentas"><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button><small className="suave">{msgs.length} mensagens</small></div>}
+      <div className="chat" aria-live="polite">{msgs.map((m, i) => <MensagemRetratil key={i} m={m} recolhida={mensagemRecolhida(i, msgs.length, abertas, modoMsgs)} onAlternar={() => alternarMsg(i)} />)}<div ref={fim} /></div>
+      <Retratil id="atalhos" titulo="Atalhos" resumo="perguntas rápidas" aberto={msgs.length < 2}><p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p></Retratil>
       <div className="chat-compositor">
-      {selecao && <label style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.</label>}
+      {selecao && <label className="consentimento" style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.</label>}
       {selecao?.motivo && <p role="status">{selecao.motivo}</p>}
       <form onSubmit={onSubmit} style={{ maxWidth: "none" }}>
         <div className="linha-voz">

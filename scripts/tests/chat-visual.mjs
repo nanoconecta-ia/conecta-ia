@@ -28,7 +28,7 @@ try{
  try { await page.getByRole('button',{name:'Nova conversa',exact:true}).waitFor(); } catch (e) { console.error('Diagnóstico de fixture SIMULADA:',JSON.stringify({erros,html:(await page.locator('body').innerText()).slice(0,3000)})); throw e; }
  const enviar=page.getByRole('button',{name:'Enviar',exact:true});assert.equal(await enviar.isDisabled(),true);
  await page.getByLabel(/Enviar esta pergunta/).check();await page.getByLabel('Pergunte',{exact:true}).fill('Consulte SKU-DEMO');await enviar.click();
- await page.getByText('API Bling consultada',{exact:false}).waitFor();assert.equal(chamadas,1);assert.ok(await page.getByText('SIMULADO · API Bling consultada').isVisible());
+ await page.locator('details.evid-retratil > summary').waitFor();assert.equal(chamadas,1);await page.locator('details.evid-retratil > summary').click();assert.ok(await page.getByText('SIMULADO · API Bling consultada').isVisible());
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false,'Sem transbordamento horizontal em 390px');assert.deepEqual(erros,[]);
  await mkdir(root+'evidencias-chat',{recursive:true});await page.screenshot({path:root+'evidencias-chat/chat-390-simulado.png',fullPage:true});
  console.log('ok: componente real, viewport 390px, consentimento, histórico privado e cartão de origem SIMULADA, sem rede real');

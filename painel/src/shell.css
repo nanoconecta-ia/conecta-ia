@@ -235,3 +235,44 @@ a.ficha-wa { display: block; text-align: center; padding: 12px; background: #1f9
   .abas[data-esq="aberto"] .aba-esq, .abas[data-dir="aberto"] .aba-dir { display: flex; }
   .abas-fundo { display: none; }
 }
+/* ===== Blocos retráteis (vertical e horizontal), chat retrátil e esfera em ação ===== */
+.retratil { border: 1px solid var(--borda); border-radius: var(--raio); background: var(--cartao, var(--fundo)); min-width: 0; }
+.retratil--go { border-left: 4px solid var(--ok); } .retratil--warn { border-left: 4px solid var(--atencao); } .retratil--stop { border-left: 4px solid var(--erro); }
+.retratil-cabecote { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 6px 12px; background: transparent; color: inherit; border: 0; border-radius: var(--raio); text-align: left; cursor: pointer; font-weight: 600; }
+.retratil-cabecote:hover:not(:disabled) { background: var(--realce); }
+.retratil-titulo { flex: none; } .retratil-resumo { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .7; font-weight: 400; }
+.retratil-corpo { padding: 8px 12px 12px; } .retratil-corpo[hidden] { display: none; }
+.retratil--vertical.retratil--fechado { background: transparent; }
+/* horizontal: aberto ocupa a coluna; fechado vira uma trilha estreita com o título na vertical */
+.retratil--horizontal.retratil--fechado { width: 44px; flex: none; }
+.retratil--horizontal.retratil--fechado .retratil-cabecote { flex-direction: column; justify-content: flex-start; height: 100%; min-height: 120px; padding: 10px 4px; }
+.retratil--horizontal.retratil--fechado .retratil-titulo { writing-mode: vertical-rl; transform: rotate(180deg); }
+.retratil--horizontal.retratil--fechado .retratil-resumo { display: none; }
+
+.chat-ferramentas { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chat-ferramentas .mini, .bolha .mini, .bolha-linha { min-height: 32px; padding: 2px 10px; font-size: .82rem; }
+.bolha-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; font-size: .8rem; opacity: .85; }
+.bolha .mais { display: inline-block; margin-left: 6px; }
+.bolha-linha { display: flex; align-items: center; gap: 8px; width: 100%; max-width: min(92%, 760px); text-align: left; background: var(--realce); border: 1px solid var(--borda); border-radius: 12px; color: inherit; cursor: pointer; }
+.bolha-linha.eu { justify-self: end; } .bolha-linha span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .85; } .bolha-linha b { flex: none; }
+.evid-retratil { margin-top: 8px; border-top: 1px dashed var(--borda); padding-top: 6px; } .evid-retratil > summary { cursor: pointer; font-size: .85rem; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
+
+/* Esfera em ação: a esfera cresce, ganha halo e a faixa abaixo diz, com palavras, o que realmente está acontecendo */
+.abas .esfera-caixa { transition: transform .35s ease; }
+.abas .esfera-caixa:has(.esfera[data-ativo="true"]) .esfera, .abas .esfera-caixa:has(.esfera[data-estado="interpretando"]) .esfera, .abas .esfera-caixa:has(.esfera[data-estado="escutando"]) .esfera { box-shadow: 0 0 0 4px color-mix(in srgb, var(--esf-cor, var(--marca)) 35%, transparent), 0 0 22px color-mix(in srgb, var(--esf-cor, var(--marca)) 70%, transparent); animation: esf-halo 1.1s ease-in-out infinite alternate; }
+.abas .esfera-caixa:has(.esfera[data-estado="interpretando"]) .orbita { animation-duration: 2.4s; animation-play-state: running; }
+@keyframes esf-halo { from { transform: scale(.96); } to { transform: scale(1.06); } }
+.faixa-acao { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--realce); border: 1px solid var(--borda); font-size: .88rem; }
+.faixa-pulso { width: 10px; height: 10px; border-radius: 50%; background: var(--ciano); box-shadow: 0 0 0 0 var(--ciano); animation: faixa-pulso 1.2s ease-out infinite; flex: none; }
+@keyframes faixa-pulso { to { box-shadow: 0 0 0 10px transparent; } }
+.faixa-acao[data-estado="ouvindo"] .faixa-pulso { background: var(--ok); } .faixa-acao[data-estado="falando"] .faixa-pulso { background: var(--marca); }
+@media (prefers-reduced-motion: reduce) { .abas .esfera-caixa .esfera, .faixa-pulso { animation: none !important; } }
+/* cabeçotes e linhas retráteis não são botões de ação: sem fundo de marca */
+.retratil > button.retratil-cabecote, .retratil > button.retratil-cabecote:hover:not(:disabled) { background: transparent; color: var(--texto); box-shadow: none; border: 0; }
+.retratil > button.retratil-cabecote:hover:not(:disabled) { background: var(--realce); }
+button.bolha-linha, button.bolha-linha:hover:not(:disabled) { color: var(--texto); background: var(--realce); box-shadow: none; }
+.bolha.eu .mini.sec { background: transparent; color: inherit; border-color: currentColor; }
+.abas .consentimento { font-size: .82rem; line-height: 1.3; }
+.abas .nova-conv { min-height: 40px; padding: 4px 12px; } .abas .nova-conv .rot-curto { display: none; }
+@container abas (max-width: 520px) { .abas .nova-conv .rot-longo { display: none; } .abas .nova-conv .rot-curto { display: inline; } }
+.abas .retratil-corpo { padding-top: 4px; padding-bottom: 8px; }
