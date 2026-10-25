@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "b70b9f01b83c66436ade9a0353a140e373822d4ea865b32937f2fc8bd7abea20",
+  "artefato_sha256": "8f9eb156e15e612030aa77600af43b64783dcdccc012f5a713bd7d1b289adacd",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -30,11 +30,11 @@
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores.ts",
-      "sha256": "cb617112f772f076b948127b1a1931b1bbf557309b9a51eec6c5b9954baa2d89"
+      "sha256": "9a5153ced93ae629cfcb373e6943365bfea9b7f49d80086c6e7d0f534b9299ba"
     },
     {
       "path": "supabase/functions/_shared/ia/claude.ts",
-      "sha256": "2a56cd86d59002c85acf1a26d4062e2a912c683a8bf39d0053a38c857e5ad518"
+      "sha256": "479b9d1f6ba8ca9b0f8ea7c9a70d5a49400d1acea4808be98f70a14a7557a825"
     },
     {
       "path": "supabase/functions/_shared/ia/escrita.ts",
@@ -58,7 +58,7 @@
     },
     {
       "path": "supabase/functions/_shared/bling_ferramentas.ts",
-      "sha256": "9ea444759ce88cc371ca7160e2493eec03ecd40c2409f2e4cfa619d458f2df44"
+      "sha256": "073eae55f84c5666ec91736604432b3a47c3a68111dc3d5191b701cf73d3f95c"
     },
     {
       "path": "supabase/functions/_shared/bling_token.ts",
@@ -73,12 +73,16 @@
       "sha256": "af765b491093e16d2bbc41d8f9ac803b68a24d9312df71b1feb1f262a4f796fa"
     },
     {
+      "path": "supabase/functions/_shared/assistente/busca_produto.ts",
+      "sha256": "40230d545de45f7fa88f080f2b1c9b87562d135985c4a1133a9289ac43301c6b"
+    },
+    {
       "path": "supabase/functions/_shared/assistente/bling_consultar.ts",
-      "sha256": "4f8a9a7155d43e388a0246c9d84cf84786f9d57a64b109bcd6f4c00dd6b05311"
+      "sha256": "ca0f9afa98f3830f9f8fe523738d96025a25ea8d53bc24fe999d52443ad102b8"
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "5482e2a46b725afc330aff89f1bae72848e22e87ae7529067c41224320a1bc53"
+      "sha256": "50be782e531d0440819c6538678ec8a61c852d2dd5f03840d6a9de3359081532"
     },
     {
       "path": "supabase/functions/assistente/index.ts",

@@ -141,3 +141,37 @@ test("compatível OpenAI: recusa endereço interno/http, argumentos inválidos v
   const r = await conversar({ provedor: "compativel_openai", baseUrl: "https://a.exemplo.com/v1", chave: "k", modelo: "m", sistema: "s", mensagens: [], ferramentas: [], executar: async (_n, e) => { recebido = e; return 1; }, fetch: g });
   assert.equal(r.texto, "ok"); assert.deepEqual(recebido, {});
 });
+
+test("conversar: ferramenta solicitada que FALHA não conta como concluída; resposta completa quando o provedor terminou", async () => {
+  let n = 0;
+  const f = (async () => { n++; return n === 1 ? resp({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "t1", name: "consultar", input: {} }] }) : resp({ stop_reason: "end_turn", content: [{ type: "text", text: "Não consegui consultar." }] }); }) as unknown as typeof fetch;
+  const r = await conversar({ chave: "k", modelo: "m", sistema: "s", mensagens: [], ferramentas: [], executar: async () => { throw new Error("Consulta Bling desligada nesta loja."); }, fetch: f });
+  assert.deepEqual(r.ferramentasUsadas, ["consultar"], "solicitada");
+  assert.deepEqual(r.ferramentasConcluidas, [], "não concluída");
+  assert.deepEqual(r.falhas, [{ nome: "consultar", motivo: "Consulta Bling desligada nesta loja." }]);
+  assert.equal(r.completa, true);
+});
+
+test("conversar: o conteúdo devolvido ao modelo diz que a ferramenta NÃO foi concluída e que nada foi verificado", async () => {
+  let enviado = "";
+  let n = 0;
+  const f = (async (_u: string, init: RequestInit) => { n++; if (n === 2) enviado = String(init.body); return n === 1 ? resp({ stop_reason: "tool_use", content: [{ type: "tool_use", id: "t1", name: "consultar", input: {} }] }) : resp({ stop_reason: "end_turn", content: [{ type: "text", text: "ok" }] }); }) as unknown as typeof fetch;
+  await conversar({ chave: "k", modelo: "m", sistema: "s", mensagens: [], ferramentas: [], executar: async () => { throw new Error("Limite temporário"); }, fetch: f });
+  assert.match(enviado, /FERRAMENTA NÃO CONCLUÍDA: Limite temporário/); assert.match(enviado, /não afirme ausência, execução ou resultado/);
+});
+
+test("conversar: corte por tamanho/bloqueio do provedor marca a resposta como INCOMPLETA nos 3 provedores", async () => {
+  const casos: { provedor: "claude" | "gemini" | "compativel_openai"; corpo: unknown; esperado: string }[] = [
+    { provedor: "claude", corpo: { stop_reason: "max_tokens", content: [{ type: "text", text: "Preço, Custo e Estoque: Mantidos como" }] }, esperado: "limite_tamanho" },
+    { provedor: "gemini", corpo: { candidates: [{ finishReason: "MAX_TOKENS", content: { parts: [{ text: "Preço, Custo e Estoque: Mantidos como" }] } }] }, esperado: "limite_tamanho" },
+    { provedor: "compativel_openai", corpo: { choices: [{ finish_reason: "length", message: { content: "Preço, Custo e Estoque: Mantidos como" } }] }, esperado: "limite_tamanho" },
+    { provedor: "gemini", corpo: { candidates: [{ finishReason: "SAFETY", content: { parts: [{ text: "parcial" }] } }] }, esperado: "bloqueado" },
+  ];
+  for (const c of casos) {
+    const f = (async () => resp(c.corpo)) as unknown as typeof fetch;
+    const r = await conversar({ provedor: c.provedor, baseUrl: "https://api.exemplo-llm.com/v1", chave: "k", modelo: "m", sistema: "s", mensagens: [], ferramentas: [], executar: async () => ({}), fetch: f });
+    assert.equal(r.completa, false, c.provedor); assert.equal(r.parada, c.esperado, c.provedor); assert.ok(r.texto.length > 0);
+  }
+  const ok = await conversar({ provedor: "gemini", chave: "k", modelo: "m", sistema: "s", mensagens: [], ferramentas: [], executar: async () => ({}), fetch: (async () => resp({ candidates: [{ finishReason: "STOP", content: { parts: [{ text: "fim" }] } }] })) as unknown as typeof fetch });
+  assert.equal(ok.completa, true); assert.equal(ok.parada, undefined);
+});

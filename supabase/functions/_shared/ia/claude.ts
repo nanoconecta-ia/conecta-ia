@@ -1,6 +1,6 @@
 // Laço de conversa com ferramentas (tool use), independente de provedor (ver adaptadores.ts). Portas injetáveis: testável sem rede.
 // Nunca registra a chave nem o corpo de erro do provedor. Conteúdo de ferramentas é DADO, nunca instrução.
-import { ADAPTADORES, type Chamada, type Passo } from "./adaptadores.ts";
+import { ADAPTADORES, type Chamada, type Parada, type Passo } from "./adaptadores.ts";
 import { IaErro, type Bloco, type Ferramenta, type Mensagem } from "./tipos.ts";
 export { IaErro } from "./tipos.ts";
 export type { Bloco, Ferramenta, Mensagem } from "./tipos.ts";
@@ -18,7 +18,9 @@ export interface Opcoes {
   /** Adaptador com streaming; se ausente, usa o adaptador comum do provedor. */
   adaptadorStream?: (c: Chamada, msgs: Mensagem[], aoTexto: (delta: string) => void, sinal?: AbortSignal) => Promise<Passo>;
 }
-export interface Resposta { texto: string; tokens: number; passos: number; ferramentasUsadas: string[]; respostaId?: string; modelo?: string }
+/** `ferramentasUsadas` = SOLICITADAS pelo modelo (compatibilidade). `ferramentasConcluidas` = só as que terminaram sem erro. `falhas` = tentativas que falharam (sem dado do usuário).
+ *  `completa` é falso se o provedor cortou por tamanho/bloqueou ou se os passos acabaram: uma resposta incompleta nunca pode ser tratada como tarefa concluída. */
+export interface Resposta { texto: string; tokens: number; passos: number; ferramentasUsadas: string[]; ferramentasConcluidas: string[]; falhas: { nome: string; motivo: string }[]; completa: boolean; parada?: Parada; respostaId?: string; modelo?: string }
 
 export const VERSAO_API = "2023-06-01";
 
@@ -28,7 +30,7 @@ export async function conversar(o: Opcoes): Promise<Resposta> {
   const limite = o.limiteResultado ?? 6000;
   const adaptador = ADAPTADORES[o.provedor ?? "claude"];
   let tokens = 0;
-  const usadas: string[] = [];
+  const usadas: string[] = []; const concluidas: string[] = []; const falhas: { nome: string; motivo: string }[] = [];
 
   for (let passo = 1; passo <= maxPassos; passo++) {
     if (o.sinal?.aborted) throw new IaErro(499, "cancelado");
@@ -40,7 +42,7 @@ export async function conversar(o: Opcoes): Promise<Resposta> {
     const usos = r.blocos.filter((b): b is Extract<Bloco, { type: "tool_use" }> => b.type === "tool_use");
     if (usos.length === 0) {
       const texto = r.blocos.filter((b): b is Extract<Bloco, { type: "text" }> => b.type === "text").map((b) => b.text).join("\n").trim();
-      return { texto, tokens, passos: passo, ferramentasUsadas: usadas, respostaId: r.respostaId, modelo: r.modelo };
+      return { texto, tokens, passos: passo, ferramentasUsadas: usadas, ferramentasConcluidas: concluidas, falhas, completa: !r.parada, parada: r.parada, respostaId: r.respostaId, modelo: r.modelo };
     }
 
     msgs.push({ role: "assistant", content: r.blocos });
@@ -48,13 +50,14 @@ export async function conversar(o: Opcoes): Promise<Resposta> {
     for (const u of usos) {
       usadas.push(u.name);
       try {
-        const saida = JSON.stringify(await o.executar(u.name, u.input));
+        const saida = JSON.stringify(await o.executar(u.name, u.input)); concluidas.push(u.name);
         resultados.push({ type: "tool_result", tool_use_id: u.id, content: saida.length > limite ? saida.slice(0, limite) + '…[cortado]' : saida });
       } catch (e) {
-        resultados.push({ type: "tool_result", tool_use_id: u.id, is_error: true, content: e instanceof Error ? e.message.slice(0, 300) : "falha na ferramenta" });
+        const motivo = e instanceof Error ? e.message.slice(0, 300) : "falha na ferramenta"; falhas.push({ nome: u.name, motivo: motivo.slice(0, 120) });
+        resultados.push({ type: "tool_result", tool_use_id: u.id, is_error: true, content: `FERRAMENTA NÃO CONCLUÍDA: ${motivo} Nada foi verificado; não afirme ausência, execução ou resultado.` });
       }
     }
     msgs.push({ role: "user", content: resultados });
   }
-  return { texto: "Não consegui concluir em poucos passos. Pode reformular o pedido de forma mais específica?", tokens, passos: maxPassos, ferramentasUsadas: usadas };
+  return { texto: "Não consegui concluir em poucos passos. Pode reformular o pedido de forma mais específica?", tokens, passos: maxPassos, ferramentasUsadas: usadas, ferramentasConcluidas: concluidas, falhas, completa: false };
 }

@@ -27,7 +27,9 @@ const escrita = (nome: string, metodo: "POST" | "PUT" | "PATCH", caminho: string
 });
 
 export const FERRAMENTAS: readonly Ferramenta[] = [
-  leitura("bling.produtos.listar", "/produtos"),
+  // GET /produtos (somente leitura). Conferido em 2026-10-25 por CHAMADAS REAIS do conector Bling: filtros codigos[], gtins[], nome e criterio=5 (todos) devolveram produtos EXCLUÍDOS; paginação por pagina/limite.
+  // PENDENTE: conferir também no OpenAPI oficial (developer.bling.com.br não é acessível do ambiente de desenvolvimento). Revisor: confirmar antes de implantar.
+  leitura("bling.produtos.listar", "/produtos", true),
   // Conferido em 2026-10-18 no OpenAPI oficial developer.bling.com.br/referencia (GET /produtos/{idProduto}).
   leitura("bling.produtos.obter", "/produtos/{id}", true),
   leitura("bling.categorias.listar", "/categorias/produtos"),

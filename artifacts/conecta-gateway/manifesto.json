@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/conecta-gateway/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "e4765f1369c622de5869127b42c75b011fb33034fae0f0ea197b483a097535dc",
+  "artefato_sha256": "4611168ac061c562c4006bdb6fbbb046c50c2e95cd259d909441f36a67292baa",
   "fontes": [
     {
       "path": "supabase/functions/_shared/pair/escopos.ts",
@@ -26,7 +26,7 @@
     },
     {
       "path": "supabase/functions/_shared/bling_ferramentas.ts",
-      "sha256": "9ea444759ce88cc371ca7160e2493eec03ecd40c2409f2e4cfa619d458f2df44"
+      "sha256": "073eae55f84c5666ec91736604432b3a47c3a68111dc3d5191b701cf73d3f95c"
     },
     {
       "path": "supabase/functions/_shared/cripto.ts",
@@ -45,8 +45,12 @@
       "sha256": "af765b491093e16d2bbc41d8f9ac803b68a24d9312df71b1feb1f262a4f796fa"
     },
     {
+      "path": "supabase/functions/_shared/assistente/busca_produto.ts",
+      "sha256": "40230d545de45f7fa88f080f2b1c9b87562d135985c4a1133a9289ac43301c6b"
+    },
+    {
       "path": "supabase/functions/_shared/assistente/bling_consultar.ts",
-      "sha256": "4f8a9a7155d43e388a0246c9d84cf84786f9d57a64b109bcd6f4c00dd6b05311"
+      "sha256": "ca0f9afa98f3830f9f8fe523738d96025a25ea8d53bc24fe999d52443ad102b8"
     },
     {
       "path": "supabase/functions/_shared/pair/gateway_dados.ts",

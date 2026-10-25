@@ -134,7 +134,8 @@ test("blingFetch recusa caminho que não é da API v3 (sem URL livre)", async ()
 
 test("catálogo: leitura ativa; escrita desligada, com aprovação e idempotency_key; nada de DELETE nem emissão/envio de nota", () => {
   for (const f of FERRAMENTAS) {
-    assert.equal(f.conferido, f.nome === "bling.produtos.obter", "somente GET de produto foi conferido no OpenAPI oficial");
+    // Só duas leituras estão conferidas: obter (OpenAPI oficial, 2026-10-18) e listar (chamadas reais do conector Bling em 2026-10-25; OpenAPI oficial ainda a conferir). Escrita nunca.
+    assert.equal(f.conferido, f.nome === "bling.produtos.obter" || f.nome === "bling.produtos.listar", "somente estas leituras foram conferidas");
     if (f.metodo === "GET") { assert.equal(f.risco, "LOW"); assert.equal(f.ativa, true); }
     else { assert.equal(f.ativa, false); assert.equal(f.exigeAprovacao, true); assert.equal(f.exigeIdempotencyKey, true); assert.equal(f.retry, "nenhum"); assert.notEqual(f.risco, "LOW"); }
     assert.ok(!/enviar|emitir|autorizar/i.test(f.caminho + f.nome));
