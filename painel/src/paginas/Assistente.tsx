@@ -3,6 +3,7 @@ import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { gravarPreferenciaFala, lerPreferenciaFala, useVoz } from "../lib/voz.ts";
 import { Esfera, type EstadoEsfera } from "../componentes/Esfera.tsx";
+import { EvidenciaProduto, type EvidenciaBusca } from "../componentes/EvidenciaProduto.tsx";
 import { escolherInicial, erroAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 
 type Evidencia = { origem: string; simulado: boolean; consultado_em: string; sincronizado_em?: string; motivo?: string; dados: { sku?: string; nome?: string; preco?: number | null; estoque?: number | null } };
@@ -174,7 +175,7 @@ export function Assistente({ loja }: { loja: Loja }) {
       {erroHistorico && <p role="status">{erroHistorico}</p>}
       {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
       {retentativa && <div><p>Recupere a mesma pergunta para verificar se o turno terminou. Isso preserva a chave de idempotência.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Recuperar pergunta</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button></div>}
-      <div className="chat" aria-live="polite">{msgs.map((m, i) => <div key={i} className={`bolha ${m.de}`}>{m.texto}{m.simulado === true && <strong> · RESPOSTA SIMULADA</strong>}{m.evidencias?.map((ev, n) => <aside key={n} style={{ marginTop: 8, padding: 8, border: "1px solid currentColor", borderRadius: 6, overflowWrap: "anywhere" }}><strong>{ev.simulado ? "SIMULADO · " : ""}{ev.origem === "api_bling" ? "API Bling consultada" : "Espelho sincronizado"}</strong><p>{ev.dados.nome} · SKU {ev.dados.sku}</p><p>Preço: {ev.dados.preco == null ? "não informado" : `R$ ${ev.dados.preco.toFixed(2)}`} · Estoque: {ev.dados.estoque ?? "não informado"}</p><small>Consulta: {new Date(ev.consultado_em).toLocaleString()}{ev.sincronizado_em ? ` · Sincronização: ${new Date(ev.sincronizado_em).toLocaleString()}` : ""}{ev.motivo ? ` · Alternativa usada: ${ev.motivo}` : ""}</small></aside>)}</div>)}<div ref={fim} /></div>
+      <div className="chat" aria-live="polite">{msgs.map((m, i) => <div key={i} className={`bolha ${m.de}`}>{m.texto}{m.simulado === true && <strong> · RESPOSTA SIMULADA</strong>}{m.evidencias?.map((ev, n) => <EvidenciaProduto key={n} ev={ev as EvidenciaBusca} />)}</div>)}<div ref={fim} /></div>
       <p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p>
       <div className="chat-compositor">
       {selecao && <label style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.</label>}
