@@ -21,7 +21,7 @@ const PRODUTOS: (ProdutoResumo & { preco: number | null; marca: string | null; g
 ];
 const travas: Record<string, string> = { pr3: "bloqueado" };
 
-const P = (o: Partial<Proposta> & Pick<Proposta, "id" | "titulo" | "estado">): Proposta => ({ loja_id: lojaDemo.id, solicitante_user: U, agente: "Conector IA", provedor: "claude", modelo: "claude-sonnet-5-5", resumo: null, risco: "MEDIUM", versao: 1, lote: false, hash: "a3f9c0d17b2e4c68".padEnd(64, "0"), expira_em: iso(60 * 20), criado_em: iso(-90), enviado_em: iso(-88), decidido_em: null, ...o });
+const P = (o: Partial<Proposta> & Pick<Proposta, "id" | "titulo" | "estado">): Proposta => ({ loja_id: lojaDemo.id, solicitante_user: U, agente: "Nano.ia", provedor: "claude", modelo: "claude-sonnet-5-5", resumo: null, risco: "MEDIUM", versao: 1, lote: false, hash: "a3f9c0d17b2e4c68".padEnd(64, "0"), expira_em: iso(60 * 20), criado_em: iso(-90), enviado_em: iso(-88), decidido_em: null, ...o });
 const I = (o: Partial<ItemProposta> & Pick<ItemProposta, "id" | "proposta_id" | "ordem">): ItemProposta => ({ produto_id: "pr1", operacao: "conecta.enriquecimento.definir", alvo: null, campos: ["marca_peca"], antes: { marca_peca: null }, depois: { marca_peca: "EX-Marca" }, fontes: [{ url: "https://exemplo.invalid/catalogo-fabricante.pdf", titulo: "Catálogo do fabricante (exemplo)" }], validacoes: [{ nome: "Fonte registrada", ok: true }], risco: "MEDIUM", estado: "pendente", motivo: null, ...o });
 
 let propostas: Proposta[] = [
@@ -54,7 +54,7 @@ let conversas: Conversa[] = [
   { id: "cv3", titulo: "Descrições do lote de juntas", projeto: "Hyundai HR", provedor: "claude", modelo: "claude-sonnet-5-5", atualizado_em: iso(-1500) },
 ];
 const msgs: Record<string, MensagemSalva[]> = { cv1: [
-  { id: "m1", seq: 1, papel: "user", conteudo: [{ type: "text", text: "Conector IA, organize o cadastro do Jogo de Juntas 80692, consulte o Bling e valide as aplicações." }], provedor: null, modelo: null, criado_em: iso(-25) },
+  { id: "m1", seq: 1, papel: "user", conteudo: [{ type: "text", text: "Nano.ia, organize o cadastro do Jogo de Juntas 80692, consulte o Bling e valide as aplicações." }], provedor: null, modelo: null, criado_em: iso(-25) },
   { id: "m2", seq: 2, papel: "assistant", conteudo: [{ type: "text", text: "Vou consultar o produto no Bling e a taxonomia." }, { type: "tool_use", id: "t1", name: "ver_produto", input: { sku: "80692" } }], provedor: "claude", modelo: "claude-sonnet-5-5", criado_em: iso(-24) },
   { id: "m3", seq: 3, papel: "user", conteudo: [{ type: "tool_result", tool_use_id: "t1", content: "{\"sku\":\"80692\",\"faltando_para_publicar\":[\"peso\"]}" }], provedor: null, modelo: null, criado_em: iso(-24) },
   { id: "m4", seq: 4, papel: "assistant", conteudo: [{ type: "text", text: "O produto **80692** está no Bling, mas falta **peso confirmado**.\n\n| Campo | Situação |\n|---|---|\n| Marca | SABó |\n| GTIN | 7891252806921 |\n| Peso | 2,4 kg |\n\nPosso preparar uma proposta com antes/depois para você aprovar." }], provedor: "claude", modelo: "claude-sonnet-5-5", criado_em: iso(-20) },

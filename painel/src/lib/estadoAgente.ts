@@ -1,4 +1,4 @@
-// Estado da esfera do Conector IA. Só muda por (a) evento `estado` enviado pelo servidor ou (b) algo que o app realmente está
+// Estado da esfera do Nano.ia. Só muda por (a) evento `estado` enviado pelo servidor ou (b) algo que o app realmente está
 // fazendo (microfone aberto, requisição que falhou ou foi cancelada). Nunca é simulado para "parecer ocupado".
 export const ESTADOS_AGENTE = [
   "ocioso", "escutando", "interpretando", "consultando_ferramentas", "pesquisando_fontes", "preparando_proposta",

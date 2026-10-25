@@ -29,7 +29,7 @@ function fetchCom(r: () => Response | Promise<Response>) {
 }
 const ev = (obj: unknown, nome?: string) => `${nome ? `event: ${nome}\n` : ""}data: ${JSON.stringify(obj)}\n\n`;
 const chamada = (f: typeof fetch, extra: Partial<ChamadaStream> = {}): ChamadaStream => ({
-  chave: CHAVE, modelo: "modelo-x", sistema: "Você é o Conector IA.", maxTokens: 256, fetch: f, baseUrl: "https://api.exemplo-llm.com/v1",
+  chave: CHAVE, modelo: "modelo-x", sistema: "Você é o Nano.ia.", maxTokens: 256, fetch: f, baseUrl: "https://api.exemplo-llm.com/v1",
   ferramentas: [{ name: "buscar", description: "busca", input_schema: { type: "object", properties: { q: { type: "string" } }, required: ["q"] } }], ...extra,
 });
 const msgs: Mensagem[] = [{ role: "user", content: "olá" }];
@@ -229,4 +229,20 @@ test("o laço de conversa existente continua compatível: o Passo do streaming a
   const r = await ADAPTADORES_STREAM.claude(chamada(fetchCom(() => resposta(claudeEventos()))), msgs, () => {});
   const usos = r.blocos.filter((b) => b.type === "tool_use");
   assert.equal(usos.length, 1); assert.deepEqual((usos[0] as { input: unknown }).input, { q: "cabeçote HR" });
+});
+
+test("streaming: corte por tamanho/bloqueio vira Passo.parada nos 3 provedores (e fim normal não marca nada)", async () => {
+  const claude = (stop: string) => [ev({ type: "message_start", message: { id: "m1", model: "c", usage: { input_tokens: 1, output_tokens: 0 } } }, "message_start"), ev({ type: "content_block_start", index: 0, content_block: { type: "text", text: "Mantidos como" } }, "content_block_start"),
+    ev({ type: "content_block_stop", index: 0 }, "content_block_stop"), ev({ type: "message_delta", delta: { stop_reason: stop }, usage: { output_tokens: 3 } }, "message_delta"), ev({ type: "message_stop" }, "message_stop")].join("");
+  const openai = (fim: string) => ev({ choices: [{ index: 0, delta: { content: "Mantidos como" }, finish_reason: fim }] }) + "data: [DONE]\n\n";
+  const gemini = (fim: string) => ev({ candidates: [{ content: { parts: [{ text: "Mantidos como" }] }, finishReason: fim }] });
+  const rodar = async (prov: "claude" | "compativel_openai" | "gemini", corpo: string) => ADAPTADORES_STREAM[prov](chamada(fetchCom(() => resposta([corpo]))), msgs, () => {});
+  assert.equal((await rodar("claude", claude("max_tokens"))).parada, "limite_tamanho");
+  assert.equal((await rodar("claude", claude("end_turn"))).parada, undefined);
+  assert.equal((await rodar("compativel_openai", openai("length"))).parada, "limite_tamanho");
+  assert.equal((await rodar("compativel_openai", openai("content_filter"))).parada, "bloqueado");
+  assert.equal((await rodar("compativel_openai", openai("stop"))).parada, undefined);
+  assert.equal((await rodar("gemini", gemini("MAX_TOKENS"))).parada, "limite_tamanho");
+  assert.equal((await rodar("gemini", gemini("SAFETY"))).parada, "bloqueado");
+  assert.equal((await rodar("gemini", gemini("STOP"))).parada, undefined);
 });

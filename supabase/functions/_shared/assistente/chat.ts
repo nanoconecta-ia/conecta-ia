@@ -63,6 +63,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  if (turno?.estado === "concluido") return resultado({ resposta: turno.resposta, conversa_id: turno.conversa_id, ...turno.metadados, reutilizada: true });
  if (turno?.estado !== "novo") return resultado({ erro: turno?.estado === "interrompido" ? "O turno foi interrompido; não repetimos a chamada ao provedor. Inicie uma nova pergunta." : "Turno em execução. Aguarde e tente recuperar a mesma pergunta.", codigo: turno?.estado ?? "turno_recusado", conversa_id: turno?.conversa_id }, 409);
  const chamadas: Record<string, unknown>[] = []; const evidencias: Record<string, unknown>[] = [];
+ const tentativas: { ferramenta: string; ok: boolean; motivo?: string }[] = []; // toda tentativa de ferramenta, inclusive as que falharam (sem dado do usuário nem segredo)
  let tokens = 0; let respostaId: string | undefined; let modelo: string | undefined;
  const simulado = ctx.get("CHAT_AMBIENTE") === "sintetico";
  let resposta = "Não consegui concluir esta pergunta."; let status = 200;
@@ -91,20 +92,37 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   modelo = modeloDaChave(k);
   meta.host_provedor = provedor === "compativel_openai" ? new URL(k.base_url).hostname : provedor === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
   const r = await conversar({ provedor, baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo, mensagens,
-   sistema: `${SISTEMA}\nLoja: ${loja.nome}. Neste fluxo só existe bling_consultar_produto. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.`,
-   maxPassos: 3, maxTokens: 768, ferramentas: ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO] : [], fetch: ctx.fetch,
+   sistema: `${SISTEMA}\nLoja: ${loja.nome}. Neste fluxo só existe bling_consultar_produto. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro com base em ausência. Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.`,
+   maxPassos: 3, maxTokens: 1536, ferramentas: ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO] : [], fetch: ctx.fetch,
    onPasso: p => { tokens += p.tokens; respostaId = p.respostaId; modelo = p.modelo ?? modelo; },
    executar: async (nome, entrada) => {
-    if (nome !== CONSULTAR_PRODUTO.name || !ativo("chat_consulta_bling")) throw new Error("Ferramenta não permitida.");
-    return consultarProduto(entrada, { usuario, admin, lojaId: loja.id, userId, conversaId: turno.conversa_id, cfg: { chaveCifra: chaveiro, fetch: ctx.fetch }, simulado, chamadas, evidencias });
+    const t0 = Date.now();
+    try {
+     if (nome !== CONSULTAR_PRODUTO.name || !ativo("chat_consulta_bling")) throw new Error("Ferramenta não permitida.");
+     const saida = await consultarProduto(entrada, { usuario, admin, lojaId: loja.id, userId, conversaId: turno.conversa_id, cfg: { chaveCifra: chaveiro, fetch: ctx.fetch }, simulado, chamadas, evidencias });
+     tentativas.push({ ferramenta: nome, ok: true });
+     return saida;
+    } catch (e) {
+     const motivo = (e instanceof Error ? e.message : "falha").slice(0, 120);
+     tentativas.push({ ferramenta: String(nome).slice(0, 60), ok: false, motivo });
+     // Falha também é auditada (sem a entrada do usuário, sem corpo de resposta, sem credencial). Se a auditoria falhar, a falha original segue para o modelo.
+     try { await admin.from("auditoria").insert({ loja_id: loja.id, user_id: userId, acao: "chat.bling_consulta_falha", tabela: "produtos", depois: { conversa_id: turno.conversa_id, ferramenta: String(nome).slice(0, 60), motivo, ms: Date.now() - t0 } }); } catch { /* sem efeito: não mascara o erro da ferramenta */ }
+     throw e;
+    }
    },
   });
   resposta = r.texto || "O provedor não retornou texto.";
-  Object.assign(meta, { desfecho: "ok", passos: r.passos, ferramentas: r.ferramentasUsadas });
+  // `ferramentas` = só as CONCLUÍDAS; as solicitadas e as tentativas ficam à parte. Ferramenta disponível ou solicitada não é chamada concluída.
+  Object.assign(meta, { desfecho: "ok", passos: r.passos, ferramentas: r.ferramentasConcluidas, ferramentas_solicitadas: r.ferramentasUsadas, tentativas, completa: r.completa });
+  if (r.ferramentasUsadas.length > 0 && r.ferramentasConcluidas.length === 0) resposta += "\n\n⚠ Aviso do sistema: nenhuma consulta ao Bling foi concluída neste turno. Qualquer afirmação acima sobre o ERP (inclusive \"não encontrado\") NÃO foi verificada.";
+  if (!r.completa) {
+   meta.desfecho = r.parada === "bloqueado" ? "bloqueado" : r.parada === "limite_tamanho" ? "truncado" : "incompleto";
+   resposta += r.parada === "bloqueado" ? "\n\n⚠ Resposta bloqueada pelo provedor: não foi concluída." : "\n\n⚠ Resposta INCOMPLETA (o limite de tamanho foi atingido ou os passos acabaram). Não trate isto como cadastro nem tarefa concluída: peça de novo em partes menores.";
+  }
  } catch (e) {
   status = e instanceof IaErro && [400,401,409,429,502,503,504].includes(e.status) ? e.status : 502;
   resposta = e instanceof IaErro ? e.message : "Não consegui concluir esta pergunta.";
-  meta.codigo = "turno_falhou";
+  meta.codigo = "turno_falhou"; meta.tentativas = tentativas;
  }
  Object.assign(meta, { tokens, modelo, resposta_id: respostaId, http_status: status });
  const { error: fimErro } = await admin.rpc("chat_responder", { p_loja: loja.id, p_user: userId, p_pergunta: turno.pergunta_id, p_token: turno.turno_token, p_resposta: resposta, p_meta: meta });
