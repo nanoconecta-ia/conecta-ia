@@ -22,8 +22,10 @@ export const LIMITE_MODELO = 5000;
 /** Redução ESTRUTURADA: encolhe só `candidatos` (do fim para o começo) e SEMPRE mantém fontes, conclusao, total e o indicador de lista parcial. */
 export function paraModelo(ev: Record<string, any>, limite = LIMITE_MODELO): Record<string, unknown> {
  const todos: unknown[] = ev.candidatos ?? [];
- const monta = (n: number) => ({ ...ev, candidatos: todos.slice(0, n), candidatos_retornados: n, candidatos_omitidos: todos.length - n, lista_parcial: n < todos.length || ev.truncado === true,
-  ...(n < todos.length || ev.truncado === true ? { aviso_lista: `Lista PARCIAL: ${n} de ${ev.total_candidatos} candidato(s) mostrados ao modelo; a lista completa está na evidência da tela. Não conclua nada sobre os omitidos.` } : {}) });
+ const monta = (n: number) => ({ ...ev, candidatos: todos.slice(0, n), candidatos_retornados: n, candidatos_omitidos: Math.max(Number(ev.total_candidatos ?? 0), todos.length) - n, lista_parcial: n < todos.length || ev.truncado === true,
+  ...(n < todos.length || ev.truncado === true ? { aviso_lista: ev.truncado === true
+   ? `Lista PARCIAL: a busca encontrou ${ev.total_candidatos} candidato(s), mas a evidência guarda no máximo ${todos.length} e ao modelo foram dados ${n}. Há registros omitidos que nem a tela mostra (limite da busca/evidência); não conclua nada sobre eles.`
+   : `Lista PARCIAL: ${n} de ${ev.total_candidatos} candidato(s) mostrados ao modelo; a lista completa (${todos.length}) está na evidência da tela. Não conclua nada sobre os omitidos.` } : {}) });
  let n = todos.length;
  while (n > 0 && JSON.stringify(monta(n)).length > limite) n = n > 8 ? Math.ceil(n * 0.75) - 1 : n - 1;
  return monta(n);

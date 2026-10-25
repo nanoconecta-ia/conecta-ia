@@ -45,7 +45,7 @@ function ambiente({ flag = true, auditoria = true, limite = true, status = 200, 
     assert.equal(op?.method, "GET"); assert.equal(op?.redirect, "manual"); assert.equal((op?.headers as Record<string, string>).Authorization, "Bearer " + token);
     const q = new URL(String(url)).searchParams; const cod = q.get("codigos[]"); const nome = q.get("nome");
     let lista = api.filter((r) => q.get("criterio") === "5" || r.situacao === "A");
-    if (cod) lista = lista.filter((r) => r.codigo === cod); else if (nome) lista = lista.filter((r) => `${r.nome} ${r.codigo}`.toLowerCase().includes(nome.toLowerCase()));
+    if (cod) lista = lista.filter((r) => r.codigo === cod); else if (nome) lista = lista.filter((r) => String(r.nome).toLowerCase().startsWith(nome.toLowerCase())); // resposta real observada: nome não é substring em nome+SKU
     return Response.json({ data: lista }, { status });
   };
   const ctx: any = { usuario, admin, lojaId: "A", userId: "U", conversaId: "C", cfg: { chaveCifra: chave, fetch: fake, espera: async () => {} }, simulado: true, chamadas: [], evidencias: [] };
@@ -56,7 +56,7 @@ test("API: JWT completo, GET fixo, origem real, candidatos, allowlist e auditori
   const a = ambiente(); const r: any = await consultarProduto({ sku: "SKU-1" }, a.ctx);
   assert.equal(r.origem, "api_bling"); assert.equal(r.simulado, true);
   assert.equal(r.candidatos.length, 1); const c = r.candidatos[0];
-  assert.equal(c.origem, "api_bling"); assert.equal(c.preco, 34.5); assert.equal(c.estoque, -2.5); assert.equal(c.no_espelho, true); assert.deepEqual(c.achado_por.sort(), ["referencia_no_nome", "sku_exato"]);
+  assert.equal(c.origem, "api_bling"); assert.equal(c.preco, 34.5); assert.equal(c.estoque, -2.5); assert.equal(c.no_espelho, true); assert.deepEqual(c.achado_por.sort(), ["sku_exato"]); // o filtro nome real não casa SKU
   assert.equal(r.dados.preco, 34.5); assert.equal(r.conclusao.autoriza_criacao, false);
   assert.ok(a.calls.every((x) => x.url.startsWith("https://api.bling.com.br/Api/v3/produtos?") && x.url.includes("criterio=5")), "API consultada incluindo excluídos");
   assert.equal(a.audits.length, 1); assert.equal(a.ctx.chamadas[0].hash.length, 64);
@@ -151,7 +151,7 @@ test("escopo da ausência: referência só fora de nome/SKU NÃO é coberta; zer
   const r: any = await consultarProduto({ codigo: "833333" }, a.ctx);
   assert.equal(r.candidatos.length, 0);
   assert.equal(r.conclusao.ausencia_nos_filtros_pesquisados, true); assert.equal(r.conclusao.escopo.prova_universal, false); assert.equal(r.conclusao.autoriza_criacao, false);
-  assert.deepEqual(r.conclusao.escopo.filtros_executados, ["sku_exato", "referencia_no_nome"]);
+  assert.deepEqual(r.conclusao.escopo.filtros_concluidos, ["sku_exato", "referencia_no_nome"]);
   for (const campo of ["descrição", "marca/fabricante", "código do fornecedor"]) assert.ok(r.conclusao.escopo.campos_nao_cobertos.includes(campo));
   assert.match(r.conclusao.aviso, /NÃO é prova de que o produto não existe/);
 });
@@ -159,7 +159,18 @@ test("escopo da ausência: referência só fora de nome/SKU NÃO é coberta; zer
 test("termo curto (<3): filtro por nome não roda e o escopo declara isso", async () => {
   const a = ambiente({ espelho: [], itens: [] });
   const r: any = await consultarProduto({ codigo: "A7" }, a.ctx);
-  assert.deepEqual(r.conclusao.escopo.filtros_executados, ["sku_exato"]); assert.equal(r.conclusao.escopo.filtro_nome_aplicado, false);
+  assert.deepEqual(r.conclusao.escopo.filtros_concluidos, ["sku_exato"]); assert.deepEqual(r.conclusao.escopo.filtros_planejados, ["sku_exato"]); assert.equal(r.conclusao.escopo.filtro_nome_aplicado, false);
   assert.ok(r.conclusao.escopo.campos_nao_cobertos.some((c: string) => /menos de 3 caracteres/.test(c)));
   assert.ok(a.calls.every((x) => !x.url.includes("nome=")), "nenhuma consulta por nome com termo curto"); assert.equal(r.conclusao.autoriza_criacao, false);
+});
+
+test("busca limitada: 300 encontrados, evidência com 50 — o aviso NÃO diz que a tela tem a lista completa", async () => {
+  const itens = Array.from({ length: 300 }, (_, i) => ({ id: 5000 + i, codigo: "833333", nome: `KIT ${i}`, situacao: "E", preco: 1, estoque: { saldoVirtualTotal: 0 } }));
+  const a = ambiente({ espelho: [], itens });
+  const r: any = await consultarProduto({ codigo: "833333" }, a.ctx);
+  const ev = a.ctx.evidencias[0] as any;
+  assert.equal(ev.total_candidatos, 300); assert.equal(ev.candidatos.length, 50); assert.equal(ev.truncado, true);
+  assert.equal(r.total_candidatos, 300); assert.equal(r.lista_parcial, true); assert.ok(JSON.stringify(r).length <= LIMITE_MODELO); assert.equal(JSON.parse(JSON.stringify(r)).candidatos.length, r.candidatos_retornados);
+  assert.equal(r.candidatos_omitidos, 300 - r.candidatos_retornados);
+  assert.match(r.aviso_lista, /nem a tela mostra/); assert.doesNotMatch(r.aviso_lista, /lista completa/);
 });

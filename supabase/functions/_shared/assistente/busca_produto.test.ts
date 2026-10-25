@@ -29,7 +29,9 @@ function api(base: Record<string, unknown>[] = OITO, opc: { falha?: number; erro
       if (opc.paginas) { const chave = cod ? "cod" : nome ? "nome" : "gtin"; return { ok: true, status: 200, itens: opc.paginas[chave]?.[pag - 1] ?? [] }; }
       let lista = base.filter((r) => crit === "5" || r.situacao === "A");
       if (cod) lista = lista.filter((r) => r.codigo === cod);
-      else if (nome) lista = lista.filter((r) => `${r.nome} ${r.codigo}`.toLowerCase().includes(nome.toLowerCase()));
+      // Fixture ajustada à RESPOSTA REAL observada em 2026-10-25 (nome="833333", criterio=5 → só o 12753970402, que COMEÇA com 833333; 4891 e 8173252121 têm 833333 no meio/fim e NÃO voltaram).
+      // A semântica exata do filtro `nome` não está documentada: não assumir substring em nome+SKU.
+      else if (nome) lista = lista.filter((r) => String(r.nome).toLowerCase().startsWith(nome.toLowerCase()));
       else if (gtin) lista = gtin === GTIN ? lista : [];
       return { ok: true, status: 200, itens: lista };
     },
@@ -38,16 +40,29 @@ function api(base: Record<string, unknown>[] = OITO, opc: { falha?: number; erro
 }
 const ports = (a: ReturnType<typeof api>, espelho: LinhaEspelho[] = []): PortasBusca => ({ ...a.portas, espelho: async () => espelho });
 
-test("SKU 833333 duplicado: devolve os DOIS registros, sem mesclar, e também as referências no nome", async () => {
+test("SKU 833333 duplicado: as duas consultas iniciais (código + nome) comprovam 3 candidatos, sem mesclar; os 8 só aparecem com o GTIN", async () => {
   const r = await buscarProduto({ termo: "833333" }, ports(api()));
-  const ids = r.candidatos.map((c) => c.id);
-  assert.ok(ids.includes("8173252121") && ids.includes("16622651374"), "os dois SKU 833333");
+  const ids = r.candidatos.map((c) => c.id).sort();
+  assert.deepEqual(ids, ["12753970402", "16622651374", "8173252121"], "5112 (nome) + os dois SKU 833333");
   assert.equal(r.candidatos.filter((c) => c.sku === "833333").length, 2);
-  assert.ok(ids.includes("12753970402") && ids.includes("7538741982"), "5112 e 4891 trazem 833333 no nome");
-  assert.ok(ids.includes("16514593039") && ids.includes("16622651373"), "833333/1 contém a referência no código");
-  assert.ok(!ids.includes("16559870756"), "EAT (89096) não casa por SKU nem por nome");
+  for (const fora of ["7538741982", "16514593039", "16622651373", "16559870756", "16622651026"]) assert.ok(!ids.includes(fora), `${fora} não volta nas consultas por código/nome (a expansão por GTIN não é automática)`);
   assert.ok(r.candidatos.every((c) => c.situacao === "excluido" && c.origem === "api_bling"));
   assert.deepEqual(r.candidatos.filter((c) => c.sku === "833333").map((c) => c.achado_por.includes("sku_exato")), [true, true]);
+  assert.deepEqual(r.conclusao.escopo.filtros_concluidos, ["sku_exato", "referencia_no_nome"]); assert.ok(!r.conclusao.escopo.filtros_concluidos.includes("gtin"));
+});
+
+test("SKU 833333/1 (consulta própria) devolve os dois registros 833333/1", async () => {
+  const r = await buscarProduto({ termo: "833333/1" }, ports(api()));
+  assert.deepEqual(r.candidatos.map((c) => c.id).sort(), ["16514593039", "16622651373"]);
+});
+
+test("API falha (403) na 1ª consulta: o escopo NÃO chama de executado o que não foi tentado", async () => {
+  const r = await buscarProduto({ termo: "833333" }, ports(api(OITO, { falha: 403 })));
+  const e = r.conclusao.escopo;
+  assert.deepEqual(e.filtros_planejados, ["sku_exato", "referencia_no_nome"]); assert.deepEqual(e.filtros_tentados, ["sku_exato"]); assert.deepEqual(e.filtros_concluidos, []);
+  assert.deepEqual(e.campos_cobertos, []); assert.equal(e.filtro_nome_aplicado, false);
+  assert.ok(e.campos_nao_cobertos.some((c) => /SKU.*não concluída/.test(c)) && e.campos_nao_cobertos.some((c) => /nome \(consulta não concluída\)/.test(c)));
+  assert.equal(r.conclusao.ausencia_nos_filtros_pesquisados, false);
 });
 
 test("GTIN colidido com EAT: os 8 candidatos vêm, cada um só com 'gtin' como motivo, e o aviso diz que GTIN não prova identidade", async () => {

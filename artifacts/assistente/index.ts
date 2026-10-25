@@ -1901,18 +1901,26 @@ async function buscarProduto(entrada, p) {
     ].sort((a, b)=>ORDEM[a.situacao] - ORDEM[b.situacao] || Number(b.achado_por.includes("sku_exato")) - Number(a.achado_por.includes("sku_exato")) || (a.sku ?? "").localeCompare(b.sku ?? "") || a.id.localeCompare(b.id));
     const apiOk = apiCompleta && fontes.filter((f)=>f.origem === "api_bling").every((f)=>f.completa);
     const ausencia = apiOk && incluir && todos.length === 0;
-    const executados = planoApi(termo, incluir).map((q)=>q.chave);
+    const planejados = planoApi(termo, incluir).map((q)=>q.chave);
+    const apiFontes = fontes.filter((f)=>f.origem === "api_bling");
+    const tentados = apiFontes.filter((f)=>f.consultada || f.motivo).map((f)=>f.consulta);
+    const concluidos = apiFontes.filter((f)=>f.completa).map((f)=>f.consulta);
+    const cobre = (k)=>concluidos.includes(k);
     const escopo = {
-        filtros_executados: executados,
+        filtros_planejados: planejados,
+        filtros_tentados: tentados,
+        filtros_concluidos: concluidos,
         criterio: incluir ? "todos" : "ativos",
-        filtro_nome_aplicado: executados.includes("referencia_no_nome"),
-        gtin_aplicado: executados.includes("gtin"),
+        filtro_nome_aplicado: cobre("referencia_no_nome"),
+        gtin_aplicado: cobre("gtin"),
         campos_cobertos: [
-            "SKU (código) exato",
-            ...executados.includes("referencia_no_nome") ? [
+            ...cobre("sku_exato") ? [
+                "SKU (código) exato"
+            ] : [],
+            ...cobre("referencia_no_nome") ? [
                 "nome"
             ] : [],
-            ...executados.includes("gtin") ? [
+            ...cobre("gtin") ? [
                 "GTIN/EAN"
             ] : []
         ],
@@ -1920,12 +1928,19 @@ async function buscarProduto(entrada, p) {
             "descrição",
             "marca/fabricante",
             "código do fornecedor",
-            ...executados.includes("referencia_no_nome") ? [] : [
-                "nome (termo com menos de 3 caracteres: filtro por nome não executado)"
-            ],
-            ...executados.includes("gtin") ? [] : [
+            ...!cobre("sku_exato") ? [
+                "SKU (código) exato (consulta não concluída)"
+            ] : [],
+            ...!planejados.includes("referencia_no_nome") ? [
+                "nome (termo com menos de 3 caracteres: filtro por nome não planejado)"
+            ] : !cobre("referencia_no_nome") ? [
+                "nome (consulta não concluída)"
+            ] : [],
+            ...!planejados.includes("gtin") ? [
                 "GTIN/EAN (termo não é um GTIN válido)"
-            ]
+            ] : !cobre("gtin") ? [
+                "GTIN/EAN (consulta não concluída)"
+            ] : []
         ],
         prova_universal: false
     };
@@ -1996,10 +2011,10 @@ function paraModelo(ev, limite = LIMITE_MODELO) {
             ...ev,
             candidatos: todos.slice(0, n),
             candidatos_retornados: n,
-            candidatos_omitidos: todos.length - n,
+            candidatos_omitidos: Math.max(Number(ev.total_candidatos ?? 0), todos.length) - n,
             lista_parcial: n < todos.length || ev.truncado === true,
             ...n < todos.length || ev.truncado === true ? {
-                aviso_lista: `Lista PARCIAL: ${n} de ${ev.total_candidatos} candidato(s) mostrados ao modelo; a lista completa está na evidência da tela. Não conclua nada sobre os omitidos.`
+                aviso_lista: ev.truncado === true ? `Lista PARCIAL: a busca encontrou ${ev.total_candidatos} candidato(s), mas a evidência guarda no máximo ${todos.length} e ao modelo foram dados ${n}. Há registros omitidos que nem a tela mostra (limite da busca/evidência); não conclua nada sobre eles.` : `Lista PARCIAL: ${n} de ${ev.total_candidatos} candidato(s) mostrados ao modelo; a lista completa (${todos.length}) está na evidência da tela. Não conclua nada sobre os omitidos.`
             } : {}
         });
     let n = todos.length;
