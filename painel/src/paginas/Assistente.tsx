@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
-import { gravarPreferenciaFala, lerPreferenciaFala, useVoz } from "../lib/voz.ts";
+import { escolherVoz, gravarPreferenciaFala, lerPreferenciaFala, useVoz } from "../lib/voz.ts";
 import { Esfera, type EstadoEsfera } from "../componentes/Esfera.tsx";
 import { MensagemRetratil } from "../componentes/MensagemRetratil.tsx";
 import { Retratil } from "../componentes/Retratil.tsx";
@@ -222,9 +222,11 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         <div className="linha-voz">
           <label>Pergunte<input value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={1000} /></label>
           {voz.suporteMic && <button type="button" className="sec mic" aria-pressed={voz.ouvindo} aria-label={voz.ouvindo ? "Parar de ouvir" : "Falar com o assistente"} onClick={() => (voz.ouvindo ? voz.parar() : voz.ouvir())} disabled={ocupado}>🎤</button>}
+          {voz.suporteFala && <button type="button" className="sec mic" aria-pressed={lerAlto} aria-label={lerAlto ? "Desligar a leitura das respostas em voz alta" : "Ler as respostas em voz alta"} title={lerAlto ? "Leitura em voz alta ligada" : "Leitura em voz alta desligada"} onClick={alternarFala}>{lerAlto ? "🔊" : "🔈"}</button>}
           <button disabled={ocupado || !podeEnviar || administrando || !!retentativa}>Enviar</button>
         </div>
         {voz.erro && <p className="msg-erro">{voz.erro}</p>}
+        {voz.suporteFala && lerAlto && <div className="voz-escolha"><label>Voz<select value={voz.vozEscolhida ?? ""} onChange={(e) => voz.escolherVozPreferida(e.target.value || null)}><option value="">Automática (a mais natural)</option>{voz.vozes.map((v) => <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>)}</select></label><small className="suave">{voz.vozes.length === 0 ? "Nenhuma voz em português encontrada; uso a padrão do aparelho." : `Em uso: ${escolherVoz(voz.vozes, voz.vozEscolhida)?.name ?? "padrão do aparelho"}${voz.vozes.length === 1 ? " (é a única em português neste aparelho)" : ""}`}</small></div>}
         {!voz.suporteMic && <p className="aviso-voz">Este navegador não oferece microfone para sites. Use o campo de texto.</p>}
       </form>
       </div>
@@ -238,8 +240,6 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         </select></label>
         <p className="suave">Os estados refletem a configuração e o limite de uso; a API será consultada somente ao enviar.</p>
         <p className="suave">{provedor ? "Se o provedor falhar, escolha outro; não há troca automática." : "Só consultas por palavras-chave, sem enviar a um provedor de IA."} {config.persistente && provedor ? ` Histórico privado no servidor, com retenção de ${config.retencao_dias} dias por mensagem.` : " Histórico temporário nesta tela."}</p>
-        {voz.suporteFala && <label className="linha" style={{ display: "flex" }}><input type="checkbox" style={{ width: "auto", minHeight: "auto" }} checked={lerAlto} onChange={alternarFala} /> Ler as respostas em voz alta</label>}
-        {voz.suporteFala && lerAlto && voz.vozes.length > 1 && <label>Voz<select value={voz.vozEscolhida ?? ""} onChange={(e) => voz.escolherVozPreferida(e.target.value || null)}><option value="">Automática (a mais natural disponível)</option>{voz.vozes.map((v) => <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>)}</select></label>}
         {(voz.suporteMic || voz.suporteFala) && <p className="aviso-voz">A voz usa o reconhecimento do próprio navegador; no Chrome o áudio é processado pelo Google. O Conecta.IA não guarda o áudio; o texto segue a política de histórico indicada acima.</p>}
         </div>
       </aside>

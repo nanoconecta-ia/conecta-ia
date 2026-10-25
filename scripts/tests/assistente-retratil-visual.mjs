@@ -61,6 +61,11 @@ try{
   await longa.getByRole('button',{name:'Mostrar mais'}).click();await longa.getByRole('button',{name:'Mostrar menos'}).waitFor();
   const det=longa.locator('details.evid-retratil');assert.equal(await det.evaluate(d=>d.open),false);assert.match(await det.locator('summary').innerText(),/Consulta ao Bling \(API\) · 3 candidatos/);
   await det.locator('summary').click();assert.equal(await det.evaluate(d=>d.open),true);
+  // 5) voz: botão 🔊 no próprio compositor liga a leitura e mostra a escolha de voz (não fica escondido na aba lateral)
+  const som=page.getByRole('button',{name:/leitura (das respostas )?em voz alta|Ler as respostas em voz alta/});
+  assert.ok(await som.count(),'botão de leitura em voz alta no compositor');
+  {const antes=await som.getAttribute('aria-pressed');await som.click();assert.notEqual(await som.getAttribute('aria-pressed'),antes);
+   if(await som.getAttribute('aria-pressed')==='true'){await page.locator('.voz-escolha').waitFor();assert.ok((await page.locator('.voz-escolha').innerText()).includes('Voz'));}}
   // 4) bloco retrátil (atalhos): recolhe e reabre, com o estado lembrado
   const atalhos=page.getByRole('button',{name:/Atalhos/});const exp=await atalhos.getAttribute('aria-expanded');await atalhos.click();assert.notEqual(await atalhos.getAttribute('aria-expanded'),exp);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false,`sem transbordamento horizontal a ${largura}px`);
