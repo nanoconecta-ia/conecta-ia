@@ -349,3 +349,15 @@ html button.balao-genesis:hover:not(:disabled) { background: radial-gradient(120
 .abas .linha-voz > label { flex: 1 1 0; min-width: 0; } .abas .linha-voz input:not([type=file]) { min-width: 0; width: 100%; }
 .abas .linha-voz > button { flex: none; padding-left: 10px; padding-right: 10px; }
 .abas .abas-centro, .abas .abas-centro > *, .abas form, .abas .chat-compositor { min-width: 0; max-width: 100%; box-sizing: border-box; }
+
+/* compositor grande: campo de texto em linha própria (como nos chats normais); botões embaixo */
+.abas .compositor-grade { display: grid; gap: 8px; min-width: 0; }
+.abas .compositor-campo { display: grid; gap: 4px; min-width: 0; font-size: .82rem; }
+.abas .compositor-campo textarea { width: 100%; box-sizing: border-box; min-height: 84px; max-height: 38dvh; resize: none; font: inherit; font-size: 1.05rem; line-height: 1.35; padding: 12px 14px; border-radius: 14px; field-sizing: content; }
+.abas .compositor-acoes { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.abas .compositor-acoes > button { flex: none; min-height: 46px; min-width: 44px; padding-left: 8px; padding-right: 8px; }
+.abas .compositor-espaco { flex: 1 1 0; min-width: 0; }
+.abas .compositor-acoes .compositor-enviar { min-width: 88px; font-size: 1.05rem; padding-left: 16px; padding-right: 16px; }
+/* barra do agente: o título encolhe em vez de passar por cima do botão Nova */
+.abas .agente-titulo { flex: 1 1 0; min-width: 0; } .abas .nova-conv { flex: none; white-space: nowrap; margin-left: 0 !important; }
+@container abas (max-width: 460px) { .abas .nova-conv .rot-curto-txt { display: none; } .abas .nova-conv { padding: 4px 10px; min-width: 44px; } }
