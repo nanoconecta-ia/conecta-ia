@@ -361,3 +361,16 @@ html button.balao-genesis:hover:not(:disabled) { background: radial-gradient(120
 /* barra do agente: o título encolhe em vez de passar por cima do botão Nova */
 .abas .agente-titulo { flex: 1 1 0; min-width: 0; } .abas .nova-conv { flex: none; white-space: nowrap; margin-left: 0 !important; }
 @container abas (max-width: 460px) { .abas .nova-conv .rot-curto-txt { display: none; } .abas .nova-conv { padding: 4px 10px; min-width: 44px; } }
+
+/* atalhos e privacidade: duas pílulas na mesma linha (fechadas ocupam pouco); a conversa ganha o espaço */
+.abas .barra-extras { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; min-width: 0; }
+.abas .barra-extras .retratil { flex: 0 1 auto; min-width: 0; }
+.abas .barra-extras .retratil--aberto { flex: 1 1 100%; }
+.abas .barra-extras .retratil--fechado .retratil-cabecote { width: auto; min-height: 36px; padding: 4px 12px; border: 1px solid var(--borda); border-radius: 999px; }
+.abas .barra-extras .retratil--fechado .retratil-resumo { display: none; }
+.abas .barra-extras .retratil--go.retratil--fechado .retratil-cabecote { border-left: 4px solid var(--verde, #2e7d4f); }
+.abas .barra-extras .retratil--warn.retratil--fechado .retratil-cabecote { border-left: 4px solid var(--ambar, #b7791f); }
+.abas-centro > .chat { flex: 1 1 0; min-height: 200px; }
+.abas .compositor-campo textarea { min-height: 64px; }
+.abas .barra-extras .retratil--fechado { border: 0; }
+.abas .barra-extras .retratil--fechado .retratil-cabecote { font-size: .92rem; gap: 6px; }
