@@ -149,6 +149,18 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     try { await chamada("chat_retencao", { dias }); setConfig(v => ({ ...v, retencao_dias: dias })); setErroHistorico("Retenção alterada e auditada."); }
     catch (e) { setErroHistorico(String(e)); } finally { setOcupado(false); }
   }
+  /** Atalhos: resposta direta dos dados da loja (contagens), sem chamar IA externa — instantâneo, sem custo e sem depender de cota. */
+  async function atalho(t: string) {
+    if (ocupado || administrando || carregando) return;
+    const lojaDoEnvio = loja.id;
+    setMsgs((m) => [...m, { de: "eu", texto: t }]); setOcupado(true); setErroHistorico("");
+    try {
+      const data = await chamada("perguntar", { texto: t, sem_ia: true });
+      if (lojaAtual.current !== lojaDoEnvio) return;
+      setMsgs((m) => [...m, { de: "ia", texto: String(data.resposta ?? "") }]);
+    } catch (e) { if (lojaAtual.current === lojaDoEnvio) setErroHistorico(String(e)); }
+    finally { if (lojaAtual.current === lojaDoEnvio) setOcupado(false); }
+  }
   async function enviar(t: string, repetir = false) {
     if (!repetir && menu && t.trim() && !ocupado && !acaoLocal && !administrando && !retentativa) { const cmd = interpretar(t, menu); if (cmd.tipo !== "nenhum") { await comandoLocal(t, cmd); return; } }
     if (!t.trim() || ocupado || !podeEnviar || administrando || retentativa && !repetir) return;
@@ -189,7 +201,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   // microfone: o texto vai aparecendo no campo; quando a fala termina, envia sozinho
   const voz = useVoz((t, final) => { setTexto(t); if (final && t) void enviar(t); });
   useEffect(() => { setAbertas(new Set()); setModoMsgs("auto"); }, [conversaId]);
-  useEffect(() => { fim.current?.scrollIntoView({ block: "end", behavior: "smooth" }); }, [msgs.length]);
+  useEffect(() => { const c = fim.current?.parentElement; c?.scrollTo({ top: c.scrollHeight, behavior: "smooth" }); }, [msgs.length]); // rola só a lista (scrollIntoView arrastava o painel todo para o lado)
 
   const estado: EstadoEsfera = acaoLocal ? acaoLocal.estado : voz.ouvindo ? "ouvindo" : ocupado ? "pensando" : voz.falando ? "falando" : "parado";
   const onSubmit = (e: FormEvent) => { e.preventDefault(); void enviar(texto); };
@@ -231,7 +243,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       {msgs.length > 3 && <div className="chat-ferramentas"><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button><small className="suave">{msgs.length} mensagens</small></div>}
       <div className="chat" aria-live="polite">{msgs.map((m, i) => <MensagemRetratil key={i} m={m} recolhida={mensagemRecolhida(i, msgs.length, abertas, modoMsgs)} onAlternar={() => alternarMsg(i)} />)}<div ref={fim} /></div>
       <div className="barra-extras">
-      <Retratil id="atalhos" titulo="Atalhos" resumo="perguntas rápidas" aberto={msgs.length < 2} recolherQuando={msgs.length >= 3}><p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p></Retratil>
+      <Retratil id="atalhos" titulo="Atalhos" resumo="perguntas rápidas" aberto={msgs.length < 2} recolherQuando={msgs.length >= 3}><p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || carregando || administrando} onClick={() => void atalho(s)}>{s}</button>)}</p></Retratil>
       {selecao && <Retratil id="consentimento" titulo="Privacidade" resumo={aceitaEnvio ? "autorizado" : "autorize para enviar"} status={aceitaEnvio ? "go" : "warn"} recolherQuando={aceitaEnvio}><label className="consentimento" style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.{anexos.length > 0 && " Os anexos desta pergunta também são enviados."}</label></Retratil>}
       </div>
       <div className="chat-compositor">
