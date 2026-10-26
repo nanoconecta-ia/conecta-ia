@@ -32,11 +32,11 @@ test("detalhe só quando novo, mudou ou está velho", () => {
   assert.equal(precisaDetalhe(it, { ...e, sincronizado_em: new Date(AGORA - 25 * 3600_000).toISOString() }, AGORA), true);
 });
 
-function portas(itens: ItemLista[], ex: Existente[] = [], falhaNaPagina?: number) {
+function portas(itens: ItemLista[], ex: Existente[] = [], falhaNaPagina?: number, inativos: ItemLista[] = []) {
   const gravados: LinhaProduto[][] = []; const erros: string[] = []; let ausentes: string[] = []; let t = AGORA; let detalhes = 0;
   const p: PortasSync = {
-    listarPagina: async (pg, lim) => (falhaNaPagina === pg ? { erro: "Bling 503" } : { itens: itens.slice((pg - 1) * lim, pg * lim) }),
-    detalhe: async (id) => { detalhes++; return { ...detalheReal, id, codigo: `S${id}`, nome: `N${id}` }; },
+    listarPagina: async (pg, lim, grupo = "ativos") => (falhaNaPagina === pg && grupo === "ativos" ? { erro: "Bling 503" } : { itens: (grupo === "inativos" ? inativos : itens).slice((pg - 1) * lim, pg * lim) }),
+    detalhe: async (id) => { detalhes++; return { ...detalheReal, id, codigo: `S${id}`, nome: `N${id}`, situacao: inativos.some((i) => i.id === id) ? "I" : "A" }; },
     existentes: async () => ex, gravar: async (l) => { gravados.push(l); },
     marcarAusentes: async (ids) => { ausentes = ids; }, registrarErro: async (m) => { erros.push(m); },
     espera: async (ms) => { t += ms; }, agora: () => t,
@@ -48,7 +48,7 @@ test("sincroniza em lotes, paginando; listagem completa => completo", async () =
   const itens = Array.from({ length: 230 }, (_, i) => ({ id: i + 1, codigo: `S${i + 1}`, nome: `N${i + 1}`, preco: 1, situacao: "A" }));
   const h = portas(itens);
   const r = await sincronizar("L", h.p);
-  assert.equal(r.paginas, 3); assert.equal(r.vistos, 230); assert.equal(r.gravados, 230); assert.equal(r.completo, true);
+  assert.equal(r.paginas, 4); assert.equal(r.vistos, 230); assert.equal(r.gravados, 230); assert.equal(r.completo, true);
   assert.ok(h.gravados.every((l) => l.length <= 50), "lotes de até 50");
 });
 
@@ -73,4 +73,19 @@ test("sem mudança não regrava nem busca detalhe; orçamento de tempo interromp
   const h2 = portas(grande);
   const r2 = await sincronizar("L", h2.p, 20_000);
   assert.equal(r2.completo, false); assert.ok(r2.gravados > 0 && r2.gravados < 300);
+});
+
+test("inativos do Bling entram no espelho (despublicados) e não são marcados ausentes; excluídos nunca são pedidos", async () => {
+  const ativos = [{ id: 1, codigo: "S1", nome: "N1", preco: 1, situacao: "A" }];
+  const inativos = [{ id: 2, codigo: "S2", nome: "N2", preco: 2, situacao: "I" }, { id: 3, codigo: "S3", nome: "N3", preco: 3, situacao: "I" }];
+  const ex: Existente[] = [{ bling_id: "2", sku: "S2", nome: "N2", preco: 2, estoque: 0, situacao: "ausente", sincronizado_em: new Date(AGORA).toISOString() }];
+  const h = portas(ativos, ex, undefined, inativos);
+  const r = await sincronizar("L", h.p);
+  assert.equal(r.completo, true); assert.equal(r.vistos, 3); assert.equal(r.ausentes, 0);
+  const ids = h.gravados.flat().map((l) => l.bling_id).sort(); assert.deepEqual(ids, ["1", "2", "3"]);
+  assert.equal(h.gravados.flat().find((l) => l.bling_id === "3")!.situacao, "I");
+});
+test("falha ao listar ativos interrompe a rodada sem marcar ausentes", async () => {
+  const h = portas([{ id: 1, codigo: "S1", nome: "N1", preco: 1, situacao: "A" }], [], 1, [{ id: 2, codigo: "S2", nome: "N2", preco: 2, situacao: "I" }]);
+  const r = await sincronizar("L", h.p); assert.equal(r.completo, false); assert.equal(h.ausentes.length, 0);
 });

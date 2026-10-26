@@ -34,9 +34,9 @@ function portasDaLoja(admin: any, lojaId: string, chaveCifra: Chaveiro): PortasS
   const arm = armazemSupabase(admin);
   const cfg = { chaveCifra };
   return {
-    async listarPagina(pagina, limite) {
+    async listarPagina(pagina, limite, grupo = "ativos") {
       try {
-        const r = await blingFetch(arm, lojaId, `/produtos?pagina=${pagina}&limite=${limite}&criterio=2&tipo=T`, cfg);
+        const r = await blingFetch(arm, lojaId, `/produtos?pagina=${pagina}&limite=${limite}&criterio=${grupo === "inativos" ? 3 : 2}&tipo=T`, cfg);
         if (!r.ok) return { erro: `Bling respondeu ${r.status} ao listar produtos` };
         const j = await r.json().catch(() => null);
         return { itens: Array.isArray(j?.data) ? j.data : [] };
