@@ -40,6 +40,9 @@ try{
   // consentimento recolhe sozinho depois de autorizado, liberando espaço no compositor
   await page.getByLabel(/Enviar esta pergunta/).check();
   await page.locator('.consentimento').waitFor({state:'hidden'});
+  // campo de texto grande, em linha própria; botões embaixo; sem sobreposição
+  {const m=await page.evaluate(()=>{const t=document.querySelector('.compositor-campo textarea').getBoundingClientRect(),a=document.querySelector('.compositor-acoes').getBoundingClientRect(),e=document.querySelector('.compositor-enviar').getBoundingClientRect(),w=window.innerWidth;return {tw:t.width,th:t.height,ab:a.top>=t.bottom-1,env:e.right<=w&&e.left>=0,w}});
+   assert.ok(m.th>=80,'campo de texto com altura confortável '+JSON.stringify(m));assert.ok(m.tw>=m.w*0.7,'campo de texto largo '+JSON.stringify(m));assert.ok(m.ab,'botões abaixo do campo');assert.ok(m.env,'Enviar visível');}
   // anexa PNG + TXT; tipo não aceito é recusado com aviso
   const PNG=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==','base64');
   await page.setInputFiles('input[type=file]',[{name:'foto-peca-com-nome-bem-comprido-para-testar-corte.png',mimeType:'image/png',buffer:PNG},{name:'tabela.csv',mimeType:'text/csv',buffer:Buffer.from('sku;qtd\n5112;3')}]);
@@ -49,10 +52,10 @@ try{
   // remover um anexo
   await page.getByRole('button',{name:/Remover tabela.csv/}).click();assert.equal(await page.locator('.anexos-lista li').count(),1);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false,`sem transbordamento com anexo a ${largura}px`);
-  const diag=await page.evaluate(()=>['.chat-tela','.abas-centro','.chat-compositor','form','.anexos-lista','.linha-voz'].map(q=>{const e=document.querySelector(q);const r=e?.getBoundingClientRect();return q+':'+Math.round(r?.left)+'..'+Math.round(r?.right)}).join(' '));if(process.env.DIAG)console.log(diag);const caixa=await page.locator('.anexos-lista li').first().evaluate(e=>{const r=e.getBoundingClientRect();return [r.left,r.right,window.innerWidth]});assert.ok(caixa[1]<=caixa[2]+0.5&&caixa[0]>=0,'chip de anexo dentro da tela '+JSON.stringify(caixa));
+  const caixa=await page.locator('.anexos-lista li').first().evaluate(e=>{const r=e.getBoundingClientRect();return [r.left,r.right,window.innerWidth]});assert.ok(caixa[1]<=caixa[2]+0.5&&caixa[0]>=0,'chip de anexo dentro da tela '+JSON.stringify(caixa));
   await mkdir(root+'evidencias-chat',{recursive:true});await page.screenshot({path:root+`evidencias-chat/anexo-chip-${largura}.png`});
   // envia: o corpo leva o anexo em base64 sem o prefixo data:, o balão mostra o nome e a lista esvazia
-  await page.getByLabel('Pergunte',{exact:true}).fill('O que é esta peça?');await page.getByRole('button',{name:'Enviar',exact:true}).click();
+  await page.getByLabel('Pergunte',{exact:true}).fill('O que é esta peça?');await page.getByLabel('Pergunte',{exact:true}).press('Enter');
   await page.getByText('Resposta 1 da Nano.ia.').waitFor();
   assert.equal(corpos.length,1);assert.equal(corpos[0].anexos.length,1);assert.equal(corpos[0].anexos[0].tipo,'image/png');assert.equal(corpos[0].anexos[0].dados,PNG.toString('base64'));
   assert.ok(await page.locator('.anexos-enviados').first().innerText().then(t=>t.includes('foto-peca')));

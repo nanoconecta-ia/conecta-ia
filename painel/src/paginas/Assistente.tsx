@@ -219,7 +219,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Conversas" onClick={() => { setEsq((v) => !v); if (estreito()) setDir(false); }}>☰<span> Conversas</span></button>
         <Esfera estado={estado} tamanho={estado === "parado" ? 40 : 56} />
         <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite">{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span></div>
-        {(config.persistente || conversas.length > 0) && <button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span className="rot-longo">Nova conversa</span><span className="rot-curto" aria-hidden="true">＋ Nova</span></button>}
+        {(config.persistente || conversas.length > 0) && <button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span className="rot-longo">Nova conversa</span><span className="rot-curto" aria-hidden="true">＋<span className="rot-curto-txt"> Nova</span></span></button>}
         <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}>⚙<span> Modelo</span></button>
       </div>
       {estado !== "parado" && <div className="faixa-acao" role="status" data-estado={estado}><span className="faixa-pulso" aria-hidden="true" />{acaoLocal?.texto ?? { ouvindo: "Ouvindo você…", pensando: "Consultando o modelo e os dados da loja…", falando: "Lendo a resposta em voz alta…" }[estado as string] ?? ""}{estado === "falando" && <button type="button" className="mini sec" onClick={voz.calar}>Parar</button>}</div>}
@@ -237,13 +237,16 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       <form onSubmit={onSubmit} style={{ maxWidth: "none" }}>
         {anexos.length > 0 && <ul className="anexos-lista" aria-label="Anexos desta pergunta">{anexos.map((a, i) => <li key={`${a.nome}-${i}`}><span className="anexo-nome" title={a.nome}>{a.tipo.startsWith("image/") ? "🖼" : "📄"} {a.nome}</span><span className="suave">{rotuloBytes(a.bytes)}</span><button type="button" className="sec mini" aria-label={`Remover ${a.nome}`} onClick={() => setAnexos((l) => l.filter((_, k) => k !== i))}>✕</button></li>)}</ul>}
         {erroAnexo && <p role="alert" className="msg-erro">{erroAnexo}</p>}
-        <div className="linha-voz">
+        <div className="compositor-grade">
           <input ref={entradaArquivo} type="file" hidden multiple accept={CHAT_ACEITA} onChange={(e) => void escolherArquivos(e.target.files)} />
+          <div className="compositor-campo"><span id="rotulo-pergunta">Pergunte</span><textarea aria-labelledby="rotulo-pergunta" value={texto} rows={2} enterKeyHint="send" placeholder="Escreva aqui…" onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void enviar(texto); } }} maxLength={1000} /></div>
+          <div className="compositor-acoes">
           <button type="button" className="sec mic" aria-label="Anexar imagem ou arquivo" title={provedor ? `Anexar imagem, PDF, TXT ou CSV (até ${CHAT_MAX_ANEXOS})` : "Escolha um modelo de IA para anexar arquivos"} disabled={ocupado || !provedor || administrando || anexos.length >= CHAT_MAX_ANEXOS} onClick={() => entradaArquivo.current?.click()}>📎</button>
-          <label>Pergunte<input value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={1000} /></label>
           {voz.suporteMic && <button type="button" className="sec mic" aria-pressed={voz.ouvindo} aria-label={voz.ouvindo ? "Parar de ouvir" : "Falar com o assistente"} onClick={() => (voz.ouvindo ? voz.parar() : voz.ouvir())} disabled={ocupado}>🎤</button>}
           {voz.suporteFala && <button type="button" className="sec mic" aria-pressed={lerAlto} aria-label={lerAlto ? "Desligar a leitura das respostas em voz alta" : "Ler as respostas em voz alta"} title={lerAlto ? "Leitura em voz alta ligada" : "Leitura em voz alta desligada"} onClick={alternarFala}>{lerAlto ? "🔊" : "🔈"}</button>}
-          <button disabled={ocupado || !podeEnviar || administrando || !!retentativa}>Enviar</button>
+            <span className="compositor-espaco" />
+          <button className="compositor-enviar" disabled={ocupado || !podeEnviar || administrando || !!retentativa}>Enviar</button>
+          </div>
         </div>
         {voz.erro && <p className="msg-erro">{voz.erro}</p>}
         {voz.suporteFala && lerAlto && <div className="voz-escolha"><label>Voz<select value={voz.vozEscolhida ?? ""} onChange={(e) => voz.escolherVozPreferida(e.target.value || null)}><option value="">Automática (a mais natural)</option>{voz.vozes.map((v) => <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>)}</select></label><small className="suave">{voz.vozes.length === 0 ? "Nenhuma voz em português encontrada; uso a padrão do aparelho." : `Em uso: ${escolherVoz(voz.vozes, voz.vozEscolhida)?.name ?? "padrão do aparelho"}${voz.vozes.length === 1 ? " (é a única em português neste aparelho)" : ""}`}</small></div>}
