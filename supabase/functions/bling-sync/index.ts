@@ -8,10 +8,10 @@
 // deploy real em produção usa uma versão AUTOCONTIDA (tudo inline, sem imports de ../_shared/*), mantida à parte.
 // Esta é a fonte modular de verdade — qualquer mudança de lógica aqui deve ser replicada manualmente na versão
 // de deploy até o bug de bundling ser resolvido pela plataforma.
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { armazemSupabase } from "../_shared/bling_armazem.ts";
 import { blingFetch } from "../_shared/bling_api.ts";
-import { type Chaveiro } from "../_shared/cripto.ts";
+import type { Chaveiro } from "../_shared/cripto.ts";
 import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 import { sincronizar, type Existente, type PortasSync } from "../_shared/bling_sync.ts";
 
