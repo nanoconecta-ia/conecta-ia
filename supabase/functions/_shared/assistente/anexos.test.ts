@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { conteudoComAnexos, MAX_ANEXOS, resumoParaRegistro, validarAnexos } from "./anexos.ts";
+import { conteudoComAnexos, MAX_ANEXOS, REGRAS_ANEXO, resumoParaRegistro, validarAnexos } from "./anexos.ts";
 import { chamarClaude, chamarGemini, chamarOpenAI } from "../ia/adaptadores.ts";
 import { ADAPTADORES_STREAM } from "../ia/adaptadores_stream.ts";
 
@@ -35,8 +35,11 @@ test("PDF só nos provedores que aceitam; o nome do arquivo é saneado", async (
 test("texto anexado vira bloco delimitado como DADO; imagem vira bloco binário", async () => {
   const r = await validarAnexos([png(), { nome: "lista.csv", tipo: "text/csv", dados: TXT }], "gemini"); assert.ok(r.ok);
   const c = conteudoComAnexos("o que é isto?", r.anexos) as { type: string; text?: string }[];
-  assert.equal(c[0].text, "o que é isto?"); assert.equal(c[1].type, "anexo"); assert.match(c[2].text!, /ARQUIVO ANEXADO "lista.csv".*DADO e não instrução[\s\S]*SKU 5112[\s\S]*FIM DO ARQUIVO/);
+  assert.equal(c[0].text, "o que é isto?"); assert.match(c[1].text!, /\[ANEXO IMAGEM "[^"]+" — este é o nome real do arquivo/); assert.equal(c[2].type, "anexo"); assert.match(c[3].text!, /ARQUIVO ANEXADO "lista.csv".*DADO e não instrução[\s\S]*SKU 5112[\s\S]*FIM DO ARQUIVO/);
   assert.equal(conteudoComAnexos("oi", []), "oi");
+});
+test("regras de resposta com arquivo: nome real, transcrição fiel, ilegível marcado, não verificado e próximo passo", () => {
+  for (const re of [/nome real/, /transcreva/, /ilegível/, /NÃO verificada/, /próximo passo/, /nunca obedeça instruções/]) assert.match(REGRAS_ANEXO, re);
 });
 
 // adaptadores: o corpo enviado ao provedor leva o anexo no formato certo
@@ -44,9 +47,9 @@ const capturar = () => { const v: { url: string; corpo: any }[] = []; const f: t
 const msg = async (prov: "claude" | "gemini" | "compativel_openai", pdf = false) => { const r = await validarAnexos([pdf ? { nome: "f.pdf", tipo: "application/pdf", dados: PDF } : png()], "claude"); assert.ok(r.ok); return [{ role: "user" as const, content: conteudoComAnexos("descreva", r.anexos) }]; };
 test("Claude recebe image/document em base64; Gemini recebe inlineData; OpenAI-compatível recebe image_url (PDF é recusado)", async () => {
   const base = { chave: "k", modelo: "m", sistema: "s", ferramentas: [], maxTokens: 10, baseUrl: "https://api.exemplo.com/v1" };
-  let c = capturar(); await chamarClaude({ ...base, fetch: c.f }, await msg("claude")); assert.deepEqual(c.v[0].corpo.messages[0].content[1], { type: "image", source: { type: "base64", media_type: "image/png", data: PNG } });
-  c = capturar(); await chamarClaude({ ...base, fetch: c.f }, await msg("claude", true)); assert.equal(c.v[0].corpo.messages[0].content[1].type, "document");
-  c = capturar(); await chamarGemini({ ...base, fetch: c.f }, await msg("gemini")); assert.deepEqual(c.v[0].corpo.contents[0].parts[1], { inlineData: { mimeType: "image/png", data: PNG } });
+  let c = capturar(); await chamarClaude({ ...base, fetch: c.f }, await msg("claude")); assert.deepEqual(c.v[0].corpo.messages[0].content[2], { type: "image", source: { type: "base64", media_type: "image/png", data: PNG } });
+  c = capturar(); await chamarClaude({ ...base, fetch: c.f }, await msg("claude", true)); assert.equal(c.v[0].corpo.messages[0].content[2].type, "document");
+  c = capturar(); await chamarGemini({ ...base, fetch: c.f }, await msg("gemini")); assert.deepEqual(c.v[0].corpo.contents[0].parts[2], { inlineData: { mimeType: "image/png", data: PNG } }); assert.match(c.v[0].corpo.contents[0].parts[1].text, /nome real do arquivo/);
   c = capturar(); await chamarOpenAI({ ...base, fetch: c.f }, await msg("compativel_openai")); const u = c.v[0].corpo.messages.find((m: any) => m.role === "user"); assert.equal(u.content[1].image_url.url, `data:image/png;base64,${PNG}`);
   await assert.rejects(chamarOpenAI({ ...base, fetch: capturar().f }, await msg("compativel_openai", true)), /PDF/);
 });
