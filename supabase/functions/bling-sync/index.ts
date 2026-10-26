@@ -14,6 +14,7 @@ import { blingFetch } from "../_shared/bling_api.ts";
 import type { Chaveiro } from "../_shared/cripto.ts";
 import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 import { sincronizar, type Existente, type PortasSync } from "../_shared/bling_sync.ts";
+import { sincronizarCategorias, type PortasCategorias } from "../_shared/bling_categorias.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -82,6 +83,37 @@ function portasDaLoja(admin: any, lojaId: string, chaveCifra: Chaveiro): PortasS
   };
 }
 
+// deno-lint-ignore no-explicit-any
+function portasCategorias(admin: any, lojaId: string, chaveCifra: Chaveiro): PortasCategorias {
+  const arm = armazemSupabase(admin);
+  const cfg = { chaveCifra };
+  return {
+    async listarPagina(pagina, limite) {
+      try {
+        const r = await blingFetch(arm, lojaId, `/categorias/produtos?pagina=${pagina}&limite=${limite}`, cfg);
+        if (!r.ok) return { erro: `Bling respondeu ${r.status} ao listar categorias` };
+        const j = await r.json().catch(() => null);
+        return { itens: Array.isArray(j?.data) ? j.data : [] };
+      } catch (e) { return { erro: e instanceof Error ? e.message : "falha ao listar categorias" }; }
+    },
+    async existentes() {
+      const { data, error } = await admin.from("bling_categorias").select("bling_id").eq("loja_id", lojaId).limit(5000);
+      if (error) throw new Error("falha ao ler as categorias do espelho");
+      return (data ?? []).map((l: { bling_id: string }) => l.bling_id);
+    },
+    async gravar(linhas) {
+      const { error } = await admin.from("bling_categorias").upsert(linhas, { onConflict: "loja_id,bling_id" });
+      if (error) throw new Error("falha ao gravar as categorias do espelho");
+    },
+    async remover(ids) {
+      for (let i = 0; i < ids.length; i += 200) await admin.from("bling_categorias").delete().eq("loja_id", lojaId).in("bling_id", ids.slice(i, i + 200));
+    },
+    async registrarErro(mensagem, detalhe) { await admin.from("sync_erros").insert({ loja_id: lojaId, mensagem: mensagem.slice(0, 300), detalhe: detalhe ?? null }); },
+    espera: (ms) => new Promise((r) => setTimeout(r, ms)),
+    agora: () => Date.now(),
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ erro: "Método não permitido." }, 405);
@@ -115,13 +147,16 @@ Deno.serve(async (req) => {
   const resultado: Record<string, unknown>[] = [];
   for (const lojaId of lojas) {
     try {
+      // categorias primeiro (poucas chamadas); falha aqui não impede a varredura de produtos
+      let cat: { vistas: number; removidas: number; completo: boolean } | undefined;
+      try { const rc = await sincronizarCategorias(lojaId, portasCategorias(admin, lojaId, chaveCifra)); cat = { vistas: rc.vistas, removidas: rc.removidas, completo: rc.completo && !rc.erro }; } catch { cat = { vistas: 0, removidas: 0, completo: false }; }
       const r = await sincronizar(lojaId, portasDaLoja(admin, lojaId, chaveCifra));
       if (r.completo) {
         await admin.from("bling_conexoes").update({ ultimo_sync_ok_em: new Date().toISOString(), ultimo_erro: null }).eq("loja_id", lojaId);
         // Produto novo ou que trocou de categoria no Bling: aplica o mapeamento de taxonomia já definido pelo lojista.
         await admin.rpc("bling_categoria_taxonomia_aplicar", { p_loja: lojaId });
       } else if (r.erro) await admin.from("bling_conexoes").update({ ultimo_erro: r.erro.slice(0, 300) }).eq("loja_id", lojaId);
-      resultado.push({ paginas: r.paginas, vistos: r.vistos, gravados: r.gravados, detalhes: r.detalhes, ausentes: r.ausentes, completo: r.completo, erro: r.erro ? true : undefined });
+      resultado.push({ categorias: cat, paginas: r.paginas, vistos: r.vistos, gravados: r.gravados, detalhes: r.detalhes, ausentes: r.ausentes, completo: r.completo, erro: r.erro ? true : undefined });
     } catch {
       resultado.push({ completo: false, erro: true });
     }

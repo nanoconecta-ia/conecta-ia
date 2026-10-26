@@ -479,6 +479,77 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000) {
 return { mapearProduto: mapearProduto, precisaDetalhe: precisaDetalhe, sincronizar: sincronizar };
 })();
 
+// ---------- supabase/functions/_shared/bling_categorias.ts ----------
+const __m8 = (() => {
+const LIMITE = 100, INTERVALO_MS = 350, MAX_PAGINAS = 20;
+const txt = (v)=>typeof v === "string" && v.trim() !== "" ? v.trim().slice(0, 200) : null;
+function mapearCategoria(lojaId, c, agoraISO) {
+    const nome = txt(c.descricao);
+    if (c.id == null || String(c.id).trim() === "" || !nome) return null;
+    const pai = c.categoriaPai?.id;
+    return {
+        loja_id: lojaId,
+        bling_id: String(c.id),
+        nome,
+        pai_bling_id: pai == null || String(pai) === "0" || String(pai) === String(c.id) ? null : String(pai),
+        sincronizado_em: agoraISO
+    };
+}
+async function sincronizarCategorias(lojaId, p) {
+    const r = {
+        paginas: 0,
+        vistas: 0,
+        gravadas: 0,
+        removidas: 0,
+        completo: false
+    };
+    const vistas = new Map();
+    for(let pagina = 1; pagina <= MAX_PAGINAS; pagina++){
+        const pg = await p.listarPagina(pagina, LIMITE);
+        await p.espera(INTERVALO_MS);
+        if ("erro" in pg) {
+            r.erro = pg.erro;
+            await p.registrarErro(pg.erro, {
+                pagina,
+                recurso: "categorias"
+            });
+            return r;
+        }
+        r.paginas++;
+        for (const c of pg.itens){
+            const l = mapearCategoria(lojaId, c, new Date(p.agora()).toISOString());
+            if (l) vistas.set(l.bling_id, l);
+        }
+        if (pg.itens.length < LIMITE) {
+            r.completo = true;
+            break;
+        }
+    }
+    r.vistas = vistas.size;
+    if (!r.completo) {
+        r.erro = "listagem de categorias incompleta";
+        await p.registrarErro(r.erro, {
+            recurso: "categorias"
+        });
+        return r;
+    }
+    if (vistas.size === 0) return r;
+    const linhas = [
+        ...vistas.values()
+    ];
+    await p.gravar(linhas);
+    r.gravadas = linhas.length;
+    const sobras = (await p.existentes()).filter((id)=>!vistas.has(id));
+    if (sobras.length) {
+        await p.remover(sobras);
+        r.removidas = sobras.length;
+    }
+    return r;
+}
+
+return { mapearCategoria: mapearCategoria, sincronizarCategorias: sincronizarCategorias };
+})();
+
 // ---------- supabase/functions/bling-sync/index.ts ----------
 const __m0 = (() => {
 const { createClient: createClient } = __sdk;
@@ -486,6 +557,7 @@ const { armazemSupabase: armazemSupabase } = __m1;
 const { blingFetch: blingFetch } = __m2;
 const { chaveiroPlataforma: chaveiroPlataforma } = __m6;
 const { sincronizar: sincronizar } = __m7;
+const { sincronizarCategorias: sincronizarCategorias } = __m8;
 const CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info, x-cron-segredo",
@@ -581,6 +653,53 @@ function portasDaLoja(admin, lojaId, chaveCifra) {
         agora: ()=>Date.now()
     };
 }
+function portasCategorias(admin, lojaId, chaveCifra) {
+    const arm = armazemSupabase(admin);
+    const cfg = {
+        chaveCifra
+    };
+    return {
+        async listarPagina (pagina, limite) {
+            try {
+                const r = await blingFetch(arm, lojaId, `/categorias/produtos?pagina=${pagina}&limite=${limite}`, cfg);
+                if (!r.ok) return {
+                    erro: `Bling respondeu ${r.status} ao listar categorias`
+                };
+                const j = await r.json().catch(()=>null);
+                return {
+                    itens: Array.isArray(j?.data) ? j.data : []
+                };
+            } catch (e) {
+                return {
+                    erro: e instanceof Error ? e.message : "falha ao listar categorias"
+                };
+            }
+        },
+        async existentes () {
+            const { data, error } = await admin.from("bling_categorias").select("bling_id").eq("loja_id", lojaId).limit(5000);
+            if (error) throw new Error("falha ao ler as categorias do espelho");
+            return (data ?? []).map((l)=>l.bling_id);
+        },
+        async gravar (linhas) {
+            const { error } = await admin.from("bling_categorias").upsert(linhas, {
+                onConflict: "loja_id,bling_id"
+            });
+            if (error) throw new Error("falha ao gravar as categorias do espelho");
+        },
+        async remover (ids) {
+            for(let i = 0; i < ids.length; i += 200)await admin.from("bling_categorias").delete().eq("loja_id", lojaId).in("bling_id", ids.slice(i, i + 200));
+        },
+        async registrarErro (mensagem, detalhe) {
+            await admin.from("sync_erros").insert({
+                loja_id: lojaId,
+                mensagem: mensagem.slice(0, 300),
+                detalhe: detalhe ?? null
+            });
+        },
+        espera: (ms)=>new Promise((r)=>setTimeout(r, ms)),
+        agora: ()=>Date.now()
+    };
+}
 Deno.serve(async (req)=>{
     if (req.method === "OPTIONS") return new Response("ok", {
         headers: CORS
@@ -645,6 +764,21 @@ Deno.serve(async (req)=>{
     const resultado = [];
     for (const lojaId of lojas){
         try {
+            let cat;
+            try {
+                const rc = await sincronizarCategorias(lojaId, portasCategorias(admin, lojaId, chaveCifra));
+                cat = {
+                    vistas: rc.vistas,
+                    removidas: rc.removidas,
+                    completo: rc.completo && !rc.erro
+                };
+            } catch  {
+                cat = {
+                    vistas: 0,
+                    removidas: 0,
+                    completo: false
+                };
+            }
             const r = await sincronizar(lojaId, portasDaLoja(admin, lojaId, chaveCifra));
             if (r.completo) {
                 await admin.from("bling_conexoes").update({
@@ -658,6 +792,7 @@ Deno.serve(async (req)=>{
                 ultimo_erro: r.erro.slice(0, 300)
             }).eq("loja_id", lojaId);
             resultado.push({
+                categorias: cat,
                 paginas: r.paginas,
                 vistos: r.vistos,
                 gravados: r.gravados,
