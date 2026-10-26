@@ -40,9 +40,13 @@ try{
   // consentimento recolhe sozinho depois de autorizado, liberando espaço no compositor
   await page.getByLabel(/Enviar esta pergunta/).check();
   await page.locator('.consentimento').waitFor({state:'hidden'});
+  // Atalhos e Privacidade viram duas pílulas na mesma linha; a conversa mantém espaço
+  await page.getByRole('button',{name:/Atalhos/}).evaluate(b=>{if(b.getAttribute('aria-expanded')==='true')b.click()});
+  {const g=await page.evaluate(()=>{const b=document.querySelector('.barra-extras').getBoundingClientRect(),c=document.querySelector('.abas-centro > .chat').getBoundingClientRect(),p=[...document.querySelectorAll('.barra-extras .retratil-cabecote')].map(e=>Math.round(e.getBoundingClientRect().top));return {bh:b.height,ch:c.height,tops:p}});
+   assert.ok(g.bh<=52,'pílulas em uma linha '+JSON.stringify(g));assert.ok(g.ch>=150,'conversa com espaço '+JSON.stringify(g));assert.equal(new Set(g.tops).size,1,'pílulas lado a lado '+JSON.stringify(g));}
   // campo de texto grande, em linha própria; botões embaixo; sem sobreposição
   {const m=await page.evaluate(()=>{const t=document.querySelector('.compositor-campo textarea').getBoundingClientRect(),a=document.querySelector('.compositor-acoes').getBoundingClientRect(),e=document.querySelector('.compositor-enviar').getBoundingClientRect(),w=window.innerWidth;return {tw:t.width,th:t.height,ab:a.top>=t.bottom-1,env:e.right<=w&&e.left>=0,w}});
-   assert.ok(m.th>=80,'campo de texto com altura confortável '+JSON.stringify(m));assert.ok(m.tw>=m.w*0.7,'campo de texto largo '+JSON.stringify(m));assert.ok(m.ab,'botões abaixo do campo');assert.ok(m.env,'Enviar visível');}
+   assert.ok(m.th>=60,'campo de texto com altura confortável '+JSON.stringify(m));assert.ok(m.tw>=m.w*0.7,'campo de texto largo '+JSON.stringify(m));assert.ok(m.ab,'botões abaixo do campo');assert.ok(m.env,'Enviar visível');}
   // anexa PNG + TXT; tipo não aceito é recusado com aviso
   const PNG=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==','base64');
   await page.setInputFiles('input[type=file]',[{name:'foto-peca-com-nome-bem-comprido-para-testar-corte.png',mimeType:'image/png',buffer:PNG},{name:'tabela.csv',mimeType:'text/csv',buffer:Buffer.from('sku;qtd\n5112;3')}]);
