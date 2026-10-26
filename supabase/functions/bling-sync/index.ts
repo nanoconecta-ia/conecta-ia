@@ -8,10 +8,10 @@
 // deploy real em produção usa uma versão AUTOCONTIDA (tudo inline, sem imports de ../_shared/*), mantida à parte.
 // Esta é a fonte modular de verdade — qualquer mudança de lógica aqui deve ser replicada manualmente na versão
 // de deploy até o bug de bundling ser resolvido pela plataforma.
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { armazemSupabase } from "../_shared/bling_armazem.ts";
 import { blingFetch } from "../_shared/bling_api.ts";
-import { type Chaveiro } from "../_shared/cripto.ts";
+import type { Chaveiro } from "../_shared/cripto.ts";
 import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 import { sincronizar, type Existente, type PortasSync } from "../_shared/bling_sync.ts";
 
@@ -34,9 +34,9 @@ function portasDaLoja(admin: any, lojaId: string, chaveCifra: Chaveiro): PortasS
   const arm = armazemSupabase(admin);
   const cfg = { chaveCifra };
   return {
-    async listarPagina(pagina, limite) {
+    async listarPagina(pagina, limite, grupo = "ativos") {
       try {
-        const r = await blingFetch(arm, lojaId, `/produtos?pagina=${pagina}&limite=${limite}&criterio=2&tipo=T`, cfg);
+        const r = await blingFetch(arm, lojaId, `/produtos?pagina=${pagina}&limite=${limite}&criterio=${grupo === "inativos" ? 3 : 2}&tipo=T`, cfg);
         if (!r.ok) return { erro: `Bling respondeu ${r.status} ao listar produtos` };
         const j = await r.json().catch(() => null);
         return { itens: Array.isArray(j?.data) ? j.data : [] };

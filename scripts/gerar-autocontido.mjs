@@ -70,8 +70,11 @@ export async function gerar(root, entry = 'supabase/functions/assistente/index.t
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const root = fileURLToPath(new URL('../', import.meta.url));
-  const { codigo, manifesto } = await gerar(root);
-  const saida = resolve(root, 'artifacts/assistente');
+  const iFuncao = process.argv.indexOf('--funcao');
+  const funcao = iFuncao > 0 ? process.argv[iFuncao + 1] : 'assistente'; // padrão: assistente
+  if (!/^[a-z][a-z0-9-]*$/.test(funcao)) throw Error('Nome de função inválido.');
+  const { codigo, manifesto } = await gerar(root, `supabase/functions/${funcao}/index.ts`);
+  const saida = resolve(root, `artifacts/${funcao}`);
   for (const [nome, conteudo] of [['index.ts', codigo], ['manifesto.json', manifesto]]) {
     const path = resolve(saida, nome);
     if (process.argv.includes('--check')) {

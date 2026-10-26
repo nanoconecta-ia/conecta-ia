@@ -47,8 +47,10 @@ export function precisaDetalhe(l: ItemLista, e: Existente | undefined, agora: nu
   return !e.sincronizado_em || agora - Date.parse(e.sincronizado_em) > maxIdadeMs;
 }
 
+export type GrupoLista = "ativos" | "inativos";
 export interface PortasSync {
-  listarPagina(pagina: number, limite: number): Promise<{ itens: ItemLista[] } | { erro: string }>;
+  /** `grupo`: produtos ATIVOS ou INATIVOS do Bling (excluídos nunca entram no espelho). */
+  listarPagina(pagina: number, limite: number, grupo?: GrupoLista): Promise<{ itens: ItemLista[] } | { erro: string }>;
   detalhe(id: number): Promise<Detalhe | null>;
   existentes(): Promise<Existente[]>;
   gravar(linhas: LinhaProduto[]): Promise<void>;
@@ -69,28 +71,30 @@ export async function sincronizar(lojaId: string, p: PortasSync, orcamentoMs = 1
   let lote: LinhaProduto[] = [];
   const descarregar = async () => { if (lote.length) { await p.gravar(lote); r.gravados += lote.length; lote = []; } };
 
-  for (let pagina = 1; ; pagina++) {
-    if (p.agora() - ini > orcamentoMs) { await descarregar(); return r; } // sem timeout: retoma na próxima rodada
-    const pg = await p.listarPagina(pagina, LIMITE);
-    await p.espera(INTERVALO_MS);
-    if ("erro" in pg) { await descarregar(); r.erro = pg.erro; await p.registrarErro(pg.erro, { pagina }); return r; }
-    r.paginas++;
-    for (const it of pg.itens) {
-      vistos.add(String(it.id)); r.vistos++;
-      let d: Detalhe | null = null;
-      if (precisaDetalhe(it, ex.get(String(it.id)), p.agora())) {
-        if (p.agora() - ini > orcamentoMs) continue; // fica para a próxima rodada (não grava meia-linha)
-        d = await p.detalhe(it.id); r.detalhes++;
-        await p.espera(INTERVALO_MS);
-        if (!d) { await p.registrarErro("detalhe indisponível", { bling_id: it.id }); continue; }
-      } else continue; // sem mudança: não regrava
-      lote.push(mapearProduto(lojaId, it, d, new Date(p.agora()).toISOString()));
-      if (lote.length >= 50) await descarregar();
+  for (const grupo of ["ativos", "inativos"] as GrupoLista[]) {
+    for (let pagina = 1; ; pagina++) {
+      if (p.agora() - ini > orcamentoMs) { await descarregar(); return r; } // sem timeout: retoma na próxima rodada
+      const pg = await p.listarPagina(pagina, LIMITE, grupo);
+      await p.espera(INTERVALO_MS);
+      if ("erro" in pg) { await descarregar(); r.erro = pg.erro; await p.registrarErro(pg.erro, { pagina, grupo }); return r; }
+      r.paginas++;
+      for (const it of pg.itens) {
+        vistos.add(String(it.id)); r.vistos++;
+        let d: Detalhe | null = null;
+        if (precisaDetalhe(it, ex.get(String(it.id)), p.agora())) {
+          if (p.agora() - ini > orcamentoMs) continue; // fica para a próxima rodada (não grava meia-linha)
+          d = await p.detalhe(it.id); r.detalhes++;
+          await p.espera(INTERVALO_MS);
+          if (!d) { await p.registrarErro("detalhe indisponível", { bling_id: it.id }); continue; }
+        } else continue; // sem mudança: não regrava
+        lote.push(mapearProduto(lojaId, it, d, new Date(p.agora()).toISOString()));
+        if (lote.length >= 50) await descarregar();
+      }
+      if (pg.itens.length < LIMITE) break;
     }
-    if (pg.itens.length < LIMITE) break;
   }
   await descarregar();
-  // Listagem completa: o que sumiu da lista de ATIVOS deixa de ser publicável.
+  // Listagem completa (ativos + inativos): o que sumiu das duas listas deixa de ser publicável.
   const ausentes = [...ex.keys()].filter((id) => !vistos.has(id) && ex.get(id)!.situacao !== "ausente");
   if (ausentes.length) { await p.marcarAusentes(ausentes); r.ausentes = ausentes.length; }
   r.completo = true;

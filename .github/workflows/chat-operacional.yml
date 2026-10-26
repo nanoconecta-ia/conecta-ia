@@ -27,6 +27,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '24.19.0'}
       - run: node --experimental-vm-modules scripts/gerar-autocontido.mjs --check
+      - run: node --experimental-vm-modules scripts/gerar-autocontido.mjs --funcao bling-sync --check
       - run: node --experimental-vm-modules scripts/tests/chat-artefato.test.mjs
       - run: node --experimental-vm-modules scripts/tests/oauth-operacional.test.mjs
       - run: node scripts/tests/chat-guardas.test.mjs
