@@ -55,13 +55,13 @@ export interface ItemProposta {
   campos: ["categoria_bling_id"];
   antes: { categoria_bling_id: string | null };
   depois: { categoria_bling_id: string };
-  fontes: { tipo: string; descricao: string; confianca: number | null }[];
+  fontes: { documento: string; descricao: string; confianca: number | null }[];
   validacoes: string[];
   risco: "MEDIUM" | "HIGH";
 }
 
-export type Motivo = "inativo" | "confianca_baixa" | "excluido" | "ja_na_categoria" | "sem_equivalente" | "escolha_pendente" | "escolha_invalida" | "categoria_inexistente" | "corpo_recusado";
-export interface Pendencia { produto_id: string; sku: string | null; motivo: Motivo; detalhe: string; candidatas?: { id: string; nome: string }[] }
+export type Motivo = "sem_sugestao_aprovada" | "leitura_indisponivel" | "inativo" | "confianca_baixa" | "excluido" | "ja_na_categoria" | "sem_equivalente" | "escolha_pendente" | "escolha_invalida" | "categoria_inexistente" | "corpo_recusado";
+export interface Pendencia { produto_id: string | null; sku: string | null; motivo: Motivo; detalhe: string; candidatas?: { id: string; nome: string }[] }
 
 export interface Resultado { itens: ItemProposta[]; pendencias: Pendencia[] }
 
@@ -107,7 +107,12 @@ export function montarItensCategoria(entradas: readonly Entrada[], pontes: reado
       campos: ["categoria_bling_id"],
       antes: { categoria_bling_id: e.categoria_atual },
       depois: { categoria_bling_id: destinoId },
-      fontes: [{ tipo: "decisao_do_lojista", descricao: e.fonte ?? `categoria sugerida aprovada: ${e.no_nome} -> ${destinoNome} (${destinoId})`, confianca: e.confianca }],
+      fontes: [{
+        // o banco exige url ou documento em toda fonte: aqui a fonte é a decisão do lojista registrada na Fila de aprovação
+        documento: `Decisão do lojista (categoria sugerida aprovada): ${e.no_nome} -> ${destinoNome} (${destinoId})`,
+        descricao: e.fonte ?? "sugestão de categoria aprovada na Fila de aprovação",
+        confianca: e.confianca,
+      }],
       validacoes: [
         `destino ${destinoId} (${destinoNome}) existe no espelho do Bling`,
         "somente o campo categoria; corpo validado contra a lista fechada de campos permitidos",

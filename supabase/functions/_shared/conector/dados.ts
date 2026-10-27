@@ -1,7 +1,17 @@
 // Porta de leitura do Nano.ia sobre o banco. TODA consulta é escopada pela loja AQUI (não depende do chamador lembrar).
 // Implementação com cliente estilo supabase-js (service_role no servidor). Os testes rodam esta mesma implementação sobre
 // um cliente que fala SQL com um Postgres local, para provar nomes de colunas e filtros contra o esquema real.
+import type { Entrada, Ponte } from "./categoria_bling.ts";
 export interface ClienteDados { from(tabela: string): any }
+
+/** Sugestões de categoria APROVADAS pelo lojista, com o que falta para virar proposta de alteração no Bling. Só leitura. */
+export interface CategoriasAprovadas {
+  /** `aplicado` = o produto já está no nó que a decisão aprovada indica (a sincronização aplicou). */
+  entradas: (Entrada & { aplicado: boolean })[];
+  pontes: Ponte[];
+  /** Ids das categorias que existem no espelho do Bling. */
+  categoriasExistentes: string[];
+}
 
 export interface PortaDados {
   resumo(): Promise<{ produtos: number; publicados: number; aguardando_aprovacao: number }>;
@@ -15,6 +25,7 @@ export interface PortaDados {
   propostaEstado(id: string): Promise<unknown>;
   prontoPublicacao(o: { sku: string }): Promise<{ pronto: boolean; faltando: string[] } | { erro: string }>;
   buscarConhecimento(texto: string, tipo?: string, limite?: number): Promise<unknown[]>;
+  categoriasAprovadas(): Promise<CategoriasAprovadas>;
 }
 
 const lim = (v: unknown, padrao = 10, max = 20) => Math.min(Math.max(Number.isInteger(v) ? (v as number) : padrao, 1), max);
@@ -98,6 +109,32 @@ export function dadosSupabase(c: ClienteDados, lojaId: string): PortaDados {
         .or(`loja_id.eq.${lojaId},loja_id.is.null`).textSearch("busca", t, { config: "portuguese", type: "websearch" }).neq("status", "rejeitado").limit(lim(limite, 5, 10));
       if (tipo) q = q.eq("tipo", tipo);
       return (await q).data ?? [];
+    },
+    async categoriasAprovadas() {
+      const [enr, prods, nos, pt, cats] = await Promise.all([
+        c.from("produto_enriquecimento").select("produto_id, valor, fonte, confianca").eq("loja_id", lojaId).eq("campo", "categoria_sugerida").eq("status", "aprovado").limit(2000),
+        c.from("produtos").select("id, sku, nome, bling_id, situacao, categoria_bling_id, taxonomia_no_id").eq("loja_id", lojaId).limit(5000),
+        c.from("taxonomia_nos").select("id, pai_id, nome").limit(5000),
+        c.from("bling_categoria_taxonomia").select("bling_categoria_id, taxonomia_no_id").eq("loja_id", lojaId).limit(5000),
+        c.from("bling_categorias").select("bling_id, nome").eq("loja_id", lojaId).limit(5000),
+      ]);
+      const porProduto = new Map<string, any>((prods.data ?? []).map((p: any) => [p.id, p]));
+      const noPorId = new Map<string, any>((nos.data ?? []).map((n: any) => [n.id, n]));
+      const nomeCat = new Map<string, string>((cats.data ?? []).map((k: any) => [k.bling_id, k.nome]));
+      const caminho = (id: string) => { const n = noPorId.get(id); if (!n) return ""; const pai = n.pai_id ? noPorId.get(n.pai_id) : null; return pai ? `${pai.nome} › ${n.nome}` : n.nome; };
+      const igual = (a: string, b: string) => a.replace(/\s*[>›]\s*/g, "›").trim() === b.replace(/\s*[>›]\s*/g, "›").trim();
+      const entradas = [];
+      for (const e of enr.data ?? []) {
+        const p = porProduto.get(e.produto_id);
+        if (!p || !p.taxonomia_no_id || typeof e.valor !== "string") continue;
+        const no = caminho(p.taxonomia_no_id);
+        entradas.push({
+          produto_id: p.id, sku: p.sku, nome: p.nome, bling_id: p.bling_id, situacao: p.situacao, categoria_atual: p.categoria_bling_id ?? null,
+          taxonomia_no_id: p.taxonomia_no_id, no_nome: no, confianca: e.confianca == null ? null : Number(e.confianca), fonte: e.fonte ?? null, aplicado: igual(e.valor, no),
+        });
+      }
+      const pontes = (pt.data ?? []).filter((x: any) => nomeCat.has(x.bling_categoria_id)).map((x: any) => ({ bling_categoria_id: x.bling_categoria_id, nome: nomeCat.get(x.bling_categoria_id)!, taxonomia_no_id: x.taxonomia_no_id }));
+      return { entradas, pontes, categoriasExistentes: [...nomeCat.keys()] };
     },
   };
   return dados;
