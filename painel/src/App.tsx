@@ -42,7 +42,7 @@ import { Icone } from "./componentes/Icone.tsx";
 import { LogoConecta } from "./componentes/LogoConecta.tsx";
 import { SeletorTema } from "./componentes/SeletorTema.tsx";
 import { DockAgente } from "./componentes/DockAgente.tsx";
-import { dividePagina, gravar as gravarPainel, ler as lerPainel, reserva, type EstadoPainel } from "./lib/painelLateral.ts";
+import { dividePagina, gravar as gravarPainel, ler as lerPainel, reserva, TELA_MIN_PARA_FIXO, type EstadoPainel } from "./lib/painelLateral.ts";
 import { BalaoGenesis } from "./componentes/BalaoGenesis.tsx";
 import "./shell.css";
 
@@ -106,6 +106,9 @@ export function App() {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
+  const modoPainel = painel.modo === "fixo" && telaW >= TELA_MIN_PARA_FIXO ? "fixo" : "flutuante"; // só reflete a preferência; quem divide a tela de fato é dividePagina()
+  useEffect(() => { document.documentElement.dataset.painel = modoPainel; }, [modoPainel]);
+
   const lojaSlug = caminho.match(/^\/loja\/([a-z0-9-]{2,63})$/);
   if (lojaSlug) return <Loja slug={lojaSlug[1]} />;
   if (hostCliente && !caminho.startsWith("/p/")) return <Loja host={hostCliente} />;
@@ -127,7 +130,6 @@ export function App() {
   const dockAberto = agente && !!loja && !demoAtivo && !paginaDeChat;
   const dividindo = dividePagina(painel, telaW, dockAberto);
   const res = reserva(painel, telaW, dockAberto);
-  useEffect(() => { document.documentElement.dataset.painel = dividindo ? "fixo" : "flutuante"; }, [dividindo]);
   const filtroInd = caminho.match(/^\/indicadores\/([a-z_:]+)$/);
   return (
     <>

@@ -69,7 +69,7 @@ export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, ao
         <button className="sec mini dock-ico" onClick={() => mudar({ modo: "fixo", lado: "esq" })} aria-pressed={painel.modo === "fixo" && painel.lado === "esq"} aria-label="Fixar à esquerda" title="Fixar à esquerda">{I.esq}</button>
         <button className="sec mini dock-ico" onClick={() => mudar({ modo: "fixo", lado: "dir" })} aria-pressed={painel.modo === "fixo" && painel.lado === "dir"} aria-label="Fixar à direita" title="Fixar à direita">{I.dir}</button>
         <button className="sec mini dock-ico" onClick={() => mudar({ modo: "flutuante" })} aria-pressed={painel.modo === "flutuante"} aria-label="Flutuar" title="Flutuar sobre a página">{I.flutuar}</button>
-        {!dividindo && <button className="sec mini dock-ico" onClick={() => setAmpliado((v) => !v)} aria-pressed={ampliado} aria-label={ampliado ? "Reduzir o painel" : "Ampliar o painel"} title="Ampliar">{I.ampliar}</button>}
+        {!dividindo && <button className="sec mini dock-ico" onClick={() => setAmpliado((v) => !v)} aria-pressed={ampliado} aria-label={ampliado ? "Reduzir a janela do Nano.ia" : "Ampliar a janela do Nano.ia"} title="Ampliar">{I.ampliar}</button>}
         <button className="sec mini dock-ico" onClick={aoFechar} aria-label="Fechar o Nano.ia" title="Fechar">{I.fechar}</button>
       </div>
       <div className="dock-area">
