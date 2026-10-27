@@ -431,7 +431,7 @@ html .dock-trilho button.dock-aba:focus-visible { outline: 2px solid var(--verde
   html .dock-agente[data-aberto="true"] ~ .balao-genesis { display: none; } /* o balão não cobre o painel aberto; o X do painel fecha */
   .dock-topo { flex-wrap: nowrap; padding: 6px 10px; gap: 6px; row-gap: 0; }
   .dock-topo .suave { display: none; } .dock-topo strong { margin-right: auto; }
-  .abas .compositor-campo textarea { min-height: 52px; max-height: 22dvh; padding: 8px 12px; font-size: 1rem; }
+  .abas .compositor-campo textarea { min-height: 60px; max-height: 22dvh; padding: 8px 12px; font-size: 1rem; }
   .abas .compositor-acoes > button { min-height: 44px; }
   .abas .chat-compositor { padding-top: 6px; gap: 4px; }
 }
