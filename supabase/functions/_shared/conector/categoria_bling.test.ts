@@ -36,6 +36,7 @@ test("monta o item: antes/depois só com a categoria, operação e alvo corretos
   assert.equal(i.risco, "MEDIUM");
   assert.equal(chaveProibida(i.depois), null, "nada fiscal, de preço, custo ou estoque");
   assert.ok(i.validacoes.some((v) => v.includes("relê o produto no Bling")));
+  assert.match(i.fontes[0].documento, /Decisão do lojista/, "toda fonte precisa de url ou documento (regra do banco)");
 });
 
 test("caso ambíguo: sem escolha vai para pendência com as candidatas; com escolha válida entra; escolha fora das candidatas é recusada", () => {

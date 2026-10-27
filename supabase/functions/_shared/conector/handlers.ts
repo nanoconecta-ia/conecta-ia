@@ -6,6 +6,7 @@ import type { PortaDados } from "./dados.ts";
 import type { PortaBling } from "./porta_bling.ts";
 import type { Rpc } from "./executor.ts";
 import { buscarDefinicao } from "./registro.ts";
+import { montarItensCategoria, type Pendencia } from "./categoria_bling.ts";
 import { proporAplicacao, proporCodigo, proporEnriquecimento, proporImagem, type AdminRpc } from "../ia/escrita.ts";
 import { chamarPlugin, type PluginRegistro } from "../ia/plugin.ts";
 import { buscarImagens } from "../ia/google.ts";
@@ -145,6 +146,34 @@ export const HANDLERS: Record<string, Handler> = {
     const busca = String(e.busca ?? "").toLowerCase();
     return ((r.corpo as any)?.data ?? []).map((x: any) => ({ id: x.id, descricao: x.descricao, categoria_pai_id: x.categoriaPai?.id || null }))
       .filter((x: any) => !busca || String(x.descricao).toLowerCase().includes(busca));
+  },
+  // Troca de categoria no Bling a partir das sugestões APROVADAS. Só os SKUs pedidos; só a categoria; lê o Bling AGORA para o "antes". Não grava no Bling.
+  "bling.categorias.preparar_alteracao_lote": async (e, c) => {
+    if (!c.bling) return { erro: "Leitura do Bling indisponível: sem ela não há como montar o 'antes' da proposta." };
+    const base = await c.dados.categoriasAprovadas();
+    const porSku = new Map(base.entradas.filter((x) => x.sku).map((x) => [x.sku as string, x]));
+    const pedidos: string[] = [...new Set<string>(e.skus)];
+    const selecionadas = pedidos.map((s) => porSku.get(s)).filter((x): x is NonNullable<typeof x> => !!x);
+    const pendencias: Pendencia[] = [];
+    for (const s of pedidos) if (!porSku.has(s)) pendencias.push({ produto_id: null, sku: s, motivo: "sem_sugestao_aprovada", detalhe: "não há sugestão de categoria APROVADA para este SKU" });
+    const escolhas: Record<string, string> = {};
+    for (const [sku, id] of Object.entries((e.escolhas ?? {}) as Record<string, unknown>)) { const en = porSku.get(sku); if (en) escolhas[en.produto_id] = String(id); }
+    const excluir = new Map<string, string>();
+    for (const en of selecionadas) if (!en.aplicado) excluir.set(en.produto_id, "a decisão aprovada ainda não foi aplicada ao nó da taxonomia; aguarde a próxima sincronização");
+    const r = montarItensCategoria(selecionadas, base.pontes, { categoriasExistentes: new Set(base.categoriasExistentes), escolhas, excluir });
+    pendencias.push(...r.pendencias);
+    const itens: typeof r.itens = [];
+    for (const it of r.itens) {
+      const lido = await c.bling.ler("bling.produtos.confirmar", { id: it.alvo }).catch(() => null);
+      if (!lido || lido.status !== 200) { pendencias.push({ produto_id: it.produto_id, sku: it.sku ?? null, motivo: "leitura_indisponivel", detalhe: "não consegui ler o produto no Bling agora" }); continue; }
+      const atual = (lido.corpo as any)?.data?.categoria?.id;
+      const atualId = atual ? String(atual) : null;
+      if (atualId === it.depois.categoria_bling_id) { pendencias.push({ produto_id: it.produto_id, sku: it.sku ?? null, motivo: "ja_na_categoria", detalhe: "o Bling já tem essa categoria" }); continue; }
+      itens.push({ ...it, antes: { categoria_bling_id: atualId }, validacoes: [...it.validacoes, `categoria lida no Bling em ${new Date().toISOString()}: ${atualId ?? "nenhuma"}`] });
+    }
+    if (itens.length === 0) return { aviso: "Nenhum item entrou na proposta.", pendencias };
+    const prop = await criarPropostaVersionada(c, { titulo: `Trocar a categoria de ${itens.length} produto(s) no Bling`, resumo: "Só o campo categoria, a partir de sugestões aprovadas pelo lojista.", lote: itens.length > 1, itens });
+    return { ...(prop as Record<string, unknown>), pendencias };
   },
   // Lê o Bling AGORA, calcula antes/depois dos campos pedidos e cria a proposta. Não grava nada no Bling.
   "bling.produtos.preparar_atualizacao": async (e, c) => {
