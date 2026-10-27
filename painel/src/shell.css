@@ -421,3 +421,25 @@ html .dock-trilho button.dock-aba:focus-visible { outline: 2px solid var(--verde
 .resumo-lista { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; } .resumo-atencao { color: var(--atencao); font-weight: 600; }
 @media (max-width: 1099px) { .layout { padding-left: 0; padding-right: 0; } }
 @media (prefers-reduced-motion: reduce) { .layout, .dock-separador::after { transition: none; } }
+
+/* ===== Painel do Nano.ia no celular (em pé e deitado): nada fora da tela, cabeçalho sem sobreposição, compositor sempre à vista ===== */
+.abas-centro > .chat { min-height: 0; }
+.abas .agente-titulo { overflow: hidden; } .abas .agente h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 560px), (max-height: 600px) {
+  /* a janela ocupa a área útil (abaixo do cabeçalho do app) em vez de usar altura em % + margem fixa, que saía por cima da tela quando deitado */
+  html .dock-agente, html .dock-agente[data-ampliado="true"], html[data-balao] .dock-agente[data-ampliado="true"] { left: 6px; right: 6px; width: auto; top: 58px; bottom: 6px; height: auto; border-radius: 14px; padding-bottom: env(safe-area-inset-bottom); }
+  html .dock-agente[data-aberto="true"] ~ .balao-genesis { display: none; } /* o balão não cobre o painel aberto; o X do painel fecha */
+  .dock-topo { flex-wrap: nowrap; padding: 6px 10px; gap: 6px; row-gap: 0; }
+  .dock-topo .suave { display: none; } .dock-topo strong { margin-right: auto; }
+  .abas .compositor-campo textarea { min-height: 52px; max-height: 22dvh; padding: 8px 12px; font-size: 1rem; }
+  .abas .compositor-acoes > button { min-height: 44px; }
+  .abas .chat-compositor { padding-top: 6px; gap: 4px; }
+}
+@media (max-height: 600px) {
+  /* tela baixa (celular deitado): cabeçalho, atalhos e conversa rolam; o campo de texto e o Enviar ficam fixos embaixo, sempre à vista */
+  .abas-centro { overflow-y: auto; overscroll-behavior: contain; }
+  .abas-centro > .chat { flex: 1 0 120px; overflow-y: visible; }
+  .abas .chat-compositor { position: sticky; bottom: 0; z-index: 2; background: var(--fundo); }
+  .dock-trilho { overflow-y: auto; gap: 2px; padding: 4px; }
+  .dock-aba { min-height: 44px; padding: 2px 4px; gap: 0; } .dock-aba span { font-size: .68rem; }
+}
