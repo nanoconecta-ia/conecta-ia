@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { mensagemVisibilidade, type RespostaVisibilidade } from "../lib/visibilidade.ts";
 import { alternar, alternarTodos, erroAutomacao, mensagemAutomacao, textoLote } from "../lib/automacao.ts";
+import { despublicar, publicar } from "../lib/contextoPagina.ts";
+import { mapaDoCatalogo } from "../lib/mapaPagina.ts";
 import { camposFaltando, contagens, filtrar, ROTULO_FILTRO, semCategoria, situacaoTexto, type Filtro, type LinhaPlanilha } from "../lib/planilha.ts";
 
 type Produto = LinhaPlanilha & { preco: number | null; estoque: number | null; publicado: boolean };
@@ -54,6 +56,21 @@ export function Catalogo({ loja }: { loja: Loja }) {
     else { setMsg({ ok: true, texto: mensagemAutomacao(pausar, ids.length) }); setSelecionados(new Set()); void carregar(); }
   }
   const idsListados = new Set(categorias.keys());
+  const mapa = useMemo(() => {
+    if (!itens) return null;
+    const ids = new Set(categorias.keys());
+    const faltando: Record<string, number> = {};
+    for (const p of itens) for (const f of camposFaltando(p)) faltando[f] = (faltando[f] ?? 0) + 1;
+    const porNo = new Map<string, number>();
+    for (const p of itens) if (p.taxonomia_no_id) porNo.set(p.taxonomia_no_id, (porNo.get(p.taxonomia_no_id) ?? 0) + 1);
+    return mapaDoCatalogo({
+      total: itens.length, publicados: itens.filter((p) => p.publicado).length, inativos: itens.filter((p) => p.situacao !== "A").length,
+      semCategoria: itens.filter((p) => semCategoria(p, ids)).length, semLugarNaTaxonomia: itens.filter((p) => p.taxonomia_no_id == null).length,
+      incompletos: itens.filter((p) => camposFaltando(p).length > 0).length, faltando,
+      porNo: [...nos.values()].map((n) => ({ id: n.id, pai_id: n.pai_id, nome: n.nome, produtos: porNo.get(n.id) ?? 0 })),
+    });
+  }, [itens, categorias, nos]);
+  useEffect(() => { if (mapa) publicar("/catalogo", "Catálogo", mapa); return () => despublicar("/catalogo"); }, [mapa]);
   const totais = contagens(itens ?? [], idsListados);
   const visiveis = filtrar(itens ?? [], filtro, idsListados);
   const idsVisiveis = visiveis.map((p) => p.id);

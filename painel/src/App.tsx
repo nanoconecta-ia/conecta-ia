@@ -42,6 +42,7 @@ import { Icone } from "./componentes/Icone.tsx";
 import { LogoConecta } from "./componentes/LogoConecta.tsx";
 import { SeletorTema } from "./componentes/SeletorTema.tsx";
 import { DockAgente } from "./componentes/DockAgente.tsx";
+import { dividePagina, gravar as gravarPainel, ler as lerPainel, reserva, TELA_MIN_PARA_FIXO, type EstadoPainel } from "./lib/painelLateral.ts";
 import { BalaoGenesis } from "./componentes/BalaoGenesis.tsx";
 import "./shell.css";
 
@@ -90,6 +91,10 @@ export function App() {
   const [recolhido, setRecolhido] = useState(() => { try { return localStorage.getItem("conecta:menu") === "recolhido"; } catch { return false; } });
   const alternarMenu = () => setRecolhido((r) => { try { localStorage.setItem("conecta:menu", r ? "aberto" : "recolhido"); } catch { /* sem storage */ } return !r; });
   const [agente, setAgente] = useState(false);
+  const [telaW, setTelaW] = useState(() => window.innerWidth);
+  const [painel, setPainelEstado] = useState<EstadoPainel>(() => lerPainel(window.innerWidth));
+  useEffect(() => { const f = () => setTelaW(window.innerWidth); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
+  const mudarPainel = (p: EstadoPainel) => { setPainelEstado(p); gravarPainel(p); };
   useEffect(() => { // Ctrl/⌘+K abre a paleta de comandos; Ctrl/⌘+J abre o agente lateral, em qualquer tela do painel
     const h = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey)) return;
@@ -100,6 +105,9 @@ export function App() {
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, []);
+
+  const modoPainel = painel.modo === "fixo" && telaW >= TELA_MIN_PARA_FIXO ? "fixo" : "flutuante"; // só reflete a preferência; quem divide a tela de fato é dividePagina()
+  useEffect(() => { document.documentElement.dataset.painel = modoPainel; }, [modoPainel]);
 
   const lojaSlug = caminho.match(/^\/loja\/([a-z0-9-]{2,63})$/);
   if (lojaSlug) return <Loja slug={lojaSlug[1]} />;
@@ -120,6 +128,8 @@ export function App() {
   const larga = caminho === "/conector" && !bloqueada;
   const paginaDeChat = caminho === "/assistente" || (caminho === "/conector" && !bloqueada); // já são o próprio chat: sem painel duplicado
   const dockAberto = agente && !!loja && !demoAtivo && !paginaDeChat;
+  const dividindo = dividePagina(painel, telaW, dockAberto);
+  const res = reserva(painel, telaW, dockAberto);
   const filtroInd = caminho.match(/^\/indicadores\/([a-z_:]+)$/);
   return (
     <>
@@ -132,7 +142,7 @@ export function App() {
         <button className="sec" onClick={() => void supabase.auth.signOut()} disabled={demoAtivo}>Sair</button>
       </header>
       <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
-      <div className={`layout ${larga ? "layout--larga" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""}`}>
+      <div className={`layout ${larga ? "layout--larga" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""}`} style={{ "--res-esq": `${res.esq}px`, "--res-dir": `${res.dir}px` } as React.CSSProperties}>
       <nav className="menu" aria-label="Menu principal">
         {agruparMenu(MENU).map((g) => (
           <div key={g.id} className="menu-grupo" role="group" aria-label={g.titulo}>
@@ -174,7 +184,7 @@ export function App() {
           : <VisaoGeral loja={loja} />}
       </main>
       </div>
-      {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} menu={MENU} aoNavegar={ir} />}
+      {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} menu={MENU} aoNavegar={ir} painel={painel} aoMudarPainel={mudarPainel} dividindo={dividindo} telaW={telaW} />}
       {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis aberto={dockAberto} aoAlternar={() => setAgente((a) => !a)} />}
       <BarraStatus loja={loja ? loja.nome : null} tela={MENU.find((i) => i[0] === caminho)?.[1] ?? "Visão geral"} demo={demoAtivo} />
     </>
