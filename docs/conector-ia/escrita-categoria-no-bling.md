@@ -20,14 +20,18 @@ O lojista aprovou um **nó da taxonomia**. A categoria do Bling é achada pela p
 | Situação | Qtde | Detalhe |
 |---|---|---|
 | **Destino único** | 22 | ex.: Embreagem viscosa → 14668464; Válvula termostática → 14676556; Motor parcial → 14676530; Filtros de óleo → 14676579 |
-| **Escolha do lojista** | 1 | SKU 3975 (terminal de direção): 14676575 *Pivôs* ou 14676577 *Terminais de direção* (o nome sugere Terminais de direção) |
-| **Sem equivalente no Bling** | 1 | SKU 5339 (injetor CR): o nó aprovado "Alimentação e injeção › Bicos injetores" não existe no Bling; no Bling a categoria seria *Injeção diesel* (14676553, dentro de Motor). Escolher entre mudar o nó ou criar a categoria. |
+| **Escolha do lojista** | 1 | SKU 3975 (terminal de direção): 14676575 *Pivôs* ou 14676577 *Terminais de direção*. **Decidido pelo dono em 27/10/2026: Terminais de direção (14676577).** |
+| **Sem equivalente no Bling** | 1 | SKU 5339 (injetor CR): o nó aprovado "Bicos injetores" não existe no Bling. **Decidido pelo dono em 27/10/2026: usar *Injeção diesel*.** A categoria já existe no Bling (14676553) e na taxonomia, então nada foi criado; a sugestão aprovada do produto foi ajustada para "Alimentação e injeção › Injeção diesel" (auditado). |
 
 **Fora do primeiro lote, por prudência:**
 - os **11 itens provisórios ENG-1645** (o cadastro diz "sem NF-e de entrada, não usar como referência técnica confirmada");
 - os **3 itens de confiança 35%** (flexível do alternador, silicone, mangueira de retorno de óleo);
 - os **7 inativos** (sem efeito na loja).
 Sobram os produtos ativos de confiança alta/média com NF-e: CI000054, CI000211, CI003696 e o radiador de óleo (sem SKU).
+
+### Decisões do dono (27/10/2026)
+- SKU 3975 vai para **Terminais de direção** (14676577). Na montagem da proposta entra como `escolhas: { <produto_id do 3975>: "14676577" }`.
+- SKU 5339 usa **Injeção diesel** (14676553), que **já existe**; não é preciso criar categoria no Bling.
 
 ## 4. Fluxo (reaproveita o motor que já existe; nada novo de arquitetura)
 1. **Proposta:** `agente_proposta_criar` + um item por produto (`bling.produtos.alterar`, campo `categoria`, `antes` = categoria atual lida do Bling, `depois` = categoria de destino). Risco **MEDIUM** (HIGH se o lote passar de 5).
