@@ -1,0 +1,128 @@
+{
+  "versao": 1,
+  "entrada": "supabase/functions/conector-chat/index.ts",
+  "externo": "npm:@supabase/supabase-js@2.117.3",
+  "artefato_sha256": "8167c3a5d3b3400156dbe9247d468c0169852b2d3e7b9ea8c69de959ef2bdca5",
+  "fontes": [
+    {
+      "path": "supabase/functions/_shared/ia/reducao.ts",
+      "sha256": "a19f56f001113dd6276afaff82d0a2e71347c2be31eafeda00ff00a589618f76"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/tipos.ts",
+      "sha256": "19a543153f283ae12a8f79d68e87e0e0dc2f0c588234194ea34865888ac83031"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/plugin.ts",
+      "sha256": "a6d7180dc22a97b83b674d61ce5e89ac1afa7883a1bcc5c89e2b7be499ccbc61"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/adaptadores.ts",
+      "sha256": "145911eda693e93c28b92d428d77bba19777ba2dfd10204a70443b44c52cafb4"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/claude.ts",
+      "sha256": "139f2e35bb4447393f9bceef849017881a82a835a019ee2a259f4f04c501971d"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/registro.ts",
+      "sha256": "693175d0c2cf0cf9635667974e27c0bf2841eb61fe77697ae0b0c333750ed541"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/bling_campos.ts",
+      "sha256": "2ebb0b5adae74bab1ccd4b0eace810e154e1562b8eef075bd0f873e6b62cd7fc"
+    },
+    {
+      "path": "supabase/functions/_shared/consulta/interpretar.ts",
+      "sha256": "f93b6f12190b0e7de82798e478b06c6cad74d5d0ef5e43afd5a940907cafce4e"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/categoria_bling.ts",
+      "sha256": "412f8d475e4e387aa4a7a39170f0e51cdf57dcbfe3af86cade82dee555f8d366"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/escrita.ts",
+      "sha256": "06c2749c118a05ed918f0eb9bf7e62bf0bd12c48f9862ab0c757d11f4df08759"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/google.ts",
+      "sha256": "21cf58db274bda777a2ea76c5cd5b06dd9f81d06cb2ab99a88cdc15ea7034646"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/handlers.ts",
+      "sha256": "a286eda4f8c9360464cdabb20da3c7b4d118541c59c803ffce88549a9bbbc794"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/tipos.ts",
+      "sha256": "5aaeb8f6145409711a2eb5f0930e3a73cdde45573b5e0aa1103b257d290a4de1"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/policy.ts",
+      "sha256": "575a98626e14ffa3f7f409b166f7b8e462cc256acde6349da84234dc077a5314"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/schema.ts",
+      "sha256": "dd564643363db906a7c39d61ff6bbc77add338378c7b383823acb534b14faae6"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/despacho.ts",
+      "sha256": "17aaea838825b55df2653415cc72f897e371266feadf8ade905cdd47d11bf5a9"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/prompts.ts",
+      "sha256": "d70523d30ab62c745fa36cc781589407fb048a3576bc626da9469365c253a401"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/chat.ts",
+      "sha256": "339ddc818218696a8b804ac6cd120ac7f69902a63fba664d675ba9fc437aad38"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/dados.ts",
+      "sha256": "85b304d015fb3bdd7ead5bce41652d19d423b34122f5be1abb4563631093b6ca"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/chat_portas.ts",
+      "sha256": "f6cca349744bd9539e0f6ff85e8f7f8107d200322ad08d8485cd6ed51c96f933"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/adaptadores_stream.ts",
+      "sha256": "ba365237d99ec3a4fe60404a599e1a7b3cbc1d5a01ba08cd8fae3998632c2659"
+    },
+    {
+      "path": "supabase/functions/_shared/estado.ts",
+      "sha256": "ca773dccf24fee19ad71c8efc9f4751f46c08a12d502456bf96c3e3183b23419"
+    },
+    {
+      "path": "supabase/functions/_shared/cripto.ts",
+      "sha256": "0ce08b5db4d10007547d4c040fef8a6580be6879ef72fd3a800236824beb294c"
+    },
+    {
+      "path": "supabase/functions/_shared/plataforma.ts",
+      "sha256": "5b49bd8a52937b9560bf4161a58bcda5ee80d7f598f98236ef4a32effcd93619"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_armazem.ts",
+      "sha256": "af765b491093e16d2bbc41d8f9ac803b68a24d9312df71b1feb1f262a4f796fa"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_token.ts",
+      "sha256": "cc0741c715b6cf29b4f55cf1d5a842d982b254f2c36499486d66993ca70dcae2"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_api.ts",
+      "sha256": "b4111a685e011d2d051d8f9d40d6a5e8a6fde2da8232c0871360f2e09ddbd8fb"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/porta_bling.ts",
+      "sha256": "05aa25ec8f16dc68b623edef4e0fc2959f3f773ede7a66a1cf361eba50cc492e"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/edge.ts",
+      "sha256": "5569947790a2d78bdac99fb9ddd1a7614fccc0419952adc49522750874b6570b"
+    },
+    {
+      "path": "supabase/functions/conector-chat/index.ts",
+      "sha256": "0ab11f829c0b8e36b8ef207b009165cccd99c3bfa6536e16df4844e66c0c8608"
+    }
+  ]
+}

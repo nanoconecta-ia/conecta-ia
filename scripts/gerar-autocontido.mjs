@@ -1,7 +1,7 @@
 // Node 24.19.0. Sem rede, dependências npm, credenciais ou publicação.
 // O parser TS é o do Node; o linker ESM do V8 confere imports e exports antes da transformação.
 // Suporta o subconjunto usado neste grafo: imports nomeados, reexports nomeados,
-// exports const/function/class. Ciclos, import dinâmico, default, namespace e live bindings mutáveis falham.
+// exports const/function/function*/class. Ciclos, import dinâmico, default, namespace e live bindings mutáveis falham.
 import { stripTypeScriptTypes } from 'node:module';
 import { SourceTextModule, SyntheticModule } from 'node:vm';
 import { readFile, writeFile, mkdir, realpath } from 'node:fs/promises';
@@ -53,7 +53,7 @@ export async function gerar(root, entry = 'supabase/functions/assistente/index.t
     let corpo = m.js.replace(/^import\s*\{([^}]+)\}\s*from\s*["']([^"']+)["'];?/gm, (_, b, spec) => decl(b, spec));
     corpo = corpo.replace(/^export\s*\{([^}]+)\}\s*from\s*["']([^"']+)["'];?/gm, (_, b, spec) => decl(b, spec, true));
     corpo = corpo.replace(/^export\s*\{([^}]+)\};?/gm, (_, b) => { pares(b).forEach(([orig, dest]) => exportados.set(dest, orig)); return ''; });
-    corpo = corpo.replace(/^export\s+((?:async\s+)?function|class|const)\s+([\w$]+)/gm, (_, tipo, nome) => {
+    corpo = corpo.replace(/^export\s+((?:async\s+)?function\s*\*?|class|const)\s+([\w$]+)/gm, (_, tipo, nome) => {
       exportados.set(nome, nome); return `${tipo} ${nome}`;
     });
     const esperados = Reflect.ownKeys(m.vm.namespace).filter((k) => typeof k === 'string').sort();
