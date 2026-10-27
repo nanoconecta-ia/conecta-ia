@@ -31,7 +31,7 @@ async function interna(sku: string, depois: Record<string, unknown>, risco = "ME
 test("preparação", { skip }, () => {
   db.sql(`insert into public.lojas (id, nome, slug) values ('${L}', 'Loja ações', 'loja-acoes')`);
   db.sql(`insert into public.usuarios_loja values ('${L}', '${U}', 'lojista'), ('${L}', '${ED}', 'editor')`);
-  for (let n = 1; n <= 5; n++) { db.sql(`insert into public.produtos (loja_id, bling_id, sku, nome, preco, situacao) values ('${L}', '${1000 + n}', 'ACAO-00${n}', 'Peça ${n}', 10, 'A')`); bling.semear(String(1000 + n), { codigo: `ACAO-00${n}`, nome: `Peça ${n}`, preco: 10, situacao: "A" }); }
+  for (let n = 1; n <= 6; n++) { db.sql(`insert into public.produtos (loja_id, bling_id, sku, nome, preco, situacao) values ('${L}', '${1000 + n}', 'ACAO-00${n}', 'Peça ${n}', 10, 'A')`); bling.semear(String(1000 + n), { codigo: `ACAO-00${n}`, nome: `Peça ${n}`, preco: 10, situacao: "A" }); }
 });
 
 test("decidir: validação de entrada, hash errado, editor sem permissão, aprovação, duplicidade e risco alto", { skip }, async () => {
@@ -71,15 +71,25 @@ test("travar/destravar em lote: editor trava, só lojista destrava", { skip }, a
 });
 
 test("ensaio (executar_simulado) parte do produto real lido e não muda estado; sem leitura real, avisa a origem do mock", { skip }, async () => {
-  const p = await proposta("ACAO-005", { marca: "Sabó" });
+  const p = await proposta("ACAO-005", { categoria_bling_id: "14668464" }); // só a categoria está liberada para escrita
   assert.equal((await acaoAprovacoes({ acao: "decidir", proposta_id: p, versao: 1, hash: hashDe(p), decisao: "aprovada" }, lojista, deps())).status, 200);
   const r = await acaoAprovacoes({ acao: "executar_simulado", proposta_id: p }, lojista, deps());
   assert.equal(r.status, 200, JSON.stringify(r)); assert.equal((r.corpo.relatorio as any).itens[0].ok, true);
   assert.match(String((r.corpo.semeado_de as string[])[0]), /leitura real do Bling/);
   assert.equal(db.sql(`select estado from public.agente_propostas where id = '${p}'`), "aprovada");
-  assert.equal(bling.produtos.get("1005")!.marca, undefined, "o Bling (mock de leitura) não foi tocado pelo ensaio");
+  assert.equal(bling.produtos.get("1005")!.categoria, undefined, "o Bling (mock de leitura) não foi tocado pelo ensaio");
   const sem = await acaoAprovacoes({ acao: "executar_simulado", proposta_id: p }, lojista, deps({ blingLeitura: undefined }));
   assert.match(String((sem.corpo.semeado_de as string[])[0]), /'antes' da proposta/);
+});
+
+test("ensaio de campo NÃO liberado (marca) é recusado e diz o motivo: só a categoria está liberada", { skip }, async () => {
+  const p = await proposta("ACAO-006", { marca: "Sabó" });
+  assert.equal((await acaoAprovacoes({ acao: "decidir", proposta_id: p, versao: 1, hash: hashDe(p), decisao: "aprovada" }, lojista, deps())).status, 200);
+  const r = await acaoAprovacoes({ acao: "executar_simulado", proposta_id: p }, lojista, deps());
+  assert.equal(r.status, 200, JSON.stringify(r));
+  const item = (r.corpo.relatorio as any).itens[0];
+  assert.equal(item.ok, false); assert.match(String(item.motivo), /campo_nao_liberado: marca/);
+  assert.equal(bling.recebidos.filter((x) => x.id === "1006").length, 0, "nada chegou ao Bling");
 });
 
 test("executar: item interno aprovado executa; escrita no Bling é barrada; nada vai ao Bling", { skip }, async () => {

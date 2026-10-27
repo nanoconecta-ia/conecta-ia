@@ -24,6 +24,25 @@ export const MAPA_CAMPOS: readonly MapaCampo[] = [
   { conecta: "categoria_bling_id", caminho: ["categoria", "id"], tipo: "id_numerico", conferido: false, observacao: "categoria precisa existir no Bling (bling_categorias)" },
 ];
 
+/**
+ * Campos que cada operação de ESCRITA no Bling pode enviar AGORA. Lista fechada: a liberação de um campo é decisão do dono, por escrito.
+ * Hoje só a categoria do produto (desenho em docs/conector-ia/escrita-categoria-no-bling.md). Operação ausente = nenhum campo liberado.
+ * Isto NÃO liga a escrita: a ferramenta segue `ativa:false` e a porta real só lê.
+ */
+export const CAMPOS_ESCRITA_LIBERADOS: Readonly<Record<string, readonly string[]>> = {
+  "bling.produtos.alterar": ["categoria_bling_id"],
+};
+
+/** Campos pedidos (`depois` e `campos` declarados) que a operação NÃO tem liberados. Vazio = pode seguir. */
+export function camposNaoLiberados(
+  operacao: string, depois: Record<string, unknown> | null | undefined, campos: readonly string[] = [],
+  liberados: Readonly<Record<string, readonly string[]>> = CAMPOS_ESCRITA_LIBERADOS,
+): string[] {
+  const ok = new Set(liberados[operacao] ?? []);
+  const pedidos = new Set([...Object.keys(depois ?? {}), ...campos]);
+  return [...pedidos].filter((c) => !ok.has(c)).sort();
+}
+
 const POR_CONECTA = new Map(MAPA_CAMPOS.map((m) => [m.conecta, m]));
 const PROIBIDOS = new Set<string>(CAMPOS_BLING_PROIBIDOS);
 

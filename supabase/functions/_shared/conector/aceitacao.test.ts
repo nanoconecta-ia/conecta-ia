@@ -20,6 +20,8 @@ const db = BANCO ? criarPsql(BANCO) : (null as never);
 
 const A = "aaaaaaaa-0000-0000-0000-00000000000a", U1 = "11111111-1111-1111-1111-111111111111", U2 = "22222222-2222-2222-2222-222222222222";
 const sku = (n: number) => `TESTE-00${n}`;
+// Em produção só a categoria está liberada (CAMPOS_ESCRITA_LIBERADOS). Estes testes usam marca/descrição com o Bling SIMULADO, então liberam esses campos só aqui.
+const LIBERADOS_TESTE = { "bling.produtos.alterar": ["marca", "descricao_curta", "categoria_bling_id"] };
 const bling = new BlingMock();
 const emitir = (sql: string) => db.sql(sql);
 
@@ -166,7 +168,7 @@ test("6. produto travado recebe sugestão, mas não pode ser aprovado nem sofrer
 // ---------------------------------------------------------------------------------------------------- 7. execução simulada
 test("7. ensaio com mock: Bling simulado recebe só dados válidos e NENHUM estado muda", { skip }, async () => {
   const antesEstado = db.sql(`select estado from public.agente_propostas where id = '${propostaA}'`);
-  const rel = await simularProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: propostaA, userId: U1, definicao: sobreescreverBlingAtivo });
+  const rel = await simularProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: propostaA, userId: U1, definicao: sobreescreverBlingAtivo });
   assert.equal(rel.simulado, true); assert.equal(rel.itens.length, 1); assert.equal(rel.itens[0].ok, true, JSON.stringify(rel));
   assert.deepEqual(bling.recebidos[0].corpo, { marca: "Sabó", descricaoCurta: "Cabeçote do motor HR 2.5 16V D4CB" });
   assert.equal(bling.rejeitados.length, 0);
@@ -179,21 +181,21 @@ test("7. ensaio com mock: Bling simulado recebe só dados válidos e NENHUM esta
 
 // ---------------------------------------------------------------------------------------------------- 8. escrita real continua bloqueada
 test("8a. sem liberação explícita, o banco recusa executar escrita no Bling mesmo aprovada", { skip }, async () => {
-  const r = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: propostaA, definicao: sobreescreverBlingAtivo });
+  const r = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: propostaA, definicao: sobreescreverBlingAtivo });
   assert.match(r.erro ?? "", /escrita_real_nao_liberada/);
   assert.equal(bling.recebidos.length, 0);
 });
 
 test("8b. com liberação no banco, o registro (ferramenta desligada) ainda bloqueia: nada chega ao Bling", { skip }, async () => {
   await db.rpc("agente_escrita_liberar", { p_loja: A, p_ferramenta: "bling.produtos.alterar", p_user: U1, p_referencia: "teste de aceitação com Bling simulado" });
-  const r = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: propostaA });
+  const r = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: propostaA });
   assert.equal(r.itens[0].estado, "falhou"); assert.match(r.itens[0].motivo ?? "", /desligada/);
   assert.equal(bling.recebidos.length, 0, "ferramenta desligada no registro: o Bling nunca foi chamado");
 });
 
 // ---------------------------------------------------------------------------------------------------- 9. execução com verificação
 test("9. execução aprovada (mock liberado): escreve, LÊ DE VOLTA, confirma com evidência e sincroniza o produto", { skip }, async () => {
-  const r = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: propostaA, definicao: sobreescreverBlingAtivo });
+  const r = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: propostaA, definicao: sobreescreverBlingAtivo });
   assert.equal(r.erro, undefined, JSON.stringify(r)); assert.equal(r.itens[0].estado, "confirmada"); assert.equal(r.estado_final, "executada");
   assert.equal(bling.produtos.get("701")!.marca, "Sabó");
   assert.ok(bling.leituras >= 1, "houve leitura de confirmação");
@@ -208,7 +210,7 @@ test("9b. leitura de confirmação diverge do enviado => falha registrada, produ
   const p = await propor(sku(5), { marca: "Sabó" });
   assert.equal((await aprovar(p)).error, null);
   bling.falhas.push("leitura_diverge");
-  const r = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
+  const r = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
   assert.equal(r.itens[0].estado, "falhou"); assert.match(r.itens[0].motivo ?? "", /divergência/);
   assert.equal(r.estado_final, "falhou");
   assert.equal(db.sql(`select estado from public.produto_travas where produto_id = (select id from public.produtos where sku = '${sku(5)}')`), "erro_divergencia");
@@ -220,15 +222,15 @@ test("10a. timeout que GRAVOU: vira 'desconhecida', não repete às cegas, recon
   assert.equal((await aprovar(p)).error, null);
   const antes = bling.recebidos.length;
   bling.falhas.push("timeout_gravou");
-  const r1 = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
+  const r1 = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
   assert.equal(r1.itens[0].estado, "desconhecida");
   assert.equal(bling.recebidos.length - antes, 1, "uma única escrita enviada");
-  const r2 = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
+  const r2 = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
   assert.match(r2.erro ?? "", /reconciliar_antes/);
   assert.equal(bling.recebidos.length - antes, 1, "nenhuma repetição às cegas");
   const opId = db.sql(`select id from public.agente_operacoes where proposta_id = '${p}' order by tentativa desc limit 1`);
   assert.equal(await reconciliar({ rpc: db.rpc as any, bling, lojaId: A, operacaoId: opId, userId: U1, item: itemDe(p) }), "gravado");
-  const r3 = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
+  const r3 = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
   assert.equal(r3.estado_final, "executada", JSON.stringify(r3));
   assert.equal(bling.recebidos.length - antes, 1, "ainda uma única escrita: sem duplicar");
   assert.equal(db.sql(`select estado from public.produto_travas where produto_id = (select id from public.produtos where sku = '${sku(4)}')`), "sincronizado");
@@ -239,11 +241,11 @@ test("10b. timeout que NÃO gravou: reconcilia com prova de que não gravou e re
   assert.equal((await aprovar(p)).error, null);
   const antes = bling.recebidos.length;
   bling.falhas.push("timeout_nao_gravou");
-  const r1 = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
+  const r1 = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
   assert.equal(r1.itens[0].estado, "desconhecida");
   const opId = db.sql(`select id from public.agente_operacoes where proposta_id = '${p}' order by tentativa desc limit 1`);
   assert.equal(await reconciliar({ rpc: db.rpc as any, bling, lojaId: A, operacaoId: opId, userId: U1, item: itemDe(p) }), "nao_gravado");
-  const r2 = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
+  const r2 = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
   assert.equal(r2.estado_final, "executada", JSON.stringify(r2));
   const novos = bling.recebidos.slice(antes);
   assert.equal(novos.length, 2); assert.equal(novos[0].idem, novos[1].idem, "mesma chave de idempotência nas duas tentativas");
@@ -254,10 +256,10 @@ test("10c. parada de emergência: itens restantes não são executados e ficam r
   const p = await propor(sku(7), { marca: "Sabó" });
   assert.equal((await aprovar(p)).error, null);
   const antes = bling.recebidos.length;
-  const r = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo, parar: () => true });
+  const r = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo, parar: () => true });
   assert.equal(r.itens[0].estado, "falhou"); assert.match(r.itens[0].motivo ?? "", /parada_de_emergencia/);
   assert.equal(bling.recebidos.length, antes);
-  const retomada = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
+  const retomada = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: p, definicao: sobreescreverBlingAtivo });
   assert.equal(retomada.estado_final, "executada");
 });
 
@@ -271,7 +273,7 @@ test("11. produto completo vira página comercial válida: publicação exige de
   const e = await despachar("conecta.proposta.criar", { titulo: "Descrição do TESTE-003", itens: [{ sku: alvo, operacao: "conecta.enriquecimento.definir", campos: ["descricao_curta"], antes: {}, depois: { descricao_curta: "Cabeçote do motor para HR 2.5 16V." }, fontes: [{ url: "https://exemplo.com/catalogo", versao: "2026" }] }] }, ctx());
   const pe = (e.resultado as any).proposta_id as string;
   assert.equal((await aprovar(pe)).error, null);
-  const re = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: pe });
+  const re = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: pe });
   assert.equal(re.estado_final, "executada", JSON.stringify(re));
   assert.equal(db.sql(`select status::text || '|' || (fonte is not null) from public.produto_enriquecimento where campo = 'descricao_curta' and produto_id = (select id from public.produtos where sku = '${alvo}')`), "aprovado|true");
 
@@ -285,7 +287,7 @@ test("11. produto completo vira página comercial válida: publicação exige de
   const pp = (pub.resultado as any).proposta_id as string;
   assert.match((await db.rpc("agente_proposta_decidir", { p_loja: A, p_proposta: pp, p_versao: 1, p_hash: hashDe(pp), p_user: U1, p_decisao: "aprovada" })).error?.message ?? "", /confirmacao_explicita_obrigatoria/);
   assert.equal((await aprovar(pp, { p_confirmacao_explicita: true })).error, null);
-  const rp = await executarProposta({ rpc: db.rpc as any, bling, lojaId: A, propostaId: pp });
+  const rp = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: pp });
   assert.equal(rp.estado_final, "executada", JSON.stringify(rp));
 
   // 4) página pública montada SÓ com dados aprovados
