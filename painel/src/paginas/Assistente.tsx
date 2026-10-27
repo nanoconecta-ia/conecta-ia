@@ -62,6 +62,10 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     } finally { setAcaoLocal(null); }
   }
   const [texto, setTexto] = useState("");
+  useEffect(() => { // o painel lateral (mapa, resumo, atalhos) pede uma pergunta: só preenche a caixa; quem envia é o lojista
+    const f = (e: Event) => { const t = (e as CustomEvent<{ texto?: string }>).detail?.texto; if (typeof t === "string" && t.trim()) setTexto(t.slice(0, 4000)); };
+    window.addEventListener("nano:perguntar", f); return () => window.removeEventListener("nano:perguntar", f);
+  }, []);
   const [ocupado, setOcupado] = useState(false);
   const [esq, setEsq] = useState(false), [dir, setDir] = useState(false); // abas laterais retráteis (conversas / modelo e privacidade)
   const caixa = useRef<HTMLDivElement>(null);
