@@ -1,6 +1,6 @@
 // Cola das Edge Functions do Nano.ia (somente Deno; nunca importada pelos testes). Autentica a PESSOA (JWT do Supabase),
 // confere que é membro da loja e monta os clientes. A lógica de negócio está em acoes.ts/chat.ts, testada contra o banco.
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { decifrar } from "../cripto.ts";
 import { chaveiroPlataforma } from "../plataforma.ts";
 import { armazemSupabase } from "../bling_armazem.ts";
