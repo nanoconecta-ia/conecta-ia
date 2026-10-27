@@ -147,3 +147,13 @@ test("ferramentas de verificação: ativas, somente leitura e com entrada valida
 test("regra do sistema: nenhuma ferramenta apaga nota fiscal nem o cadastro espelhado do Bling", () => {
   for (const f of FERRAMENTAS_CONECTOR) assert.doesNotMatch(f.id, /excluir|apagar|delete|remov|destroy|\.nfe\.|nota_fiscal/i, f.id);
 });
+
+test("ferramentas de web: ativas, só leitura, no chat e fora do MCP, com URL obrigatória", async () => {
+  const { buscarDefinicao } = await import("./registro.ts");
+  for (const id of ["web.buscar", "web.pagina.ler"]) {
+    const d = buscarDefinicao(id)!;
+    assert.equal(d.estado, "ativa"); assert.equal(d.permissao, "leitura"); assert.equal(d.risco, "LOW");
+    assert.equal(d.escreveExterno, false); assert.equal(d.exposicao.chat, true); assert.equal(d.exposicao.mcp, false);
+  }
+  assert.deepEqual(buscarDefinicao("web.pagina.ler")!.entrada.required, ["url"]);
+});
