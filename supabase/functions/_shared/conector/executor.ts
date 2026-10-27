@@ -3,7 +3,7 @@
 // LÊ DE VOLTA e só então confirma. Timeout/5xx em escrita => "desconhecida" (nunca "falhou" e nunca repetir às cegas).
 import { buscarDefinicao } from "./registro.ts";
 import { decidir } from "./policy.ts";
-import { antesIntacto, divergencias, montarCorpoProduto } from "./bling_campos.ts";
+import { antesIntacto, CAMPOS_ESCRITA_LIBERADOS, camposNaoLiberados, divergencias, montarCorpoProduto } from "./bling_campos.ts";
 import { TimeoutBling, type PortaBling } from "./porta_bling.ts";
 import type { DefinicaoFerramenta } from "./tipos.ts";
 
@@ -25,12 +25,14 @@ export interface OpcoesExecucao {
   parar?: () => boolean;
   /** Permite os testes usarem variantes do registro (ex.: ferramenta Bling 'ativa' com porta mock). */
   definicao?: (id: string) => DefinicaoFerramenta | undefined;
+  /** Campos que cada operação pode escrever. Padrão: CAMPOS_ESCRITA_LIBERADOS (lista fechada). Só testes passam outra. */
+  camposLiberados?: Readonly<Record<string, readonly string[]>>;
 }
 
 type Veredito = { estado: "confirmada" | "falhou" | "desconhecida"; motivo?: string; evidencia?: unknown; resposta?: unknown };
 
 /** Escrita no Bling + leitura de confirmação. Compartilhada pelo executor real (porta mock/liberada) e pelo ensaio. */
-export async function escreverEConfirmarNoBling(bling: PortaBling, op: string, item: ItemExecucao, aoEnviar?: () => Promise<void>): Promise<Veredito> {
+export async function escreverEConfirmarNoBling(bling: PortaBling, op: string, item: ItemExecucao, aoEnviar?: () => Promise<void>, liberados: Readonly<Record<string, readonly string[]>> = CAMPOS_ESCRITA_LIBERADOS): Promise<Veredito> {
   const alterar = op === "bling.produtos.alterar", criarProduto = op === "bling.produtos.criar", criarCategoria = op === "bling.categorias.criar";
   if (!alterar && !criarProduto && !criarCategoria) return { estado: "falhou", motivo: `operacao_nao_suportada: ${op}` };
   let corpo: Record<string, unknown>;
@@ -39,6 +41,8 @@ export async function escreverEConfirmarNoBling(bling: PortaBling, op: string, i
     if (typeof d.descricao !== "string" || !d.descricao.trim()) return { estado: "falhou", motivo: "categoria sem descrição" };
     corpo = { descricao: d.descricao.trim(), ...(d.categoria_pai_id ? { categoriaPai: { id: Number(d.categoria_pai_id) } } : {}) };
   } else {
+    const fora = camposNaoLiberados(op, item.depois, item.campos, liberados);
+    if (fora.length) return { estado: "falhou", motivo: `campo_nao_liberado: ${fora.join(", ")} (liberado para ${op}: ${(liberados[op] ?? []).join(", ") || "nenhum"})` };
     const m = montarCorpoProduto(item.depois ?? {});
     if (m.erros.length) return { estado: "falhou", motivo: `corpo_invalido: ${m.erros.join("; ")}` };
     corpo = m.corpo;
@@ -109,7 +113,7 @@ export async function executarProposta(o: OpcoesExecucao): Promise<RelatorioExec
           v = dif.length === 0 ? { estado: "confirmada", evidencia: { leitura: lido } } : { estado: "falhou", motivo: `divergência na leitura: ${dif.map(([k]) => k).join(", ")}`, evidencia: { leitura: lido } };
         } catch (e) { v = { estado: "falhou", motivo: (e as Error).message.slice(0, 300) }; }
       } else {
-        v = await escreverEConfirmarNoBling(o.bling, item.operacao, item, enviada);
+        v = await escreverEConfirmarNoBling(o.bling, item.operacao, item, enviada, o.camposLiberados);
       }
       await fechar(v);
     } catch (e) {
@@ -152,7 +156,7 @@ export async function reconciliar(o: { rpc: Rpc; bling: PortaBling; lojaId: stri
 export interface RelatorioSimulacao { proposta_id: string; simulado: true; itens: { item_id: string; operacao: string; ok: boolean; motivo?: string; previsto?: unknown; confirmacao_simulada?: unknown }[]; simulacao_id?: string }
 
 /** ENSAIO: valida a aprovação e roda cada item contra a porta SIMULADA. Não muda estado de item, proposta nem produto. */
-export async function simularProposta(o: { rpc: Rpc; bling: PortaBling; lojaId: string; propostaId: string; userId: string; definicao?: (id: string) => DefinicaoFerramenta | undefined }): Promise<RelatorioSimulacao> {
+export async function simularProposta(o: { rpc: Rpc; bling: PortaBling; lojaId: string; propostaId: string; userId: string; definicao?: (id: string) => DefinicaoFerramenta | undefined; camposLiberados?: Readonly<Record<string, readonly string[]>> }): Promise<RelatorioSimulacao> {
   if (!o.bling.simulado) throw new Error("ensaio exige porta simulada (mock)");
   const itens: ItemExecucao[] = await chamar(o.rpc, "agente_proposta_validar", { p_loja: o.lojaId, p_proposta: o.propostaId });
   const achar = o.definicao ?? buscarDefinicao;
@@ -162,7 +166,7 @@ export async function simularProposta(o: { rpc: Rpc; bling: PortaBling; lojaId: 
     const p = decidir(def, { origem: "executor", aprovacaoValida: true, simulado: true, produtoTravado: false });
     if (p.decisao !== "simulada" && p.decisao !== "permitida") { rel.itens.push({ item_id: item.item_id, operacao: item.operacao, ok: false, motivo: `policy: ${p.motivo}` }); continue; }
     if (item.operacao.startsWith("bling.")) {
-      const v = await escreverEConfirmarNoBling(o.bling, item.operacao, item);
+      const v = await escreverEConfirmarNoBling(o.bling, item.operacao, item, undefined, o.camposLiberados);
       rel.itens.push({ item_id: item.item_id, operacao: item.operacao, ok: v.estado === "confirmada", motivo: v.motivo, previsto: v.resposta, confirmacao_simulada: v.evidencia });
     } else {
       rel.itens.push({ item_id: item.item_id, operacao: item.operacao, ok: true, previsto: item.depois, motivo: "interna: nada é gravado no ensaio" });
