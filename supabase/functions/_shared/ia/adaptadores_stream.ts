@@ -6,6 +6,7 @@
 // ATENÇÃO — verificação: tudo aqui foi testado SOMENTE com corpos SSE falsos (fixtures escritas a partir do formato documentado
 // de cada API) e fetch simulado. NÃO foi testado contra o serviço real de nenhum provedor (não há chave). Antes de ligar em
 // produção, rodar uma chamada real por provedor e comparar o Passo com o do adaptador não-streaming.
+import { houveFiltragem, protegerCorpo } from "./guarda_payload.ts";
 import { IaErro, temAnexo, type Bloco, type Mensagem } from "./tipos.ts";
 import { urlPublicaSegura } from "./plugin.ts";
 import { paradaClaude, paradaGemini, paradaOpenAI, type Chamada, type Parada, type Passo, type ProvedorId } from "./adaptadores.ts";
@@ -95,6 +96,8 @@ export async function* lerEventosSse(corpo: ReadableStream<Uint8Array>, sinal: A
 // ------------------------------------------------------------------------------------------------ requisição
 async function abrirEventos(c: ChamadaStream, url: string, headers: Record<string, string>, corpo: unknown, sinal?: AbortSignal): Promise<{ eventos: AsyncGenerator<EventoSse>; encerrar: () => void }> {
   if (sinal?.aborted) throw new IaErro(499, "cancelado");
+  const seguro = protegerCorpo(corpo); // antes de qualquer rede: custo, fornecedor, fiscal e segredos não saem daqui
+  if (houveFiltragem(seguro.relatorio)) c.aoFiltrar?.(seguro.relatorio);
   const f = c.fetch ?? fetch;
   const ms = c.inatividadeMs ?? TEMPO_MS;
   const ctrl = new AbortController();
@@ -104,7 +107,7 @@ async function abrirEventos(c: ChamadaStream, url: string, headers: Record<strin
   const t = setTimeout(() => ctrl.abort(), ms); // tempo para o provedor começar a responder
   let r: Response;
   try {
-    r = await f(url, { method: "POST", redirect: "manual", headers: { "content-type": "application/json", accept: "text/event-stream", ...headers }, body: JSON.stringify(corpo), signal: ctrl.signal });
+    r = await f(url, { method: "POST", redirect: "manual", headers: { "content-type": "application/json", accept: "text/event-stream", ...headers }, body: JSON.stringify(seguro.corpo), signal: ctrl.signal });
   } catch {
     clearTimeout(t); soltar();
     throw sinal?.aborted ? new IaErro(499, "cancelado") : new IaErro(504, "O provedor de IA não respondeu a tempo.");

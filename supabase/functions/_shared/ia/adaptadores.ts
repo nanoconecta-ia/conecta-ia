@@ -3,9 +3,12 @@
 // Nunca registram chave nem corpo de erro. Erros viram IaErro com mensagem genérica.
 import { IaErro, type Bloco, type Ferramenta, type Mensagem } from "./tipos.ts";
 import { urlPublicaSegura } from "./plugin.ts";
+import { houveFiltragem, protegerCorpo, type RelatorioGuarda } from "./guarda_payload.ts";
 
 export type ProvedorId = "claude" | "gemini" | "compativel_openai";
-export interface Chamada { chave: string; modelo: string; sistema: string; ferramentas: Ferramenta[]; maxTokens: number; baseUrl?: string; fetch?: typeof fetch }
+export interface Chamada { chave: string; modelo: string; sistema: string; ferramentas: Ferramenta[]; maxTokens: number; baseUrl?: string; fetch?: typeof fetch;
+  /** Chamado (só com nomes de chave e contagens, nunca valores) quando a barreira de dados removeu algo do corpo antes do envio. */
+  aoFiltrar?: (r: RelatorioGuarda) => void }
 /** `parada`: por que o provedor encerrou ESTE passo sem terminar de verdade (resposta cortada por tamanho ou bloqueada). Ausente = fim normal. */
 export type Parada = "limite_tamanho" | "bloqueado";
 export interface Passo { blocos: Bloco[]; tokens: number; respostaId?: string; modelo?: string; parada?: Parada }
@@ -21,10 +24,12 @@ function erroHttp(status: number, corpo = ""): IaErro {
   if (status === 404) return new IaErro(502, "O provedor não encontrou o modelo informado. Confira o nome do modelo nas Integrações.");
   return new IaErro(502, "O provedor de IA devolveu um erro.");
 }
-async function enviar(f: typeof fetch, url: string, headers: Record<string, string>, corpo: unknown): Promise<unknown> {
+async function enviar(f: typeof fetch, url: string, headers: Record<string, string>, corpo: unknown, aoFiltrar?: (r: RelatorioGuarda) => void): Promise<unknown> {
+  const seguro = protegerCorpo(corpo); // antes de qualquer rede: custo, fornecedor, fiscal e segredos não saem daqui
+  if (houveFiltragem(seguro.relatorio)) aoFiltrar?.(seguro.relatorio);
   let r: Response;
   try {
-    r = await f(url, { method: "POST", redirect: "manual", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(corpo), signal: AbortSignal.timeout(TEMPO_MS) });
+    r = await f(url, { method: "POST", redirect: "manual", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(seguro.corpo), signal: AbortSignal.timeout(TEMPO_MS) });
   } catch {
     throw new IaErro(504, "O provedor de IA não respondeu a tempo.");
   }
@@ -46,7 +51,7 @@ const paraClaude = (msgs: Mensagem[]) => msgs.map((m) => typeof m.content === "s
 export async function chamarClaude(c: Chamada, msgs: Mensagem[]): Promise<Passo> {
   const j = await enviar(c.fetch ?? fetch, "https://api.anthropic.com/v1/messages",
     { "x-api-key": c.chave, "anthropic-version": "2023-06-01" },
-    { model: c.modelo, max_tokens: c.maxTokens, system: c.sistema, messages: paraClaude(msgs), tools: c.ferramentas.length ? c.ferramentas : undefined }) as
+    { model: c.modelo, max_tokens: c.maxTokens, system: c.sistema, messages: paraClaude(msgs), tools: c.ferramentas.length ? c.ferramentas : undefined }, c.aoFiltrar) as
     { id?: string; model?: string; content?: Bloco[]; stop_reason?: string; usage?: { input_tokens?: number; output_tokens?: number } };
   if (!Array.isArray(j.content)) throw new IaErro(502, "Resposta inesperada do provedor de IA.");
   return { respostaId: j.id, modelo: j.model, blocos: j.content, tokens: (j.usage?.input_tokens ?? 0) + (j.usage?.output_tokens ?? 0), parada: paradaClaude(j.stop_reason) };
@@ -76,7 +81,7 @@ export async function chamarGemini(c: Chamada, msgs: Mensagem[]): Promise<Passo>
   });
   const j = await enviar(c.fetch ?? fetch, `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(c.modelo)}:generateContent`,
     { "x-goog-api-key": c.chave },
-    { systemInstruction: { parts: [{ text: c.sistema }] }, contents, tools: decl.length ? [{ functionDeclarations: decl }] : undefined, generationConfig: { maxOutputTokens: c.maxTokens } }) as
+    { systemInstruction: { parts: [{ text: c.sistema }] }, contents, tools: decl.length ? [{ functionDeclarations: decl }] : undefined, generationConfig: { maxOutputTokens: c.maxTokens } }, c.aoFiltrar) as
     { responseId?: string; modelVersion?: string; candidates?: { content?: { parts?: ParteG[] }; finishReason?: string }[]; usageMetadata?: { totalTokenCount?: number } };
   const partes = j.candidates?.[0]?.content?.parts;
   if (!Array.isArray(partes)) throw new IaErro(502, "O provedor não devolveu resposta (o conteúdo pode ter sido bloqueado). Reformule a pergunta.");
@@ -113,7 +118,7 @@ export async function chamarOpenAI(c: Chamada, msgs: Mensagem[]): Promise<Passo>
   }
   const tools = c.ferramentas.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.input_schema } }));
   const j = await enviar(c.fetch ?? fetch, `${c.baseUrl.replace(/\/+$/, "")}/chat/completions`, { authorization: `Bearer ${c.chave}` },
-    { model: c.modelo, messages: m, ...(new URL(c.baseUrl).hostname === "api.openai.com" ? { max_completion_tokens: c.maxTokens } : { max_tokens: c.maxTokens }), tools: tools.length ? tools : undefined }) as
+    { model: c.modelo, messages: m, ...(new URL(c.baseUrl).hostname === "api.openai.com" ? { max_completion_tokens: c.maxTokens } : { max_tokens: c.maxTokens }), tools: tools.length ? tools : undefined }, c.aoFiltrar) as
     { id?: string; model?: string; choices?: { finish_reason?: string | null; message?: { content?: string | null; tool_calls?: { id: string; function: { name: string; arguments?: string } }[] } }[]; usage?: { total_tokens?: number } };
   const msg = j.choices?.[0]?.message;
   if (!msg) throw new IaErro(502, "Resposta inesperada do provedor de IA.");

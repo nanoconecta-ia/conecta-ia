@@ -1,6 +1,7 @@
 // Chamada de plugin tipo "api" (a plataforma chama um endpoint cadastrado pela loja). Contrato SDK v1:
 //   POST <url>  Authorization: Bearer <credencial>   { sdk: "1", capacidade, entrada }   =>   JSON
 // O retorno é DADO: nunca vira instrução nem grava nada sozinho. Só capacidade declarada, plugin ativo, risco LOW.
+import { protegerCorpo } from "./guarda_payload.ts";
 export interface PluginRegistro { id: string; nome: string; tipo: string; url: string | null; capacidades: string[]; risco: string; ativo: boolean }
 
 /** Endereço seguro para chamar de dentro do servidor: https, host público (sem IP literal nem rede interna). */
@@ -26,7 +27,7 @@ export async function chamarPlugin(p: PluginRegistro, credencial: string | null,
     const r = await f(p.url, {
       method: "POST", redirect: "manual",
       headers: { "content-type": "application/json", ...(credencial ? { authorization: `Bearer ${credencial}` } : {}) },
-      body: JSON.stringify({ sdk: "1", capacidade, entrada }),
+      body: JSON.stringify({ sdk: "1", capacidade, entrada: protegerCorpo(entrada).corpo }), // plugin é terceiro: mesma barreira de dados
       signal: AbortSignal.timeout(15_000),
     });
     if (!r.ok) return { ok: false, erro: `O plugin respondeu ${r.status}.` };
