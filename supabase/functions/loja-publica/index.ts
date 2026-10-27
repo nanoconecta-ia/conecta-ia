@@ -4,6 +4,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.ts";
 import { urlProduto } from "../_shared/seo/url.ts";
+import { guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
 import { montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
@@ -13,12 +14,19 @@ const POR_PAGINA = 24;
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ erro: "Método não permitido." }, 405);
-  const c = await req.json().catch(() => ({}));
+  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  // limite de requisições ANTES de qualquer consulta pesada: IP (rajada e sustentado) + teto por loja; corpo pequeno
+  const g = await guardarPublico({
+    endpoint: "loja-publica", req, segredo: segredoDoLimite(Deno.env),
+    lojaDe: (b) => normalizarHost(b?.host) ?? (typeof b?.slug === "string" && SLUG_RE.test(b.slug) ? b.slug : null),
+    porta: portaViaRpc(sb),
+    aoFalhar: (m) => console.warn("limite-publico", m),
+  });
+  if (!g.ok) return new Response(JSON.stringify(g.corpo), { status: g.status, headers: { ...CORS, "Content-Type": "application/json", ...g.cabecalhos } });
+  const c = g.corpo;
   const host = normalizarHost(c?.host);
   const slug = typeof c?.slug === "string" && SLUG_RE.test(c.slug) ? c.slug : null;
   if (!host && !slug) return json({ erro: "Loja não encontrada." }, 404);
-
-  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const urlDoProduto = (sku: string) => urlProduto(host, sku); // só com domínio informado pelo servidor; sem domínio, sem link
   let lojaId: string | null = null;
   if (host) {
