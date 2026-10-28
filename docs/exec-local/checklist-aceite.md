@@ -15,3 +15,17 @@ Nenhum item abaixo é "funcional real": os ✅ são de runner simulado (PR #118)
 | Erros e recuperação | ✅ simulado | timeout → DESCONHECIDO, auditoria falha → nada entregue |
 | Fila com banco | ⛔ | exige migração: desenho + aprovação 👤 |
 | Executor instalado no PC | ⛔ | 👤 autorização específica por etapa |
+
+## Matriz de aceite atualizada (28/10) — real local × integração em produção
+Legenda: ✅ comprovado · 🟡 relatado, sem a evidência em mãos · 🧪 só teste local simulado · ⛔ não existe/ não feito · 👤 depende do proprietário.
+
+| Etapa da cadeia | Execução real local (Fase A, PC Mobis) | Integração em produção (Fase B) |
+|---|---|---|
+| Descoberta de ferramentas | 🟡 relatado (gateway de teste 127.0.0.1) | 🧪 código pronto; ⛔ não publicado (👤) |
+| Sessão autorizada / pareamento | 🟡 código de uso único local | 🧪 Conecta Pair reaproveitado; ⛔ PC não pareado (👤) |
+| PowerShell diagnóstico (5 consultas) | 🟡 PowerShell real relatado; JSON não lido por Claude | ⛔ |
+| Bloqueio de comando fora da lista | ✅ testes + 🟡 relatado | 🧪 CHECK no banco + agente (SQL 33 + Node 4) |
+| Revogação de sessão e dispositivo | ✅ testes + 🟡 relatado | 🧪 SQL + Node; ⛔ prod |
+| Fila persistente / isolamento por loja | — | 🧪 SQL 33 verificações; ⛔ migração não aplicada (👤) |
+| Auditoria | ✅ local | 🧪 `public.auditoria` no SQL; ⛔ prod |
+| Resultado no chat (origem, hash, aviso) | ✅ cartão (objeto) | ⛔ renderização na tela do chat |
