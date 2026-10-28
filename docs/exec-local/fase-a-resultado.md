@@ -22,4 +22,4 @@ O arquivo `.json` **não foi entregue a esta sessão** (está no PC Mobis); port
 |---|---|---|
 | **Primária** | JSON original no PC Mobis (`…\nano-fase-a-20261028\…\evidencias\homologacao-powershell_real-2026-10-28T06-18-44-450Z.json`) | **não lida por esta sessão** |
 | Cópia resumida | `NanoIA-Fase-A-Evidencia-2026-10-28.json` (gerada no chat do ChatGPT) | **não é o original, não tem o mesmo hash, sem acesso desta sessão** — não citar como evidência primária |
-| Registro verificável | hash SHA-256 e tamanho do original, informados pelo proprietário (`Get-FileHash … -Algorithm SHA256`) | **pendente** |
+| Registro verificável | hash SHA-256 e tamanho do original, informados pelo proprietário (`Get-FileHash … -Algorithm SHA256`) | 8.393 bytes; SHA-256 `4EEDD19D16F066A6E96A3CB65D82380126A2E7B17344C57C6286C39A183A57A8` — **informado pelo proprietário; não lido nem recalculado por Claude** |
