@@ -16,7 +16,7 @@ export function idDoDispositivo(sondas = {}) {
   return "dev_" + createHash("sha256").update(`${h}|${p}|${a}`).digest("hex").slice(0, 16);   // estável, não reversível, sem nome da máquina
 }
 
-export async function rodarAgente({ gateway, codigo, token: tokenDado, binario, argsAntes, capacidades, log = () => {}, parar = () => false, intervaloMs = 300, sondas = {} }) {
+export async function rodarAgente({ gateway, codigo, token: tokenDado, binario, argsAntes, capacidades, log = () => {}, parar = () => false, intervaloMs = 1000, sondas = {} }) {
   const tabela = compilar(capacidades ?? JSON.parse(readFileSync(new URL("./capacidades.windows.json", import.meta.url), "utf8")).capacidades);
   const runner = criarRunnerWindows({ binario, argsAntes });
   const plataforma = sondas.plataforma ?? process.platform, device_id = idDoDispositivo(sondas);
@@ -35,6 +35,7 @@ export async function rodarAgente({ gateway, codigo, token: tokenDado, binario, 
     try { resp = await post("/dispositivo/proximo", {}, token); } catch { log({ evento: "gateway_inacessivel" }); await dormir(intervaloMs * 3); continue; }
     if (resp.status === 401) { log({ evento: "revogado_encerrando" }); return { motivo: "revogado" }; }
     if (resp.status === 204) { await dormir(intervaloMs); continue; }
+    if (!resp.ok) { log({ evento: "gateway_recusou_temporariamente", status: resp.status }); await dormir(Math.min(intervaloMs * 5, 30000)); continue; }   // 429/5xx: espera mais e tenta de novo (só 401 encerra)
     const job = await resp.json();
     const cap = autorizar(job.argv, tabela, job.capacidade);
     if (!cap) {

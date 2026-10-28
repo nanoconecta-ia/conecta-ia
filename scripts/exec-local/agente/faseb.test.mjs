@@ -90,3 +90,13 @@ test("capacidade ≠ comando (formato válido, modelo de OUTRA capacidade): o ag
   for (let i = 0; i < 100 && c.tarefas.get(id).estado !== "FALHOU"; i++) await new Promise((r) => setTimeout(r, 20));
   assert.equal(c.tarefas.get(id).erro, "comando_nao_autorizado_no_agente"); await c.encerrar();
 });
+
+test("429 e 5xx do gateway: o agente espera e continua (só 401 encerra) e o intervalo padrão cabe no limite da sessão", async () => {
+  let n = 0; const quando = [];
+  const srv = createServer(async (req, res) => { for await (const _ of req); quando.push(Date.now()); n++; res.writeHead(n === 1 ? 429 : n === 2 ? 503 : 401, { "content-type": "application/json" }); res.end("{}"); });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const log = []; const fim = await rodarAgente({ gateway: `http://127.0.0.1:${srv.address().port}`, token: "a".repeat(45) + "." + "b".repeat(45), capacidades: caps, log: (e) => log.push(e.evento), intervaloMs: 20 });
+  srv.close(); assert.equal(fim.motivo, "revogado"); assert.equal(n, 3); assert.equal(log.filter((e) => e === "gateway_recusou_temporariamente").length, 2);
+  assert.ok(quando[1] - quando[0] >= 90);                                         // esperou ≥ 5× o intervalo depois do 429
+  const src = readFileSync(new URL("./agente.mjs", import.meta.url), "utf8"); assert.match(src, /intervaloMs = 1000/);   // ~60 req/min < 150/min do gateway
+});

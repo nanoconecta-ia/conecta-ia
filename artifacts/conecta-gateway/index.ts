@@ -2684,6 +2684,89 @@ async function tratarOAuth(req, p) {
 return { redirectValido: redirectValido, metadataRecurso: metadataRecurso, desafioOAuth: desafioOAuth, tratarOAuth: tratarOAuth };
 })();
 
+// ---------- supabase/functions/_shared/exec_local/rotas_dispositivo.ts ----------
+const __m18 = (() => {
+const { HASH_RE: HASH_RE, separarToken: separarToken, sha256Hex: sha256Hex } = __m4;
+const LIMITE_SESSAO_DISPOSITIVO = {
+    max: 150,
+    janelaS: 60
+};
+const LIMITE_FALHAS_DISPOSITIVO_IP = {
+    max: 20,
+    janelaS: 60
+};
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+async function tratarDispositivo(req, p) {
+    if (req.metodo !== "POST") return {
+        status: 405
+    };
+    if (req.corpo.length > 420_000) return {
+        status: 413
+    };
+    const m = /^Bearer ([A-Za-z0-9_.-]+)$/.exec(req.authorization ?? "");
+    const tk = m ? separarToken(m[1]) : null;
+    const ip = req.ip ?? "?";
+    const falhou = async ()=>p.limite && !await p.limite(`dev401:${ip}`, LIMITE_FALHAS_DISPOSITIVO_IP.max, LIMITE_FALHAS_DISPOSITIVO_IP.janelaS) ? {
+            status: 429
+        } : {
+            status: 401
+        };
+    if (!tk) return falhou();
+    const hash = await sha256Hex(tk.token), sal = await sha256Hex(tk.sal);
+    if (!HASH_RE.test(hash) || !HASH_RE.test(sal)) return falhou();
+    if (p.limite && !await p.limite(`dev:${hash.slice(0, 16)}`, LIMITE_SESSAO_DISPOSITIVO.max, LIMITE_SESSAO_DISPOSITIVO.janelaS)) return {
+        status: 429
+    };
+    let corpo = {};
+    try {
+        corpo = req.corpo ? JSON.parse(req.corpo) : {};
+    } catch  {
+        return {
+            status: 400
+        };
+    }
+    if (req.caminho === "/dispositivo/proximo") {
+        const r = await p.rpc("exec_local_puxar", {
+            p_token_hash: hash,
+            p_sal_hash: sal
+        });
+        if (r === null || r === undefined) return falhou();
+        if (typeof r === "object" && Object.keys(r).length === 0) return {
+            status: 204
+        };
+        return {
+            status: 200,
+            corpo: r
+        };
+    }
+    if (req.caminho === "/dispositivo/resultado") {
+        if (typeof corpo.job_id !== "string" || !UUID.test(corpo.job_id) || typeof corpo.ok !== "boolean") return {
+            status: 400
+        };
+        const r = await p.rpc("exec_local_resultado", {
+            p_token_hash: hash,
+            p_sal_hash: sal,
+            p_tarefa: corpo.job_id,
+            p_ok: corpo.ok,
+            p_saida: typeof corpo.saida === "string" ? corpo.saida : null,
+            p_erro: typeof corpo.erro === "string" ? corpo.erro : null
+        });
+        if (r === null || r === undefined) return falhou();
+        return {
+            status: 200,
+            corpo: {
+                estado: r
+            }
+        };
+    }
+    return {
+        status: 404
+    };
+}
+
+return { LIMITE_SESSAO_DISPOSITIVO: LIMITE_SESSAO_DISPOSITIVO, LIMITE_FALHAS_DISPOSITIVO_IP: LIMITE_FALHAS_DISPOSITIVO_IP, tratarDispositivo: tratarDispositivo };
+})();
+
 // ---------- supabase/functions/conecta-gateway/index.ts ----------
 const __m0 = (() => {
 const { createClient: createClient } = __sdk;
@@ -2692,6 +2775,7 @@ const { dadosSupabase: dadosSupabase } = __m6;
 const { chaveiroPlataforma: chaveiroPlataforma, segredoEstado: segredoEstado } = __m15;
 const { configuracaoPair: configuracaoPair } = __m16;
 const { tratarOAuth: tratarOAuth, desafioOAuth: desafioOAuth } = __m17;
+const { tratarDispositivo: tratarDispositivo } = __m18;
 const CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, content-type, mcp-protocol-version, mcp-session-id",
@@ -2710,6 +2794,34 @@ Deno.serve(async (req)=>{
     });
     const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || undefined;
     try {
+        const rota = /\/dispositivo\/(proximo|resultado)$/.exec(new URL(req.url).pathname);
+        if (rota) {
+            const rd = await tratarDispositivo({
+                metodo: req.method,
+                caminho: `/dispositivo/${rota[1]}`,
+                authorization: req.headers.get("Authorization"),
+                corpo: await req.text(),
+                ip
+            }, {
+                async rpc (fn, args) {
+                    const { data, error } = await admin.rpc(fn, args);
+                    if (error) throw new Error(fn);
+                    return data;
+                },
+                limite: async (chave, max, janela)=>(await admin.rpc("limite_chamada", {
+                        p_chave: chave,
+                        p_max: max,
+                        p_janela_s: janela
+                    })).data === true
+            });
+            return new Response(rd.corpo === undefined ? null : JSON.stringify(rd.corpo), {
+                status: rd.status,
+                headers: {
+                    ...CORS,
+                    "Content-Type": "application/json"
+                }
+            });
+        }
         const get = (k)=>Deno.env.get(k);
         const baseURL = Deno.env.get("SUPABASE_URL").replace(/\/$/, "") + "/functions/v1/conecta-gateway";
         const config = configuracaoPair(get);

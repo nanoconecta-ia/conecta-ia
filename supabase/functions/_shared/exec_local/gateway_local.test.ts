@@ -74,3 +74,14 @@ test("auditoria falha: nada é devolvido como sucesso", async () => {
 test("método não local é delegado ao gateway (ping)", async () => {
   const c = await cenario(); assert.deepEqual(corpo(await c.chamar(c.A, "ping")).result, {});
 });
+
+test("produção: só executores LIGADOS são anunciados e aceitos (browser sem runner fica de fora); dispositivo pode ser assíncrono", async () => {
+  const c = await cenario(); const g: PortasGateway = { validarChave: async (h) => (h === (await sha256Hex(c.A)) ? { chave_id: "kA", loja_id: "lojaA", escopos: ["leitura"], criada_por: "dono", nome: "gemini" } : null), limite: async () => true, contexto: () => ({}) as never };
+  const l: PortasLocais = { esperaMs: 0, novoId: () => "t", executoresAtivos: ["windows"], dispositivo: async () => ({ dispositivo_id: "d1", hosts_permitidos: [] }),
+    executarInline: async () => ({ estado: "CONCLUIDA", evidencia: { saida: "ok", sha256: "a".repeat(64), em: 1, capacidade: "windows.sistema.inventario" } }) };
+  const chamar = async (method: string, params: unknown) => JSON.parse((await tratarMcpComLocal({ metodo: "POST", cabecalhos: { authorization: `Bearer ${c.A}` }, corpo: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) }, g, l)).corpo).result;
+  const nomes = (await chamar("tools/list", {})).tools.map((t: { title: string }) => t.title);
+  assert.ok(nomes.includes("windows.sistema.inventario") && !nomes.some((n: string) => n.startsWith("browser.")));
+  assert.equal(JSON.parse((await chamar("tools/call", { name: "browser__pagina__ler", arguments: { url: "https://teste.exemplo.com/x" } })).content[0].text).erro, "executor_nao_ligado");
+  assert.equal(JSON.parse((await chamar("tools/call", { name: "windows__sistema__inventario", arguments: {} })).content[0].text).estado, "CONCLUIDA");
+});
