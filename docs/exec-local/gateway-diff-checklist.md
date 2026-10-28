@@ -31,7 +31,7 @@ PR em rascunho. Esta etapa **não** publica Edge Function, **não** aplica migra
 - Nada de segredo no repositório, no log ou na URL; token do agente só em variável de ambiente e memória.
 
 ## 4. Testes
-- Node: 44 (`exec_local`, inclui 4 de **integração com o esquema real** via `criarPsql`: cadeia completa com as rotas, `dispositivoAtivo`, recusas do banco, revogação) + 22 do agente/runner; suíte completa de funções: **426/426** com Postgres local; `tsc` estrito limpo; `gerar-pair.mjs --check` ok.
+- Node: 43 (`exec_local`, inclui 4 de **integração com o esquema real** via `criarPsql`: cadeia completa com as rotas, `dispositivoAtivo`, recusas do banco, revogação) + 22 do agente/runner; suíte completa de funções: **426/426** com Postgres local; `tsc` estrito limpo; `gerar-pair.mjs --check` ok.
 - SQL e concorrência: já em `exec_local_fila.sql` (40), `exec_local_saida_modelos.sql` (19) e `exec_local_concorrencia.sh`.
 
 ## 5. Plano de publicação (cada passo exige autorização) e rollback
