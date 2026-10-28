@@ -16,3 +16,10 @@ O arquivo `.json` **não foi entregue a esta sessão** (está no PC Mobis); port
 | Pareamento por código de uso único, identidade própria do dispositivo | Pareamento pelo **Conecta Pair** (aprovação do lojista no painel) |
 | Bloqueio de comando fora da lista, revogação de sessão e de dispositivo | Fila persistente, isolamento por loja em banco, auditoria em `public.auditoria` |
 | Resultado e cartão de origem no "chat" simulado | Chat real do Conecta.IA |
+
+## Fontes da evidência (atualizado em 28/10)
+| Fonte | O que é | Estado |
+|---|---|---|
+| **Primária** | JSON original no PC Mobis (`…\nano-fase-a-20261028\…\evidencias\homologacao-powershell_real-2026-10-28T06-18-44-450Z.json`) | **não lida por esta sessão** |
+| Cópia resumida | `NanoIA-Fase-A-Evidencia-2026-10-28.json` (gerada no chat do ChatGPT) | **não é o original, não tem o mesmo hash, sem acesso desta sessão** — não citar como evidência primária |
+| Registro verificável | hash SHA-256 e tamanho do original, informados pelo proprietário (`Get-FileHash … -Algorithm SHA256`) | **pendente** |
