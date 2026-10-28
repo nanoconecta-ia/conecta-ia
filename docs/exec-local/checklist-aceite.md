@@ -4,7 +4,7 @@ Nenhum item abaixo é "funcional real": os ✅ são de runner simulado (PR #118)
 
 | Item | Estado | Evidência / o que falta |
 |---|---|---|
-| Ferramentas descobertas por sessão | ✅ simulado | `catalogo_mcp.ts` (4 testes); falta ligar ao `tools/list` do gateway (PR próprio, mexe em produção) |
+| Ferramentas descobertas por sessão | ✅ local (composição) | `gateway_local.ts` anuncia as locais junto com as do gateway; o `gateway.ts` de produção NÃO foi alterado (ligar na Edge Function = PR/deploy próprio, 👤) |
 | Sessão autorizada, escopos | ✅ simulado / 🟡 gateway | `executor.ts`; Pair real em `_shared/pair` |
 | Browser navega/consulta | 🟡 | NanoShell `execution/browser` (testes em site de teste); runner do Conecta ⛔ |
 | PowerShell diagnóstico permitido | ✅ simulado | lista fixa + validação; execução real ⛔ (👤 autorização + dispositivo) |
