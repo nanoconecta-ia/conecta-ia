@@ -1,6 +1,6 @@
-# PR #116: revisão da emenda de retenção (PROPOSTA, não aplicada)
+# PR #116: emenda de retenção (APROVADA pelo dono em 2026-10-28; incorporada à migração do PR; NÃO aplicada em produção)
 
-**Estado:** proposta para aprovação. A migração `20261028000001_limite_chamadas_limpeza.sql` **não foi alterada** e nada foi aplicado em banco real. Testada só num Postgres 16 local descartável.
+**Estado:** emenda aprovada e **incorporada** à migração `20261028000001_limite_chamadas_limpeza.sql` e ao teste `supabase/tests/limite_chamadas_limpeza.sql` (18 verificações). **Nada foi aplicado em banco real**; a aplicação em produção continua dependendo de autorização específica. Testada só num Postgres 16 local descartável (40 suítes passam). Mutações (retenção de 10 min trocada por 3 h; teto de 20 lotes trocado por 3) são detectadas.
 
 ## Por que emendar
 Simulação local do #112 (`scripts/simulacao/baldes-ip.ts`, branch do #112): no pior caso (uma loja atacada nos dois endpoints, ~1.200 pedidos aceitos/min) a tabela chega a ~300 mil linhas ≈ **51 MB** com retenção de 2 h para tudo, acima do critério de parada de 20 MB. A migração atual apaga no máximo 10.000 linhas por hora, abaixo do ritmo desse pior caso.
@@ -55,7 +55,7 @@ end $$;
 ## Rollback
 `select cron.unschedule('limite-limpeza');` e voltar à função da migração original (`create or replace` com a versão sem lotes), ou o rollback já documentado no resumo do PR. Sem perda de dado útil.
 
-## Se você aprovar, eu faço (e só isso)
+## Feito após a aprovação
 1. Atualizo a migração do #116 com o `create or replace` acima e o agendamento a cada 10 min.
 2. Estendo `supabase/tests/limite_chamadas_limpeza.sql` com as verificações acima.
 3. Rodo as 40 suítes locais e o CI; o PR continua em rascunho, **sem aplicar nada em produção**.
