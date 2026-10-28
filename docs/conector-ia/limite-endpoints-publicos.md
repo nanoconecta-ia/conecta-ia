@@ -10,22 +10,29 @@ Roda **antes de qualquer consulta ao banco**, usando a RPC que já existe (`publ
 
 | Camada | loja-publica | vitrine-assistente |
 |---|---|---|
+| Teto por loja (todos os IPs), checado **primeiro** | 1.200 / min | 600 / min |
 | Rajada por IP | 60 / min | 20 / min |
 | Sustentado por IP | 600 / h | 120 / h |
-| Teto por loja (todos os IPs) | 1.200 / min | 600 / min |
+| Sem IP confiável (por loja) | 300 / min | 100 / min |
+| Baldes de IP por janela | 2.048 | 2.048 |
 | Corpo máximo | 4 KB | 2 KB |
 
 - Estourou: `429` + `Retry-After`, corpo genérico (não revela limites). Corpo grande: `413`.
-- IP: `cf-connecting-ip` → `x-real-ip` → 1º do `x-forwarded-for`; valor inválido/ausente cai num balde próprio com **metade** do limite.
-- O IP **nunca é guardado cru**: vira HMAC-SHA256 truncado. Segredo: `LIMITE_PEPPER` se existir; senão deriva do segredo de serviço já presente no runtime (não cria segredo novo, não é logado nem devolvido).
-- Se a RPC falhar, a vitrine **continua** com um teto local por instância (30/min e 10/min) e registra `limite-publico limitador_indisponivel`.
+- **Ordem:** teto da loja primeiro. Pedido negado ali grava **1 linha** (sempre a mesma da janela) e não toca nas chaves de IP.
+- **Crescimento limitado:** o IP vira HMAC e cai em um de 2.048 baldes fixos; por janela e camada o número de linhas é limitado por construção, mesmo com IP girando. Pedido aceito grava 3 linhas (loja + 2 de IP); sem IP, 2.
+- **IP confiável:** só o cabeçalho que a borda define, padrão `cf-connecting-ip` (configurável por `LIMITE_CABECALHO_IP`). `x-forwarded-for` e `x-real-ip` **não** são usados (o 1º item do XFF é forjável pelo cliente).
+- **Sem IP confiável:** não existe balde global; vale o limite "sem-ip" próprio da loja, mais apertado que o geral.
+- O IP **nunca é guardado cru**. Segredo do HMAC: `LIMITE_PEPPER` se existir; senão deriva do segredo de serviço já presente no runtime (sem segredo novo, nunca logado nem devolvido).
+- Se a RPC falhar, a vitrine **continua** com um teto local por instância (30/min e 10/min; limpeza das entradas vencidas no máximo a cada 30 s e só acima de 5 mil entradas) e registra `limite-publico limitador_indisponivel`.
+- **Cliente:** `Loja.tsx` e `ProdutoPublico.tsx` tratam 429/413/5xx com mensagem e "Tentar de novo" (antes: tela em branco). Teste visual `scripts/tests/loja-limite-visual.mjs`.
 - Contrato de sucesso e CORS inalterados; corpo JSON inválido continua virando `{}` (404 da loja).
 
 ## Limites honestos / pendências
-1. **Cabeçalho do IP não confirmado** na borda do Supabase. Se o cliente puder forjar `x-forwarded-for`, o limite por IP é contornável; o teto **por loja** é a rede de proteção (testado), mas um ataque distribuído pode esgotar o teto de uma loja e atrapalhar clientes legítimos dela. Validar em ambiente de teste antes de confiar.
-2. **`private.limite_chamadas` nunca é limpa** e passa a receber linhas por IP. Precisa de rotina de limpeza (migração em PR separado, com desenho aprovado). Antes disso, medir o tamanho atual com a consulta de leitura da proposta (não executada).
-3. Cada chamada faz 3 gravações pequenas na RPC; é mais barato que as ~9 leituras que protege, mas não é zero.
-4. Valores iniciais são estimativas; ajustar com dados reais.
+1. **Cabeçalho do IP na borda do Supabase não confirmado.** Se `cf-connecting-ip` não chegar, todos caem no limite "sem-ip" da loja (a vitrine segue no ar, mas o limite por IP some). Confirmar com função de eco temporária (deploy sob autorização) antes de ativar.
+2. **Pré-requisito de deploy:** `private.limite_chamadas` não tem limpeza. Os baldes limitam o crescimento, mas a limpeza (migração em PR separado, desenho aprovado antes) deve vir **antes** do deploy.
+3. Cada pedido aceito faz até 3 chamadas à RPC; mais barato que as ~9 leituras que protege, mas não é zero.
+4. Sob ataque distribuído o teto da loja pode ser esgotado e clientes legítimos dela recebem 429 (outras lojas não são afetadas).
+5. Valores iniciais são estimativas; calibrar com dados reais (modo apenas-registro antes de bloquear).
 
 ## Teste e rollback
-`node --experimental-strip-types --test supabase/functions/_shared/limite/publico.test.ts` (13 testes). Rollback: reimplantar a versão anterior das duas funções.
+`node --experimental-strip-types --test supabase/functions/_shared/limite/publico.test.ts` (19 testes) e `node scripts/tests/loja-limite-visual.mjs`. Rollback: reimplantar a versão anterior das duas funções.

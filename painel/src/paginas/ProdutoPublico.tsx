@@ -34,7 +34,7 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
         body: JSON.stringify({ slug, sku, pergunta: t }),
       });
       const j = await r.json().catch(() => ({}));
-      resposta = String(j.resposta ?? resposta);
+      resposta = r.status === 429 ? "Muitas perguntas seguidas. Aguarde um instante e pergunte de novo." : String(j.resposta ?? resposta);
     } catch { /* mantém a mensagem padrão */ }
     setMsgs((m) => [...m, { de: "ia", texto: resposta }]); setOcupado(false);
     if (lerRef.current) voz.falar(resposta);

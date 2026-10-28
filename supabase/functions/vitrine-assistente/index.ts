@@ -3,7 +3,7 @@
 // Não menciona provedor de IA. Limites de tamanho na entrada.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { intencaoCliente, responderCliente } from "../_shared/intencoes.ts";
-import { guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
+import { cabecalhoIpConfigurado, guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   // limite de requisições ANTES de qualquer consulta: IP (rajada e sustentado) + teto por loja; corpo pequeno
   const g = await guardarPublico({
-    endpoint: "vitrine-assistente", req, segredo: segredoDoLimite(Deno.env),
+    endpoint: "vitrine-assistente", req, segredo: segredoDoLimite(Deno.env), cabecalhoIp: cabecalhoIpConfigurado(Deno.env.get("LIMITE_CABECALHO_IP")),
     lojaDe: (b) => (typeof b?.slug === "string" ? b.slug.slice(0, 80) : null),
     porta: portaViaRpc(sb), aoFalhar: (m) => console.warn("limite-publico", m),
   });

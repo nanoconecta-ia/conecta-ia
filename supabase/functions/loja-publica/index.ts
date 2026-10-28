@@ -4,7 +4,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.ts";
 import { urlProduto } from "../_shared/seo/url.ts";
-import { guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
+import { cabecalhoIpConfigurado, guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
 import { montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   // limite de requisições ANTES de qualquer consulta pesada: IP (rajada e sustentado) + teto por loja; corpo pequeno
   const g = await guardarPublico({
-    endpoint: "loja-publica", req, segredo: segredoDoLimite(Deno.env),
+    endpoint: "loja-publica", req, segredo: segredoDoLimite(Deno.env), cabecalhoIp: cabecalhoIpConfigurado(Deno.env.get("LIMITE_CABECALHO_IP")),
     lojaDe: (b) => normalizarHost(b?.host) ?? (typeof b?.slug === "string" && SLUG_RE.test(b.slug) ? b.slug : null),
     porta: portaViaRpc(sb),
     aoFalhar: (m) => console.warn("limite-publico", m),
