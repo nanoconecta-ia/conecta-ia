@@ -520,6 +520,22 @@ html .dock-trilho button.dock-aba:focus-visible { outline: 2px solid var(--verde
   .abas .compositor-acoes > button { min-height: 44px; }
   .abas .chat-compositor { padding-top: 6px; gap: 4px; }
 }
+@media (max-width: 560px), (max-height: 600px) {
+  /* celular em pé com texto grande: cabeçalho, atalhos e conversa rolam; o campo de texto e o Enviar ficam fixos embaixo, sempre à vista (não dependem do tamanho da fonte) */
+  .abas-centro { overflow-y: auto; overscroll-behavior: contain; }
+  .abas-centro > .chat { flex: 1 0 120px; overflow-y: visible; }
+  .abas .chat-compositor { position: sticky; bottom: 0; z-index: 2; background: var(--fundo); }
+  /* título "Nano.ia" nunca vira "N.": tem largura mínima e, faltando espaço, os botões descem para a linha de baixo */
+  .abas .agente { flex-wrap: wrap; }
+  .abas .agente-titulo { flex: 1 1 4.4rem; min-width: 4.4rem; }
+  /* ações do compositor: com texto grande o Enviar desce para a linha de baixo em vez de passar da borda */
+  .abas .compositor-acoes { flex-wrap: wrap; }
+  .abas .compositor-acoes .compositor-enviar { flex: 1 1 auto; min-width: 88px; max-width: 100%; }
+  .abas .agente > button { min-width: 44px; padding-left: 8px; padding-right: 8px; }
+  /* atalhos compactos: duas colunas de botões baixos em vez de uma pilha de botões grandes */
+  .dock-agente #atalhos .linha, .abas .retratil .linha { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .dock-agente .retratil .linha > button { min-height: 44px; padding: 6px 8px; font-size: .88rem; line-height: 1.15; white-space: normal; }
+}
 @media (max-height: 600px) {
   /* tela baixa (celular deitado): cabeçalho, atalhos e conversa rolam; o campo de texto e o Enviar ficam fixos embaixo, sempre à vista */
   .abas-centro { overflow-y: auto; overscroll-behavior: contain; }
