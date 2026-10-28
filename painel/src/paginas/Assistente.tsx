@@ -240,6 +240,12 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       </div>
       <div className="chat-compositor">
       {selecao?.motivo && <p role="status">{selecao.motivo}</p>}
+      {selecao?.estado === "disponivel" && !aceitaEnvio && (
+        <div className="aviso-envio" role="status">
+          <p><strong>O Nano.ia ainda não pode responder.</strong> Falta a sua autorização para enviar a pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.</p>
+          <button type="button" disabled={ocupado} onClick={() => setAceitaEnvio(true)}>Autorizar e continuar</button>
+        </div>
+      )}
       <form onSubmit={onSubmit} style={{ maxWidth: "none" }}>
         {anexos.length > 0 && <ul className="anexos-lista" aria-label="Anexos desta pergunta">{anexos.map((a, i) => <li key={`${a.nome}-${i}`}><span className="anexo-nome" title={a.nome}>{a.tipo.startsWith("image/") ? "🖼" : "📄"} {a.nome}</span><span className="suave">{rotuloBytes(a.bytes)}</span><button type="button" className="sec mini" aria-label={`Remover ${a.nome}`} onClick={() => setAnexos((l) => l.filter((_, k) => k !== i))}>✕</button></li>)}</ul>}
         {erroAnexo && <p role="alert" className="msg-erro">{erroAnexo}</p>}

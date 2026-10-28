@@ -571,3 +571,9 @@ html .dock-trilho button.dock-aba:focus-visible { outline: 2px solid var(--verde
 .fid-banner figcaption { position: absolute; right: 8px; bottom: 8px; background: var(--cartao); color: var(--texto); }
 .fid-protecao { margin-top: 12px; padding: 12px; border-radius: var(--raio, 10px); background: var(--realce); } .fid-protecao ul { margin: 6px 0 0; padding-left: 20px; }
 @media (prefers-reduced-motion: reduce) { .fid-quadro { transition: none; } }
+
+/* Envio bloqueado só por falta de autorização: o motivo aparece escrito, com o botão que resolve (antes só o Enviar ficava apagado) */
+.aviso-envio { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--atencao, var(--marca)); border-left-width: 5px; border-radius: var(--raio, 10px); background: var(--cartao); }
+.aviso-envio p { margin: 0; } .aviso-envio button { min-height: 44px; justify-self: stretch; }
+/* o contêiner dos painéis laterais corta sem poder ser rolado por dentro (foco/scrollIntoView deslocava o chat para a esquerda) */
+@supports (overflow: clip) { .abas { overflow: clip; } }
