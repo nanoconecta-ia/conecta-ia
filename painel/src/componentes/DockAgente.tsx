@@ -3,7 +3,7 @@ import type { Loja } from "../lib/dados.ts";
 import { Assistente } from "../paginas/Assistente.tsx";
 import type { Item } from "../lib/comandosNL.ts";
 import { assinar, obter, perguntarAoNano } from "../lib/contextoPagina.ts";
-import { ajustarLargura, larguraPeloPonteiro, LARGURA_MAX, LARGURA_MIN, passoDeTeclado, type EstadoPainel } from "../lib/painelLateral.ts";
+import { ajustarLargura, larguraPeloPonteiro, LARGURA_MAX, LARGURA_MIN, passoDeTeclado, TELA_MIN_PARA_FIXO, type EstadoPainel } from "../lib/painelLateral.ts";
 import { CONECTOR_ATIVO } from "../lib/flags.ts";
 import { MapaMental } from "./MapaMental.tsx";
 import { ResumoPagina } from "./ResumoPagina.tsx";
@@ -66,9 +66,13 @@ export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, ao
       )}
       <div className="dock-topo">
         <strong>Nano.ia</strong><span className="suave">{loja.nome}</span>
-        <button className="sec mini dock-ico" onClick={() => mudar({ modo: "fixo", lado: "esq" })} aria-pressed={painel.modo === "fixo" && painel.lado === "esq"} aria-label="Fixar à esquerda" title="Fixar à esquerda">{I.esq}</button>
-        <button className="sec mini dock-ico" onClick={() => mudar({ modo: "fixo", lado: "dir" })} aria-pressed={painel.modo === "fixo" && painel.lado === "dir"} aria-label="Fixar à direita" title="Fixar à direita">{I.dir}</button>
-        <button className="sec mini dock-ico" onClick={() => mudar({ modo: "flutuante" })} aria-pressed={painel.modo === "flutuante"} aria-label="Flutuar" title="Flutuar sobre a página">{I.flutuar}</button>
+        {telaW >= TELA_MIN_PARA_FIXO && ( // fixar só existe onde funciona: em tela estreita (celular) o painel é sempre flutuante
+          <>
+          <button className="sec mini dock-ico" onClick={() => mudar({ modo: "fixo", lado: "esq" })} aria-pressed={painel.modo === "fixo" && painel.lado === "esq"} aria-label="Fixar à esquerda" title="Fixar à esquerda">{I.esq}</button>
+          <button className="sec mini dock-ico" onClick={() => mudar({ modo: "fixo", lado: "dir" })} aria-pressed={painel.modo === "fixo" && painel.lado === "dir"} aria-label="Fixar à direita" title="Fixar à direita">{I.dir}</button>
+          <button className="sec mini dock-ico" onClick={() => mudar({ modo: "flutuante" })} aria-pressed={painel.modo === "flutuante"} aria-label="Flutuar" title="Flutuar sobre a página">{I.flutuar}</button>
+          </>
+        )}
         {!dividindo && <button className="sec mini dock-ico" onClick={() => setAmpliado((v) => !v)} aria-pressed={ampliado} aria-label={ampliado ? "Reduzir a janela do Nano.ia" : "Ampliar a janela do Nano.ia"} title="Ampliar">{I.ampliar}</button>}
         <button className="sec mini dock-ico" onClick={aoFechar} aria-label="Fechar o Nano.ia" title="Fechar">{I.fechar}</button>
       </div>
