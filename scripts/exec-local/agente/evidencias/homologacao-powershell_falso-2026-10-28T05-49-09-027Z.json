@@ -1,0 +1,286 @@
+{
+  "passos": [
+    {
+      "nome": "pareamento com identidade própria",
+      "ok": true,
+      "detalhe": "dev_f83a34873d35c96f"
+    },
+    {
+      "nome": "descoberta de ferramentas",
+      "ok": true,
+      "detalhe": [
+        "windows.sistema.inventario",
+        "windows.ambiente.versoes",
+        "windows.disco.livre",
+        "windows.processo.existe",
+        "windows.servico.estado"
+      ]
+    },
+    {
+      "nome": "inventário de leitura: windows.sistema.inventario",
+      "ok": true,
+      "detalhe": {
+        "estado": "CONCLUIDA",
+        "hash": "cb96e79340a4",
+        "dispositivo": "dev_f83a34873d35c96f",
+        "saida": "{\"Caption\":\"Windows FICTICIO\",\"Version\":\"0.0\",\"OSArchitecture\":\"64-bit\"}"
+      }
+    },
+    {
+      "nome": "inventário de leitura: windows.ambiente.versoes",
+      "ok": true,
+      "detalhe": {
+        "estado": "CONCLUIDA",
+        "hash": "0e6f3b7dfa14",
+        "dispositivo": "dev_f83a34873d35c96f",
+        "saida": "{\"Windows\":\"Microsoft Windows NT 10.0.0.0 FICTICIO\",\"PowerShell\":\"5.1.0.0\",\"Ferramentas\":[{\"Name\":\"node.exe\",\"Version\":\"22.0.0.0\",\"Source\":\"C:\\\\fake\\\\node.exe\"}]}"
+      }
+    },
+    {
+      "nome": "injeção bloqueada no servidor",
+      "ok": true,
+      "detalhe": "parametro_invalido:nome"
+    },
+    {
+      "nome": "ferramenta de escrita não anunciada nem executável",
+      "ok": true,
+      "detalhe": "capacidade_desligada"
+    },
+    {
+      "nome": "agente recusa comando fora da lista (servidor comprometido)",
+      "ok": true,
+      "detalhe": "comando_nao_autorizado_no_agente"
+    },
+    {
+      "nome": "sessão revogada: tarefa negada",
+      "ok": true,
+      "detalhe": "sessao_revogada"
+    },
+    {
+      "nome": "dispositivo revogado: agente encerra sozinho",
+      "ok": true,
+      "detalhe": "revogado"
+    },
+    {
+      "nome": "após revogar, ferramentas locais deixam de ser anunciadas",
+      "ok": true
+    }
+  ],
+  "inicio": "2026-10-28T05:49:09.027Z",
+  "fim": "2026-10-28T05:49:09.349Z",
+  "modo": "powershell_falso",
+  "ambiente": "local_isolado",
+  "device_id": "dev_f83a34873d35c96f",
+  "cartoes": {
+    "windows.sistema.inventario": {
+      "titulo": "Consulta concluída",
+      "estado": "CONCLUIDA",
+      "ambiente": "local_isolado",
+      "aviso": "Resultado de teste LOCAL isolado: não veio do computador da loja.",
+      "tom": "ok",
+      "linhas": [
+        {
+          "rotulo": "Ferramenta",
+          "valor": "windows.sistema.inventario"
+        },
+        {
+          "rotulo": "Origem",
+          "valor": "executor local · dispositivo dev_f83a34873d35c96f"
+        },
+        {
+          "rotulo": "Pedido por",
+          "valor": "nano-ia"
+        },
+        {
+          "rotulo": "Tarefa",
+          "valor": "a88c476d-581a-4ccc-ae6b-1fcc2f339139"
+        },
+        {
+          "rotulo": "Horário",
+          "valor": "2026-10-28T05:49:09.157Z"
+        },
+        {
+          "rotulo": "Hash",
+          "valor": "cb96e79340a4"
+        },
+        {
+          "rotulo": "Auditoria",
+          "valor": "registrada"
+        }
+      ],
+      "trecho_citado": "{\"Caption\":\"Windows FICTICIO\",\"Version\":\"0.0\",\"OSArchitecture\":\"64-bit\"}"
+    },
+    "windows.ambiente.versoes": {
+      "titulo": "Consulta concluída",
+      "estado": "CONCLUIDA",
+      "ambiente": "local_isolado",
+      "aviso": "Resultado de teste LOCAL isolado: não veio do computador da loja.",
+      "tom": "ok",
+      "linhas": [
+        {
+          "rotulo": "Ferramenta",
+          "valor": "windows.ambiente.versoes"
+        },
+        {
+          "rotulo": "Origem",
+          "valor": "executor local · dispositivo dev_f83a34873d35c96f"
+        },
+        {
+          "rotulo": "Pedido por",
+          "valor": "nano-ia"
+        },
+        {
+          "rotulo": "Tarefa",
+          "valor": "a2585090-2c28-4e7f-a6ec-e0b61c25c024"
+        },
+        {
+          "rotulo": "Horário",
+          "valor": "2026-10-28T05:49:09.246Z"
+        },
+        {
+          "rotulo": "Hash",
+          "valor": "0e6f3b7dfa14"
+        },
+        {
+          "rotulo": "Auditoria",
+          "valor": "registrada"
+        }
+      ],
+      "trecho_citado": "{\"Windows\":\"Microsoft Windows NT 10.0.0.0 FICTICIO\",\"PowerShell\":\"5.1.0.0\",\"Ferramentas\":[{\"Name\":\"node.exe\",\"Version\":\"22.0.0.0\",\"Source\":\"C:\\\\fake\\\\node.exe\"}]}"
+    }
+  },
+  "auditoria": [
+    {
+      "ts": "2026-10-28T05:49:09.157Z",
+      "sessao_id": "k-homolog",
+      "loja_id": "loja-homologacao",
+      "dispositivo_id": "dev_f83a34873d35c96f",
+      "agente": "nano-ia",
+      "tarefa_id": "a88c476d-581a-4ccc-ae6b-1fcc2f339139",
+      "capacidade": "windows.sistema.inventario",
+      "resultado": "CONCLUIDA"
+    },
+    {
+      "ts": "2026-10-28T05:49:09.246Z",
+      "sessao_id": "k-homolog",
+      "loja_id": "loja-homologacao",
+      "dispositivo_id": "dev_f83a34873d35c96f",
+      "agente": "nano-ia",
+      "tarefa_id": "a2585090-2c28-4e7f-a6ec-e0b61c25c024",
+      "capacidade": "windows.ambiente.versoes",
+      "resultado": "CONCLUIDA"
+    },
+    {
+      "ts": "2026-10-28T05:49:09.271Z",
+      "sessao_id": "k-homolog",
+      "loja_id": "loja-homologacao",
+      "dispositivo_id": "dev_f83a34873d35c96f",
+      "agente": "nano-ia",
+      "tarefa_id": "047bef71-ed6d-4e2e-91c7-43955ee14a7e",
+      "capacidade": "windows.processo.existe",
+      "resultado": "NEGADA",
+      "detalhe": "parametro_invalido:nome"
+    },
+    {
+      "ts": "2026-10-28T05:49:09.291Z",
+      "sessao_id": "k-homolog",
+      "loja_id": "loja-homologacao",
+      "dispositivo_id": "dev_f83a34873d35c96f",
+      "agente": "nano-ia",
+      "tarefa_id": "863b43c2-fd96-4f05-9026-efee7b16b6b5",
+      "capacidade": "windows.servico.reiniciar",
+      "resultado": "NEGADA",
+      "detalhe": "capacidade_desligada"
+    },
+    {
+      "ts": "2026-10-28T05:49:09.332Z",
+      "sessao_id": "k-homolog",
+      "loja_id": "loja-homologacao",
+      "dispositivo_id": "dev_f83a34873d35c96f",
+      "agente": "nano-ia",
+      "tarefa_id": "0fb8cb8d-3f30-4013-8abc-990e929b2ae7",
+      "capacidade": "windows.sistema.inventario",
+      "resultado": "NEGADA",
+      "detalhe": "sessao_revogada"
+    }
+  ],
+  "eventos_servidor": [
+    {
+      "ts": "2026-10-28T05:49:09.065Z",
+      "evento": "dispositivo_pareado",
+      "device_id": "dev_f83a34873d35c96f",
+      "plataforma": "linux"
+    },
+    {
+      "ts": "2026-10-28T05:49:09.110Z",
+      "evento": "job_criado",
+      "job_id": "3820bc46-e46a-4fb4-a450-0ab34a92416c",
+      "device_id": "dev_f83a34873d35c96f"
+    },
+    {
+      "ts": "2026-10-28T05:49:09.156Z",
+      "evento": "resultado_recebido",
+      "job_id": "3820bc46-e46a-4fb4-a450-0ab34a92416c",
+      "ok": true
+    },
+    {
+      "ts": "2026-10-28T05:49:09.169Z",
+      "evento": "job_criado",
+      "job_id": "58cab49b-b327-4f01-b0ad-5c95cd376d21",
+      "device_id": "dev_f83a34873d35c96f"
+    },
+    {
+      "ts": "2026-10-28T05:49:09.244Z",
+      "evento": "resultado_recebido",
+      "job_id": "58cab49b-b327-4f01-b0ad-5c95cd376d21",
+      "ok": true
+    },
+    {
+      "ts": "2026-10-28T05:49:09.312Z",
+      "evento": "resultado_recebido",
+      "job_id": "5e56f7aa-af0b-4bd2-839f-25a978feb8fb",
+      "ok": false
+    },
+    {
+      "ts": "2026-10-28T05:49:09.313Z",
+      "evento": "sessao_revogada"
+    },
+    {
+      "ts": "2026-10-28T05:49:09.335Z",
+      "evento": "dispositivo_revogado",
+      "device_id": "dev_f83a34873d35c96f"
+    }
+  ],
+  "log_agente": [
+    {
+      "ts": "2026-10-28T05:49:09.074Z",
+      "evento": "pareado",
+      "device_id": "dev_f83a34873d35c96f",
+      "plataforma": "linux"
+    },
+    {
+      "ts": "2026-10-28T05:49:09.155Z",
+      "evento": "executado",
+      "job_id": "3820bc46-e46a-4fb4-a450-0ab34a92416c",
+      "capacidade": "windows.sistema.inventario",
+      "ms": 41
+    },
+    {
+      "ts": "2026-10-28T05:49:09.242Z",
+      "evento": "executado",
+      "job_id": "58cab49b-b327-4f01-b0ad-5c95cd376d21",
+      "capacidade": "windows.ambiente.versoes",
+      "ms": 50
+    },
+    {
+      "ts": "2026-10-28T05:49:09.312Z",
+      "evento": "comando_recusado_pelo_agente",
+      "job_id": "5e56f7aa-af0b-4bd2-839f-25a978feb8fb"
+    },
+    {
+      "ts": "2026-10-28T05:49:09.346Z",
+      "evento": "revogado_encerrando"
+    }
+  ],
+  "aprovado": true
+}

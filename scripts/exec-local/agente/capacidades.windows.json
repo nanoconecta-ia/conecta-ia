@@ -1,0 +1,41 @@
+{
+  "gerado_de": "supabase/functions/_shared/exec_local/capacidades.ts",
+  "capacidades": [
+    {
+      "id": "windows.sistema.inventario",
+      "modelo": "Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,OSArchitecture,TotalVisibleMemorySize | ConvertTo-Json -Compress",
+      "timeoutMs": 15000,
+      "parametros": {}
+    },
+    {
+      "id": "windows.ambiente.versoes",
+      "modelo": "[pscustomobject]@{Windows=[System.Environment]::OSVersion.VersionString; PowerShell=$PSVersionTable.PSVersion.ToString(); Ferramentas=@(Get-Command node -ErrorAction SilentlyContinue | Select-Object Name,Version,Source)} | ConvertTo-Json -Compress",
+      "timeoutMs": 15000,
+      "parametros": {}
+    },
+    {
+      "id": "windows.disco.livre",
+      "modelo": "Get-PSDrive -Name {{unidade}} | Select-Object Name,Used,Free | ConvertTo-Json -Compress",
+      "timeoutMs": 15000,
+      "parametros": {
+        "unidade": "^[A-Za-z]:?$"
+      }
+    },
+    {
+      "id": "windows.processo.existe",
+      "modelo": "Get-Process -Name {{nome}} -ErrorAction SilentlyContinue | Measure-Object | Select-Object Count | ConvertTo-Json -Compress",
+      "timeoutMs": 15000,
+      "parametros": {
+        "nome": "^[A-Za-z0-9_.-]{1,40}$"
+      }
+    },
+    {
+      "id": "windows.servico.estado",
+      "modelo": "Get-Service -Name {{nome}} -ErrorAction SilentlyContinue | Select-Object Name,Status | ConvertTo-Json -Compress",
+      "timeoutMs": 15000,
+      "parametros": {
+        "nome": "^[A-Za-z0-9_.-]{1,40}$"
+      }
+    }
+  ]
+}
