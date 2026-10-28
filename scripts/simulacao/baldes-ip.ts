@@ -1,5 +1,5 @@
 // Simulação LOCAL (sem rede, sem banco): colisão dos baldes de IP do guarda do PR #112, usando o chaveOpaca/baldeDe reais.
-import { chaveOpaca, baldeDe } from new URL("../../supabase/functions/_shared/limite/publico.ts", import.meta.url).pathname;
+import { chaveOpaca, baldeDe } from "../../supabase/functions/_shared/limite/publico.ts";
 const N_BALDES = 2048, SEG = "segredo-de-simulacao";
 let seed = 12345; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
 const ipAleat = () => `${1 + Math.floor(rnd() * 223)}.${Math.floor(rnd() * 256)}.${Math.floor(rnd() * 256)}.${Math.floor(rnd() * 256)}`;
