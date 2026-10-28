@@ -6,7 +6,7 @@ import { pareceTokenMcp, sha256Hex } from "../conector/cripto.ts";
 import { buscarCapacidade } from "./capacidades.ts";
 import { ferramentasLocaisMcp } from "./catalogo_mcp.ts";
 import type { FilaLocal } from "./fila.ts";
-import type { SessaoLocal } from "./executor.ts";
+import type { SessaoLocal, Tarefa, Veredito } from "./executor.ts";
 
 export interface PortasLocais {
   fila: FilaLocal;
@@ -14,6 +14,8 @@ export interface PortasLocais {
   dispositivo(chave: ChaveMcp): { dispositivo_id: string; hosts_permitidos: readonly string[] } | null;
   novoId(): string;
   esperaMs: number;
+  /** Fase B: executa na hora (despachante + runner sobre a fila persistente) em vez de usar a fila em memória. */
+  executarInline?(sessao: SessaoLocal, tarefa: Tarefa): Promise<Veredito>;
 }
 const escoposLocais = (c: ChaveMcp) => c.escopos.flatMap((e) => (e === "leitura" ? ["consulta"] : e === "propor" ? ["proposta"] : [])) as ("consulta" | "proposta")[];
 const J = { "content-type": "application/json" };
@@ -48,6 +50,10 @@ export async function tratarMcpComLocal(req: RequisicaoMcp, p: PortasGateway, l:
   if (!disp) return falha("sem_dispositivo_pareado");
   const sessao: SessaoLocal = { sessao_id: chave.chave_id, loja_id: chave.loja_id, dispositivo_id: disp.dispositivo_id, agente: chave.nome, escopos, hosts_permitidos: disp.hosts_permitidos };
   const tarefa_id = l.novoId();
+  if (l.executarInline) {
+    const v = await l.executarInline(sessao, { tarefa_id, capacidade: idLocal, params: msg!.params?.arguments ?? {} });
+    return ok(msg!.id, { content: [{ type: "text", text: JSON.stringify({ tarefa_id, ...v, origem: "executor_local", dispositivo_id: disp.dispositivo_id }) }], isError: v.estado !== "CONCLUIDA" });
+  }
   const e = l.fila.enfileirar(sessao, { tarefa_id, capacidade: idLocal, params: msg!.params?.arguments ?? {} });
   if (!e.ok) return falha(e.motivo);
   const fim = Date.now() + l.esperaMs;

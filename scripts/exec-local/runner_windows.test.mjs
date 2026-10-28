@@ -18,7 +18,7 @@ test("metacaracteres no comando não viram shell (vão como argumento único)", 
 });
 test("saída é limitada a 64 KB", async () => {
   const r = await runner.executar("windows", argvPowerShell("grande"), 5000, ctl().signal);
-  assert.ok(r.saida.length < 70000 && r.saida.endsWith("…[truncado]"));
+  assert.ok(Buffer.byteLength(r.saida) <= 65536 && r.saida.endsWith("…[truncado]") && r.truncada);
 });
 test("código de saída ≠ 0 vira erro; argv que não é powershell.exe é recusado; executor errado é recusado", async () => {
   await assert.rejects(runner.executar("windows", argvPowerShell("falha"), 5000, ctl().signal), /saida_3/);
@@ -38,4 +38,20 @@ test("pelo despachante: capacidade permitida conclui; injeção nunca chega ao r
   assert.equal(v.estado, "CONCLUIDA"); assert.equal(JSON.parse(v.evidencia.saida).Caption, "Windows FICTICIO"); assert.equal(chamadas, 1);
   const n = await executar(S, { tarefa_id: "t2", capacidade: "windows.processo.existe", params: { nome: "a; calc" } }, p);
   assert.equal(n.estado, "NEGADA"); assert.equal(chamadas, 1);
+});
+
+import { cortarUtf8 } from "./runner_windows.mjs";
+test("teto de saída em BYTES: multibyte (4 bytes/char) fica ≤ 65536, sem caractere partido, e sinaliza", async () => {
+  const r = await runner.executar("windows", argvPowerShell("grande_mb"), 10000, ctl().signal);
+  assert.ok(Buffer.byteLength(r.saida) <= 65536, `bytes=${Buffer.byteLength(r.saida)}`); assert.ok(r.truncada); assert.ok(!r.saida.includes("\uFFFD"));
+  assert.ok(r.saida.endsWith("…[truncado]")); assert.match(r.saida, /^(😀)+…\[truncado\]$/u);
+});
+test("cortarUtf8 nunca parte caractere de 2, 3 ou 4 bytes, em qualquer posição de corte", () => {
+  for (const ch of ["é", "€", "😀"]) {
+    const buf = Buffer.from(ch.repeat(20));
+    for (let max = 0; max <= buf.length; max++) {
+      const c = cortarUtf8(buf, max); assert.ok(c.length <= max); assert.ok(!c.toString("utf8").includes("\uFFFD"), `${ch} max=${max}`);
+      assert.ok(max - c.length < Buffer.byteLength(ch));                 // perde menos de um caractere
+    }
+  }
 });

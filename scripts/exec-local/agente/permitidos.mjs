@@ -9,10 +9,12 @@ export function compilar(capacidades) {
   });
 }
 const FIXOS = ["powershell.exe", "-NoProfile", "-NonInteractive", "-NoLogo", "-Command"];
-/** Devolve a capacidade que autoriza este argv, ou null. */
-export function autorizar(argv, tabela) {
+/** Devolve a capacidade que autoriza este argv, ou null. `capacidadeId` é a capacidade que o servidor DIZ estar executando:
+ *  o comando precisa casar com o modelo DESSA capacidade (formato válido de outra capacidade, ou de comando qualquer, é recusado). */
+export function autorizar(argv, tabela, capacidadeId) {
+  if (typeof capacidadeId !== "string") return null;
   if (!Array.isArray(argv) || argv.length !== 6 || argv.some((a) => typeof a !== "string")) return null;
   if (FIXOS.some((f, i) => argv[i] !== f)) return null;
   if (/[\r\n\u0000]/.test(argv[5])) return null;
-  return tabela.find((c) => c.re.test(argv[5])) ?? null;
+  return tabela.find((c) => c.id === capacidadeId && c.re.test(argv[5])) ?? null;
 }

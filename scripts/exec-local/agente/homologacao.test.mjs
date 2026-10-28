@@ -19,11 +19,11 @@ test("homologação ponta a ponta com PowerShell falso: todos os passos aprovado
   assert.match(r.cartoes["windows.ambiente.versoes"].linhas.find((l) => l.rotulo === "Origem").valor, new RegExp(r.device_id));
 });
 test("lista permitida do agente: aceita só os modelos de consulta", () => {
-  assert.ok(autorizar([...pre, "Get-PSDrive -Name C | Select-Object Name,Used,Free | ConvertTo-Json -Compress"], tab));
+  assert.ok(autorizar([...pre, "Get-PSDrive -Name C | Select-Object Name,Used,Free | ConvertTo-Json -Compress"], tab, "windows.disco.livre"));
   for (const ruim of ["Get-PSDrive -Name C; whoami | Select-Object Name,Used,Free | ConvertTo-Json -Compress", "Remove-Item C:\\x", "Get-Process -Name a b", "Get-Service -Name x\nwhoami"])
-    assert.equal(autorizar([...pre, ruim], tab), null, ruim);
-  assert.equal(autorizar(["cmd.exe", "/c", "dir"], tab), null); assert.equal(autorizar([...pre.slice(0, 4), "-EncodedCommand", "x"], tab), null);
-  assert.equal(autorizar(pre, tab), null);
+    for (const cap of tab.map((c) => c.id)) assert.equal(autorizar([...pre, ruim], tab, cap), null, ruim);
+  assert.equal(autorizar(["cmd.exe", "/c", "dir"], tab, "windows.disco.livre"), null); assert.equal(autorizar([...pre.slice(0, 4), "-EncodedCommand", "x"], tab, "windows.disco.livre"), null);
+  assert.equal(autorizar(pre, tab, "windows.disco.livre"), null);
 });
 test("código de pareamento: uso único, errado recusado, bloqueio após 5 falhas", async () => {
   const s = await criarServidorLocal(); const c = s.emitirCodigo(); let parar = false;
@@ -38,4 +38,13 @@ test("sem dispositivo pareado nenhuma ferramenta local é anunciada", async () =
   const s = await criarServidorLocal();
   const r = await (await fetch(s.url + "/mcp", { method: "POST", headers: { authorization: `Bearer ${s.tokenMcp}` }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }) })).json();
   assert.ok(!r.result.tools.some((t) => t.title.startsWith("windows."))); s.fechar();
+});
+
+test("allowlist exata por capacidade no agente: formato válido de OUTRA capacidade ou capacidade ausente são recusados", () => {
+  const inv = "Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,OSArchitecture,TotalVisibleMemorySize | ConvertTo-Json -Compress";
+  assert.ok(autorizar([...pre, inv], tab, "windows.sistema.inventario"));
+  assert.equal(autorizar([...pre, inv], tab, "windows.ambiente.versoes"), null);       // comando de uma capacidade, nome de outra
+  assert.equal(autorizar([...pre, inv], tab, undefined), null);                        // servidor não informou a capacidade
+  assert.equal(autorizar([...pre, inv], tab, "windows.servico.reiniciar"), null);      // capacidade inexistente/de escrita
+  assert.equal(autorizar([...pre, "Get-ChildItem C:\\ -Recurse"], tab, "windows.sistema.inventario"), null);   // formato válido, comando diferente
 });
