@@ -9,7 +9,7 @@ Nenhum item abaixo é "funcional real": os ✅ são de runner simulado (PR #118)
 | Browser navega/consulta | 🟡 | NanoShell `execution/browser` (testes em site de teste); runner do Conecta ⛔ |
 | PowerShell diagnóstico permitido | ✅ local (executável FALSO) | `runner_windows.mjs`: spawn sem shell, saída limitada, abort mata o filho (6 testes); `powershell.exe` real ⛔ 👤 |
 | Tempo limite / pausa / revogação | ✅ simulado | `executor.test.ts` |
-| Chat exibe resultado com origem/auditoria | ⛔ | evidência (hash, carimbo) existe; falta o painel no chat |
+| Chat exibe resultado com origem/auditoria | ✅ contrato (objeto) / ⛔ tela | `apresentacao_chat.ts` gera o cartão (origem, horário, hash, auditoria, aviso de ambiente; conteúdo externo só como trecho citado); falta renderizar na tela do chat |
 | Isolamento entre lojas e dispositivos | ✅ simulado | `fila.test.ts` |
 | Bling leitura real × espelho | 🟡 | `bling.produtos.consultar` (tempo real) × `conecta.catalogo.*` (espelho) já separados no registro |
 | Erros e recuperação | ✅ simulado | timeout → DESCONHECIDO, auditoria falha → nada entregue |
