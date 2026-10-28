@@ -1,14 +1,18 @@
-// Modo de aparência: automático (segue o aparelho), claro, escuro ou noturno (tons quentes, menos azul).
+// Modo de aparência: automático (segue o aparelho), claro, escuro, noturno (tons quentes, menos azul) ou alto contraste (fundo preto, bordas fortes, acento amarelo).
 // Escolha guardada no aparelho; sem storage, volta ao automático. Puro e testável: quem toca no DOM é aplicarTema.
 
-export type Preferencia = "auto" | "claro" | "escuro" | "noturno";
-export const PREFERENCIAS: { valor: Preferencia; rotulo: string }[] = [
-  { valor: "auto", rotulo: "Auto" }, { valor: "claro", rotulo: "Claro" }, { valor: "escuro", rotulo: "Escuro" }, { valor: "noturno", rotulo: "Noturno" },
+export type Preferencia = "auto" | "claro" | "escuro" | "noturno" | "contraste";
+export const PREFERENCIAS: { valor: Preferencia; rotulo: string; descricao: string }[] = [
+  { valor: "auto", rotulo: "Automático", descricao: "Segue o claro ou escuro do aparelho" },
+  { valor: "claro", rotulo: "Claro", descricao: "Fundo marfim, para ambientes iluminados" },
+  { valor: "escuro", rotulo: "Escuro", descricao: "Fundo grafite, menos brilho" },
+  { valor: "noturno", rotulo: "Noturno", descricao: "Tons quentes e menos azul, para a noite" },
+  { valor: "contraste", rotulo: "Alto contraste", descricao: "Fundo preto, bordas fortes e acento amarelo" },
 ];
 const CHAVE = "conecta:tema";
 
 export function preferenciaValida(v: unknown): Preferencia {
-  return v === "claro" || v === "escuro" || v === "noturno" ? v : "auto";
+  return v === "claro" || v === "escuro" || v === "noturno" || v === "contraste" ? v : "auto";
 }
 
 /** Valor do atributo data-tema: automático não escreve nada (o CSS segue prefers-color-scheme). */
