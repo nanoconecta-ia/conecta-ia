@@ -3,19 +3,22 @@
 // todo o resto é delegado a tratarMcp. Fase local: a fila é em memória e o executor do dispositivo é um laço separado.
 import { tratarMcp, type ChaveMcp, type PortasGateway, type RequisicaoMcp, type RespostaMcp } from "../conector/gateway.ts";
 import { pareceTokenMcp, sha256Hex } from "../conector/cripto.ts";
-import { buscarCapacidade } from "./capacidades.ts";
+import { buscarCapacidade, type Executor } from "./capacidades.ts";
 import { ferramentasLocaisMcp } from "./catalogo_mcp.ts";
 import type { FilaLocal } from "./fila.ts";
 import type { SessaoLocal, Tarefa, Veredito } from "./executor.ts";
 
 export interface PortasLocais {
-  fila: FilaLocal;
+  /** Só a fase local (fila em memória). Em produção (executarInline) não é usada. */
+  fila?: FilaLocal;
   /** Dispositivo pareado da loja da chave (Pair). null = sem dispositivo autorizado. */
-  dispositivo(chave: ChaveMcp): { dispositivo_id: string; hosts_permitidos: readonly string[] } | null;
+  dispositivo(chave: ChaveMcp): { dispositivo_id: string; hosts_permitidos: readonly string[] } | null | Promise<{ dispositivo_id: string; hosts_permitidos: readonly string[] } | null>;
+  /** Executores com runner LIGADO neste ambiente (padrão: todos). Em produção, só "windows": o que não tem runner não é anunciado nem aceito. */
+  executoresAtivos?: readonly Executor[];
   novoId(): string;
   esperaMs: number;
   /** Fase B: executa na hora (despachante + runner sobre a fila persistente) em vez de usar a fila em memória. */
-  executarInline?(sessao: SessaoLocal, tarefa: Tarefa): Promise<Veredito>;
+  executarInline?(sessao: SessaoLocal, tarefa: Tarefa, chave: ChaveMcp): Promise<Veredito>;
 }
 const escoposLocais = (c: ChaveMcp) => c.escopos.flatMap((e) => (e === "leitura" ? ["consulta"] : e === "propor" ? ["proposta"] : [])) as ("consulta" | "proposta")[];
 const J = { "content-type": "application/json" };
@@ -41,19 +44,22 @@ export async function tratarMcpComLocal(req: RequisicaoMcp, p: PortasGateway, l:
 
   if (msg!.method === "tools/list") {
     const base = JSON.parse((await tratarMcp(req, p)).corpo);
-    const locais = l.dispositivo(chave) ? ferramentasLocaisMcp(escopos) : [];   // sem dispositivo pareado, nada local é anunciado
+    const locais = (await l.dispositivo(chave)) ? ferramentasLocaisMcp(escopos, l.executoresAtivos) : [];   // sem dispositivo pareado, nada local é anunciado
     return ok(msg!.id, { tools: [...(base.result?.tools ?? []), ...locais] });
   }
   // tools/call de capacidade local
   const falha = (texto: string, extra: object = {}) => ok(msg!.id, { content: [{ type: "text", text: JSON.stringify({ erro: texto, ...extra }) }], isError: true });
-  const disp = l.dispositivo(chave);
+  const cap = buscarCapacidade(idLocal)!;
+  if (l.executoresAtivos && !l.executoresAtivos.includes(cap.executor)) return falha("executor_nao_ligado");
+  const disp = await l.dispositivo(chave);
   if (!disp) return falha("sem_dispositivo_pareado");
   const sessao: SessaoLocal = { sessao_id: chave.chave_id, loja_id: chave.loja_id, dispositivo_id: disp.dispositivo_id, agente: chave.nome, escopos, hosts_permitidos: disp.hosts_permitidos };
   const tarefa_id = l.novoId();
   if (l.executarInline) {
-    const v = await l.executarInline(sessao, { tarefa_id, capacidade: idLocal, params: msg!.params?.arguments ?? {} });
+    const v = await l.executarInline(sessao, { tarefa_id, capacidade: idLocal, params: msg!.params?.arguments ?? {} }, chave);
     return ok(msg!.id, { content: [{ type: "text", text: JSON.stringify({ tarefa_id, ...v, origem: "executor_local", dispositivo_id: disp.dispositivo_id }) }], isError: v.estado !== "CONCLUIDA" });
   }
+  if (!l.fila) return falha("fila_nao_configurada");
   const e = l.fila.enfileirar(sessao, { tarefa_id, capacidade: idLocal, params: msg!.params?.arguments ?? {} });
   if (!e.ok) return falha(e.motivo);
   const fim = Date.now() + l.esperaMs;

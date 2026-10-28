@@ -7,6 +7,7 @@ import { dadosSupabase } from "../_shared/pair/gateway_dados.ts";
 import { chaveiroPlataforma, segredoEstado } from "../_shared/plataforma.ts";
 import { configuracaoPair } from "../_shared/pair/implantacao.ts";
 import { tratarOAuth, desafioOAuth } from "../_shared/pair/oauth.ts";
+import { tratarDispositivo } from "../_shared/exec_local/rotas_dispositivo.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, content-type, mcp-protocol-version, mcp-session-id", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Expose-Headers": "WWW-Authenticate", "Cache-Control": "no-store" };
 
@@ -15,6 +16,15 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || undefined;
   try {
+    // Rotas do AGENTE Windows (só ele chama): puxar tarefa e devolver resultado. Auth = sessão do Conecta Pair, conferida no banco a cada chamada.
+    const rota = /\/dispositivo\/(proximo|resultado)$/.exec(new URL(req.url).pathname);
+    if (rota) {
+      const rd = await tratarDispositivo({ metodo: req.method, caminho: `/dispositivo/${rota[1]}`, authorization: req.headers.get("Authorization"), corpo: await req.text(), ip }, {
+        async rpc(fn, args) { const { data, error } = await admin.rpc(fn, args); if (error) throw new Error(fn); return data; },
+        limite: async (chave, max, janela) => (await admin.rpc("limite_chamada", { p_chave: chave, p_max: max, p_janela_s: janela })).data === true,
+      });
+      return new Response(rd.corpo === undefined ? null : JSON.stringify(rd.corpo), { status: rd.status, headers: { ...CORS, "Content-Type": "application/json" } });
+    }
     const get = (k: string) => Deno.env.get(k);
     const baseURL = Deno.env.get("SUPABASE_URL")!.replace(/\/$/, "") + "/functions/v1/conecta-gateway";
     const config = configuracaoPair(get);
