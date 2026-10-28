@@ -188,7 +188,9 @@ test("8a. sem liberação explícita, o banco recusa executar escrita no Bling m
 
 test("8b. com liberação no banco, o registro (ferramenta desligada) ainda bloqueia: nada chega ao Bling", { skip }, async () => {
   await db.rpc("agente_escrita_liberar", { p_loja: A, p_ferramenta: "bling.produtos.alterar", p_user: U1, p_referencia: "teste de aceitação com Bling simulado" });
-  const r = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: propostaA });
+  // Em produção esta ferramenta está ativa (liberada pelo dono em 28/10/2026); aqui o registro volta ao estado desligado para provar que essa trava continua valendo.
+  const desligadoNoRegistro = (id: string) => { const d = buscarDefinicao(id); return d ? { ...d, estado: "desligada" as const } : d; };
+  const r = await executarProposta({ camposLiberados: LIBERADOS_TESTE, rpc: db.rpc as any, bling, lojaId: A, propostaId: propostaA, definicao: desligadoNoRegistro });
   assert.equal(r.itens[0].estado, "falhou"); assert.match(r.itens[0].motivo ?? "", /desligada/);
   assert.equal(bling.recebidos.length, 0, "ferramenta desligada no registro: o Bling nunca foi chamado");
 });

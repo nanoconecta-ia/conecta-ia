@@ -1,6 +1,6 @@
 # Desenho: escrever a categoria do produto no Bling
 
-**Status: DESENHO. Nada foi escrito no Bling e nenhuma ferramenta de escrita foi ligada.** A autorização do dono vale para o espelhamento nos dois sentidos; a liberação de cada escrita continua passando pelas travas do projeto (CLAUDE.md, regra 7) e por autorização específica (fase P8 em `piloto-mobis.md`).
+**Status (28/10/2026): código da escrita real PRONTO e DESLIGADO. Nada foi escrito no Bling; nada foi implantado.** Ver a seção 8. A autorização do dono vale para o espelhamento nos dois sentidos; a liberação de cada escrita continua passando pelas travas do projeto (CLAUDE.md, regra 7) e por autorização específica (fase P8 em `piloto-mobis.md`).
 
 ## 1. Escopo
 - **Um campo só:** `categoria.id` do produto, pela ferramenta que já existe no catálogo fechado, `bling.produtos.alterar` (`PATCH /produtos/{id}`), hoje `ativa: false` e `conferido: false`.
@@ -71,3 +71,17 @@ Primeiro **1 produto** (o produto de teste da fase P8), depois **até 5**, depoi
 | Resposta do Bling perdida (timeout) | estado DESCONHECIDO; reconcilia por leitura |
 | Escrita fora do escopo (outro campo) | lista fechada de campos; teste de recusa |
 | Reversão não testada | descobrir no produto de teste antes do lote |
+
+## 8. Estado em 28/10/2026 e como ligar (decisões do dono no chat)
+**Decidido pelo dono:** gravar no Bling só **criação de categoria** e **categoria do produto** (primeiro lote); **cada ação aprovada por ele**; navegador do Bling **só leitura** primeiro; nota fiscal só consulta. Criação de produto, estoque, pedidos e contatos seguem **desligados**.
+
+**O que o código faz agora** (PR de código; nada implantado): `BlingEscritaReal` (porta de escrita com lista fechada de 2 ferramentas, id numérico, corpo sem campo proibido, 1 escrita por vez a ~3/s, sem repetição, sem enviar a chave de idempotência ao Bling), `bling.produtos.alterar` e `bling.categorias.criar` **ativas no registro**, e o painel recusa executar (409, aprovação preservada) enquanto a escrita estiver desligada.
+
+**Quatro travas, todas precisam estar abertas (qualquer uma fechada = nada é enviado):**
+1. **Implantar** a função `conector-aprovacoes` (hoje não implantada). *Autorização específica do dono.*
+2. **Segredo** `BLING_ESCRITA_REAL=1` nas funções. Sem ele a porta recusa antes de enviar. *Dono define.*
+3. **Liberação da loja** por ferramenta: `agente_escrita_liberar` com a referência da autorização (começar pelo produto de teste). *Dono autoriza.*
+4. **Aprovação da versão exata** de cada proposta, no painel. *Dono, a cada ação.*
+Além disso, antes da primeira gravação: confirmar que o **app do Bling tem o escopo de escrita em produtos** e se há **marketplace/loja virtual** ligados (a categoria pode mudar o mapeamento deles); e conferir o corpo de `PATCH /produtos/{id}` e `POST /categorias/produtos` no OpenAPI oficial (os campos usados — `categoria.id`; `descricao` e `categoriaPai.id` — coincidem com o esquema do conector oficial do Bling lido em 28/10/2026).
+
+**Desligar na hora (emergência):** remover o segredo `BLING_ESCRITA_REAL` (ou `agente_escrita_revogar` para a ferramenta). **Reverter um valor:** o `antes` de cada item fica guardado; o produto pode voltar à categoria anterior por nova proposta aprovada.

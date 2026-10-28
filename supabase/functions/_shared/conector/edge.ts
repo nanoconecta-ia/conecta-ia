@@ -4,7 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { decifrar } from "../cripto.ts";
 import { chaveiroPlataforma } from "../plataforma.ts";
 import { armazemSupabase } from "../bling_armazem.ts";
-import { BlingLeituraReal } from "./porta_bling.ts";
+import { BlingEscritaReal, BlingLeituraReal } from "./porta_bling.ts";
 
 export const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -44,6 +44,12 @@ export async function autenticar(req: Request, lojaId: unknown): Promise<Sessao 
 export async function blingLeitura(s: Sessao) {
   const chaveCifra = await chaveiroPlataforma(s.admin, (n) => Deno.env.get(n));
   return chaveCifra ? new BlingLeituraReal(armazemSupabase(s.admin), s.lojaId, { chaveCifra }) : undefined;
+}
+
+/** Porta de escrita do Bling: sempre construída (lê e confirma), mas SÓ escreve com o segredo BLING_ESCRITA_REAL=1. Sem ele, qualquer escrita é recusada antes de enviar. */
+export async function blingEscrita(s: Sessao) {
+  const chaveCifra = await chaveiroPlataforma(s.admin, (n) => Deno.env.get(n));
+  return chaveCifra ? new BlingEscritaReal(armazemSupabase(s.admin), s.lojaId, { chaveCifra }, Deno.env.get("BLING_ESCRITA_REAL") === "1") : undefined;
 }
 
 export const decifrarComChaveiro = async (s: Sessao) => {

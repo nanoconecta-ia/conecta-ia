@@ -28,9 +28,9 @@ const proposta = (id: string, grupo: DefinicaoFerramenta["grupo"], descricao: st
 const interna = (id: string, descricao: string, entrada: JsonSchema, risco: Risco, verificacao: string, recuperacao: string) =>
   def({ id, grupo: "conecta", descricao, entrada, saida: livre, permissao: "executar", risco, simulacao: true, exigeAprovacao: true, idempotencia: "chave",
     verificacao, recuperacao, estado: "ativa", escreveExterno: false });
-const execucao = (id: string, descricao: string, entrada: JsonSchema, risco: Risco, verificacao: string, recuperacao: string) =>
+const execucao = (id: string, descricao: string, entrada: JsonSchema, risco: Risco, verificacao: string, recuperacao: string, estado: DefinicaoFerramenta["estado"] = "desligada") =>
   def({ id, grupo: "bling", descricao, entrada, saida: livre, permissao: "executar", risco, simulacao: true, exigeAprovacao: true, idempotencia: "chave",
-    verificacao, recuperacao, estado: "desligada", escreveExterno: true });
+    verificacao, recuperacao, estado, escreveExterno: true });
 
 const PRODUTO_ALVO = obj({ sku, produto_id: uuid });
 const itemProposta = obj({
@@ -96,8 +96,8 @@ export const FERRAMENTAS_CONECTOR: readonly DefinicaoFerramenta[] = [
 
   // ------------------------------------------------------------------ Execução (SÓ o executor; nunca exposto a LLM nem a cliente externo)
   execucao("bling.produtos.criar", "Cria produto no Bling (POST /produtos).", obj({ corpo: livre }, ["corpo"]), "MEDIUM", "Ler o produto no Bling e comparar com o enviado.", "Timeout => desconhecido; reconciliar por SKU/GTIN antes de repetir."),
-  execucao("bling.produtos.alterar", "Altera campos permitidos de um produto no Bling (PATCH /produtos/{id}).", obj({ id: txt(undefined, 30), corpo: livre }, ["id", "corpo"]), "MEDIUM", "Ler o produto e comparar campo a campo.", "Timeout => desconhecido; ler o produto e comparar antes de repetir."),
-  execucao("bling.categorias.criar", "Cria categoria de produto no Bling (POST /categorias/produtos).", obj({ corpo: livre }, ["corpo"]), "MEDIUM", "Listar categorias e localizar a criada.", "Timeout => desconhecido; listar e procurar pelo nome/pai antes de repetir."),
+  execucao("bling.produtos.alterar", "Altera campos permitidos de um produto no Bling (PATCH /produtos/{id}).", obj({ id: txt(undefined, 30), corpo: livre }, ["id", "corpo"]), "MEDIUM", "Ler o produto e comparar campo a campo.", "Timeout => desconhecido; ler o produto e comparar antes de repetir.", "ativa"),
+  execucao("bling.categorias.criar", "Cria categoria de produto no Bling (POST /categorias/produtos).", obj({ corpo: livre }, ["corpo"]), "MEDIUM", "Listar categorias e localizar a criada.", "Timeout => desconhecido; listar e procurar pelo nome/pai antes de repetir.", "ativa"),
   execucao("bling.produtos.confirmar", "Leitura de confirmação após gravação (parte do executor).", obj({ id: txt(undefined, 30) }, ["id"]), "LOW", "Compara com o esperado.", "Repetir a leitura."),
 
   interna("conecta.enriquecimento.definir", "Aplica no Conecta.IA o enriquecimento aprovado (camada separada do Bling). Confere conflito com o valor anterior aprovado.",

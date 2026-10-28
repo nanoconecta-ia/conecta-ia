@@ -49,6 +49,8 @@ export async function escreverEConfirmarNoBling(bling: PortaBling, op: string, i
   }
   if (alterar && !(item.alvo && /^\d+$/.test(item.alvo))) return { estado: "falhou", motivo: "alvo (id do produto no Bling) ausente ou inválido" };
 
+  // Porta que não escreve (leitura só, ou BLING_ESCRITA_REAL desligado): recusa ANTES de marcar "enviada", para não gastar a tentativa nem a aprovação.
+  if (bling.escritaLigada === false) return { estado: "falhou", motivo: "escrita_real_desligada: a escrita no Bling não está ligada neste ambiente" };
   await aoEnviar?.();
   let r;
   try { r = await bling.chamar(op, { id: item.alvo ?? undefined, corpo }, item.idempotency_key); }

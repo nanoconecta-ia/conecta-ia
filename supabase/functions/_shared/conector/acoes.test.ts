@@ -31,7 +31,7 @@ async function interna(sku: string, depois: Record<string, unknown>, risco = "ME
 test("preparação", { skip }, () => {
   db.sql(`insert into public.lojas (id, nome, slug) values ('${L}', 'Loja ações', 'loja-acoes')`);
   db.sql(`insert into public.usuarios_loja values ('${L}', '${U}', 'lojista'), ('${L}', '${ED}', 'editor')`);
-  for (let n = 1; n <= 6; n++) { db.sql(`insert into public.produtos (loja_id, bling_id, sku, nome, preco, situacao) values ('${L}', '${1000 + n}', 'ACAO-00${n}', 'Peça ${n}', 10, 'A')`); bling.semear(String(1000 + n), { codigo: `ACAO-00${n}`, nome: `Peça ${n}`, preco: 10, situacao: "A" }); }
+  for (let n = 1; n <= 8; n++) { db.sql(`insert into public.produtos (loja_id, bling_id, sku, nome, preco, situacao) values ('${L}', '${1000 + n}', 'ACAO-00${n}', 'Peça ${n}', 10, 'A')`); bling.semear(String(1000 + n), { codigo: `ACAO-00${n}`, nome: `Peça ${n}`, preco: 10, situacao: "A" }); }
 });
 
 test("decidir: validação de entrada, hash errado, editor sem permissão, aprovação, duplicidade e risco alto", { skip }, async () => {
@@ -105,6 +105,22 @@ test("executar: item interno aprovado executa; escrita no Bling é barrada; nada
   const bloqueada = await acaoAprovacoes({ acao: "executar", proposta_id: bl }, lojista, deps());
   assert.equal(bloqueada.status, 403); assert.match(String(bloqueada.corpo.erro), /desligada/);
   assert.equal(bling.recebidos.length, antes);
+});
+
+test("executar com a escrita real DESLIGADA: proposta com item do Bling volta 409 sem gastar a aprovação; proposta só interna segue executando", { skip }, async () => {
+  const desligada = { simulado: false, escritaLigada: false, chamar: async () => { throw new Error("não deveria chamar"); }, ler: async () => ({ status: 200, corpo: {} }) };
+  const antes = bling.recebidos.length;
+  const bl = await proposta("ACAO-007", { marca: "Sabó" });
+  await acaoAprovacoes({ acao: "decidir", proposta_id: bl, versao: 1, hash: hashDe(bl), decisao: "aprovada" }, lojista, deps({ blingEscrita: desligada }));
+  const r = await acaoAprovacoes({ acao: "executar", proposta_id: bl }, lojista, deps({ blingEscrita: desligada }));
+  assert.equal(r.status, 409); assert.match(String(r.corpo.erro), /desligada/); assert.equal((r.corpo as any).codigo ?? (r.corpo as any).motivo, "escrita_desligada");
+  assert.equal(db.sql(`select estado from public.agente_propostas where id = '${bl}'`), "aprovada", "a aprovação NÃO foi gasta");
+  assert.equal(db.sql(`select count(*) from public.agente_operacoes where item_id in (select id from public.agente_proposta_itens where proposta_id = '${bl}')`), "0", "nenhuma tentativa foi aberta");
+  assert.equal(bling.recebidos.length, antes);
+  const pi = await interna("ACAO-008", { descricao_curta: "Só interna com escrita desligada" });
+  await acaoAprovacoes({ acao: "decidir", proposta_id: pi, versao: 1, hash: hashDe(pi), decisao: "aprovada" }, lojista, deps({ blingEscrita: desligada }));
+  const ok = await acaoAprovacoes({ acao: "executar", proposta_id: pi }, lojista, deps({ blingEscrita: desligada }));
+  assert.equal(ok.status, 200, JSON.stringify(ok)); assert.equal((ok.corpo.relatorio as any).estado_final, "executada");
 });
 
 test("reconciliar: operação desconhecida com prova de que gravou", { skip }, async () => {

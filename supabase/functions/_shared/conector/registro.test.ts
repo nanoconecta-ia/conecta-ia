@@ -7,6 +7,9 @@ import { gerarToken, pareceTokenMcp, sha256Hex } from "./cripto.ts";
 
 const d = (id: string) => buscarDefinicao(id)!;
 
+/** Escritas no Bling ativas no registro. Estoque, pedidos, contatos e criação de produto seguem desligados. */
+const ESCRITA_BLING_LIBERADA = new Set(["bling.produtos.alterar", "bling.categorias.criar"]);
+
 test("registro: ids únicos, formato aceito pelo banco e contrato completo em toda ferramenta", () => {
   const ids = new Set<string>();
   for (const f of FERRAMENTAS_CONECTOR) {
@@ -18,8 +21,10 @@ test("registro: ids únicos, formato aceito pelo banco e contrato completo em to
       assert.equal(f.exigeAprovacao, true, `${f.id} exige aprovação`);
       assert.equal(f.idempotencia, "chave", `${f.id} exige idempotência`);
       assert.equal(f.exposicao.chat || f.exposicao.mcp, false, `${f.id} nunca exposta a LLM/cliente`);
-      // escrita em sistema externo (Bling) nasce desligada; execução interna aprovada pode estar ativa
-      assert.equal(f.estado, f.escreveExterno ? "desligada" : "ativa", `${f.id} estado inicial`);
+      // escrita em sistema externo (Bling) nasce desligada; só as liberadas pelo dono (28/10/2026: cadastro de categoria e categoria do produto) estão ativas
+      // no registro, e mesmo assim só escrevem com BLING_ESCRITA_REAL=1, liberação da loja no banco, aprovação da versão exata e campos da lista fechada.
+      const esperado = f.escreveExterno ? (ESCRITA_BLING_LIBERADA.has(f.id) ? "ativa" : "desligada") : "ativa";
+      assert.equal(f.estado, esperado, `${f.id} estado inicial`);
     }
     if (f.escreveExterno) assert.equal(f.permissao, "executar", `${f.id}: escrita externa só no executor`);
   }
@@ -83,8 +88,24 @@ test("policy: execução interna (Conecta.IA) aprovada passa; sem aprovação pe
 });
 
 test("policy: escrita REAL fica negada enquanto a ferramenta está desligada, mesmo aprovada e liberada", () => {
-  const r = decidir(d("bling.produtos.alterar"), { origem: "executor", aprovacaoValida: true, simulado: false, escritaRealLiberada: true });
-  assert.equal(r.decisao, "negada"); assert.match(r.motivo, /desligada/);
+  // desligadas no registro: criação de produto, estoque, pedidos e contatos (e qualquer outra que não esteja na lista liberada)
+  for (const id of ["bling.produtos.criar"]) {
+    const r = decidir(d(id), { origem: "executor", aprovacaoValida: true, simulado: false, escritaRealLiberada: true });
+    assert.equal(r.decisao, "negada", id); assert.match(r.motivo, /desligada/, id);
+  }
+});
+
+test("policy: as duas escritas liberadas (categoria do produto e criação de categoria) só passam com aprovação E liberação da loja", () => {
+  for (const id of ["bling.produtos.alterar", "bling.categorias.criar"]) {
+    assert.equal(decidir(d(id), { origem: "executor", aprovacaoValida: false, simulado: false, escritaRealLiberada: true }).decisao, "requer_aprovacao", id);
+    const semLiberacao = decidir(d(id), { origem: "executor", aprovacaoValida: true, simulado: false, escritaRealLiberada: false });
+    assert.equal(semLiberacao.decisao, "negada", id); assert.match(semLiberacao.motivo, /escrita_real_nao_liberada/, id);
+    assert.equal(decidir(d(id), { origem: "executor", aprovacaoValida: true, simulado: false, escritaRealLiberada: true, produtoTravado: true }).decisao, "negada", `${id} produto travado`);
+    assert.equal(decidir(d(id), { origem: "executor", aprovacaoValida: true, simulado: false, escritaRealLiberada: true }).decisao, "permitida", id);
+    // LLM e cliente externo nunca executam
+    assert.equal(decidir(d(id), { origem: "chat", aprovacaoValida: true, escritaRealLiberada: true }).decisao, "negada", `${id} chat`);
+    assert.equal(decidir(d(id), { origem: "gateway_mcp", escopos: ["executar", "leitura", "propor"], aprovacaoValida: true, escritaRealLiberada: true }).decisao, "negada", `${id} mcp`);
+  }
 });
 
 test("policy: MCP exige escopo; leitura passa, proposta exige 'propor'", () => {
