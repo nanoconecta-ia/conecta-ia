@@ -61,6 +61,7 @@ jobs:
       - run: node scripts/tests/nano-guia-visual.mjs
       - run: node scripts/tests/temas-visual.mjs
       - run: node scripts/tests/versao-visual.mjs
+      - run: node scripts/tests/sw-atualiza.mjs
       - run: node scripts/tests/fidelidade-visual.mjs
       - run: node scripts/tests/painel-lateral-mobile-visual.mjs
       - uses: actions/upload-artifact@v4

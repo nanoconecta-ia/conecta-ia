@@ -57,6 +57,8 @@ try{
   const rc=await campo.boundingBox(),re=await enviar.boundingBox(),dd=await dock.boundingBox();
   ver(!(await cortado(campo))&&!(await cortado(enviar))&&dentro(rc)&&dentro(re),`${rotulo}: caixa de texto e Enviar à vista dentro do painel (${Math.round(re.y+re.height)} de ${altura})`);
   ver(rc.height>=40&&re.height>=36,`${rotulo}: caixa e botão com tamanho utilizável (${Math.round(rc.height)}/${Math.round(re.height)})`);
+  // a versão do painel aparece no topo do Nano.ia (a barra de baixo fica escondida atrás da janela no celular)
+  ver(/^v([0-9a-f]{7}|local)$/.test((await dock.locator('.dock-topo .dock-versao').innerText()).trim()),`${rotulo}: versão visível no topo do Nano.ia`);
   // título legível mesmo com texto grande: não vira "N." (sem reticências) e Enviar à vista dentro do painel
   const tit=await dock.locator('.agente-titulo h1').evaluate(e=>({c:e.clientWidth,s:e.scrollWidth}));ver(tit.s<=tit.c+1,`${rotulo}: título "Nano.ia" inteiro, sem reticências (${tit.s}/${tit.c})`);
   ver(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),`${rotulo}: sem rolagem horizontal`);

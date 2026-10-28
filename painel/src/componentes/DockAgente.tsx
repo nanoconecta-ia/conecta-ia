@@ -5,6 +5,7 @@ import type { Item } from "../lib/comandosNL.ts";
 import { assinar, obter, perguntarAoNano } from "../lib/contextoPagina.ts";
 import { ajustarLargura, larguraPeloPonteiro, LARGURA_MAX, LARGURA_MIN, passoDeTeclado, TELA_MIN_PARA_FIXO, type EstadoPainel } from "../lib/painelLateral.ts";
 import { CONECTOR_ATIVO } from "../lib/flags.ts";
+import { VERSAO_LOCAL, rotuloVersao } from "../lib/versao.ts";
 import { MapaMental } from "./MapaMental.tsx";
 import { ResumoPagina } from "./ResumoPagina.tsx";
 
@@ -65,7 +66,7 @@ export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, ao
           tabIndex={0} onPointerDown={aoPressionar} onPointerMove={aoMover} onPointerUp={aoSoltar} onPointerCancel={aoSoltar} onKeyDown={aoTeclar} />
       )}
       <div className="dock-topo">
-        <strong>Nano.ia</strong><span className="suave">{loja.nome}</span>
+        <strong>Nano.ia <small className="dock-versao mono" title="Versão do painel neste aparelho">v{rotuloVersao(VERSAO_LOCAL)}</small></strong><span className="suave">{loja.nome}</span>
         {telaW >= TELA_MIN_PARA_FIXO && ( // fixar só existe onde funciona: em tela estreita (celular) o painel é sempre flutuante
           <>
           <button className="sec mini dock-ico" onClick={() => mudar({ modo: "fixo", lado: "esq" })} aria-pressed={painel.modo === "fixo" && painel.lado === "esq"} aria-label="Fixar à esquerda" title="Fixar à esquerda">{I.esq}</button>

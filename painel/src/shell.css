@@ -585,3 +585,6 @@ html .aviso-versao button, html .aviso-versao button:hover:not(:disabled) { min-
 html .aviso-versao button:disabled { background: #fff; color: #1d1b18; opacity: .75; }
 [data-tema="contraste"] .aviso-versao { background: #000; color: #fff; border-bottom: 3px solid #fff; }
 [data-tema="contraste"] .aviso-versao button { border-color: #fff; }
+
+/* versão do painel também no topo do Nano.ia (a barra de baixo fica escondida atrás da janela no celular) */
+.dock-topo .dock-versao { font-weight: 500; font-size: .72rem; color: #cfc6b6; margin-left: 6px; white-space: nowrap; }
