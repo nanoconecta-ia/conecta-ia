@@ -176,7 +176,7 @@ export function App() {
           : BANNERS_ATIVO && caminho === "/banners" ? <Banners loja={loja} />
           : caminho === "/condicoes" ? <Condicoes loja={loja} />
           : caminho === "/integracoes" ? <Integracoes loja={loja} />
-          : caminho === "/imagens" ? <Imagens />
+          : caminho === "/imagens" ? <Imagens loja={loja} />
           : caminho === "/design" ? <Design />
           : BACKUP_ATIVO && caminho === "/backup" ? <Backup loja={loja} />
           : caminho === "/bling" ? <Bling loja={loja} query={query} />

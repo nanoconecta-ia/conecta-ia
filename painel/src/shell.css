@@ -528,3 +528,30 @@ html .dock-trilho button.dock-aba:focus-visible { outline: 2px solid var(--verde
   .dock-trilho { overflow-y: auto; gap: 2px; padding: 4px; }
   .dock-aba { min-height: 44px; padding: 2px 4px; gap: 0; } .dock-aba span { font-size: .68rem; }
 }
+
+/* ===== Nano Visual Fidelity (Imagens e SEO): comparador, banner demonstrativo e configuração ===== */
+.fid-par { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); margin: 10px 0; }
+@media (min-width: 640px) { .fid-par { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.fid-par figure, .fid-banners figure { margin: 0; }
+.fid-quadro { aspect-ratio: 4 / 3; width: 100%; border: 1px solid var(--borda); border-radius: var(--raio, 10px); background-color: var(--realce); cursor: crosshair; touch-action: manipulation; }
+.fid-par figcaption { margin-top: 6px; }
+.fid-zoom { display: flex; align-items: center; gap: 10px; min-height: 44px; } .fid-zoom input[type="range"] { flex: 1; min-width: 0; min-height: 44px; }
+.fid-sha { word-break: break-all; font-size: .8rem; }
+.fid-checagem, .fid-modos { border: 1px solid var(--borda); border-radius: var(--raio, 10px); padding: 12px; margin: 12px 0 0; min-width: 0; }
+.fid-checagem legend, .fid-modos legend { font-weight: 700; padding: 0 6px; }
+.fid-opcao { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 0; } .fid-opcao input { width: 22px; height: 22px; flex: none; margin-top: 2px; }
+.fid-opcao small { display: block; }
+.fid-campo { display: grid; gap: 4px; margin: 8px 0 12px; } .fid-campo input { min-height: 44px; }
+.fid-banners { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 900px) { .fid-banners { grid-template-columns: 1.6fr 1fr 1fr; } }
+.fid-banner { position: relative; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; border-radius: var(--raio, 10px); background: var(--grafite); color: #fff; max-width: 100%; }
+.fid-banner[data-formato="4:5"], .fid-banner[data-formato="1:1"] { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+.fid-banner-texto { display: grid; align-content: center; gap: 6px; padding: 14px; min-width: 0; overflow-wrap: anywhere; }
+.fid-banner-texto strong { font-family: var(--titulo); font-size: clamp(1rem, 4.5vw, 1.5rem); line-height: 1.1; }
+.fid-banner-texto small { text-transform: uppercase; letter-spacing: .08em; opacity: .85; }
+.fid-cta { justify-self: start; background: var(--marca); color: var(--marca-texto); border-radius: 8px; padding: 6px 12px; font-weight: 700; }
+.fid-banner-foto { background-size: cover; background-position: center; min-height: 0; }
+.fid-banner[data-formato="4:5"] .fid-banner-foto, .fid-banner[data-formato="1:1"] .fid-banner-foto { grid-row: 2; }
+.fid-banner figcaption { position: absolute; right: 8px; bottom: 8px; background: var(--cartao); color: var(--texto); }
+.fid-protecao { margin-top: 12px; padding: 12px; border-radius: var(--raio, 10px); background: var(--realce); } .fid-protecao ul { margin: 6px 0 0; padding-left: 20px; }
+@media (prefers-reduced-motion: reduce) { .fid-quadro { transition: none; } }
