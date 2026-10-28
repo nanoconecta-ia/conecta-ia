@@ -48,7 +48,7 @@ export function SeletorTema() {
         <div id={`${id}-lista`} className="seletor-painel" role="radiogroup" aria-label="Aparência">
           {PREFERENCIAS.map((p, i) => (
             <button key={p.valor} type="button" role="radio" aria-checked={pref === p.valor} tabIndex={pref === p.valor ? 0 : -1} ref={(el) => { opcoes.current[i] = el; }}
-              className="seletor-opcao" onClick={() => escolher(p.valor)} onKeyDown={(e) => teclar(e, i)}>
+              className="sec seletor-opcao" onClick={() => escolher(p.valor)} onKeyDown={(e) => teclar(e, i)}>
               <span className="amostra" aria-hidden="true">
                 {p.valor === "auto"
                   ? <><span className="amostra-meia" data-tema="claro" /><span className="amostra-meia" data-tema="escuro" /></>

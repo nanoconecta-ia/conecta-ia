@@ -156,11 +156,16 @@ button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(
 .topo .seletor-gatilho:hover:not(:disabled) { background:rgba(255,255,255,.14); }
 @media (max-width:900px) { .topo .seletor-rotulo { display:none; } .topo .seletor-gatilho { padding:0; width:44px; justify-content:center; } }
 .seletor-painel { position:absolute; right:0; top:calc(100% + 8px); z-index:30; width:min(340px, calc(100vw - 24px)); display:grid; gap:2px; padding:6px; background:var(--cartao); color:var(--texto); border:var(--campo-bw) solid var(--borda-forte); border-radius:12px; box-shadow:0 18px 50px rgba(0,0,0,.4); }
-.seletor-opcao { display:flex; align-items:center; gap:12px; min-height:56px; padding:8px 10px; background:transparent; color:var(--texto); border:var(--campo-bw) solid transparent; border-radius:10px; text-align:left; font-weight:500; }
-.seletor-opcao:hover:not(:disabled) { background:var(--realce); }
-.seletor-opcao[aria-checked="true"] { border-color:var(--marca); background:color-mix(in srgb, var(--marca) 12%, transparent); }
+@media (max-width:560px) { .seletor-painel { position:fixed; left:12px; right:12px; top:64px; width:auto; } } /* celular: lista ocupa a largura da tela, sem sair pela esquerda */
+button.seletor-opcao { display:flex; align-items:center; gap:12px; min-height:56px; padding:8px 10px; background:transparent; color:var(--texto); border:var(--campo-bw) solid transparent; border-radius:10px; text-align:left; font-weight:500; }
+button.seletor-opcao:hover:not(:disabled) { background:var(--realce); }
+button.seletor-opcao[aria-checked="true"] { border-color:var(--marca); background:color-mix(in srgb, var(--marca) 12%, transparent); }
 .seletor-texto { display:grid; flex:1; min-width:0; } .seletor-texto b { font-size:.95rem; } .seletor-texto small { color:var(--suave); font-size:.78rem; line-height:1.25; }
-.seletor-marca { width:18px; text-align:center; font-weight:800; color:var(--marca); }
+.seletor-marca { width:18px; text-align:center; font-weight:800; color:var(--marca-forte); }
+/* dentro da barra escura do topo, a lista tem fundo de cartão: texto e bordas voltam às cores do tema */
+.topo .seletor-painel button.seletor-opcao { color:var(--texto); border-color:transparent; }
+.topo .seletor-painel button.seletor-opcao[aria-checked="true"] { border-color:var(--marca-forte); }
+.topo .seletor-painel button.seletor-opcao:hover:not(:disabled) { background:var(--realce); color:var(--texto); }
 .amostra { flex:none; width:44px; height:32px; border-radius:8px; overflow:hidden; border:1px solid var(--borda-forte); display:flex; }
 .amostra-meia { flex:1; background:var(--fundo); } .amostra-cheia { flex:1; display:flex; align-items:center; justify-content:center; gap:4px; background:var(--fundo); }
 .amostra-cheia i { width:8px; height:8px; border-radius:50%; background:var(--marca); } .amostra-cheia i:nth-child(2) { background:var(--texto); } .amostra-cheia i:nth-child(3) { background:var(--ok); }
@@ -237,12 +242,6 @@ button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(
 .logo-conecta { display:inline-flex; align-items:center; gap:8px; } .logo-conecta b { font-weight:800; font-size:1.05rem; letter-spacing:-.01em; } .logo-conecta b span { color:var(--marca); }
 .topo .logo-conecta b { color:#fff; } .topo .logo-conecta b span { color:var(--marca); }
 .marca > .logo-conecta { flex:none; }
-.seletor-tema { display:inline-flex; border:1px solid rgba(255,255,255,.28); border-radius:6px; overflow:hidden; }
-.seletor-tema button { min-height:34px; border:0; border-radius:0; background:transparent; color:#cfc6b6; font-size:.8rem; font-weight:500; padding:4px 10px; box-shadow:none; }
-.seletor-tema button + button { border-left:1px solid rgba(255,255,255,.18); }
-.seletor-tema button[aria-pressed="true"] { background:rgba(255,255,255,.14); color:#fff; }
-.seletor-tema button:hover:not(:disabled) { background:rgba(255,255,255,.1); }
-@media (max-width:900px) { .topo .seletor-tema { display:none; } }
 .ico-peca { --ac:var(--marca); flex:none; } .ico-veiculo { display:block; max-width:100%; height:auto; }
 .vista { margin:0; display:grid; gap:8px; justify-items:stretch; color:var(--texto); }
 .vista-desenho { position:relative; width:min(100%,560px); margin-inline:auto; }

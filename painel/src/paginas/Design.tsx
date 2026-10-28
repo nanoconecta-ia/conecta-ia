@@ -6,14 +6,14 @@ import { Esfera } from "../componentes/Esfera.tsx";
 import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
 
 // Guia vivo do Design System: mostra os tokens e componentes reais, para todas as telas compartilharem o mesmo padrão.
-const CORES: [string, string][] = [["--fundo", "Fundo"], ["--cartao", "Cartão"], ["--realce", "Realce"], ["--borda", "Borda"], ["--texto", "Texto"], ["--suave", "Texto suave"], ["--marca", "Terracota (primário)"], ["--marca-forte", "Terracota forte"], ["--ciano", "Azul-petróleo (dados)"], ["--verde", "Verde (WhatsApp)"], ["--grafite", "Grafite"], ["--ok", "OK"], ["--atencao", "Atenção"], ["--erro", "Erro"]];
+const CORES: [string, string][] = [["--fundo", "Fundo"], ["--cartao", "Cartão"], ["--realce", "Realce"], ["--borda", "Borda (decorativa)"], ["--borda-forte", "Borda de campo (3:1)"], ["--texto", "Texto"], ["--suave", "Texto suave"], ["--marca", "Terracota (primário)"], ["--marca-forte", "Terracota forte"], ["--ciano", "Azul-petróleo (dados)"], ["--verde", "Verde (WhatsApp)"], ["--grafite", "Grafite"], ["--ok", "OK"], ["--atencao", "Atenção"], ["--erro", "Erro"]];
 
 export function Design() {
   return (
     <>
       <div className="cartao">
         <h1>Design System <span className="selo atencao">referência</span></h1>
-        <p className="suave">Tokens e componentes compartilhados por todos os módulos. Telas novas reaproveitam isto; nada de cor ou fonte solta. Use o seletor de aparência no topo para ver os três modos.</p>
+        <p className="suave">Tokens e componentes compartilhados por todos os módulos. Telas novas reaproveitam isto; nada de cor ou fonte solta. Use o seletor de aparência no topo para ver os modos Automático, Claro, Escuro, Noturno e Alto contraste.</p>
       </div>
       <div className="cartao">
         <h2>Cores (tokens)</h2>
