@@ -9,7 +9,7 @@ import { montarCorpoProduto } from "./bling_campos.ts";
 import type { ClienteDados } from "./dados.ts";
 
 export interface Humano { userId: string; lojaId: string }
-export interface DepsAcoes { rpc: Rpc; dados: ClienteDados; /** leitura real do Bling (nunca escreve) */ blingLeitura?: PortaBling }
+export interface DepsAcoes { rpc: Rpc; dados: ClienteDados; /** leitura real do Bling (nunca escreve) */ blingLeitura?: PortaBling; /** escrita real do Bling (lista fechada; desligada sem BLING_ESCRITA_REAL=1) */ blingEscrita?: PortaBling }
 export interface Resposta { status: number; corpo: Record<string, unknown> }
 
 const UUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -85,10 +85,17 @@ export async function acaoAprovacoes(c: Record<string, any>, h: Humano, d: DepsA
         return ok({ relatorio: rel, semeado_de: semeadoDe, aviso: "Ensaio: nada foi enviado ao Bling e nenhum estado mudou." });
       }
       case "executar": {
-        // Executa o que foi APROVADO. Escrita no Bling continua barrada (banco: sem liberação; registro: ferramenta desligada).
+        // Executa o que foi APROVADO. Travas em camadas para escrever no Bling: segredo BLING_ESCRITA_REAL, ferramenta ativa no registro,
+        // liberação da loja no banco (por ferramenta), aprovação da versão exata, campos da lista fechada e leitura de confirmação.
         if (!uuid(c.proposta_id)) return erro(400, "Informe proposta_id.");
-        if (!d.blingLeitura) return erro(503, "Leitura do Bling indisponível para confirmar a execução.");
-        const rel = await executarProposta({ rpc: d.rpc, bling: d.blingLeitura, lojaId: h.lojaId, propostaId: c.proposta_id });
+        const porta = d.blingEscrita ?? d.blingLeitura;
+        if (!porta) return erro(503, "Leitura do Bling indisponível para confirmar a execução.");
+        if (porta.escritaLigada === false) {
+          // Recusa ANTES de iniciar a execução: a aprovação e a tentativa não são gastas à toa.
+          const previstos = (await rpcOu(d, "agente_proposta_validar", { p_loja: h.lojaId, p_proposta: c.proposta_id })) as ItemExecucao[];
+          if (previstos.some((i) => i.operacao.startsWith("bling."))) return erro(409, "A escrita no Bling está desligada neste ambiente. Nada foi enviado e a aprovação continua valendo.", "escrita_desligada");
+        }
+        const rel = await executarProposta({ rpc: d.rpc, bling: porta, lojaId: h.lojaId, propostaId: c.proposta_id });
         if (rel.erro) return traduz(rel.erro);
         return ok({ relatorio: rel });
       }
