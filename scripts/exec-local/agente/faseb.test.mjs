@@ -82,3 +82,11 @@ test("rotas do dispositivo: sem token, token malformado, GET e caminho desconhec
   assert.equal((await fetch(c.url + "/dispositivo/x", { method: "POST", headers: { authorization: `Bearer ${c.tokenPair}` }, body: "{}" })).status, 404);
   assert.equal((await fetch(c.url + "/dispositivo/resultado", { method: "POST", headers: { authorization: `Bearer ${c.tokenPair}` }, body: JSON.stringify({ job_id: "x", ok: true }) })).status, 400); await c.encerrar();
 });
+
+test("capacidade ≠ comando (formato válido, modelo de OUTRA capacidade): o agente recusa", async () => {
+  const c = await montar(); const id = randomUUID();
+  const ver = "[pscustomobject]@{Windows=[System.Environment]::OSVersion.VersionString; PowerShell=$PSVersionTable.PSVersion.ToString(); Ferramentas=@(Get-Command node -ErrorAction SilentlyContinue | Select-Object Name,Version,Source)} | ConvertTo-Json -Compress";
+  c.tarefas.set(id, { id, loja_id: "lojaA", dispositivo_id: "dev-A", capacidade: "windows.sistema.inventario", argv: [...PRE, ver], timeout_ms: 5000, estado: "NA_FILA" });
+  for (let i = 0; i < 100 && c.tarefas.get(id).estado !== "FALHOU"; i++) await new Promise((r) => setTimeout(r, 20));
+  assert.equal(c.tarefas.get(id).erro, "comando_nao_autorizado_no_agente"); await c.encerrar();
+});

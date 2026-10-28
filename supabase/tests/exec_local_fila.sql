@@ -28,20 +28,33 @@ insert into public.pair_sessoes (loja_id, usuario_id, dispositivo_id, token_hash
 
 create function public.argv(cmd text) returns text[] language sql immutable as
 $$ select array['powershell.exe','-NoProfile','-NonInteractive','-NoLogo','-Command', cmd] $$;
+create function public.c_inv() returns text language sql immutable as $$ select 'Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,OSArchitecture,TotalVisibleMemorySize | ConvertTo-Json -Compress' $$;
+create function public.c_ver() returns text language sql immutable as $$ select '[pscustomobject]@{Windows=[System.Environment]::OSVersion.VersionString; PowerShell=$PSVersionTable.PSVersion.ToString(); Ferramentas=@(Get-Command node -ErrorAction SilentlyContinue | Select-Object Name,Version,Source)} | ConvertTo-Json -Compress' $$;
+grant execute on function public.argv(text), public.c_inv(), public.c_ver(), public.h(text), public.afirma(boolean, text), public.espera_erro(text, text) to public;
 set local role service_role;
 
 -- enfileirar
 create temp table r (nome text primary key, v text);
 grant all on r to service_role;
-insert into r select 't1', public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-00000000000a', 'windows.sistema.inventario', public.argv('Get-CimInstance Win32_OperatingSystem'), 5000, 'chave-idem-1', 'gemini')::text;
+insert into r select 't1', public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-00000000000a', 'windows.sistema.inventario', public.argv(public.c_inv()), 5000, 'chave-idem-1', 'gemini')::text;
 select public.afirma((select v from r where nome = 't1') is not null, 'enfileira tarefa de dispositivo da loja com capacidade permitida');
-select public.afirma(public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-00000000000a', 'windows.sistema.inventario', public.argv('x'), 5000, 'chave-idem-1')::text = (select v from r where nome = 't1'), 'idempotency_key devolve a mesma tarefa, sem duplicar');
+select public.afirma(public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-00000000000a', 'windows.sistema.inventario', public.argv(public.c_inv()), 5000, 'chave-idem-1')::text = (select v from r where nome = 't1'), 'idempotency_key devolve a mesma tarefa, sem duplicar');
 select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.servico.reiniciar',public.argv('Restart-Service x'),5000)$$, '42501');
 select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000b','windows.sistema.inventario',public.argv('x'),5000)$$, '42501');
 select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000c','windows.sistema.inventario',public.argv('x'),5000)$$, '42501');
-select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.sistema.inventario',array['cmd.exe','/c','dir','a','b','c'],5000)$$, '23514');
-select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.sistema.inventario',public.argv(E'a\nwhoami'),5000)$$, '23514');
-select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.sistema.inventario',public.argv('x'),600000)$$, '23514');
+select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.sistema.inventario',array['cmd.exe','/c','dir','a','b','c'],5000)$$, '42501');
+select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.sistema.inventario',public.argv(public.c_inv() || E'\nwhoami'),5000)$$, '42501');
+select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.sistema.inventario',public.argv(public.c_inv()),600000)$$, '23514');
+-- allowlist EXATA por capacidade: formato válido, mas comando diferente (ou de outra capacidade) é recusado no banco
+select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.sistema.inventario',public.argv('Get-ChildItem C:\ -Recurse'),5000)$$, '42501');
+select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.sistema.inventario',public.argv(public.c_ver()),5000)$$, '42501');
+select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.sistema.inventario',public.argv(public.c_inv() || '; whoami'),5000)$$, '42501');
+select public.espera_erro($$select public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.ambiente.versoes',public.argv(public.c_inv()),5000)$$, '42501');
+
+reset role;
+select public.espera_erro($$insert into public.exec_local_tarefas (loja_id, dispositivo_id, capacidade, argv, timeout_ms) values ('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.sistema.inventario',array['cmd.exe','/c','dir','a','b','c'],5000)$$, '23514');
+select public.espera_erro($$insert into public.exec_local_tarefas (loja_id, dispositivo_id, capacidade, argv, timeout_ms) values ('aaaaaaaa-0000-0000-0000-000000000001','d0000000-0000-0000-0000-00000000000a','windows.sistema.inventario',public.argv(E'a\nb'),5000)$$, '23514');
+set local role service_role;
 
 -- puxar: isolamento por loja e dispositivo, sem dupla retirada
 select public.afirma(public.exec_local_puxar(public.h('tA'), public.h('errado')) is null, 'sal errado: sessão inválida (null)');
@@ -57,12 +70,13 @@ select public.afirma(public.exec_local_estado('bbbbbbbb-0000-0000-0000-000000000
 -- resultado
 select public.afirma(public.exec_local_resultado(public.h('tB'), public.h('sB'), (select v::uuid from r where nome = 't1'), true, 'x', null) = 'ignorado', 'resultado de outro dispositivo é ignorado');
 select public.afirma(public.exec_local_resultado(public.h('tA'), public.h('sA'), (select v::uuid from r where nome = 't1'), true, repeat('x', 70000), null) = 'CONCLUIDA', 'resultado do dono conclui');
-select public.afirma(length(public.exec_local_estado('aaaaaaaa-0000-0000-0000-000000000001', (select v::uuid from r where nome = 't1')) ->> 'saida') = 65536, 'saída truncada em 64 KB');
+select public.afirma(octet_length(public.exec_local_estado('aaaaaaaa-0000-0000-0000-000000000001', (select v::uuid from r where nome = 't1')) ->> 'saida') = 65536, 'saída ASCII truncada em 64 KB');
+select public.afirma((public.exec_local_estado('aaaaaaaa-0000-0000-0000-000000000001', (select v::uuid from r where nome = 't1')) ->> 'truncada')::boolean and (public.exec_local_estado('aaaaaaaa-0000-0000-0000-000000000001', (select v::uuid from r where nome = 't1')) ->> 'bytes_originais')::int = 70000, 'truncamento sinalizado, com o tamanho original');
 select public.afirma(length(public.exec_local_estado('aaaaaaaa-0000-0000-0000-000000000001', (select v::uuid from r where nome = 't1')) ->> 'sha256') = 64, 'hash da saída gravado pelo banco');
 select public.afirma(public.exec_local_resultado(public.h('tA'), public.h('sA'), (select v::uuid from r where nome = 't1'), true, 'outro', null) = 'ignorado', 'segundo resultado é ignorado (não sobrescreve)');
 
 -- revogação, lease e limites
-insert into r select 't2', public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-00000000000a', 'windows.ambiente.versoes', public.argv('y'), 5000)::text;
+insert into r select 't2', public.exec_local_enfileirar('aaaaaaaa-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-00000000000a', 'windows.ambiente.versoes', public.argv(public.c_ver()), 5000)::text;
 reset role;
 update public.pair_dispositivos set revogado_em = now() where id = 'd0000000-0000-0000-0000-00000000000a';
 set local role service_role;
@@ -75,8 +89,8 @@ insert into public.exec_local_tarefas (id, loja_id, dispositivo_id, capacidade, 
 set local role service_role;
 select public.afirma((public.exec_local_estado('bbbbbbbb-0000-0000-0000-000000000002', 'eeeeeeee-0000-0000-0000-000000000001') ->> 'estado') = 'DESCONHECIDO', 'lease vencida: DESCONHECIDO (não volta para a fila)');
 select public.afirma(public.exec_local_resultado(public.h('tB'), public.h('sB'), 'eeeeeeee-0000-0000-0000-000000000001', true, 'tarde', null) = 'ignorado', 'resultado depois da lease é ignorado');
-do $$ begin for i in 1..20 loop perform public.exec_local_enfileirar('bbbbbbbb-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-00000000000b', 'windows.sistema.inventario', public.argv('f' || i), 5000); end loop; end $$;
-select public.espera_erro($$select public.exec_local_enfileirar('bbbbbbbb-0000-0000-0000-000000000002','d0000000-0000-0000-0000-00000000000b','windows.sistema.inventario',public.argv('21'),5000)$$, '54000');
+do $$ begin for i in 1..20 loop perform public.exec_local_enfileirar('bbbbbbbb-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-00000000000b', 'windows.sistema.inventario', public.argv(public.c_inv()), 5000); end loop; end $$;
+select public.espera_erro($$select public.exec_local_enfileirar('bbbbbbbb-0000-0000-0000-000000000002','d0000000-0000-0000-0000-00000000000b','windows.sistema.inventario',public.argv(public.c_inv()),5000)$$, '54000');
 select public.afirma(public.exec_local_cancelar('bbbbbbbb-0000-0000-0000-000000000002', (select id from public.exec_local_tarefas where loja_id = 'bbbbbbbb-0000-0000-0000-000000000002' and estado = 'NA_FILA' limit 1)), 'gateway cancela tarefa ainda na fila');
 
 -- privilégios: só service_role

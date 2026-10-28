@@ -21,8 +21,16 @@
 - Revogação: dispositivo revogado → tarefas NA_FILA viram `CANCELADA`; sessão revogada → `puxar` devolve `null` (401); lease vencida → `DESCONHECIDO`.
 - Auditoria: `public.auditoria` (`exec_local.enfileirada`, `.concluida`, `.falhou`) por `private.pair_auditar`.
 
+## 3b. Revisão técnica do PR (item a item) — corrigida em `<commit desta rodada>`
+| # | Alegação | Verificado | Estado |
+|---|---|---|---|
+| 1 | hash de `saida` pode não corresponder ao valor persistido | **Não procede**: o hash era do valor truncado já persistido. Mas o limite era em **caracteres** (até 262 144 bytes com emoji) | corrigido: teto em **BYTES** (CHECK `octet_length ≤ 65536`), corte em fronteira UTF-8 (`private.exec_local_cortar_bytes`), colunas `saida_truncada` e `saida_bytes_originais`; testes com 1, 2, 3 e 4 bytes/char, 65536 e 65537 bytes, hash do valor exato e prefixo do original |
+| 2 | teto em bytes no runner, agente e SQL | **Procede** (runner e rota usavam caracteres) | corrigido: runner corta em bytes (UTF-8, marca `…[truncado]` incluída, `truncada: true`); rota aceita até 420 000 chars de JSON (64 KB escapam até 6×); banco corta em 65536 bytes e sinaliza; auditoria não carrega a saída (teste) |
+| 3 | allowlist por capacidade: o CHECK só vê a estrutura | **Procede**: o agente aceitava o modelo de QUALQUER capacidade para um job, e o banco não ligava comando a capacidade | corrigido: tabela `exec_local_modelos` (regex por capacidade, gerada de `capacidades.ts`; teste de deriva) checada em `exec_local_enfileirar`; agente exige `job.capacidade` = capacidade cujo modelo casa. Provado: comando diferente de formato válido, comando de outra capacidade, parâmetro fora do padrão e `\n` são recusados no SQL e no agente |
+| 4 | limite de 20 sob concorrência | **Procede, reproduzido**: sem lock, 40 enfileiramentos simultâneos geraram **39** linhas (e 10 erros de índice único na mesma `idempotency_key`) | corrigido: `pg_advisory_xact_lock` por dispositivo antes da checagem; `exec_local_concorrencia.sh` (conexões reais, barreira) dá exatamente 20, 1 linha por chave e 1 única puxada; com `SEM_LOCK=1` o mesmo teste FALHA (prova que ele detecta a corrida); entra no CI |
+
 ## 4. Testes (todos locais)
-- SQL em Postgres 16 descartável: `supabase/tests/exec_local_fila.sql` — **33 verificações** (isolamento por loja e dispositivo, sem dupla retirada, idempotência, CHECK do argv, revogação, lease, limite de fila, privilégios `anon`/`authenticated`, auditoria).
+- SQL em Postgres 16 descartável: `supabase/tests/exec_local_fila.sql` — **40 + 19 verificações** (duas suítes) e o script de concorrência real (isolamento por loja e dispositivo, sem dupla retirada, idempotência, CHECK do argv, revogação, lease, limite de fila, privilégios `anon`/`authenticated`, auditoria).
 - Node: `scripts/exec-local/agente/faseb.test.mjs` (4) — MCP → fila → rotas → **agente real** → PowerShell falso, recusa no agente de comando fora da lista, revogação por 401, rotas recusam token ausente/malformado. Banco **simulado em memória**: a semântica real é a do SQL acima.
 - Suíte `exec_local` (34) segue passando. Lista restrita de comandos preservada (5 consultas; escrita desligada).
 

@@ -9,7 +9,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export async function tratarDispositivo(req: RequisicaoDispositivo, p: PortasDispositivo): Promise<RespostaDispositivo> {
   if (req.metodo !== "POST") return { status: 405 };
-  if (req.corpo.length > 140_000) return { status: 413 };
+  if (req.corpo.length > 420_000) return { status: 413 };   // 64 KB de saída podem virar até 6x em JSON escapado; o banco corta em 65536 BYTES
   const m = /^Bearer ([A-Za-z0-9_.-]+)$/.exec(req.authorization ?? "");
   const tk = m ? separarToken(m[1]) : null;
   if (!tk) return { status: 401 };

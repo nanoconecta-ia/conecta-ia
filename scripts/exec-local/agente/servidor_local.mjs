@@ -2,10 +2,13 @@
 // Credencial do dispositivo (cia_dev_…) é separada da chave MCP; só o hash fica aqui; código de pareamento é de uso único e expira.
 import { createServer } from "node:http";
 import { randomBytes, randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { compilar } from "./permitidos.mjs";
 import { tratarMcpComLocal } from "../../../supabase/functions/_shared/exec_local/gateway_local.ts";
 import { FilaLocal } from "../../../supabase/functions/_shared/exec_local/fila.ts";
 import { sha256Hex, gerarToken } from "../../../supabase/functions/_shared/conector/cripto.ts";
 
+const TABELA = compilar(JSON.parse(readFileSync(new URL("./capacidades.windows.json", import.meta.url), "utf8")).capacidades);
 const ALFA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const novoCodigo = () => Array.from(randomBytes(8), (b) => ALFA[b % ALFA.length]).join("");
 const JSON_H = { "content-type": "application/json" };
@@ -23,7 +26,7 @@ export async function criarServidorLocal({ loja_id = "loja-homologacao", nomeAge
       const d = [...dispositivos.entries()].find(([, v]) => !v.revogado && v.loja_id === loja_id);
       if (!d) return Promise.reject(new Error("sem_dispositivo"));
       return new Promise((resolve, reject) => {
-        const job = { job_id: randomUUID(), device_id: d[0], argv, timeout_ms: timeoutMs };
+        const job = { job_id: randomUUID(), device_id: d[0], capacidade: TABELA.find((c) => argv.length === 6 && c.re.test(argv[5]))?.id, argv, timeout_ms: timeoutMs };
         pendentes.push(job); reg({ evento: "job_criado", job_id: job.job_id, device_id: d[0] });
         resultados.set(job.job_id, { resolve, reject });
         sinal.addEventListener("abort", () => { resultados.delete(job.job_id); const i = pendentes.indexOf(job); if (i >= 0) pendentes.splice(i, 1); reject(new Error("abortado")); });
@@ -83,7 +86,7 @@ export async function criarServidorLocal({ loja_id = "loja-homologacao", nomeAge
     emitirCodigo: () => { const c = novoCodigo(); codigos.set(c, { expira: agora() + 10 * 60000 }); return c; },
     revogarDispositivo: (id) => { const d = dispositivos.get(id); if (d) { d.revogado = true; reg({ evento: "dispositivo_revogado", device_id: id }); } },
     revogarSessao: () => { sessaoRevogada = true; reg({ evento: "sessao_revogada" }); },
-    injetarJobBruto: (device_id, argv) => new Promise((resolve) => { const job = { job_id: randomUUID(), device_id, argv, timeout_ms: 5000 }; resultados.set(job.job_id, { resolve: (r) => resolve({ ok: true, ...r }), reject: (e) => resolve({ ok: false, erro: e.message }) }); pendentes.push(job); }),
+    injetarJobBruto: (device_id, argv, capacidade = "windows.sistema.inventario") => new Promise((resolve) => { const job = { job_id: randomUUID(), device_id, capacidade, argv, timeout_ms: 5000 }; resultados.set(job.job_id, { resolve: (r) => resolve({ ok: true, ...r }), reject: (e) => resolve({ ok: false, erro: e.message }) }); pendentes.push(job); }),
     dispositivos: () => [...dispositivos.keys()],
     fechar: () => { clearInterval(laco); server.close(); },
   };

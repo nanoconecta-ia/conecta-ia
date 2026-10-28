@@ -20,6 +20,8 @@ echo "== TypeScript contra Postgres local"
 saida_ts=$(CONECTOR_TEST_DB="$BANCO" node --experimental-strip-types --test --test-concurrency=1 $(find supabase/functions -name '*.test.ts' | sort) 2>&1); st_ts=$?
 echo "$saida_ts" | grep -E "^# (tests|pass|fail|skipped)|^not ok"
 [ $st_ts -eq 0 ] || status=1
+echo "== Executor local: agente, runner Windows, deriva e Fase B (sem Chromium)"
+node --experimental-strip-types --no-warnings --test scripts/exec-local/runner_windows.test.mjs scripts/exec-local/agente/*.test.mjs 2>&1 | grep -E "^# (tests|pass|fail)|^not ok"; [ "${PIPESTATUS[0]}" -eq 0 ] || status=1
 echo "== Tipos estritos (shim do Deno)"
 (cd supabase/functions && ../../painel/node_modules/.bin/tsc -p tsconfig.check.json) || status=1
 echo "== Empacotamento das funções (sem imports relativos)"

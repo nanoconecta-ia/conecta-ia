@@ -36,7 +36,7 @@ export async function rodarAgente({ gateway, codigo, token: tokenDado, binario, 
     if (resp.status === 401) { log({ evento: "revogado_encerrando" }); return { motivo: "revogado" }; }
     if (resp.status === 204) { await dormir(intervaloMs); continue; }
     const job = await resp.json();
-    const cap = autorizar(job.argv, tabela);
+    const cap = autorizar(job.argv, tabela, job.capacidade);
     if (!cap) {
       log({ evento: "comando_recusado_pelo_agente", job_id: job.job_id });
       await post("/dispositivo/resultado", { job_id: job.job_id, ok: false, erro: "comando_nao_autorizado_no_agente" }, token); continue;
