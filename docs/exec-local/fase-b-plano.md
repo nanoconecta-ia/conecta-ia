@@ -21,7 +21,7 @@
 - Revogação: dispositivo revogado → tarefas NA_FILA viram `CANCELADA`; sessão revogada → `puxar` devolve `null` (401); lease vencida → `DESCONHECIDO`.
 - Auditoria: `public.auditoria` (`exec_local.enfileirada`, `.concluida`, `.falhou`) por `private.pair_auditar`.
 
-## 3b. Revisão técnica do PR (item a item) — corrigida em `<commit desta rodada>`
+## 3b. Revisão técnica do PR (item a item) — corrigida em `1b8d52a`
 | # | Alegação | Verificado | Estado |
 |---|---|---|---|
 | 1 | hash de `saida` pode não corresponder ao valor persistido | **Não procede**: o hash era do valor truncado já persistido. Mas o limite era em **caracteres** (até 262 144 bytes com emoji) | corrigido: teto em **BYTES** (CHECK `octet_length ≤ 65536`), corte em fronteira UTF-8 (`private.exec_local_cortar_bytes`), colunas `saida_truncada` e `saida_bytes_originais`; testes com 1, 2, 3 e 4 bytes/char, 65536 e 65537 bytes, hash do valor exato e prefixo do original |
