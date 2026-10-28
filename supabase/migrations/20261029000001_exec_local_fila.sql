@@ -1,5 +1,5 @@
 -- Fase B do executor local (Nano.IA → Gateway MCP → agente Windows → PowerShell): FILA PERSISTENTE de tarefas.
--- RASCUNHO PARA APROVAÇÃO — NÃO APLICADA. Reaproveita o Conecta Pair (pair_dispositivos 'agente_desktop' + pair_sessoes + pair_validar):
+-- Aplicada com autorização do proprietário (28/10/2026) no Supabase conecta-ia (versão 20261028065432). Reaproveita o Conecta Pair (pair_dispositivos 'agente_desktop' + pair_sessoes + pair_validar):
 -- identidade, revogação, detecção de replay e isolamento por loja já existem; aqui entra só a fila.
 -- Rollback no fim do arquivo.
 

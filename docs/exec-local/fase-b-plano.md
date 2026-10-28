@@ -1,5 +1,13 @@
 # Fase B — Nano.IA → Gateway MCP real → agente Windows → PowerShell → chat
-**Estado: RASCUNHO PARA APROVAÇÃO. Nada foi aplicado, publicado ou implantado.** Código e testes locais apenas.
+**Estado (28/10/2026):** a **migração da fila foi aplicada** no Supabase conecta-ia (`dsfzhsrudriqkumtlqwj`, versão `20261028065432`) com autorização do proprietário. **Nada mais foi publicado:** a Edge Function `conecta-gateway` e o pareamento do PC Mobis seguem pendentes de autorização separada.
+
+### Evidência da aplicação (somente leitura após aplicar)
+- 7 funções criadas; o **md5 de cada `pg_get_functiondef` é idêntico** ao do banco local de teste, assim como o md5 dos 5 modelos (`ebb70d20…`).
+- Permissões: `anon` e `authenticated` sem EXECUTE e sem SELECT; `service_role` com EXECUTE nas 5 funções públicas; funções `private.*` sem EXECUTE para nenhum papel de API; RLS ligado nas 2 tabelas, 0 policies (acesso só pelas funções).
+- Testes sem escrita em produção: sessão inválida → `null` em `puxar` e `resultado`; estado/cancelar de tarefa inexistente; corte de 280 000 bytes de emoji → ≤ 65 536 bytes. Fila vazia (0 tarefas) e nenhuma linha `exec_local.*` em `auditoria`.
+- Advisors de segurança: apenas INFO "RLS ativo sem policy" nas 2 tabelas novas (intencional, igual a 8 tabelas existentes); nenhum alerta novo.
+- Impacto: os 2 dispositivos existentes são `navegador`; nenhum dado existente foi alterado.
+- **Rollback** (sem perda de dado de produto): comandos no fim do arquivo da migração. A fila está vazia.
 
 ## 1. Cadeia e o que cada peça faz
 1. **Nano.IA / qualquer LLM** chama `tools/call` no Gateway MCP com a chave MCP da loja (já existe).
