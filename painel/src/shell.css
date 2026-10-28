@@ -577,3 +577,11 @@ html .dock-trilho button.dock-aba:focus-visible { outline: 2px solid var(--verde
 .aviso-envio p { margin: 0; } .aviso-envio button { min-height: 44px; justify-self: stretch; }
 /* o contêiner dos painéis laterais corta sem poder ser rolado por dentro (foco/scrollIntoView deslocava o chat para a esquerda) */
 @supports (overflow: clip) { .abas { overflow: clip; } }
+
+/* Versão do painel: visível na barra de baixo e aviso quando há uma publicada mais nova */
+.barra-status .versao { margin-left: auto; padding-left: 12px; white-space: nowrap; color: #e6dfd2; } .barra-status .versao + .direita { margin-left: 12px; }
+.aviso-versao { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; padding: 8px 12px; background: var(--marca); color: var(--marca-texto); font-weight: 600; }
+html .aviso-versao button, html .aviso-versao button:hover:not(:disabled) { min-height: 44px; background: #fff; background-image: none; box-shadow: none; color: #1d1b18; border: 2px solid #1d1b18; opacity: 1; font-weight: 700; }
+html .aviso-versao button:disabled { background: #fff; color: #1d1b18; opacity: .75; }
+[data-tema="contraste"] .aviso-versao { background: #000; color: #fff; border-bottom: 3px solid #fff; }
+[data-tema="contraste"] .aviso-versao button { border-color: #fff; }
