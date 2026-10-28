@@ -56,6 +56,7 @@ jobs:
           npx playwright install chromium --with-deps
       - run: node scripts/tests/chat-visual.mjs
       - run: node scripts/tests/assistente-retratil-visual.mjs
+      - run: node scripts/tests/assistente-autorizacao-visual.mjs
       - run: node scripts/tests/anexo-chat-visual.mjs
       - run: node scripts/tests/nano-guia-visual.mjs
       - run: node scripts/tests/temas-visual.mjs
