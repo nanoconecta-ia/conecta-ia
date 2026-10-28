@@ -37,7 +37,7 @@ const FALHAS_QUE_PERMITEM_FALLBACK = new Set([401, 429, 502, 504]);
 
 /** Estado da esfera para cada tipo de ferramenta: reflete o que o servidor está de fato fazendo. */
 export function estadoParaFerramenta(id: string): EstadoAgente {
-  if (id.startsWith("conhecimento.") || id.includes("buscar_web") || id.startsWith("conecta.plugins.") || id.startsWith("engenharia.oem") || id.startsWith("engenharia.cruzados")) return "pesquisando_fontes";
+  if (id.startsWith("conhecimento.") || id.includes("buscar_web") || id.startsWith("web.") || id.startsWith("conecta.plugins.") || id.startsWith("engenharia.oem") || id.startsWith("engenharia.cruzados")) return "pesquisando_fontes";
   if (id.includes("preparar") || id.includes("propor") || id === "conecta.proposta.criar") return "preparando_proposta";
   return "consultando_ferramentas";
 }
