@@ -38,6 +38,7 @@ import { Backup } from "./paginas/Backup.tsx";
 import { agruparMenu } from "./lib/navegacao.ts";
 import { PaletaComandos } from "./componentes/PaletaComandos.tsx";
 import { BarraStatus } from "./componentes/BarraStatus.tsx";
+import { AvisoVersao } from "./componentes/AvisoVersao.tsx";
 import { Icone } from "./componentes/Icone.tsx";
 import { LogoConecta } from "./componentes/LogoConecta.tsx";
 import { SeletorTema } from "./componentes/SeletorTema.tsx";
@@ -134,6 +135,7 @@ export function App() {
   return (
     <>
       {demo && <div className="faixa-demo" role="status">{demo.FAIXA}</div>}
+      <AvisoVersao />
       <header className="topo">
         <div className="marca"><LogoConecta tamanho={34} /><div>Conecta.IA<small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
         <button className="busca-topo" onClick={() => setPaleta(true)} aria-label="Abrir paleta de comandos"><Icone nome="busca" tamanho={16} /><span>Buscar tela…</span><kbd>Ctrl K</kbd></button>
