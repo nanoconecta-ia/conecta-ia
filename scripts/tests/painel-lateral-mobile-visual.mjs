@@ -1,4 +1,4 @@
-// Painel lateral do Nano.ia no CELULAR (em pé e deitado): nada fora da tela, cabeçalho sem sobreposição, caixa de texto e Enviar visíveis, balão fora do caminho. Sessão e rede 100% SINTÉTICAS.
+// Painel lateral do Nano.ia no CELULAR (em pé, deitado e com texto grande 140/170%): nada fora da tela, cabeçalho sem sobreposição, caixa de texto e Enviar visíveis, balão fora do caminho. Sessão e rede 100% SINTÉTICAS.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
@@ -12,7 +12,7 @@ let browser;const todas=[];
 try{
  for(let i=0;i<100;i++){try{if((await fetch(base+'/')).ok)break}catch{}await new Promise(r=>setTimeout(r,100))}
  browser=await chromium.launch({headless:true});
- for(const [largura,altura] of [[390,844],[360,740],[780,360],[844,390],[640,360]]){
+ for(const [largura,altura,escala] of [[390,844],[360,740],[780,360],[844,390],[640,360],[360,700,140],[360,700,170],[360,640,170]]){
   const context=await browser.newContext({viewport:{width:largura,height:altura}});
   const page=await context.newPage(),erros=[],falhas=[];const ver=(c,m)=>{if(!c)falhas.push(m)};
   page.on('pageerror',e=>erros.push(e.message));
@@ -31,9 +31,10 @@ try{
   });
  
   await page.goto(`${base}/#/integracoes`);
+  if(escala)await page.addStyleTag({content:`html{font-size:${escala}% !important}`}); // texto grande do aparelho
   const balao=page.getByRole('button',{name:'Abrir o Nano.ia'});await balao.waitFor();await balao.click();
   const dock=page.locator('#dock-agente');await dock.waitFor({state:'visible'});await page.waitForTimeout(500);
-  const rotulo=`${largura}x${altura}`;
+  const rotulo=`${largura}x${altura}${escala?`@${escala}%`:''}`;
   // visível de verdade = dentro de todo ancestral que corta (overflow hidden/clip); rolar a página é permitido, ser cortado não
   const cortado=(loc)=>loc.evaluate((el)=>{const r=el.getBoundingClientRect();for(let a=el.parentElement;a&&a!==document.documentElement;a=a.parentElement){const o=getComputedStyle(a);if(o.overflowY==='hidden'||o.overflowY==='clip'){const b=a.getBoundingClientRect();if(r.top<b.top-1||r.bottom>b.bottom+1)return true}}return false});
   const dentro=(r)=>r.x>=-0.5&&r.y>=-0.5&&r.x+r.width<=largura+0.5&&r.y+r.height<=altura+0.5;
@@ -56,6 +57,8 @@ try{
   const rc=await campo.boundingBox(),re=await enviar.boundingBox(),dd=await dock.boundingBox();
   ver(!(await cortado(campo))&&!(await cortado(enviar))&&dentro(rc)&&dentro(re),`${rotulo}: caixa de texto e Enviar à vista dentro do painel (${Math.round(re.y+re.height)} de ${altura})`);
   ver(rc.height>=40&&re.height>=36,`${rotulo}: caixa e botão com tamanho utilizável (${Math.round(rc.height)}/${Math.round(re.height)})`);
+  // título legível mesmo com texto grande: não vira "N." (sem reticências) e Enviar à vista dentro do painel
+  const tit=await dock.locator('.agente-titulo h1').evaluate(e=>({c:e.clientWidth,s:e.scrollWidth}));ver(tit.s<=tit.c+1,`${rotulo}: título "Nano.ia" inteiro, sem reticências (${tit.s}/${tit.c})`);
   ver(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),`${rotulo}: sem rolagem horizontal`);
   await mkdir(root+'evidencias-chat',{recursive:true});await page.screenshot({path:root+`evidencias-chat/painel-celular-${rotulo}.png`});
   // tela Assistente (sem painel): caixa e Enviar precisam estar inteiros na tela, sem depender de rolar
@@ -69,5 +72,5 @@ try{
   await context.close();
  }
  assert.deepEqual(todas,[],'problemas de layout no celular:\n'+todas.join('\n'));
- console.log('painel-lateral-mobile-visual ok (390x844, 360x740, 780x360, 844x390 e 640x360: painel inteiro à vista, sem sobreposição, Enviar visível, balão fora do caminho)');
+ console.log('painel-lateral-mobile-visual ok (390x844, 360x740, 780x360, 844x390, 640x360 e 360x700/640 com texto a 140% e 170%: painel inteiro à vista, sem sobreposição, Enviar visível, balão fora do caminho)');
 }finally{await browser?.close();servidor.kill()}
