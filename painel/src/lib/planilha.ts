@@ -62,4 +62,4 @@ export const ROTULO_FILTRO: Record<Filtro, string> = {
   sem_no: "Sem lugar na taxonomia",
 };
 
-export const situacaoTexto = (s: string | null) => (s === "A" ? "ativo" : s === "I" ? "inativo" : s === "ausente" ? "sumiu do Bling" : "—");
+export const situacaoTexto = (s: string | null) => (s === "A" ? "ativo" : s === "I" ? "inativo" : s === "E" ? "excluído" : s === "ausente" ? "sumiu do Bling" : "—");
