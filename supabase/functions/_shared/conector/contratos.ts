@@ -51,6 +51,7 @@ export const CONTRATOS: readonly Contrato[] = [
   P("propor_enriquecimento", "Propõe valor de campo de enriquecimento.", ["rpc enriquecimento_propor → produto_enriquecimento"], ["sku", "campo", "valor", "fonte"]),
   P("propor_codigo", "Propõe código de referência (nunca sku).", ["rpc codigo_propor → produto_codigos"], ["sku", "tipo", "valor", "fonte"]),
   P("propor_aplicacao", "Propõe aplicação veicular.", ["rpc aplicacao_propor → produto_aplicacoes"], ["sku", "modelo", "fonte"]),
+  L("buscar_dados_tecnicos_web", "Pesquisa textual pública com links e resumos candidatos, sem validar automaticamente especificações.", [], { operacao: "externa", obrigatorios: ["consulta"] }),
   L("buscar_imagem_web", "Busca imagens candidatas (não grava).", [], { operacao: "externa", obrigatorios: ["consulta"] }),
   P("propor_imagem", "Propõe imagem https; nasce aprovada=false.", ["rpc imagem_propor → produto_imagens"], ["sku", "url"]),
   L("bling_categorias", "Lista as categorias do Bling agora (leitura em tempo real; não grava).", ["Bling (categorias, leitura)"], { operacao: "externa" }),

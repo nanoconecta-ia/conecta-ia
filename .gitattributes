@@ -1,0 +1,3 @@
+artifacts/assistente/index.ts text eol=lf
+artifacts/assistente/manifesto.json text eol=lf
+supabase/functions/_shared/ia/google.test.ts text eol=lf

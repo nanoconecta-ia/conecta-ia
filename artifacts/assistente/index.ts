@@ -984,8 +984,36 @@ async function buscarImagens(chave, cx, consulta, f = fetch, limite = 6) {
             pagina: i.image?.contextLink ?? ""
         }));
 }
+async function buscarDadosTecnicos(chave, cx, consulta, f = fetch, limite = 5) {
+    const q = consulta.trim().slice(0, 160);
+    if (q.length < 3) throw new IaErro(400, "Informe SKU ou referência técnica com pelo menos 3 caracteres.");
+    const url = new URL("https://www.googleapis.com/customsearch/v1");
+    url.searchParams.set("key", chave);
+    url.searchParams.set("cx", cx);
+    url.searchParams.set("q", q);
+    url.searchParams.set("num", String(Math.min(Math.max(limite, 1), 10)));
+    url.searchParams.set("safe", "active");
+    let r;
+    try {
+        r = await f(url.toString(), {
+            signal: AbortSignal.timeout(15_000)
+        });
+    } catch  {
+        throw new IaErro(504, "A pesquisa técnica não respondeu a tempo.");
+    }
+    if (r.status === 401 || r.status === 403) throw new IaErro(401, "Credencial de pesquisa recusada. Verifique Google API Key e CX.");
+    if (r.status === 429) throw new IaErro(429, "Limite de pesquisas atingido.");
+    if (!r.ok) throw new IaErro(502, "Erro ao consultar pesquisa técnica.");
+    const j = await r.json().catch(()=>null);
+    return (j?.items ?? []).filter((i)=>typeof i.link === "string" && /^https:\/\//i.test(i.link)).map((i)=>({
+            titulo: (i.title ?? "").slice(0, 180),
+            pagina: i.link,
+            resumo: (i.snippet ?? "").slice(0, 500),
+            fonte: (i.displayLink ?? new URL(i.link).hostname).slice(0, 160)
+        }));
+}
 
-return { buscarImagens: buscarImagens };
+return { buscarImagens: buscarImagens, buscarDadosTecnicos: buscarDadosTecnicos };
 })();
 
 // ---------- supabase/functions/_shared/conector/registro.ts ----------
@@ -3175,7 +3203,7 @@ return { despachar: despachar, ferramentasParaLlm: ferramentasParaLlm, executorP
 const __m10 = (() => {
 const { chamarPlugin: chamarPlugin } = __m9;
 const { CAMPOS_ENRIQUECIMENTO: CAMPOS_ENRIQUECIMENTO, proporAplicacao: proporAplicacao, proporCodigo: proporCodigo, proporEnriquecimento: proporEnriquecimento, proporImagem: proporImagem, TIPOS_CODIGO: TIPOS_CODIGO } = __m11;
-const { buscarImagens: buscarImagens } = __m12;
+const { buscarImagens: buscarImagens, buscarDadosTecnicos: buscarDadosTecnicos } = __m12;
 const { despachar: despachar } = __m13;
 const SISTEMA = [
     "Você é o Nano.ia, o assistente do lojista no Conecta.IA. Seu nome é Nano.ia. Fale em português do Brasil, como um colega de balcão experiente: natural, direto e caloroso, em frases curtas e do jeito que se fala em voz alta.",
@@ -3188,7 +3216,12 @@ const SISTEMA = [
     "exige uma fonte real (URL ou documento) e entra como 'a_confirmar' na fila — nunca marque nada como aprovado sozinho.",
     "Para imagem: use buscar_imagem_web para achar candidatas e só então propor_imagem com a que fizer mais sentido; nunca invente uma URL de imagem.",
     "No Bling você só PREPARA PROPOSTAS: criar categoria (bling_propor_categoria), trocar a categoria de produtos já aprovada (bling_propor_trocar_categoria), REATIVAR produto excluído (bling_propor_reativar_produto, depois de bling_consultar_produto mostrar que não há outro ativo) e atualizar nome, marca, GTIN, descrições, peso e medidas de produto ativo (bling_propor_ajuste_produto, sempre com fonte). Antes de propor cadastro, procure o código no Bling INCLUSIVE excluídos: se já existir, proponha reativar em vez de duplicar. Quem grava é o executor, depois que o lojista aprova a versão exata na Central de Inteligência, e só com a escrita real ligada. Depois de propor, diga o que ficou pendente e onde aprovar; nunca diga que já gravou.",
-    "Ainda NÃO existe ferramenta para criar produto novo no Bling (do zero), alterar preço, custo, estoque, fornecedor ou dados fiscais, nem para busca geral na internet (só busca de imagens). Se o lojista pedir isso, diga com clareza que ainda não é possível e o que pode ser feito hoje; não enrole nem finja.",
+    "Ainda NÃO existe ferramenta para criar produto novo no Bling (do zero), alterar preço, custo, estoque, fornecedor ou dados fiscais, ; a pesquisa técnica textual usa Google Custom Search somente se configurada. Se o lojista pedir isso, diga com clareza que ainda não é possível e o que pode ser feito hoje; não enrole nem finja.",
+    "FLUXO PARA SKU: quando o lojista informar um código de peça e pedir ajuste ou enriquecimento, consulte primeiro ver_produto e bling_consultar_produto quando disponíveis. Confira produtos ativos e excluídos para não duplicar. Depois identifique campos faltantes e prepare um resumo único do cadastro atual, possíveis melhorias, fontes e pendências. Não pergunte repetidamente quais campos quer alterar quando a intenção de enriquecer já estiver clara.",
+    "PESQUISA E EVIDÊNCIA: consulte apenas ferramentas realmente disponíveis. A busca de imagens não comprova fabricante, OEM, aplicação ou dimensões. Use buscar_dados_tecnicos_web quando configurada; os snippets são pistas, não provas finais de OEM, GTIN ou compatibilidade. Caso falte pesquisa geral, apresente o que foi possível apurar e quais dados exigem fonte externa, sem inventar códigos, GTIN ou peso.",
+    "FOTOS REAIS: procure até quatro imagens candidatas do produto e, quando possível, da embalagem, vinculando URL da imagem e página de origem. Priorize fabricante e catálogo verificável; distribuidor pode ser fonte, mas não é necessariamente fabricante. Nunca apresente imagem gerada por IA, similar visual ou foto sem procedência como fotografia confirmada do SKU. Sem evidência de correspondência técnica, mantenha como candidata pendente de revisão.",
+    "ORIGEM DA PEÇA: diferencie fabricante, marca comercial, distribuidor, importador e código OEM. Não presuma origem original ou equivalência por aparência ou nome semelhante. Registre a fonte de cada informação e destaque conflitos; custos, fornecedores comerciais e dados fiscais confidenciais não devem ser enviados a serviços gratuitos.",
+    "APROVAÇÃO: ofereça uma proposta consolidada com valores atuais, valores sugeridos, fontes e nível de confiança. Nunca grave no Bling, publique no site ou aprove propostas por conta própria. Se faltar ferramenta de pesquisa técnica, diga isso uma vez e prossiga com o diagnóstico de leitura, em vez de transferir toda a pesquisa ao lojista.",
     "Você não publica nem aprova: quem decide é o lojista.",
     "Produto incompleto não é publicado. Nunca cite o nome do provedor de IA nem do modelo."
 ].join("\n");
@@ -3410,6 +3443,22 @@ const FERRAMENTAS = [
                 "sku",
                 "modelo",
                 "fonte"
+            ]
+        }
+    },
+    {
+        name: "buscar_dados_tecnicos_web",
+        description: "Pesquisa páginas técnicas públicas por SKU, fabricante, referência e aplicação. Retorna links e resumos candidatos, não valida automaticamente OEM, GTIN, peso ou compatibilidade. Nunca inclua custo, fornecedor comercial confidencial, dados fiscais ou dados pessoais na consulta.",
+        input_schema: {
+            type: "object",
+            properties: {
+                consulta: {
+                    type: "string",
+                    description: "SKU, marca e aplicação técnica sem dados sigilosos"
+                }
+            },
+            required: [
+                "consulta"
             ]
         }
     },
@@ -3660,6 +3709,22 @@ async function executarFerramenta(nome, entrada, c) {
             return proporAplicacao(c.admin, c.lojaId, e);
         case "propor_imagem":
             return proporImagem(c.admin, c.lojaId, e);
+        case "buscar_dados_tecnicos_web":
+            {
+                if (!c.buscaImagem) return {
+                    erro: "Pesquisa técnica não configurada. Configure Google API Key e CX em Integrações de IA."
+                };
+                try {
+                    return {
+                        resultados_candidatos: await buscarDadosTecnicos(c.buscaImagem.chave, c.buscaImagem.cx, txt(e.consulta), c.fetch),
+                        aviso: "Resumos não comprovam aplicação, OEM, GTIN ou medidas. Confirme na página do fabricante antes de propor alterações."
+                    };
+                } catch (err) {
+                    return {
+                        erro: err instanceof Error ? err.message : "Falha na pesquisa técnica."
+                    };
+                }
+            }
         case "buscar_imagem_web":
             {
                 if (!c.buscaImagem) return {
