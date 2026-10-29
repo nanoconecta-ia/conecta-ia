@@ -17,6 +17,8 @@ Deno.serve(async (req) => {
     endpoint: "vitrine-assistente", req, segredo: segredoDoLimite(Deno.env), cabecalhoIp: cabecalhoIpConfigurado(Deno.env.get("LIMITE_CABECALHO_IP")),
     lojaDe: (b) => (typeof b?.slug === "string" ? b.slug.slice(0, 80) : null),
     porta: portaViaRpc(sb), aoFalhar: (m) => console.warn("limite-publico", m),
+    modo: Deno.env.get("LIMITE_MODO") === "bloquear" ? "bloquear" : "observar",
+    aoObservar: (camada, negaria) => { if (negaria) console.info("limite-publico", JSON.stringify({ endpoint: "vitrine-assistente", camada, decisao: "negaria" })); },
   });
   if (!g.ok) return new Response(JSON.stringify(g.corpo), { status: g.status, headers: { ...CORS, "Content-Type": "application/json", ...g.cabecalhos } });
   const c = g.corpo;
