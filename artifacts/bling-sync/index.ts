@@ -398,6 +398,24 @@ function precisaDetalhe(l, e, agora, maxIdadeMs = 24 * 3600_000) {
     return !e.sincronizado_em || agora - Date.parse(e.sincronizado_em) > maxIdadeMs;
 }
 const LIMITE = 100, INTERVALO_MS = 350;
+function resumirExcluido(lojaId, item, anterior, agoraISO) {
+    const base = mapearProduto(lojaId, {
+        ...item,
+        situacao: "E"
+    }, null, agoraISO);
+    return {
+        ...base,
+        ...anterior,
+        loja_id: lojaId,
+        bling_id: String(item.id),
+        sku: txt(item.codigo) ?? anterior?.sku ?? null,
+        nome: txt(item.nome) ?? anterior?.nome ?? null,
+        preco: typeof item.preco === "number" ? item.preco : anterior?.preco ?? null,
+        estoque: typeof item.estoque?.saldoVirtualTotal === "number" ? item.estoque.saldoVirtualTotal : anterior?.estoque ?? null,
+        situacao: "E",
+        sincronizado_em: agoraISO
+    };
+}
 async function sincronizar(lojaId, p, orcamentoMs = 100_000) {
     const ini = p.agora();
     const r = {
@@ -405,6 +423,7 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000) {
         vistos: 0,
         gravados: 0,
         detalhes: 0,
+        resumosExcluidos: 0,
         ausentes: 0,
         completo: false
     };
@@ -412,8 +431,12 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000) {
             e.bling_id,
             e
         ]));
+    const skuDono = new Map();
+    for (const e of ex.values())if (e.sku) skuDono.set(e.sku, e.bling_id);
     const vistos = new Set();
     let lote = [];
+    let falhasDetalhe = 0;
+    let falhasSku = 0;
     const descarregar = async ()=>{
         if (lote.length) {
             await p.gravar(lote);
@@ -421,13 +444,28 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000) {
             lote = [];
         }
     };
+    const incluir = async (linha)=>{
+        if (linha.sku && skuDono.has(linha.sku) && skuDono.get(linha.sku) !== linha.bling_id) {
+            falhasSku++;
+            await p.registrarErro("SKU repetido entre IDs do Bling", {
+                bling_id: linha.bling_id,
+                sku: linha.sku
+            });
+            return;
+        }
+        if (linha.sku) skuDono.set(linha.sku, linha.bling_id);
+        lote.push(linha);
+        if (lote.length >= 50) await descarregar();
+    };
     for (const grupo of [
         "ativos",
-        "inativos"
+        "inativos",
+        "excluidos"
     ]){
         for(let pagina = 1;; pagina++){
             if (p.agora() - ini > orcamentoMs) {
                 await descarregar();
+                r.erro = "tempo esgotado antes de concluir a varredura";
                 return r;
             }
             const pg = await p.listarPagina(pagina, LIMITE, grupo);
@@ -443,28 +481,74 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000) {
             }
             r.paginas++;
             for (const it of pg.itens){
-                vistos.add(String(it.id));
+                if (!Number.isSafeInteger(it.id) || it.id <= 0) {
+                    await descarregar();
+                    r.erro = "ID inválido na listagem do Bling";
+                    await p.registrarErro(r.erro, {
+                        pagina,
+                        grupo
+                    });
+                    return r;
+                }
+                const id = String(it.id);
+                if (vistos.has(id)) {
+                    await descarregar();
+                    r.erro = "ID repetido na listagem do Bling";
+                    await p.registrarErro(r.erro, {
+                        pagina,
+                        grupo,
+                        bling_id: id
+                    });
+                    return r;
+                }
+                vistos.add(id);
                 r.vistos++;
-                let d = null;
-                if (precisaDetalhe(it, ex.get(String(it.id)), p.agora())) {
-                    if (p.agora() - ini > orcamentoMs) continue;
-                    d = await p.detalhe(it.id);
-                    r.detalhes++;
-                    await p.espera(INTERVALO_MS);
-                    if (!d) {
-                        await p.registrarErro("detalhe indisponível", {
-                            bling_id: it.id
-                        });
+                const anterior = ex.get(id);
+                const listado = grupo === "excluidos" ? {
+                    ...it,
+                    situacao: "E"
+                } : it;
+                if (!precisaDetalhe(listado, anterior, p.agora())) continue;
+                if (p.agora() - ini > orcamentoMs) {
+                    await descarregar();
+                    r.erro = "tempo esgotado durante a leitura dos detalhes";
+                    return r;
+                }
+                const d = await p.detalhe(it.id);
+                r.detalhes++;
+                await p.espera(INTERVALO_MS);
+                if (!d) {
+                    if (grupo === "excluidos") {
+                        await incluir(resumirExcluido(lojaId, listado, anterior, new Date(p.agora()).toISOString()));
+                        r.resumosExcluidos++;
                         continue;
                     }
-                } else continue;
-                lote.push(mapearProduto(lojaId, it, d, new Date(p.agora()).toISOString()));
-                if (lote.length >= 50) await descarregar();
+                    falhasDetalhe++;
+                    await p.registrarErro("detalhe indisponível", {
+                        bling_id: it.id,
+                        grupo
+                    });
+                    continue;
+                }
+                const linha = mapearProduto(lojaId, listado, d, new Date(p.agora()).toISOString());
+                if (grupo === "excluidos") linha.situacao = "E";
+                await incluir(linha);
             }
             if (pg.itens.length < LIMITE) break;
         }
     }
     await descarregar();
+    if (falhasDetalhe || falhasSku) {
+        r.erro = `varredura parcial: ${falhasDetalhe} detalhes indisponíveis, ${falhasSku} conflitos de SKU`;
+        return r;
+    }
+    if (vistos.size === 0 && ex.size > 0) {
+        r.erro = "listagem vazia inesperada para loja com produtos";
+        await p.registrarErro(r.erro, {
+            existentes: ex.size
+        });
+        return r;
+    }
     const ausentes = [
         ...ex.keys()
     ].filter((id)=>!vistos.has(id) && ex.get(id).situacao !== "ausente");
@@ -476,7 +560,7 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000) {
     return r;
 }
 
-return { mapearProduto: mapearProduto, precisaDetalhe: precisaDetalhe, sincronizar: sincronizar };
+return { mapearProduto: mapearProduto, precisaDetalhe: precisaDetalhe, resumirExcluido: resumirExcluido, sincronizar: sincronizar };
 })();
 
 // ---------- supabase/functions/_shared/bling_categorias.ts ----------
@@ -584,7 +668,7 @@ function portasDaLoja(admin, lojaId, chaveCifra) {
     return {
         async listarPagina (pagina, limite, grupo = "ativos") {
             try {
-                const r = await blingFetch(arm, lojaId, `/produtos?pagina=${pagina}&limite=${limite}&criterio=${grupo === "inativos" ? 3 : 2}&tipo=T`, cfg);
+                const r = await blingFetch(arm, lojaId, `/produtos?pagina=${pagina}&limite=${limite}&criterio=${grupo === "inativos" ? 3 : grupo === "excluidos" ? 4 : 2}&tipo=T`, cfg);
                 if (!r.ok) return {
                     erro: `Bling respondeu ${r.status} ao listar produtos`
                 };
@@ -610,7 +694,7 @@ function portasDaLoja(admin, lojaId, chaveCifra) {
         async existentes () {
             const out = [];
             for(let de = 0;; de += 1000){
-                const { data, error } = await admin.from("produtos").select("bling_id, sku, nome, preco, estoque, situacao, sincronizado_em").eq("loja_id", lojaId).range(de, de + 999);
+                const { data, error } = await admin.from("produtos").select("bling_id, sku, nome, preco, estoque, situacao, sincronizado_em, categoria_bling_id, marca, gtin, gtin_tributario, descricao_curta, descricao_complementar, peso_kg, largura_cm, altura_cm, profundidade_cm, unidade, condicao, formato, pai_bling_id, volumes").eq("loja_id", lojaId).range(de, de + 999);
                 if (error) throw new Error("falha ao ler o espelho");
                 out.push(...data ?? []);
                 if ((data ?? []).length < 1000) break;
@@ -636,10 +720,11 @@ function portasDaLoja(admin, lojaId, chaveCifra) {
         },
         async marcarAusentes (ids) {
             for(let i = 0; i < ids.length; i += 200){
-                await admin.from("produtos").update({
+                const { error } = await admin.from("produtos").update({
                     situacao: "ausente",
                     publicado: false
                 }).eq("loja_id", lojaId).in("bling_id", ids.slice(i, i + 200));
+                if (error) throw new Error("falha ao registrar produtos ausentes no espelho");
             }
         },
         async registrarErro (mensagem, detalhe) {
@@ -797,6 +882,7 @@ Deno.serve(async (req)=>{
                 vistos: r.vistos,
                 gravados: r.gravados,
                 detalhes: r.detalhes,
+                resumos_excluidos: r.resumosExcluidos,
                 ausentes: r.ausentes,
                 completo: r.completo,
                 erro: r.erro ? true : undefined

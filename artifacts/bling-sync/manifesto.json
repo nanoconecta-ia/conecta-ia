@@ -2,43 +2,43 @@
   "versao": 1,
   "entrada": "supabase/functions/bling-sync/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "2d018f22cdafae4f972b08e55ad5eab053ff3c0115398a4973058d6759ff978e",
+  "artefato_sha256": "053a989d3286f46f93abc57da0f18436540ec47cbcbc929b3651e71752e3798e",
   "fontes": [
     {
       "path": "supabase/functions/_shared/bling_armazem.ts",
-      "sha256": "af765b491093e16d2bbc41d8f9ac803b68a24d9312df71b1feb1f262a4f796fa"
+      "sha256": "935f6805ec694a0a53255c06a808918fab729e8e35dd1683402a8d0d05a166d3"
     },
     {
       "path": "supabase/functions/_shared/estado.ts",
-      "sha256": "ca773dccf24fee19ad71c8efc9f4751f46c08a12d502456bf96c3e3183b23419"
+      "sha256": "8f4aa032ad3bd518c81590aad995a3a71fe9569f45bd9fae858eac15148291be"
     },
     {
       "path": "supabase/functions/_shared/cripto.ts",
-      "sha256": "0ce08b5db4d10007547d4c040fef8a6580be6879ef72fd3a800236824beb294c"
+      "sha256": "10903ba82788bbe7322c79bc5571046330251aba58ad59f8c5a1e2805a9f07c4"
     },
     {
       "path": "supabase/functions/_shared/bling_token.ts",
-      "sha256": "cc0741c715b6cf29b4f55cf1d5a842d982b254f2c36499486d66993ca70dcae2"
+      "sha256": "9f42941e6c2dfecb8bb8e419411b33eb5d949271cc573438af61ef4b286d7c98"
     },
     {
       "path": "supabase/functions/_shared/bling_api.ts",
-      "sha256": "b4111a685e011d2d051d8f9d40d6a5e8a6fde2da8232c0871360f2e09ddbd8fb"
+      "sha256": "035e09f803dbe1a479b5f1aae67fe9ac150e7b754b54a31bc9744a8c51792c79"
     },
     {
       "path": "supabase/functions/_shared/plataforma.ts",
-      "sha256": "5b49bd8a52937b9560bf4161a58bcda5ee80d7f598f98236ef4a32effcd93619"
+      "sha256": "b698f61b45d63a0bf7da2060cecf5210594b044d0fc4f04821e195bf1f067aa0"
     },
     {
       "path": "supabase/functions/_shared/bling_sync.ts",
-      "sha256": "ef42b57363f95e65e6c2752f14bd9cad78c5dc73ffd3c56d118c1cb32a3d9952"
+      "sha256": "07da5a0b3d202a12f8a61dabe62cdf014e2c1e165f98e724abfd16c9f86c353c"
     },
     {
       "path": "supabase/functions/_shared/bling_categorias.ts",
-      "sha256": "432d138c83ead997cc0058368f7ad2b5b1303d4726aab11c255a63ffa732b9dc"
+      "sha256": "498e246048a0eda599366e7603315fe7ca2fb8ed1b9bbefe42753fbec5559c8f"
     },
     {
       "path": "supabase/functions/bling-sync/index.ts",
-      "sha256": "4c8878f555bee7640aa0fb14a39332572bb5c31752066b86317cc3f61b8ea0d6"
+      "sha256": "df3814745732fd378096637480a48db305f54cd74ccad17a87ee3d7cacaf9354"
     }
   ]
 }
