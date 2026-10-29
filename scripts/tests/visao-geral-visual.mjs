@@ -46,7 +46,8 @@ try {
     await page.goto(base + "/#/");
     await page.getByRole("heading", { name:/Sua loja, sob controle/ }).waitFor();
     await page.getByText("Verificação pendente").waitFor();
-    await page.locator(".visao-kpi-conexao .visao-status").getByText("Conectado", { exact:true }).waitFor();
+    await page.locator(".visao-kpi-conexao .visao-status[data-tipo=ok]").waitFor();
+    assert.equal((await page.locator(".visao-kpi-conexao .visao-status").innerText()).trim(), "Conectado");
     assert.equal(await page.getByRole("link", { name:"Ver referência" }).count(),0,"URL javascript bloqueada");
     assert.equal(await page.locator(".visao-acesso").count(),6,"seis módulos reais disponíveis");
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`sem rolagem horizontal em ${width}px`);
