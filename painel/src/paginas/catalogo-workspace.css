@@ -72,3 +72,10 @@
 [data-tema="contraste"] .catalogo-intro h1 em { color:#ffd23f; }
 [data-tema="contraste"] .catalogo-abrir-bling { background:#ffd23f; color:#000; }
 @media(prefers-reduced-motion:reduce) { .catalogo-workspace *, .catalogo-ficha * { transition:none !important; } }
+
+/* Continuação paginada: consultas limitadas a 100 registros por chamada. */
+.catalogo-paginacao { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; padding:15px 18px; border:1px solid var(--borda); border-radius:15px; background:var(--cartao); }
+.catalogo-paginacao span { color:var(--suave); font-size:.82rem; font-weight:650; }
+.catalogo-paginacao button { min-height:44px; border-radius:12px; padding-inline:18px; font-weight:750; }
+.catalogo-workspace .msg-erro button { margin-left:10px; min-height:38px; }
+@media(max-width:520px) { .catalogo-paginacao button { width:100%; } }
