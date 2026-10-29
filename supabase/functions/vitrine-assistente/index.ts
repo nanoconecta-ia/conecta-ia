@@ -3,6 +3,7 @@
 // Não menciona provedor de IA. Limites de tamanho na entrada.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { intencaoCliente, responderCliente } from "../_shared/intencoes.ts";
+import { cabecalhoIpConfigurado, guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -10,13 +11,21 @@ const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { sta
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ erro: "Método não permitido." }, 405);
-  const c = await req.json().catch(() => ({}));
+  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+  // limite de requisições ANTES de qualquer consulta: IP (rajada e sustentado) + teto por loja; corpo pequeno
+  const g = await guardarPublico({
+    endpoint: "vitrine-assistente", req, segredo: segredoDoLimite(Deno.env), cabecalhoIp: cabecalhoIpConfigurado(Deno.env.get("LIMITE_CABECALHO_IP")),
+    lojaDe: (b) => (typeof b?.slug === "string" ? b.slug.slice(0, 80) : null),
+    porta: portaViaRpc(sb), aoFalhar: (m) => console.warn("limite-publico", m),
+    modo: Deno.env.get("LIMITE_MODO") === "bloquear" ? "bloquear" : "observar",
+    aoObservar: (camada, negaria) => { if (negaria) console.info("limite-publico", JSON.stringify({ endpoint: "vitrine-assistente", camada, decisao: "negaria" })); },
+  });
+  if (!g.ok) return new Response(JSON.stringify(g.corpo), { status: g.status, headers: { ...CORS, "Content-Type": "application/json", ...g.cabecalhos } });
+  const c = g.corpo;
   const slug = typeof c?.slug === "string" ? c.slug.slice(0, 80) : "";
   const sku = typeof c?.sku === "string" ? c.sku.slice(0, 80) : "";
   const pergunta = typeof c?.pergunta === "string" ? c.pergunta.slice(0, 300) : "";
   if (!slug || !sku) return json({ erro: "Informe slug e sku." }, 400);
-
-  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const { data: loja } = await sb.from("lojas").select("id, nome, whatsapp, ativa").eq("slug", slug).maybeSingle();
   if (!loja || loja.ativa === false) return json({ resposta: "Loja não encontrada." }, 404);
   const { data: p } = await sb.from("produtos").select("id, nome, sku, preco, estoque").eq("loja_id", loja.id).eq("sku", sku).eq("publicado", true).maybeSingle();

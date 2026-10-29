@@ -1,7 +1,7 @@
 name: Estúdio do agente - revisão visual sintética
 on:
   pull_request:
-    paths: ['painel/**', 'scripts/tests/estudio-visual.mjs', 'scripts/tests/oauth-consentimento-visual.mjs', 'scripts/tests/loja-filtros-visual.mjs', 'scripts/tests/balao-genesis-visual.mjs', 'scripts/tests/pwa-instalavel.mjs', '.github/workflows/estudio-agente.yml']
+    paths: ['painel/**', 'scripts/tests/estudio-visual.mjs', 'scripts/tests/oauth-consentimento-visual.mjs', 'scripts/tests/loja-filtros-visual.mjs', 'scripts/tests/loja-limite-visual.mjs', 'scripts/tests/balao-genesis-visual.mjs', 'scripts/tests/pwa-instalavel.mjs', '.github/workflows/estudio-agente.yml']
 permissions:
   contents: read
 concurrency:
@@ -33,6 +33,7 @@ jobs:
           npx playwright install chromium --with-deps
       - run: node scripts/tests/estudio-visual.mjs
       - run: node scripts/tests/loja-filtros-visual.mjs
+      - run: node scripts/tests/loja-limite-visual.mjs
       - run: node scripts/tests/balao-genesis-visual.mjs
       - run: node scripts/tests/pwa-instalavel.mjs
       - run: node scripts/tests/oauth-consentimento-visual.mjs

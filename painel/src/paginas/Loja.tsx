@@ -20,7 +20,8 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
   const [f, setF] = useState<Filtros>(VAZIO);
   const [busca, setBusca] = useState("");
   const [dados, setDados] = useState<Resposta | null>(null);
-  const [estado, setEstado] = useState<"carregando" | "ok" | "naoachada" | "erro">("carregando");
+  const [estado, setEstado] = useState<"carregando" | "ok" | "naoachada" | "erro" | "limite">("carregando");
+  const [tentativa, setTentativa] = useState(0); // "Tentar de novo" refaz a consulta sem recarregar a página
   // as opções da busca por veículo vêm da 1ª resposta sem filtro, para a cascata não encolher ao escolher
   const [opcoes, setOpcoes] = useState<Veiculo[]>([]);
   const [categorias, setCategorias] = useState<Resposta["categorias"]>([]);
@@ -36,6 +37,8 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
     }).then(async (r) => {
       if (!vivo) return;
       if (r.status === 404) { setEstado("naoachada"); return; }
+      if (r.status === 429 || r.status === 413) { setEstado("limite"); return; } // limite de consultas do servidor: mensagem e nova tentativa, nunca tela em branco
+      if (!r.ok) { setEstado("erro"); return; }
       const j = (await r.json()) as Resposta;
       setDados(j); setEstado("ok");
       if (!f.modelo && !f.motor && !f.ano) setOpcoes(j.veiculos);
@@ -43,7 +46,7 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
       if (!f.tipo) setTipos(j.tipos ?? []);
     }).catch(() => vivo && setEstado("erro"));
     return () => { vivo = false; };
-  }, [slug, host, f]);
+  }, [slug, host, f, tentativa]);
 
   // Tema da loja: variáveis CSS calculadas e validadas no servidor; o navegador só aceita nomes --x e valores sem ; { } < > url(.
   const estilo = useMemo(() => {
@@ -171,7 +174,8 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
           </div>
         )}
         {estado === "carregando" && !dados && <p className="suave">Carregando catálogo…</p>}
-        {estado === "erro" && <div className="v-cartao"><p>Não foi possível carregar o catálogo agora. Tente de novo em instantes.</p></div>}
+        {estado === "erro" && <div className="v-cartao" role="alert"><p>Não foi possível carregar o catálogo agora. Tente de novo em instantes.</p><button type="button" className="sec" onClick={() => setTentativa((t) => t + 1)}>Tentar de novo</button></div>}
+        {estado === "limite" && <div className="v-cartao" role="alert"><p>Muitas consultas seguidas. Aguarde alguns segundos e tente de novo.</p><button type="button" className="sec" onClick={() => setTentativa((t) => t + 1)}>Tentar de novo</button></div>}
         {dados && dados.produtos.length === 0 && (
           <div className="v-cartao"><h2>{f.q || f.modelo || f.categoria || f.tipo ? "Nenhuma peça encontrada" : "Catálogo em preparação"}</h2>
             <p className="suave">{f.q || f.modelo || f.categoria || f.tipo ? "Tente outros termos ou limpe os filtros." : "Esta loja ainda não publicou produtos. Volte em breve."}</p></div>
