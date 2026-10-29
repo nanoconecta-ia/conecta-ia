@@ -36,16 +36,32 @@ export function LeitorEstoque({ produtos, lojaId }: { produtos: LinhaPlanilha[];
     let encerrado = false;
     let frame = 0;
     let camera: MediaStream | null = null;
+    let pararFallback: (() => void) | undefined;
     const iniciar = async () => {
       try {
         const Ctor = (window as Window & { BarcodeDetector?: DetectorCtor }).BarcodeDetector;
-        if (!Ctor) throw Error("Leitor automático indisponível neste navegador. Use a digitação ou um leitor Bluetooth.");
+
         if (!navigator.mediaDevices?.getUserMedia) throw Error("Câmera indisponível. Abra o site em HTTPS e autorize a câmera.");
-        const detector = new Ctor({ formats: ["qr_code", "ean_13", "ean_8", "upc_a", "upc_e", "code_128", "data_matrix"] });
+        const detector = Ctor ? new Ctor({ formats: ["qr_code", "ean_13", "ean_8", "upc_a", "upc_e", "code_128", "data_matrix"] }) : null;
         camera = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
         if (encerrado) { camera.getTracks().forEach(t => t.stop()); return; }
         stream.current = camera;
         if (video.current) { video.current.srcObject = camera; await video.current.play(); }
+        if (!detector) {
+          const { BrowserMultiFormatReader } = await import("@zxing/browser");
+          if (encerrado || !video.current) return;
+          const leitor = new BrowserMultiFormatReader();
+          const controles = await leitor.decodeFromVideoElement(video.current, (resultado) => {
+            const c = resultado?.getText()?.trim();
+            if (c && (c !== ultimo.current.codigo || Date.now() - ultimo.current.instante > 1800)) {
+              ultimo.current = { codigo: c, instante: Date.now() };
+              adicionar(c);
+            }
+          });
+          pararFallback = () => controles.stop();
+          if (encerrado) pararFallback();
+          return;
+        }
         const procurar = async () => {
           if (encerrado) return;
           if (video.current?.readyState === 4) {
@@ -64,7 +80,7 @@ export function LeitorEstoque({ produtos, lojaId }: { produtos: LinhaPlanilha[];
       } catch (e) { if (!encerrado) { setErro(e instanceof Error ? e.message : "Falha ao iniciar câmera"); setAtivo(false); } }
     };
     void iniciar();
-    return () => { encerrado = true; window.clearTimeout(frame); camera?.getTracks().forEach(t => t.stop()); stream.current?.getTracks().forEach(t => t.stop()); stream.current = null; };
+    return () => { encerrado = true; window.clearTimeout(frame); pararFallback?.(); camera?.getTracks().forEach(t => t.stop()); stream.current?.getTracks().forEach(t => t.stop()); stream.current = null; };
   }, [aberto, ativo]);
 
   async function conferirCatalogo() {
