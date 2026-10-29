@@ -2,6 +2,12 @@ name: Painel (GitHub Pages)
 
 on:
   workflow_dispatch:
+  # Um único release por evento: só dispara se o arquivo de autorização desta data for ADICIONADO na main.
+  # Commits de código comuns não fazem deploy automático.
+  push:
+    branches: [main]
+    paths:
+      - '.github/releases/painel-publicacao-unica-20261029.md'
 
 permissions:
   contents: read
