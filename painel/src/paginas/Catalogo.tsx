@@ -182,7 +182,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
         <div><Icone nome="escudo" tamanho={22}/><strong>{itens === null ? "…" : resumo.inativos.toLocaleString("pt-BR")}</strong><span>Inativos/excluídos</span></div>
         <div><Icone nome="imagem" tamanho={22}/><strong>{itens === null ? "…" : resumo.semImagem.toLocaleString("pt-BR")}</strong><span>Sem imagem no espelho</span></div>
       </section>
-      <LeitorEstoque produtos={itens ?? []} />
+      <LeitorEstoque produtos={itens ?? []} lojaId={loja.id} />
       <div className="catalogo-barra">
         <label className="catalogo-pesquisa"><span>Buscar por SKU, nome, marca ou GTIN em todo o espelho</span>
           <div><Icone nome="busca" tamanho={19} /><input type="search" aria-label="Buscar produto por SKU, nome, marca ou GTIN" placeholder="SKU, nome, marca ou GTIN…" value={busca} onChange={(e) => { setBusca(e.target.value); setSelecionados(new Set()); }} /></div>

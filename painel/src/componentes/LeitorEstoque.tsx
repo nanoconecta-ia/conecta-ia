@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { LinhaPlanilha } from "../lib/planilha.ts";
+import { supabase } from "../supabase.ts";
+import { codigoDaLeitura, campoCsvSeguro } from "../lib/leitorEstoque.ts";
 
 type Leitura = { codigo: string; quantidade: number; produto: string; situacao: string };
 type Detector = { detect: (video: HTMLVideoElement) => Promise<{ rawValue: string }[]> };
 type DetectorCtor = new (options: { formats: string[] }) => Detector;
 
-export function LeitorEstoque({ produtos }: { produtos: LinhaPlanilha[] }) {
+export function LeitorEstoque({ produtos, lojaId }: { produtos: LinhaPlanilha[]; lojaId: string }) {
   const [aberto, setAberto] = useState(false);
   const [ativo, setAtivo] = useState(false);
   const [codigo, setCodigo] = useState("");
@@ -15,11 +17,13 @@ export function LeitorEstoque({ produtos }: { produtos: LinhaPlanilha[] }) {
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const ultimo = useRef({ codigo: "", instante: 0 });
+  const produtosRef = useRef(produtos);
+  produtosRef.current = produtos;
 
   function adicionar(valor: string) {
-    const c = valor.trim();
-    if (!c) return;
-    const encontrado = produtos.find(p => p.gtin === c || p.sku === c);
+    const c = codigoDaLeitura(valor);
+    if (!c) { setErro("Código não reconhecido. Informe GTIN/EAN ou SKU válido."); return; }
+    const encontrado = produtosRef.current.find(p => p.gtin === c || p.sku === c);
     setLeituras(atual => {
       const pos = atual.findIndex(x => x.codigo === c);
       if (pos >= 0) return atual.map((x, i) => i === pos ? { ...x, quantidade: x.quantidade + 1 } : x);
@@ -61,11 +65,26 @@ export function LeitorEstoque({ produtos }: { produtos: LinhaPlanilha[] }) {
     };
     void iniciar();
     return () => { encerrado = true; window.clearTimeout(frame); camera?.getTracks().forEach(t => t.stop()); stream.current?.getTracks().forEach(t => t.stop()); stream.current = null; };
-  }, [aberto, ativo, produtos]);
+  }, [aberto, ativo]);
 
+  async function conferirCatalogo() {
+    setErro("");
+    const codigos = leituras.map(l => l.codigo);
+    if (!codigos.length) return;
+    const [gtin, sku] = await Promise.all([
+      supabase.from("produtos").select("id, nome, gtin, sku").eq("loja_id", lojaId).in("gtin", codigos).limit(500),
+      supabase.from("produtos").select("id, nome, gtin, sku").eq("loja_id", lojaId).in("sku", codigos).limit(500),
+    ]);
+    if (gtin.error || sku.error) { setErro("Falha ao conferir catálogo completo. Nenhuma alteração realizada."); return; }
+    const encontrados = [...(gtin.data ?? []), ...(sku.data ?? [])];
+    setLeituras(atual => atual.map(l => {
+      const p = encontrados.find(p => p.gtin === l.codigo || p.sku === l.codigo);
+      return { ...l, produto: p?.nome ?? "", situacao: p ? "Encontrado no espelho da loja" : "Não encontrado no espelho; revisão necessária" };
+    }));
+  }
   function exportar() {
     const campos = [["codigo", "quantidade", "produto", "situacao", "fornecedor_informado"], ...leituras.map(l => [l.codigo, String(l.quantidade), l.produto, l.situacao, fornecedor])];
-    const csv = "\uFEFF" + campos.map(l => l.map(v => '"' + v.replace(/"/g, '""') + '"').join(";")).join("\r\n");
+    const csv = "\uFEFF" + campos.map(l => l.map(campoCsvSeguro).join(";")).join("\r\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a"); a.href = url; a.download = "conecta-ia-conferencia-estoque.csv"; a.click(); URL.revokeObjectURL(url);
   }
@@ -81,6 +100,7 @@ export function LeitorEstoque({ produtos }: { produtos: LinhaPlanilha[] }) {
       {erro && <p role="alert">{erro}</p>}
       <p><strong>{leituras.length}</strong> códigos diferentes · <strong>{leituras.reduce((n, l) => n + l.quantidade, 0)}</strong> unidades lidas</p>
       <div className="leitor-lista">{leituras.map(l => <div key={l.codigo} className="leitor-linha"><div><strong>{l.codigo}</strong><small>{l.produto || l.situacao}</small></div><label>Qtd. <input type="number" min="1" value={l.quantidade} onChange={e => setLeituras(a => a.map(x => x.codigo === l.codigo ? { ...x, quantidade: Math.max(1, Number(e.target.value) || 1) } : x))} /></label><button type="button" onClick={() => setLeituras(a => a.filter(x => x.codigo !== l.codigo))}>Remover</button></div>)}</div>
+      {leituras.length > 0 && <button type="button" onClick={() => void conferirCatalogo()}>Conferir códigos no catálogo completo</button>}
       {leituras.length > 0 && <button type="button" onClick={exportar}>Exportar conferência CSV (sem gravar no ERP)</button>}
     </div>}
   </section>;
