@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex"><title>Conecta.IA - Teste de Camera</title>
+<style>body{font:16px system-ui;background:#171b22;color:#f5f5f5;max-width:640px;margin:auto;padding:20px}button,input{font:inherit;padding:12px;border-radius:10px;margin:6px 2px}button{background:#ffad74;border:0;color:#1b1b1b}video{display:block;width:100%;min-height:180px;background:#050505;border-radius:12px}#status{padding:12px;border:1px solid #777;border-radius:10px}li{padding:6px}</style></head>
+<body><h2>Conecta.IA - Teste da camera</h2><p>Homologacao isolada: nao acessa Bling nem envia dados.</p>
+<button id="start">Ligar camera traseira</button><button id="stop">Desligar</button>
+<video id="video" autoplay muted playsinline></video><p id="status">Aguardando permissao.</p>
+<form id="form"><input id="codigo" placeholder="GTIN ou SKU manual"><button>Adicionar</button></form>
+<h3>Leituras: <span id="total">0</span></h3><ol id="lista"></ol>
+<script>
+const video=document.querySelector('#video'),status=document.querySelector('#status'),lista=document.querySelector('#lista');
+let stream=null,detector=null,ativo=false,ultimo='',ultimoMs=0;const lidos=new Map();
+function informar(s){status.textContent=s}
+function adicionar(c){c=String(c).trim();if(!c)return;lidos.set(c,(lidos.get(c)||0)+1);document.querySelector('#total').textContent=[...lidos.values()].reduce((a,b)=>a+b,0);lista.replaceChildren();for(const [codigo,n] of lidos){const li=document.createElement('li');li.textContent=codigo+' - quantidade '+n;lista.append(li)}informar('Lido: '+c)}
+async function ler(){if(!ativo)return;try{if(video.readyState>=2){const r=await detector.detect(video);const codigo=r[0]?.rawValue;if(codigo&&(codigo!==ultimo||Date.now()-ultimoMs>2500)){ultimo=codigo;ultimoMs=Date.now();adicionar(codigo)}}}catch(e){informar('Erro de leitura: '+e.message)}if(ativo)setTimeout(ler,250)}
+function desligar(){ativo=false;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null}
+document.querySelector('#start').onclick=async()=>{try{if(!window.isSecureContext)throw Error('Pagina sem contexto HTTPS seguro');if(!('BarcodeDetector'in window))throw Error('BarcodeDetector indisponivel. Abra no Chrome atualizado.');detector=new BarcodeDetector({formats:['qr_code','ean_13','ean_8','upc_a','upc_e','code_128']});stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});video.srcObject=stream;await video.play();ativo=true;informar('Camera ligada. Aponte para o codigo.');ler()}catch(e){desligar();informar('Falha: '+e.message)}};
+document.querySelector('#stop').onclick=()=>{desligar();informar('Camera desligada')};
+document.querySelector('#form').onsubmit=e=>{e.preventDefault();adicionar(document.querySelector('#codigo').value);document.querySelector('#codigo').value=''};
+window.addEventListener('pagehide',desligar);
+</script></body></html>
