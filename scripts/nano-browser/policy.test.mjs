@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {authorizeUrl,authorizeRequest} from './policy.mjs';
+test('allow public panel',()=>assert.equal(authorizeUrl('https://nanoconecta-ia.github.io/conecta-ia/'),'https://nanoconecta-ia.github.io/conecta-ia/'));
+for(const u of ['http://nanoconecta-ia.github.io/conecta-ia/','https://nanoconecta-ia.github.io.evil.com/conecta-ia/','https://127.0.0.1/conecta-ia/','https://nanoconecta-ia.github.io/other/','file:///etc/passwd'])test('reject '+u,()=>assert.throws(()=>authorizeUrl(u)));
+test('deny POST and external GET',()=>{assert.equal(authorizeRequest({method:()=> 'POST',url:()=> 'https://nanoconecta-ia.github.io/conecta-ia/'}),false);assert.equal(authorizeRequest({method:()=> 'GET',url:()=> 'https://example.com/'}),false)});
