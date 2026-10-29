@@ -600,3 +600,30 @@ html .aviso-versao button:disabled { background: #fff; color: #1d1b18; opacity: 
   html .dock-trilho button.dock-aba { min-height: 44px; font-size: .66rem; padding: 4px 1px; border-radius: 10px; }
   .dock-topo { padding: 8px 10px; gap: 6px; }
 }
+
+/* Chat compacto (estilo chat de IA avançado): campo que cresce com o texto, ícones pequenos numa linha, Enviar redondo, voz recolhida */
+.so-leitor { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.abas .compositor-grade { gap: 6px; }
+.abas .compositor-campo textarea { min-height: 44px; max-height: 30dvh; field-sizing: content; padding: 10px 14px; font-size: 1rem; border-radius: 22px; }
+.abas .compositor-acoes { gap: 4px; flex-wrap: nowrap; }
+html .abas .compositor-acoes > button.mic { min-height: 36px; min-width: 36px; width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 1rem; line-height: 1; }
+html .abas .compositor-acoes .compositor-enviar { flex: none; min-width: 44px; width: 44px; height: 44px; min-height: 44px; max-width: 44px; padding: 0; border-radius: 50%; font-size: 1.1rem; line-height: 1; }
+.voz-escolha { font-size: .85rem; }
+.voz-escolha > summary { cursor: pointer; display: inline-flex; gap: 4px; align-items: center; padding: 4px 10px; border: 1px solid var(--borda); border-radius: 999px; list-style: none; color: var(--suave, inherit); }
+.voz-escolha > summary::-webkit-details-marker { display: none; }
+.voz-escolha > summary::after { content: "▾"; font-size: .8em; }
+.voz-escolha[open] > summary::after { content: "▴"; }
+.voz-escolha label { display: grid; gap: 4px; margin-top: 6px; }
+
+/* Trilho do Nano.ia no celular: só ícones (o nome fica no title/aria-label) */
+@media (max-width: 560px) {
+  .dock-area { grid-template-columns: 48px minmax(0, 1fr); }
+  .dock-trilho { padding: 4px 2px; }
+  html .dock-trilho button.dock-aba { min-height: 44px; padding: 0; }
+  html .dock-trilho .dock-aba span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+
+/* Telas grandes: a esfera sai do cabeçalho quando o Nano.ia está parado; volta quando ele trabalha */
+@media (min-width: 900px) {
+  .agente .esfera-bloco:has(.esfera[data-estado="ocioso"]) { display: none; }
+}
