@@ -6,6 +6,7 @@ import { cifrar } from "../cripto.ts";
 import type { Armazem, CredCifrada } from "../bling_token.ts";
 import { BlingEscritaReal, BlingLeituraReal, FERRAMENTAS_ESCRITA_REAL, INTERVALO_ESCRITA_MS } from "./porta_bling.ts";
 import { escreverEConfirmarNoBling, type ItemExecucao } from "./executor.ts";
+import { HANDLERS } from "./handlers.ts";
 
 const chave = randomBytes(32).toString("base64");
 const AGORA = Date.parse("2026-10-28T12:00:00Z");
@@ -132,4 +133,45 @@ test("executor + porta real: timeout na escrita => desconhecida; 5xx => desconhe
   const fora = await porta(true, () => resp(200));
   const v = await escreverEConfirmarNoBling(fora.p, "bling.produtos.alterar", item("bling.produtos.alterar", { preco: 1 }));
   assert.equal(v.estado, "falhou"); assert.match(v.motivo ?? "", /campo_nao_liberado/); assert.equal(fora.chamadas.length, 0);
+});
+
+test("Nano.ia: consulta 854008 inclui excluído, informa situação e não expõe custo/fornecedor", async () => {
+  const { p, chamadas } = await porta(false, () => resp(200, { data: [
+    { id: 1177890085, codigo: "854008", nome: "Bomba d'água INDISA", situacao: "E", marca: "INDISA", preco: 260, precoCusto: 151, fornecedor: "CONFIDENCIAL" },
+  ] }));
+  const r = await HANDLERS["bling.produtos.consultar"]({ sku: "854008" }, { bling: p } as any) as any;
+  assert.equal(r.produto.situacao, "E");
+  assert.equal(r.produto.id, 1177890085);
+  assert.equal(r.produto.precoCusto, undefined);
+  assert.equal(r.produto.fornecedor, undefined);
+  assert.equal(chamadas.length, 1);
+  assert.match(chamadas[0].url, /criterio=5/);
+  assert.deepEqual(chamadas.map((c) => c.metodo), ["GET"]);
+});
+
+test("Nano.ia: excluído não gera proposta de ajuste de cadastro antes da reativação", async () => {
+  const { p, chamadas } = await porta(false, () => resp(200, { data: [
+    { id: 1177890085, codigo: "854008", situacao: "E", marca: "INDISA" },
+  ] }));
+  const r = await HANDLERS["bling.produtos.preparar_atualizacao"](
+    { sku: "854008", campos: { marca: "INDISA" }, fontes: [{ documento: "teste" }] },
+    { bling: p } as any,
+  ) as any;
+  assert.match(r.erro, /excluído\/inativo/);
+  assert.equal(r.bling_id, 1177890085);
+  assert.equal(chamadas.length, 1);
+});
+
+test("Nano.ia: código aproximado não é tratado como SKU exato", async () => {
+  const { p } = await porta(false, () => resp(200, { data: [
+    { id: 999, codigo: "854008X", situacao: "A" },
+  ] }));
+  const r = await HANDLERS["bling.produtos.consultar"]({ sku: "854008" }, { bling: p } as any) as any;
+  assert.match(r.erro, /código exato não encontrado/);
+});
+
+test("Nano.ia: busca com página cheia exige reconciliação antes de proposta", async () => {
+  const { p } = await porta(false, () => resp(200, { data: Array.from({ length: 100 }, (_, i) => ({ id: i + 1, codigo: "854008", situacao: "E" })) }));
+  const r = await HANDLERS["bling.produtos.consultar"]({ sku: "854008" }, { bling: p } as any) as any;
+  assert.match(r.erro, /paginação/);
 });

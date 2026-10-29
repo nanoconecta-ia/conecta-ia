@@ -26,7 +26,8 @@ export class BlingLeituraReal implements PortaBling {
   async ler(ferramenta: string, args: { id?: string; sku?: string; gtin?: string; busca?: string }): Promise<RespostaBling> {
     let caminho: string;
     if (ferramenta === "bling.produtos.confirmar" && args.id && /^\d+$/.test(args.id)) caminho = `/produtos/${args.id}`;
-    else if (ferramenta === "bling.produtos.consultar" && args.sku) caminho = `/produtos?codigos[]=${encodeURIComponent(args.sku)}`;
+    // Incluir ativos, inativos e excluídos: a busca administrativa NÃO pode confundir um excluído com produto inexistente.
+    else if (ferramenta === "bling.produtos.consultar" && args.sku) caminho = `/produtos?codigos[]=${encodeURIComponent(args.sku)}&criterio=5&limite=100&pagina=1`;
     else if (ferramenta === "bling.categorias.consultar") caminho = `/categorias/produtos?pagina=1&limite=100`;
     // criterio=2 = só ATIVOS (filtro documentado no OpenAPI do Bling: 1 últimos, 2 ativos, 3 inativos, 4 excluídos, 5 todos)
     else if (ferramenta === "bling.produtos.consultar_ativos" && args.sku) caminho = `/produtos?codigos[]=${encodeURIComponent(args.sku)}&criterio=2&limite=100`;

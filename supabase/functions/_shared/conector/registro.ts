@@ -80,7 +80,7 @@ export const FERRAMENTAS_CONECTOR: readonly DefinicaoFerramenta[] = [
 
   // ------------------------------------------------------------------ Bling (leitura pelo backend com o token da loja; nunca o MCP cru)
   leitura("bling.status.consultar", "bling", "Situação da conexão com o Bling e da última sincronização.", obj({}), livre, "Leitura de bling_conexoes.", { estado: "ativa" }),
-  leitura("bling.produtos.consultar", "bling", "Consulta um produto no Bling pelo SKU (leitura em tempo real, sem custo nem fornecedor).", obj({ sku }, ["sku"]), livre,
+  leitura("bling.produtos.consultar", "bling", "Consulta um produto no Bling pelo SKU exato, incluindo excluídos e inativos (leitura em tempo real, sem custo nem fornecedor).", obj({ sku }, ["sku"]), livre,
     "Resposta do Bling filtrada por lista de campos permitidos.", { estado: "ativa" }),
   leitura("bling.categorias.consultar", "bling", "Lista as categorias de produto do Bling.", obj({ busca: txt(undefined, 80) }), lista(livre, 100), "Resposta do Bling.", { estado: "ativa" }),
   leitura("bling.estoque.consultar", "bling", "Saldo de estoque de um produto no Bling.", obj({ sku }, ["sku"]), livre, "Resposta do Bling.", { estado: "planejada" }),
