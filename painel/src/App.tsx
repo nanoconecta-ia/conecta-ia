@@ -160,7 +160,7 @@ export function App() {
         {!!loja && <a className="topo-atalho-nano" href={`#${ROTA_NANO}`}><Icone nome="agentes" tamanho={17} /><span>Nano.IA</span></a>}
         {!!loja && !demoAtivo && !paginaDeChat && <button className="sec agente-botao" onClick={() => setAgente((a) => !a)} aria-pressed={agente} aria-label="Agente lateral (Ctrl J)"><Icone nome="agentes" tamanho={16} /><span>Agente</span></button>}
         <SeletorTema />
-        <button className="sec" onClick={() => void supabase.auth.signOut()} disabled={demoAtivo}>Sair</button>
+        <button className="sec topo-sair" onClick={() => void supabase.auth.signOut()} disabled={demoAtivo}>Sair</button>
       </header>
       <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
       <div className={`layout layout-premium ${larga ? "layout--larga" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""} ${menuMovel ? "layout--menu-movel-aberto" : ""}`} style={{ "--res-esq": `${res.esq}px`, "--res-dir": `${res.dir}px` } as React.CSSProperties}>
@@ -179,6 +179,7 @@ export function App() {
             ))}
           </div>
         ))}
+        <button className="sec menu-sair" disabled={demoAtivo} onClick={() => void supabase.auth.signOut()}><Icone nome="fechar" tamanho={18} /><span>Sair da conta</span></button>
         <button className="sec menu-recolher" onClick={alternarMenu} aria-pressed={recolhido} aria-label={recolhido ? "Expandir menu" : "Recolher menu"}><Icone nome="recolher" tamanho={16} /></button>
       </nav>
       <main>
