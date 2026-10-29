@@ -36,7 +36,11 @@ export function mapearProduto(lojaId: string, lista: ItemLista, d: Detalhe | nul
   };
 }
 
-export interface Existente { bling_id: string; sku: string | null; nome: string | null; preco: number | null; estoque: number | null; situacao: string | null; sincronizado_em: string | null }
+/** Preserva campos antigos quando o Bling permite LISTAR um excluído, mas não consultar seu detalhe. */
+export interface Existente extends Omit<Partial<LinhaProduto>, "sincronizado_em"> {
+  bling_id: string; sku: string | null; nome: string | null; preco: number | null; estoque: number | null;
+  situacao: string | null; sincronizado_em: string | null;
+}
 
 /** Precisa buscar o detalhe? Novo, mudou algo da lista, ou o último detalhe tem mais de `maxIdadeMs`. */
 export function precisaDetalhe(l: ItemLista, e: Existente | undefined, agora: number, maxIdadeMs = 24 * 3600_000): boolean {
@@ -47,9 +51,9 @@ export function precisaDetalhe(l: ItemLista, e: Existente | undefined, agora: nu
   return !e.sincronizado_em || agora - Date.parse(e.sincronizado_em) > maxIdadeMs;
 }
 
-export type GrupoLista = "ativos" | "inativos";
+export type GrupoLista = "ativos" | "inativos" | "excluidos";
 export interface PortasSync {
-  /** `grupo`: produtos ATIVOS ou INATIVOS do Bling (excluídos nunca entram no espelho). */
+  /** `grupo`: produtos ativos, inativos ou excluídos (critério 2, 3 e 4 da API v3). */
   listarPagina(pagina: number, limite: number, grupo?: GrupoLista): Promise<{ itens: ItemLista[] } | { erro: string }>;
   detalhe(id: number): Promise<Detalhe | null>;
   existentes(): Promise<Existente[]>;
@@ -59,44 +63,130 @@ export interface PortasSync {
   espera(ms: number): Promise<void>;
   agora(): number;
 }
-export interface ResultadoSync { paginas: number; vistos: number; gravados: number; detalhes: number; ausentes: number; completo: boolean; erro?: string }
+export interface ResultadoSync { paginas: number; vistos: number; gravados: number; detalhes: number; resumosExcluidos: number; ausentes: number; completo: boolean; erro?: string }
 
 const LIMITE = 100, INTERVALO_MS = 350; // ~3 req/s por conta
 
+/** Fallback controlado para excluído sem GET /produtos/{id} (pode devolver 404).
+ * Preserva metadados previamente espelhados, atualiza apenas valores conhecidos e força situacao E.
+ * Custo, fornecedor e campos fiscais nunca são lidos, mapeados ou guardados.
+ */
+export function resumirExcluido(lojaId: string, item: ItemLista, anterior: Existente | undefined, agoraISO: string): LinhaProduto {
+  const base = mapearProduto(lojaId, { ...item, situacao: "E" }, null, agoraISO);
+  return {
+    ...base,
+    ...anterior,
+    loja_id: lojaId,
+    bling_id: String(item.id),
+    sku: txt(item.codigo) ?? anterior?.sku ?? null,
+    nome: txt(item.nome) ?? anterior?.nome ?? null,
+    preco: typeof item.preco === "number" ? item.preco : anterior?.preco ?? null,
+    estoque: typeof item.estoque?.saldoVirtualTotal === "number" ? item.estoque.saldoVirtualTotal : anterior?.estoque ?? null,
+    situacao: "E",
+    sincronizado_em: agoraISO,
+  };
+}
+
 export async function sincronizar(lojaId: string, p: PortasSync, orcamentoMs = 100_000): Promise<ResultadoSync> {
   const ini = p.agora();
-  const r: ResultadoSync = { paginas: 0, vistos: 0, gravados: 0, detalhes: 0, ausentes: 0, completo: false };
+  const r: ResultadoSync = { paginas: 0, vistos: 0, gravados: 0, detalhes: 0, resumosExcluidos: 0, ausentes: 0, completo: false };
   const ex = new Map((await p.existentes()).map((e) => [e.bling_id, e]));
+  const skuDono = new Map<string, string>();
+  for (const e of ex.values()) if (e.sku) skuDono.set(e.sku, e.bling_id);
   const vistos = new Set<string>();
   let lote: LinhaProduto[] = [];
-  const descarregar = async () => { if (lote.length) { await p.gravar(lote); r.gravados += lote.length; lote = []; } };
+  let falhasDetalhe = 0;
+  let falhasSku = 0;
+  const descarregar = async () => {
+    if (lote.length) { await p.gravar(lote); r.gravados += lote.length; lote = []; }
+  };
+  // Não incluir uma linha com SKU já pertencente a outro ID do Bling.
+  // Uma colisão é pendência humana, nunca motivo para sobrescrever o cadastro anterior.
+  const incluir = async (linha: LinhaProduto) => {
+    if (linha.sku && skuDono.has(linha.sku) && skuDono.get(linha.sku) !== linha.bling_id) {
+      falhasSku++;
+      await p.registrarErro("SKU repetido entre IDs do Bling", { bling_id: linha.bling_id, sku: linha.sku });
+      return;
+    }
+    if (linha.sku) skuDono.set(linha.sku, linha.bling_id);
+    lote.push(linha);
+    if (lote.length >= 50) await descarregar();
+  };
 
-  for (const grupo of ["ativos", "inativos"] as GrupoLista[]) {
+  for (const grupo of ["ativos", "inativos", "excluidos"] as GrupoLista[]) {
     for (let pagina = 1; ; pagina++) {
-      if (p.agora() - ini > orcamentoMs) { await descarregar(); return r; } // sem timeout: retoma na próxima rodada
+      if (p.agora() - ini > orcamentoMs) {
+        await descarregar();
+        r.erro = "tempo esgotado antes de concluir a varredura";
+        return r;
+      }
       const pg = await p.listarPagina(pagina, LIMITE, grupo);
       await p.espera(INTERVALO_MS);
-      if ("erro" in pg) { await descarregar(); r.erro = pg.erro; await p.registrarErro(pg.erro, { pagina, grupo }); return r; }
+      if ("erro" in pg) {
+        await descarregar(); r.erro = pg.erro;
+        await p.registrarErro(pg.erro, { pagina, grupo });
+        return r;
+      }
       r.paginas++;
       for (const it of pg.itens) {
-        vistos.add(String(it.id)); r.vistos++;
-        let d: Detalhe | null = null;
-        if (precisaDetalhe(it, ex.get(String(it.id)), p.agora())) {
-          if (p.agora() - ini > orcamentoMs) continue; // fica para a próxima rodada (não grava meia-linha)
-          d = await p.detalhe(it.id); r.detalhes++;
-          await p.espera(INTERVALO_MS);
-          if (!d) { await p.registrarErro("detalhe indisponível", { bling_id: it.id }); continue; }
-        } else continue; // sem mudança: não regrava
-        lote.push(mapearProduto(lojaId, it, d, new Date(p.agora()).toISOString()));
-        if (lote.length >= 50) await descarregar();
+        if (!Number.isSafeInteger(it.id) || it.id <= 0) {
+          await descarregar();
+          r.erro = "ID inválido na listagem do Bling";
+          await p.registrarErro(r.erro, { pagina, grupo });
+          return r; // resposta inconsistente: NÃO marcar ausentes
+        }
+        const id = String(it.id);
+        if (vistos.has(id)) {
+          await descarregar();
+          r.erro = "ID repetido na listagem do Bling";
+          await p.registrarErro(r.erro, { pagina, grupo, bling_id: id });
+          return r; // paginação instável: NÃO marcar ausentes
+        }
+        vistos.add(id);
+        r.vistos++;
+        const anterior = ex.get(id);
+        const listado = grupo === "excluidos" ? { ...it, situacao: "E" } : it;
+        if (!precisaDetalhe(listado, anterior, p.agora())) continue;
+        if (p.agora() - ini > orcamentoMs) {
+          await descarregar(); r.erro = "tempo esgotado durante a leitura dos detalhes";
+          return r;
+        }
+        const d = await p.detalhe(it.id);
+        r.detalhes++;
+        await p.espera(INTERVALO_MS);
+        if (!d) {
+          if (grupo === "excluidos") {
+            await incluir(resumirExcluido(lojaId, listado, anterior, new Date(p.agora()).toISOString()));
+            r.resumosExcluidos++;
+            continue;
+          }
+          falhasDetalhe++;
+          await p.registrarErro("detalhe indisponível", { bling_id: it.id, grupo });
+          continue;
+        }
+        const linha = mapearProduto(lojaId, listado, d, new Date(p.agora()).toISOString());
+        if (grupo === "excluidos") linha.situacao = "E";
+        await incluir(linha);
       }
       if (pg.itens.length < LIMITE) break;
     }
   }
   await descarregar();
-  // Listagem completa (ativos + inativos): o que sumiu das duas listas deixa de ser publicável.
+  if (falhasDetalhe || falhasSku) {
+    r.erro = `varredura parcial: ${falhasDetalhe} detalhes indisponíveis, ${falhasSku} conflitos de SKU`;
+    return r; // nenhum registro é marcado "ausente" com pendências
+  }
+  if (vistos.size === 0 && ex.size > 0) {
+    r.erro = "listagem vazia inesperada para loja com produtos";
+    await p.registrarErro(r.erro, { existentes: ex.size });
+    return r; // proteção contra resposta vazia falsa da API
+  }
+  // Só após as 3 situações terem sido totalmente verificadas.
   const ausentes = [...ex.keys()].filter((id) => !vistos.has(id) && ex.get(id)!.situacao !== "ausente");
-  if (ausentes.length) { await p.marcarAusentes(ausentes); r.ausentes = ausentes.length; }
+  if (ausentes.length) {
+    await p.marcarAusentes(ausentes);
+    r.ausentes = ausentes.length;
+  }
   r.completo = true;
   return r;
 }

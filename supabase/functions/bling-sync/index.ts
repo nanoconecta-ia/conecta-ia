@@ -37,7 +37,7 @@ function portasDaLoja(admin: any, lojaId: string, chaveCifra: Chaveiro): PortasS
   return {
     async listarPagina(pagina, limite, grupo = "ativos") {
       try {
-        const r = await blingFetch(arm, lojaId, `/produtos?pagina=${pagina}&limite=${limite}&criterio=${grupo === "inativos" ? 3 : 2}&tipo=T`, cfg);
+        const r = await blingFetch(arm, lojaId, `/produtos?pagina=${pagina}&limite=${limite}&criterio=${grupo === "inativos" ? 3 : grupo === "excluidos" ? 4 : 2}&tipo=T`, cfg);
         if (!r.ok) return { erro: `Bling respondeu ${r.status} ao listar produtos` };
         const j = await r.json().catch(() => null);
         return { itens: Array.isArray(j?.data) ? j.data : [] };
@@ -53,7 +53,7 @@ function portasDaLoja(admin: any, lojaId: string, chaveCifra: Chaveiro): PortasS
     async existentes() {
       const out: Existente[] = [];
       for (let de = 0; ; de += 1000) {
-        const { data, error } = await admin.from("produtos").select("bling_id, sku, nome, preco, estoque, situacao, sincronizado_em").eq("loja_id", lojaId).range(de, de + 999);
+        const { data, error } = await admin.from("produtos").select("bling_id, sku, nome, preco, estoque, situacao, sincronizado_em, categoria_bling_id, marca, gtin, gtin_tributario, descricao_curta, descricao_complementar, peso_kg, largura_cm, altura_cm, profundidade_cm, unidade, condicao, formato, pai_bling_id, volumes").eq("loja_id", lojaId).range(de, de + 999);
         if (error) throw new Error("falha ao ler o espelho");
         out.push(...((data ?? []) as Existente[]));
         if ((data ?? []).length < 1000) break;
@@ -72,7 +72,8 @@ function portasDaLoja(admin: any, lojaId: string, chaveCifra: Chaveiro): PortasS
     },
     async marcarAusentes(ids) {
       for (let i = 0; i < ids.length; i += 200) {
-        await admin.from("produtos").update({ situacao: "ausente", publicado: false }).eq("loja_id", lojaId).in("bling_id", ids.slice(i, i + 200));
+        const { error } = await admin.from("produtos").update({ situacao: "ausente", publicado: false }).eq("loja_id", lojaId).in("bling_id", ids.slice(i, i + 200));
+        if (error) throw new Error("falha ao registrar produtos ausentes no espelho");
       }
     },
     async registrarErro(mensagem, detalhe) {
@@ -156,7 +157,7 @@ Deno.serve(async (req) => {
         // Produto novo ou que trocou de categoria no Bling: aplica o mapeamento de taxonomia já definido pelo lojista.
         await admin.rpc("bling_categoria_taxonomia_aplicar", { p_loja: lojaId });
       } else if (r.erro) await admin.from("bling_conexoes").update({ ultimo_erro: r.erro.slice(0, 300) }).eq("loja_id", lojaId);
-      resultado.push({ categorias: cat, paginas: r.paginas, vistos: r.vistos, gravados: r.gravados, detalhes: r.detalhes, ausentes: r.ausentes, completo: r.completo, erro: r.erro ? true : undefined });
+      resultado.push({ categorias: cat, paginas: r.paginas, vistos: r.vistos, gravados: r.gravados, detalhes: r.detalhes, resumos_excluidos: r.resumosExcluidos, ausentes: r.ausentes, completo: r.completo, erro: r.erro ? true : undefined });
     } catch {
       resultado.push({ completo: false, erro: true });
     }
