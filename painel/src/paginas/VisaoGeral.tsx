@@ -28,6 +28,7 @@ export function VisaoGeral({ loja }: { loja: Loja }) {
   const [contadores, setContadores] = useState<Contadores>({ produtos: null, publicados: null, pendentes: null });
   const [avisos, setAvisos] = useState<Notificacao[]>([]);
   const [avisosErro, setAvisosErro] = useState("");
+  const [carregandoAvisos, setCarregandoAvisos] = useState(true);
   const [resolvendo, setResolvendo] = useState<string | null>(null);
 
   async function carregarAvisos(lojaId: string) {
@@ -45,6 +46,7 @@ export function VisaoGeral({ loja }: { loja: Loja }) {
     setContadores({ produtos: null, publicados: null, pendentes: null });
     setAvisos([]);
     setAvisosErro("");
+    setCarregandoAvisos(true);
 
     void Promise.all([
       supabase.from("bling_conexoes").select("status").eq("loja_id", loja.id).maybeSingle(),
@@ -60,9 +62,10 @@ export function VisaoGeral({ loja }: { loja: Loja }) {
         publicados: publicados.error ? null : publicados.count ?? 0,
         pendentes: pendentes.error ? null : pendentes.count ?? 0,
       });
+      setCarregandoAvisos(false);
       if (notificacoes.error) setAvisosErro("Não foi possível consultar os avisos desta loja.");
       else setAvisos((notificacoes.data ?? []) as Notificacao[]);
-    }).catch(() => { if (ativo) { setConexao("indisponível"); setAvisosErro("Serviço de consulta indisponível."); } });
+    }).catch(() => { if (ativo) { setConexao("indisponível"); setCarregandoAvisos(false); setAvisosErro("Serviço de consulta indisponível."); } });
     return () => { ativo = false; };
   }, [loja.id]);
 
@@ -137,7 +140,7 @@ export function VisaoGeral({ loja }: { loja: Loja }) {
         <section className="visao-alertas" aria-labelledby="avisos-titulo">
           <div className="visao-secao-titulo"><div><span>ACOMPANHAMENTO</span><h2 id="avisos-titulo">Avisos da loja</h2></div></div>
           {avisosErro && <p role="alert" className="visao-aviso-erro">{avisosErro}</p>}
-          {avisos.length === 0 && !avisosErro ? <div className="visao-sem-aviso"><Icone nome="escudo" tamanho={28}/><strong>Sem avisos pendentes</strong><small>Os avisos que exigirem atenção aparecerão aqui.</small></div> : avisos.map((a) => (
+          {carregandoAvisos ? <div className="visao-sem-aviso" role="status">Consultando avisos da loja…</div> : avisos.length === 0 && !avisosErro ? <div className="visao-sem-aviso"><Icone nome="escudo" tamanho={28}/><strong>Sem avisos pendentes</strong><small>Os avisos que exigirem atenção aparecerão aqui.</small></div> : avisos.map((a) => (
             <article className="visao-notificacao" key={a.id}>
               <div className="visao-notificacao-titulo"><strong>{a.titulo}</strong><span className={`selo ${a.severidade === "bloqueio" ? "erro" : a.severidade === "atencao" ? "atencao" : ""}`}>{a.severidade}</span></div>
               {a.corpo && <p>{a.corpo}</p>}
