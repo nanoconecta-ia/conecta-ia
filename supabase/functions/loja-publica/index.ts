@@ -21,6 +21,8 @@ Deno.serve(async (req) => {
     lojaDe: (b) => normalizarHost(b?.host) ?? (typeof b?.slug === "string" && SLUG_RE.test(b.slug) ? b.slug : null),
     porta: portaViaRpc(sb),
     aoFalhar: (m) => console.warn("limite-publico", m),
+    modo: Deno.env.get("LIMITE_MODO") === "bloquear" ? "bloquear" : "observar",
+    aoObservar: (camada, negaria) => { if (negaria) console.info("limite-publico", JSON.stringify({ endpoint: "loja-publica", camada, decisao: "negaria" })); },
   });
   if (!g.ok) return new Response(JSON.stringify(g.corpo), { status: g.status, headers: { ...CORS, "Content-Type": "application/json", ...g.cabecalhos } });
   const c = g.corpo;
