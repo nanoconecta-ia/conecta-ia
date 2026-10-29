@@ -94,6 +94,9 @@ export interface EntradaGuarda {
   config?: ConfigLimite;
   agora?: () => number;
   aoFalhar?: (motivo: string) => void;
+  /** Em observar, contabiliza a decisão mas não bloqueia por taxa. */
+  modo?: "observar" | "bloquear";
+  aoObservar?: (camada: string, negaria: boolean) => void;
 }
 export type ResultadoGuarda =
   | { ok: true; corpo: any }
@@ -114,7 +117,7 @@ export async function guardarPublico(e: EntradaGuarda): Promise<ResultadoGuarda>
 
   // 1) Teto da loja PRIMEIRO: pedido negado aqui grava uma única linha (sempre a mesma da janela) e não toca nas chaves de IP.
   const rl = await tenta(`pub:${e.endpoint}:loja:${lojaOpaca}`, cfg.loja);
-  if (rl === false) return negar(cfg.loja.janelaS);
+  if (rl === false) { e.aoObservar?.("loja", true); if (e.modo !== "observar") return negar(cfg.loja.janelaS); }
 
   // 2) IP em balde fixo; sem IP confiável não existe balde global: vale o limite próprio da loja para quem não se identifica.
   let chavesLocais: string, resultados: (boolean | null)[], regras: RegraLimite[];
@@ -129,11 +132,11 @@ export async function guardarPublico(e: EntradaGuarda): Promise<ResultadoGuarda>
     resultados = await Promise.all(regras.map((r) => tenta(`pub:${e.endpoint}:semip:${lojaOpaca}`, r)));
   }
   const i = resultados.findIndex((r) => r === false);
-  if (i >= 0) return negar(regras[i].janelaS);
+  if (i >= 0) { e.aoObservar?.(ip ? `ip_${regras[i].nome}` : "sem_ip", true); if (e.modo !== "observar") return negar(regras[i].janelaS); }
 
   if (rl === null || resultados.some((r) => r === null)) {
     e.aoFalhar?.("limitador_indisponivel");
-    if (!tetoLocal(chavesLocais, cfg.tetoLocalPorMin, agora())) return negar(60);
+    if (!tetoLocal(chavesLocais, cfg.tetoLocalPorMin, agora())) { e.aoObservar?.("fallback", true); if (e.modo !== "observar") return negar(60); }
   }
   return { ok: true, corpo };
 }
