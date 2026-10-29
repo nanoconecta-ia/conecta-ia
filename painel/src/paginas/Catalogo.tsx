@@ -8,6 +8,7 @@ import { mapaDoCatalogo } from "../lib/mapaPagina.ts";
 import { resumoDoLote } from "../lib/catalogoExperiencia.ts";
 import { TAMANHO_LOTE_CATALOGO, expressaoBuscaCatalogo, juntarProdutosPorId, existemMaisProdutos } from "../lib/catalogoPaginacao.ts";
 import { Icone } from "../componentes/Icone.tsx";
+import { LeitorEstoque } from "../componentes/LeitorEstoque.tsx";
 import "./catalogo-workspace.css";
 import { camposFaltando, contagens, filtrar, ROTULO_FILTRO, semCategoria, situacaoTexto, type Filtro, type LinhaPlanilha } from "../lib/planilha.ts";
 
@@ -181,6 +182,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
         <div><Icone nome="escudo" tamanho={22}/><strong>{itens === null ? "…" : resumo.inativos.toLocaleString("pt-BR")}</strong><span>Inativos/excluídos</span></div>
         <div><Icone nome="imagem" tamanho={22}/><strong>{itens === null ? "…" : resumo.semImagem.toLocaleString("pt-BR")}</strong><span>Sem imagem no espelho</span></div>
       </section>
+      <LeitorEstoque produtos={itens ?? []} lojaId={loja.id} />
       <div className="catalogo-barra">
         <label className="catalogo-pesquisa"><span>Buscar por SKU, nome, marca ou GTIN em todo o espelho</span>
           <div><Icone nome="busca" tamanho={19} /><input type="search" aria-label="Buscar produto por SKU, nome, marca ou GTIN" placeholder="SKU, nome, marca ou GTIN…" value={busca} onChange={(e) => { setBusca(e.target.value); setSelecionados(new Set()); }} /></div>
