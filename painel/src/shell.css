@@ -803,3 +803,20 @@ html .abas .compositor-acoes .compositor-enviar { flex: none; min-width: 44px; w
   .topo-premium .topo-atalho-nano { min-width: 42px; padding: 8px; }
   .topo-premium .busca-topo { max-width: 42px; min-width: 42px; width: 42px; }
 }
+
+/* Mobile UX: accessible targets, readable forms, and stable keyboard viewport. */
+@media (max-width: 640px) {
+  .conector { min-height: 0; height: calc(100dvh - 56px - 76px - 32px); }
+  .conector textarea, .conector input, .conector select { font-size: 16px; min-width: 0; max-width: 100%; }
+  .conector button { min-height: 44px; }
+  .barra-status { padding-inline: 10px; gap: 6px; }
+  .janela-corpo { padding: 12px; }
+  .esp-colunas { min-width: 0; }
+}
+:where(button, a, input, select, textarea, [role="button"]):focus-visible {
+  outline: 3px solid var(--verde);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
