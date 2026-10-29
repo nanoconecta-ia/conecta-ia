@@ -4849,8 +4849,16 @@ const { decifrar: decifrar } = __m2;
 const { conversar: conversar, IaErro: IaErro } = __m5;
 const { modeloDaChave: modeloDaChave, validarProvedor: validarProvedor } = __m27;
 const { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, consultarProduto: consultarProduto } = __m31;
-const { SISTEMA: SISTEMA } = __m10;
+const { executarFerramenta: executarFerramenta, FERRAMENTAS: FERRAMENTAS, SISTEMA: SISTEMA } = __m10;
+const { dadosSupabase: dadosSupabase } = __m22;
+const { BlingLeituraReal: BlingLeituraReal } = __m23;
+const { armazemSupabase: armazemSupabase } = __m26;
 const { conteudoComAnexos: conteudoComAnexos, REGRAS_ANEXO: REGRAS_ANEXO, resumoParaRegistro: resumoParaRegistro, validarAnexos: validarAnexos } = __m29;
+const FERRAMENTAS_PROPOSTA_BLING = [
+    "bling_categorias",
+    "bling_propor_categoria",
+    "bling_propor_trocar_categoria"
+];
 const resultado = (corpo, status = 200)=>({
         corpo,
         status
@@ -5069,17 +5077,19 @@ async function atenderChat(c, ctx) {
         }
         modelo = modeloDaChave(k);
         meta.host_provedor = provedor === "compativel_openai" ? new URL(k.base_url).hostname : provedor === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
+        const propostas = [];
         const r = await conversar({
             provedor,
             baseUrl: k.base_url ?? undefined,
             chave: await decifrar(k.cifrada, chaveiro),
             modelo,
             mensagens,
-            sistema: `${SISTEMA}\nLoja: ${loja.nome}. Neste fluxo só existe bling_consultar_produto. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro com base em ausência. Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
-            maxPassos: 3,
+            sistema: `${SISTEMA}\nLoja: ${loja.nome}. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria e bling_propor_trocar_categoria: nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
+            maxPassos: 5,
             maxTokens: 1536,
             ferramentas: ativo("chat_consulta_bling") ? [
-                CONSULTAR_PRODUTO
+                CONSULTAR_PRODUTO,
+                ...FERRAMENTAS.filter((f)=>FERRAMENTAS_PROPOSTA_BLING.includes(f.name))
             ] : [],
             fetch: ctx.fetch,
             onPasso: (p)=>{
@@ -5090,7 +5100,52 @@ async function atenderChat(c, ctx) {
             executar: async (nome, entrada)=>{
                 const t0 = Date.now();
                 try {
-                    if (nome !== CONSULTAR_PRODUTO.name || !ativo("chat_consulta_bling")) throw new Error("Ferramenta não permitida.");
+                    if (!ativo("chat_consulta_bling") || nome !== CONSULTAR_PRODUTO.name && !FERRAMENTAS_PROPOSTA_BLING.includes(nome)) throw new Error("Ferramenta não permitida.");
+                    if (nome !== CONSULTAR_PRODUTO.name) {
+                        const bling = new BlingLeituraReal(armazemSupabase(admin), loja.id, {
+                            chaveCifra: chaveiro,
+                            fetch: ctx.fetch
+                        });
+                        const conector = {
+                            origem: "chat",
+                            lojaId: loja.id,
+                            userId,
+                            dados: dadosSupabase(admin, loja.id),
+                            rpc: (fn, args)=>admin.rpc(fn, args),
+                            admin,
+                            bling,
+                            conversaId: null,
+                            agente: {
+                                nome: "Nano.ia",
+                                provedor,
+                                modelo
+                            }
+                        };
+                        const out = await executarFerramenta(nome, entrada, {
+                            usuario,
+                            admin,
+                            lojaId: loja.id,
+                            plugins: [],
+                            credencial: async ()=>null,
+                            fetch: ctx.fetch,
+                            conector
+                        });
+                        tentativas.push({
+                            ferramenta: nome,
+                            ok: !out?.erro
+                        });
+                        if (out?.proposta_id) {
+                            propostas.push({
+                                id: out.proposta_id,
+                                titulo: out.titulo,
+                                versao: out.versao,
+                                hash: out.hash,
+                                risco: out.risco
+                            });
+                            meta.propostas = propostas;
+                        }
+                        return out;
+                    }
                     const saida = await consultarProduto(entrada, {
                         usuario,
                         admin,
@@ -5189,7 +5244,7 @@ async function atenderChat(c, ctx) {
     }, status);
 }
 
-return { atenderChat: atenderChat };
+return { FERRAMENTAS_PROPOSTA_BLING: FERRAMENTAS_PROPOSTA_BLING, atenderChat: atenderChat };
 })();
 
 // ---------- supabase/functions/assistente/index.ts ----------
