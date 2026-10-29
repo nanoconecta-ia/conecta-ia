@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { mensagemVisibilidade, type RespostaVisibilidade } from "../lib/visibilidade.ts";
 import { alternar, alternarTodos, erroAutomacao, mensagemAutomacao, textoLote } from "../lib/automacao.ts";
 import { despublicar, publicar } from "../lib/contextoPagina.ts";
 import { mapaDoCatalogo } from "../lib/mapaPagina.ts";
-import { pesquisarProdutos, resumoDoLote } from "../lib/catalogoExperiencia.ts";
+import { resumoDoLote } from "../lib/catalogoExperiencia.ts";
+import { TAMANHO_LOTE_CATALOGO, expressaoBuscaCatalogo, juntarProdutosPorId, existemMaisProdutos } from "../lib/catalogoPaginacao.ts";
 import { Icone } from "../componentes/Icone.tsx";
 import "./catalogo-workspace.css";
 import { camposFaltando, contagens, filtrar, ROTULO_FILTRO, semCategoria, situacaoTexto, type Filtro, type LinhaPlanilha } from "../lib/planilha.ts";
@@ -23,28 +24,93 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const [pausados, setPausados] = useState<Set<string>>(new Set());
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [busca, setBusca] = useState("");
+  const [buscaAplicada, setBuscaAplicada] = useState("");
+  const [totalBanco, setTotalBanco] = useState<number | null>(null);
+  const [proximoOffset, setProximoOffset] = useState(0);
+  const [ultimoLote, setUltimoLote] = useState(0);
+  const [carregando, setCarregando] = useState(false);
+  const [erroConsulta, setErroConsulta] = useState("");
+  const sequenciaConsulta = useRef(0);
   const [vista, setVista] = useState<"tabela" | "cartoes">(() =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? "cartoes" : "tabela");
   const [fichaId, setFichaId] = useState<string | null>(null);
   const [categorias, setCategorias] = useState<Map<string, string>>(new Map());
   const [nos, setNos] = useState<Map<string, No>>(new Map());
-  const carregar = useCallback(async () => {
-    const [{ data }, { data: cats }, { data: tx }, { data: imgs }] = await Promise.all([
-      supabase.from("produtos").select("id, sku, nome, preco, estoque, publicado, marca, gtin, peso_kg, descricao_curta, descricao_complementar, categoria_bling_id, situacao, taxonomia_no_id").eq("loja_id", loja.id).order("nome").limit(500),
-      supabase.from("bling_categorias").select("bling_id, nome").eq("loja_id", loja.id).limit(2000),
-      supabase.from("taxonomia_nos").select("id, pai_id, nome").eq("perfil_ramo", loja.perfil_ramo).limit(2000),
-      supabase.from("produto_imagens").select("produto_id").eq("loja_id", loja.id).limit(5000),
-    ]);
-    setCategorias(new Map((cats ?? []).map((c: { bling_id: string; nome: string }) => [c.bling_id, c.nome])));
-    setNos(new Map((tx ?? []).map((n: No) => [n.id, n])));
-    const comImagem = new Map<string, number>();
-    for (const i of (imgs ?? []) as { produto_id: string }[]) comImagem.set(i.produto_id, (comImagem.get(i.produto_id) ?? 0) + 1);
-    setItens(((data ?? []) as Omit<Produto, "imagens">[]).map((p) => ({ ...p, imagens: comImagem.get(p.id) ?? 0 })));
-    const { data: pz } = await supabase.from("produto_automacao").select("produto_id").eq("loja_id", loja.id).eq("pausado", true);
-    setPausados(new Set((pz ?? []).map((x: { produto_id: string }) => x.produto_id)));
-  }, [loja.id]);
-  useEffect(() => { void carregar(); }, [carregar]);
-  useEffect(() => { setFichaId(null); setSelecionados(new Set()); setBusca(""); }, [loja.id]);
+  const carregar = useCallback(async (offset = 0) => {
+    // Qualquer nova consulta invalida as respostas anteriores, incluindo troca de loja.
+    const chamada = ++sequenciaConsulta.current;
+    const inicial = offset === 0;
+    setCarregando(true);
+    setErroConsulta("");
+    if (inicial) {
+      setItens(null);
+      setTotalBanco(null);
+      setProximoOffset(0);
+      setUltimoLote(0);
+      setSelecionados(new Set());
+      setPausados(new Set());
+      setCategorias(new Map());
+      setNos(new Map());
+    }
+    const codigoFiltro = expressaoBuscaCatalogo(buscaAplicada);
+    let produtosQuery = supabase.from("produtos")
+      .select("id, sku, nome, preco, estoque, publicado, marca, gtin, peso_kg, descricao_curta, descricao_complementar, categoria_bling_id, situacao, taxonomia_no_id", { count: "exact" })
+      .eq("loja_id", loja.id)
+      .order("nome", { ascending: true, nullsFirst: false })
+      .order("id", { ascending: true })
+      .range(offset, offset + TAMANHO_LOTE_CATALOGO - 1);
+    if (codigoFiltro) produtosQuery = produtosQuery.or(codigoFiltro);
+    try {
+      const [prod, cats, tx] = await Promise.all([
+        produtosQuery,
+        inicial ? supabase.from("bling_categorias").select("bling_id, nome").eq("loja_id", loja.id).limit(2000) : Promise.resolve(null),
+        inicial ? supabase.from("taxonomia_nos").select("id, pai_id, nome").eq("perfil_ramo", loja.perfil_ramo).limit(2000) : Promise.resolve(null),
+      ]);
+      if (sequenciaConsulta.current !== chamada) return;
+      if (prod.error || !Array.isArray(prod.data)) {
+        setErroConsulta("Falha ao consultar produtos do espelho. A lista anterior não foi alterada no Bling.");
+        return;
+      }
+      const registros = prod.data as Omit<Produto, "imagens">[];
+      const ids = registros.map(p => p.id);
+      // Consultar imagens/pausas apenas para os SKUs desta página — nunca carregar a loja inteira.
+      const [imagens, pausas] = ids.length ? await Promise.all([
+        supabase.from("produto_imagens").select("produto_id").eq("loja_id", loja.id).in("produto_id", ids).limit(5000),
+        supabase.from("produto_automacao").select("produto_id").eq("loja_id", loja.id).eq("pausado", true).in("produto_id", ids),
+      ]) : [{ data: [], error: null }, { data: [], error: null }];
+      if (sequenciaConsulta.current !== chamada) return;
+      if (imagens.error || pausas.error) {
+        setErroConsulta("Produtos consultados, mas não foi possível conferir todas as imagens ou pausas. Confira antes de publicar.");
+      }
+      const comImagem = new Map<string, number>();
+      for (const img of (imagens.data ?? []) as { produto_id: string }[]) comImagem.set(img.produto_id, (comImagem.get(img.produto_id) ?? 0) + 1);
+      const lote = registros.map(p => ({ ...p, imagens: comImagem.get(p.id) ?? 0 }));
+      setItens(atual => inicial ? lote : juntarProdutosPorId(atual ?? [], lote));
+      setTotalBanco(prod.count ?? null);
+      setUltimoLote(registros.length);
+      setProximoOffset(offset + registros.length);
+      const novosPausados = (pausas.data ?? []).map(x => x.produto_id as string);
+      setPausados(atual => inicial ? new Set(novosPausados) : new Set([...atual, ...novosPausados]));
+      if (inicial) {
+        if (cats?.error || tx?.error) setErroConsulta("Produtos consultados, mas categorias ou taxonomia estão temporariamente indisponíveis.");
+        setCategorias(new Map((cats?.data ?? []).map((c: { bling_id: string; nome: string }) => [String(c.bling_id), c.nome])));
+        setNos(new Map((tx?.data ?? []).map((n: No) => [n.id, n])));
+      }
+    } catch {
+      if (sequenciaConsulta.current === chamada) setErroConsulta("Não foi possível acessar o espelho. Confira a conexão e tente novamente.");
+    } finally {
+      if (sequenciaConsulta.current === chamada) setCarregando(false);
+    }
+  }, [loja.id, loja.perfil_ramo, buscaAplicada]);
+  useEffect(() => {
+    void carregar(0);
+    return () => { sequenciaConsulta.current++; };
+  }, [carregar]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setBuscaAplicada(busca.trim()), 350);
+    return () => window.clearTimeout(timer);
+  }, [busca]);
+  useEffect(() => { setFichaId(null); setSelecionados(new Set()); setBusca(""); setBuscaAplicada(""); }, [loja.id]);
   useEffect(() => {
     if (!fichaId) return;
     const aoTeclar = (e: KeyboardEvent) => { if (e.key === "Escape") setFichaId(null); };
@@ -71,7 +137,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
   }
   const idsListados = new Set(categorias.keys());
   const mapa = useMemo(() => {
-    if (!itens) return null;
+    if (!itens || totalBanco === null || itens.length < totalBanco || buscaAplicada !== "") return null;
     const ids = new Set(categorias.keys());
     const faltando: Record<string, number> = {};
     for (const p of itens) for (const f of camposFaltando(p)) faltando[f] = (faltando[f] ?? 0) + 1;
@@ -83,10 +149,12 @@ export function Catalogo({ loja }: { loja: Loja }) {
       incompletos: itens.filter((p) => camposFaltando(p).length > 0).length, faltando,
       porNo: [...nos.values()].map((n) => ({ id: n.id, pai_id: n.pai_id, nome: n.nome, produtos: porNo.get(n.id) ?? 0 })),
     });
-  }, [itens, categorias, nos]);
+  }, [itens, categorias, nos, totalBanco, buscaAplicada]);
   useEffect(() => { if (mapa) publicar("/catalogo", "Catálogo", mapa); return () => despublicar("/catalogo"); }, [mapa]);
   const totais = contagens(itens ?? [], idsListados);
-  const visiveis = pesquisarProdutos(filtrar(itens ?? [], filtro, idsListados), busca);
+  const visiveis = filtrar(itens ?? [], filtro, idsListados);
+  const faltamProdutos = itens !== null && existemMaisProdutos(itens.length, totalBanco, ultimoLote);
+  const pesquisaPendente = busca.trim() !== buscaAplicada;
   const resumo = resumoDoLote(itens ?? []);
   const ficha = itens?.find((p) => p.id === fichaId) ?? null;
   const idsVisiveis = visiveis.map((p) => p.id);
@@ -114,7 +182,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
         <div><Icone nome="imagem" tamanho={22}/><strong>{itens === null ? "…" : resumo.semImagem.toLocaleString("pt-BR")}</strong><span>Sem imagem no espelho</span></div>
       </section>
       <div className="catalogo-barra">
-        <label className="catalogo-pesquisa"><span>Buscar no lote carregado</span>
+        <label className="catalogo-pesquisa"><span>Buscar por SKU, nome, marca ou GTIN em todo o espelho</span>
           <div><Icone nome="busca" tamanho={19} /><input type="search" aria-label="Buscar produto por SKU, nome, marca ou GTIN" placeholder="SKU, nome, marca ou GTIN…" value={busca} onChange={(e) => { setBusca(e.target.value); setSelecionados(new Set()); }} /></div>
         </label>
         <div className="catalogo-modos" role="group" aria-label="Modo de visualização">
@@ -129,8 +197,9 @@ export function Catalogo({ loja }: { loja: Loja }) {
           </button>
         ))}
       </div>
-      <p className="catalogo-informacao" role="note"><Icone nome="escudo" tamanho={18} /><span>Esta pesquisa considera apenas os <strong>até 500 produtos carregados</strong> do espelho. Valores de custo e fornecedores não são exibidos. A publicação no site e a pausa de automação continuam sendo decisões explícitas do lojista.</span></p>
-      <div className="catalogo-resultados" role="status">{itens === null ? "Consultando o espelho…" : `${visiveis.length} produto(s) nesta visualização · ${itens.length} carregado(s)`}</div>
+      <p className="catalogo-informacao" role="note"><Icone nome="escudo" tamanho={18} /><span>A pesquisa é feita no espelho da <strong>sua loja</strong> em lotes de 100. Os indicadores e filtros técnicos mostram apenas os produtos <strong>já carregados</strong>; use "Carregar mais" para continuar. Custos e fornecedores não são exibidos. Publicação e pausa continuam sob aprovação do lojista.</span></p>
+      <div className="catalogo-resultados" role="status">{itens === null ? "Consultando o espelho…" : `${visiveis.length} filtrado(s) entre ${itens.length} carregado(s)${totalBanco !== null ? ` · ${totalBanco.toLocaleString("pt-BR")} encontrado(s) na busca do servidor` : ""}`}{pesquisaPendente ? " · atualizando pesquisa…" : ""}</div>
+      {erroConsulta && <div className="msg-erro" role="alert">{erroConsulta} <button type="button" className="sec" onClick={() => void carregar(0)}>Tentar novamente</button></div>}
       {msg && <p className={msg.ok ? "msg-ok" : "msg-erro"} role="status">{msg.texto}</p>}
       {selecionados.size > 0 && (
         <div className="linha" role="group" aria-label="Ações para os produtos selecionados">
@@ -139,7 +208,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
           <button className="sec" disabled={ocupado === "lote"} onClick={() => void automacao(false)}>Retomar cadastro automático</button>
         </div>
       )}
-      {itens === null ? <p className="suave">Carregando…</p> : itens.length === 0 ? <p className="suave">Nenhum produto sincronizado ainda. Confira a conexão com o Bling.</p> : visiveis.length === 0 ? <p className="suave">Nenhum produto corresponde à busca e ao filtro selecionados.</p> : vista === "tabela" ? (
+      {itens === null ? <p className="suave">Carregando…</p> : itens.length === 0 ? <p className="suave">Nenhum produto encontrado nesta pesquisa. Confira a busca ou a conexão com o Bling.</p> : visiveis.length === 0 ? <p className="suave">Nenhum produto corresponde à busca e ao filtro selecionados.</p> : vista === "tabela" ? (
         <div className="rolagem catalogo-rolagem">
           <table>
             <thead><tr><th><input type="checkbox" aria-label="Selecionar todos" checked={idsVisiveis.length > 0 && idsVisiveis.every((i) => selecionados.has(i))} onChange={() => setSelecionados(alternarTodos(selecionados, idsVisiveis))} style={{ width: 20, minHeight: 20 }} /></th><th>SKU</th><th>Nome</th><th>Marca</th><th>Categoria no Bling</th><th>Lugar na taxonomia</th><th>Preço</th><th>Estoque</th><th>Falta</th><th>Ficha</th><th>Site</th></tr></thead>
@@ -183,6 +252,14 @@ export function Catalogo({ loja }: { loja: Loja }) {
               </div>
             </article>
           ))}
+        </div>
+      )}
+      {faltamProdutos && (
+        <div className="catalogo-paginacao" role="group" aria-label="Paginação do Catálogo">
+          <span>Exibindo ${itens?.length ?? 0}${totalBanco !== null ? ` de ${totalBanco.toLocaleString("pt-BR")}` : ""} produtos retornados pela busca.</span>
+          <button type="button" className="sec" disabled={carregando || pesquisaPendente} onClick={() => void carregar(proximoOffset)}>
+            {carregando ? "Carregando…" : "Carregar mais 100"}
+          </button>
         </div>
       )}
       {ficha && (

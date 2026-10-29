@@ -36,6 +36,11 @@ try{
   corpos.length=0;await page.goto(`http://127.0.0.1:${porta}/.anexo-demo.html`);
   await page.getByRole('button',{name:/Nova conversa|Enviar/}).first().waitFor();
   const clipe=page.getByRole('button',{name:'Anexar imagem ou arquivo'});await clipe.waitFor();
+  // O estado da configuração do provedor chega de forma assíncrona; aguardar a habilitação real.
+  await page.waitForFunction(() => {
+    const botao=document.querySelector('button[aria-label="Anexar imagem ou arquivo"]');
+    return botao instanceof HTMLButtonElement && !botao.disabled;
+  }, null, {timeout:10000});
   assert.equal(await clipe.isDisabled(),false,'com provedor escolhido o 📎 fica ativo');
   // consentimento recolhe sozinho depois de autorizado, liberando espaço no compositor
   await page.getByLabel(/Enviar esta pergunta/).check();
