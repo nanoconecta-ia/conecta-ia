@@ -803,3 +803,31 @@ html .abas .compositor-acoes .compositor-enviar { flex: none; min-width: 44px; w
   .topo-premium .topo-atalho-nano { min-width: 42px; padding: 8px; }
   .topo-premium .busca-topo { max-width: 42px; min-width: 42px; width: 42px; }
 }
+
+/* Nano.IA: trilho discreto à direita em desktop, preservando a área útil do ERP.
+   O painel expandido continua sob controle dos estados existentes da aplicação.
+   Não altera permissões, sincronização ou navegação de terceiros. */
+@media (min-width: 900px) {
+  .dock-agente:not([data-lado="esq"]) .dock-area {
+    grid-template-columns: minmax(0, 1fr) 48px;
+  }
+  .dock-agente:not([data-lado="esq"]) .dock-trilho {
+    order: 2;
+    border-right: 0;
+    border-left: 1px solid var(--borda);
+    padding-inline: 2px;
+  }
+  .dock-agente:not([data-lado="esq"]) .dock-trilho button.dock-aba {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 4px 2px;
+  }
+  .dock-agente:not([data-lado="esq"]) .dock-trilho .dock-aba span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
