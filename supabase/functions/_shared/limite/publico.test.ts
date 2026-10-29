@@ -184,3 +184,35 @@ test("tetoLocal: conta por minuto, libera depois da janela e a limpeza de vencid
   tetoLocal("depois", 5, t0 + 61_000); // todas as anteriores venceram e já passou o intervalo mínimo entre limpezas
   assert.ok(tamanhoTetoLocal() < 100, `depois da limpeza: ${tamanhoTetoLocal()}`);
 });
+
+
+test("modo observar: decisão de limite é registrada mas não retorna 429", async () => {
+  const eventos: string[] = [];
+  const r = await guardarPublico({
+    endpoint: "loja-publica",
+    req: { headers: new Headers({ "cf-connecting-ip": "203.0.113.88" }), body: new Blob([JSON.stringify({ slug: "loja-a" })]).stream() },
+    lojaDe: (b) => b.slug,
+    porta: async () => false,
+    segredo: SEGREDO,
+    config: cfgPequena(),
+    modo: "observar",
+    aoObservar: (camada, negaria) => { if (negaria) eventos.push(camada); },
+  });
+  assert.equal(r.ok, true);
+  assert.ok(eventos.includes("loja"));
+  assert.ok(eventos.some((x) => x.startsWith("ip_")));
+});
+
+test("modo bloquear: preserva 429 quando o limite da loja é atingido", async () => {
+  const r = await guardarPublico({
+    endpoint: "loja-publica",
+    req: { headers: new Headers(), body: new Blob([JSON.stringify({ slug: "loja-a" })]).stream() },
+    lojaDe: (b) => b.slug,
+    porta: async () => false,
+    segredo: SEGREDO,
+    config: cfgPequena(),
+    modo: "bloquear",
+  });
+  assert.equal(r.ok, false);
+  if (!r.ok) assert.equal(r.status, 429);
+});
