@@ -1,0 +1,1 @@
+{"name":"nano-browser-homologacao","private":true,"type":"module","scripts":{"test":"node --test *.test.mjs","check":"node executor.mjs"},"dependencies":{"playwright":"^1.56.1"}}
