@@ -40,6 +40,7 @@ test("filtros e contagens batem com os produtos", () => {
 test("situação em português claro", () => {
   assert.equal(situacaoTexto("A"), "ativo");
   assert.equal(situacaoTexto("I"), "inativo");
+  assert.equal(situacaoTexto("E"), "excluído");
   assert.equal(situacaoTexto("ausente"), "sumiu do Bling");
   assert.equal(situacaoTexto(null), "—");
 });
