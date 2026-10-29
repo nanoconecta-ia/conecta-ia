@@ -32,6 +32,7 @@ import { DEMO } from "./lib/modo.ts";
 import type { Loja as LojaTipo } from "./lib/dados.ts";
 import { ParearAprovador, ParearSolicitante } from "./paginas/Parear.tsx";
 import { Aprovacoes } from "./paginas/Aprovacoes.tsx";
+import { HomologacaoNano } from "./paginas/HomologacaoNano.tsx";
 import { Dispositivos } from "./paginas/Dispositivos.tsx";
 import { MeuAgente } from "./paginas/MeuAgente.tsx";
 import { Backup } from "./paginas/Backup.tsx";
@@ -57,7 +58,7 @@ const ICONES_ROTAS: Record<string, string> = {
   "/fila": "fila", "/taxonomia": "arvore", "/aparencia": "paleta", "/condicoes": "cartao",
   "/integracoes": "conexoes", "/gateway": "rede", "/imagens": "imagem", "/design": "paleta",
   "/bling": "erp", "/backup": "arquivo", "/banners": "imagem", "/contador": "grafico",
-  "/aprovacoes": "escudo", "/meu-agente": "agentes", "/dispositivos": "monitor"
+  "/homologacao-nano": "escudo", "/aprovacoes": "escudo", "/meu-agente": "agentes", "/dispositivos": "monitor"
 };
 const ROTA_NANO = CONECTOR_ATIVO ? "/conector" : "/assistente";
 
@@ -65,6 +66,7 @@ const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], 
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
   ["/conector", "Nano.ia"],
+  ["/homologacao-nano", "Nano.IA - Teste seguro"],
   ["/central", "Central de Inteligência"],
   ["/indicadores", "Indicadores"],
   ["/studio", "Studio de produtos"],
@@ -187,6 +189,7 @@ export function App() {
           <div className="cartao"><h1>Sem loja vinculada</h1><p className="suave">Seu login ainda não está ligado a uma loja. Peça ao suporte para vincular.</p></div>
         ) : bloqueada ? <VisaoGeral loja={loja} />
           : caminho === "/estudio" ? <EstudioAgente key={loja.id} loja={loja} />
+          : caminho === "/homologacao-nano" ? <HomologacaoNano loja={loja} />
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />
           : PAIR_ATIVO && caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao?.user.email ?? null} />
