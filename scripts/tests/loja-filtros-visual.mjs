@@ -27,12 +27,12 @@ try{
   });
   await page.goto(`${base}/#/loja/loja-demo`);
   await page.getByRole('navigation',{name:'Como encontrar sua peça'}).waitFor();
-  await page.getByText('4 peças encontradas no catálogo').waitFor(); // espera a resposta da vitrine (a navegação aparece antes dos dados)
+  await page.getByText('4 peças encontradas no catálogo').waitFor(); // espera a vitrine carregar (antes contava na hora e falhava de forma intermitente)
   assert.equal(await page.getByText('4 peças encontradas no catálogo').count(),1,'contagem sem filtro');
   for(const t of ['1 Qual é o tipo do seu veículo?','2 Busca por veículo','3 Qual peça você procura?'])assert.ok(await page.getByRole('heading',{name:new RegExp(t,'i')}).count()>0,'passo: '+t);
   await page.getByRole('button',{name:/Furgão fechado/}).click();
   await page.getByRole('button',{name:'Remover filtro Tipo: Furgão fechado'}).waitFor();
-  await page.getByText('2 peças encontradas com os filtros escolhidos').waitFor();
+  await page.getByText('2 peças encontradas com os filtros escolhidos').first().waitFor(); // espera a resposta do filtro
   assert.ok(await page.getByText('2 peças encontradas com os filtros escolhidos').count()>0,'contagem com filtro');
   assert.equal(corpos.at(-1).tipo,'furgao','o filtro foi enviado ao servidor');
   await page.getByRole('button',{name:'Remover filtro Tipo: Furgão fechado'}).click();
