@@ -797,4 +797,9 @@ html .abas .compositor-acoes .compositor-enviar { flex: none; min-width: 44px; w
   .agente .esfera-bloco:has(.esfera[data-estado="ocioso"]) { display: none; }
 }
 
-@media (max-width: 360px) {`n  .topo-premium .marca-identidade { display: none; }`n  .topo-premium .marca > .logo-conecta { max-width: 29px; }`n  .topo-premium .topo-atalho-nano { min-width: 42px; padding: 8px; }`n  .topo-premium .busca-topo { max-width: 42px; min-width: 42px; width: 42px; }`n}`n
+@media (max-width: 360px) {
+  .topo-premium .marca-identidade { display: none; }
+  .topo-premium .marca > .logo-conecta { max-width: 29px; }
+  .topo-premium .topo-atalho-nano { min-width: 42px; padding: 8px; }
+  .topo-premium .busca-topo { max-width: 42px; min-width: 42px; width: 42px; }
+}
