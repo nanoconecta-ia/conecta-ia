@@ -91,8 +91,8 @@ export const FERRAMENTAS_CONECTOR: readonly DefinicaoFerramenta[] = [
     obj({ sku, campos: livre, fontes: { ...lista(fonte, 10), minItems: 1 } }, ["sku", "campos", "fontes"]), livre, "MEDIUM", { estado: "ativa", simulacao: true }),
   proposta("bling.categorias.preparar_alteracao_lote", "bling", "Prepara (sem gravar) a troca da categoria de produtos no Bling a partir das sugestões de categoria JÁ APROVADAS pelo lojista: lê a categoria atual no Bling agora, monta antes/depois e cria a proposta. Só a categoria; só os SKUs informados.",
     obj({ skus: { ...lista(sku, 50), minItems: 1 }, escolhas: { type: "object", description: "SKU -> id da categoria do Bling, para os casos em que o nó tem mais de uma categoria" } }, ["skus"]), livre, "MEDIUM", { estado: "ativa", simulacao: true, exposicao: { chat: true, mcp: false } }),
-  proposta("bling.categorias.preparar_criacao", "bling", "Prepara (sem gravar) a criação de categoria no Bling, só se o mapeamento da taxonomia a suportar.",
-    obj({ nome: txt(undefined, 120), pai_id: txt(undefined, 30), fontes: { ...lista(fonte, 10), minItems: 1 } }, ["nome", "fontes"]), livre, "MEDIUM", { estado: "planejada", simulacao: true }),
+  proposta("bling.categorias.preparar_criacao", "bling", "Prepara (sem gravar) a criação de uma categoria de produto no Bling: confere duplicidade e pai nas categorias do Bling agora e cria a proposta de aprovação.",
+    obj({ nome: txt(undefined, 120), pai_id: txt(undefined, 30), fontes: { ...lista(fonte, 10), minItems: 1 } }, ["nome", "fontes"]), livre, "MEDIUM", { estado: "ativa", simulacao: true, exposicao: { chat: true, mcp: false } }),
 
   // ------------------------------------------------------------------ Execução (SÓ o executor; nunca exposto a LLM nem a cliente externo)
   execucao("bling.produtos.criar", "Cria produto no Bling (POST /produtos).", obj({ corpo: livre }, ["corpo"]), "MEDIUM", "Ler o produto no Bling e comparar com o enviado.", "Timeout => desconhecido; reconciliar por SKU/GTIN antes de repetir."),

@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "392b929cd4c71e4a908a456fc62a2716a126402b56ad4f2f81a786e12a6125b8",
+  "artefato_sha256": "2ec438fbe5ef6a1e74d6a5855c6be6756ec6314ebb1b669023829e5ca58d4116",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -49,8 +49,64 @@
       "sha256": "21cf58db274bda777a2ea76c5cd5b06dd9f81d06cb2ab99a88cdc15ea7034646"
     },
     {
+      "path": "supabase/functions/_shared/conector/registro.ts",
+      "sha256": "62471ceec9285702ada96599c2197d36fcaa4270b3267cd6b758fb718dc2232a"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/bling_campos.ts",
+      "sha256": "2ebb0b5adae74bab1ccd4b0eace810e154e1562b8eef075bd0f873e6b62cd7fc"
+    },
+    {
+      "path": "supabase/functions/_shared/consulta/interpretar.ts",
+      "sha256": "f93b6f12190b0e7de82798e478b06c6cad74d5d0ef5e43afd5a940907cafce4e"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/categoria_bling.ts",
+      "sha256": "412f8d475e4e387aa4a7a39170f0e51cdf57dcbfe3af86cade82dee555f8d366"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/handlers.ts",
+      "sha256": "7146cda9c93ec3282c4b221edc899cf69759d736ae347d50f50f699db2db2e22"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/tipos.ts",
+      "sha256": "5aaeb8f6145409711a2eb5f0930e3a73cdde45573b5e0aa1103b257d290a4de1"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/policy.ts",
+      "sha256": "575a98626e14ffa3f7f409b166f7b8e462cc256acde6349da84234dc077a5314"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/schema.ts",
+      "sha256": "dd564643363db906a7c39d61ff6bbc77add338378c7b383823acb534b14faae6"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/despacho.ts",
+      "sha256": "17aaea838825b55df2653415cc72f897e371266feadf8ade905cdd47d11bf5a9"
+    },
+    {
       "path": "supabase/functions/_shared/ia/ferramentas.ts",
-      "sha256": "eb1389c695726feec2c3fb8e7300e84488b3f3bb9761529c8ff20cc9dc0e5840"
+      "sha256": "0bb150ad6acc20eb4654c079dd3b1bc9e6b23f738f2724756ea07a11a9fba0d0"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/dados.ts",
+      "sha256": "85b304d015fb3bdd7ead5bce41652d19d423b34122f5be1abb4563631093b6ca"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_token.ts",
+      "sha256": "cc0741c715b6cf29b4f55cf1d5a842d982b254f2c36499486d66993ca70dcae2"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_api.ts",
+      "sha256": "b4111a685e011d2d051d8f9d40d6a5e8a6fde2da8232c0871360f2e09ddbd8fb"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/porta_bling.ts",
+      "sha256": "064f7c95a4186c9d09ed1627466a49eaad513234b9842302bd94c97182ed6ec2"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_armazem.ts",
+      "sha256": "af765b491093e16d2bbc41d8f9ac803b68a24d9312df71b1feb1f262a4f796fa"
     },
     {
       "path": "supabase/functions/_shared/assistente/provedores.ts",
@@ -69,18 +125,6 @@
       "sha256": "654e203abdcd1d92acf9627764a2d9935a1557d8e0c01491a232dd468f4658b9"
     },
     {
-      "path": "supabase/functions/_shared/bling_token.ts",
-      "sha256": "cc0741c715b6cf29b4f55cf1d5a842d982b254f2c36499486d66993ca70dcae2"
-    },
-    {
-      "path": "supabase/functions/_shared/bling_api.ts",
-      "sha256": "b4111a685e011d2d051d8f9d40d6a5e8a6fde2da8232c0871360f2e09ddbd8fb"
-    },
-    {
-      "path": "supabase/functions/_shared/bling_armazem.ts",
-      "sha256": "af765b491093e16d2bbc41d8f9ac803b68a24d9312df71b1feb1f262a4f796fa"
-    },
-    {
       "path": "supabase/functions/_shared/assistente/busca_produto.ts",
       "sha256": "d90c56940898662850e2eae5af6195fd65b8a3ee1d7a288258d5130314b6cda2"
     },
@@ -94,7 +138,7 @@
     },
     {
       "path": "supabase/functions/assistente/index.ts",
-      "sha256": "56858f49bfc112d925e885e4a26551596c7d4493315ce6ace3d65db19ae287b6"
+      "sha256": "589916db2d58f1e93e05ca0a711ff9477b328f8893ae05f84b462c5b2805d88d"
     }
   ]
 }

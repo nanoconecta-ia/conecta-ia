@@ -85,3 +85,15 @@ Primeiro **1 produto** (o produto de teste da fase P8), depois **até 5**, depoi
 Além disso, antes da primeira gravação: confirmar que o **app do Bling tem o escopo de escrita em produtos** e se há **marketplace/loja virtual** ligados (a categoria pode mudar o mapeamento deles); e conferir o corpo de `PATCH /produtos/{id}` e `POST /categorias/produtos` no OpenAPI oficial (os campos usados — `categoria.id`; `descricao` e `categoriaPai.id` — coincidem com o esquema do conector oficial do Bling lido em 28/10/2026).
 
 **Desligar na hora (emergência):** remover o segredo `BLING_ESCRITA_REAL` (ou `agente_escrita_revogar` para a ferramenta). **Reverter um valor:** o `antes` de cada item fica guardado; o produto pode voltar à categoria anterior por nova proposta aprovada.
+
+## 9. O chat do painel agora PROPÕE categorias (não grava)
+
+Até aqui o chat do painel (`assistente`) só consultava e propunha enriquecimento; não tinha como pedir cadastro de categoria. Agora tem três ferramentas, todas pelo Policy Engine (`despachar`, origem `chat`):
+
+| Ferramenta do chat | O que faz | Grava no Bling? |
+|---|---|---|
+| `bling_categorias` | lista as categorias do Bling agora (leitura) | não |
+| `bling_propor_categoria` | confere duplicidade e pai no Bling agora e cria a **proposta** de criar categoria | não |
+| `bling_propor_trocar_categoria` | cria a proposta de trocar a categoria de SKUs com sugestão **já aprovada** | não |
+
+A proposta aparece na Central de Inteligência; o lojista aprova a versão exata; só o executor grava, e só com `BLING_ESCRITA_REAL=1` e a ferramenta liberada para a loja (seções 1 a 8). Cadastro de produto novo, preço, estoque e dados fiscais continuam sem ferramenta, e o prompt manda o agente dizer isso com clareza.
