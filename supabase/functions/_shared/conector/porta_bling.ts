@@ -13,7 +13,7 @@ export interface PortaBling {
   /** false = esta porta NÃO escreve (leitura só, ou escrita real desligada). undefined = mock. O executor recusa ANTES de marcar "enviada". */
   readonly escritaLigada?: boolean;
   chamar(ferramenta: string, args: { id?: string; corpo: unknown }, idempotencyKey: string): Promise<RespostaBling>;
-  ler(ferramenta: "bling.produtos.confirmar" | "bling.categorias.consultar" | "bling.produtos.consultar", args: { id?: string; sku?: string; busca?: string }): Promise<RespostaBling>;
+  ler(ferramenta: "bling.produtos.confirmar" | "bling.categorias.consultar" | "bling.produtos.consultar" | "bling.produtos.consultar_ativos", args: { id?: string; sku?: string; gtin?: string; busca?: string }): Promise<RespostaBling>;
 }
 
 /** Leitura real (GET) com o token da loja, pelo cliente único `blingFetch`. Qualquer escrita é recusada. */
@@ -23,11 +23,14 @@ export class BlingLeituraReal implements PortaBling {
   private arm: Armazem; private lojaId: string; private cfg: Config;
   constructor(arm: Armazem, lojaId: string, cfg: Config) { this.arm = arm; this.lojaId = lojaId; this.cfg = cfg; }
   chamar(): Promise<RespostaBling> { throw new Error("escrita_real_desligada: esta porta só lê"); }
-  async ler(ferramenta: string, args: { id?: string; sku?: string; busca?: string }): Promise<RespostaBling> {
+  async ler(ferramenta: string, args: { id?: string; sku?: string; gtin?: string; busca?: string }): Promise<RespostaBling> {
     let caminho: string;
     if (ferramenta === "bling.produtos.confirmar" && args.id && /^\d+$/.test(args.id)) caminho = `/produtos/${args.id}`;
     else if (ferramenta === "bling.produtos.consultar" && args.sku) caminho = `/produtos?codigos[]=${encodeURIComponent(args.sku)}`;
     else if (ferramenta === "bling.categorias.consultar") caminho = `/categorias/produtos?pagina=1&limite=100`;
+    // criterio=2 = só ATIVOS (filtro documentado no OpenAPI do Bling: 1 últimos, 2 ativos, 3 inativos, 4 excluídos, 5 todos)
+    else if (ferramenta === "bling.produtos.consultar_ativos" && args.sku) caminho = `/produtos?codigos[]=${encodeURIComponent(args.sku)}&criterio=2&limite=100`;
+    else if (ferramenta === "bling.produtos.consultar_ativos" && args.gtin && /^\d{8,14}$/.test(args.gtin)) caminho = `/produtos?gtins[]=${args.gtin}&criterio=2&limite=100`;
     else throw new Error("leitura_nao_suportada");
     const r = await blingFetch(this.arm, this.lojaId, caminho, this.cfg);
     return { status: r.status, corpo: await r.json().catch(() => null) };
@@ -55,7 +58,7 @@ export class BlingEscritaReal implements PortaBling {
     this.arm = arm; this.lojaId = lojaId; this.cfg = cfg; this.escritaLigada = ligada;
     this.leitor = new BlingLeituraReal(arm, lojaId, cfg);
   }
-  ler(ferramenta: "bling.produtos.confirmar" | "bling.categorias.consultar" | "bling.produtos.consultar", args: { id?: string; sku?: string; busca?: string }): Promise<RespostaBling> {
+  ler(ferramenta: "bling.produtos.confirmar" | "bling.categorias.consultar" | "bling.produtos.consultar" | "bling.produtos.consultar_ativos", args: { id?: string; sku?: string; gtin?: string; busca?: string }): Promise<RespostaBling> {
     return this.leitor.ler(ferramenta, args);
   }
   async chamar(ferramenta: string, args: { id?: string; corpo: unknown }, _idempotencyKey: string): Promise<RespostaBling> {

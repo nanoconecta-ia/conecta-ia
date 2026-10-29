@@ -13,8 +13,8 @@ const lista = (items: JsonSchema, maxItems = 50): JsonSchema => ({ type: "array"
 const fonte = obj({ url: txt("endereço da fonte", 500), documento: txt("nome do documento", 200), versao: txt("versão da fonte", 60), consultado_em: txt("data (ISO)", 40) });
 
 /** Campos do produto no Bling que o Nano.ia PODE alterar (nunca fiscal, preço, custo, fornecedor, estoque, SKU). conferido:false até a conferência na documentação oficial. */
-export const CAMPOS_BLING_PERMITIDOS = ["nome", "descricaoCurta", "descricaoComplementar", "marca", "gtin", "pesoLiquido", "pesoBruto", "dimensoes", "categoria"] as const;
-export const CAMPOS_BLING_PROIBIDOS = ["tributacao", "ncm", "cest", "fornecedor", "fornecedores", "precoCusto", "precoCompra", "preco", "estoque", "codigo", "situacao", "formato"] as const;
+export const CAMPOS_BLING_PERMITIDOS = ["nome", "descricaoCurta", "descricaoComplementar", "marca", "gtin", "pesoLiquido", "pesoBruto", "dimensoes", "categoria", "situacao"] as const; // situacao: só "A" (reativar), ver bling_campos.ts
+export const CAMPOS_BLING_PROIBIDOS = ["tributacao", "ncm", "cest", "fornecedor", "fornecedores", "precoCusto", "precoCompra", "preco", "estoque", "codigo", "formato"] as const;
 
 const def = (d: Omit<DefinicaoFerramenta, "exposicao" | "escreveExterno" | "simulacao" | "exigeAprovacao" | "idempotencia" | "estado"> & Partial<DefinicaoFerramenta>): DefinicaoFerramenta => ({
   exposicao: { chat: false, mcp: false }, escreveExterno: false, simulacao: false, exigeAprovacao: false, idempotencia: "nao_se_aplica", estado: "planejada", ...d,
@@ -87,6 +87,8 @@ export const FERRAMENTAS_CONECTOR: readonly DefinicaoFerramenta[] = [
   leitura("bling.precos.consultar", "bling", "Preço atual de um produto no Bling (sem preço de compra/custo).", obj({ sku }, ["sku"]), livre, "Resposta do Bling.", { estado: "planejada" }),
   proposta("bling.produtos.preparar_cadastro", "bling", "Prepara (sem gravar) o cadastro de um produto novo no Bling: confere duplicidade por SKU/GTIN e monta a proposta.",
     obj({ rascunho: livre, fontes: { ...lista(fonte, 10), minItems: 1 } }, ["rascunho", "fontes"]), livre, "MEDIUM", { estado: "planejada", simulacao: true }),
+  proposta("bling.produtos.preparar_reativacao", "bling", "Prepara (sem gravar) a REATIVAÇÃO de um produto excluído ou inativo no Bling: lê o produto pelo id agora, confere que não existe outro ATIVO com o mesmo código ou GTIN e cria a proposta (só a situação vai para ativo).",
+    obj({ bling_id: txt(undefined, 20), fontes: { ...lista(fonte, 10), minItems: 1 } }, ["bling_id", "fontes"]), livre, "MEDIUM", { estado: "ativa", simulacao: true, exposicao: { chat: true, mcp: false } }),
   proposta("bling.produtos.preparar_atualizacao", "bling", "Prepara (sem gravar) a alteração de campos permitidos de um produto: lê o Bling agora, monta antes/depois e cria a proposta.",
     obj({ sku, campos: livre, fontes: { ...lista(fonte, 10), minItems: 1 } }, ["sku", "campos", "fontes"]), livre, "MEDIUM", { estado: "ativa", simulacao: true }),
   proposta("bling.categorias.preparar_alteracao_lote", "bling", "Prepara (sem gravar) a troca da categoria de produtos no Bling a partir das sugestões de categoria JÁ APROVADAS pelo lojista: lê a categoria atual no Bling agora, monta antes/depois e cria a proposta. Só a categoria; só os SKUs informados.",

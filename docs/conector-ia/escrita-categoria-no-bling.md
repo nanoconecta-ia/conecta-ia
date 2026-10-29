@@ -97,3 +97,13 @@ Até aqui o chat do painel (`assistente`) só consultava e propunha enriquecimen
 | `bling_propor_trocar_categoria` | cria a proposta de trocar a categoria de SKUs com sugestão **já aprovada** | não |
 
 A proposta aparece na Central de Inteligência; o lojista aprova a versão exata; só o executor grava, e só com `BLING_ESCRITA_REAL=1` e a ferramenta liberada para a loja (seções 1 a 8). Cadastro de produto novo, preço, estoque e dados fiscais continuam sem ferramenta, e o prompt manda o agente dizer isso com clareza.
+
+## 10. Produto: reativar e ajustar dados de cadastro (decisão do dono, 2026-10-29)
+
+O dono escolheu no chat: **reativar** o cadastro existente (ex.: INDISA 854008, id 1177890085, hoje *excluído*) em vez de duplicar, e começar pelo cadastro de produto.
+
+- Lista fechada `CAMPOS_ESCRITA_LIBERADOS["bling.produtos.alterar"]`: categoria, `situacao` (**só "A"**, reativar), nome, marca, GTIN, descrições, peso e medidas. Preço, custo, estoque, fornecedor, SKU e fiscal continuam **proibidos**.
+- `bling.produtos.preparar_reativacao`: lê o produto pelo id agora; recusa se já está ativo; recusa se existe OUTRO produto **ativo** com o mesmo código ou GTIN (`criterio=2`); cria proposta só da situação.
+- Chat: `bling_propor_reativar_produto` e `bling_propor_ajuste_produto` (este exige fonte).
+- **A confirmar no Bling real:** o esquema do `PATCH /produtos/{id}` lista `situacao` A|I, mas não diz se reativa um produto *excluído* (E). A leitura de confirmação decide: se não ficar "A", o item fica `falhou`/`desconhecida`, nunca "sucesso".
+- Para executar de verdade continuam valendo as quatro trancas (aprovação da versão exata, `agente_escrita_liberar` da loja, `BLING_ESCRITA_REAL=1`, ferramenta ativa no registro) e é preciso **republicar `conector-aprovacoes`** com esta lista.

@@ -71,7 +71,9 @@ export async function criarPropostaVersionada(c: ContextoFerramenta, o: { titulo
     if (!def || def.permissao !== "executar") { erros.push(`item ${i}: operação '${it.operacao}' não é executável`); continue; }
     let produtoId = it.produto_id;
     if (!produtoId && it.sku) produtoId = (await c.dados.produtoPorSku(it.sku))?.id;
-    if (!produtoId && it.operacao !== "bling.categorias.criar") { erros.push(`item ${i}: produto não encontrado nesta loja`); continue; }
+    // exceções sem produto no espelho: criar categoria, e reativar (o espelho só tem ATIVOS; o alvo é o id do Bling, lido agora)
+    const reativacao = it.operacao === "bling.produtos.alterar" && /^\d{1,20}$/.test(it.alvo ?? "") && JSON.stringify(it.campos ?? Object.keys(it.depois)) === '["situacao"]';
+    if (!produtoId && it.operacao !== "bling.categorias.criar" && !reativacao) { erros.push(`item ${i}: produto não encontrado nesta loja`); continue; }
     if (it.operacao === "bling.produtos.alterar" || it.operacao === "bling.produtos.criar") {
       const m = montarCorpoProduto(it.depois);
       if (m.erros.length) { erros.push(`item ${i}: ${m.erros.join("; ")}`); continue; }
@@ -191,6 +193,32 @@ export const HANDLERS: Record<string, Handler> = {
     return criarPropostaVersionada(c, { titulo: `Criar a categoria "${nome}" no Bling`, resumo: "Só a criação de uma categoria de produto; nenhum produto é alterado.", itens: [{
       operacao: "bling.categorias.criar", campos: ["descricao", ...(pai ? ["categoria_pai_id"] : [])], antes: { descricao: null, ...(pai ? { categoria_pai_id: null } : {}) }, depois: { descricao: nome, ...(pai ? { categoria_pai_id: pai } : {}) }, fontes: e.fontes,
       validacoes: [`categorias do Bling lidas em ${new Date().toISOString()}: nenhuma com este nome${pai ? ` sob o pai ${pai}` : ""}`] }] });
+  },
+  // Reativação: lê o produto pelo id AGORA (funciona para excluído), exige que não esteja ativo e que não haja OUTRO ativo com o mesmo código/GTIN
+  // (evita duplicar), e cria a proposta só da situação. Não grava nada no Bling.
+  "bling.produtos.preparar_reativacao": async (e, c) => {
+    if (!c.bling) return { erro: "Leitura do Bling indisponível: sem ela não dá para conferir o produto nem a duplicidade." };
+    const id = String(e.bling_id).trim();
+    if (!/^\d{1,20}$/.test(id)) return { erro: "Informe o id numérico do produto no Bling." };
+    const lido = await c.bling.ler("bling.produtos.confirmar", { id });
+    if (lido.status === 404) return { erro: `Produto ${id} não encontrado no Bling.` };
+    if (lido.status !== 200) return { erro: `O Bling respondeu ${lido.status} ao ler o produto.` };
+    const p = (lido.corpo as any)?.data ?? {};
+    const situacao = String(p.situacao ?? "");
+    if (situacao === "A") return { aviso: "Este produto já está ATIVO no Bling; nada foi proposto.", produto: { id, codigo: p.codigo ?? null, nome: p.nome ?? null } };
+    if (situacao !== "E" && situacao !== "I") return { erro: `Situação desconhecida no Bling (${situacao || "vazia"}); não proponho reativar às cegas.` };
+    const conflitos: { id: string; codigo: unknown; nome: unknown; por: string }[] = [];
+    for (const [por, args] of [["codigo", p.codigo ? { sku: String(p.codigo) } : null], ["gtin", p.gtin ? { gtin: String(p.gtin) } : null]] as const) {
+      if (!args) continue;
+      const r = await c.bling.ler("bling.produtos.consultar_ativos", args);
+      if (r.status !== 200) return { erro: `Não consegui conferir duplicidade por ${por} no Bling (${r.status}); nada foi proposto.` };
+      for (const x of ((r.corpo as any)?.data ?? []) as any[]) if (String(x.id) !== id) conflitos.push({ id: String(x.id), codigo: x.codigo ?? null, nome: x.nome ?? null, por });
+    }
+    if (conflitos.length) return { aviso: "Já existe produto ATIVO com o mesmo código ou GTIN; reativar duplicaria o cadastro. Nada foi proposto.", conflitos };
+    const local = p.codigo ? await c.dados.produtoPorSku(String(p.codigo)) : null;
+    return criarPropostaVersionada(c, { titulo: `Reativar no Bling o produto ${p.codigo ?? id} (${String(p.nome ?? "").slice(0, 80)})`, resumo: "Só a situação: de excluído/inativo para ativo. Nenhum outro campo é alterado.", itens: [{
+      produto_id: local?.id, sku: p.codigo ?? undefined, operacao: "bling.produtos.alterar", alvo: id, campos: ["situacao"], antes: { situacao }, depois: { situacao: "A" }, fontes: e.fontes,
+      validacoes: [`produto ${id} lido no Bling em ${new Date().toISOString()}: situação ${situacao}`, `nenhum outro produto ATIVO com o código ${p.codigo ?? "(sem código)"}${p.gtin ? ` ou o GTIN ${p.gtin}` : ""}`] }] });
   },
   // Lê o Bling AGORA, calcula antes/depois dos campos pedidos e cria a proposta. Não grava nada no Bling.
   "bling.produtos.preparar_atualizacao": async (e, c) => {

@@ -82,13 +82,13 @@ test("ensaio (executar_simulado) parte do produto real lido e não muda estado; 
   assert.match(String((sem.corpo.semeado_de as string[])[0]), /'antes' da proposta/);
 });
 
-test("ensaio de campo NÃO liberado (marca) é recusado e diz o motivo: só a categoria está liberada", { skip }, async () => {
+test("ensaio de campo liberado pelo dono (marca) passa no Bling SIMULADO e nada chega ao Bling de leitura", { skip }, async () => {
   const p = await proposta("ACAO-006", { marca: "Sabó" });
   assert.equal((await acaoAprovacoes({ acao: "decidir", proposta_id: p, versao: 1, hash: hashDe(p), decisao: "aprovada" }, lojista, deps())).status, 200);
   const r = await acaoAprovacoes({ acao: "executar_simulado", proposta_id: p }, lojista, deps());
   assert.equal(r.status, 200, JSON.stringify(r));
   const item = (r.corpo.relatorio as any).itens[0];
-  assert.equal(item.ok, false); assert.match(String(item.motivo), /campo_nao_liberado: marca/);
+  assert.equal(item.ok, true, JSON.stringify(item));
   assert.equal(bling.recebidos.filter((x) => x.id === "1006").length, 0, "nada chegou ao Bling");
 });
 

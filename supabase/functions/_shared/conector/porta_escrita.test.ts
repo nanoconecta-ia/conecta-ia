@@ -130,6 +130,6 @@ test("executor + porta real: timeout na escrita => desconhecida; 5xx => desconhe
   const e422 = await porta(true, () => resp(422, { error: "x" }));
   assert.equal((await escreverEConfirmarNoBling(e422.p, "bling.categorias.criar", item("bling.categorias.criar", { descricao: "A" }, null))).estado, "falhou");
   const fora = await porta(true, () => resp(200));
-  const v = await escreverEConfirmarNoBling(fora.p, "bling.produtos.alterar", item("bling.produtos.alterar", { marca: "X" }));
+  const v = await escreverEConfirmarNoBling(fora.p, "bling.produtos.alterar", item("bling.produtos.alterar", { preco: 1 }));
   assert.equal(v.estado, "falhou"); assert.match(v.motivo ?? "", /campo_nao_liberado/); assert.equal(fora.chamadas.length, 0);
 });

@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "844dd506b88b92e301f650eb0675ff9f72b95b66e3b951711e6288822434ff48",
+  "artefato_sha256": "263fee7b8f67d555f35d3a854b56c6231e6fd8b8a18fa4e0ab57bf335e13ca05",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -50,11 +50,11 @@
     },
     {
       "path": "supabase/functions/_shared/conector/registro.ts",
-      "sha256": "62471ceec9285702ada96599c2197d36fcaa4270b3267cd6b758fb718dc2232a"
+      "sha256": "6a3261bf0f5b05df411259533721fd680fd6b0678c2fa383acc6ff115db4eaa0"
     },
     {
       "path": "supabase/functions/_shared/conector/bling_campos.ts",
-      "sha256": "2ebb0b5adae74bab1ccd4b0eace810e154e1562b8eef075bd0f873e6b62cd7fc"
+      "sha256": "945af96365402f9945137263d2e44c3e77e7d29cf10499f4f19ea24fc74c16d2"
     },
     {
       "path": "supabase/functions/_shared/consulta/interpretar.ts",
@@ -66,7 +66,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/handlers.ts",
-      "sha256": "7146cda9c93ec3282c4b221edc899cf69759d736ae347d50f50f699db2db2e22"
+      "sha256": "de0a4d035090498f8cd2a9707454cd94c9694efb1c32754287c7ce8239018f5e"
     },
     {
       "path": "supabase/functions/_shared/conector/tipos.ts",
@@ -86,7 +86,7 @@
     },
     {
       "path": "supabase/functions/_shared/ia/ferramentas.ts",
-      "sha256": "0bb150ad6acc20eb4654c079dd3b1bc9e6b23f738f2724756ea07a11a9fba0d0"
+      "sha256": "108a55fae4280cb926f9b53f8c73fcf2d4bc5c444eddb3ef33d0edb4364e15b9"
     },
     {
       "path": "supabase/functions/_shared/conector/dados.ts",
@@ -102,7 +102,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/porta_bling.ts",
-      "sha256": "064f7c95a4186c9d09ed1627466a49eaad513234b9842302bd94c97182ed6ec2"
+      "sha256": "363094cc09c56d1cdb6bbc6adf5f4b0462e1234f80ad02eb1fd0d3953d9b7aec"
     },
     {
       "path": "supabase/functions/_shared/bling_armazem.ts",
@@ -134,7 +134,7 @@
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "3e60cedf50205b6e67d3ce03c232e21e41a25c127db1e69cb456fa5636e5fcdd"
+      "sha256": "1fa21c019e4ba89589761cfde5ce372171e6757cbeab0477e7b9c483b468d24d"
     },
     {
       "path": "supabase/functions/assistente/index.ts",
