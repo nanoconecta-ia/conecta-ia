@@ -588,3 +588,15 @@ html .aviso-versao button:disabled { background: #fff; color: #1d1b18; opacity: 
 
 /* versão do painel também no topo do Nano.ia (a barra de baixo fica escondida atrás da janela no celular) */
 .dock-topo .dock-versao { font-weight: 500; font-size: .72rem; color: #cfc6b6; margin-left: 6px; white-space: nowrap; }
+
+/* Celular: o painel do Nano.ia usa menos espaço (trilho mais fino, letra e botões menores), sem perder o alvo de toque de 40px */
+@media (max-width: 560px) {
+  .dock-agente { font-size: .9rem; }
+  .dock-agente .dock-corpo { padding: 8px; gap: 8px; }
+  .dock-agente button, .dock-agente select, .dock-agente input, .dock-agente textarea { font-size: inherit; }
+  .dock-agente button:not(.mini) { min-height: 40px; }
+  .dock-agente h1, .dock-agente h2 { font-size: 1.05rem; }
+  .dock-trilho { padding: 4px 3px; }
+  html .dock-trilho button.dock-aba { min-height: 44px; font-size: .66rem; padding: 4px 1px; border-radius: 10px; }
+  .dock-topo { padding: 8px 10px; gap: 6px; }
+}

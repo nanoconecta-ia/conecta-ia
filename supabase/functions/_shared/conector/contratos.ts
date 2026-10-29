@@ -53,6 +53,9 @@ export const CONTRATOS: readonly Contrato[] = [
   P("propor_aplicacao", "Propõe aplicação veicular.", ["rpc aplicacao_propor → produto_aplicacoes"], ["sku", "modelo", "fonte"]),
   L("buscar_imagem_web", "Busca imagens candidatas (não grava).", [], { operacao: "externa", obrigatorios: ["consulta"] }),
   P("propor_imagem", "Propõe imagem https; nasce aprovada=false.", ["rpc imagem_propor → produto_imagens"], ["sku", "url"]),
+  L("bling_categorias", "Lista as categorias do Bling agora (leitura em tempo real; não grava).", ["Bling (categorias, leitura)"], { operacao: "externa" }),
+  { ...P("bling_propor_categoria", "Prepara a PROPOSTA de criar categoria no Bling (confere duplicidade e pai); o Bling só é tocado pelo executor, depois da aprovação.", ["rpc agente_proposta_criar → agente_propostas (versão exata, aprovação humana)"], ["nome"]), risco: "MEDIUM", ferramentaBling: "bling.categorias.criar" },
+  { ...P("bling_propor_trocar_categoria", "Prepara a PROPOSTA de trocar a categoria de produtos no Bling a partir de sugestões já aprovadas; o Bling só é tocado pelo executor, depois da aprovação.", ["rpc agente_proposta_criar → agente_propostas (versão exata, aprovação humana)"], ["skus"]), risco: "MEDIUM", ferramentaBling: "bling.produtos.alterar" },
 
   // ---- Agente público (vitrine). Hoje determinístico por palavras-chave (vitrine-assistente), sem LLM ----
   { nome: "publico.consultar_produto_publicado", escopo: "publico", operacao: "leitura", risco: "LOW", estado: "implementada",

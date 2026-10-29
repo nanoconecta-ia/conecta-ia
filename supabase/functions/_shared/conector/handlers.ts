@@ -175,6 +175,23 @@ export const HANDLERS: Record<string, Handler> = {
     const prop = await criarPropostaVersionada(c, { titulo: `Trocar a categoria de ${itens.length} produto(s) no Bling`, resumo: "Só o campo categoria, a partir de sugestões aprovadas pelo lojista.", lote: itens.length > 1, itens });
     return { ...(prop as Record<string, unknown>), pendencias };
   },
+  // Criação de categoria: lê as categorias do Bling AGORA (não duplica nome, confere o pai) e cria a proposta. Não grava no Bling.
+  "bling.categorias.preparar_criacao": async (e, c) => {
+    if (!c.bling) return { erro: "Leitura do Bling indisponível: sem ela não dá para conferir duplicidade." };
+    const nome = String(e.nome).trim().replace(/\s+/g, " ");
+    if (!nome) return { erro: "Informe o nome da categoria." };
+    const lido = await c.bling.ler("bling.categorias.consultar", {});
+    if (lido.status !== 200) return { erro: `O Bling respondeu ${lido.status} ao listar categorias.` };
+    const existentes = ((lido.corpo as any)?.data ?? []) as any[];
+    const norm = (t: unknown) => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const pai = e.pai_id ? String(e.pai_id) : null;
+    if (pai && !existentes.some((x) => String(x.id) === pai)) return { erro: `A categoria pai ${pai} não existe no Bling.` };
+    const igual = existentes.find((x) => norm(x.descricao) === norm(nome) && String(x.categoriaPai?.id || "") === (pai ?? ""));
+    if (igual) return { aviso: "Essa categoria já existe no Bling; nada foi proposto.", categoria: { id: igual.id, descricao: igual.descricao } };
+    return criarPropostaVersionada(c, { titulo: `Criar a categoria "${nome}" no Bling`, resumo: "Só a criação de uma categoria de produto; nenhum produto é alterado.", itens: [{
+      operacao: "bling.categorias.criar", campos: ["descricao", ...(pai ? ["categoria_pai_id"] : [])], antes: { descricao: null, ...(pai ? { categoria_pai_id: null } : {}) }, depois: { descricao: nome, ...(pai ? { categoria_pai_id: pai } : {}) }, fontes: e.fontes,
+      validacoes: [`categorias do Bling lidas em ${new Date().toISOString()}: nenhuma com este nome${pai ? ` sob o pai ${pai}` : ""}`] }] });
+  },
   // Lê o Bling AGORA, calcula antes/depois dos campos pedidos e cria a proposta. Não grava nada no Bling.
   "bling.produtos.preparar_atualizacao": async (e, c) => {
     const r = await produtoNoBling(c, e.sku);

@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 55 ferramentas — 34 ativas, 17 planejadas, 4 desligadas.
+Resumo: 56 ferramentas — 38 ativas, 16 planejadas, 2 desligadas.
 
 ## Grupo: conecta
 
@@ -101,10 +101,11 @@ Resumo: 55 ferramentas — 34 ativas, 17 planejadas, 4 desligadas.
 | `bling.precos.consultar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
 | `bling.produtos.preparar_cadastro` | planejada | propor | MEDIUM | não | sim | sim | sim | chave | `rascunho*:object` `fontes*:array` |
 | `bling.produtos.preparar_atualizacao` | ativa | propor | MEDIUM | não | sim | sim | sim | chave | `sku*:string` `campos*:object` `fontes*:array` |
-| `bling.categorias.preparar_criacao` | planejada | propor | MEDIUM | não | sim | sim | sim | chave | `nome*:string` `pai_id:string` `fontes*:array` |
+| `bling.categorias.preparar_alteracao_lote` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `skus*:array` `escolhas:object` |
+| `bling.categorias.preparar_criacao` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `nome*:string` `pai_id:string` `fontes*:array` |
 | `bling.produtos.criar` | desligada | executar | MEDIUM | sim | não | não | sim | chave | `corpo*:object` |
-| `bling.produtos.alterar` | desligada | executar | MEDIUM | sim | não | não | sim | chave | `id*:string` `corpo*:object` |
-| `bling.categorias.criar` | desligada | executar | MEDIUM | sim | não | não | sim | chave | `corpo*:object` |
+| `bling.produtos.alterar` | ativa | executar | MEDIUM | sim | não | não | sim | chave | `id*:string` `corpo*:object` |
+| `bling.categorias.criar` | ativa | executar | MEDIUM | sim | não | não | sim | chave | `corpo*:object` |
 | `bling.produtos.confirmar` | desligada | executar | LOW | sim | não | não | sim | chave | `id*:string` |
 
 - **`bling.status.consultar`** — Situação da conexão com o Bling e da última sincronização.
@@ -128,7 +129,10 @@ Resumo: 55 ferramentas — 34 ativas, 17 planejadas, 4 desligadas.
 - **`bling.produtos.preparar_atualizacao`** — Prepara (sem gravar) a alteração de campos permitidos de um produto: lê o Bling agora, monta antes/depois e cria a proposta.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
-- **`bling.categorias.preparar_criacao`** — Prepara (sem gravar) a criação de categoria no Bling, só se o mapeamento da taxonomia a suportar.
+- **`bling.categorias.preparar_alteracao_lote`** — Prepara (sem gravar) a troca da categoria de produtos no Bling a partir das sugestões de categoria JÁ APROVADAS pelo lojista: lê a categoria atual no Bling agora, monta antes/depois e cria a proposta. Só a categoria; só os SKUs informados.
+  - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
+  - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
+- **`bling.categorias.preparar_criacao`** — Prepara (sem gravar) a criação de uma categoria de produto no Bling: confere duplicidade e pai nas categorias do Bling agora e cria a proposta de aprovação.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
 - **`bling.produtos.criar`** — Cria produto no Bling (POST /produtos).
