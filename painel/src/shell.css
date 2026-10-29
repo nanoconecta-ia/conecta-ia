@@ -761,3 +761,12 @@ html .aviso-versao button:disabled { background: #fff; color: #1d1b18; opacity: 
   .layout-premium .menu-premium { transition: none; }
   .topo-atalho-nano, .menu-premium a { transition: none; }
 }
+
+/* O logout permanece acessível no drawer, liberando espaço na barra em telas pequenas. */
+.menu-premium .menu-sair { display: none; }
+@media (max-width: 640px) {
+  .topo-premium .topo-sair { display: none; }
+  .topo-premium .marca { gap: 6px; min-width: 0; }
+  .topo-premium .marca-identidade { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 9ch; }
+  .menu-premium .menu-sair { display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 11px 13px; color: #f0e6df; border-color: rgba(255,255,255,.26); margin-top: 14px; }
+}
