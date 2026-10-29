@@ -54,8 +54,13 @@ async function produtoNoBling(c: ContextoFerramenta, sku: string) {
   if (!c.bling) return { erro: "Leitura do Bling indisponível neste contexto." } as const;
   const r = await c.bling.ler("bling.produtos.consultar", { sku });
   if (r.status !== 200) return { erro: `O Bling respondeu ${r.status} ao consultar o produto.` } as const;
-  const achados = ((r.corpo as any)?.data ?? []) as any[];
-  if (achados.length === 0) return { erro: "Produto não encontrado no Bling com esse SKU." } as const;
+  const recebidos = (r.corpo as any)?.data;
+  if (!Array.isArray(recebidos)) return { erro: "Resposta inesperada do Bling; consulta inconclusiva." } as const;
+  // Não presumir que uma única página contenha todos os produtos quando o limite é atingido.
+  if (recebidos.length >= 100) return { erro: "A consulta atingiu 100 registros; conferir paginação antes de propor alterações." } as const;
+  // A API pode fazer buscas aproximadas: só o código EXATO é seguro para propor alteração.
+  const achados = recebidos.filter((p: any) => String(p?.codigo ?? "") === sku) as any[];
+  if (achados.length === 0) return { erro: "Produto com código exato não encontrado entre ativos, inativos e excluídos; não criar duplicata sem busca completa." } as const;
   if (achados.length > 1) return { erro: "Mais de um produto no Bling com esse SKU; resolva a duplicidade antes." } as const;
   return { produto: achados[0] } as const;
 }
@@ -224,6 +229,12 @@ export const HANDLERS: Record<string, Handler> = {
   "bling.produtos.preparar_atualizacao": async (e, c) => {
     const r = await produtoNoBling(c, e.sku);
     if ("erro" in r) return r;
+    // A atualização de cadastro só vale para produtos ATIVOS.
+    // Um excluído como a INDISA 854008 segue primeiro para a proposta de reativação específica.
+    if (r.produto.situacao !== "A") return {
+      erro: "Produto excluído/inativo no Bling. Não atualizar campos: primeiro conferir duplicidade e preparar reativação pelo ID.",
+      bling_id: r.produto.id, situacao: r.produto.situacao,
+    };
     const campos = Object.keys(e.campos ?? {});
     if (campos.length === 0) return { erro: "Informe ao menos um campo em 'campos'." };
     const m = montarCorpoProduto(e.campos);
