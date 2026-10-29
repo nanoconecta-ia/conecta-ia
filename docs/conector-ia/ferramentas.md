@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 56 ferramentas — 38 ativas, 16 planejadas, 2 desligadas.
+Resumo: 57 ferramentas — 39 ativas, 16 planejadas, 2 desligadas.
 
 ## Grupo: conecta
 
@@ -100,6 +100,7 @@ Resumo: 56 ferramentas — 38 ativas, 16 planejadas, 2 desligadas.
 | `bling.estoque.consultar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
 | `bling.precos.consultar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
 | `bling.produtos.preparar_cadastro` | planejada | propor | MEDIUM | não | sim | sim | sim | chave | `rascunho*:object` `fontes*:array` |
+| `bling.produtos.preparar_reativacao` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `bling_id*:string` `fontes*:array` |
 | `bling.produtos.preparar_atualizacao` | ativa | propor | MEDIUM | não | sim | sim | sim | chave | `sku*:string` `campos*:object` `fontes*:array` |
 | `bling.categorias.preparar_alteracao_lote` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `skus*:array` `escolhas:object` |
 | `bling.categorias.preparar_criacao` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `nome*:string` `pai_id:string` `fontes*:array` |
@@ -124,6 +125,9 @@ Resumo: 56 ferramentas — 38 ativas, 16 planejadas, 2 desligadas.
   - *Verificação:* Resposta do Bling.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`bling.produtos.preparar_cadastro`** — Prepara (sem gravar) o cadastro de um produto novo no Bling: confere duplicidade por SKU/GTIN e monta a proposta.
+  - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
+  - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
+- **`bling.produtos.preparar_reativacao`** — Prepara (sem gravar) a REATIVAÇÃO de um produto excluído ou inativo no Bling: lê o produto pelo id agora, confere que não existe outro ATIVO com o mesmo código ou GTIN e cria a proposta (só a situação vai para ativo).
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
 - **`bling.produtos.preparar_atualizacao`** — Prepara (sem gravar) a alteração de campos permitidos de um produto: lê o Bling agora, monta antes/depois e cria a proposta.
@@ -258,8 +262,8 @@ Resumo: 56 ferramentas — 38 ativas, 16 planejadas, 2 desligadas.
 
 ## Campos do produto no Bling
 
-Pode ser **alterado** pelo Nano.ia (somente após aprovação e com a escrita liberada): `nome`, `descricaoCurta`, `descricaoComplementar`, `marca`, `gtin`, `pesoLiquido`, `pesoBruto`, `dimensoes`, `categoria`.
-**Nunca** é lido para o LLM nem alterado: `tributacao`, `ncm`, `cest`, `fornecedor`, `fornecedores`, `precoCusto`, `precoCompra`, `preco`, `estoque`, `codigo`, `situacao`, `formato`.
+Pode ser **alterado** pelo Nano.ia (somente após aprovação e com a escrita liberada): `nome`, `descricaoCurta`, `descricaoComplementar`, `marca`, `gtin`, `pesoLiquido`, `pesoBruto`, `dimensoes`, `categoria`, `situacao`.
+**Nunca** é lido para o LLM nem alterado: `tributacao`, `ncm`, `cest`, `fornecedor`, `fornecedores`, `precoCusto`, `precoCompra`, `preco`, `estoque`, `codigo`, `formato`.
 
 | Campo Conecta.IA | Caminho no Bling | Tipo | Conferido na documentação oficial |
 |---|---|---|---|
@@ -273,5 +277,6 @@ Pode ser **alterado** pelo Nano.ia (somente após aprovação e com a escrita li
 | `altura_cm` | `dimensoes.altura` | numero_positivo | **não** |
 | `profundidade_cm` | `dimensoes.profundidade` | numero_positivo | **não** |
 | `categoria_bling_id` | `categoria.id` | id_numerico | **não** — categoria precisa existir no Bling (bling_categorias) |
+| `situacao` | `situacao` | reativar | **não** — só 'A'; reativar produto excluído a confirmar no Bling real |
 
 Campo sem equivalente no Bling (aplicação veicular, genealogia, equivalências, códigos cruzados) **não é enviado**: fica só no Conecta.IA, ligado ao identificador do produto no ERP.

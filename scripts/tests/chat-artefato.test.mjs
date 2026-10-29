@@ -75,10 +75,10 @@ test('artefato: resposta cortada por tamanho é marcada truncada/incompleta e nu
 });
 
 // ---- Chat persistente: ferramentas de PROPOSTA de categoria no Bling. Nenhuma grava; só lê o Bling e cria proposta para o lojista aprovar.
-test('artefato: o chat persistente oferece as ferramentas de proposta de categoria (e nenhuma de escrita) quando a consulta Bling está ligada',async()=>{
+test('artefato: o chat persistente oferece as ferramentas de proposta (categoria e produto; nenhuma de escrita) quando a consulta Bling está ligada',async()=>{
  const a=await ambiente();await a.perguntar();
  const nomes=JSON.parse(a.rede[0].op.body).tools.map(t=>t.function.name);
- eq(nomes.sort(),['bling_categorias','bling_consultar_produto','bling_propor_categoria','bling_propor_trocar_categoria']);
+ eq(nomes.sort(),['bling_categorias','bling_consultar_produto','bling_propor_ajuste_produto','bling_propor_categoria','bling_propor_reativar_produto','bling_propor_trocar_categoria']);
 });
 test('artefato: propor categoria lê o Bling, cria a proposta (sem vínculo de conversa) e NÃO escreve no Bling',async()=>{
  const a=await ambiente({tool:'bling_propor_categoria',args:'{"nome":"Freios"}'});const r=await a.perguntar();const m=a.final.p_meta;

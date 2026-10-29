@@ -56,11 +56,15 @@ export class BlingMock implements PortaBling {
     return { status: 400 };
   }
 
-  async ler(ferramenta: string, args: { id?: string; sku?: string; busca?: string }): Promise<RespostaBling> {
+  async ler(ferramenta: string, args: { id?: string; sku?: string; gtin?: string; busca?: string }): Promise<RespostaBling> {
     this.leituras++;
     const falha = this.falhas[0];
     if (falha === "leitura_timeout") { this.falhas.shift(); throw new TimeoutBling(); }
     if (ferramenta === "bling.categorias.consultar") return { status: 200, corpo: { data: this.categorias.map((c) => ({ id: c.id, descricao: c.descricao, categoriaPai: { id: c.idCategoriaPai ?? 0 } })) } };
+    if (ferramenta === "bling.produtos.consultar_ativos") {
+      const achados = [...this.produtos.entries()].filter(([, p]) => (p.situacao ?? "A") === "A" && (args.sku ? p.codigo === args.sku : p.gtin === args.gtin)).map(([id, p]) => ({ id: Number(id), ...p }));
+      return { status: 200, corpo: { data: achados } };
+    }
     if (ferramenta === "bling.produtos.consultar") {
       const achados = [...this.produtos.entries()].filter(([, p]) => p.codigo === args.sku).map(([id, p]) => ({ id: Number(id), ...p }));
       return { status: 200, corpo: { data: achados } };

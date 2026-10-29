@@ -1034,7 +1034,8 @@ const CAMPOS_BLING_PERMITIDOS = [
     "pesoLiquido",
     "pesoBruto",
     "dimensoes",
-    "categoria"
+    "categoria",
+    "situacao"
 ];
 const CAMPOS_BLING_PROIBIDOS = [
     "tributacao",
@@ -1047,7 +1048,6 @@ const CAMPOS_BLING_PROIBIDOS = [
     "preco",
     "estoque",
     "codigo",
-    "situacao",
     "formato"
 ];
 const def = (d)=>({
@@ -1491,6 +1491,23 @@ const FERRAMENTAS_CONECTOR = [
         estado: "planejada",
         simulacao: true
     }),
+    proposta("bling.produtos.preparar_reativacao", "bling", "Prepara (sem gravar) a REATIVAÇÃO de um produto excluído ou inativo no Bling: lê o produto pelo id agora, confere que não existe outro ATIVO com o mesmo código ou GTIN e cria a proposta (só a situação vai para ativo).", obj({
+        bling_id: txt(undefined, 20),
+        fontes: {
+            ...lista(fonte, 10),
+            minItems: 1
+        }
+    }, [
+        "bling_id",
+        "fontes"
+    ]), livre, "MEDIUM", {
+        estado: "ativa",
+        simulacao: true,
+        exposicao: {
+            chat: true,
+            mcp: false
+        }
+    }),
     proposta("bling.produtos.preparar_atualizacao", "bling", "Prepara (sem gravar) a alteração de campos permitidos de um produto: lê o Bling agora, monta antes/depois e cria a proposta.", obj({
         sku,
         campos: livre,
@@ -1888,11 +1905,30 @@ const MAPA_CAMPOS = [
         tipo: "id_numerico",
         conferido: false,
         observacao: "categoria precisa existir no Bling (bling_categorias)"
+    },
+    {
+        conecta: "situacao",
+        caminho: [
+            "situacao"
+        ],
+        tipo: "reativar",
+        conferido: false,
+        observacao: "só 'A'; reativar produto excluído a confirmar no Bling real"
     }
 ];
 const CAMPOS_ESCRITA_LIBERADOS = {
     "bling.produtos.alterar": [
-        "categoria_bling_id"
+        "categoria_bling_id",
+        "situacao",
+        "nome",
+        "marca",
+        "gtin",
+        "descricao_curta",
+        "descricao_complementar",
+        "peso_kg",
+        "largura_cm",
+        "altura_cm",
+        "profundidade_cm"
     ]
 };
 function camposNaoLiberados(operacao, depois, campos = [], liberados = CAMPOS_ESCRITA_LIBERADOS) {
@@ -1929,6 +1965,8 @@ function valida(m, v) {
             return typeof v === "string" && /^(\d{8}|\d{12}|\d{13}|\d{14})$/.test(v) ? null : "GTIN deve ter 8, 12, 13 ou 14 dígitos";
         case "id_numerico":
             return typeof v === "string" && /^\d{1,20}$/.test(v) ? null : "id de categoria deve ser numérico";
+        case "reativar":
+            return v === "A" ? null : "situação só pode ir para \"A\" (reativar); inativar ou excluir não é permitido ao agente";
     }
 }
 function montarCorpoProduto(depois) {
@@ -2385,7 +2423,8 @@ async function criarPropostaVersionada(c, o) {
         }
         let produtoId = it.produto_id;
         if (!produtoId && it.sku) produtoId = (await c.dados.produtoPorSku(it.sku))?.id;
-        if (!produtoId && it.operacao !== "bling.categorias.criar") {
+        const reativacao = it.operacao === "bling.produtos.alterar" && /^\d{1,20}$/.test(it.alvo ?? "") && JSON.stringify(it.campos ?? Object.keys(it.depois)) === '["situacao"]';
+        if (!produtoId && it.operacao !== "bling.categorias.criar" && !reativacao) {
             erros.push(`item ${i}: produto não encontrado nesta loja`);
             continue;
         }
@@ -2726,6 +2765,95 @@ const HANDLERS = {
             ]
         });
     },
+    "bling.produtos.preparar_reativacao": async (e, c)=>{
+        if (!c.bling) return {
+            erro: "Leitura do Bling indisponível: sem ela não dá para conferir o produto nem a duplicidade."
+        };
+        const id = String(e.bling_id).trim();
+        if (!/^\d{1,20}$/.test(id)) return {
+            erro: "Informe o id numérico do produto no Bling."
+        };
+        const lido = await c.bling.ler("bling.produtos.confirmar", {
+            id
+        });
+        if (lido.status === 404) return {
+            erro: `Produto ${id} não encontrado no Bling.`
+        };
+        if (lido.status !== 200) return {
+            erro: `O Bling respondeu ${lido.status} ao ler o produto.`
+        };
+        const p = lido.corpo?.data ?? {};
+        const situacao = String(p.situacao ?? "");
+        if (situacao === "A") return {
+            aviso: "Este produto já está ATIVO no Bling; nada foi proposto.",
+            produto: {
+                id,
+                codigo: p.codigo ?? null,
+                nome: p.nome ?? null
+            }
+        };
+        if (situacao !== "E" && situacao !== "I") return {
+            erro: `Situação desconhecida no Bling (${situacao || "vazia"}); não proponho reativar às cegas.`
+        };
+        const conflitos = [];
+        for (const [por, args] of [
+            [
+                "codigo",
+                p.codigo ? {
+                    sku: String(p.codigo)
+                } : null
+            ],
+            [
+                "gtin",
+                p.gtin ? {
+                    gtin: String(p.gtin)
+                } : null
+            ]
+        ]){
+            if (!args) continue;
+            const r = await c.bling.ler("bling.produtos.consultar_ativos", args);
+            if (r.status !== 200) return {
+                erro: `Não consegui conferir duplicidade por ${por} no Bling (${r.status}); nada foi proposto.`
+            };
+            for (const x of r.corpo?.data ?? [])if (String(x.id) !== id) conflitos.push({
+                id: String(x.id),
+                codigo: x.codigo ?? null,
+                nome: x.nome ?? null,
+                por
+            });
+        }
+        if (conflitos.length) return {
+            aviso: "Já existe produto ATIVO com o mesmo código ou GTIN; reativar duplicaria o cadastro. Nada foi proposto.",
+            conflitos
+        };
+        const local = p.codigo ? await c.dados.produtoPorSku(String(p.codigo)) : null;
+        return criarPropostaVersionada(c, {
+            titulo: `Reativar no Bling o produto ${p.codigo ?? id} (${String(p.nome ?? "").slice(0, 80)})`,
+            resumo: "Só a situação: de excluído/inativo para ativo. Nenhum outro campo é alterado.",
+            itens: [
+                {
+                    produto_id: local?.id,
+                    sku: p.codigo ?? undefined,
+                    operacao: "bling.produtos.alterar",
+                    alvo: id,
+                    campos: [
+                        "situacao"
+                    ],
+                    antes: {
+                        situacao
+                    },
+                    depois: {
+                        situacao: "A"
+                    },
+                    fontes: e.fontes,
+                    validacoes: [
+                        `produto ${id} lido no Bling em ${new Date().toISOString()}: situação ${situacao}`,
+                        `nenhum outro produto ATIVO com o código ${p.codigo ?? "(sem código)"}${p.gtin ? ` ou o GTIN ${p.gtin}` : ""}`
+                    ]
+                }
+            ]
+        });
+    },
     "bling.produtos.preparar_atualizacao": async (e, c)=>{
         const r = await produtoNoBling(c, e.sku);
         if ("erro" in r) return r;
@@ -3047,8 +3175,8 @@ const SISTEMA = [
     "Você pode PROPOR dados novos (enriquecimento, código, aplicação veicular, imagem) com as ferramentas propor_*; toda proposta",
     "exige uma fonte real (URL ou documento) e entra como 'a_confirmar' na fila — nunca marque nada como aprovado sozinho.",
     "Para imagem: use buscar_imagem_web para achar candidatas e só então propor_imagem com a que fizer mais sentido; nunca invente uma URL de imagem.",
-    "No Bling você só PREPARA PROPOSTAS: criar categoria (bling_propor_categoria) e trocar a categoria de produtos já aprovada (bling_propor_trocar_categoria). Quem grava é o executor, depois que o lojista aprova a versão exata na Central de Inteligência, e só com a escrita real ligada. Depois de propor, diga o que ficou pendente e onde aprovar; nunca diga que já gravou.",
-    "Ainda NÃO existe ferramenta para cadastrar produto novo no Bling, alterar preço, estoque ou dados fiscais, nem para busca geral na internet (só busca de imagens). Se o lojista pedir isso, diga com clareza que ainda não é possível e o que pode ser feito hoje; não enrole nem finja.",
+    "No Bling você só PREPARA PROPOSTAS: criar categoria (bling_propor_categoria), trocar a categoria de produtos já aprovada (bling_propor_trocar_categoria), REATIVAR produto excluído (bling_propor_reativar_produto, depois de bling_consultar_produto mostrar que não há outro ativo) e atualizar nome, marca, GTIN, descrições, peso e medidas de produto ativo (bling_propor_ajuste_produto, sempre com fonte). Antes de propor cadastro, procure o código no Bling INCLUSIVE excluídos: se já existir, proponha reativar em vez de duplicar. Quem grava é o executor, depois que o lojista aprova a versão exata na Central de Inteligência, e só com a escrita real ligada. Depois de propor, diga o que ficou pendente e onde aprovar; nunca diga que já gravou.",
+    "Ainda NÃO existe ferramenta para criar produto novo no Bling (do zero), alterar preço, custo, estoque, fornecedor ou dados fiscais, nem para busca geral na internet (só busca de imagens). Se o lojista pedir isso, diga com clareza que ainda não é possível e o que pode ser feito hoje; não enrole nem finja.",
     "Você não publica nem aprova: quem decide é o lojista.",
     "Produto incompleto não é publicado. Nunca cite o nome do provedor de IA nem do modelo."
 ].join("\n");
@@ -3348,6 +3476,47 @@ const FERRAMENTAS = [
         }
     },
     {
+        name: "bling_propor_reativar_produto",
+        description: "Prepara a PROPOSTA de reativar no Bling um produto EXCLUÍDO ou inativo (pelo id do Bling, que aparece em bling_consultar_produto). Antes confere que não há outro produto ATIVO com o mesmo código ou GTIN. Não grava: o lojista precisa aprovar.",
+        input_schema: {
+            type: "object",
+            properties: {
+                bling_id: {
+                    type: "string",
+                    description: "id numérico do produto no Bling"
+                }
+            },
+            required: [
+                "bling_id"
+            ]
+        }
+    },
+    {
+        name: "bling_propor_ajuste_produto",
+        description: "Prepara a PROPOSTA de atualizar dados de cadastro de um produto ATIVO no Bling: nome, marca, gtin, descricao_curta, descricao_complementar, peso_kg, largura_cm, altura_cm, profundidade_cm. Nunca preço, custo, estoque, fornecedor, SKU ou fiscal. Cada valor precisa de fonte. Não grava: o lojista precisa aprovar.",
+        input_schema: {
+            type: "object",
+            properties: {
+                sku: {
+                    type: "string"
+                },
+                campos: {
+                    type: "object",
+                    description: "campo -> novo valor, ex.: { \"marca\": \"INDISA\", \"peso_kg\": 2 }"
+                },
+                fonte: {
+                    type: "string",
+                    description: "URL ou documento de onde vieram os valores (obrigatório)"
+                }
+            },
+            required: [
+                "sku",
+                "campos",
+                "fonte"
+            ]
+        }
+    },
+    {
         name: "bling_propor_trocar_categoria",
         description: "Prepara a PROPOSTA de trocar a categoria de produtos no Bling, só para SKUs cuja sugestão de categoria JÁ foi aprovada pelo lojista. Não grava: o lojista precisa aprovar.",
         input_schema: {
@@ -3497,6 +3666,8 @@ async function executarFerramenta(nome, entrada, c) {
         case "bling_categorias":
         case "bling_propor_categoria":
         case "bling_propor_trocar_categoria":
+        case "bling_propor_reativar_produto":
+        case "bling_propor_ajuste_produto":
             {
                 if (!c.conector) return {
                     erro: "O motor de propostas do Bling não está disponível neste ambiente."
@@ -3507,7 +3678,27 @@ async function executarFerramenta(nome, entrada, c) {
                         consultado_em: new Date().toISOString()
                     }
                 ];
-                const r = nome === "bling_categorias" ? await despachar("bling.categorias.consultar", {
+                const fonteDada = typeof e.fonte === "string" && e.fonte.trim() ? e.fonte.trim().slice(0, 500) : "";
+                const r = nome === "bling_propor_reativar_produto" ? await despachar("bling.produtos.preparar_reativacao", {
+                    bling_id: String(e.bling_id ?? "").slice(0, 20),
+                    fontes
+                }, c.conector) : nome === "bling_propor_ajuste_produto" ? fonteDada ? await despachar("bling.produtos.preparar_atualizacao", {
+                    sku: txt(e.sku),
+                    campos: e.campos,
+                    fontes: [
+                        /^https?:\/\//i.test(fonteDada) ? {
+                            url: fonteDada,
+                            consultado_em: new Date().toISOString()
+                        } : {
+                            documento: fonteDada,
+                            consultado_em: new Date().toISOString()
+                        }
+                    ]
+                }, c.conector) : {
+                    ok: false,
+                    erro: "Informe a fonte (URL ou documento) dos valores; sem fonte não proponho.",
+                    decisao: "negada"
+                } : nome === "bling_categorias" ? await despachar("bling.categorias.consultar", {
                     busca: txt(e.busca)
                 }, c.conector) : nome === "bling_propor_categoria" ? await despachar("bling.categorias.preparar_criacao", {
                     nome: typeof e.nome === "string" ? e.nome.trim().slice(0, 120) : "",
@@ -3916,6 +4107,8 @@ class BlingLeituraReal {
         if (ferramenta === "bling.produtos.confirmar" && args.id && /^\d+$/.test(args.id)) caminho = `/produtos/${args.id}`;
         else if (ferramenta === "bling.produtos.consultar" && args.sku) caminho = `/produtos?codigos[]=${encodeURIComponent(args.sku)}`;
         else if (ferramenta === "bling.categorias.consultar") caminho = `/categorias/produtos?pagina=1&limite=100`;
+        else if (ferramenta === "bling.produtos.consultar_ativos" && args.sku) caminho = `/produtos?codigos[]=${encodeURIComponent(args.sku)}&criterio=2&limite=100`;
+        else if (ferramenta === "bling.produtos.consultar_ativos" && args.gtin && /^\d{8,14}$/.test(args.gtin)) caminho = `/produtos?gtins[]=${args.gtin}&criterio=2&limite=100`;
         else throw new Error("leitura_nao_suportada");
         const r = await blingFetch(this.arm, this.lojaId, caminho, this.cfg);
         return {
@@ -4857,7 +5050,9 @@ const { conteudoComAnexos: conteudoComAnexos, REGRAS_ANEXO: REGRAS_ANEXO, resumo
 const FERRAMENTAS_PROPOSTA_BLING = [
     "bling_categorias",
     "bling_propor_categoria",
-    "bling_propor_trocar_categoria"
+    "bling_propor_trocar_categoria",
+    "bling_propor_reativar_produto",
+    "bling_propor_ajuste_produto"
 ];
 const resultado = (corpo, status = 200)=>({
         corpo,
@@ -5084,7 +5279,7 @@ async function atenderChat(c, ctx) {
             chave: await decifrar(k.cifrada, chaveiro),
             modelo,
             mensagens,
-            sistema: `${SISTEMA}\nLoja: ${loja.nome}. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria e bling_propor_trocar_categoria: nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
+            sistema: `${SISTEMA}\nLoja: ${loja.nome}. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto e bling_propor_ajuste_produto: nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
             maxPassos: 5,
             maxTokens: 1536,
             ferramentas: ativo("chat_consulta_bling") ? [

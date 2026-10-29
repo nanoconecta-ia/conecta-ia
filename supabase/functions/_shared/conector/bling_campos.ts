@@ -6,7 +6,7 @@ import { CAMPOS_BLING_PROIBIDOS } from "./registro.ts";
 export interface MapaCampo {
   conecta: string;                 // nome do campo no Conecta.IA (espelho/enriquecimento)
   caminho: readonly string[];      // caminho no corpo do Bling
-  tipo: "texto" | "numero_positivo" | "gtin" | "id_numerico";
+  tipo: "texto" | "numero_positivo" | "gtin" | "id_numerico" | "reativar";
   conferido: boolean;
   observacao?: string;
 }
@@ -22,15 +22,19 @@ export const MAPA_CAMPOS: readonly MapaCampo[] = [
   { conecta: "altura_cm", caminho: ["dimensoes", "altura"], tipo: "numero_positivo", conferido: false },
   { conecta: "profundidade_cm", caminho: ["dimensoes", "profundidade"], tipo: "numero_positivo", conferido: false },
   { conecta: "categoria_bling_id", caminho: ["categoria", "id"], tipo: "id_numerico", conferido: false, observacao: "categoria precisa existir no Bling (bling_categorias)" },
+  // Só REATIVAR: o único valor aceito é "A". Inativar/excluir pelo agente continua impossível. O esquema do PATCH lista situacao A|I;
+  // se o Bling aceita reativar um produto EXCLUÍDO (E) por esse PATCH ainda não foi confirmado: a leitura de confirmação decide.
+  { conecta: "situacao", caminho: ["situacao"], tipo: "reativar", conferido: false, observacao: "só 'A'; reativar produto excluído a confirmar no Bling real" },
 ];
 
 /**
  * Campos que cada operação de ESCRITA no Bling pode enviar AGORA. Lista fechada: a liberação de um campo é decisão do dono, por escrito.
- * Hoje só a categoria do produto (desenho em docs/conector-ia/escrita-categoria-no-bling.md). Operação ausente = nenhum campo liberado.
+ * Decisão do dono (2026-10-29, escolha registrada no chat): categoria, REATIVAR (situação "A") e os dados de cadastro do produto
+ * (nome, marca, GTIN, descrições, peso e medidas). Preço, custo, estoque, fornecedor, SKU e fiscal NUNCA. Operação ausente = nenhum campo liberado.
  * Isto NÃO liga a escrita: a ferramenta segue `ativa:false` e a porta real só lê.
  */
 export const CAMPOS_ESCRITA_LIBERADOS: Readonly<Record<string, readonly string[]>> = {
-  "bling.produtos.alterar": ["categoria_bling_id"],
+  "bling.produtos.alterar": ["categoria_bling_id", "situacao", "nome", "marca", "gtin", "descricao_curta", "descricao_complementar", "peso_kg", "largura_cm", "altura_cm", "profundidade_cm"],
 };
 
 /** Campos pedidos (`depois` e `campos` declarados) que a operação NÃO tem liberados. Vazio = pode seguir. */
@@ -63,6 +67,7 @@ function valida(m: MapaCampo, v: unknown): string | null {
     case "numero_positivo": return typeof v === "number" && Number.isFinite(v) && v > 0 ? null : "número deve ser maior que zero";
     case "gtin": return typeof v === "string" && /^(\d{8}|\d{12}|\d{13}|\d{14})$/.test(v) ? null : "GTIN deve ter 8, 12, 13 ou 14 dígitos";
     case "id_numerico": return typeof v === "string" && /^\d{1,20}$/.test(v) ? null : "id de categoria deve ser numérico";
+    case "reativar": return v === "A" ? null : "situação só pode ir para \"A\" (reativar); inativar ou excluir não é permitido ao agente";
   }
 }
 
