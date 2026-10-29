@@ -51,6 +51,16 @@ import "./shell.css";
 const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
 const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(window.location.hostname) ? window.location.hostname : null;
 
+const ICONES_ROTAS: Record<string, string> = {
+  "/": "inicio", "/conector": "agentes", "/central": "escudo", "/indicadores": "grafico",
+  "/studio": "caixas", "/estudio": "ajustes", "/assistente": "conversa", "/catalogo": "catalogo",
+  "/fila": "fila", "/taxonomia": "arvore", "/aparencia": "paleta", "/condicoes": "cartao",
+  "/integracoes": "conexoes", "/gateway": "rede", "/imagens": "imagem", "/design": "paleta",
+  "/bling": "erp", "/backup": "arquivo", "/banners": "imagem", "/contador": "grafico",
+  "/aprovacoes": "escudo", "/meu-agente": "agentes", "/dispositivos": "monitor"
+};
+const ROTA_NANO = CONECTOR_ATIVO ? "/conector" : "/assistente";
+
 const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], ["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
@@ -89,6 +99,8 @@ export function App() {
   }, [sessao]);
 
   const [paleta, setPaleta] = useState(false);
+  const [menuMovel, setMenuMovel] = useState(false);
+  useEffect(() => { setMenuMovel(false); }, [caminho]);
   const [recolhido, setRecolhido] = useState(() => { try { return localStorage.getItem("conecta:menu") === "recolhido"; } catch { return false; } });
   const alternarMenu = () => setRecolhido((r) => { try { localStorage.setItem("conecta:menu", r ? "aberto" : "recolhido"); } catch { /* sem storage */ } return !r; });
   const [agente, setAgente] = useState(false);
@@ -98,6 +110,7 @@ export function App() {
   const mudarPainel = (p: EstadoPainel) => { setPainelEstado(p); gravarPainel(p); };
   useEffect(() => { // Ctrl/⌘+K abre a paleta de comandos; Ctrl/⌘+J abre o agente lateral, em qualquer tela do painel
     const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setMenuMovel(false); return; }
       if (!(e.ctrlKey || e.metaKey)) return;
       const k = e.key.toLowerCase();
       if (k === "k") { e.preventDefault(); setPaleta((p) => !p); }
@@ -136,24 +149,37 @@ export function App() {
     <>
       {demo && <div className="faixa-demo" role="status">{demo.FAIXA}</div>}
       <AvisoVersao />
-      <header className="topo">
-        <div className="marca"><LogoConecta tamanho={34} /><div>Conecta.IA<small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
-        <button className="busca-topo" onClick={() => setPaleta(true)} aria-label="Abrir paleta de comandos"><Icone nome="busca" tamanho={16} /><span>Buscar tela…</span><kbd>Ctrl K</kbd></button>
+      <header className="topo topo-premium">
+        <button type="button" className="sec menu-movel-acionar" onClick={() => setMenuMovel((v) => !v)}
+          aria-label={menuMovel ? "Fechar navegação" : "Abrir navegação"} aria-controls="menu-principal" aria-expanded={menuMovel}>
+          <Icone nome={menuMovel ? "fechar" : "menu"} tamanho={20} />
+        </button>
+        <div className="marca"><LogoConecta tamanho={40} /><div className="marca-identidade">Conecta<span>.IA</span><small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
+        <span className="topo-selo" aria-label="Ambiente administrativo">WORKSPACE <b>ADMIN</b></span>
+        <button className="busca-topo" onClick={() => setPaleta(true)} aria-label="Abrir paleta de comandos"><Icone nome="busca" tamanho={16} /><span>Buscar módulos e ações…</span><kbd>Ctrl K</kbd></button>
+        {!!loja && <a className="topo-atalho-nano" href={`#${ROTA_NANO}`}><Icone nome="agentes" tamanho={17} /><span>Nano.IA</span></a>}
         {!!loja && !demoAtivo && !paginaDeChat && <button className="sec agente-botao" onClick={() => setAgente((a) => !a)} aria-pressed={agente} aria-label="Agente lateral (Ctrl J)"><Icone nome="agentes" tamanho={16} /><span>Agente</span></button>}
         <SeletorTema />
-        <button className="sec" onClick={() => void supabase.auth.signOut()} disabled={demoAtivo}>Sair</button>
+        <button className="sec topo-sair" onClick={() => void supabase.auth.signOut()} disabled={demoAtivo}>Sair</button>
       </header>
       <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
-      <div className={`layout ${larga ? "layout--larga" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""}`} style={{ "--res-esq": `${res.esq}px`, "--res-dir": `${res.dir}px` } as React.CSSProperties}>
-      <nav className="menu" aria-label="Menu principal">
+      <div className={`layout layout-premium ${larga ? "layout--larga" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""} ${menuMovel ? "layout--menu-movel-aberto" : ""}`} style={{ "--res-esq": `${res.esq}px`, "--res-dir": `${res.dir}px` } as React.CSSProperties}>
+      {menuMovel && <button type="button" className="menu-escurecedor" aria-label="Fechar menu de navegação" onClick={() => setMenuMovel(false)} />}
+      <nav id="menu-principal" className="menu menu-premium" aria-label="Menu principal">
+        <div className="menu-destaque">
+          <span className="menu-destaque-legenda">ASSISTENTE OPERACIONAL</span>
+          <a href={`#${ROTA_NANO}`} className="menu-nano-iniciar" onClick={() => setMenuMovel(false)}><Icone nome="agentes" tamanho={20} /><span>Conversar com Nano.IA</span></a>
+          <small>Consulta e propostas com aprovação humana</small>
+        </div>
         {agruparMenu(MENU).map((g) => (
           <div key={g.id} className="menu-grupo" role="group" aria-label={g.titulo}>
             <span className="menu-titulo"><Icone nome={g.id} tamanho={16} /><b>{g.titulo}</b></span>
             {g.itens.map(([c, t]) => (
-              <a key={c} href={`#${c}`} title={t} className={caminho === c ? "ativo" : ""} aria-current={caminho === c ? "page" : undefined}><span>{t}</span></a>
+              <a key={c} href={`#${c}`} title={t} className={caminho === c ? "ativo" : ""} aria-current={caminho === c ? "page" : undefined} onClick={() => setMenuMovel(false)}><Icone nome={ICONES_ROTAS[c] ?? g.id} tamanho={18} /><span>{t}</span></a>
             ))}
           </div>
         ))}
+        <button className="sec menu-sair" disabled={demoAtivo} onClick={() => void supabase.auth.signOut()}><Icone nome="fechar" tamanho={18} /><span>Sair da conta</span></button>
         <button className="sec menu-recolher" onClick={alternarMenu} aria-pressed={recolhido} aria-label={recolhido ? "Expandir menu" : "Recolher menu"}><Icone nome="recolher" tamanho={16} /></button>
       </nav>
       <main>
