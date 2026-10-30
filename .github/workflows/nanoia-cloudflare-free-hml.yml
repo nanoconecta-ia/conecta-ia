@@ -1,0 +1,142 @@
+name: NanoIA - homologacao Cloudflare Free (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: "SHA completo (40 digitos) do PR #153, com 9 checks verdes"
+        required: true
+        type: string
+      confirmar_plano_free:
+        description: "Confirmar teste somente Free, sem contratar ou ativar Paid"
+        required: true
+        type: choice
+        default: NAO
+        options: [NAO, SIM]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: nanoia-cloudflare-free-hml
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    if: ${{ github.repository == 'nanoconecta-ia/conecta-ia' && inputs.confirmar_plano_free == 'SIM' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: experiments/nanoia-codemode
+    env:
+      TARGET_SHA: ${{ inputs.revision }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Exigir SHA exato do PR #153
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TARGET_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          test "$(git ls-remote origin refs/heads/feat/gpt-workspace-core-20261030 | cut -f1)" = "$TARGET_SHA"
+      - name: Exigir nove workflows aprovados antes da nuvem
+        run: node staging/validar-revisao.mjs
+      - name: Recusar ambiente inexistente ou sem revisor obrigatorio
+        run: node staging/verificar-ambiente-free.mjs
+      - name: Instalar dependencias fixadas sem scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Confirmar que o pai nao usa Dynamic Worker nem execucao arbitraria
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e "const c=JSON.parse(require('node:fs').readFileSync('staging/wrangler-free-parent.jsonc','utf8')); if(c.worker_loaders||c.vars.PILOT_ENABLED!=='false'||c.workers_dev!==false)process.exit(1)"
+          ! grep -Eq '^import .*@cloudflare/codemode|new Function|eval[(]' staging/free-parent.ts
+          node --test test/bridge-auth.test.mjs
+          node test/free-parent-smoke.mjs
+      - name: Preparar nomes unicos e compilar no dry-run
+        shell: bash
+        run: |
+          set -euo pipefail
+          id="$GITHUB_RUN_ID"
+          trap 'rm -f "staging/.run-${id}-host.jsonc" "staging/.run-${id}-pai.jsonc"' EXIT
+          node staging/preparar-plano-free.mjs "$id"
+          npx wrangler deploy -c "staging/.run-${id}-host.jsonc" --dry-run
+          npx wrangler deploy -c "staging/.run-${id}-pai.jsonc" --dry-run
+
+  free-staging:
+    needs: preflight
+    environment:
+      name: cloudflare-homologacao-free
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: experiments/nanoia-codemode
+    env:
+      TARGET_SHA: ${{ inputs.revision }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_WORKERS_SUBDOMAIN: ${{ vars.CLOUDFLARE_WORKERS_SUBDOMAIN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Conferir conta autorizada e impedir deploy sem ambiente
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          test "$CLOUDFLARE_ACCOUNT_ID" = "76ead64847b165d46877d94720d5b0ff"
+          test -n "$CLOUDFLARE_API_TOKEN"
+          [[ "$CLOUDFLARE_WORKERS_SUBDOMAIN" =~ ^[a-z0-9-]{3,63}$ ]]
+      - name: Instalar sem scripts externos
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Gerar configs Free e tokens descartaveis
+        shell: bash
+        run: |
+          set -euo pipefail
+          node staging/preparar-plano-free.mjs "$GITHUB_RUN_ID"
+          node staging/gerar-segredos.mjs "$GITHUB_RUN_ID"
+          node -e "const fs=require('node:fs');const id=process.env.GITHUB_RUN_ID;const c=JSON.parse(fs.readFileSync('staging/.run-'+id+'-pai.jsonc','utf8'));if(c.worker_loaders||!c.workers_dev||c.services?.length!==1||c.vars.PILOT_ENABLED!=='true')process.exit(1)"
+      - name: Implantar host HMAC/SQLite (privado)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler deploy -c "staging/.run-${GITHUB_RUN_ID}-host.jsonc" \
+            --secrets-file "staging/.run-${GITHUB_RUN_ID}-host-secrets.json"
+      - name: Implantar apenas Worker Free com MCP fixo
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler deploy -c "staging/.run-${GITHUB_RUN_ID}-pai.jsonc" \
+            --secrets-file "staging/.run-${GITHUB_RUN_ID}-pai-secrets.json"
+      - name: Testar hospedagem real com lojas ficticias
+        shell: bash
+        run: |
+          set -euo pipefail
+          export NANOIA_HML_URL="https://nanoia-hml-free-pai-${GITHUB_RUN_ID}.${CLOUDFLARE_WORKERS_SUBDOMAIN}.workers.dev/mcp"
+          node staging/teste-hospedado-free.mjs
+      - name: Excluir somente Workers deste teste, inclusive se houve falha
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          for tipo in pai host; do
+            conf="staging/.run-${GITHUB_RUN_ID}-${tipo}.jsonc"
+            if test -f "$conf" && test -n "$CLOUDFLARE_API_TOKEN" && test "$CLOUDFLARE_ACCOUNT_ID" = "76ead64847b165d46877d94720d5b0ff"; then
+              printf 'y\n' | timeout 70s npx wrangler delete -c "$conf" ||
+                echo "AVISO: confira exclusao manual do Worker Free efemero: $tipo"
+            fi
+          done
+          rm -f "staging/.run-${GITHUB_RUN_ID}-"* 2>/dev/null
+          echo "Verificar no painel que nenhum recurso residual ficou ativo."
