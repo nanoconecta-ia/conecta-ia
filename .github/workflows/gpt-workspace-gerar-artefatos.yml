@@ -1,0 +1,64 @@
+name: GPT Workspace - regenerar artefatos na branch (sem deploy)
+on:
+  push:
+    branches:
+      - feat/gpt-workspace-core-20261030
+    paths:
+      - 'scripts/gerar-autocontido.mjs'
+      - 'supabase/functions/**'
+      - 'experiments/nanoia-codemode/**'
+      - '.github/workflows/gpt-workspace-gerar-artefatos.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: gerar-gpt-workspace-branch
+  cancel-in-progress: false
+jobs:
+  gerar:
+    if: github.repository == 'nanoconecta-ia/conecta-ia' && github.ref == 'refs/heads/feat/gpt-workspace-core-20261030' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/gpt-workspace-core-20261030
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Gerar artefatos com o gerador oficial do projeto
+        run: |
+          node --experimental-vm-modules scripts/gerar-autocontido.mjs
+          node --experimental-vm-modules scripts/gerar-autocontido.mjs --funcao bling-sync
+          node --experimental-vm-modules scripts/gerar-autocontido.mjs --check
+          node --experimental-vm-modules scripts/gerar-autocontido.mjs --funcao bling-sync --check
+      - name: Gerar lockfile do piloto Code Mode, sem scripts externos
+        working-directory: experiments/nanoia-codemode
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Conferir escopo dos arquivos gerados antes de qualquer commit
+        run: |
+          set -euo pipefail
+          git add -- artifacts/assistente/index.ts artifacts/assistente/manifesto.json
+          git add -- artifacts/bling-sync/index.ts artifacts/bling-sync/manifesto.json
+          git add -- experiments/nanoia-codemode/package-lock.json
+          git diff --cached --name-only | while IFS= read -r p; do
+            case "$p" in
+              artifacts/assistente/index.ts|artifacts/assistente/manifesto.json|artifacts/bling-sync/index.ts|artifacts/bling-sync/manifesto.json|experiments/nanoia-codemode/package-lock.json) ;;
+              *) echo "Arquivo inesperado: $p"; exit 1;;
+            esac
+          done
+      - name: Commitar somente artefatos derivados na branch
+        env:
+          GH_ACTOR: github-actions[bot]
+        run: |
+          set -euo pipefail
+          if git diff --cached --quiet; then
+            echo "Nenhum artefato a atualizar."
+            exit 0
+          fi
+          git config user.name "$GH_ACTOR"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build(gpt-workspace): atualizar artefatos derivados e lockfile [skip ci]"
+          git push origin HEAD:refs/heads/feat/gpt-workspace-core-20261030
