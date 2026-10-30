@@ -12,7 +12,7 @@ const port=8891, root="http://127.0.0.1:"+port;
 const run=spawn("./node_modules/.bin/wrangler",[
   "dev", "-c", "staging/wrangler-host.jsonc", "--local", "--ip", "127.0.0.1",
   "--port", String(port), "--show-interactive-dev-session=false",
-  "--var", "STAGING_HMAC_A:"+secretA,"--var", "STAGING_HMAC_B:"+secretB
+  "--var", "STAGING_HMAC_A:"+secretA,"--var", "STAGING_HMAC_B:"+secretB,"--var", "DEBUG_FIXTURE:true"
 ],{stdio:["ignore","pipe","pipe"],env:{...process.env,CI:"true",WRANGLER_SEND_METRICS:"false"}});
 let logs="";
 for(const st of [run.stdout,run.stderr])st.on("data",v=>{logs=(logs+v.toString()).slice(-12000);});
