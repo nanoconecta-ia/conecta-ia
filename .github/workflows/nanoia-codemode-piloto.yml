@@ -28,3 +28,21 @@ jobs:
           set -euo pipefail
           ! rg -n 'SUPABASE_SERVICE_ROLE_KEY|BLING_CLIENT_SECRET|process\.env|from ["\x27].*supabase|bling_armazem|\beval\(|\bnew Function\(' experiments/nanoia-codemode/src
       # Sem deploy, sem chaves, sem acesso a banco. Build Wrangler sob teste separado.
+
+  worker-build-sem-deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: experiments/nanoia-codemode
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - name: Instalar dependências fixadas sem scripts de instalação
+        run: npm install --no-package-lock --ignore-scripts --no-audit --no-fund
+      - name: Compilar Worker Loader - proibido publicar
+        run: npx wrangler deploy --dry-run --outdir /tmp/nanoia-codemode-preview
+      - name: Confirmar pacote local
+        run: test -s /tmp/nanoia-codemode-preview/index.js
