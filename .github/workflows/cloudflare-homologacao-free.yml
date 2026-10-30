@@ -1,7 +1,11 @@
 name: Cloudflare Free - homologação isolada
 
-# Sem push, cron ou gatilho por PR: nunca publicar automaticamente.
+# Sem push ou cron. PR roda APENAS testes; deploy exige dispatch manual + aprovação.
 on:
+  pull_request:
+    paths:
+      - 'painel/**'
+      - '.github/workflows/cloudflare-homologacao-free.yml'
   workflow_dispatch:
 
 permissions:
@@ -52,7 +56,7 @@ jobs:
 
   publicar-homologacao:
     needs: validar
-    if: github.repository == 'nanoconecta-ia/conecta-ia' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'nanoconecta-ia/conecta-ia' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: cloudflare-homologacao-free
