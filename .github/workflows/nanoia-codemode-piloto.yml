@@ -87,3 +87,23 @@ jobs:
         run: node --experimental-strip-types test/bridge-runtime-smoke.mjs
       - name: Verificar contratos de autenticação e destinos permitidos
         run: node --test test/bridge-auth.test.mjs
+
+  host-staging-durable-objects:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: experiments/nanoia-codemode
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - name: Instalar dependências fixadas
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compilar host e pai de homologação sem publicar
+        run: |
+          npx wrangler deploy -c staging/wrangler-host.jsonc --dry-run --outdir /tmp/nanoia-hml-host
+          npx wrangler deploy -c staging/wrangler-parent.jsonc --dry-run --outdir /tmp/nanoia-hml-parent
+      - name: Testar Durable Object SQLite real com HMAC, replay, auditoria e rate-limit
+        run: node --experimental-strip-types test/staging-host-do-smoke.mjs
