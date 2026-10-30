@@ -91,7 +91,8 @@ export function criarClienteBridge({ url, keyId, secret, local = false, fetchFn 
         method: "POST",
         headers: { "content-type": "application/json", ...assinado },
         body: corpo,
-        redirect: "error",
+        // Workers não implementa redirect:error; manual evita seguir 3xx, verificação abaixo.
+        redirect: "manual",
         signal: AbortSignal.timeout(8_000),
       });
     } catch (e) {
