@@ -2,6 +2,20 @@
 
 **Situação:** implementação de laboratório na branch do PR #153, sem merge, sem publicação Cloudflare/Supabase, sem credenciais comerciais ou dados da Mobis. A execução por GitHub Actions é **local/descartável**, não homologação hospedada.
 
+## Correção de transporte identificada no CI (30/10/2026)
+
+O teste inicial de transporte no `wrangler dev --local` para `http://127.0.0.1:8799` falhou com `host_indisponivel` (não é comprovação de falha HMAC). A correção de arquitetura implementa **Cloudflare Service Bindings privados** em vez de depender de saída `fetch()` para um host loopback.
+
+- `PILOT_BRIDGE_TRANSPORT=service` seleciona `env.PILOT_HOST_SERVICE.fetch()` no **Worker pai**. Ausência de binding falha fechada; não existe fallback para `fetch` externo nesse modo.
+- `wrangler.jsonc` define o binding `PILOT_HOST_SERVICE` para o worker `nanoia-codemode-host-fixture-nao-publicar`. Nenhum endereço público é necessário para o serviço interno.
+- `test/bridge-host-worker.ts` executa apenas um host sintético com chaves de teste, a política real via `criarAdaptadorCodeModeLeitura` e `despachar()`, e revogação simulada após duas consultas da loja A.
+- `test/bridge-runtime-smoke.mjs` executa `wrangler dev -c wrangler.jsonc -c test/host-generated.wrangler.json`, com a configuração do segundo Worker e segredos HMAC randômicos gerados no runner e apagados ao terminar. Um host HTTP Node separado ainda testa assinatura, replay e revogação diretamente; ele **não recebe** as chamadas do Worker do service binding.
+- A opção com host HTTPS permanece como possibilidade futura do Worker pai, mas a arquitetura preferencial para o host de homologação **dentro da Cloudflare** é o Service Binding privado, combinado com HMAC e revalidação da identidade.
+
+**Atenção:** um Service Binding é uma capacidade interna de comunicação, não substitui autenticação da aplicação, isolamento entre lojas, rate limit, auditoria e storage compartilhado de nonces. Os testes locais com Map são prova de integração, **não prova de segurança multi-instância**.
+
+O novo CI ainda precisa confirmar que a integração multiconfig do Wrangler funciona na versão travada no projeto. **Não declarar homologado antes do log final de sucesso.**
+
 ## Componentes
 
 - `experiments/nanoia-codemode/src/bridge-auth.mjs` — contrato de assinatura e verificação HTTP `POST /v1/codemode/consulta`. A autenticação HMAC-SHA256 vincula método, caminho, timestamp, nonce, identificador de chave e SHA-256 dos bytes exatos do corpo.
