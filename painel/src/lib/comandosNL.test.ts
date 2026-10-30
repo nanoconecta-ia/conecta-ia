@@ -36,3 +36,9 @@ test("avaliar layout e ajuda são reconhecidos", () => {
   for (const t of ["o que você sabe fazer?", "quais são as funcionalidades", "ajuda"]) assert.equal(interpretar(t, MENU).tipo, "ajuda", t);
   assert.match(textoAjuda(MENU), /Catálogo.*Fila de aprovação/); assert.match(textoAjuda(MENU), /sem enviar nada a um provedor de IA/);
 });
+
+test("pedido para Nano.IA consultar produtos com ferramentas não vira ajuda local", () => {
+  const pedido = "Nano.IA, consulte no Bling os produtos CI000016 e CI000054. Pesquise códigos OEM e imagens reais. Informe quais ferramentas executou e os resultados obtidos.";
+  assert.equal(interpretar(pedido, MENU).tipo, "nenhum");
+  assert.deepEqual(rotas(interpretar("abre catálogo e bling", MENU)), ["/catalogo", "/bling"]);
+});
