@@ -69,3 +69,21 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Testar protocolo e chamadas Code Mode locais somente com fixtures
         run: node test/mcp-runtime-smoke.mjs
+
+  worker-bridge-hmac-local:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: experiments/nanoia-codemode
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - name: Instalar dependências do laboratório (sem chaves de produção)
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Testar duas instâncias locais e transporte HMAC com credenciais efêmeras
+        run: node --experimental-strip-types test/bridge-runtime-smoke.mjs
+      - name: Verificar contratos de autenticação e destinos permitidos
+        run: node --test test/bridge-auth.test.mjs
