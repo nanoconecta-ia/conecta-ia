@@ -214,7 +214,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
 
   return (
     <div className="abas-caixa" ref={caixa}>
-    <div className="cartao chat-tela abas" style={{ minHeight: "min(90dvh, 1100px)", height: "calc(100dvh - 110px)", maxHeight: "none" }} data-esq={esq ? "aberto" : "fechado"} data-dir={dir ? "aberto" : "fechado"}>
+    <div className="cartao chat-tela abas" style={{ minHeight: 0, height: "calc(100dvh - 170px)", maxHeight: "calc(100dvh - 170px)", overflow: "hidden" }} data-esq={esq ? "aberto" : "fechado"} data-dir={dir ? "aberto" : "fechado"}>
       {(esq || dir) && <button type="button" className="abas-fundo" aria-label="Fechar painel lateral" onClick={() => { setEsq(false); setDir(false); }} />}
       <aside className="aba aba-esq" id="aba-conversas" aria-label="Conversas">
         <div className="aba-topo"><strong>Conversas</strong><button type="button" className="sec mini" onClick={() => setEsq(false)} aria-label="Recolher conversas">Recolher</button></div>
