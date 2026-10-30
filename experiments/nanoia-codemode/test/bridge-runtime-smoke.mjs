@@ -8,7 +8,7 @@ import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { writeFileSync, rmSync } from "node:fs";
 import { assinarBridge, BRIDGE_PATH } from "../src/bridge-auth.mjs";
-const PORT = 8797, HOST = "http://127.0.0.1:8799", URL = `http://127.0.0.1:${PORT}/mcp`;
+const PORT = 8797, HOST_WORKER_PORT = 8798, HOST = "http://127.0.0.1:8799", URL = `http://127.0.0.1:${PORT}/mcp`;
 const HOST_CONFIG = "test/host-generated.wrangler.json";
 const SERVICE_HOST = "https://nanoia-bridge.internal" + BRIDGE_PATH;
 const A = "laboratorio_A_token_sintetico_20261030", B = "laboratorio_B_token_sintetico_20261030";
@@ -22,7 +22,7 @@ function iniciar(cmd, args, env) {
 }
 const host = iniciar(process.execPath, ["--experimental-strip-types", "test/bridge-host-fixture.mjs"],
   { TEST_HMAC_A: sA, TEST_HMAC_B: sB, TEST_CONTROL: control });
-let worker;
+let worker, hostWorker;
 const sessao = new Map();
 const protocolo = { "content-type": "application/json", accept: "application/json, text/event-stream" };
 async function aguardar(path, check, proc) {
@@ -77,7 +77,16 @@ try {
     workers_dev: false,
     vars: { TEST_HMAC_A: sA, TEST_HMAC_B: sB },
   }));
-  worker = iniciar("./node_modules/.bin/wrangler", ["dev", "-c", "wrangler.jsonc", "-c", HOST_CONFIG, "--local", "--ip", "127.0.0.1", "--port", String(PORT),
+  // Multi-config em uma chamada Wrangler 4.156.0 montava o binding como
+  // [not connected] no runner CI. Iniciar o host ANTES e em outro processo
+  // é o fluxo documentado para descoberta local entre dois Workers.
+  hostWorker = iniciar("./node_modules/.bin/wrangler", [
+    "dev", "-c", HOST_CONFIG, "--local", "--ip", "127.0.0.1",
+    "--port", String(HOST_WORKER_PORT), "--show-interactive-dev-session=false",
+  ], { WRANGLER_SEND_METRICS: "false", CI: "true" });
+  await aguardar("http://127.0.0.1:" + HOST_WORKER_PORT + "/test/health",
+    (r) => r.status === 404 && (r.headers.get("content-type") ?? "").includes("application/json"), hostWorker.proc);
+  worker = iniciar("./node_modules/.bin/wrangler", ["dev", "-c", "wrangler.jsonc", "--local", "--ip", "127.0.0.1", "--port", String(PORT),
     "--var", "PILOT_ENABLED:true",
     "--var", `PILOT_TOKEN_A:${A}`, "--var", `PILOT_TOKEN_B:${B}`,
     "--var", "PILOT_BRIDGE_ENABLED:true",
@@ -143,6 +152,7 @@ try {
 } catch (err) {
   console.error("FALHA: canal HMAC de homologação:",String(err));
   console.error("HOST (sem credenciais):",host.logs().slice(-1200));
+  if(hostWorker) console.error("WORKER HOST (sem chaves):",hostWorker.logs().replaceAll(sA,"[redigido]").replaceAll(sB,"[redigido]").slice(-1500));
   if(worker) {
     // Diagnóstico NÃO sensível: nomes de bindings, estado de conexão e classe do erro.
     // Saída completa não é publicada, pois o Wrangler pode exibir vars locais.
@@ -153,6 +163,6 @@ try {
   }
   process.exitCode = 1;
 } finally {
-  for (const p of [worker?.proc,host.proc]) if (p) p.kill("SIGTERM");
+  for (const p of [worker?.proc,hostWorker?.proc,host.proc]) if (p) p.kill("SIGTERM");
   try { rmSync(HOST_CONFIG, { force: true }); } catch { /* fixture efêmera */ }
 }
