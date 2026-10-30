@@ -181,12 +181,24 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     } catch (e) { if (lojaAtual.current === lojaDoEnvio) setErroHistorico(String(e)); }
     finally { if (lojaAtual.current === lojaDoEnvio) setOcupado(false); }
   }
+  async function reconhecerCodigoImagem(arquivo: File): Promise<string | null> {
+    type Detector = { detect: (imagem: ImageBitmap) => Promise<Array<{ rawValue?: string }>> };
+    const api = window as Window & { BarcodeDetector?: new (opcoes: { formats: string[] }) => Detector };
+    if (!api.BarcodeDetector || !arquivo.type.startsWith("image/")) return null;
+    let imagem: ImageBitmap | null = null;
+    try {
+      imagem = await createImageBitmap(arquivo);
+      const detector = new api.BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "qr_code", "code_128", "itf"] });
+      return (await detector.detect(imagem)).find(item => item.rawValue?.trim())?.rawValue?.trim() ?? null;
+    } catch { return null; }
+    finally { imagem?.close(); }
+  }
   async function escolherArquivos(lista: FileList | null) {
     const arquivos = Array.from(lista ?? []); if (entradaArquivo.current) entradaArquivo.current.value = "";
     setErroAnexo(""); const pdfOk = provedor !== "compativel_openai"; let atual = [...anexos];
     for (const f of arquivos) {
       const erro = validarSelecao(f, atual, pdfOk); if (erro) { setErroAnexo(erro); break; }
-      try { const a = await prepararArquivo(f); const e2 = validarSelecao({ name: a.nome, type: a.tipo, size: a.bytes }, atual, pdfOk); if (e2) { setErroAnexo(e2); break; } atual = [...atual, a]; }
+      try { const codigo = await reconhecerCodigoImagem(f); if (codigo) setTexto(t => (t.trim() + "\nCódigo capturado: " + codigo + ". Identifique produto, SKU, OEM e aplicação sem criar duplicata.").trim().slice(0, 1000)); const a = await prepararArquivo(f); const e2 = validarSelecao({ name: a.nome, type: a.tipo, size: a.bytes }, atual, pdfOk); if (e2) { setErroAnexo(e2); break; } atual = [...atual, a]; }
       catch { setErroAnexo(`Não consegui ler "${f.name}".`); break; }
     }
     setAnexos(atual);
