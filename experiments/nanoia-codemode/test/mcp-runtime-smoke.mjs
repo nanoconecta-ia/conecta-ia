@@ -84,9 +84,15 @@ try {
   assert.match(b, /"produtos"\\?:?\s*1|produtos.{0,10}1/, `tenant B difere: ${b.slice(0,600)}`);
   const cross = await codigo(B, "async () => { return await codemode.catalogo_listar({ busca: 'TEST-A', limite: 10 }); }");
   assert.match(cross, /\[\]|itens.{0,8}\[\]/, `loja B vazou itens da A: ${cross.slice(0,600)}`);
+  // O token da loja B não autoriza um SKU da loja A, mesmo adivinhando seu identificador.
+  const cruzado = await codigo(B, "async () => { try { await codemode.catalogo_ver({ sku: 'TEST-A-001' }); return { isolado: false }; } catch(e) { return { isolado: String(e).includes('produto_nao_encontrado') }; } }");
+  assert.match(cruzado, /isolado.{0,12}true/, `acesso cruzado não foi bloqueado: ${cruzado.slice(0,600)}`);
+  // Budget é validado pelo handler, inclusive quando 13 chamadas estão dentro de UMA execução code.
+  const budget = await codigo(A, "async () => { let bloqueio = false; for(let i=0;i<13;i++) { try { await codemode.catalogo_resumo({}); } catch(e) { bloqueio = String(e).includes('limite_de_chamadas'); break; } } return { bloqueio }; }");
+  assert.match(budget, /bloqueio.{0,12}true/, `13a chamada não foi bloqueada: ${budget.slice(0,600)}`);
   const egress = await codigo(A, "async () => { try { const r = await fetch('https://example.invalid'); return { egress_bloqueado: false, http: r.status }; } catch(e) { return { egress_bloqueado: true, erro: String(e).slice(0,100) }; } }");
   assert.match(egress, /egress_bloqueado.{0,12}true/, `fetch não foi bloqueado: ${egress.slice(0,600)}`);
-  console.log("PASS: auth, origin, initialize, tools/list, code A/B, isolamento e egress (Miniflare).");
+  console.log("PASS: auth, origin, initialize, tools/list, Code Mode A/B, acesso cruzado, orçamento de 12, egress local.");
 } catch (e) {
   console.error("FALHA - MCP runtime sintético:", String(e), "\nLogs Wrangler:\n", logs);
   process.exitCode = 1;
