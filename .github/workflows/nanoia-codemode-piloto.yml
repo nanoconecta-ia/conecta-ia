@@ -1,0 +1,30 @@
+name: NanoIA Code Mode - piloto isolado
+on:
+  pull_request:
+    paths:
+      - 'experiments/nanoia-codemode/**'
+      - '.github/workflows/nanoia-codemode-piloto.yml'
+permissions:
+  contents: read
+concurrency:
+  group: nanoia-codemode-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  fixtures-e-seguranca:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - run: node --test test/*.test.mjs
+        working-directory: experiments/nanoia-codemode
+      - run: node benchmark.mjs
+        working-directory: experiments/nanoia-codemode
+      - name: Bloquear imports e segredos de produção no piloto
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! rg -n 'SUPABASE_SERVICE_ROLE_KEY|BLING_CLIENT_SECRET|process\.env|from ["\x27].*supabase|bling_armazem|\beval\(|\bnew Function\(' experiments/nanoia-codemode/src
+      # Sem deploy, sem chaves, sem acesso a banco. Build Wrangler sob teste separado.
