@@ -30,7 +30,7 @@ export interface PortasChat {
   adaptadorStream?(p: ProvedorId): ((c: Chamada, m: Mensagem[], aoTexto: (d: string) => void, s?: AbortSignal) => Promise<Passo>) | undefined;
   fetch?: typeof fetch;
 }
-export interface PedidoTurno { texto: string; conversaId?: string; provedor?: ProvedorId; modelo?: string; fallback?: boolean }
+export interface PedidoTurno { texto: string; conversaId?: string; provedor?: ProvedorId; modelo?: string; fallback?: boolean; contextoOperacional?: boolean }
 
 const MAX_TEXTO = 4000, MAX_HISTORICO = 20;
 const FALHAS_QUE_PERMITEM_FALLBACK = new Set([401, 429, 502, 504]);
@@ -67,7 +67,8 @@ export async function executarTurno(pedido: PedidoTurno, portas: PortasChat, emi
     const desejado = pedido.provedor ?? (conv?.provedor as ProvedorId | null) ?? undefined;
     const escolhido = desejado ? ativos.find((p) => p.provedor === desejado) : ativos[0];
     if (!escolhido) { e("erro", { mensagem: `O provedor escolhido não tem chave ativa. Ativos: ${ativos.map((p) => p.provedor).join(", ")}.` }); estado("erro"); return; }
-    const candidatos = [escolhido, ...(pedido.fallback === false ? [] : ativos.filter((p) => p !== escolhido))];
+    // Enviar a conversa para outro provedor exige opt-in expresso; nunca alternar silenciosamente.
+    const candidatos = [escolhido, ...(pedido.fallback === true ? ativos.filter((p) => p !== escolhido) : [])];
     const modeloPara = (p: ProvedorAtivo) => (p === escolhido && pedido.modelo) || p.modelo;
 
     // histórico ANTES de gravar a mensagem nova; memória da conversa = só texto de usuário/assistente (o resto fica no log de ferramentas)
@@ -79,7 +80,13 @@ export async function executarTurno(pedido: PedidoTurno, portas: PortasChat, emi
     }
     await portas.gravarMensagem(conversaId, "user", texto);
 
-    const [prompt, op, conhecimento] = await Promise.all([portas.promptAtivo().catch(() => ({ texto: PROMPT_PADRAO, versao: null })), portas.estadoOperacional().catch(() => ({ tarefas: [], propostas: [] })), portas.conhecimento(texto).catch(() => [])]);
+    // Contexto de outras tarefas e conhecimento da loja só é enviado com opt-in do usuário neste turno.
+    const contextoAutorizado = pedido.contextoOperacional === true;
+    const [prompt, op, conhecimento] = await Promise.all([
+      portas.promptAtivo().catch(() => ({ texto: PROMPT_PADRAO, versao: null })),
+      contextoAutorizado ? portas.estadoOperacional().catch(() => ({ tarefas: [], propostas: [] })) : Promise.resolve({ tarefas: [], propostas: [] }),
+      contextoAutorizado ? portas.conhecimento(texto).catch(() => []) : Promise.resolve([]),
+    ]);
     const sistema = montarSistema({ prompt, loja: portas.nomeLoja(), tarefas: op.tarefas, propostas: op.propostas, conhecimento });
     const ctx = await portas.contexto(conversaId);
     const mensagens: Mensagem[] = [];
@@ -88,7 +95,7 @@ export async function executarTurno(pedido: PedidoTurno, portas: PortasChat, emi
       mensagens.push(m);
     }
 
-    let propostaCriada = false, bloqueado = false, chamadas = 0;
+    let propostaCriada = false, bloqueado = false, chamadas = 0, textoTransmitido = false;
     const executar = async (nome: string, entrada: unknown) => {
       const id = idDoNomeLlm(nome), n = String(++chamadas), def = buscarDefinicao(id);
       e("ferramenta_inicio", { id: n, nome: id, risco: def?.risco ?? "LOW" });
@@ -111,8 +118,9 @@ export async function executarTurno(pedido: PedidoTurno, portas: PortasChat, emi
         if (i > 0) e("aviso", { mensagem: "O provedor anterior falhou; respondendo com outro provedor ativo.", provedor: p.provedor });
         const r = await conversar({
           provedor: p.provedor, baseUrl: p.baseUrl, chave: p.chave, modelo: modeloPara(p), sistema, mensagens, ferramentas: ferramentasParaLlm("chat"), executar,
-          aoTexto: (delta) => e("texto", { delta }), sinal, fetch: portas.fetch, maxTokens: 2048, adaptadorStream: portas.adaptadorStream?.(p.provedor),
+          aoTexto: (delta) => { if (delta) textoTransmitido = true; e("texto", { delta }); }, sinal, fetch: portas.fetch, maxTokens: 2048, adaptadorStream: portas.adaptadorStream?.(p.provedor),
         });
+        if (!r.completa) throw new IaErro(502, "O provedor não concluiu a resposta. Nenhuma operação deve ser tratada como confirmada sem consultar a auditoria.");
         const final = r.texto || "Não encontrei uma resposta. Pode reformular?";
         await portas.gravarMensagem(conversaId, "assistant", final, { provedor: p.provedor, modelo: modeloPara(p), tokens: r.tokens, promptVersao: prompt.versao });
         await portas.registrarUso(p.provedor, r.tokens).catch(() => {});
@@ -122,7 +130,8 @@ export async function executarTurno(pedido: PedidoTurno, portas: PortasChat, emi
       } catch (err) {
         if (err instanceof IaErro && err.status === 499) throw err;
         ultimoErro = err;
-        if (!(err instanceof IaErro && FALHAS_QUE_PERMITEM_FALLBACK.has(err.status))) break;
+        // Depois de streaming ou ferramenta não é seguro misturar modelos nem repetir ações.
+        if (textoTransmitido || chamadas > 0 || !(err instanceof IaErro && FALHAS_QUE_PERMITEM_FALLBACK.has(err.status))) break;
       }
     }
     throw ultimoErro ?? new IaErro(502, "Nenhum provedor respondeu.");

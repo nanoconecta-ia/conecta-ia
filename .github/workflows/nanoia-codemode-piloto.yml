@@ -1,0 +1,150 @@
+name: NanoIA Code Mode - piloto isolado
+on:
+  pull_request:
+    paths:
+      - 'experiments/nanoia-codemode/**'
+      - '.github/workflows/nanoia-codemode-piloto.yml'
+permissions:
+  contents: read
+concurrency:
+  group: nanoia-codemode-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  fixtures-e-seguranca:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - run: node --test test/*.test.mjs
+        working-directory: experiments/nanoia-codemode
+      - run: node benchmark.mjs
+        working-directory: experiments/nanoia-codemode
+      - name: Bloquear imports e segredos de produção no piloto
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          grep -R -n -E 'SUPABASE_SERVICE_ROLE_KEY|BLING_CLIENT_SECRET|process[.]env|bling_armazem|eval[(]|new Function[(]' experiments/nanoia-codemode/src
+          status=$?
+          set -e
+          if [ "$status" -ne 1 ]; then
+            echo "Encontrado uso proibido ou falha na inspeção (status $status)"
+            exit 1
+          fi
+      # Sem deploy, sem chaves, sem acesso a banco. Build Wrangler sob teste separado.
+
+  worker-build-sem-deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: experiments/nanoia-codemode
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - name: Instalar dependências fixadas sem scripts de instalação
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compilar Worker Loader - proibido publicar
+        run: npx wrangler deploy --dry-run --outdir /tmp/nanoia-codemode-preview
+      # O próprio --dry-run conclui com erro se o bundle for inválido; o arquivo
+      # gerado muda de nome entre versões do Wrangler. Não assumir index.js.
+
+  worker-mcp-local-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: experiments/nanoia-codemode
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - name: Instalar versões travadas
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Testar protocolo e chamadas Code Mode locais somente com fixtures
+        run: node test/mcp-runtime-smoke.mjs
+
+  worker-bridge-hmac-local:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: experiments/nanoia-codemode
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - name: Instalar dependências do laboratório (sem chaves de produção)
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Testar duas instâncias locais e transporte HMAC com credenciais efêmeras
+        run: node --experimental-strip-types test/bridge-runtime-smoke.mjs
+      - name: Verificar contratos de autenticação e destinos permitidos
+        run: node --test test/bridge-auth.test.mjs
+
+  host-staging-durable-objects:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: experiments/nanoia-codemode
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - name: Instalar dependências fixadas
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compilar host e pai de homologação sem publicar
+        run: |
+          npx wrangler deploy -c staging/wrangler-host.jsonc --dry-run --outdir /tmp/nanoia-hml-host
+          npx wrangler deploy -c staging/wrangler-parent.jsonc --dry-run --outdir /tmp/nanoia-hml-parent
+      - name: Validar arquivos efêmeros de release com dry-run, sem credenciais
+        shell: bash
+        run: |
+          set -euo pipefail
+          id="13000123456"
+          trap 'rm -f "staging/.run-${id}-host.jsonc" "staging/.run-${id}-pai.jsonc"' EXIT
+          node staging/preparar-plano.mjs "$id"
+          npx wrangler deploy -c "staging/.run-${id}-host.jsonc" --dry-run --outdir /tmp/nanoia-hml-unique-host
+          npx wrangler deploy -c "staging/.run-${id}-pai.jsonc" --dry-run --outdir /tmp/nanoia-hml-unique-pai
+      - name: Testar Durable Object SQLite real com HMAC, replay, auditoria e rate-limit
+        run: node --experimental-strip-types test/staging-host-do-smoke.mjs
+      - name: Testar MCP completo entre Worker pai e host Durable Object
+        run: node --experimental-strip-types test/staging-full-bridge-smoke.mjs
+
+  worker-free-homologacao-local:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: experiments/nanoia-codemode
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - name: Instalar dependencias travadas sem scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compilar Worker Free sem Dynamic Worker Loader e sem deploy
+        run: |
+          node -e "const c=JSON.parse(require('node:fs').readFileSync('./staging/wrangler-free-parent.jsonc','utf8')); if(c.worker_loaders || c.workers_dev!==false || c.vars.PILOT_ENABLED!=='false')process.exit(1)"
+          npx wrangler deploy -c staging/wrangler-free-parent.jsonc --dry-run --outdir /tmp/nanoia-worker-free-hml
+      - name: Compilar as configuracoes de deploy Workers Free por run ID, sem publicar
+        shell: bash
+        run: |
+          set -euo pipefail
+          id=13000987654
+          trap 'rm -f "staging/.run-${id}-host.jsonc" "staging/.run-${id}-pai.jsonc"' EXIT
+          node staging/preparar-plano-free.mjs "$id"
+          node -e "const fs=require('node:fs');const id='13000987654';const host=JSON.parse(fs.readFileSync('staging/.run-'+id+'-host.jsonc','utf8'));const pai=JSON.parse(fs.readFileSync('staging/.run-'+id+'-pai.jsonc','utf8'));if(host.workers_dev!==false||pai.workers_dev!==true||pai.worker_loaders||pai.services[0].service!==host.name||pai.vars.PILOT_ENABLED!=='true')process.exit(1)"
+          npx wrangler deploy -c "staging/.run-${id}-host.jsonc" --dry-run --outdir /tmp/nanoia-free-host-build
+          npx wrangler deploy -c "staging/.run-${id}-pai.jsonc" --dry-run --outdir /tmp/nanoia-free-pai-build
+      - name: Testar Worker MCP gratuito com host HMAC/SQLite e duas lojas sintéticas
+        run: node test/free-parent-smoke.mjs

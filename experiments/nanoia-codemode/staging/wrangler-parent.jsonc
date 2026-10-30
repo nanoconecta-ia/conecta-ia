@@ -1,0 +1,30 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "nanoia-codemode-hml-parent",
+  "main": "../src/server.ts",
+  "compatibility_date": "2026-10-30",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "vars": {
+    "PILOT_ENABLED": "true",
+    "PILOT_BRIDGE_ENABLED": "true",
+    "PILOT_BRIDGE_TRANSPORT": "service",
+    "PILOT_HOST_URL": "https://nanoia-bridge.internal/v1/codemode/consulta",
+    "PILOT_HOST_KEY_A": "hml-a",
+    "PILOT_HOST_KEY_B": "hml-b",
+    "PILOT_ALLOW_LOCAL_HOST": "false"
+  },
+  "worker_loaders": [
+    {
+      "binding": "LOADER"
+    }
+  ],
+  "services": [
+    {
+      "binding": "PILOT_HOST_SERVICE",
+      "service": "nanoia-codemode-hml-host"
+    }
+  ]
+}

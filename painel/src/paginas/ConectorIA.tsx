@@ -40,6 +40,7 @@ export function ConectorIA({ loja, query }: { loja: Loja; query: URLSearchParams
   const [ctxVisivel, setCtxVisivel] = useState(true);
   const [uso, setUso] = useState("");
   const [lerAlto, setLerAlto] = useState(lerPreferenciaFala);
+  const [contextoOperacional, setContextoOperacional] = useState(false); // opt-in por sessão, sem salvar preferência
   const abortar = useRef<AbortController | null>(null);
   const fim = useRef<HTMLDivElement>(null);
   const iaAtual = useRef<string | null>(null);
@@ -88,7 +89,7 @@ export function ConectorIA({ loja, query }: { loja: Loja; query: URLSearchParams
         }
         for (const f of arquivos) ids.push((await fonte.anexar(loja.id, conversaId, f)).id);
       }
-      await fonte.enviar({ loja_id: loja.id, conversa_id: conversaId, texto: msg, anexos: ids.length ? ids : undefined, provedor: provedor || undefined }, {
+      await fonte.enviar({ loja_id: loja.id, conversa_id: conversaId, texto: msg, anexos: ids.length ? ids : undefined, provedor: provedor || undefined, contexto_operacional: contextoOperacional }, {
         conversa: (d) => { setAtivaId(d.id); },
         estado: (e) => despachar({ tipo: "servidor", estado: e }),
         texto: (delta) => {
@@ -140,6 +141,10 @@ export function ConectorIA({ loja, query }: { loja: Loja; query: URLSearchParams
           <Esfera estado={estado} tamanho={48} />
           <div className="cab-texto"><h1>Nano.ia</h1><span className="estado" role="status" aria-live="polite">{ROTULO_ESTADO[estado]}</span></div>
           <div className="linha cab-acoes">
+            <label className="linha marcar-linha" title="Inclui tarefas, propostas e conhecimento técnico da loja no contexto enviado ao provedor selecionado; não inclui a memória privada do ChatGPT. O histórico da conversa continua armazenado no Conecta.IA.">
+              <input type="checkbox" checked={contextoOperacional} onChange={(e) => setContextoOperacional(e.target.checked)} aria-label="Autorizar contexto operacional para este chat" />
+              <span>Contexto técnico</span>
+            </label>
             {voz.suporteFala && <label className="linha marcar-linha"><input type="checkbox" checked={lerAlto} onChange={(e) => { setLerAlto(e.target.checked); gravarPreferenciaFala(e.target.checked); if (!e.target.checked) voz.calar(); }} /> <span>Ler respostas</span></label>}
             <button className="sec so-estreito" onClick={() => setDirAberta(true)}>Contexto</button>
             <button className="sec so-largo" aria-expanded={ctxVisivel} aria-label={ctxVisivel ? "Recolher painel de contexto" : "Mostrar painel de contexto"} onClick={() => setCtxVisivel((v) => !v)}>Contexto</button>

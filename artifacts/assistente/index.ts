@@ -3164,19 +3164,22 @@ async function despachar(id, entrada, c) {
     const gravou = await registrar(c, id, "permitida", falha ?? (ok ? pol.motivo : "retornou erro"), entrada, falha ? {
         erro: falha
     } : resultado, Date.now() - ini);
-    const auditoria_falhou = gravou ? undefined : true;
+    if (!gravou) return {
+        ok: false,
+        decisao: "permitida",
+        auditoria_falhou: true,
+        erro: "auditoria_nao_confirmada: o resultado pode ter produzido efeitos internos; verifique a operação antes de repetir."
+    };
     if (falha) return {
         ok: false,
         decisao: "permitida",
-        erro: falha,
-        auditoria_falhou
+        erro: falha
     };
     return {
         ok,
         decisao: "permitida",
         resultado,
-        erro: ok ? undefined : String(resultado.erro),
-        auditoria_falhou
+        erro: ok ? undefined : String(resultado.erro)
     };
 }
 function ferramentasParaLlm(origem, escopos = []) {

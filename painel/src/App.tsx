@@ -9,6 +9,7 @@ import { supabase } from "./supabase.ts";
 import { Entrar, Recuperar, Redefinir } from "./paginas/Acesso.tsx";
 import { EstudioAgente } from "./paginas/EstudioAgente.tsx";
 import { VisaoGeral } from "./paginas/VisaoGeral.tsx";
+import { GptWorkspace } from "./paginas/GptWorkspace.tsx";
 import { Banners } from "./paginas/Banners.tsx";
 import { Catalogo } from "./paginas/Catalogo.tsx";
 import { Bling } from "./paginas/Bling.tsx";
@@ -52,7 +53,7 @@ const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
 const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(window.location.hostname) ? window.location.hostname : null;
 
 const ICONES_ROTAS: Record<string, string> = {
-  "/": "inicio", "/conector": "agentes", "/central": "escudo", "/indicadores": "grafico",
+  "/": "inicio", "/gpt-workspace": "agentes", "/conector": "agentes", "/central": "escudo", "/indicadores": "grafico",
   "/studio": "caixas", "/estudio": "ajustes", "/assistente": "conversa", "/catalogo": "catalogo",
   "/fila": "fila", "/taxonomia": "arvore", "/aparencia": "paleta", "/condicoes": "cartao",
   "/integracoes": "conexoes", "/gateway": "rede", "/imagens": "imagem", "/design": "paleta",
@@ -64,6 +65,7 @@ const ROTA_NANO = CONECTOR_ATIVO ? "/conector" : "/assistente";
 const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], ["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
+  ["/gpt-workspace", "GPT Workspace"],
   ["/conector", "Nano.ia"],
   ["/central", "Central de Inteligência"],
   ["/indicadores", "Indicadores"],
@@ -186,6 +188,7 @@ export function App() {
         {!demoAtivo && lojas === null ? <p className="suave">Carregando…</p> : !loja ? (
           <div className="cartao"><h1>Sem loja vinculada</h1><p className="suave">Seu login ainda não está ligado a uma loja. Peça ao suporte para vincular.</p></div>
         ) : bloqueada ? <VisaoGeral loja={loja} />
+          : caminho === "/gpt-workspace" ? <GptWorkspace loja={loja} />
           : caminho === "/estudio" ? <EstudioAgente key={loja.id} loja={loja} />
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />

@@ -45,7 +45,7 @@ test("gateway: limite por chave devolve 429", async () => {
 
 test("gateway: initialize negocia versão, anuncia só 'tools' e instrui a só propor; notificação devolve 202", async () => {
   const r = JSON.parse((await tratarMcp(req(rpc("initialize", { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "x", version: "1" } })), portas(chaveBase))).corpo);
-  assert.equal(r.result.protocolVersion, "2025-03-26"); assert.deepEqual(Object.keys(r.result.capabilities), ["tools"]); assert.match(r.result.instructions, /PROPÕE|propõe|PROPOR|propor/i);
+  assert.equal(r.result.protocolVersion, "2025-03-26"); assert.deepEqual(Object.keys(r.result.capabilities), ["tools", "resources"]); assert.match(r.result.instructions, /PROPÕE|propõe|PROPOR|propor/i);
   const antiga = JSON.parse((await tratarMcp(req(rpc("initialize", { protocolVersion: "1999-01-01" })), portas(chaveBase))).corpo);
   assert.equal(antiga.result.protocolVersion, "2025-06-18");
   const n = await tratarMcp(req(rpc("notifications/initialized", undefined, null)), portas(chaveBase));
@@ -57,6 +57,11 @@ test("gateway: tools/list respeita o escopo da chave e nunca lista execução", 
   const leitura = await nomes(["leitura"]); const propor = await nomes(["leitura", "propor"]);
   assert.ok(leitura.includes("conecta__catalogo__resumo")); assert.ok(!leitura.includes("conecta__proposta__criar"));
   assert.ok(propor.includes("conecta__proposta__criar"));
+  assert.ok(leitura.includes("conecta_render_painel"));
+  const listagem = JSON.parse((await tratarMcp(req(rpc("tools/list")), portas(chaveBase))).corpo);
+  const render = listagem.result.tools.find((t: any) => t.name === "conecta_render_painel");
+  assert.equal(render._meta.ui.resourceUri, "ui://conecta-ia/gpt-workspace.html");
+  assert.equal(render.annotations.readOnlyHint, true);
   for (const lista of [leitura, propor]) {
     assert.ok(lista.every((n) => /^[A-Za-z0-9_-]+$/.test(n)), "nomes aceitos por clientes de LLM");
     assert.ok(!lista.some((n) => /^bling__(produtos|categorias)__(alterar|criar)$|publicar|definir|aprov/.test(n)), "execução/aprovação nunca é listada");
@@ -67,7 +72,12 @@ test("gateway: protocolo — JSON inválido, lote, método desconhecido e parâm
   const p = portas(chaveBase);
   assert.equal(JSON.parse((await tratarMcp(req("{não é json"), p)).corpo).error.code, -32700);
   assert.equal(JSON.parse((await tratarMcp(req([rpc("ping")]), p)).corpo).error.code, -32600);
-  assert.equal(JSON.parse((await tratarMcp(req(rpc("resources/list")), p)).corpo).error.code, -32601);
+  const recursos = JSON.parse((await tratarMcp(req(rpc("resources/list")), p)).corpo);
+  assert.equal(recursos.result.resources[0].uri, "ui://conecta-ia/gpt-workspace.html");
+  const html = JSON.parse((await tratarMcp(req(rpc("resources/read", { uri: recursos.result.resources[0].uri })), p)).corpo);
+  assert.match(html.result.contents[0].mimeType, /mcp-app/);
+  assert.match(html.result.contents[0].text, /Catálogo operacional/);
+  assert.equal(JSON.parse((await tratarMcp(req(rpc("tools/unknown")), p)).corpo).error.code, -32601);
   assert.equal(JSON.parse((await tratarMcp(req(rpc("tools/call", { name: "../../etc" })), p)).corpo).error.code, -32602);
   assert.equal((await tratarMcp(req("x".repeat(100_001)), p)).status, 413);
 });
@@ -100,6 +110,13 @@ test("gateway + banco: ciclo da chave (criar, validar, usar, revogar) e ferramen
   assert.equal(lista.result.isError, false, JSON.stringify(lista)); assert.deepEqual(itens.map((x: any) => x.sku), ["MCP-001"], "a chave só enxerga a própria loja");
   const outra = await chamar("conecta__catalogo__ver", { sku: "OUTRA-001" });
   assert.match(outra.result.content[0].text, /não encontrado/);
+
+  // O plugin renderizado devolve estrutura sem custo/fornecedor nem ferramenta de escrita.
+  const quadro = await chamar("conecta_render_painel", {});
+  assert.equal(quadro.result.isError, false);
+  assert.equal(quadro.result.structuredContent.modo, "somente_leitura");
+  assert.equal(quadro.result.structuredContent.resumo.produtos, 1);
+  assert.deepEqual(quadro.result.structuredContent.nao_publicados.map((x: any) => x.sku), ["MCP-001"]);
 
   // consulta real (simulada) ao Bling + proposta com fonte pelo cliente externo
   const b = await chamar("bling__produtos__consultar", { sku: "MCP-001" });

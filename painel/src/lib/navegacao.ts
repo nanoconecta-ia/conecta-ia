@@ -5,7 +5,7 @@ export type Item = [rota: string, titulo: string];
 export type GrupoMenu = { id: string; titulo: string; itens: Item[] };
 
 const GRUPOS: { id: string; titulo: string; rotas: string[] }[] = [
-  { id: "comando", titulo: "Comando", rotas: ["/", "/conector", "/central", "/indicadores"] },
+  { id: "comando", titulo: "Comando", rotas: ["/", "/gpt-workspace", "/conector", "/central", "/indicadores"] },
   { id: "catalogo", titulo: "Catálogo", rotas: ["/catalogo", "/studio", "/taxonomia", "/fila", "/imagens"] },
   { id: "agentes", titulo: "Agentes", rotas: ["/estudio", "/assistente", "/meu-agente", "/aprovacoes", "/dispositivos", "/gateway", "/integracoes"] },
   { id: "loja", titulo: "Loja", rotas: ["/aparencia", "/banners", "/condicoes", "/design"] },

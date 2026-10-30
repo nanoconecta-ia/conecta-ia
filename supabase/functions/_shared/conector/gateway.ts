@@ -5,6 +5,7 @@ import { reduzirJson } from "../ia/reducao.ts";
 import { despachar, type ContextoDespacho } from "./despacho.ts";
 import { ferramentasVisiveis, nomeParaLlm, idDoNomeLlm } from "./registro.ts";
 import { pareceTokenMcp, sha256Hex } from "./cripto.ts";
+import { HTML_GPT_WORKSPACE, URI_WIDGET_GPT } from "./gpt_widget.ts";
 import type { Permissao } from "./tipos.ts";
 
 export const VERSAO_GATEWAY = "0.1.0";
@@ -57,23 +58,62 @@ export async function tratarMcp(req: RequisicaoMcp, p: PortasGateway): Promise<R
       const pedida = String(params?.protocolVersion ?? "");
       return rpcOk(id, {
         protocolVersion: VERSOES_MCP.includes(pedida) ? pedida : VERSOES_MCP[0],
-        capabilities: { tools: { listChanged: false } },
+        capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
         serverInfo: { name: "conecta-ia-conector", version: VERSAO_GATEWAY }, instructions: INSTRUCOES,
       });
     }
     case "ping": return rpcOk(id, {});
+    case "resources/list":
+      return rpcOk(id, { resources: chave.escopos.includes("leitura")
+        ? [{ uri: URI_WIDGET_GPT, name: "NanoIA — painel do catálogo", mimeType: "text/html;profile=mcp-app" }] : [] });
+    case "resources/read":
+      if (!chave.escopos.includes("leitura") || params?.uri !== URI_WIDGET_GPT) return rpcErro(id, -32602, "Recurso não permitido.");
+      return rpcOk(id, { contents: [{
+        uri: URI_WIDGET_GPT, mimeType: "text/html;profile=mcp-app", text: HTML_GPT_WORKSPACE,
+        _meta: { ui: { prefersBorder: true } },
+      }] });
     case "tools/list": {
-      const tools = ferramentasVisiveis("gateway_mcp", chave.escopos).map((f) => ({
+      const tools: Record<string, unknown>[] = ferramentasVisiveis("gateway_mcp", chave.escopos).map((f) => ({
         name: nomeParaLlm(f.id), title: f.id, description: `${f.descricao} [risco ${f.risco}; permissão ${f.permissao}]`, inputSchema: f.entrada,
         annotations: { readOnlyHint: f.permissao === "leitura", destructiveHint: false, idempotentHint: f.idempotencia !== "nao_se_aplica" },
       }));
+      // Ferramenta de apresentação independente do modelo; não cria nem altera registros.
+      if (chave.escopos.includes("leitura")) tools.push({
+        name: "conecta_render_painel",
+        title: "Renderizar painel GPT do catálogo",
+        description: "Exibe um quadro visual somente leitura do espelho da loja, com produtos, publicados e pendências; não cria produtos e não usa custo ou fornecedor.",
+        inputSchema: { type: "object", properties: {}, additionalProperties: false },
+        outputSchema: { type: "object", properties: {
+          resumo: { type: "object" }, nao_publicados: { type: "array", items: { type: "object" } }, modo: { type: "string" },
+        }, required: ["resumo", "nao_publicados", "modo"] },
+        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+        _meta: { ui: { resourceUri: URI_WIDGET_GPT, visibility: ["model", "app"] }, "openai/outputTemplate": URI_WIDGET_GPT },
+      });
       return rpcOk(id, { tools });
     }
     case "tools/call": {
       const nome = params?.name;
       if (typeof nome !== "string" || !/^[A-Za-z0-9_-]{1,100}$/.test(nome)) return rpcErro(id, -32602, "Parâmetro 'name' inválido");
       const ctx = await p.contexto(chave);
-      const r = await despachar(idDoNomeLlm(nome), params?.arguments ?? {}, { ...ctx, origem: "gateway_mcp", escopos: chave.escopos, mcpChaveId: chave.chave_id });
+      const contexto = { ...ctx, origem: "gateway_mcp" as const, escopos: chave.escopos, mcpChaveId: chave.chave_id };
+      if (nome === "conecta_render_painel") {
+        if (!chave.escopos.includes("leitura")) return rpcOk(id, { content: [{ type: "text", text: "Escopo de leitura não concedido." }], isError: true });
+        // Reusa o Policy Engine e a auditoria já testados. Nenhum acesso direto privilegiado no render.
+        const [resumo, lista] = await Promise.all([
+          despachar("conecta.catalogo.resumo", {}, contexto),
+          despachar("conecta.catalogo.listar", { apenas_nao_publicados: true, limite: 10 }, contexto),
+        ]);
+        if (!resumo.ok || !lista.ok || !Array.isArray(lista.resultado)) {
+          return rpcOk(id, { content: [{ type: "text", text: "Não foi possível validar a leitura auditada da loja." }], isError: true });
+        }
+        const nao_publicados = (lista.resultado as Record<string, unknown>[]).map((p) => ({
+          nome: typeof p.nome === "string" ? p.nome : null,
+          sku: typeof p.sku === "string" ? p.sku : null,
+        }));
+        const structuredContent = { resumo: resumo.resultado, nao_publicados, modo: "somente_leitura" };
+        return rpcOk(id, { content: [{ type: "text", text: JSON.stringify(structuredContent) }], structuredContent, isError: false });
+      }
+      const r = await despachar(idDoNomeLlm(nome), params?.arguments ?? {}, contexto);
       let texto = JSON.stringify(r.ok ? r.resultado : { erro: r.erro, decisao: r.decisao });
       texto = reduzirJson(r.ok ? r.resultado : { erro: r.erro, decisao: r.decisao }, MAX_SAIDA);
       return rpcOk(id, { content: [{ type: "text", text: texto }], isError: !r.ok });

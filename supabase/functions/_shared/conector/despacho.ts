@@ -42,9 +42,14 @@ export async function despachar(id: string, entrada: unknown, c: ContextoDespach
   try { resultado = await h(entrada ?? {}, c); } catch (e) { falha = e instanceof Error ? e.message.slice(0, 300) : "falha na ferramenta"; }
   const ok = falha === undefined && !(resultado && typeof resultado === "object" && "erro" in (resultado as object));
   const gravou = await registrar(c, id, "permitida", falha ?? (ok ? pol.motivo : "retornou erro"), entrada, falha ? { erro: falha } : resultado, Date.now() - ini);
-  const auditoria_falhou = gravou ? undefined : true;
-  if (falha) return { ok: false, decisao: "permitida", erro: falha, auditoria_falhou };
-  return { ok, decisao: "permitida", resultado, erro: ok ? undefined : String((resultado as any).erro), auditoria_falhou };
+  // Não apresentar como sucesso uma proposta/consulta sem registro auditável.
+  // O handler JÁ pode ter produzido efeitos internos: não afirmar rollback nem repetir às cegas.
+  if (!gravou) return {
+    ok: false, decisao: "permitida", auditoria_falhou: true,
+    erro: "auditoria_nao_confirmada: o resultado pode ter produzido efeitos internos; verifique a operação antes de repetir.",
+  };
+  if (falha) return { ok: false, decisao: "permitida", erro: falha };
+  return { ok, decisao: "permitida", resultado, erro: ok ? undefined : String((resultado as any).erro) };
 }
 
 /** Lista de ferramentas no formato que os adaptadores de LLM entendem (nomes sem ponto). */

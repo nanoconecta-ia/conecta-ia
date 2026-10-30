@@ -36,7 +36,8 @@ Deno.serve(async (req) => {
     async start(controller) {
       const emitir = (e: EventoChat) => { try { controller.enqueue(enc.encode(`event: ${e.evento}\ndata: ${JSON.stringify(e.dados)}\n\n`)); } catch { /* cliente saiu */ } };
       await executarTurno({ texto: String(c.texto ?? ""), conversaId: typeof c.conversa_id === "string" ? c.conversa_id : undefined,
-        provedor: ["claude", "gemini", "compativel_openai"].includes(c.provedor) ? c.provedor : undefined, modelo: typeof c.modelo === "string" ? c.modelo.slice(0, 80) : undefined, fallback: c.fallback !== false }, portas, emitir, abortar.signal);
+        provedor: ["claude", "gemini", "compativel_openai"].includes(c.provedor) ? c.provedor : undefined, modelo: typeof c.modelo === "string" ? c.modelo.slice(0, 80) : undefined, fallback: c.fallback === true,
+        contextoOperacional: c.contexto_operacional === true }, portas, emitir, abortar.signal);
       try { controller.close(); } catch { /* já fechado */ }
     },
     cancel() { abortar.abort(); },
