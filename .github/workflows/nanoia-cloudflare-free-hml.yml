@@ -47,6 +47,8 @@ jobs:
           test "$(git ls-remote origin refs/heads/feat/gpt-workspace-core-20261030 | cut -f1)" = "$TARGET_SHA"
       - name: Exigir nove workflows aprovados antes da nuvem
         run: node staging/validar-revisao.mjs
+      - name: Recusar ambiente inexistente ou sem revisor obrigatorio
+        run: node staging/verificar-ambiente-free.mjs
       - name: Instalar dependencias fixadas sem scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Confirmar que o pai nao usa Dynamic Worker nem execucao arbitraria
