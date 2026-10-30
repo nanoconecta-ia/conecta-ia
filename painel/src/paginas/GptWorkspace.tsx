@@ -130,6 +130,7 @@ export function GptWorkspace({ loja }: { loja: Loja }) {
           {estado.modelos.length ? <ul className="gptw-motores">{estado.modelos.map((m) => <li key={m.provedor}><strong>{rotuloMotor(m.provedor)}</strong><span>{m.principal ? "Preferencial" : "Alternativo"} · configurado, não testado</span></li>)}</ul>
             : <p className="gptw-vazio">Nenhum motor disponível na leitura atual.</p>}
           <button type="button" className="gptw-link" onClick={() => ir("/integracoes")}>Gerenciar integrações ↗</button>
+          {CONECTOR_ATIVO && <button type="button" className="gptw-link" onClick={() => ir("/gateway")}>Chaves e conector MCP ↗</button>}
         </section>
         <section className="gptw-modulo">
           <span className="gptw-mini">TAXONOMIA / RASTREABILIDADE</span><h2>Árvore técnica</h2>
