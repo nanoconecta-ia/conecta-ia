@@ -19,7 +19,7 @@ test("logística exige dimensões positivas, marca e taxonomia documentada", () 
   });
 });
 test("busca normalizada por nome, SKU e marca e filtro de pendências", () => {
-  const p = { ...pronto, id: "2", nome: "Cabeçote D4CB", marca: "" };
+  const p = { ...pronto, id: "2", sku: "D4CB-001", nome: "Cabeçote D4CB", marca: "" };
   assert.deepEqual(buscarProdutosPendentes([pronto, p], "CABECOTE", true).map((x) => x.id), ["2"]);
   assert.deepEqual(buscarProdutosPendentes([pronto, p], "k2500", true), []);
 });
