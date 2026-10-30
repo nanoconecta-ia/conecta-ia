@@ -116,7 +116,7 @@ test("turno 2 (troca para Gemini na MESMA conversa): histórico e estado operaci
 test("turno 3 (volta ao GPT): o prompt agora carrega a proposta pendente criada no turno anterior (continuidade entre modelos)", { skip }, async () => {
   const f = provedorFalso({ openai: [oa("A proposta de marca ainda aguarda a sua aprovação.")], gemini: [] });
   corpos.length = 0;
-  await turno({ texto: "e a proposta da marca?", conversaId, provedor: "compativel_openai" }, portas(f));
+  await turno({ texto: "e a proposta da marca?", conversaId, provedor: "compativel_openai", contextoOperacional: true }, portas(f));
   const sistema = corpos[0].corpo.messages[0].content as string;
   assert.match(sistema, /\[ESTADO OPERACIONAL DA LOJA/); assert.match(sistema, /proposta \[pendente\] v1 risco MEDIUM: Atualizar marca de CHAT-001 no Bling/);
   assert.match(sistema, /tarefa \[aguardando_aprovacao\]/);
