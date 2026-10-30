@@ -46,7 +46,7 @@ try{
   assert.equal(await clipe.isDisabled(),false,'com provedor escolhido Arquivos fica ativo');
   assert.equal(await page.getByRole('menuitem',{name:'Fotos'}).count(),1);
   assert.equal(await page.getByRole('menuitem',{name:'Câmera'}).count(),1);
-  await page.getByRole('button',{name:'Fechar opções de anexos'}).click();
+  await page.getByRole('button',{name:'Fechar opções de anexos'}).click({position:{x:5,y:5}});
   // consentimento recolhe sozinho depois de autorizado, liberando espaço no compositor
   await page.getByLabel(/Enviar esta pergunta/).check();
   await page.locator('.consentimento').waitFor({state:'hidden'});
