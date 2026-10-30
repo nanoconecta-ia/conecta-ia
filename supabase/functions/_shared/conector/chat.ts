@@ -30,7 +30,7 @@ export interface PortasChat {
   adaptadorStream?(p: ProvedorId): ((c: Chamada, m: Mensagem[], aoTexto: (d: string) => void, s?: AbortSignal) => Promise<Passo>) | undefined;
   fetch?: typeof fetch;
 }
-export interface PedidoTurno { texto: string; conversaId?: string; provedor?: ProvedorId; modelo?: string; fallback?: boolean }
+export interface PedidoTurno { texto: string; conversaId?: string; provedor?: ProvedorId; modelo?: string; fallback?: boolean; contextoOperacional?: boolean }
 
 const MAX_TEXTO = 4000, MAX_HISTORICO = 20;
 const FALHAS_QUE_PERMITEM_FALLBACK = new Set([401, 429, 502, 504]);
@@ -80,7 +80,13 @@ export async function executarTurno(pedido: PedidoTurno, portas: PortasChat, emi
     }
     await portas.gravarMensagem(conversaId, "user", texto);
 
-    const [prompt, op, conhecimento] = await Promise.all([portas.promptAtivo().catch(() => ({ texto: PROMPT_PADRAO, versao: null })), portas.estadoOperacional().catch(() => ({ tarefas: [], propostas: [] })), portas.conhecimento(texto).catch(() => [])]);
+    // Contexto de outras tarefas e conhecimento da loja só é enviado com opt-in do usuário neste turno.
+    const contextoAutorizado = pedido.contextoOperacional === true;
+    const [prompt, op, conhecimento] = await Promise.all([
+      portas.promptAtivo().catch(() => ({ texto: PROMPT_PADRAO, versao: null })),
+      contextoAutorizado ? portas.estadoOperacional().catch(() => ({ tarefas: [], propostas: [] })) : Promise.resolve({ tarefas: [], propostas: [] }),
+      contextoAutorizado ? portas.conhecimento(texto).catch(() => []) : Promise.resolve([]),
+    ]);
     const sistema = montarSistema({ prompt, loja: portas.nomeLoja(), tarefas: op.tarefas, propostas: op.propostas, conhecimento });
     const ctx = await portas.contexto(conversaId);
     const mensagens: Mensagem[] = [];
