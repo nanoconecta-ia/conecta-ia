@@ -118,3 +118,23 @@ jobs:
         run: node --experimental-strip-types test/staging-host-do-smoke.mjs
       - name: Testar MCP completo entre Worker pai e host Durable Object
         run: node --experimental-strip-types test/staging-full-bridge-smoke.mjs
+
+  worker-free-homologacao-local:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: experiments/nanoia-codemode
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - name: Instalar dependencias travadas sem scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compilar Worker Free sem Dynamic Worker Loader e sem deploy
+        run: |
+          node -e "const c=require('./staging/wrangler-free-parent.jsonc'); if(c.worker_loaders || c.workers_dev!==false || c.vars.PILOT_ENABLED!=='false')process.exit(1)"
+          npx wrangler deploy -c staging/wrangler-free-parent.jsonc --dry-run --outdir /tmp/nanoia-worker-free-hml
+      - name: Testar Worker MCP gratuito com host HMAC/SQLite e duas lojas sintéticas
+        run: node test/free-parent-smoke.mjs
