@@ -54,7 +54,7 @@ async function consultar(token,code){
 }
 try{
   const host=iniciar(["-c","staging/wrangler-host.jsonc","--local","--ip","127.0.0.1","--port",String(hostPort),
-    "--var","STAGING_HMAC_A:"+hA,"--var","STAGING_HMAC_B:"+hB]);
+    "--var","STAGING_HMAC_A:"+hA,"--var","STAGING_HMAC_B:"+hB,"--var","DEBUG_FIXTURE:true"]);
   await pronto(hostPort,host);
   const parent=iniciar(["-c","staging/wrangler-parent.jsonc","--local","--ip","127.0.0.1","--port",String(parentPort),
     "--var","PILOT_TOKEN_A:"+A,"--var","PILOT_TOKEN_B:"+B,
@@ -70,10 +70,13 @@ try{
     const tools=await rpc(token,"tools/list",{});
     assert.deepEqual(tools.result.tools.map(x=>x.name),["code"]);
   }
+  console.log("HML_STEP: resumo A");
   const a=await consultar(A,"async () => { return await codemode.catalogo_resumo({}); }");
+  console.log("HML_STEP: resumo B");
   const b=await consultar(B,"async () => { return await codemode.catalogo_resumo({}); }");
   assert.match(a,/produtos.{0,12}2/);
   assert.match(b,/produtos.{0,12}1/);
+  console.log("HML_STEP: lista A");
   const lista=await consultar(A,"async () => { return await codemode.catalogo_listar({limite:10}); }");
   assert.match(lista,/FIX-HML-A-01/);
   for(const marker of ["FIX-HML-B-01","precoCusto","fornecedor","ncm","estoque"])
@@ -84,6 +87,8 @@ try{
   assert.match(egress,/bloqueado.{0,12}true/);
   console.log("PASS: staging MCP -> sandbox -> HMAC -> Service Binding -> Durable Object auditado e isolado");
 }catch(e){
+  // Dar tempo para flush do log do Worker antes de encerrar processos de teste.
+  await new Promise(r=>setTimeout(r,300));
   console.error("FAIL staging integrado:",String(e));
   for(const proc of processes){
     const safe=proc.log.replaceAll(hA,"[CHAVE_TESTE]").replaceAll(hB,"[CHAVE_TESTE]")
