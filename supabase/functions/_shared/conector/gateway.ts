@@ -73,7 +73,7 @@ export async function tratarMcp(req: RequisicaoMcp, p: PortasGateway): Promise<R
         _meta: { ui: { prefersBorder: true } },
       }] });
     case "tools/list": {
-      const tools = ferramentasVisiveis("gateway_mcp", chave.escopos).map((f) => ({
+      const tools: Record<string, unknown>[] = ferramentasVisiveis("gateway_mcp", chave.escopos).map((f) => ({
         name: nomeParaLlm(f.id), title: f.id, description: `${f.descricao} [risco ${f.risco}; permissão ${f.permissao}]`, inputSchema: f.entrada,
         annotations: { readOnlyHint: f.permissao === "leitura", destructiveHint: false, idempotentHint: f.idempotencia !== "nao_se_aplica" },
       }));
