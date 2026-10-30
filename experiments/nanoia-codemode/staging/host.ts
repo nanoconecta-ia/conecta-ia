@@ -37,7 +37,7 @@ const sinteticos = (kid:Chave) => kid === "hml-a"
 export class ReplayAuditoriaHml {
   constructor(private readonly state: DurableObjectState) {
     this.state.storage.sql.exec(`CREATE TABLE IF NOT EXISTS nonces(nonce TEXT PRIMARY KEY, exp INTEGER NOT NULL);`);
-    this.state.storage.sql.exec(`CREATE TABLE IF NOT EXISTS quota(minuto INTEGER PRIMARY KEY, total INTEGER NOT NULL);`);
+    this.state.storage.sql.exec(`CREATE TABLE IF NOT EXISTS quota(evento TEXT PRIMARY KEY, momento INTEGER NOT NULL);`);
     this.state.storage.sql.exec(`CREATE TABLE IF NOT EXISTS auditoria(id TEXT PRIMARY KEY, momento INTEGER NOT NULL, ferramenta TEXT NOT NULL, status TEXT NOT NULL);`);
   }
   async fetch(request:Request):Promise<Response> {
@@ -52,16 +52,18 @@ export class ReplayAuditoriaHml {
          typeof exp!=="number" || !Number.isSafeInteger(exp) ||
          exp < Date.now()-30_000 || exp > Date.now()+90_000)
         return resposta(400,{erro:"nonce"});
-      const now=Date.now(), minuto=Math.floor(now/60000);
+      const now=Date.now();
       const result=this.state.storage.transactionSync(()=>{
-        // Operações sem await no mesmo SQLite; INSERT OR IGNORE é atômico.
+        // Janela DESLIZANTE de 60s, evitando rajada dupla na virada do minuto.
+        // Todas as operações são atômicas num único Durable Object por chave.
         this.state.storage.sql.exec("DELETE FROM nonces WHERE exp < ?",now);
-        this.state.storage.sql.exec("DELETE FROM quota WHERE minuto < ?",minuto-2);
+        this.state.storage.sql.exec("DELETE FROM quota WHERE momento <= ?",now-60_000);
         const r=this.state.storage.sql.exec("INSERT OR IGNORE INTO nonces(nonce,exp) VALUES(?,?)",nonce,exp);
         if(r.rowsWritten===0)return {repeticao:true,limitado:false};
-        const q=this.state.storage.sql.exec(
-          "INSERT INTO quota(minuto,total) VALUES(?,1) ON CONFLICT(minuto) DO UPDATE SET total=total+1 WHERE total<60",minuto);
-        return {repeticao:false,limitado:q.rowsWritten===0};
+        const contagem=this.state.storage.sql.exec("SELECT COUNT(*) AS total FROM quota").toArray();
+        if(Number(contagem[0]?.total??0)>=60)return {repeticao:false,limitado:true};
+        this.state.storage.sql.exec("INSERT INTO quota(evento,momento) VALUES(?,?)",nonce,now);
+        return {repeticao:false,limitado:false};
       });
       return resposta(200,result);
     }
