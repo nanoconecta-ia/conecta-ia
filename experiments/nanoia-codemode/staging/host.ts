@@ -139,6 +139,13 @@ export default {
       });
       const resultado=await adaptador.executar(payload.operacao as string,payload.args);
       return resposta(200,{ok:true,resultado});
-    }catch {return resposta(403,{erro:"operacao_recusada"});}
+    }catch(e) {
+      // Log de código conhecido e fixo. Nunca registrar entrada, SKU, URL ou secrets.
+      const codigo=e instanceof Error?e.message:"interno";
+      const conhecidos=new Set(["auditoria_nao_confirmada","operacao_nao_autorizada_ou_falhou","chave_revogada_ou_sem_escopo",
+        "resposta_cadastro_invalida","operacao_falhou","argumento_invalido","identidade_invalida","tempo_total_esgotado"]);
+      console.warn("hml_consulta_recusada",conhecidos.has(codigo)?codigo:"interno");
+      return resposta(403,{erro:"operacao_recusada"});
+    }
   },
 };
