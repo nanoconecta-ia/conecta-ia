@@ -49,7 +49,7 @@ async function rpc(token,method,params){
 async function consultar(token,code){
   const r=await rpc(token,"tools/call",{name:"code",arguments:{code}});
   assert.equal(r.status,200,r.txt.slice(0,320));
-  assert.equal(r.result?.isError,false,r.txt.slice(0,600));
+  assert.equal(Boolean(r.result?.isError),false,r.txt.slice(0,600));
   return JSON.stringify(r.result);
 }
 try{
