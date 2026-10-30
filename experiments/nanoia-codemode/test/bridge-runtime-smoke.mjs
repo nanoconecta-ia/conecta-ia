@@ -143,7 +143,14 @@ try {
 } catch (err) {
   console.error("FALHA: canal HMAC de homologação:",String(err));
   console.error("HOST (sem credenciais):",host.logs().slice(-1200));
-  if(worker)console.error("WORKER (sem credenciais):",worker.logs().replaceAll(sA,"[redigido]").replaceAll(sB,"[redigido]").slice(-1600));
+  if(worker) {
+    // Diagnóstico NÃO sensível: nomes de bindings, estado de conexão e classe do erro.
+    // Saída completa não é publicada, pois o Wrangler pode exibir vars locais.
+    const redigido = worker.logs().replaceAll(sA, "[redigido]").replaceAll(sB, "[redigido]");
+    const linhas = redigido.split(/\\r?\\n/);
+    console.error("WORKER (trecho):",redigido.slice(-1900));
+    console.error("DIAGNOSTICO_BINDING:", linhas.filter(x => /PILOT_HOST_SERVICE|bridge_host_transport_failed|\\[connected\\]|\\[not connected\\]|Service bindings|No routes|Error:|Error\\s*\\[/.test(x)).slice(-16).join("\\n"));
+  }
   process.exitCode = 1;
 } finally {
   for (const p of [worker?.proc,host.proc]) if (p) p.kill("SIGTERM");
