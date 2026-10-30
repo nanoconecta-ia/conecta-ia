@@ -6,5 +6,6 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "vars": { "PILOT_ENABLED": "false" },
-  "worker_loaders": [{ "binding": "LOADER" }]
+  "worker_loaders": [{ "binding": "LOADER" }],
+  "services": [{ "binding": "PILOT_HOST_SERVICE", "service": "nanoia-codemode-host-fixture-nao-publicar" }]
 }
