@@ -5,7 +5,7 @@ Objetivo: testar build e entrega estática por Cloudflare Pages sem tocar na pro
 ## Segurança
 - Projeto separado no Cloudflare Pages: `conecta-ia-homologacao-free`, preferencialmente criado com branch de produção `main`; o workflow publica na branch de **preview** `homologacao-free`.
 - GitHub Environment: `cloudflare-homologacao-free`, revisor exigido: `mobispecas-rgb`.
-- A ação `workflow_dispatch` é exclusivamente manual, e o job de publicação só roda a partir de `main` após aprovação no Environment.
+- Pull requests executam **somente validações** sem segredos e sem deploy. O job de publicação exige evento **manual** `workflow_dispatch`, branch `main` e aprovação no Environment.
 - Segredos do **ambiente**, nunca no repositório, nunca em logs: `CLOUDFLARE_API_TOKEN` (token limitado a Pages Write do projeto/conta aplicável) e `CLOUDFLARE_ACCOUNT_ID`.
 - Não usar `SUPABASE_SERVICE_ROLE_KEY`, credenciais do Bling, custos, fornecedores ou dados de clientes.
 - Não atribuir domínio personalizado à prévia. Não alterar DNS.
