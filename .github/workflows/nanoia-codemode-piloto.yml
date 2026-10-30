@@ -107,3 +107,5 @@ jobs:
           npx wrangler deploy -c staging/wrangler-parent.jsonc --dry-run --outdir /tmp/nanoia-hml-parent
       - name: Testar Durable Object SQLite real com HMAC, replay, auditoria e rate-limit
         run: node --experimental-strip-types test/staging-host-do-smoke.mjs
+      - name: Testar MCP completo entre Worker pai e host Durable Object
+        run: node --experimental-strip-types test/staging-full-bridge-smoke.mjs
