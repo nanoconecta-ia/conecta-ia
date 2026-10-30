@@ -260,7 +260,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         </div>
       )}
       <form onSubmit={onSubmit} style={{ maxWidth: "none" }}>
-        {anexos.length > 0 && <ul className="anexos-lista" aria-label="Anexos desta pergunta">{anexos.map((a, i) => <li key={`${a.nome}-${i}`}><span className="anexo-nome" title={a.nome}>{a.tipo.startsWith("image/") ? "🖼" : "📄"} {a.nome}</span><span className="suave">{rotuloBytes(a.bytes)}</span><button type="button" className="sec mini" aria-label={`Remover ${a.nome}`} onClick={() => setAnexos((l) => l.filter((_, k) => k !== i))}>✕</button></li>)}</ul>}
+        {anexos.length > 0 && <ul className="anexos-lista" style={{ width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box", marginInline: 0, paddingInline: 0, overflowX: "hidden" }} aria-label="Anexos desta pergunta">{anexos.map((a, i) => <li key={`${a.nome}-${i}`}><span className="anexo-nome" title={a.nome}>{a.tipo.startsWith("image/") ? "🖼" : "📄"} {a.nome}</span><span className="suave">{rotuloBytes(a.bytes)}</span><button type="button" className="sec mini" aria-label={`Remover ${a.nome}`} onClick={() => setAnexos((l) => l.filter((_, k) => k !== i))}>✕</button></li>)}</ul>}
         {erroAnexo && <p role="alert" className="msg-erro">{erroAnexo}</p>}
         <div className="compositor-grade">
           <input ref={entradaArquivo} type="file" hidden multiple accept={CHAT_ACEITA} onChange={(e) => void escolherArquivos(e.target.files)} />
