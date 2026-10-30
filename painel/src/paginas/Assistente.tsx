@@ -80,6 +80,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [anexos, setAnexos] = useState<AnexoChat[]>([]);
   const [erroAnexo, setErroAnexo] = useState("");
   const entradaArquivo = useRef<HTMLInputElement>(null);
+  const entradaCamera = useRef<HTMLInputElement>(null);
   const selecao = provedores.find((p) => p.id === provedor);
   const podeEnviar = !carregandoChat && !carregando && !erroConfig && (!provedor || (selecao?.estado === "disponivel" && aceitaEnvio));
   useEffect(() => {
@@ -180,12 +181,24 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     } catch (e) { if (lojaAtual.current === lojaDoEnvio) setErroHistorico(String(e)); }
     finally { if (lojaAtual.current === lojaDoEnvio) setOcupado(false); }
   }
+  async function reconhecerCodigoImagem(arquivo: File): Promise<string | null> {
+    type Detector = { detect: (imagem: ImageBitmap) => Promise<Array<{ rawValue?: string }>> };
+    const api = window as Window & { BarcodeDetector?: new (opcoes: { formats: string[] }) => Detector };
+    if (!api.BarcodeDetector || !arquivo.type.startsWith("image/")) return null;
+    let imagem: ImageBitmap | null = null;
+    try {
+      imagem = await createImageBitmap(arquivo);
+      const detector = new api.BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "qr_code", "code_128", "itf"] });
+      return (await detector.detect(imagem)).find(item => item.rawValue?.trim())?.rawValue?.trim() ?? null;
+    } catch { return null; }
+    finally { imagem?.close(); }
+  }
   async function escolherArquivos(lista: FileList | null) {
     const arquivos = Array.from(lista ?? []); if (entradaArquivo.current) entradaArquivo.current.value = "";
     setErroAnexo(""); const pdfOk = provedor !== "compativel_openai"; let atual = [...anexos];
     for (const f of arquivos) {
       const erro = validarSelecao(f, atual, pdfOk); if (erro) { setErroAnexo(erro); break; }
-      try { const a = await prepararArquivo(f); const e2 = validarSelecao({ name: a.nome, type: a.tipo, size: a.bytes }, atual, pdfOk); if (e2) { setErroAnexo(e2); break; } atual = [...atual, a]; }
+      try { const codigo = await reconhecerCodigoImagem(f); if (codigo) setTexto(t => (t.trim() + "\nCódigo capturado: " + codigo + ". Identifique produto, SKU, OEM e aplicação sem criar duplicata.").trim().slice(0, 1000)); const a = await prepararArquivo(f); const e2 = validarSelecao({ name: a.nome, type: a.tipo, size: a.bytes }, atual, pdfOk); if (e2) { setErroAnexo(e2); break; } atual = [...atual, a]; }
       catch { setErroAnexo(`Não consegui ler "${f.name}".`); break; }
     }
     setAnexos(atual);
@@ -201,7 +214,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
 
   return (
     <div className="abas-caixa" ref={caixa}>
-    <div className="cartao chat-tela abas" data-esq={esq ? "aberto" : "fechado"} data-dir={dir ? "aberto" : "fechado"}>
+    <div className="cartao chat-tela abas" style={{ minHeight: 0, minWidth: 0, width: "100%", boxSizing: "border-box", height: "calc(100dvh - 170px)", maxHeight: "calc(100dvh - 170px)", overflow: "hidden" }} data-esq={esq ? "aberto" : "fechado"} data-dir={dir ? "aberto" : "fechado"}>
       {(esq || dir) && <button type="button" className="abas-fundo" aria-label="Fechar painel lateral" onClick={() => { setEsq(false); setDir(false); }} />}
       <aside className="aba aba-esq" id="aba-conversas" aria-label="Conversas">
         <div className="aba-topo"><strong>Conversas</strong><button type="button" className="sec mini" onClick={() => setEsq(false)} aria-label="Recolher conversas">Recolher</button></div>
@@ -233,9 +246,9 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
       {retentativa && <div><p>Recupere a mesma pergunta para verificar se o turno terminou. Isso preserva a chave de idempotência.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Recuperar pergunta</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button></div>}
       {msgs.length > 3 && <div className="chat-ferramentas"><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button><small className="suave">{msgs.length} mensagens</small></div>}
-      <div className="chat" aria-live="polite">{msgs.map((m, i) => <MensagemRetratil key={i} m={m} recolhida={mensagemRecolhida(i, msgs.length, abertas, modoMsgs)} onAlternar={() => alternarMsg(i)} />)}<div ref={fim} /></div>
+      <div className="chat" style={{ flex: "1 1 auto", minHeight: 240, overflowY: "auto" }} aria-live="polite">{msgs.map((m, i) => <MensagemRetratil key={i} m={m} recolhida={mensagemRecolhida(i, msgs.length, abertas, modoMsgs)} onAlternar={() => alternarMsg(i)} />)}<div ref={fim} /></div>
       <div className="barra-extras">
-      <Retratil id="atalhos" titulo="Atalhos" resumo="perguntas rápidas" aberto={msgs.length < 2} recolherQuando={msgs.length >= 3}><p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p></Retratil>
+      <Retratil id="atalhos" titulo="Atalhos" resumo="perguntas rápidas" aberto={false} recolherQuando={true}><p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p></Retratil>
       {selecao && <Retratil id="consentimento" titulo="Privacidade" resumo={aceitaEnvio ? "autorizado" : "autorize para enviar"} status={aceitaEnvio ? "go" : "warn"} recolherQuando={aceitaEnvio}><label className="consentimento" style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.{anexos.length > 0 && " Os anexos desta pergunta também são enviados."}</label></Retratil>}
       </div>
       <div className="chat-compositor">
@@ -247,12 +260,14 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         </div>
       )}
       <form onSubmit={onSubmit} style={{ maxWidth: "none" }}>
-        {anexos.length > 0 && <ul className="anexos-lista" aria-label="Anexos desta pergunta">{anexos.map((a, i) => <li key={`${a.nome}-${i}`}><span className="anexo-nome" title={a.nome}>{a.tipo.startsWith("image/") ? "🖼" : "📄"} {a.nome}</span><span className="suave">{rotuloBytes(a.bytes)}</span><button type="button" className="sec mini" aria-label={`Remover ${a.nome}`} onClick={() => setAnexos((l) => l.filter((_, k) => k !== i))}>✕</button></li>)}</ul>}
+        {anexos.length > 0 && <ul className="anexos-lista" style={{ width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box", marginInline: 0, paddingInline: 0, overflowX: "hidden" }} aria-label="Anexos desta pergunta">{anexos.map((a, i) => <li key={`${a.nome}-${i}`}><span className="anexo-nome" title={a.nome}>{a.tipo.startsWith("image/") ? "🖼" : "📄"} {a.nome}</span><span className="suave">{rotuloBytes(a.bytes)}</span><button type="button" className="sec mini" aria-label={`Remover ${a.nome}`} onClick={() => setAnexos((l) => l.filter((_, k) => k !== i))}>✕</button></li>)}</ul>}
         {erroAnexo && <p role="alert" className="msg-erro">{erroAnexo}</p>}
         <div className="compositor-grade">
           <input ref={entradaArquivo} type="file" hidden multiple accept={CHAT_ACEITA} onChange={(e) => void escolherArquivos(e.target.files)} />
+          <input ref={entradaCamera} type="file" hidden accept="image/*" capture="environment" onChange={(e) => void escolherArquivos(e.target.files)} />
           <div className="compositor-campo"><span id="rotulo-pergunta" className="so-leitor">Pergunte</span><textarea aria-labelledby="rotulo-pergunta" value={texto} rows={1} enterKeyHint="send" placeholder="Pergunte ao Nano.ia…" onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void enviar(texto); } }} maxLength={1000} /></div>
           <div className="compositor-acoes">
+          <button type="button" className="sec mic" aria-label="Fotografar produto ou código de barras" title="Abrir câmera para fotografar produto, GTIN ou QR Code; a imagem será anexada para análise" disabled={ocupado || !provedor || administrando || anexos.length >= CHAT_MAX_ANEXOS} onClick={() => entradaCamera.current?.click()}>📷</button>
           <button type="button" className="sec mic" aria-label="Anexar imagem ou arquivo" title={provedor ? `Anexar imagem, PDF, TXT ou CSV (até ${CHAT_MAX_ANEXOS})` : "Escolha um modelo de IA para anexar arquivos"} disabled={ocupado || !provedor || administrando || anexos.length >= CHAT_MAX_ANEXOS} onClick={() => entradaArquivo.current?.click()}>📎</button>
           {voz.suporteMic && <button type="button" className="sec mic" aria-pressed={voz.ouvindo} aria-label={voz.ouvindo ? "Parar de ouvir" : "Falar com o assistente"} onClick={() => (voz.ouvindo ? voz.parar() : voz.ouvir())} disabled={ocupado}>🎤</button>}
           {voz.suporteFala && <button type="button" className="sec mic" aria-pressed={lerAlto} aria-label={lerAlto ? "Desligar a leitura das respostas em voz alta" : "Ler as respostas em voz alta"} title={lerAlto ? "Leitura em voz alta ligada" : "Leitura em voz alta desligada"} onClick={alternarFala}>{lerAlto ? "🔊" : "🔈"}</button>}
