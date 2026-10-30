@@ -872,9 +872,10 @@ html .abas .compositor-acoes .compositor-enviar { flex: none; min-width: 44px; w
   .abas .anexos-lista, .abas .anexos-lista li { max-width:100%; box-sizing:border-box; }
 }
 @media (max-height:600px) {
-  .abas .abas-centro { overflow:hidden; }
-  .abas .abas-centro > .chat { min-height:0; flex:1 1 0; overflow-y:auto; }
-  .abas .chat-compositor { position:relative; bottom:auto; }
+  /* No modo paisagem, a área útil é curta: rolar o centro mantendo a caixa no rodapé. */
+  .abas .abas-centro { overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; }
+  .abas .abas-centro > .chat { min-height:120px; flex:1 0 120px; overflow-y:visible; }
+  .abas .chat-compositor { position:sticky; bottom:0; z-index:2; }
 }
 @media (prefers-reduced-motion:reduce) {
   .abas .nano-navegacao { transition:none; }
