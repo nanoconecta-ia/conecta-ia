@@ -53,6 +53,10 @@ export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
     if (url.pathname !== "/mcp") return new Response("not found", { status: 404 });
+    // Browser Origins são recusadas: endpoint de laboratório, sem CORS/autenticação por cookies.
+    if (req.headers.has("origin")) return new Response("origem de navegador não autorizada", {
+      status: 403, headers: { "cache-control": "no-store" },
+    });
     if (!env?.LOADER) return new Response("sandbox indisponível", { status: 503 });
     const tenant = await autenticarDemo(req, env);
     if (!tenant) return new Response("não autorizado ou piloto desligado", {
@@ -60,8 +64,17 @@ export default {
     });
     const server = await codeMcpServer({
       server: criarFerramentas(tenant),
-      executor: new DynamicWorkerExecutor({ loader: env.LOADER }),
+      executor: new DynamicWorkerExecutor({
+        loader: env.LOADER,
+        globalOutbound: null, // O código gerado NÃO pode chamar a internet via fetch/connect.
+        timeout: 12_000,      // Sem executar indefinidamente; budget por operação abaixo.
+      }),
     });
-    return createLegacyMcpHandler(server, { route: "/mcp" })(req, env, ctx);
+    const resposta = await createLegacyMcpHandler(server, { route: "/mcp" })(req, env, ctx);
+    // Headers defensivos para respostas MCP e erro, sem expor dados em caches.
+    const headers = new Headers(resposta.headers);
+    headers.set("cache-control", "no-store");
+    headers.set("x-content-type-options", "nosniff");
+    return new Response(resposta.body, { status: resposta.status, headers });
   },
 } satisfies ExportedHandler<Env>;
