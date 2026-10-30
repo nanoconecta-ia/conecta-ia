@@ -49,6 +49,6 @@ for(const forbidden of ["FIX-HML-B-01","precoCusto","fornecedor","ncm","estoque"
   assert.ok(!list.includes(forbidden),"vazamento_de_campo");
 const isolated=await code(b,"async()=>await codemode.catalogo_listar({loja_id:'aaaaaaaa-0000-0000-0000-000000000001'})");
 assert.ok(!isolated.includes("FIX-HML-A-01"));
-const noEgress=await code(a,"async()=>{try{await fetch('https://example.invalid');return {blocked:false}}catch{return {blocked:true}}}");
+const noEgress=await code(a,"async()=>{try{await fetch('https://example.com');return {blocked:false}}catch{return {blocked:true}}}");
 assert.match(noEgress,/blocked.{0,12}true/);
 console.log("PASS: staging Cloudflare hospedado, Bearer, Origin, MCP, 2 lojas, output minimo e sandbox isolada");
