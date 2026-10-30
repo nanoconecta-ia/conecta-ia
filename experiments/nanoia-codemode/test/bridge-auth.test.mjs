@@ -47,7 +47,7 @@ test("destino tem que ser https estrito, localhost somente opt-in de laboratóri
 });
 test("cliente recusa operação arbitrária, parâmetros inadequados, HTTP 500 e redirecionamento",async()=>{
   let calls=0;
-  const fetchFn=async (_url,init)=>{ calls++; assert.equal(init.redirect,"error");return new Response(JSON.stringify({ok:true,resultado:{produtos:1}}),{status:200,headers:{"content-type":"application/json"}});};
+  const fetchFn=async (_url,init)=>{ calls++; assert.equal(init.redirect,"manual");return new Response(JSON.stringify({ok:true,resultado:{produtos:1}}),{status:200,headers:{"content-type":"application/json"}});};
   const cli=criarClienteBridge({url:"https://hml.example.com"+BRIDGE_PATH,keyId,secret,fetchFn});
   assert.deepEqual(await cli("catalogo_resumo",{}),{produtos:1});
   await assert.rejects(cli("bling_produtos_alterar",{}),/operacao_nao_autorizada/);
@@ -56,6 +56,10 @@ test("cliente recusa operação arbitrária, parâmetros inadequados, HTTP 500 e
   const erro=criarClienteBridge({url:"https://hml.example.com"+BRIDGE_PATH,keyId,secret,
     fetchFn:async()=>new Response("falhou",{status:500})});
   await assert.rejects(erro("catalogo_resumo",{}),/host_recusou_operacao/);
+  // Redirect jamais pode encaminhar credenciais HMAC a outro destino.
+  const redirecionado=criarClienteBridge({url:"https://hml.example.com"+BRIDGE_PATH,keyId,secret,
+    fetchFn:async()=>new Response(null,{status:302,headers:{location:"https://fora.example/roubo"}})});
+  await assert.rejects(redirecionado("catalogo_resumo",{}),/host_recusou_operacao/);
   const redir=criarClienteBridge({url:"https://hml.example.com"+BRIDGE_PATH,keyId,secret,
     fetchFn:async()=>{throw new Error("redirect-blocked");}});
   await assert.rejects(redir("catalogo_resumo",{}),/host_indisponivel/);
