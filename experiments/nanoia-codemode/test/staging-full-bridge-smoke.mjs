@@ -6,6 +6,10 @@
  */
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+const persist=mkdtempSync(join(tmpdir(),"nanoia-hml-do-"));
 const A="token_staging_A_somente_fixture_20261030_ABCDEF";
 const B="token_staging_B_somente_fixture_20261030_ABCDEF";
 const hA="secretA_staging_fixture_HMAC_nao_publicar_1234567890123456";
@@ -53,7 +57,7 @@ async function consultar(token,code){
   return JSON.stringify(r.result);
 }
 try{
-  const host=iniciar(["-c","staging/wrangler-host.jsonc","--local","--ip","127.0.0.1","--port",String(hostPort),
+  const host=iniciar(["-c","staging/wrangler-host.jsonc","--local","--ip","127.0.0.1","--port",String(hostPort),"--persist-to",persist,
     "--var","STAGING_HMAC_A:"+hA,"--var","STAGING_HMAC_B:"+hB,"--var","DEBUG_FIXTURE:true"]);
   await pronto(hostPort,host);
   const parent=iniciar(["-c","staging/wrangler-parent.jsonc","--local","--ip","127.0.0.1","--port",String(parentPort),
@@ -96,4 +100,4 @@ try{
     console.error(safe.slice(-2300));
   }
   process.exitCode=1;
-}finally {for(const v of processes)v.p.kill("SIGTERM");}
+}finally {for(const v of processes)v.p.kill("SIGTERM");try{rmSync(persist,{recursive:true,force:true});}catch{}}
