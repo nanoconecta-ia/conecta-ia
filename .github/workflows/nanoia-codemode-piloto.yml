@@ -53,3 +53,19 @@ jobs:
         run: npx wrangler deploy --dry-run --outdir /tmp/nanoia-codemode-preview
       # O próprio --dry-run conclui com erro se o bundle for inválido; o arquivo
       # gerado muda de nome entre versões do Wrangler. Não assumir index.js.
+
+  worker-mcp-local-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: experiments/nanoia-codemode
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - name: Instalar versões travadas
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Testar protocolo e chamadas Code Mode locais somente com fixtures
+        run: node test/mcp-runtime-smoke.mjs
