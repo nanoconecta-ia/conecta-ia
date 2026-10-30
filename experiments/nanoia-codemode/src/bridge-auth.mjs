@@ -94,7 +94,12 @@ export function criarClienteBridge({ url, keyId, secret, local = false, fetchFn 
         redirect: "error",
         signal: AbortSignal.timeout(8_000),
       });
-    } catch { throw Error("host_indisponivel"); }
+    } catch (e) {
+      // Apenas classe de erro, sem corpo, URL, credenciais ou mensagem potencialmente sensível.
+      if (typeof console !== "undefined" && typeof console.warn === "function")
+        console.warn("bridge_host_transport_failed", e instanceof Error ? e.name : "unknown");
+      throw Error("host_indisponivel");
+    }
     if (!resp.ok) throw Error(resp.status === 401 ? "host_nao_autorizado" : "host_recusou_operacao");
     if (!String(resp.headers.get("content-type") ?? "").includes("application/json"))
       throw Error("resposta_host_invalida");
