@@ -13,6 +13,7 @@ interface Env {
   STAGING_HMAC_B?: string;
   STAGING_REVOKED_A?: string;
   STAGING_REVOKED_B?: string;
+  DEBUG_FIXTURE?: string;
   REPLAY_AUDITORIA: DurableObjectNamespace;
 }
 const LOJAS: Record<Chave,{id:string;uid:string}> = {
@@ -115,6 +116,7 @@ export default {
     const stub=env.REPLAY_AUDITORIA.get(env.REPLAY_AUDITORIA.idFromName("nanoia-hml:"+kid));
     const itens=sinteticos(kid);
     const identidade={chave_id:kid,loja_id:ident.id,escopos:["leitura"] as const};
+    let ultimoErroAuditoria="nenhum";
     const ctx={
       origem:"gateway_mcp" as const,lojaId:ident.id,userId:ident.uid,mcpChaveId:kid,escopos:["leitura"],
       dados:{
@@ -129,7 +131,10 @@ export default {
         try {
           await enviarDO(stub,"/audit",{id:crypto.randomUUID(),ferramenta:operacao,status:"permitida"});
           return {data:true,error:null};
-        }catch{return {data:null,error:{message:"auditoria_indisponivel"}};}
+}catch(e){
+          ultimoErroAuditoria=e instanceof Error ? e.message==="armazenamento_indisponivel"?"armazenamento_indisponivel":"outro":"outro";
+          return {data:null,error:{message:"auditoria_indisponivel"}};
+        }
       },
     };
     try {
@@ -145,7 +150,7 @@ export default {
       const conhecidos=new Set(["auditoria_nao_confirmada","operacao_nao_autorizada_ou_falhou","chave_revogada_ou_sem_escopo",
         "resposta_cadastro_invalida","operacao_falhou","argumento_invalido","identidade_invalida","tempo_total_esgotado"]);
       console.warn("hml_consulta_recusada",conhecidos.has(codigo)?codigo:"interno");
-      return resposta(403,{erro:"operacao_recusada"});
+      return resposta(403,{erro:"operacao_recusada",...(env.DEBUG_FIXTURE==="true"?{codigo:conhecidos.has(codigo)?codigo:"interno",auditoria:ultimoErroAuditoria}:{})});
     }
   },
 };
