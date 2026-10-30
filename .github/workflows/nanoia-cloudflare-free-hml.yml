@@ -54,7 +54,7 @@ jobs:
         run: |
           set -euo pipefail
           node -e "const c=JSON.parse(require('node:fs').readFileSync('staging/wrangler-free-parent.jsonc','utf8')); if(c.worker_loaders||c.vars.PILOT_ENABLED!=='false'||c.workers_dev!==false)process.exit(1)"
-          ! grep -Eq 'DynamicWorkerExecutor|worker_loaders|new Function|eval[(]' staging/free-parent.ts
+          ! grep -Eq '^import .*@cloudflare/codemode|new Function|eval[(]' staging/free-parent.ts
           node --test test/bridge-auth.test.mjs
           node test/free-parent-smoke.mjs
       - name: Preparar nomes unicos e compilar no dry-run
@@ -105,7 +105,7 @@ jobs:
           set -euo pipefail
           node staging/preparar-plano-free.mjs "$GITHUB_RUN_ID"
           node staging/gerar-segredos.mjs "$GITHUB_RUN_ID"
-          node -e "const fs=require('node:fs');const id=process.env.GITHUB_RUN_ID;const c=JSON.parse(fs.readFileSync('staging/.run-'+id+'-pai.jsonc','utf8'));if(c.worker_loaders || !c.workers_dev || c.vars.PILOT_BRIDGE_TRANSPORT!==undefined){} if(c.worker_loaders) process.exit(1)"
+          node -e "const fs=require('node:fs');const id=process.env.GITHUB_RUN_ID;const c=JSON.parse(fs.readFileSync('staging/.run-'+id+'-pai.jsonc','utf8'));if(c.worker_loaders||!c.workers_dev||c.services?.length!==1||c.vars.PILOT_ENABLED!=='true')process.exit(1)"
       - name: Implantar host HMAC/SQLite (privado)
         shell: bash
         run: |
