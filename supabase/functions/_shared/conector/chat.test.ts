@@ -132,7 +132,7 @@ test("isolamento: outro usuário da mesma loja não abre a conversa alheia", { s
 
 test("fallback: provedor principal sobrecarregado (429) => aviso e resposta de outro provedor ativo, registrado com quem respondeu", { skip }, async () => {
   const f = provedorFalso({ openai: [{ status: 429, corpo: {} }], gemini: [ge("Resposta do segundo provedor.")] });
-  const ev = await turno({ texto: "teste de fallback", provedor: "compativel_openai" }, portas(f));
+  const ev = await turno({ texto: "teste de fallback", provedor: "compativel_openai", fallback: true }, portas(f));
   assert.ok(nomes(ev).includes("aviso")); assert.equal(estados(ev).at(-1), "concluido");
   assert.equal(ev.find((e) => e.evento === "uso")!.dados.provedor, "gemini");
   const sem = await turno({ texto: "sem fallback", provedor: "compativel_openai", fallback: false }, portas(provedorFalso({ openai: [{ status: 429, corpo: {} }], gemini: [] })));
