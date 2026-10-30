@@ -25,6 +25,8 @@ interface Env {
   PILOT_HOST_SECRET_A?: string;
   PILOT_HOST_SECRET_B?: string;
   PILOT_ALLOW_LOCAL_HOST?: string;
+  PILOT_BRIDGE_TRANSPORT?: string;
+  PILOT_HOST_SERVICE?: Fetcher;
 }
 
 function criarFerramentas(tenant: string, env: Env) {
@@ -46,7 +48,11 @@ function criarFerramentas(tenant: string, env: Env) {
       keyId: a ? env.PILOT_HOST_KEY_A : env.PILOT_HOST_KEY_B,
       secret: a ? env.PILOT_HOST_SECRET_A : env.PILOT_HOST_SECRET_B,
       local: env.PILOT_ALLOW_LOCAL_HOST === "true",
-      fetchFn: fetch,
+      fetchFn: env.PILOT_BRIDGE_TRANSPORT === "service"
+        ? (env.PILOT_HOST_SERVICE
+          ? env.PILOT_HOST_SERVICE.fetch.bind(env.PILOT_HOST_SERVICE)
+          : (() => { throw new Error("binding_host_ausente"); })())
+        : fetch,
     });
     server.registerTool("catalogo_resumo", {
       description: "Consulta auditada de contagens da loja autorizada; retorno público mínimo.",
