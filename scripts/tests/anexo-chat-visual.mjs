@@ -35,13 +35,18 @@ try{
 
   corpos.length=0;await page.goto(`http://127.0.0.1:${porta}/.anexo-demo.html`);
   await page.getByRole('button',{name:/Nova conversa|Enviar/}).first().waitFor();
-  const clipe=page.getByRole('button',{name:'Anexar imagem ou arquivo'});await clipe.waitFor();
-  // O estado da configuração do provedor chega de forma assíncrona; aguardar a habilitação real.
+  const botaoMais=page.getByRole('button',{name:'Adicionar foto, câmera ou arquivo'});await botaoMais.waitFor();
+  await botaoMais.click();
+  const clipe=page.getByRole('menuitem',{name:'Arquivos'});await clipe.waitFor();
+  // O menu "+" deve exibir arquivos, fotos e câmera; anexos só habilitados com provedor.
   await page.waitForFunction(() => {
-    const botao=document.querySelector('button[aria-label="Anexar imagem ou arquivo"]');
+    const botao=[...document.querySelectorAll('.nano-anexos-menu button')].find(x=>x.textContent?.includes('Arquivos'));
     return botao instanceof HTMLButtonElement && !botao.disabled;
   }, null, {timeout:10000});
-  assert.equal(await clipe.isDisabled(),false,'com provedor escolhido o 📎 fica ativo');
+  assert.equal(await clipe.isDisabled(),false,'com provedor escolhido Arquivos fica ativo');
+  assert.equal(await page.getByRole('menuitem',{name:'Fotos'}).count(),1);
+  assert.equal(await page.getByRole('menuitem',{name:'Câmera'}).count(),1);
+  await page.getByRole('button',{name:'Fechar opções de anexos'}).click({position:{x:5,y:5}});
   // consentimento recolhe sozinho depois de autorizado, liberando espaço no compositor
   await page.getByLabel(/Enviar esta pergunta/).check();
   await page.locator('.consentimento').waitFor({state:'hidden'});
@@ -54,9 +59,9 @@ try{
    assert.ok(m.th>=40,'campo de texto com altura de toque (cresce com o texto) '+JSON.stringify(m));assert.ok(m.tw>=m.w*0.7,'campo de texto largo '+JSON.stringify(m));assert.ok(m.ab,'botões abaixo do campo');assert.ok(m.env,'Enviar visível');}
   // anexa PNG + TXT; tipo não aceito é recusado com aviso
   const PNG=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==','base64');
-  await page.setInputFiles('input[type=file]',[{name:'foto-peca-com-nome-bem-comprido-para-testar-corte.png',mimeType:'image/png',buffer:PNG},{name:'tabela.csv',mimeType:'text/csv',buffer:Buffer.from('sku;qtd\n5112;3')}]);
+  await page.locator('input[type=file]').first().setInputFiles([{name:'foto-peca-com-nome-bem-comprido-para-testar-corte.png',mimeType:'image/png',buffer:PNG},{name:'tabela.csv',mimeType:'text/csv',buffer:Buffer.from('sku;qtd\n5112;3')}]);
   await page.locator('.anexos-lista li').nth(1).waitFor();assert.equal(await page.locator('.anexos-lista li').count(),2);
-  await page.setInputFiles('input[type=file]',[{name:'virus.exe',mimeType:'application/x-msdownload',buffer:Buffer.from('MZ')}]);
+  await page.locator('input[type=file]').first().setInputFiles([{name:'virus.exe',mimeType:'application/x-msdownload',buffer:Buffer.from('MZ')}]);
   await page.getByRole('alert').filter({hasText:'use imagem'}).waitFor();assert.equal(await page.locator('.anexos-lista li').count(),2);
   // remover um anexo
   await page.getByRole('button',{name:/Remover tabela.csv/}).click();assert.equal(await page.locator('.anexos-lista li').count(),1);

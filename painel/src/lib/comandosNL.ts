@@ -54,6 +54,9 @@ export function acharRota(trecho: string, menu: Item[]): Item | null {
 export function interpretar(texto: string, menu: Item[]): Comando {
   const t = sem(texto);
   if (!t) return { tipo: "nenhum" };
+  // Pedidos operacionais com produtos, Bling ou pesquisa técnica devem chegar ao agente,
+  // mesmo quando citam "ferramentas", "imagens" ou "aprovação".
+  if (/\b(ci\d{5,}|sku|gtin|ean|oem|ncm|nf e|nota fiscal|cadastro|cadastrar|produto|produtos|pesquise|consulte|pesquisar|consultar)\b/.test(t) && /\b(consulte|consultar|pesquise|pesquisar|cadastro|cadastrar|produto|produtos|sku|oem|gtin|ean)\b/.test(t)) return { tipo: "nenhum" };
   if (/\b(avali[ae]r?|avaliacao|revis[ae]r?|analis[ae]r?|audit[ae]r?)\b.*\b(layout|tela|pagina|design|visual|interface)\b/.test(t) || /\b(layout|interface)\b.*\b(como esta|esta bom|tem problema)\b/.test(t)) return { tipo: "avaliar_layout" };
   if (/\b(o que (voce )?(sabe|consegue|pode) fazer|quais (sao )?(as )?(suas )?(funcoes|funcionalidades|ferramentas|telas)|ajuda|como voce funciona|o que tem no sistema)\b/.test(t)) return { tipo: "ajuda" };
   if (!VERBOS.test(t)) return { tipo: "nenhum" };

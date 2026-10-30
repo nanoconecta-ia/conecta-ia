@@ -832,3 +832,51 @@ html .abas .compositor-acoes .compositor-enviar { flex: none; min-width: 44px; w
     white-space: nowrap;
   }
 }
+
+
+/* Nano.IA mobile — navegação e anexos inspirados no padrão de chat de assistentes,
+   preservando as rotas e permissões reais do Conecta.IA. */
+.abas .nano-navegacao { width:min(86%, 380px); background:var(--cartao); border-radius:0 20px 20px 0; }
+.abas .nano-menu-topo { padding:16px 18px; min-height:64px; }
+.abas .nano-menu-topo strong { font-size:1.24rem; font-weight:800; }
+.abas .nano-menu-corpo { display:flex; flex-direction:column; gap:12px; padding:14px 16px 28px; }
+.abas .nano-busca-menu { display:block; margin:0; }
+.abas .nano-busca-menu input { width:100%; min-height:46px; margin:0; padding:8px 14px; border-radius:999px; box-sizing:border-box; }
+.abas .nano-acao-nova { width:100%; display:flex; gap:12px; align-items:center; min-height:48px; text-align:left; padding:8px 14px; border:0; border-radius:12px; background:var(--realce); color:var(--texto); font-weight:650; }
+.abas .nano-grupo-titulo { margin:12px 4px 0; font-size:.82rem; font-weight:750; color:var(--suave); }
+.abas .nano-links, .abas .nano-lista-conversas { display:grid; gap:3px; min-width:0; }
+.abas .nano-link { width:100%; display:flex; gap:12px; align-items:center; text-align:left; border:0; border-radius:12px; min-height:47px; padding:7px 10px; background:transparent; color:var(--texto); font:inherit; font-size:.96rem; }
+.abas .nano-link > span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.abas .nano-link:hover:not(:disabled), .abas .nano-link:focus-visible, .abas .nano-conversa-ativa { background:var(--realce); }
+.abas .nano-icone-rota { display:grid; place-items:center; flex:none; width:34px; height:34px; border-radius:11px; background:var(--realce); font-size:1.15rem; }
+.abas .nano-codigo-conversa { overflow-wrap:anywhere; font-size:.76rem; }
+.abas .nano-conversa { min-height:42px; }
+.abas .nano-mais { font-size:1.6rem !important; font-weight:500; }
+
+.abas .nano-anexos-fundo { position:absolute; inset:0; z-index:4; background:rgba(0,0,0,.27); border:0; border-radius:0; cursor:default; min-height:0; }
+.abas .nano-anexos-fundo:hover:not(:disabled) { background:rgba(0,0,0,.27); }
+.abas .nano-anexos-menu { position:absolute; left:14px; bottom:78px; z-index:5; display:grid; gap:2px; width:min(350px,calc(100% - 28px)); max-height:min(65dvh,480px); overflow-y:auto; padding:12px; box-sizing:border-box; border:1px solid var(--borda); border-radius:24px; background:var(--cartao); color:var(--texto); box-shadow:0 15px 55px rgba(0,0,0,.26); }
+.abas .nano-anexos-menu button { display:flex; align-items:center; gap:15px; width:100%; min-height:56px; padding:7px 12px; text-align:left; border:0; background:transparent; color:var(--texto); border-radius:14px; font:inherit; font-weight:500; }
+.abas .nano-anexos-menu button:hover:not(:disabled), .abas .nano-anexos-menu button:focus-visible { background:var(--realce); }
+.abas .nano-anexos-menu button:disabled { opacity:.45; }
+.abas .nano-icone-opcao { display:grid; place-items:center; flex:none; width:43px; height:43px; border-radius:50%; background:var(--realce); font-size:1.25rem; }
+
+/* O histórico é a única região de rolagem vertical; o compositor não cobre mensagens. */
+@container abas (max-width: 640px) {
+  .abas .abas-centro { overflow:hidden; }
+  .abas .abas-centro > .chat { min-height:0; flex:1 1 0; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; }
+  .abas .chat-compositor { position:relative; bottom:auto; flex:0 0 auto; z-index:1; background:var(--cartao); }
+  .abas .compositor-campo textarea { height:48px; min-height:48px; max-height:96px; field-sizing:fixed; overflow-y:auto; resize:none; }
+  .abas .compositor-acoes { flex-wrap:nowrap; }
+  .abas .compositor-acoes .compositor-enviar { flex:0 0 44px; }
+  .abas .anexos-lista, .abas .anexos-lista li { max-width:100%; box-sizing:border-box; }
+}
+@media (max-height:600px) {
+  /* No modo paisagem, a área útil é curta: rolar o centro mantendo a caixa no rodapé. */
+  .abas .abas-centro { overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; }
+  .abas .abas-centro > .chat { min-height:120px; flex:1 0 120px; overflow-y:visible; }
+  .abas .chat-compositor { position:sticky; bottom:0; z-index:2; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .abas .nano-navegacao { transition:none; }
+}

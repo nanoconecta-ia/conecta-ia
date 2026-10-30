@@ -67,7 +67,9 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     window.addEventListener("nano:perguntar", f); return () => window.removeEventListener("nano:perguntar", f);
   }, []);
   const [ocupado, setOcupado] = useState(false);
-  const [esq, setEsq] = useState(false), [dir, setDir] = useState(false); // abas laterais retráteis (conversas / modelo e privacidade)
+  const [esq, setEsq] = useState(false), [dir, setDir] = useState(false);
+  const [menuAnexos, setMenuAnexos] = useState(false);
+  const [buscaMenu, setBuscaMenu] = useState(""); // abas laterais retráteis (conversas / modelo e privacidade)
   const caixa = useRef<HTMLDivElement>(null);
   const estreito = () => (caixa.current?.clientWidth ?? 0) < 820; // em tela estreita as abas são gavetas sobrepostas: só uma por vez
   const [provedores, setProvedores] = useState<OpcaoProvedor[]>([]);
@@ -81,6 +83,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [erroAnexo, setErroAnexo] = useState("");
   const entradaArquivo = useRef<HTMLInputElement>(null);
   const entradaCamera = useRef<HTMLInputElement>(null);
+  const entradaFotos = useRef<HTMLInputElement>(null);
   const selecao = provedores.find((p) => p.id === provedor);
   const podeEnviar = !carregandoChat && !carregando && !erroConfig && (!provedor || (selecao?.estado === "disponivel" && aceitaEnvio));
   useEffect(() => {
@@ -194,7 +197,10 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     finally { imagem?.close(); }
   }
   async function escolherArquivos(lista: FileList | null) {
-    const arquivos = Array.from(lista ?? []); if (entradaArquivo.current) entradaArquivo.current.value = "";
+    const arquivos = Array.from(lista ?? []);
+    if (entradaArquivo.current) entradaArquivo.current.value = "";
+    if (entradaCamera.current) entradaCamera.current.value = "";
+    if (entradaFotos.current) entradaFotos.current.value = "";
     setErroAnexo(""); const pdfOk = provedor !== "compativel_openai"; let atual = [...anexos];
     for (const f of arquivos) {
       const erro = validarSelecao(f, atual, pdfOk); if (erro) { setErroAnexo(erro); break; }
@@ -216,27 +222,50 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     <div className="abas-caixa" ref={caixa}>
     <div className="cartao chat-tela abas" style={{ minHeight: 0, minWidth: 0, width: "100%", boxSizing: "border-box", height: "calc(100dvh - 170px)", maxHeight: "calc(100dvh - 170px)", overflow: "hidden" }} data-esq={esq ? "aberto" : "fechado"} data-dir={dir ? "aberto" : "fechado"}>
       {(esq || dir) && <button type="button" className="abas-fundo" aria-label="Fechar painel lateral" onClick={() => { setEsq(false); setDir(false); }} />}
-      <aside className="aba aba-esq" id="aba-conversas" aria-label="Conversas">
-        <div className="aba-topo"><strong>Conversas</strong><button type="button" className="sec mini" onClick={() => setEsq(false)} aria-label="Recolher conversas">Recolher</button></div>
-        <div className="aba-corpo">
-        {!(config.persistente || conversas.length > 0) && <p className="suave">Ainda não há conversas salvas. Elas aparecem aqui quando o histórico privado estiver ativo.</p>}
-        {(config.persistente || conversas.length > 0) && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <label style={{ flex: "1 1 220px" }}>Minhas conversas<select value={administrando ? "" : conversaId ?? ""} disabled={ocupado} onChange={e => e.target.value ? void abrir(e.target.value) : nova()}><option value="">Nova conversa</option>{conversas.map(c => <option key={c.id} value={c.id}>{c.titulo}</option>)}</select></label>
-          
-          {maisConversas && <button className="sec" disabled={ocupado} onClick={() => void listarConversas(true)}>Mais conversas</button>}
-          {conversaId && !administrando && <button className="sec" disabled={ocupado} onClick={() => void excluir()}>Excluir conversa</button>}
-        </div>}
-        {conversaId && <p className="suave" style={{ overflowWrap: "anywhere" }}>Código da conversa: {conversaId}{administrando ? " · Leitura administrativa auditada" : ""}</p>}
-        {podeAdministrar && <details><summary>Retenção e acesso administrativo</summary><p>A auditoria tem política própria e não é excluída junto com as conversas.</p><label>Retenção em dias (7–730)<input type="number" min={7} max={730} value={dias} onChange={e => setDias(Number(e.target.value))} /></label><button className="sec" disabled={ocupado} onClick={() => void reter()}>Salvar retenção</button>
-        {config.leitura_administrativa && <><p>Somente conversas desta empresa. Cada consulta registra usuário, motivo e conversa na auditoria.</p><label>Código da conversa<input value={adminId} onChange={e => setAdminId(e.target.value)} /></label><label>Motivo administrativo<input value={motivo} maxLength={300} onChange={e => setMotivo(e.target.value)} /></label><button className="sec" disabled={ocupado || motivo.trim().length < 10 || !adminId} onClick={() => void abrir(adminId, false, true)}>Consultar e auditar acesso</button></>}</details>}
+      <aside className="aba aba-esq nano-navegacao" id="aba-conversas" aria-label="Menu do Nano.IA">
+        <div className="aba-topo nano-menu-topo">
+          <strong>Nano.IA</strong>
+          <button type="button" className="sec mini" onClick={() => setEsq(false)} aria-label="Fechar menu">✕</button>
+        </div>
+        <div className="aba-corpo nano-menu-corpo">
+          <label className="nano-busca-menu"><span className="so-leitor">Buscar ferramentas ou conversas</span><input type="search" value={buscaMenu} onChange={(e) => setBuscaMenu(e.target.value)} placeholder="Buscar neste painel" /></label>
+          <button type="button" className="nano-acao-nova" disabled={ocupado} onClick={() => { nova(); setEsq(false); }}>✎ <span>Nova conversa</span></button>
+          <h2 className="nano-grupo-titulo">Ferramentas</h2>
+          <nav className="nano-links" aria-label="Ferramentas da loja">
+            {(menu ?? []).filter(([rota]) => ["/catalogo", "/imagens", "/fila", "/taxonomia", "/bling", "/integracoes", "/aprovacoes", "/estudio"].includes(rota))
+              .filter(([,titulo]) => titulo.toLocaleLowerCase("pt-BR").includes(buscaMenu.toLocaleLowerCase("pt-BR")))
+              .map(([rota,titulo]) => (
+                <button type="button" key={rota} className="nano-link" onClick={() => { setEsq(false); aoNavegar?.(rota); }}>
+                  <span className="nano-icone-rota" aria-hidden="true">{({ "/catalogo":"▦", "/imagens":"▧", "/fila":"✓", "/taxonomia":"⌘", "/bling":"↗", "/integracoes":"✧", "/aprovacoes":"☑", "/estudio":"◈" } as Record<string,string>)[rota] ?? "•"}</span>
+                  <span>{titulo}</span>
+                </button>
+              ))}
+          </nav>
+          <h2 className="nano-grupo-titulo">Conversas</h2>
+          {!(config.persistente || conversas.length > 0) && <p className="suave">O histórico privado aparece aqui quando estiver habilitado.</p>}
+          {(config.persistente || conversas.length > 0) && (
+            <div className="nano-lista-conversas" role="list">
+              {conversas.filter(c => c.titulo.toLocaleLowerCase("pt-BR").includes(buscaMenu.toLocaleLowerCase("pt-BR"))).map(c => (
+                <div role="listitem" key={c.id}>
+                  <button type="button" className={`nano-link nano-conversa ${conversaId === c.id && !administrando ? "nano-conversa-ativa" : ""}`}
+                    disabled={ocupado} onClick={() => { setEsq(false); void abrir(c.id); }} title={c.titulo}>▤ <span>{c.titulo}</span></button>
+                </div>
+              ))}
+              {maisConversas && <button type="button" className="sec" disabled={ocupado} onClick={() => void listarConversas(true)}>Carregar mais conversas</button>}
+              {conversaId && !administrando && <button type="button" className="sec mini" disabled={ocupado} onClick={() => void excluir()}>Excluir conversa atual</button>}
+            </div>
+          )}
+          {conversaId && <p className="suave nano-codigo-conversa">Conversa: {conversaId}{administrando ? " · Acesso auditado" : ""}</p>}
+          {podeAdministrar && <details><summary>Retenção e acesso administrativo</summary><p>A auditoria tem política própria e não é excluída junto com as conversas.</p><label>Retenção em dias (7–730)<input type="number" min={7} max={730} value={dias} onChange={e => setDias(Number(e.target.value))} /></label><button className="sec" disabled={ocupado} onClick={() => void reter()}>Salvar retenção</button>
+          {config.leitura_administrativa && <><p>Somente conversas desta empresa. Cada consulta registra usuário, motivo e conversa na auditoria.</p><label>Código da conversa<input value={adminId} onChange={e => setAdminId(e.target.value)} /></label><label>Motivo administrativo<input value={motivo} maxLength={300} onChange={e => setMotivo(e.target.value)} /></label><button className="sec" disabled={ocupado || motivo.trim().length < 10 || !adminId} onClick={() => void abrir(adminId, false, true)}>Consultar e auditar acesso</button></>}</details>}
         </div>
       </aside>
       <section className="abas-centro" aria-label="Conversa com o Nano.ia">
       <div className="agente">
-        <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Conversas" onClick={() => { setEsq((v) => !v); if (estreito()) setDir(false); }}>☰<span> Conversas</span></button>
+        <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Abrir menu do Nano.IA" onClick={() => { setEsq((v) => !v); setMenuAnexos(false); if (estreito()) setDir(false); }}>☰<span> Conversas</span></button>
         <Esfera estado={estado} tamanho={estado === "parado" ? 40 : 56} />
         <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite">{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span></div>
-        {(config.persistente || conversas.length > 0) && <button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span className="rot-longo">Nova conversa</span><span className="rot-curto" aria-hidden="true">＋<span className="rot-curto-txt"> Nova</span></span></button>}
+        {<button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span className="rot-longo">Nova conversa</span><span className="rot-curto" aria-hidden="true">＋<span className="rot-curto-txt"> Nova</span></span></button>}
         <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}>⚙<span> Modelo</span></button>
       </div>
       {estado !== "parado" && <div className="faixa-acao" role="status" data-estado={estado}><span className="faixa-pulso" aria-hidden="true" />{acaoLocal?.texto ?? { ouvindo: "Ouvindo você…", pensando: "Consultando o modelo e os dados da loja…", falando: "Lendo a resposta em voz alta…" }[estado as string] ?? ""}{estado === "falando" && <button type="button" className="mini sec" onClick={voz.calar}>Parar</button>}</div>}
@@ -246,12 +275,12 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
       {retentativa && <div><p>Recupere a mesma pergunta para verificar se o turno terminou. Isso preserva a chave de idempotência.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Recuperar pergunta</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button></div>}
       {msgs.length > 3 && <div className="chat-ferramentas"><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button><small className="suave">{msgs.length} mensagens</small></div>}
-      <div className="chat" style={{ flex: "1 1 auto", minHeight: 240, overflowY: "auto" }} aria-live="polite">{msgs.map((m, i) => <MensagemRetratil key={i} m={m} recolhida={mensagemRecolhida(i, msgs.length, abertas, modoMsgs)} onAlternar={() => alternarMsg(i)} />)}<div ref={fim} /></div>
+      <div className="chat" style={{ flex: "1 1 auto", minHeight: 0, minWidth: 0, overflowY: "auto", overflowX: "hidden" }} aria-live="polite">{msgs.map((m, i) => <MensagemRetratil key={i} m={m} recolhida={mensagemRecolhida(i, msgs.length, abertas, modoMsgs)} onAlternar={() => alternarMsg(i)} />)}<div ref={fim} /></div>
       <div className="barra-extras">
       <Retratil id="atalhos" titulo="Atalhos" resumo="perguntas rápidas" aberto={false} recolherQuando={true}><p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p></Retratil>
       {selecao && <Retratil id="consentimento" titulo="Privacidade" resumo={aceitaEnvio ? "autorizado" : "autorize para enviar"} status={aceitaEnvio ? "go" : "warn"} recolherQuando={aceitaEnvio}><label className="consentimento" style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.{anexos.length > 0 && " Os anexos desta pergunta também são enviados."}</label></Retratil>}
       </div>
-      <div className="chat-compositor">
+      <div className="chat-compositor" style={{ flex: "0 0 auto", minWidth: 0, maxHeight: "min(42dvh, 280px)", overflowY: "auto", overflowX: "hidden", boxSizing: "border-box" }}>
       {selecao?.motivo && <p role="status">{selecao.motivo}</p>}
       {selecao?.estado === "disponivel" && !aceitaEnvio && (
         <div className="aviso-envio" role="status">
@@ -265,10 +294,11 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         <div className="compositor-grade">
           <input ref={entradaArquivo} type="file" hidden multiple accept={CHAT_ACEITA} onChange={(e) => void escolherArquivos(e.target.files)} />
           <input ref={entradaCamera} type="file" hidden accept="image/*" capture="environment" onChange={(e) => void escolherArquivos(e.target.files)} />
-          <div className="compositor-campo"><span id="rotulo-pergunta" className="so-leitor">Pergunte</span><textarea aria-labelledby="rotulo-pergunta" value={texto} rows={1} enterKeyHint="send" placeholder="Pergunte ao Nano.ia…" onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void enviar(texto); } }} maxLength={1000} /></div>
+          <input ref={entradaFotos} type="file" hidden multiple accept="image/*" onChange={(e) => void escolherArquivos(e.target.files)} />
+          <div className="compositor-campo"><span id="rotulo-pergunta" className="so-leitor">Pergunte</span><textarea aria-labelledby="rotulo-pergunta" value={texto} rows={1} style={{ display: "block", width: "100%", minWidth: 0, height: "48px", minHeight: "48px", maxHeight: "96px", overflowY: "auto", resize: "none", boxSizing: "border-box" }} enterKeyHint="send" placeholder="Pergunte ao Nano.ia…" onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void enviar(texto); } }} maxLength={1000} /></div>
           <div className="compositor-acoes">
-          <button type="button" className="sec mic" aria-label="Fotografar produto ou código de barras" title="Abrir câmera para fotografar produto, GTIN ou QR Code; a imagem será anexada para análise" disabled={ocupado || !provedor || administrando || anexos.length >= CHAT_MAX_ANEXOS} onClick={() => entradaCamera.current?.click()}>📷</button>
-          <button type="button" className="sec mic" aria-label="Anexar imagem ou arquivo" title={provedor ? `Anexar imagem, PDF, TXT ou CSV (até ${CHAT_MAX_ANEXOS})` : "Escolha um modelo de IA para anexar arquivos"} disabled={ocupado || !provedor || administrando || anexos.length >= CHAT_MAX_ANEXOS} onClick={() => entradaArquivo.current?.click()}>📎</button>
+          <button type="button" className="sec mic nano-mais" aria-expanded={menuAnexos} aria-label="Adicionar foto, câmera ou arquivo" title="Adicionar ao Nano.IA"
+            onClick={() => { setMenuAnexos(v => !v); setEsq(false); setDir(false); }}>＋</button>
           {voz.suporteMic && <button type="button" className="sec mic" aria-pressed={voz.ouvindo} aria-label={voz.ouvindo ? "Parar de ouvir" : "Falar com o assistente"} onClick={() => (voz.ouvindo ? voz.parar() : voz.ouvir())} disabled={ocupado}>🎤</button>}
           {voz.suporteFala && <button type="button" className="sec mic" aria-pressed={lerAlto} aria-label={lerAlto ? "Desligar a leitura das respostas em voz alta" : "Ler as respostas em voz alta"} title={lerAlto ? "Leitura em voz alta ligada" : "Leitura em voz alta desligada"} onClick={alternarFala}>{lerAlto ? "🔊" : "🔈"}</button>}
             <span className="compositor-espaco" />
@@ -281,6 +311,16 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       </form>
       </div>
       </section>
+      {menuAnexos && <>
+        <button type="button" className="nano-anexos-fundo" aria-label="Fechar opções de anexos" onClick={() => setMenuAnexos(false)} />
+        <div className="nano-anexos-menu" role="menu" aria-label="Adicionar ao Nano.IA">
+          <button type="button" role="menuitem" disabled={ocupado || !provedor || administrando || anexos.length >= CHAT_MAX_ANEXOS} onClick={() => { setMenuAnexos(false); entradaCamera.current?.click(); }}><span className="nano-icone-opcao">📷</span>Câmera</button>
+          <button type="button" role="menuitem" disabled={ocupado || !provedor || administrando || anexos.length >= CHAT_MAX_ANEXOS} onClick={() => { setMenuAnexos(false); entradaFotos.current?.click(); }}><span className="nano-icone-opcao">▧</span>Fotos</button>
+          <button type="button" role="menuitem" disabled={ocupado || !provedor || administrando || anexos.length >= CHAT_MAX_ANEXOS} onClick={() => { setMenuAnexos(false); entradaArquivo.current?.click(); }}><span className="nano-icone-opcao">📎</span>Arquivos</button>
+          <button type="button" role="menuitem" onClick={() => { setMenuAnexos(false); if ((menu ?? []).some(([rota]) => rota === "/integracoes")) aoNavegar?.("/integracoes"); else setDir(true); }}><span className="nano-icone-opcao">✧</span>Integrações de IA</button>
+          <button type="button" role="menuitem" onClick={() => { setMenuAnexos(false); setEsq(false); setDir(true); }}><span className="nano-icone-opcao">⚙</span>Modelo e privacidade</button>
+        </div>
+      </>}
       <aside className="aba aba-dir" id="aba-modelo" aria-label="Modelo e privacidade">
         <div className="aba-topo"><strong>Modelo e privacidade</strong><button type="button" className="sec mini" onClick={() => setDir(false)} aria-label="Recolher modelo e privacidade">Recolher</button></div>
         <div className="aba-corpo">
