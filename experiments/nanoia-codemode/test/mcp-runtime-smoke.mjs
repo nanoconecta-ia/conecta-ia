@@ -78,13 +78,13 @@ try {
   assert.equal(browser.status, 403, "origem de browser deve falhar");
   await inicializar(A);
   await inicializar(B);
-  const a = await codigo(A, "async () => { return await codemode.catalogo_resumo({}); };");
-  const b = await codigo(B, "async () => { return await codemode.catalogo_resumo({}); };");
+  const a = await codigo(A, "async () => { return await codemode.catalogo_resumo({}); }");
+  const b = await codigo(B, "async () => { return await codemode.catalogo_resumo({}); }");
   assert.match(a, /"produtos"\\?:?\s*3|produtos.{0,10}3/, `tenant A difere: ${a.slice(0,600)}`);
   assert.match(b, /"produtos"\\?:?\s*1|produtos.{0,10}1/, `tenant B difere: ${b.slice(0,600)}`);
-  const cross = await codigo(B, "async () => { return await codemode.catalogo_listar({ busca: 'TEST-A', limite: 10 }); };");
+  const cross = await codigo(B, "async () => { return await codemode.catalogo_listar({ busca: 'TEST-A', limite: 10 }); }");
   assert.match(cross, /\[\]|itens.{0,8}\[\]/, `loja B vazou itens da A: ${cross.slice(0,600)}`);
-  const egress = await codigo(A, "async () => { try { const r = await fetch('https://example.invalid'); return { egress_bloqueado: false, http: r.status }; } catch(e) { return { egress_bloqueado: true, erro: String(e).slice(0,100) }; } };");
+  const egress = await codigo(A, "async () => { try { const r = await fetch('https://example.invalid'); return { egress_bloqueado: false, http: r.status }; } catch(e) { return { egress_bloqueado: true, erro: String(e).slice(0,100) }; } }");
   assert.match(egress, /egress_bloqueado.{0,12}true/, `fetch não foi bloqueado: ${egress.slice(0,600)}`);
   console.log("PASS: auth, origin, initialize, tools/list, code A/B, isolamento e egress (Miniflare).");
 } catch (e) {
