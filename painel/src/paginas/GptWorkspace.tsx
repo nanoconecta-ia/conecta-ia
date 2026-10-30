@@ -3,14 +3,15 @@ import type { Loja } from "../lib/dados.ts";
 import { CONECTOR_ATIVO } from "../lib/flags.ts";
 import { ir } from "../lib/rota.ts";
 import { supabase } from "../supabase.ts";
-import { buscarProdutosPendentes, diagnosticoCatalogo, pendenciasProduto, type NoTaxonomia, type ProdutoEspelho } from "../lib/qualidadeProduto.ts";
+import { buscarProdutosPendentes, diagnosticoCatalogo, pendenciasProduto, type ProdutoEspelho } from "../lib/qualidadeProduto.ts";
+import { auditarArvore, type NoTaxonomiaCompleto } from "../lib/taxonomiaQualidade.ts";
 import "./gpt-workspace.css";
 
 type Motor = { provedor: string; modelo: string | null; principal: boolean };
 type Situacao = { status: string; ultimo_sync_ok_em: string | null };
 type Estado = {
   produtos: ProdutoEspelho[]; totalProdutos: number | null;
-  nos: NoTaxonomia[]; totalNos: number | null; bling: Situacao | null;
+  nos: NoTaxonomiaCompleto[]; totalNos: number | null; bling: Situacao | null;
   modelos: Motor[]; aviso: string | null; carregando: boolean;
 };
 const inicial: Estado = { produtos: [], totalProdutos: null, nos: [], totalNos: null, bling: null, modelos: [], aviso: null, carregando: true };
@@ -32,7 +33,7 @@ export function GptWorkspace({ loja }: { loja: Loja }) {
       supabase.from("produtos")
         .select("id,sku,nome,marca,gtin,descricao_curta,peso_kg,largura_cm,altura_cm,profundidade_cm,taxonomia_no_id,publicado,situacao", { count: "exact" })
         .eq("loja_id", loja.id).order("nome").limit(500),
-      supabase.from("taxonomia_nos").select("id,status", { count: "exact" }).limit(500),
+      supabase.from("taxonomia_nos").select("id,pai_id,nome,slug,status", { count: "exact" }).limit(500),
       supabase.from("bling_conexoes").select("status,ultimo_sync_ok_em").eq("loja_id", loja.id).maybeSingle(),
       supabase.from("loja_chaves_ia").select("provedor,modelo,principal").eq("loja_id", loja.id).eq("ativa", true),
     ]).then(([p, n, b, m]) => {
@@ -41,7 +42,7 @@ export function GptWorkspace({ loja }: { loja: Loja }) {
       setEstado({
         produtos: p.error ? [] : (p.data ?? []) as ProdutoEspelho[],
         totalProdutos: p.error ? null : (p.count ?? 0),
-        nos: n.error ? [] : (n.data ?? []) as NoTaxonomia[],
+        nos: n.error ? [] : (n.data ?? []) as NoTaxonomiaCompleto[],
         totalNos: n.error ? null : (n.count ?? 0),
         bling: b.error ? null : (b.data as Situacao | null),
         modelos: m.error ? [] : (m.data ?? []) as Motor[],
@@ -53,6 +54,8 @@ export function GptWorkspace({ loja }: { loja: Loja }) {
   }, [loja.id, revisao]);
 
   const diagnostico = useMemo(() => diagnosticoCatalogo(estado.produtos, estado.nos), [estado.produtos, estado.nos]);
+  const arvore = useMemo(() => auditarArvore(estado.nos), [estado.nos]);
+  const arvoreCompleta = estado.totalNos !== null && estado.totalNos <= estado.nos.length;
   const lista = useMemo(() => buscarProdutosPendentes(estado.produtos, consulta, somentePendentes).slice(0, 12), [estado.produtos, consulta, somentePendentes]);
   const parcial = (estado.totalProdutos ?? 0) > estado.produtos.length || (estado.totalNos ?? 0) > estado.nos.length;
   const modeloPrincipal = estado.modelos.find((p) => p.principal) ?? estado.modelos[0];
@@ -134,6 +137,9 @@ export function GptWorkspace({ loja }: { loja: Loja }) {
           <div className="gptw-taxo">
             <span>Nós propostos <b>{estado.totalNos == null ? "—" : diagnostico.nosPropostos}</b></span>
             <span>Produtos sem nó <b>{estado.totalProdutos == null ? "—" : diagnostico.semTaxonomia}</b></span>
+            <span>Nós órfãos <b>{arvoreCompleta ? arvore.orfaos.length : "—"}</b></span>
+            <span>Ciclos na árvore <b>{arvoreCompleta ? arvore.ciclos.length : "—"}</b></span>
+            <span>Duplicidades entre irmãos <b>{arvoreCompleta ? arvore.duplicados.length : "—"}</b></span>
           </div>
           <button type="button" className="gptw-link" onClick={() => ir("/taxonomia")}>Abrir taxonomia ↗</button>
         </section>
