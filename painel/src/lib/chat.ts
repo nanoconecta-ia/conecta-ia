@@ -6,7 +6,7 @@ export type Provedor = "claude" | "gemini" | "compativel_openai";
 export type DecisaoFerramenta = "permitida" | "negada" | "requer_aprovacao" | "simulada";
 export type Risco = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
-export interface ParametrosChat { loja_id: string; conversa_id?: string | null; texto: string; anexos?: string[]; provedor?: Provedor; modelo?: string }
+export interface ParametrosChat { loja_id: string; conversa_id?: string | null; texto: string; anexos?: string[]; provedor?: Provedor; modelo?: string; contexto_operacional?: boolean; fallback?: boolean }
 export interface ManipuladoresChat {
   conversa?(d: { id: string; titulo: string }): void;
   estado?(estado: unknown): void;
