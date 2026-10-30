@@ -134,7 +134,7 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Compilar Worker Free sem Dynamic Worker Loader e sem deploy
         run: |
-          node -e "const c=require('./staging/wrangler-free-parent.jsonc'); if(c.worker_loaders || c.workers_dev!==false || c.vars.PILOT_ENABLED!=='false')process.exit(1)"
+          node -e "const c=JSON.parse(require('node:fs').readFileSync('./staging/wrangler-free-parent.jsonc','utf8')); if(c.worker_loaders || c.workers_dev!==false || c.vars.PILOT_ENABLED!=='false')process.exit(1)"
           npx wrangler deploy -c staging/wrangler-free-parent.jsonc --dry-run --outdir /tmp/nanoia-worker-free-hml
       - name: Testar Worker MCP gratuito com host HMAC/SQLite e duas lojas sintéticas
         run: node test/free-parent-smoke.mjs
