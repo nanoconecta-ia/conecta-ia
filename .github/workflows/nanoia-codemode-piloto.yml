@@ -51,5 +51,5 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Compilar Worker Loader - proibido publicar
         run: npx wrangler deploy --dry-run --outdir /tmp/nanoia-codemode-preview
-      - name: Confirmar pacote local
-        run: test -s /tmp/nanoia-codemode-preview/index.js
+      # O próprio --dry-run conclui com erro se o bundle for inválido; o arquivo
+      # gerado muda de nome entre versões do Wrangler. Não assumir index.js.
