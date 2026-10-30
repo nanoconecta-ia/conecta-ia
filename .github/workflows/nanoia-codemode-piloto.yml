@@ -136,5 +136,15 @@ jobs:
         run: |
           node -e "const c=JSON.parse(require('node:fs').readFileSync('./staging/wrangler-free-parent.jsonc','utf8')); if(c.worker_loaders || c.workers_dev!==false || c.vars.PILOT_ENABLED!=='false')process.exit(1)"
           npx wrangler deploy -c staging/wrangler-free-parent.jsonc --dry-run --outdir /tmp/nanoia-worker-free-hml
+      - name: Compilar as configuracoes de deploy Workers Free por run ID, sem publicar
+        shell: bash
+        run: |
+          set -euo pipefail
+          id=13000987654
+          trap 'rm -f "staging/.run-${id}-host.jsonc" "staging/.run-${id}-pai.jsonc"' EXIT
+          node staging/preparar-plano-free.mjs "$id"
+          node -e "const fs=require('node:fs');const id='13000987654';const host=JSON.parse(fs.readFileSync('staging/.run-'+id+'-host.jsonc','utf8'));const pai=JSON.parse(fs.readFileSync('staging/.run-'+id+'-pai.jsonc','utf8'));if(host.workers_dev!==false||pai.workers_dev!==true||pai.worker_loaders||pai.services[0].service!==host.name||pai.vars.PILOT_ENABLED!=='true')process.exit(1)"
+          npx wrangler deploy -c "staging/.run-${id}-host.jsonc" --dry-run --outdir /tmp/nanoia-free-host-build
+          npx wrangler deploy -c "staging/.run-${id}-pai.jsonc" --dry-run --outdir /tmp/nanoia-free-pai-build
       - name: Testar Worker MCP gratuito com host HMAC/SQLite e duas lojas sintéticas
         run: node test/free-parent-smoke.mjs
