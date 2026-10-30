@@ -70,8 +70,10 @@ export class ReplayAuditoriaHml {
       if(typeof id!=="string" || !/^[0-9a-fA-F-]{36}$/.test(id) ||
          typeof ferramenta!=="string" || !["conecta.catalogo.resumo","conecta.catalogo.listar"].includes(ferramenta) ||
          status!=="permitida")return resposta(400,{erro:"auditoria"});
-      const r=this.state.storage.sql.exec("INSERT OR IGNORE INTO auditoria(id,momento,ferramenta,status) VALUES(?,?,?,?)",id,Date.now(),ferramenta,status);
-      return resposta(r.rowsWritten===1?200:409,{ok:r.rowsWritten===1});
+      // SQLite RETURNING comprova que uma linha foi realmente gravada.
+      const linhas=this.state.storage.sql.exec("INSERT OR IGNORE INTO auditoria(id,momento,ferramenta,status) VALUES(?,?,?,?) RETURNING id",
+        id,Date.now(),ferramenta,status).toArray();
+      return resposta(linhas.length===1?200:409,{ok:linhas.length===1});
     }
     return resposta(404,{erro:"rota"});
   }
@@ -79,7 +81,12 @@ export class ReplayAuditoriaHml {
 const enviarDO=async(stub:DurableObjectStub,path:string,body:Record<string,unknown>)=>{
   const r=await stub.fetch("https://staging-internal.invalid"+path,{method:"POST",
     headers:{"content-type":"application/json"},body:JSON.stringify(body)});
-  if(!r.ok)throw Error("armazenamento_indisponivel");
+  if(!r.ok) {
+    const codigo=path==="/audit"?"auditoria":path==="/nonce"?"nonce":"outro";
+    // Log operacional contém apenas rota interna e código HTTP; nunca payloads.
+    console.warn("hml_do_negado",codigo,r.status);
+    throw Error("armazenamento_indisponivel");
+  }
   return await r.json() as Record<string,unknown>;
 };
 export default {
