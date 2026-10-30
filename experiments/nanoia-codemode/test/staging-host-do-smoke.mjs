@@ -5,13 +5,17 @@
  */
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+const persist=mkdtempSync(join(tmpdir(),"nanoia-hml-do-"));
 import { assinarBridge, BRIDGE_PATH } from "../src/bridge-auth.mjs";
 const secretA="segredo_sintetico_stage_A_nao_usar_em_producao__0000000001";
 const secretB="segredo_sintetico_stage_B_nao_usar_em_producao__0000000002";
 const port=8891, root="http://127.0.0.1:"+port;
 const run=spawn("./node_modules/.bin/wrangler",[
   "dev", "-c", "staging/wrangler-host.jsonc", "--local", "--ip", "127.0.0.1",
-  "--port", String(port), "--show-interactive-dev-session=false",
+  "--port", String(port), "--persist-to",persist,"--show-interactive-dev-session=false",
   "--var", "STAGING_HMAC_A:"+secretA,"--var", "STAGING_HMAC_B:"+secretB,"--var", "DEBUG_FIXTURE:true"
 ],{stdio:["ignore","pipe","pipe"],env:{...process.env,CI:"true",WRANGLER_SEND_METRICS:"false"}});
 let logs="";
@@ -79,4 +83,4 @@ try{
   const safe=logs.replaceAll(secretA,"[TEST_KEY]").replaceAll(secretB,"[TEST_KEY]");
   console.error("WRANGLER:",safe.slice(-2800));
   process.exitCode=1;
-}finally {run.kill("SIGTERM");}
+}finally {run.kill("SIGTERM");try{rmSync(persist,{recursive:true,force:true});}catch{}}
