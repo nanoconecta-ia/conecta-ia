@@ -26,7 +26,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ! rg -n 'SUPABASE_SERVICE_ROLE_KEY|BLING_CLIENT_SECRET|process\.env|from ["\x27].*supabase|bling_armazem|\beval\(|\bnew Function\(' experiments/nanoia-codemode/src
+          set +e
+          grep -R -n -E 'SUPABASE_SERVICE_ROLE_KEY|BLING_CLIENT_SECRET|process[.]env|bling_armazem|eval[(]|new Function[(]' experiments/nanoia-codemode/src
+          status=$?
+          set -e
+          if [ "$status" -ne 1 ]; then
+            echo "Encontrado uso proibido ou falha na inspeção (status $status)"
+            exit 1
+          fi
       # Sem deploy, sem chaves, sem acesso a banco. Build Wrangler sob teste separado.
 
   worker-build-sem-deploy:
