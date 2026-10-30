@@ -62,6 +62,7 @@ test("revogação e escopo são verificados antes de cada operação interna", a
   assert.equal(chamadas.length, 1);
   await assert.rejects(novo({ revalidarChave: async () => ({ ...identidade, escopos: ["propor"] }) }).executar("catalogo_resumo"), /chave_revogada/);
   await assert.rejects(novo({ revalidarChave: async () => ({ ...identidade, chave_id: "outra" }) }).executar("catalogo_resumo"), /chave_revogada/);
+  await assert.rejects(novo({ revalidarChave: async () => { throw new Error("falha interna do banco: senha exemplo"); } }).executar("catalogo_resumo"), /^Error: chave_nao_confirmada$/);
 });
 
 test("tenant do contexto não é selecionável pela IA, e tem que corresponder ao token revalidado", async () => {
