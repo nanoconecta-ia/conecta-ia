@@ -88,7 +88,9 @@ export function criarAdaptadorCodeModeLeitura(o: AdaptadorCodeModeOpcoes) {
       const operacao = nome as OperacaoCodeMode;
       if (!o.identidade.chave_id || !o.identidade.loja_id || !o.contexto.userId ||
           o.contexto.lojaId !== o.identidade.loja_id) throw new Error("identidade_invalida");
-      const atual = await o.revalidarChave();
+      let atual: IdentidadeCodeMode | null;
+      try { atual = await o.revalidarChave(); }
+      catch { throw new Error("chave_nao_confirmada"); } // Não expor erros do banco/credenciais à sandbox.
       if (!atual || atual.chave_id !== o.identidade.chave_id ||
           atual.loja_id !== o.identidade.loja_id || !atual.escopos.includes("leitura")) {
         throw new Error("chave_revogada_ou_sem_escopo");
