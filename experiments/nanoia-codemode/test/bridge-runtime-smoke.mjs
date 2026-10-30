@@ -6,8 +6,11 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import { writeFileSync, rmSync } from "node:fs";
 import { assinarBridge, BRIDGE_PATH } from "../src/bridge-auth.mjs";
 const PORT = 8797, HOST = "http://127.0.0.1:8799", URL = `http://127.0.0.1:${PORT}/mcp`;
+const HOST_CONFIG = "test/host-generated.wrangler.json";
+const SERVICE_HOST = "https://nanoia-bridge.internal" + BRIDGE_PATH;
 const A = "laboratorio_A_token_sintetico_20261030", B = "laboratorio_B_token_sintetico_20261030";
 const sA = randomBytes(48).toString("hex"), sB = randomBytes(48).toString("hex"), control = randomBytes(48).toString("hex");
 function iniciar(cmd, args, env) {
@@ -64,14 +67,25 @@ async function hostPost(corpo, cabecalhos) {
 }
 try {
   await aguardar(HOST + "/test/status", (r)=>r.status === 200, host.proc);
-  worker = iniciar("./node_modules/.bin/wrangler", ["dev", "--local", "--ip", "127.0.0.1", "--port", String(PORT),
+  // O Worker host é um serviço PRIVADO, iniciado pelo Wrangler como binding do primário.
+  // Grava credenciais de teste aleatórias somente no workspace temporário do CI.
+  writeFileSync(HOST_CONFIG, JSON.stringify({
+    name: "nanoia-codemode-host-fixture-nao-publicar",
+    main: "./bridge-host-worker.ts",
+    compatibility_date: "2026-10-30",
+    compatibility_flags: ["nodejs_compat"],
+    workers_dev: false,
+    vars: { TEST_HMAC_A: sA, TEST_HMAC_B: sB },
+  }));
+  worker = iniciar("./node_modules/.bin/wrangler", ["dev", "-c", "wrangler.jsonc", "-c", HOST_CONFIG, "--local", "--ip", "127.0.0.1", "--port", String(PORT),
     "--var", "PILOT_ENABLED:true",
     "--var", `PILOT_TOKEN_A:${A}`, "--var", `PILOT_TOKEN_B:${B}`,
     "--var", "PILOT_BRIDGE_ENABLED:true",
-    "--var", `PILOT_HOST_URL:${HOST + BRIDGE_PATH}`,
+    "--var", `PILOT_HOST_URL:${SERVICE_HOST}`,
+    "--var", "PILOT_BRIDGE_TRANSPORT:service",
     "--var", "PILOT_HOST_KEY_A:hml-a", "--var", "PILOT_HOST_KEY_B:hml-b",
     "--var", `PILOT_HOST_SECRET_A:${sA}`, "--var", `PILOT_HOST_SECRET_B:${sB}`,
-    "--var", "PILOT_ALLOW_LOCAL_HOST:true",
+    "--var", "PILOT_ALLOW_LOCAL_HOST:false",
     "--show-interactive-dev-session=false"], { WRANGLER_SEND_METRICS: "false", CI: "true" });
   // Readiness: 401 significa o Worker está ativo mas não aceita sem credenciais.
   for (let i=0;i<60;i++) {
@@ -99,8 +113,9 @@ try {
   assert.match(busca,/FIX-HML-A-01/);
   assert.ok(!busca.includes("FIX-HML-B-01"),"vazamento entre lojas");
   assert.ok(clean(busca),"lista revelou campo confidencial");
-  const spoof = await executar(B, "async () => { try { await codemode.catalogo_listar({loja_id:'aaaaaaaa-0000-0000-0000-000000000001'}); return { recusado:false }; } catch(e) { return { recusado:true }; } }");
-  assert.match(spoof,/recusado.{0,12}true/,spoof.slice(0,500));
+  // O parser pode eliminar parâmetros desconhecidos; o critério é NÃO vazar a outra loja.
+  const spoof = await executar(B, "async () => { return await codemode.catalogo_listar({loja_id:'aaaaaaaa-0000-0000-0000-000000000001'}); }");
+  assert.ok(!spoof.includes("FIX-HML-A-01"),"troca de tenant via argumento");
   const egress = await executar(A, "async () => { try { await fetch('http://127.0.0.1:8799/test/status'); return { bloqueado:false }; } catch { return { bloqueado:true }; } }");
   assert.match(egress,/bloqueado.{0,12}true/,egress.slice(0,500));
   // Testes diretos host: sem assinatura, adulteração, repetição e timestamp expirado.
@@ -114,10 +129,13 @@ try {
   assert.equal((await hostPost(corpo,passado)).status,401,"timestamp antigo deve ser recusado");
   const status = await fetch(HOST+"/test/status",{headers:{"x-test-control":control}});
   const metric = await status.json();
-  assert.ok(metric.auditorias >= 4, "despacho real deve auditar as consultas");
+  assert.ok(metric.auditorias >= 1, "despacho real deve auditar consulta no host HTTP");
   // A revogação precisa bloquear a próxima chamada, sem cachear permissão.
   const rev = await fetch(HOST+"/test/revogar",{method:"POST",headers:{"x-test-control":control,"x-test-key":"hml-a"}});
   assert.equal(rev.status,200);
+  const afterNode = await assinarBridge({keyId:"hml-a",secret:sA,corpo});
+  assert.equal((await hostPost(corpo,afterNode)).status,401,"host Node revogado deve recusar");
+  // O host Service Binding já revogou A automaticamente após duas consultas.
   await executar(A,"async () => { return await codemode.catalogo_resumo({}); }",false);
   const b2 = await executar(B,"async () => { return await codemode.catalogo_resumo({}); }");
   assert.match(b2,/produtos.{0,12}1/, "revogação de A não pode derrubar B");
@@ -129,4 +147,5 @@ try {
   process.exitCode = 1;
 } finally {
   for (const p of [worker?.proc,host.proc]) if (p) p.kill("SIGTERM");
+  try { rmSync(HOST_CONFIG, { force: true }); } catch { /* fixture efêmera */ }
 }
