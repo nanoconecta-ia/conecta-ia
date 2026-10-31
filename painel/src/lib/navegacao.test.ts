@@ -6,7 +6,7 @@ const itens: Item[] = [["/", "Visão geral"], ["/catalogo", "Catálogo"], ["/bli
 
 test("agrupa por área, na ordem do menu, e omite grupo vazio", () => {
   const g = agruparMenu(itens);
-  assert.deepEqual(g.map((x) => x.id), ["comando", "catalogo", "erp", "outros"]);
+  assert.deepEqual(g.map((x) => x.id), ["inicio", "catalogo", "ajustes", "outros"]);
   assert.deepEqual(g[2].itens.map((i) => i[0]), ["/bling", "/backup"]);
 });
 
@@ -26,4 +26,15 @@ test("filtro ignora acento e caixa; começa-com vem antes de contém", () => {
 test("consulta vazia devolve tudo; sem acerto devolve vazio", () => {
   assert.equal(filtrarComandos(itens, "  ").length, itens.length);
   assert.equal(filtrarComandos(itens, "zzz").length, 0);
+});
+
+test("cinco áreas de trabalho com rotas legadas preservadas", () => {
+  const rotas: Item[] = [
+    ["/", "Visão geral"], ["/catalogo", "Catálogo"], ["/assistente", "Assistente"],
+    ["/conector", "Nano.IA"], ["/fila", "Fila"], ["/aprovacoes", "Aprovações"],
+    ["/gateway", "Gateway MCP/API"], ["/integracoes", "Integrações"], ["/design", "Design System"],
+  ];
+  const grupos = agruparMenu(rotas);
+  assert.deepEqual(grupos.map((g) => g.titulo), ["Início", "Catálogo inteligente", "Nano.IA", "Operações", "Configurações"]);
+  assert.deepEqual(new Set(grupos.flatMap((g) => g.itens.map(([r]) => r))), new Set(rotas.map(([r]) => r)));
 });
