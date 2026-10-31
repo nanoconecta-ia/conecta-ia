@@ -4,6 +4,7 @@ import { prazo, type ItemProposta, type Operacao, type Proposta } from "../../li
 import { DecisaoProposta } from "./DecisaoProposta.tsx";
 import { TabelaItens } from "./TabelaItens.tsx";
 import { hashCurto, SeloProposta, SeloRisco } from "./ui.tsx";
+import { CENTRAL_ATIVA } from "../../lib/flags.ts";
 
 /** Cartão de aprovação dentro do chat: mostra o antes/depois lido do banco (não do texto do modelo) e permite decidir. */
 export function CartaoProposta({ propostaId, fonte, lojaId }: { propostaId: string; fonte: FonteDados; lojaId: string }) {
@@ -25,7 +26,7 @@ export function CartaoProposta({ propostaId, fonte, lojaId }: { propostaId: stri
       {msg ? <p className="msg-ok" role="status">{msg}</p> : (
         <DecisaoProposta proposta={proposta} itens={itens} selecionados={null} fonte={fonte} lojaId={lojaId} aoConcluir={(m) => { setMsg(m); carregar(); }} />
       )}
-      <p style={{ marginBottom: 0 }}><a href={`#/central?proposta=${proposta.id}`}>Abrir na Central de Inteligência</a></p>
+      {CENTRAL_ATIVA && <p style={{ marginBottom: 0 }}><a href={`#/central?proposta=${proposta.id}`}>Abrir na Central de Inteligência</a></p>}
     </article>
   );
 }

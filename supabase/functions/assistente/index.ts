@@ -15,6 +15,8 @@ import { MSG_SO_LOJISTA, podeDecidir } from "../_shared/assistente/permissao.ts"
 
 import { conteudoComAnexos, REGRAS_ANEXO, validarAnexos } from "../_shared/assistente/anexos.ts";
 import { atenderChat } from "../_shared/assistente/chat.ts";
+import { ADAPTADORES_STREAM } from "../_shared/ia/adaptadores_stream.ts";
+import { turnoComStreaming } from "../_shared/assistente/streaming.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -40,6 +42,10 @@ Deno.serve(async (req) => {
 
   if (typeof c.acao === "string" && c.acao.startsWith("chat_")) {
     const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+    // B2b (#166): o mesmo turno, com o texto chegando aos poucos (SSE). Mesmo registro, idempotência e auditoria do turno comum.
+    if (c.acao === "chat_perguntar" && c.stream === true) {
+      return turnoComStreaming((aoTexto) => atenderChat(c, { usuario, admin, loja, userId: u.user!.id, get: (n) => Deno.env.get(n), aoTexto, adaptadorStream: (p) => ADAPTADORES_STREAM[p] }), CORS);
+    }
     try {
       const r = await atenderChat(c, { usuario, admin, loja, userId: u.user.id, get: (n) => Deno.env.get(n) });
       return json(r.corpo, r.status);
