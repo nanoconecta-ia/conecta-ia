@@ -46,7 +46,6 @@ import { LogoConecta } from "./componentes/LogoConecta.tsx";
 import { SeletorTema } from "./componentes/SeletorTema.tsx";
 import { DockAgente } from "./componentes/DockAgente.tsx";
 import { dividePagina, gravar as gravarPainel, ler as lerPainel, reserva, TELA_MIN_PARA_FIXO, type EstadoPainel } from "./lib/painelLateral.ts";
-import { BalaoGenesis } from "./componentes/BalaoGenesis.tsx";
 import "./shell.css";
 import "./workspace.css";
 
@@ -163,8 +162,8 @@ export function App() {
         <div className="marca"><LogoConecta tamanho={40} /><div className="marca-identidade">Conecta<span>.IA</span><small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
         <span className="topo-selo" aria-label="Ambiente administrativo">WORKSPACE <b>ADMIN</b></span>
         <button className="busca-topo" onClick={() => ir("/pesquisa")} aria-label="Pesquisar peças, OEM e fontes na web"><Icone nome="busca" tamanho={16} /><span>Pesquisar SKU, OEM ou aplicação na web…</span><kbd>Web</kbd></button>
-        {!!loja && <a className="topo-atalho-nano" href={`#${ROTA_NANO}`} title="Abrir o chat completo com Nano.IA"><Icone nome="agentes" tamanho={17} /><span>Nano.IA</span></a>}
-        {!!loja && !demoAtivo && !paginaDeChat && <button className="sec agente-botao" onClick={() => setAgente((a) => !a)} aria-pressed={agente} aria-label="Agente lateral (Ctrl J)"><Icone nome="agentes" tamanho={16} /><span>Agente</span></button>}
+        {!!loja && (!demoAtivo && !paginaDeChat ? <button type="button" className="topo-atalho-nano" onClick={() => setAgente((a) => !a)} aria-controls="dock-agente" aria-expanded={dockAberto} aria-label={dockAberto ? "Fechar painel Nano.IA" : "Abrir painel Nano.IA"} title="Nano.IA acompanha o seu trabalho"><Icone nome="agentes" tamanho={17} /><span>Nano.IA</span></button>
+          : <a className="topo-atalho-nano" href={`#${ROTA_NANO}`} title="Chat completo Nano.IA"><Icone nome="agentes" tamanho={17}/><span>Nano.IA</span></a>)}
         <SeletorTema />
         <button className="sec topo-sair" onClick={() => void supabase.auth.signOut()} disabled={demoAtivo}>Sair</button>
       </header>
@@ -176,7 +175,6 @@ export function App() {
         <div className="workspace-atalhos">
           <button className="sec workspace-icone" onClick={alternarMenu} title={recolhido ? "Expandir menu" : "Minimizar menu"} aria-label={recolhido ? "Expandir menu de módulos" : "Minimizar menu de módulos"} aria-pressed={recolhido}><Icone nome="menu" tamanho={18}/></button>
           <button className="sec workspace-botao" onClick={() => setCentroAberto(true)}><Icone nome="caixas" tamanho={18}/><span>Todos os módulos</span></button>
-          {!paginaDeChat && !demoAtivo && <button className="workspace-botao workspace-ia" onClick={() => setAgente(true)} aria-controls="dock-agente" aria-expanded={dockAberto}><Icone nome="conversa" tamanho={18}/><span>Chat global</span><kbd>Ctrl J</kbd></button>}
           <a className="workspace-icone workspace-link" href={`#${ROTA_NANO}`} aria-label="Abrir chat em tela inteira" title="Chat em tela inteira"><Icone nome="agentes" tamanho={19}/></a>
         </div>
       </div>}
@@ -231,7 +229,6 @@ export function App() {
       </main>
       </div>
       {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} menu={MENU} aoNavegar={ir} painel={painel} aoMudarPainel={mudarPainel} dividindo={dividindo} telaW={telaW} rotaAtual={caminho} />}
-      {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis aberto={dockAberto} aoAlternar={() => setAgente((a) => !a)} pagina={MENU.find((i) => i[0] === caminho)?.[1] ?? "Área de trabalho"} />}
       {loja && !dockAberto && <nav className="workspace-mobile-tabs" aria-label="Acesso rápido no smartphone">
         <a href="#/" aria-current={caminho === "/" ? "page" : undefined}><Icone nome="inicio" tamanho={21}/><span>Início</span></a>
         <a href="#/catalogo" aria-current={caminho === "/catalogo" ? "page" : undefined}><Icone nome="catalogo" tamanho={21}/><span>Catálogo</span></a>
