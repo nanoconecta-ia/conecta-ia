@@ -4,7 +4,7 @@ import { chaveDe } from "./leitura.ts";
 import type { Reconhecimento } from "./reconhecer.ts";
 
 export interface Sugestao { campo: string; valor: string; origem: string; aplicavel: false }
-export interface Pendencia { campo: string; motivo: string }
+export interface Pendencia { campo: string; canonico: string; motivo: string }
 
 const PARADAS = new Set(["de", "da", "do", "das", "dos", "e", "com", "para", "p", "c", "sem", "em", "a", "o", "kit", "jogo", "un", "pc", "pcs"]);
 
@@ -33,7 +33,7 @@ export function sugerir(r: Reconhecimento): { sugestoes: Sugestao[]; pendencias:
   }
   for (const v of r.vazios) {
     if (!v.mapa.editavelPeloNano || v.mapa.canonico === "tags") continue;
-    pendencias.push({ campo: v.mapa.descricao, motivo: ["gtin", "pesoLiquido", "pesoBruto", "largura", "altura", "profundidade"].includes(v.mapa.canonico)
+    pendencias.push({ campo: v.mapa.descricao, canonico: v.mapa.canonico, motivo: ["gtin", "pesoLiquido", "pesoBruto", "largura", "altura", "profundidade"].includes(v.mapa.canonico)
       ? "Vazio. Precisa de fonte verificável (fabricante, embalagem, catálogo) — o Nano não inventa."
       : "Vazio. O Nano pode propor com fonte, para você aprovar." });
   }

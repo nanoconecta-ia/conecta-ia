@@ -9,10 +9,11 @@
 <body>
   <header class="topo">
     <span class="esfera" aria-hidden="true"></span>
-    <div><strong>Nano.IA</strong><small>Guardião · piloto só leitura</small></div>
+    <div><strong>Nano.IA</strong><small>Guardião · nunca grava no ERP</small></div>
   </header>
   <main>
-    <p class="aviso">Lê a tela aberta no seu navegador. <b>Não preenche nem salva nada</b> e não envia dados para fora.</p>
+    <p class="aviso">Lê a tela aberta no seu navegador. <b>Não preenche nem salva nada no ERP.</b> Conectado à loja, só envia propostas com fonte para a sua Fila de aprovação.</p>
+    <section id="loja" class="bloco-loja" aria-live="polite"></section>
     <button id="ler" type="button">Ler esta tela</button>
     <p id="erro" class="erro" role="alert"></p>
     <section id="resultado" hidden aria-live="polite">
@@ -22,6 +23,7 @@
       <ul id="campos" class="campos"></ul>
       <h2>Sugestões</h2>
       <ul id="sugestoes" class="lista"></ul>
+      <div id="bloco-espelho" hidden><h2>Espelho do Conecta.IA</h2><ul id="espelho" class="lista"></ul></div>
       <h2>Pendências</h2>
       <ul id="pendencias" class="lista"></ul>
     </section>
