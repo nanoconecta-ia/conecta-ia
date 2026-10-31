@@ -1,12 +1,28 @@
 {
   "manifest_version": 3,
   "name": "Nano.IA Guardião (piloto)",
-  "version": "0.1.0",
-  "description": "Painel lateral do Nano.IA ao lado do ERP. Piloto só leitura: lê o cadastro de produto, mostra o que falta e sugere tags. Não preenche nada.",
+  "version": "0.2.0",
+  "description": "Painel lateral do Nano.IA ao lado do ERP. Lê o cadastro de produto, compara com o espelho do Conecta.IA e envia propostas com fonte para a Fila de aprovação. Não preenche nem grava nada no ERP.",
   "minimum_chrome_version": "116",
-  "action": { "default_title": "Abrir o Nano.IA" },
-  "side_panel": { "default_path": "painel.html" },
-  "background": { "service_worker": "servico.js" },
-  "permissions": ["sidePanel", "scripting", "activeTab"],
-  "optional_host_permissions": ["https://*/*"]
+  "action": {
+    "default_title": "Abrir o Nano.IA"
+  },
+  "side_panel": {
+    "default_path": "painel.html"
+  },
+  "background": {
+    "service_worker": "servico.js"
+  },
+  "permissions": [
+    "sidePanel",
+    "scripting",
+    "activeTab",
+    "storage"
+  ],
+  "optional_host_permissions": [
+    "https://*/*"
+  ],
+  "host_permissions": [
+    "https://dsfzhsrudriqkumtlqwj.supabase.co/*"
+  ]
 }

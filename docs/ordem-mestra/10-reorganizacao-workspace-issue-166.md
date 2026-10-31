@@ -154,3 +154,9 @@ Consulta direta e só leitura ao espelho, feita pelo engenheiro, **não pelo Nan
 - **Piloto (`extensao/`):** cadastro de produto, só leitura e sugestão de tags. Mapa v0 a confirmar. Sem pareamento e sem rede.
 - **Decisão do proprietário (31/10/2026):** o Nano.IA pode operar no navegador nativo do lojista, dentro do Bling, porque o app do Bling pode liberar escopo total. Registro técnico: os escopos OAuth autorizam o uso da **API**. A leitura e o preenchimento na **interface** são feitos na sessão do próprio lojista, no navegador dele, com o OK dele. Os termos públicos do Bling **não foram lidos** nesta sessão, porque o domínio está bloqueado pela política de rede do ambiente; a decisão de seguir é do proprietário.
 - **Pendente:** confirmação do mapa com captura real.
+
+## Guardião, fase 2: conectado à loja, só propõe
+- **Pareamento:** usa o Conecta Pair já implantado (`pair` + `conecta-gateway`), com tipo `navegador` e escopos `produtos:ler` + `enriquecimento:propor`. O token nasce na extensão e fica na sessão do navegador.
+- **Espelho e propostas:** compara a tela com o espelho (`conecta.get_product`) e envia propostas com fonte obrigatória (`conecta.propose_enrichment` e `conecta.propose_code` tipo `ean`) para a Fila de aprovação existente.
+- **Sem mudança no servidor**, nenhuma escrita no ERP e nenhuma IA na extensão.
+- **Limitação:** a tela de aprovação do pareamento no painel só existe em build com `VITE_PAIR_ATIVO=1`.
