@@ -50,7 +50,7 @@ test("gateway Pair: toda ferramenta pública está mapeada; as mapeadas batem em
 
 test("gateway Pair: capacidades ainda sem contrato no registro estão travadas nesta lista (entram na C2)", () => {
   const semContrato = Object.entries(ALIASES_PAIR).filter(([, id]) => id === null).map(([n]) => n).sort();
-  assert.deepEqual(semContrato, ["conecta.get_part_by_code", "conecta.get_pending_approvals", "conecta.get_task_status", "conecta.propose_banner", "conecta.propose_bula"]);
+  assert.deepEqual(semContrato, ["conecta.get_part_by_code", "conecta.get_pending_approvals", "conecta.get_task_status", "conecta.get_validated_fields", "conecta.propose_banner", "conecta.propose_bula"]);
 });
 
 test("registro: toda ferramenta ativa (exceto execução) tem handler, e todo handler tem contrato", () => {

@@ -160,3 +160,8 @@ Consulta direta e só leitura ao espelho, feita pelo engenheiro, **não pelo Nan
 - **Espelho e propostas:** compara a tela com o espelho (`conecta.get_product`) e envia propostas com fonte obrigatória (`conecta.propose_enrichment` e `conecta.propose_code` tipo `ean`) para a Fila de aprovação existente.
 - **Sem mudança no servidor**, nenhuma escrita no ERP e nenhuma IA na extensão.
 - **Limitação:** a tela de aprovação do pareamento no painel só existe em build com `VITE_PAIR_ATIVO=1`.
+
+## Guardião, fase 3: preencher na tela o que já foi aprovado
+- **Servidor:** nova ferramenta `conecta.get_validated_fields` no gateway Pair (`produtos:ler`, por SKU). Devolve só valores aprovados de uma lista fechada, nunca NCM, custo ou preço. **Exige publicar o `conecta-gateway`.**
+- **Extensão:** um clique preenche um campo. Substituir um valor existente exige confirmação. Depois de preencher, a extensão confere a tela e oferece desfazer. **Nunca salva**: o lojista revisa e salva no ERP.
+- **Registro:** fica no histórico local do painel. Uma ferramenta de registro no servidor foi barrada pela regra de segurança do gateway (só leitura e proposta), e a regra **não foi afrouxada**. O registro no servidor fica para a C2, com contrato no Tool Registry.

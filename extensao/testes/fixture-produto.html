@@ -17,4 +17,6 @@
   <label for="ncm">NCM</label><input id="ncm" name="ncm" value="8413.30.90">
   <input type="password" aria-label="Senha" value="segredo"><input type="hidden" name="csrf" value="tok">
   <div hidden><label for="esc">Campo escondido</label><input id="esc" value="x"></div>
-</form></body></html>
+</form>
+<script>/* simula uma tela que reage ao evento "input" (como React/Vue) */ window.__eventos = []; document.addEventListener("input", (e) => window.__eventos.push(e.target.id || e.target.name), true); document.addEventListener("submit", () => { window.__enviado = true; }, true);</script>
+</body></html>

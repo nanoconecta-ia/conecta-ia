@@ -1,4 +1,4 @@
-# Nano.IA Guardião (fase 2: conectado à loja, só propõe)
+# Nano.IA Guardião (fase 3: preenche na tela, com o seu clique, só o que já foi aprovado)
 
 Extensão para **Chrome e Edge** (Manifest V3) que abre o Nano.IA num **painel lateral** ao lado do ERP em que o lojista
 já está logado. Direção definida pelo proprietário na issue #166: o Nano.IA trabalha **sobre a tela real do ERP**, sem
@@ -30,8 +30,27 @@ redesenhar as telas do ERP dentro do painel.
 Os dois serviços (`pair` e `conecta-gateway`) **já estão implantados**. A aprovação no painel depende de um build com
 `VITE_PAIR_ATIVO=1`; no build de produção atual, a tela de aprovação fica oculta.
 
+## Fase 3: preencher na tela, valores já aprovados
+8. Conectado e com a tela lida, a extensão busca os valores **já aprovados na Fila** para o SKU
+   (`conecta.get_validated_fields`): marca, descrições, peso líquido, categoria sugerida e EAN.
+9. Cada valor aparece com fonte e data:
+   - **Já está na tela**: nada a fazer.
+   - **Preencher na tela**: um clique preenche **um** campo.
+   - **Substituir**: quando já existe outro valor, o lojista precisa marcar "Substituir o valor que está na tela".
+10. Depois de preencher, a extensão **lê a tela de novo e confere** o valor. Ela dispara o evento `input`, para telas
+    em React ou Vue perceberem a mudança, e oferece **Desfazer**.
+11. **Nunca salva nem envia o formulário.** O lojista revisa e clica em salvar no ERP.
+    - Opção de lista que não existe no ERP, campo sensível, desabilitado ou de tipo não suportado: o Nano não mexe e explica por quê.
+    - NCM e outros campos fiscais, preço e SKU nunca são preenchidos.
+12. **Registro:** o histórico "Nesta sessão" fica só no painel. O gateway audita cada consulta, mas o fato de ter
+    preenchido na tela **não vai para a auditoria do servidor**. A regra de segurança do gateway só permite ferramentas
+    de leitura e de proposta, e um registro de preenchimento fica para quando houver contrato para isso no registro (C2).
+
+A ferramenta `conecta.get_validated_fields` está no código, mas **só funciona depois de publicar o `conecta-gateway`
+atualizado**. Antes disso, o painel avisa que o servidor ainda não tem a fase 3 e não preenche nada.
+
 ## O que o Guardião NÃO faz
-- Não preenche, não clica em salvar e não altera a página.
+- Não clica em salvar e não envia formulário. Só preenche, um campo por clique, valores já aprovados na Fila.
 - Sem conexão com a loja, não envia nada para fora. Conectado, só consulta o espelho e envia propostas. Nunca usa IA nem manda dado sensível.
 - Nunca lê senha nem campo oculto. **Mascara** custo, preço de compra, fornecedor, dados fiscais (NCM, CEST, CFOP,
   CST, ICMS, IPI, PIS, COFINS), CPF/CNPJ, token e chave. Campo sensível nunca casa com campo do mapa.
@@ -55,6 +74,7 @@ node --experimental-strip-types --test extensao/testes/*.test.ts         # leitu
 painel/node_modules/.bin/tsc -p extensao/tsconfig.json                     # tipos
 node extensao/testes/visual.mjs                                            # extensão carrega no Chromium + painel 360/420px
 node extensao/testes/visual-fase2.mjs                                      # pareamento, espelho e proposta com rede simulada
+node extensao/testes/visual-fase3.mjs                                      # preencher aprovados, conferir, desfazer; servidor antigo
 ```
 O teste visual usa uma página **sintética** (`testes/fixture-produto.html`) que imita um formulário de produto. Ela não
 é cópia do Bling.
@@ -62,5 +82,4 @@ O teste visual usa uma página **sintética** (`testes/fixture-produto.html`) qu
 ## Pendências antes de evoluir
 - Confirmar nos **termos de uso do Bling** se a leitura e a automação na interface são permitidas.
 - Confirmar o mapa com a captura da tela real.
-- Fase 3, com aprovação: preenchimento **campo a campo com OK do lojista**, só de valores já aprovados na Fila. O
-  salvar continua sempre com o lojista.
+- Publicar o `conecta-gateway` atualizado (fase 3) e o painel com `VITE_PAIR_ATIVO=1`, para a aprovação do pareamento. Os dois exigem autorização.

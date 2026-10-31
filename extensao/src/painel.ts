@@ -8,6 +8,8 @@ import { sugerir } from "./sugestoes.ts";
 import { estruturaParaRegistro, type Leitura } from "./registro.ts";
 import { chamarFerramenta, consultarPareamento, encerrarPareamento, iniciarPareamento, SessaoExpirada, tokenCompleto, type Desafio } from "./pareamento.ts";
 import { compararComEspelho, montarProposta, PROPONIVEIS, type ProdutoEspelho } from "./espelho.ts";
+import { conferido, planejarPreenchimento, type ItemPreenchimento, type ValorAprovado } from "./preenchimento.ts";
+import type { AlvoCampo, ResultadoPreencher } from "./leitor-dom.ts";
 
 /** Tudo que depende do navegador fica aqui, para o teste visual rodar o painel real sem Chrome. */
 export interface Ambiente {
@@ -17,6 +19,8 @@ export interface Ambiente {
   carregar(): Promise<Conexao | null>;
   esperar(ms: number): Promise<void>;
   baixar(nome: string, conteudo: string): void;
+  /** Fase 3: preenche UM campo na aba do ERP (nunca salva). */
+  preencher(alvo: AlvoCampo, valor: string): Promise<ResultadoPreencher>;
 }
 export interface Conexao { token: string; loja_id: string; expira_em: string }
 
@@ -86,7 +90,62 @@ async function compararEspelho(): Promise<void> {
     el.innerHTML = (div.length ? div.map((d) => `<li><b>${esc(d.campo)}</b> difere do espelho<p>Tela: ${esc(d.tela.slice(0, 80))}</p><p>Espelho: ${esc(d.espelho.slice(0, 80))}</p><small>O espelho pode estar desatualizado: confira a sincronização com o Bling.</small></li>`).join("") : `<li><b>Tela e espelho iguais</b> <small>nos campos comparados (nome, marca, GTIN, descrição curta).</small></li>`)
       + `<li><b>${p.publicado ? "Publicado no site" : "Ainda não publicado"}</b>${falta.length ? ` <small>Falta para publicar: ${esc(falta.join(", "))}.</small>` : ""}</li>`
       + (p.automacao_pausada ? `<li class="suave">Automação pausada para este produto: propostas serão recusadas.</li>` : "");
+    void carregarAprovados(sku);
   } catch (e) { el.innerHTML = `<li class="erro">${esc((e as Error).message)}</li>`; }
+}
+
+// ---------------------------------------------------------------------------------------------- fase 3: preencher aprovados
+const historico: string[] = [];
+function registrarLocal(t: string): void {
+  historico.unshift(`${new Date().toLocaleTimeString("pt-BR")} · ${t}`);
+  $("historico").innerHTML = historico.slice(0, 20).map((h) => `<li>${esc(h)}</li>`).join("");
+  $("bloco-historico").hidden = false;
+}
+
+async function carregarAprovados(sku: string): Promise<void> {
+  const el = $("aprovados"); $("bloco-aprovados").hidden = false;
+  el.innerHTML = `<li class="suave">Buscando valores já aprovados na Fila…</li>`;
+  try {
+    const d = await comSessao((t) => chamarFerramenta<{ campos?: ValorAprovado[]; erro?: string }>(t, "conecta.get_validated_fields", { sku }));
+    if (d.erro || !ultima) { el.innerHTML = `<li class="suave">${esc(d.erro ?? "Sem leitura da tela.")}</li>`; return; }
+    desenharAprovados(planejarPreenchimento(ultima.r, d.campos ?? []), sku);
+  } catch (e) {
+    const m = (e as Error).message;
+    el.innerHTML = `<li class="suave">${/desconhecida/i.test(m) ? "O servidor do Conecta.IA ainda não tem a fase 3 (publicar o conecta-gateway atualizado). Nada a preencher por enquanto." : esc(m)}</li>`;
+  }
+}
+
+function desenharAprovados(itens: ItemPreenchimento[], sku: string): void {
+  const el = $("aprovados");
+  if (!itens.length) { el.innerHTML = `<li class="suave">Nenhum valor aprovado na Fila para o SKU ${esc(sku)} ainda.</li>`; return; }
+  el.innerHTML = itens.map((i, n) => {
+    const origem = `<small>Fonte: ${esc(i.fonte ?? "—")}${i.aprovadoEm ? ` · aprovado em ${esc(new Date(i.aprovadoEm).toLocaleDateString("pt-BR"))}` : ""}</small>`;
+    const corpo = i.acao === "igual" ? `<small class="ok">Já está na tela.</small>`
+      : i.acao === "bloqueado" ? `<small>${esc(i.motivo ?? "")}</small>`
+      : `${i.acao === "substituir" ? `<p>Na tela: ${esc(i.atual.slice(0, 80))}</p>` : ""}<p>Aprovado: ${esc(i.novo.slice(0, 120))}</p>${origem}
+         ${i.acao === "substituir" ? `<label class="confirma"><input type="checkbox" data-n="${n}"> Substituir o valor que está na tela</label>` : ""}
+         <button type="button" class="mini preencher" data-n="${n}" ${i.acao === "substituir" ? "disabled" : ""}>Preencher na tela</button>`;
+    return `<li data-n="${n}"><b>${esc(i.descricao)}</b> ${corpo}</li>`;
+  }).join("");
+  el.querySelectorAll<HTMLInputElement>("label.confirma input").forEach((c) => c.addEventListener("change", () => { (el.querySelector(`button.preencher[data-n="${c.dataset.n}"]`) as HTMLButtonElement).disabled = !c.checked; }));
+  el.querySelectorAll<HTMLButtonElement>("button.preencher").forEach((b) => b.addEventListener("click", () => void preencher(itens[Number(b.dataset.n)], b.closest("li")!)));
+}
+
+async function preencher(i: ItemPreenchimento, li: HTMLElement): Promise<void> {
+  li.querySelectorAll("button").forEach((b) => (b as HTMLButtonElement).disabled = true);
+  const r = await amb.preencher(i.alvo, i.novo).catch(() => ({ ok: false, erro: "Não consegui falar com a aba do ERP." } as ResultadoPreencher));
+  if (!r.ok) { li.insertAdjacentHTML("beforeend", `<small class="erro"> ${esc(r.erro ?? "Falhou.")}</small>`); registrarLocal(`${i.descricao}: não preenchido (${r.erro})`); return; }
+  // conferência: lê a tela de novo e compara com o valor aprovado (não confia só no retorno do preenchimento)
+  const nova = await amb.lerAba().catch(() => null);
+  const lido = nova && !("erro" in nova) ? nova.campos.find((c) => c.rotulo === i.alvo.rotulo)?.valor ?? r.depois ?? "" : r.depois ?? "";
+  const ok = conferido(lido, i.novo);
+  li.innerHTML = `<b>${esc(i.descricao)}</b> <small class="${ok ? "ok" : "erro"}">${ok ? "Preenchido e conferido na tela. Revise e clique em salvar no ERP." : "Preenchido, mas a tela mostra outro valor: confira antes de salvar."}</small> <button type="button" class="sec mini desfazer">Desfazer</button>`;
+  registrarLocal(`${i.descricao}: ${ok ? "preenchido e conferido" : "divergente após preencher"} (aprovação ${i.aprovadoId.slice(0, 8)})`);
+  li.querySelector("button.desfazer")!.addEventListener("click", () => void (async () => {
+    const d = await amb.preencher(i.alvo, r.antes ?? "").catch(() => ({ ok: false } as ResultadoPreencher));
+    li.innerHTML = `<b>${esc(i.descricao)}</b> <small class="${d.ok ? "" : "erro"}">${d.ok ? "Desfeito: a tela voltou ao valor anterior." : "Não consegui desfazer: corrija à mão antes de salvar."}</small>`;
+    registrarLocal(`${i.descricao}: ${d.ok ? "desfeito" : "falha ao desfazer"}`);
+  })());
 }
 
 function formProposta(li: HTMLElement, canonico: string): void {
@@ -123,6 +182,7 @@ export function mostrar(leitura: Leitura): void {
   $("pendencias").innerHTML = pendencias.map((p) => `<li data-canonico="${esc(p.canonico)}" data-campo="${esc(p.campo)}"><b>${esc(p.campo)}</b> <small>${esc(p.motivo)}</small>${conexao && PROPONIVEIS[p.canonico] ? ` <button type="button" class="sec mini propor">Propor com fonte</button>` : ""}</li>`).join("") || (reconhecida ? "<li class=\"suave\">Nenhum campo essencial vazio.</li>" : "");
   $("pendencias").querySelectorAll<HTMLButtonElement>("button.propor").forEach((b) => b.addEventListener("click", () => formProposta(b.closest("li")!, b.closest("li")!.dataset.canonico!)));
   $("bloco-espelho").hidden = !(reconhecida && conexao);
+  $("bloco-aprovados").hidden = true;
   $("resultado").hidden = false;
   $("registrar").removeAttribute("disabled");
   if (reconhecida && conexao) void compararEspelho();
@@ -153,6 +213,12 @@ const ambienteChrome: Ambiente = {
   guardar: async (v) => { if (v) await chrome.storage.session.set({ conexao: v }); else await chrome.storage.session.remove("conexao"); },
   carregar: async () => ((await chrome.storage.session.get("conexao")).conexao as Conexao | undefined) ?? null,
   esperar: (ms) => new Promise((r) => setTimeout(r, ms)),
+  async preencher(alvo, valor) {
+    const [aba] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!aba?.id) return { ok: false, erro: "Aba do ERP não encontrada." };
+    const [res] = await chrome.scripting.executeScript({ target: { tabId: aba.id }, func: (a: AlvoCampo, v: string) => window.__nanoGuardiaoPreencher?.(a, v) ?? { ok: false, erro: "Leia a tela antes de preencher." }, args: [alvo, valor] });
+    return (res?.result as ResultadoPreencher | undefined) ?? { ok: false, erro: "Sem resposta da aba do ERP." };
+  },
   baixar: (nome, conteudo) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([conteudo], { type: "application/json" })); a.download = nome; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); },
 };
 

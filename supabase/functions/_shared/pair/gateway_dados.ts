@@ -100,6 +100,24 @@ export function dadosSupabase(admin: AdminRpc, agora: () => Date = () => new Dat
         .eq("loja_id", loja).eq("estado", "pendente").gt("expira_em", agora().toISOString()).order("criado_em", { ascending: false }).limit(limite);
       return data ?? [];
     },
+    async camposAprovados(loja, sku) {
+      const id = await idDoSku(loja, sku);
+      if (!id) return null;
+      const CAMPOS = ["marca_peca", "descricao_curta", "descricao_longa", "peso_kg", "categoria_sugerida"]; // nunca ncm_sugerido (fiscal)
+      const [{ data: enr }, { data: cod }] = await Promise.all([
+        admin.from("produto_enriquecimento").select("id, campo, valor, fonte, coletado_em").eq("loja_id", loja).eq("produto_id", id).eq("status", "aprovado").in("campo", CAMPOS).order("coletado_em", { ascending: false }).limit(50),
+        admin.from("produto_codigos").select("id, valor, fonte, coletado_em").eq("loja_id", loja).eq("produto_id", id).eq("tipo", "ean").eq("status", "aprovado").order("coletado_em", { ascending: false }).limit(1),
+      ]);
+      const vistos = new Set<string>(), campos: { id: string; campo: string; valor: string; fonte: string | null; aprovado_em: string | null }[] = [];
+      for (const e of (enr ?? []) as { id: string; campo: string; valor: unknown; fonte: string | null; coletado_em: string | null }[]) {
+        if (vistos.has(e.campo)) continue; // o mais recente de cada campo
+        const v = typeof e.valor === "string" ? e.valor : typeof e.valor === "number" ? String(e.valor) : null; // objeto (ex.: dimensões) não vira texto de campo
+        if (v === null) continue;
+        vistos.add(e.campo); campos.push({ id: e.id, campo: e.campo, valor: v, fonte: e.fonte, aprovado_em: e.coletado_em });
+      }
+      for (const c of (cod ?? []) as { id: string; valor: string; fonte: string | null; coletado_em: string | null }[]) campos.push({ id: c.id, campo: "ean", valor: c.valor, fonte: c.fonte, aprovado_em: c.coletado_em });
+      return { sku, campos };
+    },
     async statusTarefa(loja, id) {
       const { data: a } = await admin.from("aprovacoes").select("id, tipo, ferramenta, estado, versao, expira_em, decidido_em, motivo_decisao, hash_proposta").eq("loja_id", loja).eq("id", id).maybeSingle();
       if (a) return { origem: "aprovacao", ...a };

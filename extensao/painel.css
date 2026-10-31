@@ -43,3 +43,6 @@ button.mini { min-height:28px; padding:0 10px; font-size:.75rem; margin-top:6px;
 .proposta .linha { display:flex; gap:6px; flex-wrap:wrap; }
 .proposta .msg:empty { display:none; } .lista li .proposta .msg { margin:0; font:inherit; font-size:.78rem; }
 .lista .erro, .msg.erro { color:var(--erro); } small.ok { color:var(--ok); }
+label.confirma { display:flex; gap:6px; align-items:center; font-size:.78rem; margin-top:6px; }
+.historico li { font-size:.75rem; color:var(--suave); padding:5px 8px; }
+small.erro { color:var(--erro); }

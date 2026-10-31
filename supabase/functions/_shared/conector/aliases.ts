@@ -48,6 +48,8 @@ export const ALIASES_PAIR: Readonly<Record<string, string | null>> = {
   "conecta.propose_banner": null,
   "conecta.get_pending_approvals": null,
   "conecta.get_task_status": null,
+  // Nano Guardião, fase 3 (leitura dos valores já aprovados por SKU): contrato no registro na C2.
+  "conecta.get_validated_fields": null,
 };
 
 export const definicaoDoAssistente = (nome: string): DefinicaoFerramenta | undefined => {

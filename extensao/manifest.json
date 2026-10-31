@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Nano.IA Guardião (piloto)",
-  "version": "0.2.0",
-  "description": "Painel lateral do Nano.IA ao lado do ERP. Lê o cadastro de produto, compara com o espelho do Conecta.IA e envia propostas com fonte para a Fila de aprovação. Não preenche nem grava nada no ERP.",
+  "version": "0.3.0",
+  "description": "Painel lateral do Nano.IA ao lado do ERP. Lê o cadastro de produto, compara com o espelho do Conecta.IA, envia propostas com fonte e preenche na tela, com o seu clique, só valores já aprovados. Nunca salva no ERP.",
   "minimum_chrome_version": "116",
   "action": {
     "default_title": "Abrir o Nano.IA"
