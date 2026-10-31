@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "8a15ee004e5239da95e965c60e636893088719af7168784c0f9588acd0e1d57a",
+  "artefato_sha256": "99ef5a24fa31303624f89391d8838317bd97c819267fff863ff654e7f6207f33",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -50,7 +50,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/registro.ts",
-      "sha256": "272e11f05715fb6d7f20eab94a83d84c883dd644026dba85c1ceb21c7c1e5839"
+      "sha256": "653c55ec21d74eaeba300713446ea4f2334ffae1fb925375cc55dff85d877190"
     },
     {
       "path": "supabase/functions/_shared/conector/bling_campos.ts",
@@ -66,7 +66,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/handlers.ts",
-      "sha256": "82b5709aab40b16fdd00288e788396e26d5887124a67b523dd49ecb495e23fcd"
+      "sha256": "fe9a43c61994a0ff867d7e96b6175217074ecc00769ff632b64f341ea15b8677"
     },
     {
       "path": "supabase/functions/_shared/conector/tipos.ts",
@@ -85,8 +85,12 @@
       "sha256": "17aaea838825b55df2653415cc72f897e371266feadf8ade905cdd47d11bf5a9"
     },
     {
+      "path": "supabase/functions/_shared/conector/aliases.ts",
+      "sha256": "697d25853477fb5d6c9a90149c22b311ee369420ac944f68714c81da07536d41"
+    },
+    {
       "path": "supabase/functions/_shared/ia/ferramentas.ts",
-      "sha256": "12902a4674b4e5a7f5fec0f066cede8885feb7829faa970ff69c2feb9275522d"
+      "sha256": "f24f6af0dcf05803e1f3561d60ea8b35e88d6685d9f5645fd6064f41f52e90ee"
     },
     {
       "path": "supabase/functions/_shared/conector/dados.ts",
