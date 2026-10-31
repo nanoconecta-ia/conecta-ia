@@ -58,6 +58,7 @@ jobs:
       - run: node scripts/tests/assistente-retratil-visual.mjs
       - run: node scripts/tests/assistente-autorizacao-visual.mjs
       - run: node scripts/tests/anexo-chat-visual.mjs
+      - run: node scripts/tests/assistente-streaming-visual.mjs
       - run: node scripts/tests/nano-guia-visual.mjs
       - run: node scripts/tests/temas-visual.mjs
       - run: node scripts/tests/versao-visual.mjs

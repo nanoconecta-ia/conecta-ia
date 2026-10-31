@@ -10,12 +10,15 @@ import { interpretar, textoAjuda, type Comando, type Item } from "../lib/comando
 import { avaliar, coletar } from "../lib/avaliarLayout.ts";
 import { CHAT_ACEITA, CHAT_MAX_ANEXOS, prepararArquivo, rotuloBytes, validarSelecao, type AnexoChat } from "../lib/anexosChat.ts";
 import { gravarConversaAtiva, lerConversaAtiva } from "../lib/conversaAtiva.ts";
+import { perguntarComStreaming, propostasDoTurno, type PropostaTurno } from "../lib/streamAssistente.ts";
+import { useFonte } from "../lib/useFonte.ts";
+import { PropostaCompacta } from "../componentes/conector/PropostaCompacta.tsx";
 import { escolherInicial, erroAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 
 type Evidencia = { origem: string; simulado: boolean; consultado_em: string; sincronizado_em?: string; motivo?: string; dados: { sku?: string; nome?: string; preco?: number | null; estoque?: number | null } };
-type Msg = { de: "eu" | "ia"; texto: string; anexos?: string[]; evidencias?: Evidencia[]; simulado?: boolean };
+type Msg = { de: "eu" | "ia"; texto: string; anexos?: string[]; evidencias?: Evidencia[]; simulado?: boolean; propostas?: PropostaTurno[]; parcial?: boolean };
 type Conversa = { id: string; titulo: string; atualizada_em: string };
-type Registro = { id: string; papel: string; conteudo: string; criada_em: string; metadados?: { evidencias?: Evidencia[]; simulado?: boolean } };
+type Registro = { id: string; papel: string; conteudo: string; criada_em: string; metadados?: { evidencias?: Evidencia[]; simulado?: boolean; propostas?: unknown } };
 const SUGESTOES = ["Resumo da loja", "O que está pendente?", "Produtos incompletos", "Bling conectado?"];
 
 const espera = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -23,7 +26,8 @@ const espera = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 /** `menu` e `aoNavegar` ligam o agente às telas do painel: ele abre, em sequência, o que o lojista pedir (só telas do menu da loja). */
 export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[]; aoNavegar?: (rota: string) => void }) {
   const [msgs, setMsgs] = useState<Msg[]>([{ de: "ia", texto: "Olá! Posso resumir a loja, mostrar o que aguarda aprovação e o que falta para publicar. Para conversar com IA e usar plugins, configure um provedor em Integrações de IA." }]);
-  const [config, setConfig] = useState({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 });
+  const fonte = useFonte(); // B2b: cartões de proposta leem a proposta do banco (RLS), nunca do texto do modelo
+  const [config, setConfig] = useState<{ persistente: boolean; bling: boolean; leitura_administrativa: boolean; retencao_dias: number; streaming?: boolean }>({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 });
   const [conversas, setConversas] = useState<Conversa[]>([]);
   const [conversaId, setConversaId] = useState<string | null>(null);
   const [erroHistorico, setErroHistorico] = useState("");
@@ -134,7 +138,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     } catch (e) { if (lojaAtual.current === origem) setErroHistorico(String(e)); }
   }
   function mostrar(rs: Registro[]) {
-    setRegistros(rs); setMsgs(rs.map(m => ({ de: m.papel === "usuario" ? "eu" : "ia", texto: m.conteudo, evidencias: m.metadados?.evidencias, simulado: m.metadados?.simulado })));
+    setRegistros(rs); setMsgs(rs.map(m => ({ de: m.papel === "usuario" ? "eu" : "ia", texto: m.conteudo, evidencias: m.metadados?.evidencias, simulado: m.metadados?.simulado, propostas: propostasDoTurno(m.metadados?.propostas) })));
   }
   async function abrir(id: string, mais = false, admin = false) {
     const origem = loja.id; setOcupado(true); setErroHistorico("");
@@ -191,15 +195,29 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     setTexto(""); setOcupado(true); setErroHistorico("");
     if (persistente && prov) setRetentativa({ texto: t, chave, provedor: prov, conversa: conv });
     try {
-      const data = await chamada(persistente ? "chat_perguntar" : "perguntar", { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio } : { historico }), ...(prov ? { provedor: prov } : { sem_ia: true }), ...(anexosEnvio.length ? { anexos: anexosEnvio.map(({ nome, tipo, dados }) => ({ nome, tipo, dados })) } : {}) });
+      const campos = { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio } : { historico }), ...(prov ? { provedor: prov } : { sem_ia: true }), ...(anexosEnvio.length ? { anexos: anexosEnvio.map(({ nome, tipo, dados }) => ({ nome, tipo, dados })) } : {}) };
+      // B2b (#166): com o servidor anunciando streaming, o texto aparece enquanto o provedor escreve; o que vale é o resultado final registrado.
+      const data = persistente && config.streaming ? await perguntarStreaming(campos, lojaDoEnvio) : await chamada(persistente ? "chat_perguntar" : "perguntar", campos);
       if (lojaAtual.current !== lojaDoEnvio) return;
       const resposta = String(data.resposta ?? "");
-      setMsgs(m => [...m, { de: "ia", texto: resposta, evidencias: data.evidencias, simulado: data.simulado }]);
+      setMsgs(m => [...m.filter((x) => !x.parcial), { de: "ia", texto: resposta, evidencias: data.evidencias, simulado: data.simulado, propostas: propostasDoTurno(data.propostas) }]);
       setRetentativa(null);
       if (persistente) { setConversaId(data.conversa_id); await listarConversas(false); }
       if (lerAltoRef.current) voz.falar(resposta);
-    } catch (e) { if (lojaAtual.current === lojaDoEnvio) setErroHistorico(String(e)); }
+    } catch (e) { if (lojaAtual.current === lojaDoEnvio) { setMsgs(m => m.filter((x) => !x.parcial)); setErroHistorico(String(e)); } }
     finally { if (lojaAtual.current === lojaDoEnvio) setOcupado(false); }
+  }
+  /** Turno com streaming: a prévia vai numa mensagem `parcial` que some quando chega o resultado (ou o erro). Erro HTTP vira exceção, como em `chamada`. */
+  async function perguntarStreaming(campos: Record<string, unknown>, lojaDoEnvio: string) {
+    const { data: s } = await supabase.auth.getSession();
+    if (!s.session) throw new Error("Sua sessão expirou. Entre de novo.");
+    setMsgs(m => [...m, { de: "ia", texto: "", parcial: true }]);
+    const r = await perguntarComStreaming({ loja_id: loja.id, ...campos }, s.session.access_token, (delta) => {
+      if (lojaAtual.current !== lojaDoEnvio) return;
+      setMsgs(m => m.map((x) => x.parcial ? { ...x, texto: x.texto + delta } : x));
+    });
+    if (r.status >= 400 || typeof r.corpo.erro === "string") throw new Error(String(r.corpo.erro ?? r.corpo.resposta ?? "Não foi possível concluir."));
+    return r.corpo as Record<string, any>;
   }
   async function reconhecerCodigoImagem(arquivo: File): Promise<string | null> {
     type Detector = { detect: (imagem: ImageBitmap) => Promise<Array<{ rawValue?: string }>> };
@@ -292,7 +310,12 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
       {retentativa && <div><p>Recupere a mesma pergunta para verificar se o turno terminou. Isso preserva a chave de idempotência.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Recuperar pergunta</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button></div>}
       {msgs.length > 3 && <div className="chat-ferramentas"><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button><small className="suave">{msgs.length} mensagens</small></div>}
-      <div className="chat" style={{ flex: "1 1 auto", minHeight: 0, minWidth: 0, overflowY: "auto", overflowX: "hidden" }} aria-live="polite">{msgs.map((m, i) => <MensagemRetratil key={i} m={m} recolhida={mensagemRecolhida(i, msgs.length, abertas, modoMsgs)} onAlternar={() => alternarMsg(i)} />)}<div ref={fim} /></div>
+      <div className="chat" style={{ flex: "1 1 auto", minHeight: 0, minWidth: 0, overflowY: "auto", overflowX: "hidden" }} aria-live="polite">{msgs.map((m, i) => (
+        <div key={i}>
+          <MensagemRetratil m={m.parcial && !m.texto ? { ...m, texto: "Escrevendo…" } : m} recolhida={!m.parcial && mensagemRecolhida(i, msgs.length, abertas, modoMsgs)} onAlternar={() => alternarMsg(i)} />
+          {m.propostas?.map((p) => <PropostaCompacta key={p.id} p={p} fonte={fonte} lojaId={loja.id} />)}
+        </div>
+      ))}<div ref={fim} /></div>
       <div className="barra-extras">
       <Retratil id="atalhos" titulo="Atalhos" resumo="perguntas rápidas" aberto={false} recolherQuando={true}><p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p></Retratil>
       {selecao && <Retratil id="consentimento" titulo="Privacidade" resumo={aceitaEnvio ? "autorizado" : "autorize para enviar"} status={aceitaEnvio ? "go" : "warn"} recolherQuando={aceitaEnvio}><label className="consentimento" style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.{anexos.length > 0 && " Os anexos desta pergunta também são enviados."}</label></Retratil>}

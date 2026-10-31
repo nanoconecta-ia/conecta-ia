@@ -131,3 +131,20 @@ Consulta direta e só leitura ao espelho, feita pelo engenheiro, **não pelo Nan
 - **Mesma conversa no dock e na tela:** os dois já montavam o mesmo componente, mas cada montagem começava sem conversa. Agora o id da conversa ativa fica guardado por loja na sessão do navegador (`lib/conversaAtiva.ts`), e quem montar depois retoma o fio. Guarda-se só o id: as mensagens continuam vindo do servidor com RLS. Se a conversa não abrir mais (excluída ou de outro usuário), o id é descartado. "Nova conversa" e a exclusão limpam o id.
 - **`/conector`** continua no código e no menu **só** com a flag, rotulado "Nano.IA (homologação)", até o streaming, os cartões de proposta e o painel de contexto serem migrados para o chat canônico.
 - **Ainda falta (B2b, exige reimplantar a edge `assistente` com autorização):** streaming SSE e cartões de proposta no chat canônico. O backend `conector-chat` continua não implantado e não foi ligado.
+
+## B2b: streaming e cartões de proposta no chat canônico
+- **Cartões de proposta:** quando um turno cria uma proposta (Bling: categoria, reativação, ajuste), o chat mostra o cartão logo abaixo da resposta.
+  - O cartão é o mesmo `CartaoProposta` do conector. Ele lê a proposta **do banco (RLS)**, nunca do texto do modelo.
+  - Ao reabrir a conversa, o cartão volta a partir do histórico (`metadados.propostas`).
+  - A decisão é aprovar ou recusar (`conector-aprovacoes`, ação `decidir`). **Não executa nada.**
+  - O link "Abrir na Central" só aparece com `VITE_CENTRAL_ATIVA`.
+  - Esta parte funciona **com o backend que já está implantado**, porque o turno já devolve `propostas`.
+- **Streaming (backend, exige reimplantar a edge `assistente`):**
+  - `chat_perguntar` com `stream: true` responde em SSE: eventos `texto` { delta } e um único `resultado` { status, corpo }.
+  - O `corpo` é o mesmo da resposta JSON e já foi registrado pelo `chat_responder`.
+  - O texto parcial é só prévia: sem `resultado`, ele some e a tela pede para recuperar a mesma pergunta.
+  - Se o cliente sair no meio, o turno **não** é cancelado: ele termina e fica registrado, e a mesma `idempotency_key` recupera a resposta.
+  - Com anexos, o turno usa o adaptador comum, porque os adaptadores de streaming recusam anexos.
+  - `chat_config` passa a anunciar `streaming: true`, e só então a tela usa o streaming. Com a edge atual, a tela continua no caminho JSON.
+- **Artefato autocontido:** `adaptadores_stream.ts` passou a exportar o gerador por `export { lerEventosSse }`, porque o gerador do artefato não reconhece `export async function*`.
+- **Para ligar em produção:** reimplantar a edge `assistente`, a partir de `artifacts/assistente/`, com autorização do proprietário.
