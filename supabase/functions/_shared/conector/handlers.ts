@@ -9,7 +9,7 @@ import { buscarDefinicao } from "./registro.ts";
 import { montarItensCategoria, type Pendencia } from "./categoria_bling.ts";
 import { proporAplicacao, proporCodigo, proporEnriquecimento, proporImagem, type AdminRpc } from "../ia/escrita.ts";
 import { chamarPlugin, type PluginRegistro } from "../ia/plugin.ts";
-import { buscarImagens } from "../ia/google.ts";
+import { buscarDadosTecnicos, buscarImagens } from "../ia/google.ts";
 
 export interface ContextoFerramenta {
   lojaId: string;
@@ -131,6 +131,11 @@ export const HANDLERS: Record<string, Handler> = {
     if (!c.buscaImagem) return { erro: "Busca de imagens não configurada. Cole a chave do Google em Integrações de IA." };
     try { return { candidatas: await buscarImagens(c.buscaImagem.chave, c.buscaImagem.cx, String(e.consulta ?? ""), c.fetch) }; }
     catch (err) { return { erro: err instanceof Error ? err.message : "Falha na busca de imagens." }; }
+  },
+  "conecta.web.pesquisar_tecnico": async (e, c) => {
+    if (!c.buscaImagem) return { erro: "Pesquisa técnica não configurada. Configure Google API Key e CX em Integrações de IA." };
+    try { return { resultados_candidatos: await buscarDadosTecnicos(c.buscaImagem.chave, c.buscaImagem.cx, String(e.consulta ?? "").trim().slice(0, 200), c.fetch), aviso: "Resumos não comprovam aplicação, OEM, GTIN ou medidas. Confirme na página do fabricante antes de propor alterações." }; }
+    catch (err) { return { erro: err instanceof Error ? err.message : "Falha na pesquisa técnica." }; }
   },
   "conecta.plugins.listar": async (_e, c) => (c.plugins ?? []).filter((p) => p.ativo).map((p) => ({ nome: p.nome, tipo: p.tipo, capacidades: p.capacidades, risco: p.risco })),
   "conecta.plugins.chamar": async (e, c) => {
