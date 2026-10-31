@@ -901,6 +901,35 @@ const FERRAMENTAS = [
         }
     },
     {
+        nome: "conecta.get_validated_fields",
+        escopo: "produtos:ler",
+        somenteLeitura: true,
+        descricao: "Valores JÁ APROVADOS pelo lojista na Fila para um SKU (marca, descrições, peso, categoria sugerida e EAN), com fonte e data. Só o que foi aprovado; nunca fiscal, custo ou preço. Serve para o lojista conferir/preencher na tela do ERP com o OK dele.",
+        esquema: {
+            obrig: [
+                "sku"
+            ],
+            props: {
+                sku: {
+                    tipo: "string",
+                    max: 80
+                }
+            }
+        },
+        inputSchema: js({
+            sku: {
+                type: "string",
+                minLength: 1,
+                maxLength: 80
+            }
+        }, [
+            "sku"
+        ]),
+        executar: async (s, a, d)=>await d.camposAprovados(s.loja_id, a.sku) ?? {
+                erro: "Produto não encontrado nesta loja."
+            }
+    },
+    {
         nome: "conecta.get_pending_approvals",
         escopo: "aprovacoes:ler",
         somenteLeitura: true,
@@ -2346,6 +2375,50 @@ function dadosSupabase(admin, agora = ()=>new Date(), bling) {
                 ascending: false
             }).limit(limite);
             return data ?? [];
+        },
+        async camposAprovados (loja, sku) {
+            const id = await idDoSku(loja, sku);
+            if (!id) return null;
+            const CAMPOS = [
+                "marca_peca",
+                "descricao_curta",
+                "descricao_longa",
+                "peso_kg",
+                "categoria_sugerida"
+            ];
+            const [{ data: enr }, { data: cod }] = await Promise.all([
+                admin.from("produto_enriquecimento").select("id, campo, valor, fonte, coletado_em").eq("loja_id", loja).eq("produto_id", id).eq("status", "aprovado").in("campo", CAMPOS).order("coletado_em", {
+                    ascending: false
+                }).limit(50),
+                admin.from("produto_codigos").select("id, valor, fonte, coletado_em").eq("loja_id", loja).eq("produto_id", id).eq("tipo", "ean").eq("status", "aprovado").order("coletado_em", {
+                    ascending: false
+                }).limit(1)
+            ]);
+            const vistos = new Set(), campos = [];
+            for (const e of enr ?? []){
+                if (vistos.has(e.campo)) continue;
+                const v = typeof e.valor === "string" ? e.valor : typeof e.valor === "number" ? String(e.valor) : null;
+                if (v === null) continue;
+                vistos.add(e.campo);
+                campos.push({
+                    id: e.id,
+                    campo: e.campo,
+                    valor: v,
+                    fonte: e.fonte,
+                    aprovado_em: e.coletado_em
+                });
+            }
+            for (const c of cod ?? [])campos.push({
+                id: c.id,
+                campo: "ean",
+                valor: c.valor,
+                fonte: c.fonte,
+                aprovado_em: c.coletado_em
+            });
+            return {
+                sku,
+                campos
+            };
         },
         async statusTarefa (loja, id) {
             const { data: a } = await admin.from("aprovacoes").select("id, tipo, ferramenta, estado, versao, expira_em, decidido_em, motivo_decisao, hash_proposta").eq("loja_id", loja).eq("id", id).maybeSingle();
