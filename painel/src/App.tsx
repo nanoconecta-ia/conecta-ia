@@ -172,12 +172,18 @@ export function App() {
           <small>Consulta e propostas com aprovação humana</small>
         </div>
         {agruparMenu(MENU).map((g) => (
-          <div key={g.id} className="menu-grupo" role="group" aria-label={g.titulo}>
-            <span className="menu-titulo"><Icone nome={g.id} tamanho={16} /><b>{g.titulo}</b></span>
-            {g.itens.map(([c, t]) => (
-              <a key={c} href={`#${c}`} title={t} className={caminho === c ? "ativo" : ""} aria-current={caminho === c ? "page" : undefined} onClick={() => setMenuMovel(false)}><Icone nome={ICONES_ROTAS[c] ?? g.id} tamanho={18} /><span>{t}</span></a>
-            ))}
-          </div>
+          <details key={g.id} className="menu-grupo" open={g.itens.some(([c]) => c === caminho)}>
+            <summary className="menu-titulo" title={g.titulo}>
+              <Icone nome={g.id} tamanho={16} /><b>{g.titulo}</b>
+            </summary>
+            <div className="menu-grupo-itens">
+              {g.itens.map(([c, t]) => (
+                <a key={c} href={`#${c}`} title={t} className={caminho === c ? "ativo" : ""} aria-current={caminho === c ? "page" : undefined} onClick={() => setMenuMovel(false)}>
+                  <Icone nome={ICONES_ROTAS[c] ?? g.id} tamanho={18} /><span>{t}</span>
+                </a>
+              ))}
+            </div>
+          </details>
         ))}
         <button className="sec menu-sair" disabled={demoAtivo} onClick={() => void supabase.auth.signOut()}><Icone nome="fechar" tamanho={18} /><span>Sair da conta</span></button>
         <button className="sec menu-recolher" onClick={alternarMenu} aria-pressed={recolhido} aria-label={recolhido ? "Expandir menu" : "Recolher menu"}><Icone nome="recolher" tamanho={16} /></button>
