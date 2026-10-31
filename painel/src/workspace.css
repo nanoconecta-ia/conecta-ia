@@ -165,3 +165,22 @@ html .centro-ferramentas[open]{inset:auto;top:50%;left:50%;right:auto;bottom:aut
  html .dock-trilho button.dock-aba {min-height:44px;height:44px;max-height:44px;padding:2px 1px;gap:0;flex-shrink:0}
  html .dock-trilho .dock-trilho-sep {margin:2px 4px}
 }
+
+/* Nano.IA companheiro: o workspace permanece navegável ao lado do agente, não é outra aplicação. */
+.dock-painel{display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden;min-height:0}
+.dock-painel>.dock-corpo{min-height:0;height:100%;overflow:auto}
+.dock-contexto{min-width:0;display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--realce);border-bottom:1px solid var(--borda);font-size:.73rem;color:var(--texto)}
+.dock-contexto>span{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.dock-contexto>span b{font-size:.68rem;color:var(--suave);margin-right:4px}
+.dock-contexto button{flex:none;min-height:32px;padding:5px 8px;border:1px solid var(--borda-forte);border-radius:8px;font-size:.69rem;font-weight:750;white-space:nowrap;box-shadow:none}
+.dock-contexto button:hover{border-color:var(--marca);background:var(--cartao)}
+.dock-contexto-voltar{color:var(--marca-forte)}
+@media(max-width:700px){
+ .dock-contexto{padding:5px 6px;gap:4px;font-size:.64rem}
+ .dock-contexto>span b{display:none}
+ .dock-contexto button{min-height:29px;padding:4px 5px;font-size:.63rem}
+}
+@media(max-height:430px){
+ /* Prioriza área da mensagem no celular deitado; contexto segue no Mapa e Resumo. */
+ .dock-contexto{display:none}
+}
