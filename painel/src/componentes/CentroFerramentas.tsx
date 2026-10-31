@@ -14,9 +14,9 @@ const ICONE: Record<string, string> = {
 };
 
 /** Launcher global: mostra apenas módulos realmente liberados para este build e para a loja. */
-export function CentroFerramentas({ aberta, aoFechar, itens, aoNavegar, aoAbrirAgente, rotaNano }: {
+export function CentroFerramentas({ aberta, aoFechar, itens, aoNavegar, aoAbrirAgente, rotaNano, globalDisponivel }: {
   aberta: boolean; aoFechar: () => void; itens: Item[];
-  aoNavegar: (rota: string) => void; aoAbrirAgente: () => void; rotaNano: string;
+  aoNavegar: (rota: string) => void; aoAbrirAgente: () => void; rotaNano: string; globalDisponivel: boolean;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const campo = useRef<HTMLInputElement>(null);
