@@ -55,3 +55,13 @@
 .navegador-limite p{color:var(--suave);line-height:1.65}
 @media(max-width:1000px){.navegador-conteudo{grid-template-columns:1fr}.navegador-fontes-lateral{max-width:none}.navegador-destaque{padding:25px}}
 @media(max-width:700px){.navegador-topo{padding:10px 10px 0}.navegador-identidade>span:last-child{display:none}.navegador-navegacao{padding:12px}.navegador-trilha{font-size:.65rem}.navegador-barra-busca{padding-left:12px;gap:6px}.navegador-barra-busca input{font-size:.81rem}.navegador-pesquisar{padding:10px 12px;font-size:.78rem}.navegador-conteudo{padding:13px;gap:13px}.navegador-destaque{padding:20px}.navegador-exemplos{grid-template-columns:1fr}.navegador-resultado,.navegador-orientacao{padding:17px}}
+
+.navegador-proposta{margin-top:20px;padding:21px;border:1px solid var(--borda-forte);border-radius:14px;background:var(--realce);display:grid;gap:13px;max-width:none}
+.navegador-proposta h3{margin:0;font-size:1.04rem}
+.navegador-proposta>p{font-size:.8rem;color:var(--suave);line-height:1.6;margin:0}
+.navegador-proposta label{display:grid;gap:5px;font-size:.78rem;font-weight:750}
+.navegador-proposta input,.navegador-proposta textarea,.navegador-proposta select{width:100%;min-width:0;border-radius:9px;border:1px solid var(--borda-forte);background:var(--cartao);color:var(--texto);padding:12px;font:inherit;font-size:.87rem;min-height:44px}
+.navegador-proposta textarea{resize:vertical}
+.navegador-proposta>button{justify-self:start}
+.navegador-confirmacao{color:var(--marca-forte)!important;font-size:.88rem!important;font-weight:750!important}
+.navegador-confirmacao a{color:inherit;text-decoration:underline}
