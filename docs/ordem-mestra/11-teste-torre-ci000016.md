@@ -25,8 +25,13 @@ montar a ficha comercial, reunir imagem real e preparar texto e cadastro para o 
 | Busca de imagem na web | **desativada** (falta a chave do Google configurada na loja) |
 | Publicado no site | não |
 
-**Consequência:** os códigos de motor citados no plano (D4BH, D4BB, 4D56), a compatibilidade com Hyundai HR / Kia K2500 e a categoria
-completa **não estão no espelho com fonte**. Entram como "a confirmar" até haver catálogo do fabricante ou distribuidor.
+**Correção (31/10/2026, releitura do espelho):** a descrição curta cadastrada já cita "Motores ref.: D4BH, D4BB, 4D56" e termina com
+"Aplicação declarada pelo fornecedor; confirmar chassi e código antes da compra". Ou seja, os códigos de motor **existem no cadastro, como
+declaração do fornecedor**, e não como dado verificado com fonte e data. Continuam "a confirmar" para afirmar compatibilidade.
+Preço de venda no espelho: R$ 176,77 (uso interno). **Estoque: 0.** Peso cadastrado: 2 kg. Texto ao cliente não deve prometer disponibilidade.
+
+**Consequência:** a compatibilidade com Hyundai HR / Kia K2500 (ano, 8 ou 16 válvulas) e a categoria completa **não têm fonte verificável**.
+Entram como "a confirmar" até haver catálogo do fabricante ou distribuidor.
 
 ## Dados obrigatórios (sem eles o teste para)
 1. SKU, nome, marca, categoria e preço: lidos do Bling. **Preço e custo são do ERP; custo e fornecedor nunca vão para arte nem texto público.**
