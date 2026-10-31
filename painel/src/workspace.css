@@ -184,3 +184,9 @@ html .centro-ferramentas[open]{inset:auto;top:50%;left:50%;right:auto;bottom:aut
  /* Prioriza área da mensagem no celular deitado; contexto segue no Mapa e Resumo. */
  .dock-contexto{display:none}
 }
+
+/* Esfera viva acompanha a transição de balão flutuante para painel ampliado. */
+.dock-esfera-viva{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;overflow:hidden}
+.dock-esfera-viva .esfera-bloco,.dock-esfera-viva .esfera-caixa{display:flex;align-items:center;justify-content:center;width:28px;height:28px;margin:0;min-width:0;min-height:0}
+.dock-esfera-viva .orbita,.dock-esfera-viva .sombra-chao{display:none}
+@media(max-width:390px){.dock-esfera-viva{width:22px;height:24px}.dock-esfera-viva .esfera{transform:scale(.79)}}
