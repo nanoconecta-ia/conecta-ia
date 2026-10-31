@@ -15,6 +15,7 @@ import { MSG_SO_LOJISTA, podeDecidir } from "../_shared/assistente/permissao.ts"
 
 import { conteudoComAnexos, REGRAS_ANEXO, validarAnexos } from "../_shared/assistente/anexos.ts";
 import { atenderChat } from "../_shared/assistente/chat.ts";
+import { pesquisarWebPublica, validarConsultaPublica } from "../_shared/assistente/pesquisa_web.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -83,13 +84,14 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   }
 
-  const texto = typeof c?.texto === "string" ? c.texto.slice(0, 1000) : "";
+  const entradaTexto = c.acao === "pesquisar_web" ? c.consulta : c?.texto;
+  const texto = typeof entradaTexto === "string" ? entradaTexto.slice(0, 1000) : "";
   if (!texto.trim()) return json({ erro: "Escreva sua pergunta." }, 400);
 
   // Com chave de IA configurada: chat de verdade com ferramentas. Sem chave: respostas por palavras-chave (abaixo).
   const sb = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   let provedor;
-  try { provedor = validarProvedor(c.provedor); }
+  try { provedor = validarProvedor(c.acao === "pesquisar_web" ? "gemini" : c.provedor); }
   catch { return json({ erro: "Provedor inválido.", codigo: "provedor_invalido" }, 400); }
   const { data: kRows, error: erroChave } = c.sem_ia === true
     ? { data: null, error: null }
@@ -100,6 +102,25 @@ Deno.serve(async (req) => {
   if (k && !modeloDaChave(k)) return json({ erro: "Configure o modelo em Integrações de IA.", codigo: "provedor_indisponivel" }, 409);
   const chaveiro = k ? await chaveiroPlataforma(sb, (n) => Deno.env.get(n)) : undefined;
   if (k && !chaveiro) return json({ erro: "O provedor está indisponível na configuração do servidor.", codigo: "provedor_indisponivel" }, 503);
+  // Pesquisa pública fundamentada, separada do chat e das ferramentas do Bling.
+  // Apenas consulta técnica digitada pelo operador; nenhum histórico, custo ou cadastro é enviado.
+  if (c.acao === "pesquisar_web") {
+    if (!k || k.provedor !== "gemini" || !chaveiro) return json({ erro: "Configure um modelo Gemini ativo em Integrações de IA." }, 409);
+    if (c.consentimento_web !== true) return json({ erro: "Confirme o envio da referência técnica pública ao Google." }, 403);
+    let consulta: string;
+    try { consulta = validarConsultaPublica(texto); }
+    catch (e) { return json({ erro: e instanceof IaErro ? e.message : "Consulta inválida." }, 400); }
+    if (k.limite != null && k.tokens_mes >= k.limite) return json({ erro: "Limite mensal de IA atingido." }, 429);
+    try {
+      const r = await pesquisarWebPublica(await decifrar(k.cifrada, chaveiro), modeloDaChave(k), consulta);
+      await sb.rpc("ia_registrar_uso", { p_loja: loja.id, p_provedor: "gemini", p_tokens: r.tokens });
+      await sb.from("auditoria").insert({ loja_id: loja.id, user_id: u.user.id, acao: "assistente.pesquisa_web", tabela: "ia", depois: { provedor: "gemini", modelo: modeloDaChave(k), tokens: r.tokens, fontes: r.fontes.length, fundamentada: r.fundamentada } });
+      return json({ ...r, modelo: modeloDaChave(k), gravou_bling: false, modo: "web_publica" });
+    } catch (e) {
+      return json({ erro: e instanceof IaErro ? e.message : "Não foi possível pesquisar no Google.", codigo: "pesquisa_indisponivel" }, e instanceof IaErro ? e.status : 502);
+    }
+  }
+
   if (c.anexos != null && !(k && chaveiro)) return json({ erro: "Anexos exigem um provedor de IA configurado.", codigo: "anexo_sem_provedor" }, 409);
   if (k && chaveiro) {
     const va = c.anexos != null ? await validarAnexos(c.anexos, k.provedor) : null;
