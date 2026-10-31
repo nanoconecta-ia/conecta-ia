@@ -5,6 +5,7 @@ import { chamarPlugin, type PluginRegistro } from "./plugin.ts";
 import { CAMPOS_ENRIQUECIMENTO, proporAplicacao, proporCodigo, proporEnriquecimento, proporImagem, TIPOS_CODIGO, type AdminRpc } from "./escrita.ts";
 import { buscarImagens, buscarDadosTecnicos } from "./google.ts";
 import { despachar, type ContextoDespacho } from "../conector/despacho.ts";
+import { ALIASES_ASSISTENTE, politicaDoAssistente } from "../conector/aliases.ts";
 
 export const SISTEMA = [
   "Você é o Nano.ia, o assistente do lojista no Conecta.IA. Seu nome é Nano.ia. Fale em português do Brasil, como um colega de balcão experiente: natural, direto e caloroso, em frases curtas e do jeito que se fala em voz alta.",
@@ -27,7 +28,8 @@ export const SISTEMA = [
   "Produto incompleto não é publicado. Nunca cite o nome do provedor de IA nem do modelo."
 ].join("\n");
 
-export const FERRAMENTAS: Ferramenta[] = [
+/** Contratos de entrada que o LLM do assistente já conhece. O que cada uma É (risco, permissão, estado) vem do Tool Registry via aliases.ts. */
+export const FERRAMENTAS_DO_ASSISTENTE: readonly Ferramenta[] = [
   { name: "resumo_loja", description: "Totais da loja: produtos espelhados, publicados e itens aguardando aprovação.", input_schema: { type: "object", properties: {} } },
   { name: "listar_produtos", description: "Lista produtos da loja (nome, SKU, preço, estoque, publicado). Pode filtrar só os não publicados.", input_schema: { type: "object", properties: { apenas_nao_publicados: { type: "boolean" }, busca: { type: "string", description: "trecho do nome ou SKU" }, limite: { type: "integer", minimum: 1, maximum: 20 } } } },
   { name: "ver_produto", description: "Detalhes de um produto pelo SKU, e o que falta para publicar.", input_schema: { type: "object", properties: { sku: { type: "string" } }, required: ["sku"] } },
@@ -49,6 +51,9 @@ export const FERRAMENTAS: Ferramenta[] = [
   { name: "bling_propor_trocar_categoria", description: "Prepara a PROPOSTA de trocar a categoria de produtos no Bling, só para SKUs cuja sugestão de categoria JÁ foi aprovada pelo lojista. Não grava: o lojista precisa aprovar.", input_schema: { type: "object", properties: { skus: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 50 }, escolhas: { type: "object", description: "SKU -> id da categoria do Bling, quando houver mais de uma opção" } }, required: ["skus"] } },
 ];
 
+/** Lista entregue ao LLM: só o que o Policy Engine permite ao chat (ativa e exposta). Uma ferramenta desligada no registro some daqui. */
+export const FERRAMENTAS: Ferramenta[] = FERRAMENTAS_DO_ASSISTENTE.filter((f) => politicaDoAssistente(f.name).decisao === "permitida");
+
 export interface Contexto {
   // deno-lint-ignore no-explicit-any
   usuario: any; admin: AdminRpc; lojaId: string; plugins: PluginRegistro[];
@@ -63,6 +68,9 @@ const txt = (v: unknown) => (typeof v === "string" ? v.trim().slice(0, 80) : "")
 const seguro = (s: string) => s.replace(/[%,()*\\]/g, " "); // vai para filtro .or(): sem caracteres de sintaxe
 
 export async function executarFerramenta(nome: string, entrada: unknown, c: Contexto): Promise<unknown> {
+  // Nenhuma ferramenta roda sem passar pelo Policy Engine, com a definição do registro (issue #166, B1).
+  const pol = politicaDoAssistente(nome);
+  if (pol.decisao !== "permitida") return { erro: nome in ALIASES_ASSISTENTE ? `Ferramenta indisponível agora (${pol.motivo}).` : "Ferramenta desconhecida.", decisao: pol.decisao };
   const e = (entrada ?? {}) as Record<string, unknown>;
   const contar = (t: string, f?: (b: any) => any) => { const b = c.usuario.from(t).select("id", { count: "exact", head: true }).eq("loja_id", c.lojaId); return f ? f(b) : b; };
   switch (nome) {

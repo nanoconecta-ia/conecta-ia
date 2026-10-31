@@ -116,3 +116,12 @@ Consulta direta e só leitura ao espelho, feita pelo engenheiro, **não pelo Nan
 ## Decisão do proprietário (31/10/2026): Central oculta
 - Ordem aprovada: B1 → B2 → B3 → C1 → C2 → C3.
 - `/central` (alias `/agentes`) fica **oculta até aceite específico**, inclusive com `VITE_CONECTOR_ATIVO=1`, porque a tela tem a ação `executar` (grava via `conector-aprovacoes`). Ela sai do menu e da paleta, e o acesso direto cai na visão geral. Para ligar é preciso a nova flag `VITE_CENTRAL_ATIVA=1`, só com autorização. Nada foi removido: a tela e a edge continuam no código.
+## B1: catálogo único de ferramentas
+- **Fonte única:** `supabase/functions/_shared/conector/registro.ts` (Tool Registry). Ele define o que cada ferramenta é: risco, permissão, estado e exposição.
+- **Aliases** (`conector/aliases.ts`): os 19 nomes do assistente e os 12 do gateway Pair apontam para ids do registro. Os nomes públicos não mudam, porque o LLM e os clientes Pair já os usam.
+- **Assistente:** toda chamada passa pelo Policy Engine (`decidir`, origem `chat`) **antes** de tocar em dados. A lista entregue ao LLM é filtrada pelo registro: desligar uma ferramenta no registro tira ela do chat. Hoje nenhuma ferramenta sai da lista, então não há regressão.
+- **Registro:** nova `conecta.web.pesquisar_tecnico` (leitura, só chat), com handler no conector. Ela era a única ferramenta do assistente sem contrato.
+- **Pair:** 7 ferramentas mapeadas. As 5 capacidades que só existem no Pair (`get_part_by_code`, `propose_bula`, `propose_banner`, `get_pending_approvals`, `get_task_status`) ficam travadas como "sem contrato" até a C2. O teste impede que uma ferramenta nova entre no Pair sem alias.
+- **Invariante testada:** toda ferramenta `ativa` (exceto execução) tem handler, e todo handler tem contrato.
+- **Fora do escopo:** `_shared/bling_ferramentas.ts` é a camada de **endpoints HTTP do Bling** (usada por `contratos.ts` e `assistente/bling_consultar.ts`), não um catálogo exposto a agentes. Fica como está.
+- **Produção:** o runtime do Pair não muda. O assistente só muda quando a edge for reimplantada, o que exige autorização.
