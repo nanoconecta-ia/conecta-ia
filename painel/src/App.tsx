@@ -59,17 +59,19 @@ const ICONES_ROTAS: Record<string, string> = {
   "/bling": "erp", "/backup": "arquivo", "/banners": "imagem", "/contador": "grafico",
   "/aprovacoes": "escudo", "/meu-agente": "agentes", "/dispositivos": "monitor"
 };
-const ROTA_NANO = CONECTOR_ATIVO ? "/conector" : "/assistente";
+// Um único Nano.IA (#166, B2): atalhos e esfera abrem sempre o chat canônico (edge `assistente`, implantada).
+// /conector continua acessível pelo menu só em ambiente com VITE_CONECTOR_ATIVO, como homologação, até a paridade ser provada.
+const ROTA_NANO = "/assistente";
 
 const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], ["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
-  ["/conector", "Nano.ia"],
+  ["/conector", "Nano.IA (homologação)"],
   ["/central", "Central de Inteligência"],
   ["/indicadores", "Indicadores"],
   ["/studio", "Studio de produtos"],
   ["/estudio", "Estúdio do agente"],
-  ["/assistente", "Assistente"],
+  ["/assistente", "Conversa com Nano.IA"],
   ["/catalogo", "Catálogo"],
   ["/fila", "Fila de aprovação"],
   ["/taxonomia", "Taxonomia"],

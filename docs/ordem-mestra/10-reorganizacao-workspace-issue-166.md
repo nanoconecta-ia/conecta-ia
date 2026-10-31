@@ -125,3 +125,9 @@ Consulta direta e só leitura ao espelho, feita pelo engenheiro, **não pelo Nan
 - **Invariante testada:** toda ferramenta `ativa` (exceto execução) tem handler, e todo handler tem contrato.
 - **Fora do escopo:** `_shared/bling_ferramentas.ts` é a camada de **endpoints HTTP do Bling** (usada por `contratos.ts` e `assistente/bling_consultar.ts`), não um catálogo exposto a agentes. Fica como está.
 - **Produção:** o runtime do Pair não muda. O assistente só muda quando a edge for reimplantada, o que exige autorização.
+
+## B2 (primeira entrega): um único Nano.IA no painel
+- **Chat canônico:** `/assistente` (edge `assistente`, implantada; histórico real em `conversas`/`mensagens`). O atalho do topo e o botão "Conversar com Nano.IA" abrem sempre esse chat, inclusive com `VITE_CONECTOR_ATIVO=1`.
+- **Mesma conversa no dock e na tela:** os dois já montavam o mesmo componente, mas cada montagem começava sem conversa. Agora o id da conversa ativa fica guardado por loja na sessão do navegador (`lib/conversaAtiva.ts`), e quem montar depois retoma o fio. Guarda-se só o id: as mensagens continuam vindo do servidor com RLS. Se a conversa não abrir mais (excluída ou de outro usuário), o id é descartado. "Nova conversa" e a exclusão limpam o id.
+- **`/conector`** continua no código e no menu **só** com a flag, rotulado "Nano.IA (homologação)", até o streaming, os cartões de proposta e o painel de contexto serem migrados para o chat canônico.
+- **Ainda falta (B2b, exige reimplantar a edge `assistente` com autorização):** streaming SSE e cartões de proposta no chat canônico. O backend `conector-chat` continua não implantado e não foi ligado.

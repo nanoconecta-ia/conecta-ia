@@ -9,6 +9,7 @@ import { mensagemRecolhida } from "../lib/retratil.ts";
 import { interpretar, textoAjuda, type Comando, type Item } from "../lib/comandosNL.ts";
 import { avaliar, coletar } from "../lib/avaliarLayout.ts";
 import { CHAT_ACEITA, CHAT_MAX_ANEXOS, prepararArquivo, rotuloBytes, validarSelecao, type AnexoChat } from "../lib/anexosChat.ts";
+import { gravarConversaAtiva, lerConversaAtiva } from "../lib/conversaAtiva.ts";
 import { escolherInicial, erroAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 
 type Evidencia = { origem: string; simulado: boolean; consultado_em: string; sincronizado_em?: string; motivo?: string; dados: { sku?: string; nome?: string; preco?: number | null; estoque?: number | null } };
@@ -107,6 +108,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       if (error || !data || data.erro) { setErroHistorico("Histórico persistente ainda indisponível. O resumo local continua disponível."); return; }
       setConfig(data); setDias(data.retencao_dias);
       void listarConversas(false);
+      void restaurarConversa(data.persistente === true);
     }).catch(() => { if (ativo) { setCarregandoChat(false); setErroHistorico("Não foi possível consultar o histórico."); } });
     supabase.rpc("pode_administrar_loja", { p_loja_id: loja.id }).then(({ data, error }) => { if (ativo) setPodeAdministrar(!error && data === true); });
     return () => { ativo = false; };
@@ -145,6 +147,21 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     } catch (e) { if (lojaAtual.current === origem) setErroHistorico(String(e)); }
     finally { if (lojaAtual.current === origem) setOcupado(false); }
   }
+  // B2 (#166): dock e tela /assistente retomam a mesma conversa. Restaurar não é auditado como "abrir" de propósito:
+  // é a mesma leitura (chat_mensagens, RLS do próprio usuário); se a conversa não abrir mais, o id guardado é descartado.
+  const restaurado = useRef(false);
+  async function restaurarConversa(persistente: boolean) {
+    const origem = loja.id, id = lerConversaAtiva(origem);
+    try {
+      if (!persistente || !id) return;
+      const d = await chamada("chat_mensagens", { conversa_id: id });
+      if (lojaAtual.current !== origem) return;
+      mostrar(d.mensagens); setConversaId(id);
+    } catch { if (lojaAtual.current === origem) gravarConversaAtiva(origem, null); }
+    finally { if (lojaAtual.current === origem) restaurado.current = true; }
+  }
+  useEffect(() => { restaurado.current = false; }, [loja.id]);
+  useEffect(() => { if (restaurado.current && !administrando) gravarConversaAtiva(loja.id, conversaId); }, [conversaId, administrando, loja.id]);
   function nova() { setConversaId(null); setRegistros([]); setMsgs([]); setRetentativa(null); setAdministrando(false); setErroHistorico(""); }
   async function excluir() {
     if (!conversaId || !window.confirm("Excluir definitivamente esta conversa? A auditoria será preservada.")) return;
