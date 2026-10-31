@@ -15,6 +15,7 @@ import { MSG_SO_LOJISTA, podeDecidir } from "../_shared/assistente/permissao.ts"
 
 import { conteudoComAnexos, REGRAS_ANEXO, validarAnexos } from "../_shared/assistente/anexos.ts";
 import { atenderChat } from "../_shared/assistente/chat.ts";
+import { pesquisarWebPublica, validarConsultaPublica } from "../_shared/assistente/pesquisa_web.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +54,39 @@ Deno.serve(async (req) => {
     return json({ provedores: listarProvedores(data ?? [], !!error), verificado: !error });
   }
 
+  // Preparação de enriquecimento: grava SOMENTE proposta a confirmar no Conecta.IA, nunca no Bling.
+  // A pesquisa e a fonte são escolhidas pelo operador; proposta não equivale à verificação documental.
+  if (c.acao === "propor_enriquecimento_web") {
+    const uuid = (s: unknown) => typeof s === "string" && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(s);
+    const campo = c.campo === "descricao_curta" || c.campo === "descricao_longa" ? c.campo : "";
+    const valor = typeof c.valor === "string" ? c.valor.trim() : "";
+    const fonte = typeof c.fonte === "string" ? c.fonte.trim() : "";
+    let origem: URL | null = null; try { origem = new URL(fonte); } catch { /* inválida */ }
+    if (!uuid(c.produto_id) || !campo || valor.length < 25 || valor.length > (campo === "descricao_curta" ? 320 : 3000)
+      || !origem || origem.protocol !== "https:" || origem.username || origem.password
+      || origem.port || origem.hostname === "localhost" || origem.hostname.endsWith(".local")
+      || /^(?:127\.|10\.|192\.168\.|169\.254\.)/.test(origem.hostname))
+      return json({ erro: "Produto, descrição ou URL pública da fonte inválidos." }, 400);
+    if (/(?:\b(?:senha|token|cpf|cnpj|api key|conta bancária)\b|R\$\s*\d)/i.test(valor))
+      return json({ erro: "Não inclua credenciais, dados pessoais ou preços na descrição." }, 400);
+    const { data: produto, error: pe } = await usuario.from("produtos").select("id").eq("loja_id", loja.id).eq("id", c.produto_id).maybeSingle();
+    if (pe || !produto) return json({ erro: "Produto não encontrado ou sem acesso nesta loja." }, 404);
+    const sbProposta = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+    const { data: pendente, error: pErro } = await sbProposta.from("produto_enriquecimento")
+      .select("id").eq("loja_id", loja.id).eq("produto_id", produto.id).eq("campo", campo).eq("status", "a_confirmar").limit(1);
+    if (pErro) return json({ erro: "Não foi possível verificar propostas existentes." }, 503);
+    if (pendente?.length) return json({ erro: "Já existe proposta pendente para esse campo; revise-a na Fila de aprovação." }, 409);
+    const hashBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode([loja.id,produto.id,campo,valor,origem.href].join("|")));
+    const hash = Array.from(new Uint8Array(hashBytes)).map(b=>b.toString(16).padStart(2,"0")).join("");
+    const { data: proposta, error: e } = await sbProposta.from("produto_enriquecimento")
+      .insert({ loja_id:loja.id, produto_id:produto.id, campo, valor, fonte:origem.href, coletado_em:new Date().toISOString(),
+        hash_origem:hash, status:"a_confirmar" }).select("id").single();
+    if (e || !proposta) return json({ erro: "Não foi possível registrar a proposta." }, 503);
+    await sbProposta.from("auditoria").insert({ loja_id:loja.id, user_id:u.user.id, acao:"enriquecimento.proposta_web",
+      tabela:"produto_enriquecimento", depois:{ id:proposta.id, produto_id:produto.id, campo, origem:origem.hostname } });
+    return json({ proposta_id:proposta.id, status:"a_confirmar", gravou_bling:false });
+  }
+
   // Aprovar/rejeitar muda dado que vai ao site: só quem ADMINISTRA a loja (lojista), nunca o editor. Conversar e consultar seguem abertos.
   if ((c.acao === "decidir" || c.acao === "decidir_imagem") && !(await podeDecidir(usuario, loja.id))) return json({ erro: MSG_SO_LOJISTA }, 403);
 
@@ -83,13 +117,14 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   }
 
-  const texto = typeof c?.texto === "string" ? c.texto.slice(0, 1000) : "";
+  const entradaTexto = c.acao === "pesquisar_web" ? c.consulta : c?.texto;
+  const texto = typeof entradaTexto === "string" ? entradaTexto.slice(0, 1000) : "";
   if (!texto.trim()) return json({ erro: "Escreva sua pergunta." }, 400);
 
   // Com chave de IA configurada: chat de verdade com ferramentas. Sem chave: respostas por palavras-chave (abaixo).
   const sb = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   let provedor;
-  try { provedor = validarProvedor(c.provedor); }
+  try { provedor = validarProvedor(c.acao === "pesquisar_web" ? "gemini" : c.provedor); }
   catch { return json({ erro: "Provedor inválido.", codigo: "provedor_invalido" }, 400); }
   const { data: kRows, error: erroChave } = c.sem_ia === true
     ? { data: null, error: null }
@@ -100,6 +135,25 @@ Deno.serve(async (req) => {
   if (k && !modeloDaChave(k)) return json({ erro: "Configure o modelo em Integrações de IA.", codigo: "provedor_indisponivel" }, 409);
   const chaveiro = k ? await chaveiroPlataforma(sb, (n) => Deno.env.get(n)) : undefined;
   if (k && !chaveiro) return json({ erro: "O provedor está indisponível na configuração do servidor.", codigo: "provedor_indisponivel" }, 503);
+  // Pesquisa pública fundamentada, separada do chat e das ferramentas do Bling.
+  // Apenas consulta técnica digitada pelo operador; nenhum histórico, custo ou cadastro é enviado.
+  if (c.acao === "pesquisar_web") {
+    if (!k || k.provedor !== "gemini" || !chaveiro) return json({ erro: "Configure um modelo Gemini ativo em Integrações de IA." }, 409);
+    if (c.consentimento_web !== true) return json({ erro: "Confirme o envio da referência técnica pública ao Google." }, 403);
+    let consulta: string;
+    try { consulta = validarConsultaPublica(texto); }
+    catch (e) { return json({ erro: e instanceof IaErro ? e.message : "Consulta inválida." }, 400); }
+    if (k.limite != null && k.tokens_mes >= k.limite) return json({ erro: "Limite mensal de IA atingido." }, 429);
+    try {
+      const r = await pesquisarWebPublica(await decifrar(k.cifrada, chaveiro), modeloDaChave(k), consulta);
+      await sb.rpc("ia_registrar_uso", { p_loja: loja.id, p_provedor: "gemini", p_tokens: r.tokens });
+      await sb.from("auditoria").insert({ loja_id: loja.id, user_id: u.user.id, acao: "assistente.pesquisa_web", tabela: "ia", depois: { provedor: "gemini", modelo: modeloDaChave(k), tokens: r.tokens, fontes: r.fontes.length, fundamentada: r.fundamentada } });
+      return json({ ...r, modelo: modeloDaChave(k), gravou_bling: false, modo: "web_publica" });
+    } catch (e) {
+      return json({ erro: e instanceof IaErro ? e.message : "Não foi possível pesquisar no Google.", codigo: "pesquisa_indisponivel" }, e instanceof IaErro ? e.status : 502);
+    }
+  }
+
   if (c.anexos != null && !(k && chaveiro)) return json({ erro: "Anexos exigem um provedor de IA configurado.", codigo: "anexo_sem_provedor" }, 409);
   if (k && chaveiro) {
     const va = c.anexos != null ? await validarAnexos(c.anexos, k.provedor) : null;

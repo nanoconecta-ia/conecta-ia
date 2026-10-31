@@ -1,4 +1,4 @@
-// Nano.ia guia: balão arrastável, janela espaçosa, navegação por linguagem natural em sequência e avaliação de layout. Sessão e rede 100% SINTÉTICAS.
+// Nano.IA integrado: chat expansível, navegação natural entre módulos e avaliação de layout. Sessão e rede sintéticas.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
@@ -31,27 +31,21 @@ try{
   });
  
   await page.goto(`${base}/#/catalogo`);
-  const balao=page.getByRole('button',{name:'Abrir o Nano.ia'});await balao.waitFor();
-  if(largura>600){
-   // arrasta o balão para a esquerda: ele gruda na borda, lembra onde ficou e a janela passa a abrir desse lado
-   const b=await balao.boundingBox();await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();await page.mouse.move(300,300,{steps:6});await page.mouse.move(90,330,{steps:6});await page.mouse.up();
-   await page.waitForTimeout(900);
-   assert.equal(await balao.getAttribute('data-lado'),'esq');const e=await balao.boundingBox();assert.ok(e.x<40&&Math.abs(e.y-(330-b.height/2))<40,'balão ficou na borda esquerda onde foi largado');
-   assert.equal(await page.evaluate(()=>document.documentElement.dataset.balao),'esq');
-   assert.equal(await page.evaluate(()=>location.hash),'#/catalogo','arrastar não abre o agente nem navega');
-   await page.reload();await balao.waitFor();assert.equal(await balao.getAttribute('data-lado'),'esq','posição lembrada');
-  }
-  await balao.click();
+  assert.equal(await page.locator('.balao-genesis,.esfera').count(),0,'interface sem esfera');
+  const acionar = largura < 760
+    ? page.locator('.workspace-mobile-tabs').getByRole('button',{name:'Nano.IA',exact:true})
+    : page.getByRole('button',{name:'Abrir painel Nano.IA'});
+  await acionar.waitFor();await acionar.click();
   const dock=page.locator('#dock-agente');await dock.waitFor({state:'visible'});
   const d=await dock.boundingBox();
-  if(largura>600){assert.ok(d.x<40,'janela abre do lado do balão');assert.ok(d.height>=600,'janela espaçosa no notebook');
+  if(largura>600){assert.ok(d.height>=600,'janela espaçosa no notebook');
    await dock.getByRole('button',{name:'Ampliar a janela do Nano.ia'}).click();await page.waitForTimeout(450);assert.ok((await dock.boundingBox()).width>=900,'ampliada');await dock.getByRole('button',{name:'Reduzir a janela do Nano.ia'}).click();}
   else{assert.ok(d.width>=largura-16&&d.height>=altura*0.8,`janela quase cheia no smartphone (${Math.round(d.width)}x${Math.round(d.height)})`);}
   const campo=dock.getByLabel('Pergunte',{exact:true}),enviar=dock.getByRole('button',{name:'Enviar',exact:true});
   // linguagem natural: abre as telas em sequência, sem enviar nada ao servidor de IA
   await campo.fill('Abre a taxonomia, depois a fila de aprovação e em seguida imagens');await enviar.click();
   await page.waitForFunction(()=>location.hash==='#/taxonomia');
-  assert.ok(await page.locator('.balao-genesis.balao-guia').count()>=0);
+  assert.equal(await page.locator('.balao-genesis').count(),0,'sem esfera ao navegar por módulos');
   await page.waitForFunction(()=>location.hash==='#/fila');await page.waitForFunction(()=>location.hash==='#/imagens');
   await dock.getByText(/Pronto: abri Taxonomia, depois Fila de aprovação, depois Imagens e SEO/).waitFor();
   assert.ok((await dock.innerText()).includes('Quer que eu avalie o layout'));
@@ -66,5 +60,5 @@ try{
   assert.deepEqual(erros,[]);
   await context.close();
  }
- console.log('nano-guia-visual ok (300, 360, 390 e 1280px: balão arrastável, janela espaçosa, navegação em sequência por linguagem natural, avaliação de layout)');
+ console.log('nano-guia-visual ok (300, 360, 390 e 1280px: janela integrada sem esfera, navegação em sequência por linguagem natural, avaliação de layout)');
 }finally{await browser?.close();servidor.kill()}

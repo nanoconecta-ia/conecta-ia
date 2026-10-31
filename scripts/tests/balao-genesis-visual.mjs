@@ -1,4 +1,4 @@
-// Balão flutuante do Nano.ia em qualquer tela do painel (390px e desktop). Sessão e rede 100% SINTÉTICAS; nada sai para produção.
+// Interface sem esfera do Nano.IA, abrindo o chat integrado por cabeçalho/menu mobile. Sessão e rede sintéticas.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
@@ -29,19 +29,23 @@ try{
    return route.fulfill({status:200,contentType:'application/json',headers:h,body:u.pathname.includes('/rest/v1/')?'[]':'{}'});
   });
   await page.goto(`${base}/#/catalogo`);
-  const balao=page.getByRole('button',{name:'Abrir o Nano.ia'});await balao.waitFor();
-  const caixa=await balao.boundingBox();
-  assert.ok(caixa.x+caixa.width<=largura&&caixa.y+caixa.height<=altura,`balão dentro da tela a ${largura}px`);
-  await balao.click();
+  assert.equal(await page.locator('.balao-genesis').count(),0,'não há esfera flutuante');
+  assert.equal(await page.locator('.esfera').count(),0,'não há esfera animada no workspace');
+  const acionar = largura < 760
+    ? page.locator('.workspace-mobile-tabs').getByRole('button',{name:'Nano.IA',exact:true})
+    : page.getByRole('button',{name:'Abrir painel Nano.IA'});
+  await acionar.waitFor();await acionar.click();
   const dock=page.locator('#dock-agente');await dock.waitFor({state:'visible'});
   const d=await dock.boundingBox();
-  assert.ok(d.x>=0&&d.x+d.width<=largura&&d.y>=0&&d.y+d.height<=altura,`janela do Nano.ia cabe a ${largura}px`);
+  assert.ok(d.x>=0&&d.x+d.width<=largura&&d.y>=0&&d.y+d.height<=altura,`janela do Nano.IA cabe a ${largura}px`);
+  assert.equal(await page.locator('.esfera').count(),0,'painel integrado sem esfera');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'sem rolagem horizontal');
-  await page.getByRole('button',{name:'Fechar o Nano.ia'}).first().click();
+  await dock.getByRole('button',{name:'Fechar o Nano.ia'}).click();
   await dock.waitFor({state:'hidden'});
-  await balao.click();await page.keyboard.press('Escape');await dock.waitFor({state:'hidden'});
+  await acionar.click();await page.keyboard.press('Escape');await dock.waitFor({state:'hidden'});
+  assert.equal(new URL(page.url()).hash,'#/catalogo','chat não altera a rota do catálogo');
   assert.deepEqual(erros,[]);
   await context.close();
  }
- console.log('balao-genesis-visual ok (390px e 1280px: balão, janela, fechar e Esc)');
+ console.log('nano-sem-esfera-visual ok (390px e 1280px: sem esfera, chat integrado, fechar e Esc)');
 }finally{await browser?.close();servidor.kill()}

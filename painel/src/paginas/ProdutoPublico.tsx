@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { useVoz } from "../lib/voz.ts";
-import { Esfera, type EstadoEsfera } from "../componentes/Esfera.tsx";
+import { Icone } from "../componentes/Icone.tsx";
 import { FichaProduto } from "../componentes/FichaProduto.tsx";
 import type { FichaProduto as Produto, FichaVeiculo } from "../lib/ficha.ts";
 
@@ -40,14 +40,14 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
     if (lerRef.current) voz.falar(resposta);
   }
   const voz = useVoz((t, final) => { setTexto(t); if (final && t) void perguntar(t); });
-  const estado: EstadoEsfera = voz.ouvindo ? "ouvindo" : ocupado ? "pensando" : voz.falando ? "falando" : "parado";
+  const textoEstado = voz.ouvindo ? "Ouvindo você" : ocupado ? "Consultando" : voz.falando ? "Lendo resposta" : "Pronto para ajudar";
   const enviar = (e: FormEvent) => { e.preventDefault(); void perguntar(texto); };
 
   return (
     <main>
       {ficha && <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} />}
       <div className="cartao">
-        <div className="agente"><Esfera estado={estado} tamanho={72} /><div><h1 style={{ margin: 0 }}>Tire suas dúvidas sobre esta peça</h1>
+        <div className="agente"><span className="agente-identidade-icone" role="img" aria-label="Assistente de peças"><Icone nome="agentes" tamanho={22}/></span><div><h1 style={{ margin: 0 }}>Tire suas dúvidas sobre esta peça</h1><span role="status" className="suave">{textoEstado}</span>
           <p className="suave" style={{ margin: 0 }}>Código <span className="mono">{sku}</span>. O assistente só informa dados confirmados pela loja.</p></div></div>
         <div className="chat" aria-live="polite">{msgs.map((m, i) => <div key={i} className={`bolha ${m.de}`}>{m.texto}</div>)}</div>
         <form onSubmit={enviar} style={{ maxWidth: "none" }}>

@@ -2,7 +2,7 @@ import { PECAS, TIPOS_VEICULO } from "../lib/icones.ts";
 import { VISTAS } from "../lib/vistas.ts";
 import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
 import { LogoConecta } from "../componentes/LogoConecta.tsx";
-import { Esfera } from "../componentes/Esfera.tsx";
+import { Icone } from "../componentes/Icone.tsx";
 import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
 
 // Guia vivo do Design System: mostra os tokens e componentes reais, para todas as telas compartilharem o mesmo padrão.
@@ -29,10 +29,10 @@ export function Design() {
       </div>
       <div className="cartao">
         <h2>Marca e agente</h2>
-        <p className="suave">O logo do Conecta.IA é a esfera com nuvem e órbita. A esfera do agente anima conforme o estado real: nunca é simulada.</p>
+        <p className="suave">Identidade do Conecta.IA e ícone estático do Nano.IA. Estado operacional é comunicado por texto acessível, sem esfera animada.</p>
         <div className="linha" style={{ gap: 28 }}>
           <LogoConecta tamanho={64} nome />
-          {(["ocioso", "escutando", "interpretando", "aguardando_aprovacao", "executando", "bloqueado"] as const).map((e) => <Esfera key={e} estado={e} tamanho={64} comRotulo />)}
+          <span className="agente-identidade-icone" role="img" aria-label="Nano.IA"><Icone nome="agentes" tamanho={22}/></span>
         </div>
       </div>
       <div className="cartao">

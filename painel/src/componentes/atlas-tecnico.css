@@ -1,0 +1,71 @@
+/* Atlas técnico visual: informações reais e verificáveis, nunca mockup de uma peça/OEM. */
+.atlas{width:100%;min-width:0;display:grid;gap:16px;color:var(--texto)}
+.atlas-intro{display:flex;gap:14px;align-items:center;padding:15px;background:linear-gradient(120deg,var(--cartao),var(--realce));border:1px solid var(--borda);border-radius:16px}
+.atlas-intro-icon{display:grid;place-items:center;flex:none;width:88px;height:88px;background:var(--fundo);border:1px solid var(--borda);border-radius:16px}
+.atlas-eyebrow{margin:0;font-size:.66rem;font-weight:800;letter-spacing:.12em;color:var(--marca-forte);text-transform:uppercase}
+.atlas-intro h3{margin:5px 0;font-size:1.3rem;letter-spacing:-.04em}
+.atlas-intro p:not(.atlas-eyebrow){margin:0;font-size:.79rem;color:var(--suave)}
+.atlas-etapas{display:flex;gap:5px;overflow-x:auto;padding:2px 0 8px}
+.atlas-etapas span{flex:none;background:var(--realce);border:1px solid var(--borda);border-radius:8px;padding:6px 9px;font-size:.65rem;font-weight:750}
+.atlas-escolher{display:grid;gap:7px;font-size:.79rem;font-weight:800}
+.atlas-escolher select{max-width:100%;min-height:46px;padding:10px;border-radius:10px;background:var(--cartao);color:var(--texto);border:1px solid var(--borda-forte)}
+.atlas-vazio,.atlas-nota,.atlas-erro{font-size:.83rem;color:var(--suave)}
+.atlas-erro{color:var(--erro);border:1px solid var(--borda);padding:10px}
+.atlas-sem-registro{display:grid;justify-items:center;text-align:center;gap:11px;padding:25px 20px;border:1px dashed var(--borda-forte);border-radius:15px;background:var(--cartao)}
+.atlas-sem-registro strong{font-size:1.04rem}
+.atlas-sem-registro p{max-width:510px;margin:0;color:var(--suave);font-size:.85rem;line-height:1.7}
+.atlas-sem-registro a{font-weight:780;color:var(--marca-forte)}
+.atlas-conteudo{display:grid;grid-template-columns:minmax(180px,.9fr) minmax(0,1.1fr);gap:14px}
+.atlas-foto{margin:0;background:var(--cartao);border:1px solid var(--borda);border-radius:15px;overflow:hidden;min-width:0;display:grid;grid-template-rows:1fr auto}
+.atlas-foto>img{display:block;width:100%;height:100%;max-height:390px;min-height:260px;object-fit:contain;background:#fff}
+.atlas-sem-foto{display:grid;justify-items:center;align-content:center;gap:10px;min-height:260px;padding:20px;text-align:center;background:radial-gradient(circle at 50% 28%,color-mix(in srgb,var(--marca) 11%,var(--cartao)),var(--fundo))}
+.atlas-sem-foto strong{font-size:.85rem}
+.atlas-sem-foto small{font-size:.72rem;color:var(--suave);line-height:1.4}
+.atlas-foto figcaption{padding:11px 13px;border-top:1px solid var(--borda);font-size:.68rem;color:var(--suave)}
+.atlas-dados{min-width:0;border:1px solid var(--borda);border-radius:15px;background:var(--cartao);padding:20px}
+.atlas-dados h4{font-size:1.11rem;letter-spacing:-.035em;line-height:1.3;margin:9px 0 18px;overflow-wrap:anywhere}
+.atlas-dados dl{display:grid;grid-template-columns:minmax(110px,.72fr) minmax(0,1.3fr);gap:10px;margin:0;align-items:start}
+.atlas-dados dt{font-weight:750;color:var(--suave);font-size:.75rem}
+.atlas-dados dd{font-size:.83rem;line-height:1.5;margin:0;font-weight:600;overflow-wrap:anywhere}
+.atlas-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:20px}
+.atlas-badges span{font-size:.67rem;border:1px solid var(--borda-forte);padding:5px 7px;border-radius:20px;background:var(--realce)}
+.atlas-seo,.atlas-fontes,.atlas-diagramas{padding:19px;background:var(--cartao);border:1px solid var(--borda);border-radius:15px;min-width:0}
+.atlas-seo h4,.atlas-fontes h4,.atlas-diagramas h4{font-size:1.03rem;margin:5px 0 13px}
+.atlas-seo p{font-size:.88rem;line-height:1.6;overflow-wrap:anywhere}
+.atlas-seo-title{font-weight:800;color:var(--marca-forte)}
+.atlas-seo button{margin-bottom:12px}
+.atlas-seo small,.atlas-fontes p{display:block;font-size:.76rem;line-height:1.6;color:var(--suave)}
+.atlas-fontes>div{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+.atlas-fontes a{padding:8px 11px;text-decoration:none;color:var(--marca-forte);font-size:.76rem;font-weight:750;border:1px solid var(--borda-forte);border-radius:9px}
+.atlas-fontes a:hover{text-decoration:underline}
+.atlas-diagramas figure{margin:10px 0;max-width:600px}
+.atlas-diagramas img{display:block;max-width:100%;max-height:400px;object-fit:contain;background:#fff}
+.atlas-diagramas figcaption{font-size:.72rem;color:var(--suave);padding:7px}
+.esp-detalhe .atlas{justify-items:stretch;align-content:start}
+.esp-detalhe:has(.atlas){display:block;position:static;min-width:min(520px,85vw);width:100%;padding:12px}
+.esp-colunas:has(.atlas){grid-auto-columns:minmax(220px,auto);align-items:start}
+.esp-colunas:has(.atlas)>.esp-coluna{width:240px}
+.esp-colunas:has(.atlas)>.esp-detalhe{width:min(800px,90vw)}
+@media(max-width:850px){.atlas-conteudo{grid-template-columns:1fr}.esp-colunas:has(.atlas)>.esp-detalhe{width:min(620px,90vw)}}
+@media(max-width:720px){.esp-colunas:has(.atlas)>.esp-coluna,.esp-colunas:has(.atlas)>.esp-detalhe{width:100%;min-width:0}.atlas-intro-icon{width:68px;height:68px}.atlas-dados{padding:15px}.atlas-conteudo{grid-template-columns:1fr}.atlas-dados dl{grid-template-columns:minmax(100px,.8fr) minmax(0,1.4fr)}}
+
+/* Navegador de categorias: mais legível e tátil, sem fingir foto de peça. */
+.esp-colunas:has(.atlas) .esp-coluna{background:var(--cartao);border:1px solid var(--borda);box-shadow:0 6px 26px rgba(7,20,36,.045)}
+.esp-colunas:has(.atlas) .esp-coluna h2{padding:8px 8px 11px;margin:0;font-size:.72rem;letter-spacing:.14em}
+.esp-colunas:has(.atlas) .esp-no{display:flex;align-items:center;gap:11px;min-height:68px;margin-bottom:5px;border:1px solid var(--borda);background:linear-gradient(115deg,var(--cartao),var(--realce));border-radius:12px;padding:10px}
+.esp-colunas:has(.atlas) .esp-no .ico-peca{flex:none;width:43px;height:43px;padding:5px;background:color-mix(in srgb,var(--marca) 9%,var(--cartao));border:1px solid var(--borda);border-radius:10px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.1))}
+.esp-colunas:has(.atlas) .esp-nome{font-weight:750;font-size:.86rem;line-height:1.33}
+.esp-colunas:has(.atlas) .esp-contagem{flex:none;min-width:23px;text-align:center;font-size:.69rem;color:var(--suave)}
+.esp-colunas:has(.atlas) .esp-no.ativo{background:color-mix(in srgb,var(--marca) 13%,var(--cartao));border-color:var(--marca)}
+.atlas-ilustracao-legada{margin:16px 0;border-top:1px solid var(--borda);padding:15px 5px 0}
+.atlas-ilustracao-legada summary{cursor:pointer;color:var(--marca-forte);font-size:.81rem;font-weight:750}
+.atlas-ilustracao-legada p{font-size:.76rem;line-height:1.6}
+.atlas-ilustracao-legada .vista{margin-top:15px}
+
+/* A ficha ocupa o workspace inteiro; a navegação fica acima, sem coluna lateral aprisionada. */
+.esp-colunas:has(.atlas){display:flex;flex-wrap:wrap;align-items:stretch;overflow:visible;gap:11px}
+.esp-colunas:has(.atlas)>.esp-coluna{flex:1 1 205px;width:auto;max-width:none;min-width:min(205px,100%);}
+.esp-colunas:has(.atlas)>.esp-detalhe{flex:0 0 100%;width:100%;max-width:100%;min-width:0;position:static}
+.esp-colunas:has(.atlas)>.esp-detalhe .atlas-conteudo{grid-template-columns:minmax(220px,.8fr) minmax(0,1.2fr);}
+@media(max-width:850px){.esp-colunas:has(.atlas)>.esp-detalhe .atlas-conteudo{grid-template-columns:1fr}}
+@media(max-width:600px){.esp-colunas:has(.atlas)>.esp-coluna{flex-basis:100%;min-width:0}.esp-colunas:has(.atlas)>.esp-detalhe{padding:9px}}

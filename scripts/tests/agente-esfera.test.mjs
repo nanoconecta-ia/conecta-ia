@@ -1,11 +1,10 @@
-// Esfera do agente (movimento em repouso, respeito a prefers-reduced-motion) e acesso ao agente no celular.
+// Nano.IA sem esfera: ícone estático, privacidade e acesso integrado ao chat.
 // Painel REAL compilado + sessão FALSA no navegador; TODA chamada ao Supabase é interceptada e respondida com dado sintético (nenhuma rede de produção, nenhuma escrita).
 // Uso: node scripts/tests/agente-esfera.test.mjs   (compila o painel em painel/dist antes, se ainda não existir)
 import { createRequire } from 'node:module';
 import { spawn, execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 const root = new URL('../../', import.meta.url).pathname, painel = root + 'painel/';
 const require = createRequire(painel + 'package.json'), { chromium } = require('playwright');
 if (!existsSync(painel + 'dist/index.html')) execFileSync(process.execPath, [painel + 'node_modules/vite/bin/vite.js', 'build'], { cwd: painel, stdio: 'ignore' });
@@ -39,21 +38,20 @@ try {
     return p;
   };
   const ir = async (p, caminho) => { await p.goto(`http://127.0.0.1:${PORTA}/#${caminho}`, { waitUntil: 'networkidle' }); await p.waitForSelector('main', { timeout: 8000 }); };
-  const movimento = (p) => p.evaluate(() => { const a = document.getAnimations().filter((x) => x.effect && x.effect.target?.closest?.('.esfera, .esfera-caixa')); return { total: a.length, rodando: a.filter((x) => x.playState === 'running').length }; });
+
   const verifica = (ok, msg) => { if (!ok) falhas.push(msg); console.log((ok ? 'ok      ' : 'FALHOU  ') + msg); };
 
-  // 1) Esfera em repouso no celular: precisa ter movimento discreto
-  let p = await novaPagina(390, 844); await ir(p, '/assistente');
-  await p.getByRole('img', { name: /Nano.ia/ }).first().waitFor();
-  const m = await movimento(p);
-  verifica(m.rodando > 0, `esfera em repouso (celular) tem animação rodando: ${m.rodando} de ${m.total}`);
-  verifica(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'assistente no celular sem rolagem horizontal');
+  // 1) Identidade estática e status legível, sem esfera.
+   let p = await novaPagina(390, 844); await ir(p, '/assistente');
+   await p.getByRole('img', { name: 'Nano.IA' }).waitFor();
+   verifica((await p.locator('.esfera,.esfera-caixa,.balao-genesis').count()) === 0,'nenhuma esfera no chat');
+   verifica(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'assistente no celular sem rolagem horizontal');
   const campo = p.getByLabel(/Pergunte/).first();
   verifica(await campo.count() > 0 && await campo.isVisible().catch(() => false), 'campo de mensagem visível no celular');
   // interface em modo conversa: compositor visível sem rolar, esfera discreta, configurações recolhidas, consentimento nunca marcado sozinho
-  const dim = await p.evaluate(() => { const c = document.querySelector('.chat-compositor'); const e = document.querySelector('.esfera'); const abas = document.querySelector('.abas'); const r = c?.getBoundingClientRect(); const barra = document.querySelector('.barra-status')?.getBoundingClientRect(); return { compositorBase: r ? Math.round(r.bottom) : null, barraTopo: barra ? Math.round(barra.top) : null, esfera: e ? Math.round(e.getBoundingClientRect().width) : null, configAberta: abas ? (abas.dataset.esq === 'aberto' || abas.dataset.dir === 'aberto') : null, consentimentoMarcado: [...document.querySelectorAll('.chat-compositor input[type=checkbox]')].some((i) => i.checked && /Enviar esta pergunta/.test(i.closest('label')?.textContent ?? '')) }; });
+  const dim = await p.evaluate(() => { const c = document.querySelector('.chat-compositor'); const e = document.querySelector('.agente-identidade-icone'); const abas = document.querySelector('.abas'); const r = c?.getBoundingClientRect(); const barra = document.querySelector('.barra-status')?.getBoundingClientRect(); return { compositorBase: r ? Math.round(r.bottom) : null, barraTopo: barra ? Math.round(barra.top) : null, icone: e ? Math.round(e.getBoundingClientRect().width) : null, configAberta: abas ? (abas.dataset.esq === 'aberto' || abas.dataset.dir === 'aberto') : null, consentimentoMarcado: [...document.querySelectorAll('.chat-compositor input[type=checkbox]')].some((i) => i.checked && /Enviar esta pergunta/.test(i.closest('label')?.textContent ?? '')) }; });
   verifica(dim.compositorBase !== null && dim.compositorBase <= dim.barraTopo + 1, `compositor visível na primeira tela, acima da barra inferior (base ${dim.compositorBase}px, barra em ${dim.barraTopo}px)`);
-  verifica(dim.esfera !== null && dim.esfera <= 48, `esfera discreta no cabeçalho (${dim.esfera}px)`);
+  verifica(dim.icone !== null && dim.icone <= 48, 'ícone estático acessível no cabeçalho');
   verifica(dim.configAberta === false, 'abas laterais (conversas e modelo) recolhidas por padrão');
   verifica(dim.consentimentoMarcado === false, 'consentimento de envio ao provedor nunca vem marcado');
   await p.getByRole('button', { name: 'Modelo e privacidade' }).click(); await p.waitForTimeout(350); verifica(await p.getByLabel('Modelo de IA').isVisible(), 'seletor de modelo acessível ao abrir a aba lateral'); await p.screenshot({ path: `${SAIDA}/assistente-aba-modelo-celular.png` });
@@ -61,13 +59,9 @@ try {
   await p.getByRole('button', { name: 'Conversas', exact: true }).click(); await p.waitForTimeout(350); verifica(await p.getByRole('complementary', { name: 'Conversas' }).isVisible(), 'aba de conversas abre'); await p.screenshot({ path: `${SAIDA}/assistente-aba-conversas-celular.png` });
   await p.getByRole('button', { name: 'Recolher conversas' }).click();
   await p.waitForTimeout(350); await p.screenshot({ path: `${SAIDA}/assistente-conversa-celular.png` });
-  // movimento visível de verdade: duas capturas da esfera com 2,5 s de intervalo precisam ser diferentes
-  const caixaEsfera = p.locator('.esfera-caixa').first();
-  const foto = async () => createHash('sha1').update(await caixaEsfera.screenshot()).digest('hex');
-  const f1 = await foto(); await p.waitForTimeout(2500); const f2 = await foto();
-  verifica(f1 !== f2, 'esfera em repouso muda de aparência ao longo do tempo (movimento discreto)');
-  await caixaEsfera.screenshot({ path: `${SAIDA}/esfera-repouso-t2.png` });
-  // a barra fixa de baixo não pode cobrir o fim do conteúdo quando a página rola até o fim
+  // O estado operacional é apresentado como texto, sem animação decorativa.
+   verifica(await p.getByText('Pronto para ajudar').count() > 0,'estado do agente exposto em texto');
+   // a barra fixa de baixo não pode cobrir o fim do conteúdo quando a página rola até o fim
   await p.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   const sobreposicao = await p.evaluate(() => { const barra = document.querySelector('.barra-status'); const oculto = (e) => { const d = e.closest('details:not([open])'); return !!d && e !== d && !e.closest('summary'); }; const vis = [...document.querySelectorAll('main *')].filter((e) => e.getBoundingClientRect().height > 0 && !oculto(e)).map((e) => ({ e, b: e.getBoundingClientRect().bottom })).sort((x, y) => y.b - x.b)[0]; return { barraTopo: barra ? Math.round(barra.getBoundingClientRect().top) : null, fimDoConteudo: Math.round(vis?.b ?? 0), quem: vis ? vis.e.tagName + '.' + String(vis.e.className).slice(0, 30) : '' }; });
   verifica(sobreposicao.barraTopo === null || sobreposicao.fimDoConteudo <= sobreposicao.barraTopo + 1, `barra inferior não cobre o fim do conteúdo (barra em ${sobreposicao.barraTopo}px, conteúdo termina em ${sobreposicao.fimDoConteudo}px, elemento ${sobreposicao.quem})`);
@@ -75,7 +69,7 @@ try {
   await p.context().close();
 
   // 1b) desktop: o compositor também fica no rodapé e a conversa ocupa a área principal
-  p = await novaPagina(1280, 800); await ir(p, '/assistente'); await p.getByRole('img', { name: /Nano.ia/ }).first().waitFor();
+  p = await novaPagina(1280, 800); await ir(p, '/assistente'); await p.getByRole('img', { name: 'Nano.IA' }).waitFor();
   const d = await p.evaluate(() => ({ overflowX: document.documentElement.scrollWidth > innerWidth, compositor: !!document.querySelector('.chat-compositor'), base: Math.round(document.querySelector('.chat-compositor').getBoundingClientRect().bottom), barra: Math.round(document.querySelector('.barra-status').getBoundingClientRect().top) }));
   verifica(!d.overflowX && d.compositor && d.base <= d.barra + 1, `desktop: sem rolagem horizontal e compositor acima da barra (${d.base}px / ${d.barra}px)`);
   await p.getByRole('button', { name: 'Conversas', exact: true }).click(); await p.getByRole('button', { name: 'Modelo e privacidade' }).click(); await p.waitForTimeout(350);
@@ -83,22 +77,20 @@ try {
   await p.screenshot({ path: `${SAIDA}/assistente-conversa-desktop.png` });
   await p.context().close();
 
-  // 2) prefers-reduced-motion: sem movimento (a preferência do aparelho é respeitada)
-  p = await novaPagina(390, 844, true); await ir(p, '/assistente'); await p.getByRole('img', { name: /Nano.ia/ }).first().waitFor();
-  const r = await movimento(p); verifica(r.rodando === 0, `com movimento reduzido nada anima: ${r.rodando} rodando`);
-  const cx = p.locator('.esfera-caixa').first(); const g1 = createHash('sha1').update(await cx.screenshot()).digest('hex'); await p.waitForTimeout(1500);
-  verifica(g1 === createHash('sha1').update(await cx.screenshot()).digest('hex'), 'com movimento reduzido a esfera fica estática (preferência respeitada)');
-  await p.context().close();
+  // 2) Preferência de movimento reduzido não reintroduz a esfera.
+   p = await novaPagina(390, 844, true); await ir(p, '/assistente');
+   await p.getByRole('img', { name: 'Nano.IA' }).waitFor();
+   verifica((await p.locator('.esfera,.esfera-caixa').count()) === 0,'sem esfera com movimento reduzido');
+   await p.context().close();
 
-  // 2b) estados reais continuam distintos: ativo anima, erro congela (galeria de estados do Design System)
-  p = await novaPagina(1024, 900); await ir(p, '/design');
-  const estados = await p.evaluate(() => Object.fromEntries([...document.querySelectorAll('.esfera[data-estado]')].map((e) => [e.dataset.estado, e.getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length])));
-  verifica((estados.interpretando ?? 0) > 0 && (estados.executando ?? 0) > 0 && (estados.aguardando_aprovacao ?? 1) === 0 && (estados.bloqueado ?? 1) === 0, `estados reais preservados (rodando por estado: ${JSON.stringify(estados)})`);
-  await p.context().close();
+   // 2b) identidade padronizada também no Design System.
+   p = await novaPagina(1024, 900); await ir(p, '/design');
+   verifica((await p.locator('.esfera,.esfera-caixa').count()) === 0,'Design System sem esferas');
+   await p.context().close();
 
-  // 3) Acesso ao agente: em tela que não é chat, botão visível no celular, abre e fecha o painel do agente
+   // 3) Acesso ao agente: em tela que não é chat, botão visível no celular, abre e fecha o painel do agente
   p = await novaPagina(390, 844); await ir(p, '/catalogo');
-  const botao = p.getByRole('button', { name: /Agente lateral/ });
+  const botao = p.locator('.workspace-mobile-tabs').getByRole('button', { name: 'Nano.IA', exact: true });
   verifica(await botao.isVisible(), 'botão do agente visível no celular (tela de catálogo)');
   const caixa = await botao.boundingBox(); verifica(!!caixa && caixa.x >= 0 && caixa.x + caixa.width <= 390 && caixa.width >= 40 && caixa.height >= 40, `botão do agente dentro da tela e com alvo de toque grande (${caixa && Math.round(caixa.width)}x${caixa && Math.round(caixa.height)})`);
   await botao.click(); await p.getByRole('complementary', { name: 'Nano.ia', exact: true }).waitFor();
@@ -110,7 +102,7 @@ try {
 
   // 4) Na página do assistente o agente é a própria página: há um atalho claro para voltar/abrir?
   p = await novaPagina(390, 844); await ir(p, '/assistente');
-  const atalho = await p.getByRole('button', { name: /Agente lateral/ }).count();
+  const atalho = await p.getByRole('button', { name: 'Abrir painel Nano.IA' }).count();
   verifica(atalho === 0, `na página do assistente não há segundo agente (sem duplicar chat): botões de dock = ${atalho}`);
   await p.context().close();
 } finally { await browser?.close(); servidor.kill(); }
