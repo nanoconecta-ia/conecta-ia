@@ -54,3 +54,61 @@ MCP `tools/list` e `tools/call` são diferentes de `resources/list` e `resources
 Implementação inicial do menu preparada para revisão. Capturas reais e prova end-to-end do Nano.IA/MCP **ainda não realizadas**; não declarar concluído.
 
 Referências: [Issue #166](https://github.com/nanoconecta-ia/conecta-ia/issues/166), PRs #161, #164, #165.
+
+---
+
+## Revisão técnica da PR #167 (31/10/2026)
+
+### Correção aplicada
+- **Bug de navegação:** com `open` derivado só da rota, recolher a área da rota atual e navegar para outra tela da mesma área deixava a área fechada e o item ativo invisível (reproduzido no Playwright). Agora as áreas abertas são estado do React (`areasAoNavegar` + `grupoDaRota` em `lib/navegacao.ts`, com testes): entrar numa área diferente abre só ela, navegar dentro da mesma área sempre a revela e o que o usuário abriu à mão é preservado.
+- Evidências em `evidencias-issue-166/` (desktop, menu recolhido e 390 px; build de produção e build com todas as flags), além do roteiro Playwright usado.
+
+### Verificação das rotas (modo demonstração local)
+- Build de produção (flags desligadas): 13 rotas no menu. Com todas as flags ligadas: 24 rotas. **Todas abrem, sem erro de página**, e a largura de 390 px não gera rolagem horizontal (`scrollWidth = 390`).
+- Ressalva: o modo demonstração usa dados locais, então não prova o backend.
+
+## Inventário real (Supabase `dsfzhsrudriqkumtlqwj`, consulta só leitura)
+
+**Funções implantadas (22):** `assistente`, `assistente-homologacao`, `agente`, `bling-*` (conectar, callback, renovar, app, sync, backup), `ia-config`, `loja-publica`, `loja-tema`, `loja-seo`, `pair`, `conecta-gateway`, `conector-aprovacoes`, `conector-conversas`, `conector-chaves`, `vitrine-assistente`, `diag-ambiente`, `eco-ip-temporario`, `scanner-homologacao`.
+**Não implantadas:** `conector-chat` e `conector-mcp`.
+
+### Três catálogos de ferramentas, hoje sem ligação entre si
+| Catálogo | Arquivo | Ferramentas | Por onde é alcançado | Situação real |
+|---|---|---|---|---|
+| Assistente | `_shared/ia/ferramentas.ts` | 19 (consulta + propostas, nomes `snake_case`) | edge `assistente` (dock e `/assistente`) | Implantado. **0 registros `assistente.consulta` na auditoria**, então nenhum uso com LLM em produção está comprovado. |
+| Tool Registry do conector | `_shared/conector/registro.ts` | 57: 39 `ativa`, 16 `planejada`, 2 `desligada` | `conector-chat` / `conector-mcp` (não implantados) e `conector-aprovacoes` (implantado, executor) | "ativa" quer dizer handler e testes no código, **não** que esteja disponível em produção via chat ou MCP. |
+| Pair / gateway externo | `_shared/pair/gateway.ts` | 12 (`conecta.list_products`, `conecta.get_product`, `conecta.bling_consultar_produto`, `conecta.propose_*`…) | edge `conecta-gateway` (**implantada**, JSON-RPC MCP: `initialize`, `ping`, `tools/list`, `tools/call`) | É o único endpoint MCP implantado. Há 2 `pair_sessoes` e 2 dispositivos, mas falta prova E2E documentada. |
+
+**MCP Resources e Prompts:** não existem em nenhum dos três gateways. O gateway do conector anuncia as versões `2025-06-18`, `2025-03-26` e `2024-11-05`, nenhuma delas a `2026-07-28` citada na issue.
+
+### Histórico de conversas: dois armazenamentos
+- `assistente` usa `conversas`/`mensagens`: **60 conversas e 208 mensagens reais**.
+- `conector-*` usa `agente_conversas`/`agente_mensagens`: **0 e 0**.
+- Conclusão: tornar `assistente` canônico não exige migração de dados. O que precisa migrar do conector é **capacidade** (streaming SSE, anexos, Tool Registry com Policy Engine e auditoria), não histórico.
+
+## Arquitetura proposta para o Nano.IA (PR B, não implementada aqui)
+1. **Uma camada de conversa:** as tabelas `conversas`/`mensagens` e a edge `assistente`. A esfera, o dock e a tela `/assistente` montam o mesmo componente, como o `DockAgente` já faz hoje.
+2. **Um catálogo de ferramentas:** `conector/registro.ts` vira a única fonte (tem schema, risco, permissão e `estado`). `ia/ferramentas.ts` passa a ser um adaptador que expõe ao LLM só o que está `ativa` e `exposicao.chat`, e `pair/gateway.ts` passa a ser um adaptador de escopos para o gateway externo. Os nomes atuais ficam como aliases durante a transição.
+3. **Policy Engine e auditoria únicos:** `conector/policy.ts`. Leitura LOW passa direto; MEDIUM ou mais gera proposta com aprovação humana e `idempotency_key`; escrita externa só pelo executor (`conector-aprovacoes`).
+4. **Contexto:** `contextoPagina.ts` (rótulos e contagens sanitizados), sem envio automático ao provedor.
+5. **`/conector`** continua visível só com `VITE_CONECTOR_ATIVO` até a paridade ser provada. Depois vira alias de `/assistente`.
+
+## Atlas técnico, mapa operacional e indicadores (PR B)
+- **Mapa operacional** (`MapaMental.tsx`/`mapaPagina.ts`): estado da página atual (pendências, alertas). Não mistura taxonomia.
+- **Atlas técnico OEM:** hierarquia `montadora → veículo → geração → motor → peça → referência OEM`. Cada nó traz `fonte`, `consultado_em`, `confianca` e `status` (`aprovado` / `a_confirmar` / `não homologado`). Nenhum nó sem evidência aparece como aprovado.
+- **Indicadores:** só números lidos do banco (`/indicadores`).
+- SKU, preço e estoque sempre lidos do espelho Bling, nunca editados nem guardados na camada técnica.
+
+## Demonstração do fluxo de consulta (só leitura, sem escrita no Bling nem no banco)
+Consulta direta e só leitura ao espelho, feita pelo engenheiro, **não pelo Nano.IA**. O E2E via agente continua pendente.
+- Espelho: 42 produtos com `bling_id`, 0 publicados.
+- SKU `CI000016`, "Bomba d'água TRIM GO HR/K2500 2.5 8V Euro III com juntas" (marca TRIM GO AUTOPARTS): sem GTIN, sem descrição, 0 imagens; 2 itens de enriquecimento `a_confirmar` (descrição curta e longa, fonte "Bling API v3").
+- Proposta preparada (não gravada): campos faltantes = GTIN, descrição, imagem licenciada, aplicação técnica (HR/K2500 2.5 8V). Cada um exige uma fonte pública com URL e data antes de virar `a_confirmar`. Nenhum valor foi inventado.
+
+## Próximas PRs (nenhuma vai para produção sem aceite)
+- **B1:** unificar o catálogo de ferramentas (registro como fonte, adaptadores e testes de paridade de nomes).
+- **B2:** chat único. O Assistente ganha streaming e anexos do conector; `/conector` vira alias; teste de que dock e tela usam a mesma conversa.
+- **B3:** separar o mapa operacional do Atlas OEM, com cards legíveis e a hierarquia acima.
+- **C1:** painel "Ferramentas conectadas" dentro do Nano.IA, com estado real lido do registro e das funções implantadas, e teste somente leitura.
+- **C2:** MCP Resources no `conecta-gateway` em ambiente isolado, com testes de credencial inválida, loja B→A, rate limit e revogação.
+- **C3:** E2E Nano.IA: produto real → ficha → faltantes → fonte pública → proposta `a_confirmar`, sem escrita no Bling.
