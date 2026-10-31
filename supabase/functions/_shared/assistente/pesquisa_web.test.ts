@@ -2,7 +2,7 @@ import { test } from "node:test"; import { strict as assert } from "node:assert"
 import { validarConsultaPublica, fontePublica, pesquisarWebPublica } from "./pesquisa_web.ts";
 test("rejeita segredos ou URL de sessão; aceita OEM legítimo", () => {
   assert.equal(validarConsultaPublica("  4D56  pino 29 mm  "), "4D56 pino 29 mm");
-  for(const v of ["cpf 12345678901","token abcxyz","R$ 150 custo","https://fornecedor/login","email@site.com"]) assert.throws(() => validarConsultaPublica(v));
+  for(const v of ["cpf 12345678901","token abcxyz","R$ 150 custo","custo de aquisicao 140","margem 38 porcento","https://fornecedor/login","email@site.com"]) assert.throws(() => validarConsultaPublica(v));
 });
 test("retorna somente fontes públicas https, deduplicadas e sem inferir compatibilidade", async () => {
   const f = async (_u: string | URL | Request, o?: RequestInit) => {
