@@ -54,6 +54,39 @@ Deno.serve(async (req) => {
     return json({ provedores: listarProvedores(data ?? [], !!error), verificado: !error });
   }
 
+  // Preparação de enriquecimento: grava SOMENTE proposta a confirmar no Conecta.IA, nunca no Bling.
+  // A pesquisa e a fonte são escolhidas pelo operador; proposta não equivale à verificação documental.
+  if (c.acao === "propor_enriquecimento_web") {
+    const uuid = (s: unknown) => typeof s === "string" && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(s);
+    const campo = c.campo === "descricao_curta" || c.campo === "descricao_longa" ? c.campo : "";
+    const valor = typeof c.valor === "string" ? c.valor.trim() : "";
+    const fonte = typeof c.fonte === "string" ? c.fonte.trim() : "";
+    let origem: URL | null = null; try { origem = new URL(fonte); } catch { /* inválida */ }
+    if (!uuid(c.produto_id) || !campo || valor.length < 25 || valor.length > (campo === "descricao_curta" ? 320 : 3000)
+      || !origem || origem.protocol !== "https:" || origem.username || origem.password
+      || origem.port || origem.hostname === "localhost" || origem.hostname.endsWith(".local")
+      || /^(?:127\\.|10\\.|192\\.168\\.|169\\.254\\.)/.test(origem.hostname))
+      return json({ erro: "Produto, descrição ou URL pública da fonte inválidos." }, 400);
+    if (/(?:\\b(?:senha|token|cpf|cnpj|api key|conta bancária)\\b|R\\$\\s*\\d)/i.test(valor))
+      return json({ erro: "Não inclua credenciais, dados pessoais ou preços na descrição." }, 400);
+    const { data: produto, error: pe } = await usuario.from("produtos").select("id").eq("loja_id", loja.id).eq("id", c.produto_id).maybeSingle();
+    if (pe || !produto) return json({ erro: "Produto não encontrado ou sem acesso nesta loja." }, 404);
+    const sbProposta = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+    const { data: pendente, error: pErro } = await sbProposta.from("produto_enriquecimento")
+      .select("id").eq("loja_id", loja.id).eq("produto_id", produto.id).eq("campo", campo).eq("status", "a_confirmar").limit(1);
+    if (pErro) return json({ erro: "Não foi possível verificar propostas existentes." }, 503);
+    if (pendente?.length) return json({ erro: "Já existe proposta pendente para esse campo; revise-a na Fila de aprovação." }, 409);
+    const hashBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode([loja.id,produto.id,campo,valor,origem.href].join("|")));
+    const hash = Array.from(new Uint8Array(hashBytes)).map(b=>b.toString(16).padStart(2,"0")).join("");
+    const { data: proposta, error: e } = await sbProposta.from("produto_enriquecimento")
+      .insert({ loja_id:loja.id, produto_id:produto.id, campo, valor, fonte:origem.href, coletado_em:new Date().toISOString(),
+        hash_origem:hash, status:"a_confirmar" }).select("id").single();
+    if (e || !proposta) return json({ erro: "Não foi possível registrar a proposta." }, 503);
+    await sbProposta.from("auditoria").insert({ loja_id:loja.id, user_id:u.user.id, acao:"enriquecimento.proposta_web",
+      tabela:"produto_enriquecimento", depois:{ id:proposta.id, produto_id:produto.id, campo, origem:origem.hostname } });
+    return json({ proposta_id:proposta.id, status:"a_confirmar", gravou_bling:false });
+  }
+
   // Aprovar/rejeitar muda dado que vai ao site: só quem ADMINISTRA a loja (lojista), nunca o editor. Conversar e consultar seguem abertos.
   if ((c.acao === "decidir" || c.acao === "decidir_imagem") && !(await podeDecidir(usuario, loja.id))) return json({ erro: MSG_SO_LOJISTA }, 403);
 
