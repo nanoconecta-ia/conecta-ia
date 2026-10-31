@@ -1,0 +1,82 @@
+name: Cloudflare Free - homologação isolada
+
+# Sem push ou cron. PR roda APENAS testes; deploy exige dispatch manual + aprovação.
+on:
+  pull_request:
+    paths:
+      - 'painel/**'
+      - '.github/workflows/cloudflare-homologacao-free.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-homologacao-free
+  cancel-in-progress: false
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: painel/package-lock.json
+      - name: Dependências
+        working-directory: painel
+        run: npm ci
+      - name: Testes do painel completo (sem publicação)
+        working-directory: painel
+        run: npm test
+      - name: Build completo (apenas verificação)
+        working-directory: painel
+        run: npm run build
+      - name: Build separado, com dados sintéticos
+        working-directory: painel
+        run: npx vite build --config vite.homologacao.config.ts
+      - name: Bloquear referências operacionais na prévia
+        shell: bash
+        run: |
+          set -euo pipefail
+          mv painel/dist-homologacao/homologacao.html painel/dist-homologacao/index.html
+          test -f painel/dist-homologacao/index.html
+          if grep -R -l -E 'dsfzhsrudriqkumtlqwj|sb_publishable_|api\.bling\.com\.br' painel/dist-homologacao; then
+            echo "::error::O bundle da homologação contém referência operacional. Implantação bloqueada."
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: conecta-homologacao-estatica
+          path: painel/dist-homologacao/
+          if-no-files-found: error
+          retention-days: 3
+
+  publicar-homologacao:
+    needs: validar
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'nanoconecta-ia/conecta-ia' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: cloudflare-homologacao-free
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: conecta-homologacao-estatica
+          path: dist-homologacao
+      - name: Validar segredos do ambiente
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
+            echo "::error::Cloudflare Free não conectado: informe credenciais apenas nos segredos do ambiente."
+            exit 1
+          fi
+      - name: Publicar somente no projeto Cloudflare de homologação
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist-homologacao --project-name=conecta-ia-homologacao-free --branch=homologacao-free
