@@ -2,9 +2,8 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type Po
 import type { Loja } from "../lib/dados.ts";
 import { Assistente } from "../paginas/Assistente.tsx";
 import type { Item } from "../lib/comandosNL.ts";
-import { assinar, obter, perguntarAoNano } from "../lib/contextoPagina.ts";
+import { assinar, obter } from "../lib/contextoPagina.ts";
 import { ajustarLargura, larguraPeloPonteiro, LARGURA_MAX, LARGURA_MIN, passoDeTeclado, TELA_MIN_PARA_FIXO, type EstadoPainel } from "../lib/painelLateral.ts";
-import { CONECTOR_ATIVO } from "../lib/flags.ts";
 import { VERSAO_LOCAL, rotuloVersao } from "../lib/versao.ts";
 import { MapaMental } from "./MapaMental.tsx";
 import { ResumoPagina } from "./ResumoPagina.tsx";
@@ -16,8 +15,6 @@ const I = {
   ferramentas: <Svg><path d="M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z" /></Svg>,
   mapa: <Svg><circle cx="5" cy="12" r="2" /><circle cx="19" cy="5" r="2" /><circle cx="19" cy="12" r="2" /><circle cx="19" cy="19" r="2" /><path d="M7 12h4m0 0c3 0 3-7 6-7m-6 7h6m-6 0c3 0 3 7 6 7" /></Svg>,
   resumo: <Svg><path d="M5 4h14v16H5z" /><path d="M8 9h8M8 13h8M8 17h5" /></Svg>,
-  pesquisar: <Svg><circle cx="11" cy="11" r="6" /><path d="m20 20-4.2-4.2" /></Svg>,
-  escrever: <Svg><path d="M4 20l1-4L16 5l3 3L8 19z" /><path d="M14 7l3 3" /></Svg>,
   esq: <Svg><path d="M4 4v16" /><path d="M8 6h12v12H8z" /></Svg>,
   dir: <Svg><path d="M20 4v16" /><path d="M4 6h12v12H4z" /></Svg>,
   flutuar: <Svg><path d="M7 7h12v12H7z" /><path d="M4 16V4h12" /></Svg>,
@@ -84,20 +81,17 @@ export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, ao
             <button key={id} role="tab" type="button" className="sec dock-aba" aria-selected={aba === id} aria-label={titulo} onClick={() => setAba(id)} title={titulo}>{icone}<span>{rotulo}</span></button>
           ))}
           <span className="dock-trilho-sep" aria-hidden="true" />
-          {CONECTOR_ATIVO && <button type="button" className="sec dock-aba" title="Preparar diagnóstico sem escrita" onClick={() => perguntarAoNano("Quais itens do catálogo estão incompletos? Consulte apenas fontes e ferramentas autorizadas; informe o que não foi verificado e não altere nenhum cadastro.")}>{I.pesquisar}<span>Analisar</span></button>}
-          <button type="button" className="sec dock-aba" title="Preparar revisão de descrição técnica" onClick={() => perguntarAoNano("Ajude-me a revisar a descrição técnica de um produto. Primeiro peça o SKU e fontes confirmadas; identifique dados ausentes. Não invente compatibilidade nem faça gravações.")}>{I.escrever}<span>Revisar</span></button>
+
         </nav>
         <div className="dock-painel">
           <div className="dock-corpo" hidden={aba !== "conversa"}><Assistente key={loja.id} loja={loja} menu={menu} aoNavegar={aoNavegar} /></div>
-          {aba === "ferramentas" && <section className="dock-corpo dock-ferramentas" aria-label="Ferramentas autorizadas">
-            <header><h3>Ferramentas da loja</h3><p>Abra um módulo habilitado. O Nano.IA não executará alterações por este painel.</p></header>
-            <div className="dock-ferramentas-lista">
-              {(menu ?? []).map(([rota, titulo]) => <button type="button" className="sec" key={rota} onClick={() => aoNavegar?.(rota)} title={"Abrir "+titulo}><span>{titulo}</span><span aria-hidden="true">↗</span></button>)}
+          {aba === "ferramentas" && <section className="dock-corpo dock-ferramentas" aria-label="Ferramentas de pesquisa">
+            <header><h3>Pesquisa e evidências</h3><p>Acesse fontes externas e prepare uma revisão técnica. Uma pesquisa não modifica seu ERP.</p></header>
+            <div className="dock-ferramentas-preparar">
+              <button type="button" className="sec" onClick={() => aoNavegar?.("/pesquisa")}>Pesquisa Web e B2B ↗</button>
+              <button type="button" className="sec" onClick={() => aoNavegar?.("/catalogo")}>Abrir catálogo local ↗</button>
             </div>
-            <div className="dock-ferramentas-preparar"><h3>Preparar no chat</h3><p>Os comandos abaixo apenas preenchem a pergunta. Você revisa e decide quando enviar.</p>
-              <button type="button" className="sec" onClick={() => { setAba("conversa"); perguntarAoNano("Resuma o estado do catálogo e da conexão Bling com fontes e horários disponíveis. Não altere produtos, preços, estoque nem cadastros."); }}>Diagnosticar catálogo</button>
-              <button type="button" className="sec" onClick={() => { setAba("conversa"); perguntarAoNano("Ajude-me a analisar pendências de aprovação da loja. Diferencie sugestões de ações já concluídas. Não aprove nem execute alterações."); }}>Revisar pendências</button>
-            </div>
+            <p className="suave">Portais privados exigem login no próprio fornecedor. O Nano.IA não recolhe senhas nem cookies.</p>
           </section>}
           {aba === "mapa" && (
             <div className="dock-corpo">{contexto ? <MapaMental key={contexto.rota} raiz={contexto.mapa} titulo={contexto.titulo} /> : <p className="suave">Esta tela ainda não publica um mapa. Abra o <b>Catálogo</b> para ver a árvore dele.</p>}</div>
