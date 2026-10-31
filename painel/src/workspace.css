@@ -158,3 +158,10 @@ html .centro-ferramentas[open]{inset:auto;top:50%;left:50%;right:auto;bottom:aut
  html .dock-topo button.dock-ico{min-width:34px;width:34px;max-width:34px;flex:0 0 34px;min-height:36px;padding:0}
  html .dock-topo button.dock-ico svg{width:16px;height:16px}
 }
+
+/* Smartphone deitado: cinco ferramentas cabem no trilho com alvos de 44 px. */
+@media(max-height:430px){
+ html .dock-trilho {gap:2px;padding:3px}
+ html .dock-trilho button.dock-aba {min-height:44px;height:44px;max-height:44px;padding:2px 1px;gap:0;flex-shrink:0}
+ html .dock-trilho .dock-trilho-sep {margin:2px 4px}
+}
