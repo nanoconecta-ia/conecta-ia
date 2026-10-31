@@ -1,0 +1,29 @@
+name: Extensão Nano Guardião (verificação em PR)
+
+on:
+  pull_request:
+    paths: ["extensao/**", ".github/workflows/extensao-guardiao.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - run: npm ci
+        working-directory: painel
+      - run: painel/node_modules/.bin/tsc -p extensao/tsconfig.json
+      - run: node --experimental-strip-types --test extensao/testes/guardiao.test.ts
+      - run: node extensao/construir.mjs
+      - name: Navegador efêmero, sem alterar dependências do produto
+        working-directory: painel
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.56.1
+          npx playwright install chromium --with-deps
+      - run: node extensao/testes/visual.mjs

@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Nano.IA Guardião (piloto)",
+  "version": "0.1.0",
+  "description": "Painel lateral do Nano.IA ao lado do ERP. Piloto só leitura: lê o cadastro de produto, mostra o que falta e sugere tags. Não preenche nada.",
+  "minimum_chrome_version": "116",
+  "action": { "default_title": "Abrir o Nano.IA" },
+  "side_panel": { "default_path": "painel.html" },
+  "background": { "service_worker": "servico.js" },
+  "permissions": ["sidePanel", "scripting", "activeTab"],
+  "optional_host_permissions": ["https://*/*"]
+}

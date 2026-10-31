@@ -131,3 +131,9 @@ Consulta direta e só leitura ao espelho, feita pelo engenheiro, **não pelo Nan
 - **Mesma conversa no dock e na tela:** os dois já montavam o mesmo componente, mas cada montagem começava sem conversa. Agora o id da conversa ativa fica guardado por loja na sessão do navegador (`lib/conversaAtiva.ts`), e quem montar depois retoma o fio. Guarda-se só o id: as mensagens continuam vindo do servidor com RLS. Se a conversa não abrir mais (excluída ou de outro usuário), o id é descartado. "Nova conversa" e a exclusão limpam o id.
 - **`/conector`** continua no código e no menu **só** com a flag, rotulado "Nano.IA (homologação)", até o streaming, os cartões de proposta e o painel de contexto serem migrados para o chat canônico.
 - **Ainda falta (B2b, exige reimplantar a edge `assistente` com autorização):** streaming SSE e cartões de proposta no chat canônico. O backend `conector-chat` continua não implantado e não foi ligado.
+
+## Direção do proprietário: Nano Guardião (extensão Chrome/Edge)
+- O Nano.IA trabalha **sobre a tela real do ERP** em que o lojista está logado, num painel lateral, no modo guardião. As telas do ERP deixam de ser redesenhadas dentro do painel do Conecta.IA. A retirada desses módulos só acontece depois de o Guardião cobrir cada função, com inventário prévio.
+- Nada de clonar a sessão: a leitura é feita no navegador do lojista, e o que se guarda é o **mapa versionado da tela**.
+- **Piloto (`extensao/`):** cadastro de produto, só leitura e sugestão de tags. Mapa v0 a confirmar. Sem pareamento e sem rede.
+- **Pendente:** termos de uso do Bling e confirmação do mapa com captura real.

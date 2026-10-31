@@ -1,0 +1,34 @@
+/* Mesmos valores dos tokens do painel (painel/src/styles.css, tema claro/escuro). A extensão é uma superfície separada e não
+   importa o CSS do painel; por isso os valores são repetidos aqui, sem cor nova. */
+:root { --fundo:#F6F3EC; --cartao:#FBF9F4; --texto:#1D1B18; --suave:#5A544A; --borda:#D9D3C7; --marca:#AD4C29; --marca-texto:#FFFFFF; --verde:#04A88D;
+  --ok:#1A6F4D; --atencao:#9A5500; --erro:#B42318; --mono:"JetBrains Mono", ui-monospace, monospace; color-scheme: light dark; }
+@media (prefers-color-scheme: dark) { :root { --fundo:#1B1916; --cartao:#24211D; --texto:#EDE7DB; --suave:#B3AB9C; --borda:#3A362F; --marca:#E58A5E; --marca-texto:#1B1916;
+  --ok:#45C28B; --atencao:#F2B24B; --erro:#EF8A7E; } }
+* { box-sizing: border-box; }
+body { margin:0; font:14px/1.45 "IBM Plex Sans", system-ui, sans-serif; background:var(--fundo); color:var(--texto); }
+.topo { display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--borda); }
+.topo small { display:block; color:var(--suave); font-size:.75rem; }
+.esfera { width:22px; height:22px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #fff8, transparent 40%), var(--marca); }
+main { padding:12px 14px 20px; display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
+section, ul, li { min-width:0; }
+.aviso { margin:0; font-size:.82rem; color:var(--suave); }
+button { min-height:36px; border-radius:9px; border:0; padding:0 14px; font:600 .86rem inherit; background:var(--marca); color:var(--marca-texto); cursor:pointer; }
+button.sec { background:transparent; color:var(--texto); border:1px solid var(--borda); }
+button:disabled { opacity:.5; cursor:not-allowed; }
+button:focus-visible { outline:2px solid var(--verde); outline-offset:2px; }
+.erro { margin:0; color:var(--erro); font-size:.82rem; }
+.erro:empty { display:none; }
+.estado { margin:0; font-weight:600; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+.estado small { font-weight:400; color:var(--suave); }
+.ponto { width:8px; height:8px; border-radius:50%; } .ponto.ok { background:var(--ok); } .ponto.atencao { background:var(--atencao); }
+.site { margin:0; font:.72rem var(--mono); color:var(--suave); overflow-wrap:anywhere; }
+h2 { margin:8px 0 0; font-size:.68rem; letter-spacing:.09em; text-transform:uppercase; color:var(--suave); }
+ul { list-style:none; margin:0; padding:0; display:grid; gap:4px; }
+.campos li { display:flex; justify-content:space-between; gap:10px; padding:6px 8px; border:1px solid var(--borda); border-radius:8px; background:var(--cartao); font-size:.82rem; }
+.campos .rot { color:var(--suave); flex:0 0 auto; }
+.campos .val { text-align:right; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60%; }
+.campos .val.vazio { color:var(--atencao); } .campos .val.oculto { color:var(--suave); font-style:italic; }
+.lista li { padding:8px; border:1px solid var(--borda); border-radius:8px; background:var(--cartao); font-size:.82rem; }
+.lista li p { margin:4px 0; font-family:var(--mono); font-size:.78rem; }
+.lista li small { color:var(--suave); }
+.lista li.suave { color:var(--suave); }
