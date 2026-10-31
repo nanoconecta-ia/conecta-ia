@@ -15,3 +15,9 @@ export const BACKUP_ATIVO: boolean = (import.meta as { env?: Record<string, stri
 // Banners de oferta (tabela loja_banners e função banners_da_vitrine) ainda NÃO estão em produção.
 // Fica escondido até o build de um ambiente que já os tenha: VITE_BANNERS_ATIVO=1 npm run build.
 export const BANNERS_ATIVO: boolean = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_BANNERS_ATIVO === "1";
+
+// Central de Inteligência (/central, alias /agentes): além de propor e simular, tem a ação `executar`, que grava de verdade
+// via conector-aprovacoes. Decisão do proprietário (issue #166, 31/10/2026): fica OCULTA até aceite específico, mesmo com
+// VITE_CONECTOR_ATIVO=1. Ligar só com autorização explícita: VITE_CENTRAL_ATIVA=1 npm run build.
+export const CENTRAL_ATIVA: boolean = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_CENTRAL_ATIVA === "1";
+export const ROTAS_DA_CENTRAL = ["/central", "/agentes"];

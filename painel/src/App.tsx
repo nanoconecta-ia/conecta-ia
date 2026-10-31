@@ -1,7 +1,7 @@
 import { AutorizarAgente } from "./paginas/AutorizarAgente.tsx";
 import { useEffect, useRef, useState } from "react";
-import { BACKUP_ATIVO, BANNERS_ATIVO, CONECTOR_ATIVO, PAIR_ATIVO, ROTAS_DO_CONECTOR } from "./lib/flags.ts";
-import { montarMenu } from "./lib/visibilidade.ts";
+import { BACKUP_ATIVO, BANNERS_ATIVO, CENTRAL_ATIVA, CONECTOR_ATIVO, PAIR_ATIVO, ROTAS_DA_CENTRAL, ROTAS_DO_CONECTOR } from "./lib/flags.ts";
+import { montarMenu, rotaBloqueada, semRotasSemAceite } from "./lib/visibilidade.ts";
 import { Assistente } from "./paginas/Assistente.tsx";
 import { useLojas, useSessao } from "./lib/dados.ts";
 import { ir, useRota } from "./lib/rota.ts";
@@ -82,7 +82,7 @@ const ITENS: [string, string][] = [
   ["/bling", "Bling"],
   ["/contador", "Contador"],
 ];
-const MENU_BASE: [string, string][] = montarMenu(ITENS, ITENS_PAIR, { pairAtivo: PAIR_ATIVO, conectorAtivo: CONECTOR_ATIVO }, ROTAS_DO_CONECTOR);
+const MENU_BASE: [string, string][] = semRotasSemAceite(montarMenu(ITENS, ITENS_PAIR, { pairAtivo: PAIR_ATIVO, conectorAtivo: CONECTOR_ATIVO }, ROTAS_DO_CONECTOR), CENTRAL_ATIVA, ROTAS_DA_CENTRAL);
 const MENU_BACKUP: [string, string][] = BACKUP_ATIVO ? MENU_BASE.flatMap((i) => (i[0] === "/bling" ? [i, ["/backup", "Backup do Bling"] as [string, string]] : [i])) : MENU_BASE;
 const MENU: [string, string][] = BANNERS_ATIVO ? MENU_BACKUP.flatMap((i) => (i[0] === "/aparencia" ? [i, ["/banners", "Banners de oferta"] as [string, string]] : [i])) : MENU_BACKUP;
 const GRUPOS_MENU = agruparMenu(MENU); // MENU é fixo por build (flags), então os grupos também
@@ -149,7 +149,7 @@ export function App() {
   if (!demoAtivo && sessao && PAIR_ATIVO && caminho === "/autorizar-agente") return <AutorizarAgente codigo={query.get("c") ?? ""} />;
   if (!demoAtivo && sessao && PAIR_ATIVO && caminho === "/parear") return <ParearAprovador codigo={query.get("c") ?? ""} email={sessao?.user.email ?? null} />;
   const loja = demoAtivo ? demo?.lojaDemo ?? null : lojas?.[0] ?? null;
-  const bloqueada = !CONECTOR_ATIVO && (ROTAS_DO_CONECTOR.includes(caminho) || /^\/indicadores\//.test(caminho) || caminho === "/agentes"); // backend ainda não publicado
+  const bloqueada = rotaBloqueada(caminho, { conectorAtivo: CONECTOR_ATIVO, centralAtiva: CENTRAL_ATIVA }, ROTAS_DO_CONECTOR, ROTAS_DA_CENTRAL); // backend não publicado ou exige aceite
   const larga = caminho === "/conector" && !bloqueada;
   const paginaDeChat = caminho === "/assistente" || (caminho === "/conector" && !bloqueada); // já são o próprio chat: sem painel duplicado
   const dockAberto = agente && !!loja && !demoAtivo && !paginaDeChat;
