@@ -50,7 +50,7 @@ button.workspace-icone,.workspace-link {width:41px;min-width:41px;padding:0;back
   .workspace-mobile-tabs a[aria-current="page"] {color:var(--marca-forte);background:var(--realce)}
   .workspace-mobile-tabs button:hover,.workspace-mobile-tabs a:hover{background:var(--realce)}
   .layout-premium main{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
-  .balao-genesis{display:none!important}
+  .balao-genesis{z-index:10}
   .barra-status .versao{display:none}
 }
 /* Launcher: funciona como uma janela do workspace, só rotas visíveis no menu. */
