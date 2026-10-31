@@ -51,7 +51,7 @@ button.workspace-icone,.workspace-link {width:41px;min-width:41px;padding:0;back
   .workspace-mobile-tabs button:hover,.workspace-mobile-tabs a:hover{background:var(--realce)}
   .layout-premium main{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
   .balao-genesis{z-index:10}
-  .barra-status .versao{display:none}
+  .barra-status .versao{display:inline}
 }
 /* Launcher: funciona como uma janela do workspace, só rotas visíveis no menu. */
 .centro-ferramentas{position:fixed;inset:0;max-width:min(940px,calc(100vw - 28px));width:940px;max-height:min(88dvh,880px);height:auto;padding:0;border:1px solid color-mix(in srgb,var(--marca) 35%,var(--borda));border-radius:22px;background:var(--cartao);color:var(--texto);box-shadow:0 30px 100px rgba(0,0,0,.36);overflow:hidden}
