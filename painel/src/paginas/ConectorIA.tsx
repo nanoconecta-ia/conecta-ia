@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { Esfera } from "../componentes/Esfera.tsx";
+import { Icone } from "../componentes/Icone.tsx";
 import { Markdown } from "../componentes/Markdown.tsx";
 import { CartaoProposta } from "../componentes/conector/CartaoProposta.tsx";
 import { Compositor } from "../componentes/conector/Compositor.tsx";
@@ -137,7 +137,7 @@ export function ConectorIA({ loja, query }: { loja: Loja; query: URLSearchParams
       <section className="centro" aria-label="Conversa com o Nano.ia">
         <header className="cab-chat">
           <button className="sec so-estreito" onClick={() => setEsqAberta(true)} aria-label="Abrir conversas">☰ Conversas</button>
-          <Esfera estado={estado} tamanho={48} />
+          <span className="agente-identidade-icone" role="img" aria-label="Nano.IA"><Icone nome="agentes" tamanho={22}/></span>
           <div className="cab-texto"><h1>Nano.ia</h1><span className="estado" role="status" aria-live="polite">{ROTULO_ESTADO[estado]}</span></div>
           <div className="linha cab-acoes">
             {voz.suporteFala && <label className="linha marcar-linha"><input type="checkbox" checked={lerAlto} onChange={(e) => { setLerAlto(e.target.checked); gravarPreferenciaFala(e.target.checked); if (!e.target.checked) voz.calar(); }} /> <span>Ler respostas</span></label>}
@@ -148,7 +148,7 @@ export function ConectorIA({ loja, query }: { loja: Loja; query: URLSearchParams
         <div className="mensagens" role="log" aria-live="polite" aria-busy={enviando} aria-label="Mensagens" tabIndex={0}>
           {itens.length === 0 && (
             <div className="vazio-chat">
-              <Esfera estado={estado} tamanho={88} comRotulo />
+              <span className="agente-identidade-icone" role="img" aria-label="Nano.IA"><Icone nome="agentes" tamanho={22}/></span>
               <h2>Como posso ajudar?</h2>
               <p className="suave">Eu consulto o Bling e o catálogo, pesquiso fontes, preparo propostas com antes/depois e só gravo algo depois da sua aprovação. Nada é inventado: sem fonte, o dado fica “a confirmar”.</p>
               <div className="linha" style={{ justifyContent: "center" }}>{SUGESTOES.map((s) => <button key={s} className="sec" disabled={enviando || !provedor} onClick={() => void enviar(s)}>{s}</button>)}</div>
