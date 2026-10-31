@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="pt-BR"><meta charset="utf-8"><title>ERP de teste — Produto (sintético)</title>
+<!-- Página SINTÉTICA que imita um cadastro de produto de ERP. Não é cópia do Bling: serve só para testar a leitura. -->
+<body>
+<form>
+  <label for="nome">Nome</label><input id="nome" name="descricao" value="Bomba d'água TRIM GO HR/K2500 2.5 8V Euro III com juntas" required>
+  <label for="cod">Código (SKU)</label><input id="cod" name="codigo" value="CI000016">
+  <label for="gtin">GTIN/EAN</label><input id="gtin" name="gtin" value="">
+  <label for="marca">Marca</label><input id="marca" name="marca" value="TRIM GO AUTOPARTS">
+  <label for="dc">Descrição curta</label><textarea id="dc" name="descricaoCurta"></textarea>
+  <label for="pl">Peso líquido (kg)</label><input id="pl" name="pesoLiquido" type="number" value="">
+  <label for="pb">Peso bruto (kg)</label><input id="pb" name="pesoBruto" type="number" value="">
+  <label for="cat">Categoria</label><select id="cat" name="categoria"><option>Arrefecimento</option></select>
+  <input aria-label="Tags" name="tags" value="">
+  <label for="pc">Preço de compra</label><input id="pc" name="precoCompra" value="41,90">
+  <label for="forn">Fornecedor</label><input id="forn" name="fornecedor" value="Distribuidora X">
+  <label for="ncm">NCM</label><input id="ncm" name="ncm" value="8413.30.90">
+  <input type="password" aria-label="Senha" value="segredo"><input type="hidden" name="csrf" value="tok">
+  <div hidden><label for="esc">Campo escondido</label><input id="esc" value="x"></div>
+</form></body></html>

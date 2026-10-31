@@ -148,3 +148,9 @@ Consulta direta e só leitura ao espelho, feita pelo engenheiro, **não pelo Nan
   - `chat_config` passa a anunciar `streaming: true`, e só então a tela usa o streaming. Com a edge atual, a tela continua no caminho JSON.
 - **Artefato autocontido:** `adaptadores_stream.ts` passou a exportar o gerador por `export { lerEventosSse }`, porque o gerador do artefato não reconhece `export async function*`.
 - **Para ligar em produção:** reimplantar a edge `assistente`, a partir de `artifacts/assistente/`, com autorização do proprietário.
+## Direção do proprietário: Nano Guardião (extensão Chrome/Edge)
+- O Nano.IA trabalha **sobre a tela real do ERP** em que o lojista está logado, num painel lateral, no modo guardião. As telas do ERP deixam de ser redesenhadas dentro do painel do Conecta.IA. A retirada desses módulos só acontece depois de o Guardião cobrir cada função, com inventário prévio.
+- Nada de clonar a sessão: a leitura é feita no navegador do lojista, e o que se guarda é o **mapa versionado da tela**.
+- **Piloto (`extensao/`):** cadastro de produto, só leitura e sugestão de tags. Mapa v0 a confirmar. Sem pareamento e sem rede.
+- **Decisão do proprietário (31/10/2026):** o Nano.IA pode operar no navegador nativo do lojista, dentro do Bling, porque o app do Bling pode liberar escopo total. Registro técnico: os escopos OAuth autorizam o uso da **API**. A leitura e o preenchimento na **interface** são feitos na sessão do próprio lojista, no navegador dele, com o OK dele. Os termos públicos do Bling **não foram lidos** nesta sessão, porque o domínio está bloqueado pela política de rede do ambiente; a decisão de seguir é do proprietário.
+- **Pendente:** confirmação do mapa com captura real.

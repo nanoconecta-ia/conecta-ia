@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nano.IA</title>
+  <link rel="stylesheet" href="painel.css" />
+</head>
+<body>
+  <header class="topo">
+    <span class="esfera" aria-hidden="true"></span>
+    <div><strong>Nano.IA</strong><small>Guardião · piloto só leitura</small></div>
+  </header>
+  <main>
+    <p class="aviso">Lê a tela aberta no seu navegador. <b>Não preenche nem salva nada</b> e não envia dados para fora.</p>
+    <button id="ler" type="button">Ler esta tela</button>
+    <p id="erro" class="erro" role="alert"></p>
+    <section id="resultado" hidden aria-live="polite">
+      <p id="estado" class="estado"></p>
+      <p id="site" class="site"></p>
+      <h2>Campos lidos</h2>
+      <ul id="campos" class="campos"></ul>
+      <h2>Sugestões</h2>
+      <ul id="sugestoes" class="lista"></ul>
+      <h2>Pendências</h2>
+      <ul id="pendencias" class="lista"></ul>
+    </section>
+    <button id="registrar" type="button" class="sec" disabled title="Exporta só a estrutura da tela (rótulos e tipos, sem valores) para confirmar o mapa">Registrar esta tela</button>
+  </main>
+  <script type="module" src="painel.js"></script>
+</body>
+</html>
