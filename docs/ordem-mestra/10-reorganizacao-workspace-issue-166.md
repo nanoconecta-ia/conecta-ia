@@ -113,6 +113,9 @@ Consulta direta e só leitura ao espelho, feita pelo engenheiro, **não pelo Nan
 - **C2:** MCP Resources no `conecta-gateway` em ambiente isolado, com testes de credencial inválida, loja B→A, rate limit e revogação.
 - **C3:** E2E Nano.IA: produto real → ficha → faltantes → fonte pública → proposta `a_confirmar`, sem escrita no Bling.
 
+## Decisão do proprietário (31/10/2026): Central oculta
+- Ordem aprovada: B1 → B2 → B3 → C1 → C2 → C3.
+- `/central` (alias `/agentes`) fica **oculta até aceite específico**, inclusive com `VITE_CONECTOR_ATIVO=1`, porque a tela tem a ação `executar` (grava via `conector-aprovacoes`). Ela sai do menu e da paleta, e o acesso direto cai na visão geral. Para ligar é preciso a nova flag `VITE_CENTRAL_ATIVA=1`, só com autorização. Nada foi removido: a tela e a edge continuam no código.
 ## B1: catálogo único de ferramentas
 - **Fonte única:** `supabase/functions/_shared/conector/registro.ts` (Tool Registry). Ele define o que cada ferramenta é: risco, permissão, estado e exposição.
 - **Aliases** (`conector/aliases.ts`): os 19 nomes do assistente e os 12 do gateway Pair apontam para ids do registro. Os nomes públicos não mudam, porque o LLM e os clientes Pair já os usam.
