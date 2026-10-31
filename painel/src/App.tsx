@@ -11,6 +11,7 @@ import { EstudioAgente } from "./paginas/EstudioAgente.tsx";
 import { VisaoGeral } from "./paginas/VisaoGeral.tsx";
 import { Banners } from "./paginas/Banners.tsx";
 import { Catalogo } from "./paginas/Catalogo.tsx";
+import { PesquisaTecnica } from "./paginas/PesquisaTecnica.tsx";
 import { Bling } from "./paginas/Bling.tsx";
 import { Contador } from "./paginas/Contador.tsx";
 import { Taxonomia } from "./paginas/Taxonomia.tsx";
@@ -55,7 +56,7 @@ const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(wind
 
 const ICONES_ROTAS: Record<string, string> = {
   "/": "inicio", "/conector": "agentes", "/central": "escudo", "/indicadores": "grafico",
-  "/studio": "caixas", "/estudio": "ajustes", "/assistente": "conversa", "/catalogo": "catalogo",
+  "/studio": "caixas", "/estudio": "ajustes", "/assistente": "conversa", "/catalogo": "catalogo", "/pesquisa": "busca",
   "/fila": "fila", "/taxonomia": "arvore", "/aparencia": "paleta", "/condicoes": "cartao",
   "/integracoes": "conexoes", "/gateway": "rede", "/imagens": "imagem", "/design": "paleta",
   "/bling": "erp", "/backup": "arquivo", "/banners": "imagem", "/contador": "grafico",
@@ -66,6 +67,7 @@ const ROTA_NANO = CONECTOR_ATIVO ? "/conector" : "/assistente";
 const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], ["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
+  ["/pesquisa", "Pesquisa Web e B2B"],
   ["/conector", "Nano.ia"],
   ["/central", "Central de Inteligência"],
   ["/indicadores", "Indicadores"],
@@ -160,7 +162,7 @@ export function App() {
         </button>
         <div className="marca"><LogoConecta tamanho={40} /><div className="marca-identidade">Conecta<span>.IA</span><small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
         <span className="topo-selo" aria-label="Ambiente administrativo">WORKSPACE <b>ADMIN</b></span>
-        <button className="busca-topo" onClick={() => setPaleta(true)} aria-label="Abrir paleta de comandos"><Icone nome="busca" tamanho={16} /><span>Buscar módulos e ações…</span><kbd>Ctrl K</kbd></button>
+        <button className="busca-topo" onClick={() => ir("/pesquisa")} aria-label="Pesquisar peças, OEM e fontes na web"><Icone nome="busca" tamanho={16} /><span>Pesquisar SKU, OEM ou aplicação na web…</span><kbd>Web</kbd></button>
         {!!loja && <a className="topo-atalho-nano" href={`#${ROTA_NANO}`} title="Abrir o chat completo com Nano.IA"><Icone nome="agentes" tamanho={17} /><span>Nano.IA</span></a>}
         {!!loja && !demoAtivo && !paginaDeChat && <button className="sec agente-botao" onClick={() => setAgente((a) => !a)} aria-pressed={agente} aria-label="Agente lateral (Ctrl J)"><Icone nome="agentes" tamanho={16} /><span>Agente</span></button>}
         <SeletorTema />
@@ -204,6 +206,7 @@ export function App() {
         ) : bloqueada ? <VisaoGeral loja={loja} />
           : caminho === "/estudio" ? <EstudioAgente key={loja.id} loja={loja} />
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
+          : caminho === "/pesquisa" ? <PesquisaTecnica loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />
           : PAIR_ATIVO && caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao?.user.email ?? null} />
           : PAIR_ATIVO && caminho === "/meu-agente" ? <MeuAgente />
@@ -234,7 +237,7 @@ export function App() {
         <a href="#/" aria-current={caminho === "/" ? "page" : undefined}><Icone nome="inicio" tamanho={21}/><span>Início</span></a>
         <a href="#/catalogo" aria-current={caminho === "/catalogo" ? "page" : undefined}><Icone nome="catalogo" tamanho={21}/><span>Catálogo</span></a>
         {!paginaDeChat && !demoAtivo ? <button onClick={() => setAgente(true)}><Icone nome="agentes" tamanho={22}/><span>Nano.IA</span></button> : <a href={`#${ROTA_NANO}`}><Icone nome="agentes" tamanho={22}/><span>Nano.IA</span></a>}
-        <button onClick={() => setCentroAberto(true)}><Icone nome="caixas" tamanho={21}/><span>Ferramentas</span></button>
+        <a href="#/pesquisa" aria-current={caminho === "/pesquisa" ? "page" : undefined}><Icone nome="busca" tamanho={21}/><span>Pesquisa</span></a>
       </nav>}
       <BarraStatus loja={loja ? loja.nome : null} tela={MENU.find((i) => i[0] === caminho)?.[1] ?? "Visão geral"} demo={demoAtivo} />
     </>
