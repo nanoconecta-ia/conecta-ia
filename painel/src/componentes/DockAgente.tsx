@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type Po
 import type { Loja } from "../lib/dados.ts";
 import { Assistente } from "../paginas/Assistente.tsx";
 import type { Item } from "../lib/comandosNL.ts";
-import { assinar, obter } from "../lib/contextoPagina.ts";
+import { assinar, obter, perguntarAoNano } from "../lib/contextoPagina.ts";
+import { mapaParaTexto } from "../lib/mapaPagina.ts";
 import { ajustarLargura, larguraPeloPonteiro, LARGURA_MAX, LARGURA_MIN, passoDeTeclado, TELA_MIN_PARA_FIXO, type EstadoPainel } from "../lib/painelLateral.ts";
 import { VERSAO_LOCAL, rotuloVersao } from "../lib/versao.ts";
 import { MapaMental } from "./MapaMental.tsx";
@@ -25,9 +26,10 @@ const I = {
 /** Painel lateral do Nano.ia: FLUTUANTE (como antes) ou FIXO à esquerda/direita, com largura ajustável por arrasto ou teclado.
  *  Abas: Conversa (o mesmo Assistente, sem perder o histórico), Mapa mental e Resumo da página (calculados no navegador).
  *  Só monta na primeira abertura: com o painel fechado não há chamada ao servidor. */
-export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, aoMudarPainel, dividindo, telaW }: {
+export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, aoMudarPainel, dividindo, telaW, rotaAtual }: {
   loja: Loja; aberto: boolean; aoFechar: () => void; menu?: Item[]; aoNavegar?: (rota: string) => void;
   painel: EstadoPainel; aoMudarPainel: (p: EstadoPainel) => void; dividindo: boolean; telaW: number;
+  rotaAtual: string;
 }) {
   const [montado, setMontado] = useState(false);
   const [ampliado, setAmpliado] = useState(false);
@@ -47,6 +49,19 @@ export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, ao
     window.addEventListener("nano:perguntar", f); return () => window.removeEventListener("nano:perguntar", f);
   }, []);
 
+  const rotuloRota = menu?.find(([rota]) => rota === rotaAtual)?.[1] ?? "Área de trabalho";
+  const tituloContexto = contexto?.rota === rotaAtual ? contexto.titulo : rotuloRota;
+  const ampliarContexto = () => {
+    if (contexto?.rota === rotaAtual) {
+      perguntarAoNano("Ajude-me a verificar esta tela do Conecta.IA: " + contexto.titulo +
+        "\nContexto disponível (somente rótulos e contagens):\n" + mapaParaTexto(contexto.mapa) +
+        "\nDiferencie dados verificados, pendências e próximas consultas. Não execute alterações nem invente OEM.");
+    } else {
+      perguntarAoNano("Estou no módulo " + rotuloRota +
+        ". Oriente-me a encontrar a informação necessária, citando o que realmente está disponível. Não execute alterações.");
+    }
+    setAba("conversa");
+  };
   const largura = ajustarLargura(painel.largura, telaW);
   const mudar = useCallback((p: Partial<EstadoPainel>) => aoMudarPainel({ ...painel, ...p }), [painel, aoMudarPainel]);
   const aoPressionar = (e: PE<HTMLDivElement>) => { if (!dividindo) return; e.currentTarget.setPointerCapture(e.pointerId); setArrastando(true); };
@@ -84,6 +99,13 @@ export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, ao
 
         </nav>
         <div className="dock-painel">
+          <div className="dock-contexto" aria-label="Contexto da tela acompanhada pelo Nano.IA">
+            <span title={tituloContexto}><b>Você está em</b> {tituloContexto}</span>
+            <button type="button" className="sec dock-contexto-ajuda" onClick={ampliarContexto}
+              title="Preparar uma pergunta com o contexto seguro da tela, sem envio automático">Analisar tela</button>
+            <button type="button" className="sec dock-contexto-voltar" onClick={aoFechar}
+              title="Voltar ao trabalho sem encerrar o histórico da conversa">Ver página</button>
+          </div>
           <div className="dock-corpo" hidden={aba !== "conversa"}><Assistente key={loja.id} loja={loja} menu={menu} aoNavegar={aoNavegar} /></div>
           {aba === "ferramentas" && <section className="dock-corpo dock-ferramentas" aria-label="Ferramentas de pesquisa">
             <header><h3>Pesquisa e evidências</h3><p>Acesse fontes externas e prepare uma revisão técnica. Uma pesquisa não modifica seu ERP.</p></header>
