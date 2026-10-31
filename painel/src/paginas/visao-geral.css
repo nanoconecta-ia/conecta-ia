@@ -75,3 +75,10 @@
 [data-tema="contraste"] .visao-hero h1 em { color:#ffd23f; }
 [data-tema="contraste"] .visao-acao-primaria { background:#ffd23f; color:#000; }
 @media (prefers-reduced-motion:reduce) { .visao-arte *, .visao-hero-acoes a, .visao-acesso { animation:none !important; transition:none !important; } }
+
+/* Avisos de diagnóstico do catálogo real: nunca executam escrita nem publicam peças. */
+.visao-aviso-catalogo{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;padding:18px 22px;border-radius:16px;border:1px solid color-mix(in srgb,var(--atencao) 60%,var(--borda));background:color-mix(in srgb,var(--atencao) 9%,var(--cartao));color:var(--texto)}
+.visao-aviso-catalogo-titulo{display:block;font-weight:850;letter-spacing:.02em;font-size:.95rem}
+.visao-aviso-catalogo p{margin:8px 0 0;color:var(--texto);font-size:.9rem;max-width:950px}
+.visao-aviso-catalogo a{color:var(--texto);text-decoration:underline;text-underline-offset:3px;font-weight:750;white-space:nowrap}
+@media(max-width:600px){.visao-aviso-catalogo{padding:16px;align-items:flex-start}.visao-aviso-catalogo a{white-space:normal}}
