@@ -149,3 +149,12 @@ html .workspace-atalhos{min-width:0;flex:0 1 auto}
 html .centro-ferramentas[open]{inset:auto;top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);margin:0}
 
 .centro-atalhos:has(>button:only-child){grid-template-columns:1fr}
+
+/* Janela do agente em 300–390 px: o título não desloca os controles para fora. */
+@media(max-width:390px){
+ .dock-topo{gap:4px;padding:7px}
+ .dock-topo>strong{min-width:0;max-width:100%;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;font-size:.79rem}
+ .dock-topo .dock-versao{display:none}
+ html .dock-topo button.dock-ico{min-width:34px;width:34px;max-width:34px;flex:0 0 34px;min-height:36px;padding:0}
+ html .dock-topo button.dock-ico svg{width:16px;height:16px}
+}

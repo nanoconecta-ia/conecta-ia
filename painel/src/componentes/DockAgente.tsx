@@ -67,7 +67,7 @@ export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, ao
           tabIndex={0} onPointerDown={aoPressionar} onPointerMove={aoMover} onPointerUp={aoSoltar} onPointerCancel={aoSoltar} onKeyDown={aoTeclar} />
       )}
       <div className="dock-topo">
-        <strong>Nano.IA · Chat global <small className="dock-versao mono" title="Versão do painel neste aparelho">v{rotuloVersao(VERSAO_LOCAL)}</small></strong><span className="suave">{loja.nome}</span>
+        <strong title="Nano.IA · Chat global">Nano.IA <small className="dock-versao mono" title="Versão do painel neste aparelho">v{rotuloVersao(VERSAO_LOCAL)}</small></strong><span className="suave">{loja.nome}</span>
         {telaW >= TELA_MIN_PARA_FIXO && ( // fixar só existe onde funciona: em tela estreita (celular) o painel é sempre flutuante
           <>
           <button className="sec mini dock-ico" onClick={() => mudar({ modo: "fixo", lado: "esq" })} aria-pressed={painel.modo === "fixo" && painel.lado === "esq"} aria-label="Fixar à esquerda" title="Fixar à esquerda">{I.esq}</button>
