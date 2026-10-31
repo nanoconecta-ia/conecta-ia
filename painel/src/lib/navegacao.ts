@@ -4,12 +4,14 @@
 export type Item = [rota: string, titulo: string];
 export type GrupoMenu = { id: string; titulo: string; itens: Item[] };
 
+// Cinco áreas de trabalho. As rotas legadas continuam ativas e pesquisáveis;
+// esta mudança é apenas de navegação, sem alterar autenticação ou backend.
 const GRUPOS: { id: string; titulo: string; rotas: string[] }[] = [
-  { id: "comando", titulo: "Comando", rotas: ["/", "/conector", "/central", "/indicadores"] },
-  { id: "catalogo", titulo: "Catálogo", rotas: ["/catalogo", "/studio", "/taxonomia", "/fila", "/imagens"] },
-  { id: "agentes", titulo: "Agentes", rotas: ["/estudio", "/assistente", "/meu-agente", "/aprovacoes", "/dispositivos", "/gateway", "/integracoes"] },
-  { id: "loja", titulo: "Loja", rotas: ["/aparencia", "/banners", "/condicoes", "/design"] },
-  { id: "erp", titulo: "ERP e fiscal", rotas: ["/bling", "/backup", "/contador"] },
+  { id: "inicio", titulo: "Início", rotas: ["/", "/indicadores"] },
+  { id: "catalogo", titulo: "Catálogo inteligente", rotas: ["/catalogo", "/studio", "/taxonomia", "/imagens"] },
+  { id: "agentes", titulo: "Nano.IA", rotas: ["/assistente", "/conector", "/estudio"] },
+  { id: "fila", titulo: "Operações", rotas: ["/fila", "/aprovacoes", "/central"] },
+  { id: "ajustes", titulo: "Configurações", rotas: ["/bling", "/backup", "/contador", "/integracoes", "/gateway", "/meu-agente", "/dispositivos", "/aparencia", "/banners", "/condicoes", "/design"] },
 ];
 
 /** Agrupa os itens visíveis. Rota que não está em nenhum grupo cai em "Outros" (nada some do menu por esquecimento). */
