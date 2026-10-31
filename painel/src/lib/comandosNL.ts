@@ -13,6 +13,7 @@ export const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toL
 const APELIDOS: Record<string, string[]> = {
   "/": ["visao geral", "inicio", "pagina inicial", "home", "painel principal", "resumo geral"],
   "/catalogo": ["catalogo", "produtos", "lista de produtos", "pecas"],
+  "/pesquisa": ["pesquisa web", "pesquisa tecnica", "pesquisa de pecas", "consultar fontes", "pesquisar catalogo"],
   "/taxonomia": ["taxonomia", "categorias", "arvore de categorias", "tags de busca", "tags", "filtros laterais", "filtros da vitrine", "filtros", "arvore"],
   "/fila": ["fila de aprovacao", "fila", "pendencias", "pendentes", "itens pendentes", "aprovacao de itens"],
   "/imagens": ["imagens e seo", "imagens", "fotos", "seo", "otimizacao para busca"],

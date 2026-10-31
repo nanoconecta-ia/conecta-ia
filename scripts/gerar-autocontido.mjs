@@ -27,7 +27,8 @@ export async function gerar(root, entry = 'supabase/functions/assistente/index.t
     if (pilha.has(path)) throw Error('Dependência circular: ' + relative(root, path));
     if (modules.has(path)) return modules.get(path);
     pilha.add(path);
-    const fonte = await readFile(path, 'utf8');
+    // Canoniza CRLF do checkout Windows: o hash do manifesto precisa refletir os blobs LF do GitHub/Linux.
+    const fonte = (await readFile(path, 'utf8')).replace(/\r\n?/g, '\n');
     const js = stripTypeScriptTypes(fonte, { mode: 'transform' });
     if (/\bimport\s*\(|\bimport\.meta/.test(js)) throw Error('Import dinâmico/import.meta não suportado.');
     const m = { path, fonte, js, deps: new Map(), id: '__m' + modules.size, vm: new SourceTextModule(js, { identifier: path }) };
