@@ -2,6 +2,7 @@
 import { chaveiroPlataforma } from "../plataforma.ts";
 import { decifrar } from "../cripto.ts";
 import { conversar, IaErro, type Mensagem } from "../ia/claude.ts";
+import type { AdaptadorStream } from "../ia/adaptadores_stream.ts";
 import { modeloDaChave, validarProvedor } from "./provedores.ts";
 import { CONSULTAR_PRODUTO, consultarProduto } from "./bling_consultar.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../ia/ferramentas.ts";
@@ -12,7 +13,13 @@ import { conteudoComAnexos, REGRAS_ANEXO, resumoParaRegistro, validarAnexos, typ
 
 /** Ferramentas de PROPOSTA do Bling liberadas neste fluxo (nenhuma grava no Bling; o lojista aprova a versão exata na Central de Inteligência). */
 export const FERRAMENTAS_PROPOSTA_BLING = ["bling_categorias", "bling_propor_categoria", "bling_propor_trocar_categoria", "bling_propor_reativar_produto", "bling_propor_ajuste_produto"] as const;
-export interface ChatContexto { usuario: any; admin: any; loja: { id: string; nome: string }; userId: string; get(n: string): string | undefined; fetch?: typeof fetch }
+export interface ChatContexto {
+ usuario: any; admin: any; loja: { id: string; nome: string }; userId: string; get(n: string): string | undefined; fetch?: typeof fetch;
+ /** B2b (#166): texto da resposta assim que existir (streaming). Opcional: sem ele o turno é idêntico ao de antes. */
+ aoTexto?(delta: string): void;
+ /** Adaptador com streaming do provedor. Só é usado com `aoTexto` e sem anexos (os adaptadores de streaming recusam anexo). */
+ adaptadorStream?(provedor: "claude" | "gemini" | "compativel_openai"): AdaptadorStream | undefined;
+}
 const resultado = (corpo: unknown, status = 200) => ({ corpo, status });
 const uuid = (x: unknown) => typeof x === "string" && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(x);
 export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
@@ -23,7 +30,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  const ativo = (codigo: string) => flags.some((r: any) => r.codigo === codigo && r.ativo === true);
  if (c.acao === "chat_config") {
   const { data: config, error } = await usuario.from("lojas").select("chat_retencao_dias").eq("id", loja.id).single();
-  return error ? resultado({ erro: "Preparação do histórico ainda não instalada." }, 503) : resultado({ persistente: ativo("chat_persistente"), bling: ativo("chat_consulta_bling"), leitura_administrativa: ativo("chat_leitura_administrativa"), retencao_dias: config.chat_retencao_dias, versao: "chat_operacional_v1" });
+  return error ? resultado({ erro: "Preparação do histórico ainda não instalada." }, 503) : resultado({ streaming: true, persistente: ativo("chat_persistente"), bling: ativo("chat_consulta_bling"), leitura_administrativa: ativo("chat_leitura_administrativa"), retencao_dias: config.chat_retencao_dias, versao: "chat_operacional_v1" });
  }
  // Excluir e configurar continuam disponíveis quando o recurso é desligado.
  if (c.acao === "chat_excluir" && uuid(c.conversa_id)) {
@@ -108,7 +115,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   const propostas: Record<string, unknown>[] = [];
   const r = await conversar({ provedor, baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo, mensagens,
    sistema: `${SISTEMA}\nLoja: ${loja.nome}. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto e bling_propor_ajuste_produto: nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
-   maxPassos: 5, maxTokens: 1536, ferramentas: ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,
+   maxPassos: 5, maxTokens: 1536, aoTexto: ctx.aoTexto, adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(provedor) : undefined, ferramentas: ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,
    onPasso: p => { tokens += p.tokens; respostaId = p.respostaId; modelo = p.modelo ?? modelo; },
    executar: async (nome, entrada) => {
     const t0 = Date.now();

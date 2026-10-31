@@ -49,7 +49,7 @@ function lerPedaco(leitor: ReadableStreamDefaultReader<Uint8Array>, sinal: Abort
 }
 
 /** Parser SSE: eventos partidos entre chunks, \r\n / \n / \r, comentários (":"), `data` multilinha e UTF-8 partido no meio do caractere. */
-export async function* lerEventosSse(corpo: ReadableStream<Uint8Array>, sinal: AbortSignal | undefined, inatividadeMs = TEMPO_MS): AsyncGenerator<EventoSse> {
+async function* lerEventosSse(corpo: ReadableStream<Uint8Array>, sinal: AbortSignal | undefined, inatividadeMs = TEMPO_MS): AsyncGenerator<EventoSse> {
   const leitor = corpo.getReader();
   const dec = new TextDecoder("utf-8");
   let buf = "", evento: string | null = null, dados: string[] = [];
@@ -276,3 +276,5 @@ export const chamarGeminiStream: AdaptadorStream = async (c, msgs, aoTexto, sina
 /** Anexos (imagem/PDF) só existem no fluxo sem streaming do Assistente; aqui recusamos em vez de descartar em silêncio. */
 const recusaAnexo = (a: AdaptadorStream): AdaptadorStream => async (c, msgs, aoTexto, sinal) => { if (temAnexo(msgs)) throw new IaErro(400, "Anexos não são suportados neste fluxo."); return a(c, msgs, aoTexto, sinal); };
 export const ADAPTADORES_STREAM: Record<ProvedorId, AdaptadorStream> = { claude: recusaAnexo(chamarClaudeStream), gemini: recusaAnexo(chamarGeminiStream), compativel_openai: recusaAnexo(chamarOpenAIStream) };
+// Export separado: o gerador do artefato autocontido (scripts/gerar-autocontido.mjs) não reconhece `export async function*`.
+export { lerEventosSse };
