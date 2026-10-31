@@ -28,6 +28,23 @@ export function agruparMenu(itens: Item[]): GrupoMenu[] {
   return saida;
 }
 
+/** Área que contém a rota atual (inclui subcaminhos, ex.: `/indicadores/x`). `null` se nenhuma área a lista. */
+export function grupoDaRota(grupos: GrupoMenu[], caminho: string): string | null {
+  const casa = (r: string) => r === caminho || (r !== "/" && caminho.startsWith(`${r}/`));
+  return grupos.find((g) => g.itens.some(([r]) => casa(r)))?.id ?? null;
+}
+
+/**
+ * Áreas abertas depois de uma navegação. Entrar numa área diferente deixa só ela aberta (o menu não
+ * vai acumulando grupos abertos); navegar dentro da mesma área só garante que ela esteja aberta,
+ * preservando o que o usuário abriu à mão. Sem mudança devolve o mesmo Set (sem re-render).
+ */
+export function areasAoNavegar(abertas: ReadonlySet<string>, anterior: string | null, atual: string | null): ReadonlySet<string> {
+  if (!atual) return abertas;
+  if (anterior !== atual) return abertas.size === 1 && abertas.has(atual) ? abertas : new Set([atual]);
+  return abertas.has(atual) ? abertas : new Set([...abertas, atual]);
+}
+
 const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /** Busca da paleta de comandos: sem acento, sem maiúsculas; começa-com vence contém; mantém a ordem do menu no empate. */

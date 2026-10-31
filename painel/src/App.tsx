@@ -1,5 +1,5 @@
 import { AutorizarAgente } from "./paginas/AutorizarAgente.tsx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BACKUP_ATIVO, BANNERS_ATIVO, CONECTOR_ATIVO, PAIR_ATIVO, ROTAS_DO_CONECTOR } from "./lib/flags.ts";
 import { montarMenu } from "./lib/visibilidade.ts";
 import { Assistente } from "./paginas/Assistente.tsx";
@@ -35,7 +35,7 @@ import { Aprovacoes } from "./paginas/Aprovacoes.tsx";
 import { Dispositivos } from "./paginas/Dispositivos.tsx";
 import { MeuAgente } from "./paginas/MeuAgente.tsx";
 import { Backup } from "./paginas/Backup.tsx";
-import { agruparMenu } from "./lib/navegacao.ts";
+import { agruparMenu, areasAoNavegar, grupoDaRota } from "./lib/navegacao.ts";
 import { PaletaComandos } from "./componentes/PaletaComandos.tsx";
 import { BarraStatus } from "./componentes/BarraStatus.tsx";
 import { AvisoVersao } from "./componentes/AvisoVersao.tsx";
@@ -85,6 +85,7 @@ const ITENS: [string, string][] = [
 const MENU_BASE: [string, string][] = montarMenu(ITENS, ITENS_PAIR, { pairAtivo: PAIR_ATIVO, conectorAtivo: CONECTOR_ATIVO }, ROTAS_DO_CONECTOR);
 const MENU_BACKUP: [string, string][] = BACKUP_ATIVO ? MENU_BASE.flatMap((i) => (i[0] === "/bling" ? [i, ["/backup", "Backup do Bling"] as [string, string]] : [i])) : MENU_BASE;
 const MENU: [string, string][] = BANNERS_ATIVO ? MENU_BACKUP.flatMap((i) => (i[0] === "/aparencia" ? [i, ["/banners", "Banners de oferta"] as [string, string]] : [i])) : MENU_BACKUP;
+const GRUPOS_MENU = agruparMenu(MENU); // MENU é fixo por build (flags), então os grupos também
 
 export function App() {
   const { sessao, recuperando, fimRecuperacao } = useSessao();
@@ -101,6 +102,16 @@ export function App() {
   const [paleta, setPaleta] = useState(false);
   const [menuMovel, setMenuMovel] = useState(false);
   useEffect(() => { setMenuMovel(false); }, [caminho]);
+  // Áreas do menu abertas: controladas pelo React para que navegar sempre revele o item ativo,
+  // mesmo que o usuário tenha recolhido a área da rota atual antes (issue #166).
+  const areaAtual = grupoDaRota(GRUPOS_MENU, caminho);
+  const [areasAbertas, setAreasAbertas] = useState<ReadonlySet<string>>(() => areasAoNavegar(new Set(), null, areaAtual));
+  const areaAnterior = useRef(areaAtual);
+  useEffect(() => { const ant = areaAnterior.current; areaAnterior.current = areaAtual; setAreasAbertas((a) => areasAoNavegar(a, ant, areaAtual)); }, [caminho, areaAtual]);
+  const alternarArea = (id: string, aberta: boolean) => setAreasAbertas((a) => {
+    if (a.has(id) === aberta) return a;
+    const n = new Set(a); if (aberta) n.add(id); else n.delete(id); return n;
+  });
   const [recolhido, setRecolhido] = useState(() => { try { return localStorage.getItem("conecta:menu") === "recolhido"; } catch { return false; } });
   const alternarMenu = () => setRecolhido((r) => { try { localStorage.setItem("conecta:menu", r ? "aberto" : "recolhido"); } catch { /* sem storage */ } return !r; });
   const [agente, setAgente] = useState(false);
@@ -171,8 +182,8 @@ export function App() {
           <a href={`#${ROTA_NANO}`} className="menu-nano-iniciar" onClick={() => setMenuMovel(false)}><Icone nome="agentes" tamanho={20} /><span>Conversar com Nano.IA</span></a>
           <small>Consulta e propostas com aprovação humana</small>
         </div>
-        {agruparMenu(MENU).map((g) => (
-          <details key={g.id} className="menu-grupo" open={g.itens.some(([c]) => c === caminho)}>
+        {GRUPOS_MENU.map((g) => (
+          <details key={g.id} className="menu-grupo" open={areasAbertas.has(g.id)} onToggle={(e) => alternarArea(g.id, e.currentTarget.open)}>
             <summary className="menu-titulo" title={g.titulo}>
               <Icone nome={g.id} tamanho={16} /><b>{g.titulo}</b>
             </summary>
