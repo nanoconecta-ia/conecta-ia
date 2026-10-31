@@ -169,8 +169,7 @@ export function App() {
         <button className="sec topo-sair" onClick={() => void supabase.auth.signOut()} disabled={demoAtivo}>Sair</button>
       </header>
       <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
-      <CentroFerramentas aberta={centroAberto} aoFechar={() => setCentroAberto(false)} itens={MENU} aoNavegar={ir}
-        aoAbrirAgente={() => setAgente(true)} rotaNano={ROTA_NANO} globalDisponivel={!demoAtivo && !paginaDeChat} />
+      <CentroFerramentas aberta={centroAberto} aoFechar={() => setCentroAberto(false)} itens={MENU} aoNavegar={ir} />
       {loja && <div className="workspace-barra" role="region" aria-label="Ações globais do workspace">
         <div className="workspace-contexto"><span className="workspace-rota">WORKSPACE / {MENU.find((i) => i[0] === caminho)?.[1] ?? "Visão geral"}</span><strong>{loja.nome}</strong></div>
         <span className="workspace-ambiente" data-ambiente={loja.ambiente === "teste" ? "teste" : "real"}>{loja.ambiente === "teste" ? "Ambiente de teste" : "Ambiente operacional"}</span>
