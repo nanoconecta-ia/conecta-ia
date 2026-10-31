@@ -61,3 +61,11 @@
 .atlas-ilustracao-legada summary{cursor:pointer;color:var(--marca-forte);font-size:.81rem;font-weight:750}
 .atlas-ilustracao-legada p{font-size:.76rem;line-height:1.6}
 .atlas-ilustracao-legada .vista{margin-top:15px}
+
+/* A ficha ocupa o workspace inteiro; a navegação fica acima, sem coluna lateral aprisionada. */
+.esp-colunas:has(.atlas){display:flex;flex-wrap:wrap;align-items:stretch;overflow:visible;gap:11px}
+.esp-colunas:has(.atlas)>.esp-coluna{flex:1 1 205px;width:auto;max-width:none;min-width:min(205px,100%);}
+.esp-colunas:has(.atlas)>.esp-detalhe{flex:0 0 100%;width:100%;max-width:100%;min-width:0;position:static}
+.esp-colunas:has(.atlas)>.esp-detalhe .atlas-conteudo{grid-template-columns:minmax(220px,.8fr) minmax(0,1.2fr);}
+@media(max-width:850px){.esp-colunas:has(.atlas)>.esp-detalhe .atlas-conteudo{grid-template-columns:1fr}}
+@media(max-width:600px){.esp-colunas:has(.atlas)>.esp-coluna{flex-basis:100%;min-width:0}.esp-colunas:has(.atlas)>.esp-detalhe{padding:9px}}
