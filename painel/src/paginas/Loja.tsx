@@ -204,7 +204,7 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
           </div>
         )}
       </section>
-      <footer className="v-rodape">Preços e estoque conforme a última sincronização{ultima ? ` (${new Date(ultima).toLocaleString("pt-BR")})` : ""}. Confirme com a loja antes de comprar.</footer>
+      <footer className="v-rodape"><p>Preços e estoque conforme a última sincronização{ultima ? ` (${new Date(ultima).toLocaleString("pt-BR")})` : ""}. Confirme com a loja antes de comprar.</p><p>Esta vitrine é operada pela loja identificada acima. O Conecta.IA fornece a plataforma; atendimento, entrega, garantia e políticas de venda são definidos pela loja responsável.</p><nav aria-label="Informações sobre a plataforma" className="v-rodape-links"><a href="./institucional.html">Sobre o Conecta.IA</a><a href="./privacidade.html">Privacidade da plataforma</a><a href="./seguranca.html">Segurança</a><a href="./contato.html">Contato do projeto</a></nav></footer>
     </div>
   );
 }
