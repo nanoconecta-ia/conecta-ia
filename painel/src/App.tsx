@@ -231,7 +231,7 @@ export function App() {
       </main>
       </div>
       {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} menu={MENU} aoNavegar={ir} painel={painel} aoMudarPainel={mudarPainel} dividindo={dividindo} telaW={telaW} />}
-      {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis aberto={dockAberto} aoAlternar={() => setAgente((a) => !a)} />}
+      {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis aberto={dockAberto} aoAlternar={() => setAgente((a) => !a)} pagina={MENU.find((item) => item[0] === caminho)?.[1] ?? "o módulo atual"} />}
       {loja && !dockAberto && <nav className="workspace-mobile-tabs" aria-label="Acesso rápido no smartphone">
         <a href="#/" aria-current={caminho === "/" ? "page" : undefined}><Icone nome="inicio" tamanho={21}/><span>Início</span></a>
         <a href="#/catalogo" aria-current={caminho === "/catalogo" ? "page" : undefined}><Icone nome="catalogo" tamanho={21}/><span>Catálogo</span></a>
