@@ -65,9 +65,9 @@ Deno.serve(async (req) => {
     if (!uuid(c.produto_id) || !campo || valor.length < 25 || valor.length > (campo === "descricao_curta" ? 320 : 3000)
       || !origem || origem.protocol !== "https:" || origem.username || origem.password
       || origem.port || origem.hostname === "localhost" || origem.hostname.endsWith(".local")
-      || /^(?:127\\.|10\\.|192\\.168\\.|169\\.254\\.)/.test(origem.hostname))
+      || /^(?:127\.|10\.|192\.168\.|169\.254\.)/.test(origem.hostname))
       return json({ erro: "Produto, descrição ou URL pública da fonte inválidos." }, 400);
-    if (/(?:\\b(?:senha|token|cpf|cnpj|api key|conta bancária)\\b|R\\$\\s*\\d)/i.test(valor))
+    if (/(?:\b(?:senha|token|cpf|cnpj|api key|conta bancária)\b|R\$\s*\d)/i.test(valor))
       return json({ erro: "Não inclua credenciais, dados pessoais ou preços na descrição." }, 400);
     const { data: produto, error: pe } = await usuario.from("produtos").select("id").eq("loja_id", loja.id).eq("id", c.produto_id).maybeSingle();
     if (pe || !produto) return json({ erro: "Produto não encontrado ou sem acesso nesta loja." }, 404);
