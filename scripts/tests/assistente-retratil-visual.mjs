@@ -1,4 +1,4 @@
-// Chat retrátil, blocos retráteis e esfera em ação, no componente REAL. Rede 100% SINTÉTICA; nada sai para produção.
+// Chat retrátil e status acessível, sem esfera. Rede 100% SINTÉTICA; nada sai para produção.
 import { createRequire } from 'node:module';
 import { writeFile, rm, mkdir } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
@@ -36,13 +36,14 @@ try{
   await page.getByRole('button',{name:/Nova conversa|Enviar/}).first().waitFor();
   await page.getByLabel(/Enviar esta pergunta/).check();
   const campo=page.getByLabel('Pergunte',{exact:true}),enviar=page.getByRole('button',{name:'Enviar',exact:true});
-  // 1) esfera em ação: durante a requisição a faixa e a esfera mostram o que está acontecendo; depois voltam ao repouso
+  // 1) indicador textual acessível sem esfera ou animação decorativa
+  assert.equal(await page.locator('.esfera,.balao-genesis').count(),0,'sem esfera no chat');
+  assert.equal(await page.getByRole('img',{name:'Nano.IA'}).count(),1,'identificação simples do agente');
   await campo.fill('Consulte o kit 833333');await enviar.click();
   const faixa=page.locator('.faixa-acao');await faixa.waitFor();
-  assert.match(await faixa.innerText(),/Consultando/);assert.equal(await page.locator('.esfera').first().getAttribute('data-estado'),'interpretando');
-  const aumentou=await page.locator('.esfera').first().evaluate(e=>e.offsetWidth);assert.ok(aumentou>=54,'esfera cresce quando está em ação');
+  assert.match(await faixa.innerText(),/Consultando/);
   await page.getByText('Resposta 1 da Nano.ia.').waitFor();await faixa.waitFor({state:'detached'});
-  assert.equal(await page.locator('.esfera').first().getAttribute('data-estado'),'ocioso');
+  assert.equal(await page.locator('.esfera').count(),0,'sem esfera após conclusão');
   // 2) mais três perguntas: as mensagens antigas viram uma linha, só as 2 últimas ficam abertas
   let esperado=3; // saudação + 1ª pergunta + 1ª resposta
   for(const t of ['segunda','terceira','quarta']){await campo.fill(t);await enviar.click();esperado+=2;await page.waitForFunction(n=>document.querySelectorAll('.bolha, .bolha-linha').length===n,esperado);await page.locator('.faixa-acao').waitFor({state:'detached'});}
@@ -73,5 +74,5 @@ try{
   await mkdir(root+'evidencias-chat',{recursive:true});await page.screenshot({path:root+`evidencias-chat/assistente-retratil-${largura}.png`});
   await page.close();
  }
- console.log('assistente-retratil-visual ok (390px e 1280px: esfera em ação, mensagens recolhidas, mostrar mais, evidência retrátil, atalhos)');
+ console.log('assistente-retratil-visual ok (390px e 1280px: sem esfera, status do agente, mensagens recolhidas, mostrar mais, evidência retrátil, atalhos)');
 }finally{await browser?.close();servidor.kill('SIGTERM');await rm(fixture,{force:true})}
