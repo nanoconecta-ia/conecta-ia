@@ -7,7 +7,7 @@ const ARRASTO_MIN = 6;
 
 /** Balão flutuante do Nano.ia: acompanha o lojista em qualquer tela. Arrasta e gruda na borda, lembra onde ficou, e quando o agente abre uma tela
  *  ele sobe até o título dela ("guia") e depois volta. Abre/fecha o agente; sem chamada ao servidor por si só. */
-export function BalaoGenesis({ aberto, aoAlternar }: { aberto: boolean; aoAlternar: () => void }) {
+export function BalaoGenesis({ aberto, aoAlternar, pagina }: { aberto: boolean; aoAlternar: () => void; pagina?: string }) {
   const ref = useRef<HTMLButtonElement>(null);
   const [pos, setPos] = useState<PosicaoSalva>(ler);
   const [tela, setTela] = useState({ w: window.innerWidth, h: window.innerHeight });
@@ -31,7 +31,8 @@ export function BalaoGenesis({ aberto, aoAlternar }: { aberto: boolean; aoAltern
   }, []);
 
   const efetiva = guia ? pontoDeGuia(tela, TAMANHO) : pos;
-  const c = arrastando ?? coordenadas(efetiva, tela, TAMANHO);
+  const rodape = tela.w <= 760 ? 112 : 36; // respeita navegação inferior do smartphone
+  const c = arrastando ?? coordenadas(efetiva, tela, TAMANHO, rodape);
 
   const aoPressionar = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return;
@@ -48,24 +49,25 @@ export function BalaoGenesis({ aberto, aoAlternar }: { aberto: boolean; aoAltern
   };
   const aoSoltar = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (ref.current?.hasPointerCapture(e.pointerId)) ref.current.releasePointerCapture(e.pointerId);
-    if (arrastando) { const p = encaixar(arrastando.x, arrastando.y, tela, TAMANHO); setPos(p); gravar(p); setArrastando(null); }
+    if (arrastando) { const p = encaixar(arrastando.x, arrastando.y, tela, TAMANHO, 64, rodape); setPos(p); gravar(p); setArrastando(null); }
   };
   const aoClicar = () => { if (movido.current) { movido.current = false; return; } aoAlternar(); };
   const aoTeclar = (e: React.KeyboardEvent) => { // acessível: setas movem o balão sem mouse
-    const passo = 40; const base = coordenadas(pos, tela, TAMANHO);
+    const passo = 40; const base = coordenadas(pos, tela, TAMANHO, rodape);
     if (!e.altKey) return;
     const mapa: Record<string, [number, number]> = { ArrowUp: [0, -passo], ArrowDown: [0, passo], ArrowLeft: [-passo * 6, 0], ArrowRight: [passo * 6, 0] };
     const d = mapa[e.key]; if (!d) return; e.preventDefault();
-    const p = encaixar(base.x + d[0], base.y + d[1], tela, TAMANHO); setPos(p); gravar(p);
+    const p = encaixar(base.x + d[0], base.y + d[1], tela, TAMANHO, 64, rodape); setPos(p); gravar(p);
   };
 
   return (
     <button ref={ref} type="button" className={`sec balao-genesis ${pulo ? "balao-pulo" : ""} ${guia ? "balao-guia" : ""} ${arrastando ? "balao-arrastando" : ""}`}
       style={{ left: c.x, top: c.y }} data-lado={efetiva.lado}
       onClick={aoClicar} onPointerDown={aoPressionar} onPointerMove={aoMover} onPointerUp={aoSoltar} onPointerCancel={aoSoltar} onKeyDown={aoTeclar}
-      aria-expanded={aberto} aria-controls="dock-agente" aria-label={aberto ? "Fechar o Nano.ia" : "Abrir o Nano.ia"} aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown Alt+ArrowLeft Alt+ArrowRight">
+      aria-expanded={aberto} aria-controls="dock-agente" aria-label={aberto ? "Fechar o Nano.ia" : "Abrir o Nano.ia"}
+      title={pagina ? `Nano.IA acompanha ${pagina}. Toque para abrir o guia e conversar.` : "Abrir Nano.IA"} aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown Alt+ArrowLeft Alt+ArrowRight">
       <Esfera estado={guia ? "executando" : "parado"} tamanho={52} peso />
-      <span className="balao-texto"><b>Nano.ia</b><small>{guia ? `Aqui: ${guia}` : aberto ? "Conversando" : "Toque para falar"}</small></span>
+      <span className="balao-texto"><b>Nano.IA</b><small>{guia ? `Aqui: ${guia}` : aberto ? "Trabalhando junto" : pagina ? `Acompanhando ${pagina}` : "Toque para conversar"}</small></span>
     </button>
   );
 }
