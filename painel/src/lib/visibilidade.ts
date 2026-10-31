@@ -18,3 +18,14 @@ export function montarMenu(itens: [string, string][], pair: [string, string][], 
   const base = opcoes.conectorAtivo ? itens : itens.filter(([c]) => !dependemDoConector.includes(c));
   return opcoes.pairAtivo ? [...base.slice(0, 1), ...pair, ...base.slice(1)] : base;
 }
+
+/** Rotas que exigem aceite específico (ver CENTRAL_ATIVA em flags.ts) saem do menu e da paleta enquanto a flag estiver desligada. */
+export function semRotasSemAceite(itens: [string, string][], aceite: boolean, rotas: readonly string[]): [string, string][] {
+  return aceite ? itens : itens.filter(([c]) => !rotas.includes(c));
+}
+
+/** A rota não abre (cai na visão geral): backend ainda não publicado ou tela que exige aceite específico. */
+export function rotaBloqueada(caminho: string, opcoes: { conectorAtivo: boolean; centralAtiva: boolean }, dependemDoConector: readonly string[], daCentral: readonly string[]): boolean {
+  const semConector = !opcoes.conectorAtivo && (dependemDoConector.includes(caminho) || /^\/indicadores\//.test(caminho) || caminho === "/agentes");
+  return semConector || (!opcoes.centralAtiva && daCentral.includes(caminho));
+}
