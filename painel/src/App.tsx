@@ -114,7 +114,19 @@ export function App() {
     if (a.has(id) === aberta) return a;
     const n = new Set(a); if (aberta) n.add(id); else n.delete(id); return n;
   });
-  const [recolhido, setRecolhido] = useState(() => { try { return localStorage.getItem("conecta:menu") === "recolhido"; } catch { return false; } });
+  // Torre de ícones (#166, pedido do proprietário): no desktop o menu começa como trilho estreito de ícones pequenos.
+  // Quem expandir de propósito ("aberto") continua expandido; a escolha fica neste navegador.
+  const [recolhido, setRecolhido] = useState(() => { try { return localStorage.getItem("conecta:menu") !== "aberto"; } catch { return true; } });
+  // No trilho, cada área abre como painel flutuante só quando o lojista toca; fecha ao navegar, ao clicar fora ou com Esc.
+  const [areaFlutuante, setAreaFlutuante] = useState<string | null>(null);
+  useEffect(() => { setAreaFlutuante(null); }, [caminho]);
+  useEffect(() => {
+    if (!areaFlutuante) return;
+    const fora = (e: PointerEvent) => { if (!(e.target as Element | null)?.closest?.("#menu-principal")) setAreaFlutuante(null); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setAreaFlutuante(null); };
+    document.addEventListener("pointerdown", fora); document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("pointerdown", fora); document.removeEventListener("keydown", esc); };
+  }, [areaFlutuante]);
   const alternarMenu = () => setRecolhido((r) => { try { localStorage.setItem("conecta:menu", r ? "aberto" : "recolhido"); } catch { /* sem storage */ } return !r; });
   const [agente, setAgente] = useState(false);
   const [telaW, setTelaW] = useState(() => window.innerWidth);
@@ -154,6 +166,7 @@ export function App() {
   const bloqueada = rotaBloqueada(caminho, { conectorAtivo: CONECTOR_ATIVO, centralAtiva: CENTRAL_ATIVA }, ROTAS_DO_CONECTOR, ROTAS_DA_CENTRAL); // backend não publicado ou exige aceite
   const larga = caminho === "/conector" && !bloqueada;
   const paginaDeChat = caminho === "/assistente" || (caminho === "/conector" && !bloqueada); // já são o próprio chat: sem painel duplicado
+  const trilho = recolhido && telaW >= 960; // torre de ícones só no desktop; no celular o menu é a gaveta de sempre
   const dockAberto = agente && !!loja && !demoAtivo && !paginaDeChat;
   const dividindo = dividePagina(painel, telaW, dockAberto);
   const res = reserva(painel, telaW, dockAberto);
@@ -178,27 +191,29 @@ export function App() {
       <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
       <div className={`layout layout-premium ${larga ? "layout--larga" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""} ${menuMovel ? "layout--menu-movel-aberto" : ""}`} style={{ "--res-esq": `${res.esq}px`, "--res-dir": `${res.dir}px` } as React.CSSProperties}>
       {menuMovel && <button type="button" className="menu-escurecedor" aria-label="Fechar menu de navegação" onClick={() => setMenuMovel(false)} />}
-      <nav id="menu-principal" className="menu menu-premium" aria-label="Menu principal">
+      <nav id="menu-principal" className={`menu menu-premium ${trilho ? "menu--trilho" : ""}`} aria-label="Menu principal">
         <div className="menu-destaque">
           <span className="menu-destaque-legenda">ASSISTENTE OPERACIONAL</span>
-          <a href={`#${ROTA_NANO}`} className="menu-nano-iniciar" onClick={() => setMenuMovel(false)}><Icone nome="agentes" tamanho={20} /><span>Conversar com Nano.IA</span></a>
+          <a href={`#${ROTA_NANO}`} className="menu-nano-iniciar" title="Conversar com Nano.IA" aria-label="Conversar com Nano.IA" onClick={() => setMenuMovel(false)}><Icone nome="agentes" tamanho={16} /><span>Conversar com Nano.IA</span></a>
           <small>Consulta e propostas com aprovação humana</small>
         </div>
         {GRUPOS_MENU.map((g) => (
-          <details key={g.id} className="menu-grupo" open={areasAbertas.has(g.id)} onToggle={(e) => alternarArea(g.id, e.currentTarget.open)}>
-            <summary className="menu-titulo" title={g.titulo}>
-              <Icone nome={g.id} tamanho={16} /><b>{g.titulo}</b>
+          <details key={g.id} className={`menu-grupo ${g.id === areaAtual ? "menu-grupo--atual" : ""}`} open={trilho ? areaFlutuante === g.id : areasAbertas.has(g.id)}
+            onToggle={(e) => { const aberta = e.currentTarget.open; if (trilho) setAreaFlutuante((a) => (aberta ? g.id : a === g.id ? null : a)); else alternarArea(g.id, aberta); }}>
+            <summary className="menu-titulo" title={g.titulo} aria-label={trilho ? g.titulo : undefined}>
+              <Icone nome={g.id} tamanho={15} /><b>{g.titulo}</b>
             </summary>
             <div className="menu-grupo-itens">
+              {trilho && <span className="menu-flutuante-titulo">{g.titulo}</span>}
               {g.itens.map(([c, t]) => (
                 <a key={c} href={`#${c}`} title={t} className={caminho === c ? "ativo" : ""} aria-current={caminho === c ? "page" : undefined} onClick={() => setMenuMovel(false)}>
-                  <Icone nome={ICONES_ROTAS[c] ?? g.id} tamanho={18} /><span>{t}</span>
+                  <Icone nome={ICONES_ROTAS[c] ?? g.id} tamanho={15} /><span>{t}</span>
                 </a>
               ))}
             </div>
           </details>
         ))}
-        <button className="sec menu-sair" disabled={demoAtivo} onClick={() => void supabase.auth.signOut()}><Icone nome="fechar" tamanho={18} /><span>Sair da conta</span></button>
+        <button className="sec menu-sair" disabled={demoAtivo} onClick={() => void supabase.auth.signOut()}><Icone nome="fechar" tamanho={15} /><span>Sair da conta</span></button>
         <button className="sec menu-recolher" onClick={alternarMenu} aria-pressed={recolhido} aria-label={recolhido ? "Expandir menu" : "Recolher menu"}><Icone nome="recolher" tamanho={16} /></button>
       </nav>
       <main>

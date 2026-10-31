@@ -912,3 +912,61 @@ html .abas .compositor-acoes .compositor-enviar { flex: none; min-width: 44px; w
 @media (prefers-reduced-motion: reduce) {
   .menu-premium details.menu-grupo > summary.menu-titulo::after { transition: none; }
 }
+
+/* ===================================================================================================
+   Issue #166 — Torre de ícones (pedido do proprietário): menu enxuto, ícones pequenos, trilho estreito.
+   Desktop: trilho de 60px por padrão (cada área abre um painel flutuante ao lado); expandido = 232px compacto.
+   Celular: a mesma gaveta, mais densa. Só tokens existentes; nenhum componente novo de navegação.
+   =================================================================================================== */
+.menu-premium .menu-titulo { font-size: .66rem; letter-spacing: .09em; }
+.menu-premium a:not(.menu-nano-iniciar) { font-size: .86rem; min-height: 36px; padding: 7px 10px; gap: 9px; border-radius: 8px; }
+.menu-premium .menu-grupo-itens { gap: 1px; }
+.menu-premium .menu-destaque { padding: 8px; gap: 6px; }
+.menu-premium .menu-destaque-legenda,
+.menu-premium .menu-destaque small { display: none; }
+.menu-premium .menu-nano-iniciar { min-height: 36px; padding: 7px 10px; font-size: .86rem; gap: 8px; border-radius: 9px; }
+.menu-premium .menu-sair { min-height: 36px; font-size: .84rem; }
+.menu-flutuante-titulo { display: none; }
+
+@media (min-width: 960px) {
+  .layout.layout-premium { grid-template-columns: 232px minmax(0,1fr); }
+  .layout.layout-premium.layout--larga { grid-template-columns: 210px minmax(0,1fr); }
+  .layout-premium.layout--recolhido,
+  .layout-premium.layout--recolhido.layout--larga { grid-template-columns: 60px minmax(0,1fr); }
+  .menu.menu-premium { padding: 12px 10px; }
+  .layout-premium > .menu-premium:not(.menu--trilho) { min-width: 0; overflow-x: hidden; }
+  .menu-premium:not(.menu--trilho) a span, .menu-premium:not(.menu--trilho) .menu-titulo b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* trilho */
+  .menu.menu-premium.menu--trilho { padding: 10px 8px; align-items: center; overflow: visible; }
+  .menu--trilho .menu-destaque { padding: 0; background: none; border: 0; box-shadow: none; }
+  .menu--trilho .menu-nano-iniciar { width: 40px; min-height: 40px; padding: 0; justify-content: center; border-radius: 12px; }
+  .menu--trilho .menu-nano-iniciar span { display: none; }
+  .menu--trilho details.menu-grupo { position: relative; padding: 0; }
+  .menu--trilho details.menu-grupo > summary.menu-titulo { width: 40px; min-height: 40px; padding: 0; justify-content: center; border-radius: 10px; }
+  .menu--trilho details.menu-grupo > summary.menu-titulo b,
+  .menu--trilho details.menu-grupo > summary.menu-titulo::after { display: none; }
+  .menu--trilho details.menu-grupo > summary.menu-titulo:hover,
+  .menu--trilho details.menu-grupo[open] > summary.menu-titulo { background: rgba(255,255,255,.11); }
+  .menu--trilho .menu-grupo--atual > summary.menu-titulo { box-shadow: inset 2px 0 0 var(--verde); }
+  .menu--trilho .menu-grupo--atual > summary.menu-titulo svg { color: #ffc08c; opacity: 1; }
+  /* painel flutuante da área */
+  .menu--trilho details.menu-grupo[open] > .menu-grupo-itens {
+    display: grid; position: absolute; left: calc(100% + 10px); top: 0; z-index: 60; width: 220px; padding: 8px;
+    background: var(--grafite-2); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.35);
+  }
+  .menu--trilho .menu-flutuante-titulo { display: block; padding: 4px 8px 6px; color: #f4a579; font: 700 .66rem var(--mono); letter-spacing: .09em; text-transform: uppercase; }
+  .layout-premium.layout--recolhido .menu--trilho .menu-grupo-itens a:not(.menu-nano-iniciar) { justify-content: flex-start; padding: 7px 10px; }
+  .layout-premium.layout--recolhido .menu--trilho .menu-grupo-itens a:not(.menu-nano-iniciar) span { display: inline; width: auto; overflow: visible; font-weight: 500; white-space: nowrap; }
+  .menu--trilho .menu-sair { width: 40px; min-height: 40px; padding: 0; justify-content: center; }
+  .menu--trilho .menu-sair span { display: none; }
+  .menu--trilho .menu-recolher { align-self: center; }
+}
+
+@media (max-width: 959px) {
+  .layout-premium > .menu-premium { width: min(82vw, 290px); padding-top: max(16px, env(safe-area-inset-top)); gap: 4px; }
+  .layout-premium .menu-grupo { gap: 1px; padding-bottom: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu--trilho details.menu-grupo[open] > .menu-grupo-itens { transition: none; }
+}
