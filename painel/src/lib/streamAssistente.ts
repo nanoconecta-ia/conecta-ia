@@ -43,7 +43,9 @@ export async function perguntarComStreaming(corpo: Record<string, unknown>, toke
 }
 
 /** Propostas devolvidas pelo turno (metadados.propostas): só ids válidos; o cartão lê o resto do banco, nunca do texto do modelo. */
-export interface PropostaTurno { id: string; titulo?: string }
+export type RiscoTurno = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export interface PropostaTurno { id: string; titulo?: string; risco?: RiscoTurno }
+const RISCOS: readonly string[] = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function propostasDoTurno(v: unknown): PropostaTurno[] {
   if (!Array.isArray(v)) return [];
@@ -52,7 +54,7 @@ export function propostasDoTurno(v: unknown): PropostaTurno[] {
     const id = p && typeof p === "object" ? (p as { id?: unknown }).id : undefined;
     if (typeof id !== "string" || !UUID.test(id) || vistos.has(id)) return [];
     vistos.add(id);
-    const t = (p as { titulo?: unknown }).titulo;
-    return [{ id, ...(typeof t === "string" ? { titulo: t.slice(0, 200) } : {}) }];
+    const t = (p as { titulo?: unknown }).titulo, r = (p as { risco?: unknown }).risco;
+    return [{ id, ...(typeof t === "string" ? { titulo: t.slice(0, 200) } : {}), ...(typeof r === "string" && RISCOS.includes(r) ? { risco: r as RiscoTurno } : {}) }];
   }).slice(0, 10);
 }

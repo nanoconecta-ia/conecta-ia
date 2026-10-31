@@ -323,3 +323,19 @@ fieldset { border:1px solid var(--borda); border-radius:var(--raio); padding:10p
 [data-tema="contraste"] .cartao, [data-tema="contraste"] button.sec, [data-tema="contraste"] .selo { border-width:2px; }
 [data-tema="contraste"] button:focus-visible, [data-tema="contraste"] a:focus-visible, [data-tema="contraste"] input:focus, [data-tema="contraste"] textarea:focus, [data-tema="contraste"] select:focus { outline:4px solid var(--ciano); outline-offset:3px; }
 [data-tema="contraste"] .menu a.ativo, html[data-tema="contraste"] .dock-trilho button.dock-aba[aria-selected="true"] { background:var(--marca); color:var(--marca-texto); box-shadow:none; }
+
+/* Issue #166 (B2b): proposta no chat em uma linha discreta; os detalhes abrem sob demanda. */
+.proposta-compacta { margin:4px 0 10px; max-width:min(100%,560px); }
+.proposta-compacta > summary { display:flex; align-items:center; gap:8px; min-height:36px; padding:6px 10px; list-style:none; cursor:pointer;
+  border:1px solid var(--borda); border-radius:10px; background:var(--cartao); font-size:.85rem; color:var(--suave); }
+.proposta-compacta > summary::-webkit-details-marker { display:none; }
+.proposta-compacta > summary:hover { border-color:var(--marca); color:inherit; }
+.proposta-compacta > summary:focus-visible { outline:2px solid var(--verde); outline-offset:2px; }
+.proposta-compacta-titulo { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--texto); font-weight:600; }
+.proposta-compacta-risco { display:inline-flex; align-items:center; gap:4px; font-size:.75rem; }
+.proposta-compacta-risco i { width:7px; height:7px; border-radius:50%; background:currentColor; }
+.proposta-compacta-risco.ok { color:var(--ok); } .proposta-compacta-risco.atencao { color:var(--atencao); } .proposta-compacta-risco.erro { color:var(--erro); }
+.proposta-compacta-ver { font-size:.75rem; color:var(--marca); }
+.proposta-compacta[open] .proposta-compacta-ver::after { content:" ▴"; }
+.proposta-compacta:not([open]) .proposta-compacta-ver::after { content:" ▾"; }
+.proposta-compacta > .cartao-ia { margin-top:6px; box-shadow:none; border-color:var(--borda); }

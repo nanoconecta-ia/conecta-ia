@@ -12,7 +12,7 @@ import { CHAT_ACEITA, CHAT_MAX_ANEXOS, prepararArquivo, rotuloBytes, validarSele
 import { gravarConversaAtiva, lerConversaAtiva } from "../lib/conversaAtiva.ts";
 import { perguntarComStreaming, propostasDoTurno, type PropostaTurno } from "../lib/streamAssistente.ts";
 import { useFonte } from "../lib/useFonte.ts";
-import { CartaoProposta } from "../componentes/conector/CartaoProposta.tsx";
+import { PropostaCompacta } from "../componentes/conector/PropostaCompacta.tsx";
 import { escolherInicial, erroAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 
 type Evidencia = { origem: string; simulado: boolean; consultado_em: string; sincronizado_em?: string; motivo?: string; dados: { sku?: string; nome?: string; preco?: number | null; estoque?: number | null } };
@@ -313,7 +313,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       <div className="chat" style={{ flex: "1 1 auto", minHeight: 0, minWidth: 0, overflowY: "auto", overflowX: "hidden" }} aria-live="polite">{msgs.map((m, i) => (
         <div key={i}>
           <MensagemRetratil m={m.parcial && !m.texto ? { ...m, texto: "Escrevendo…" } : m} recolhida={!m.parcial && mensagemRecolhida(i, msgs.length, abertas, modoMsgs)} onAlternar={() => alternarMsg(i)} />
-          {fonte && m.propostas?.map((p) => <CartaoProposta key={p.id} propostaId={p.id} fonte={fonte} lojaId={loja.id} />)}
+          {m.propostas?.map((p) => <PropostaCompacta key={p.id} p={p} fonte={fonte} lojaId={loja.id} />)}
         </div>
       ))}<div ref={fim} /></div>
       <div className="barra-extras">

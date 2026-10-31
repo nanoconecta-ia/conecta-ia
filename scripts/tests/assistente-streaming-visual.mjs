@@ -36,7 +36,7 @@ try{
    if(c.acao==='chat_perguntar'){
     pedidos.push({stream:c.stream,auth:route.request().headers()['authorization'],accept:route.request().headers()['accept']});
     const ev=[['texto',{delta:'Faltam GTIN '}],['texto',{delta:'e descrição.'}]];
-    if(!semResultado)ev.push(['resultado',{status:200,corpo:{resposta:'Faltam GTIN e descrição. Preparei a troca de categoria para você aprovar.',conversa_id:C,simulado:true,evidencias:[],propostas:[{id:P,titulo:'Trocar a categoria do SKU CI000016'}]}}]);
+    if(!semResultado)ev.push(['resultado',{status:200,corpo:{resposta:'Faltam GTIN e descrição. Preparei a troca de categoria para você aprovar.',conversa_id:C,simulado:true,evidencias:[],propostas:[{id:P,titulo:'Trocar a categoria do SKU CI000016',risco:'MEDIUM'}]}}]);
     return route.fulfill({status:200,headers:{...h,'content-type':'text/event-stream; charset=utf-8'},body:sse(ev)});
    }
    return route.abort();
@@ -48,6 +48,12 @@ try{
   await page.getByRole('button',{name:'Enviar',exact:true}).click();
   if(!semResultado){
    await page.getByText('Preparei a troca de categoria para você aprovar.').waitFor();
+   const linha=page.locator('.proposta-compacta > summary');await linha.waitFor();
+   assert.match(await linha.innerText(),/Trocar a categoria do SKU CI000016[\s\S]*médio/,`${r}: proposta em uma linha com título e risco`);
+   const alturaLinha=(await linha.boundingBox()).height;assert.ok(alturaLinha>=36&&alturaLinha<=48,`${r}: linha compacta (${alturaLinha}px)`);
+   assert.equal(await page.getByRole('article',{name:'Proposta: Trocar a categoria do SKU CI000016'}).count(),0,`${r}: detalhes só ao abrir`);
+   await mkdir(root+'evidencias-issue-166',{recursive:true});await page.screenshot({path:root+`evidencias-issue-166/b2b-streaming-${largura}-fechada.png`});
+   await linha.click();
    const card=page.getByRole('article',{name:'Proposta: Trocar a categoria do SKU CI000016'});await card.waitFor();
    assert.equal(await page.getByText('Faltam GTIN e descrição.',{exact:true}).count(),0,`${r}: a prévia parcial não fica duplicada ao lado da resposta final`);
    assert.equal(await card.getByText('Abrir na Central de Inteligência').count(),0,`${r}: Central oculta -> cartão sem link para ela`);
@@ -64,5 +70,5 @@ try{
   assert.deepEqual(erros,[]);
   await page.close();
  }
- console.log('assistente-streaming-visual ok (390/1280px: stream com token, resposta final + cartão de proposta lido do banco, sem link para a Central; sem resultado a prévia não vira resposta)');
+ console.log('assistente-streaming-visual ok (390/1280px: stream com token, resposta final + proposta em uma linha que abre o cartão lido do banco, sem link para a Central; sem resultado a prévia não vira resposta)');
 }finally{await browser?.close();servidor.kill('SIGTERM');await rm(fixture,{force:true})}

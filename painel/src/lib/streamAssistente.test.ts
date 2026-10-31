@@ -52,4 +52,5 @@ test("propostasDoTurno: só ids UUID, sem duplicar, no máximo 10, título curto
   const a = "11111111-2222-4333-8444-555555555555";
   assert.deepEqual(propostasDoTurno([{ id: a, titulo: "Trocar categoria" }, { id: a }, { id: "x" }, null, { titulo: "sem id" }]), [{ id: a, titulo: "Trocar categoria" }]);
   assert.deepEqual(propostasDoTurno(undefined), []);
+  assert.deepEqual(propostasDoTurno([{ id: a, risco: "HIGH" }, { id: "22222222-2222-4333-8444-555555555555", risco: "ALTO" }]), [{ id: a, risco: "HIGH" }, { id: "22222222-2222-4333-8444-555555555555" }]);
 });
