@@ -103,3 +103,16 @@ h1,h2,h3,p{overflow-wrap:break-word}h1,h2,h3{line-height:1.17;letter-spacing:-.0
 @media(max-width:1020px){.cabecalho-linha{flex-wrap:wrap;gap:12px;padding-block:16px}.nav-principal{order:3;width:100%;justify-content:center}.hero-grid{grid-template-columns:1fr;padding:55px 0 75px}.hero-painel{max-width:740px;transform:none}.dual{gap:32px}.documento{grid-template-columns:160px 1fr;gap:28px}}
 @media(max-width:700px){.container{width:min(var(--width),calc(100% - 32px))}.cabecalho-linha{justify-content:space-between}.marca{font-size:1.05rem}.marca-simbolo{height:36px;width:36px}.entrar-link{padding:10px 12px}.nav-principal{justify-content:start;overflow:auto;flex-wrap:nowrap}.nav-principal a{white-space:nowrap}.hero-grid{gap:35px}.hero h1{font-size:clamp(2.35rem,12vw,3.5rem)}.hero-painel{padding:17px}.modulo{padding:12px}.secao{padding-block:50px}.secao-cabeca{display:block}.secao-cabeca>p{margin-top:16px}.cartoes,.contato-grade,.cartoes-seguranca,.faq,.dual,.footer-grid{grid-template-columns:1fr}.cartao{min-height:0;padding:24px}.dual{gap:25px}.faixa-valor{padding:50px 0}.chamado{flex-direction:column;align-items:start;padding:25px;margin-bottom:50px}.documento{display:block;padding-block:42px}.documento-lado{position:static;display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;margin-bottom:35px}.documento-lado strong{width:100%}.documento-lado a{padding:4px 8px;border:1px solid var(--edge);border-radius:8px}.footer-grid{gap:30px}.footer-faixa{display:block}.footer-faixa span{display:block;margin-bottom:10px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.botao{transition:none}.botao:hover{transform:none}}
+
+/* Evita expansão intrínseca no hero desktop com zoom de navegador ou fontes maiores. */
+@media(min-width:1021px){
+ .hero-grid{grid-template-columns:minmax(0,1fr) minmax(0,.95fr);gap:38px}
+ .hero-grid>*{min-width:0}
+ .hero h1{font-size:clamp(2.5rem,4.2vw,4.2rem)}
+ .hero-painel{max-width:100%}
+}
+@media(max-width:700px){
+ .cabecalho-linha{min-width:0}
+ .hero-painel,.checklist,.cartao{max-width:100%;min-width:0}
+ .hero h1{overflow-wrap:normal}
+}
