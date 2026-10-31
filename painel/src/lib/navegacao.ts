@@ -4,12 +4,14 @@
 export type Item = [rota: string, titulo: string];
 export type GrupoMenu = { id: string; titulo: string; itens: Item[] };
 
+// Cinco áreas de trabalho. As rotas legadas continuam ativas e pesquisáveis;
+// esta mudança é apenas de navegação, sem alterar autenticação ou backend.
 const GRUPOS: { id: string; titulo: string; rotas: string[] }[] = [
-  { id: "comando", titulo: "Comando", rotas: ["/", "/conector", "/central", "/indicadores"] },
-  { id: "catalogo", titulo: "Catálogo", rotas: ["/catalogo", "/studio", "/taxonomia", "/fila", "/imagens"] },
-  { id: "agentes", titulo: "Agentes", rotas: ["/estudio", "/assistente", "/meu-agente", "/aprovacoes", "/dispositivos", "/gateway", "/integracoes"] },
-  { id: "loja", titulo: "Loja", rotas: ["/aparencia", "/banners", "/condicoes", "/design"] },
-  { id: "erp", titulo: "ERP e fiscal", rotas: ["/bling", "/backup", "/contador"] },
+  { id: "inicio", titulo: "Início", rotas: ["/", "/indicadores"] },
+  { id: "catalogo", titulo: "Catálogo inteligente", rotas: ["/catalogo", "/studio", "/taxonomia", "/imagens"] },
+  { id: "agentes", titulo: "Nano.IA", rotas: ["/assistente", "/conector", "/estudio"] },
+  { id: "fila", titulo: "Operações", rotas: ["/fila", "/aprovacoes", "/central"] },
+  { id: "ajustes", titulo: "Configurações", rotas: ["/bling", "/backup", "/contador", "/integracoes", "/gateway", "/meu-agente", "/dispositivos", "/aparencia", "/banners", "/condicoes", "/design"] },
 ];
 
 /** Agrupa os itens visíveis. Rota que não está em nenhum grupo cai em "Outros" (nada some do menu por esquecimento). */
@@ -24,6 +26,23 @@ export function agruparMenu(itens: Item[]): GrupoMenu[] {
   const resto = itens.filter((i) => !usadas.has(i[0]));
   if (resto.length) saida.push({ id: "outros", titulo: "Outros", itens: resto });
   return saida;
+}
+
+/** Área que contém a rota atual (inclui subcaminhos, ex.: `/indicadores/x`). `null` se nenhuma área a lista. */
+export function grupoDaRota(grupos: GrupoMenu[], caminho: string): string | null {
+  const casa = (r: string) => r === caminho || (r !== "/" && caminho.startsWith(`${r}/`));
+  return grupos.find((g) => g.itens.some(([r]) => casa(r)))?.id ?? null;
+}
+
+/**
+ * Áreas abertas depois de uma navegação. Entrar numa área diferente deixa só ela aberta (o menu não
+ * vai acumulando grupos abertos); navegar dentro da mesma área só garante que ela esteja aberta,
+ * preservando o que o usuário abriu à mão. Sem mudança devolve o mesmo Set (sem re-render).
+ */
+export function areasAoNavegar(abertas: ReadonlySet<string>, anterior: string | null, atual: string | null): ReadonlySet<string> {
+  if (!atual) return abertas;
+  if (anterior !== atual) return abertas.size === 1 && abertas.has(atual) ? abertas : new Set([atual]);
+  return abertas.has(atual) ? abertas : new Set([...abertas, atual]);
 }
 
 const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

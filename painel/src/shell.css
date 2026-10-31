@@ -880,3 +880,35 @@ html .abas .compositor-acoes .compositor-enviar { flex: none; min-width: 44px; w
 @media (prefers-reduced-motion:reduce) {
   .abas .nano-navegacao { transition:none; }
 }
+
+
+/* Issue #166: navegação em cinco áreas, recolhível e acessível.
+   Todo destino legado permanece alcançável pela paleta de comandos. */
+.menu-premium details.menu-grupo { display: block; padding: 0 0 5px; }
+.menu-premium details.menu-grupo > summary.menu-titulo {
+  display: flex; align-items: center; min-height: 40px; gap: 8px;
+  cursor: pointer; border-radius: 9px; padding: 10px 12px;
+  list-style: none; user-select: none;
+}
+.menu-premium details.menu-grupo > summary.menu-titulo::-webkit-details-marker { display: none; }
+.menu-premium details.menu-grupo > summary.menu-titulo::after {
+  content: "›"; font-size: 1.25rem; margin-left: auto; line-height: 1;
+  transition: transform .15s ease;
+}
+.menu-premium details.menu-grupo[open] > summary.menu-titulo::after { transform: rotate(90deg); }
+.menu-premium details.menu-grupo > summary.menu-titulo:focus-visible {
+  outline: 2px solid var(--verde); outline-offset: 2px;
+}
+.menu-premium .menu-grupo-itens { display: grid; gap: 2px; padding: 0 0 4px; }
+.menu-premium details.menu-grupo:not([open]) .menu-grupo-itens { display: none; }
+@media (min-width: 960px) {
+  .layout-premium.layout--recolhido .menu-premium details.menu-grupo > summary.menu-titulo {
+    justify-content: center; padding: 10px 0;
+  }
+  .layout-premium.layout--recolhido .menu-premium details.menu-grupo > summary.menu-titulo::after {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu-premium details.menu-grupo > summary.menu-titulo::after { transition: none; }
+}
