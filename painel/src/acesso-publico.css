@@ -1,0 +1,42 @@
+/* Acesso real: layout institucional seguro e visual premium. Isolado do app após autenticar. */
+.entrada-portal{min-height:100dvh;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(390px,.95fr);background:#071828;color:#fff}
+.entrada-apresentacao{display:flex;flex-direction:column;align-items:start;justify-content:center;padding:clamp(30px,6vw,92px);background:radial-gradient(circle at 18% 15%,#1b5169 0%,transparent 42%),linear-gradient(140deg,#071828,#102d43);position:relative;overflow:hidden}
+.entrada-apresentacao:after{content:"";position:absolute;right:-120px;bottom:-120px;width:460px;height:460px;border:1px solid #6debc423;border-radius:50%;box-shadow:0 0 0 60px #6debc40b,0 0 0 120px #6debc409;pointer-events:none}
+.entrada-apresentacao>*{position:relative;z-index:1}
+.entrada-marca{display:flex;gap:12px;align-items:center;margin-bottom:clamp(48px,11vh,110px);font-size:1.45rem;font-weight:850;letter-spacing:-.035em;line-height:1.1}
+.entrada-marca b{color:#31dac4}
+.entrada-marca small{display:block;color:#98b9c7;font-size:.57rem;letter-spacing:.17em;margin-top:7px}
+.entrada-simbolo{display:grid;place-items:center;width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#38ead0,#1183a8);color:#071b2c;font-weight:950;font-size:1.6rem;box-shadow:0 12px 30px #2de6d323}
+.entrada-sobretitulo{color:#81eadd;font-size:.7rem;letter-spacing:.2em;font-weight:850}
+.entrada-apresentacao h1{font-size:clamp(2.5rem,4.5vw,4.6rem);line-height:1.13;letter-spacing:-.055em;max-width:720px;margin:13px 0 20px}
+.entrada-apresentacao h1 em{font-style:normal;color:#42e0ca}
+.entrada-apresentacao>p:not(.entrada-sobretitulo){color:#b7cedc;font-size:1.04rem;line-height:1.85;max-width:600px}
+.entrada-processos{display:grid;gap:15px;margin-top:32px;padding:25px 0;border-top:1px solid #355569;border-bottom:1px solid #355569;width:min(100%,600px)}
+.entrada-processos span{display:flex;align-items:center;gap:15px;color:#dceaf0;font-size:.9rem}
+.entrada-processos b{display:grid;place-items:center;background:#16465a;color:#8df9e7;width:33px;height:33px;border-radius:9px;font-size:.72rem}
+.entrada-sobre{color:#7be8d8;margin-top:28px;font-weight:750;font-size:.88rem;text-decoration:none}
+.entrada-sobre:hover{text-decoration:underline}
+.entrada-quadro{align-self:stretch;background:#f3f6f7;color:#102636;display:flex;flex-direction:column;justify-content:center;padding:clamp(20px,5vw,75px)}
+.entrada-quadro-topo{font-size:.7rem;letter-spacing:.15em;color:#366979;font-weight:800;margin-bottom:24px;text-align:center}
+.entrada-ponto{display:inline-block;width:7px;height:7px;background:#12a390;border-radius:50%;margin-right:7px}
+.entrada-portal .entrar{max-width:500px;width:100%;margin:0 auto;padding:clamp(22px,3vw,38px);background:#fff;border:1px solid #d7e1e8;box-shadow:0 18px 55px #09283912;border-radius:20px;display:grid;gap:16px}
+.entrada-portal .entrar h2{font-size:1.85rem;line-height:1.15;letter-spacing:-.035em;margin:0;color:#102636}
+.entrada-ajuda{color:#617587;font-size:.88rem;margin:0}
+.entrada-portal .entrar form{max-width:none;gap:16px}
+.entrada-portal .entrar label{font-size:.86rem;font-weight:750;color:#263c4c}
+.entrada-portal .entrar input{background:#f9fbfc;border:1px solid #b8cad5;border-radius:9px;min-height:51px;color:#102636}
+.entrada-portal .entrar input:focus-visible{outline:3px solid #20cdb1}
+.entrada-portal .entrar form button{width:100%;margin-top:4px;background:#0b3948;color:#fff;min-height:52px;border-radius:10px}
+.entrada-portal .entrar form button:hover:not(:disabled){background:#13596c}
+.entrada-recuperar{font-size:.85rem;text-align:right;margin:0}
+.entrada-recuperar a,.entrada-privacidade a{color:#116677}
+.entrada-divisor{display:flex;align-items:center;gap:15px;font-size:.8rem;color:#687b87}
+.entrada-divisor:before,.entrada-divisor:after{content:"";height:1px;background:#dfe7ed;flex:1}
+.entrada-google{width:100%;background:#fff!important;color:#183442!important;border:1px solid #9fb3c3!important;min-height:50px}
+.entrada-google:hover{background:#edf5f6!important}
+.entrada-privacidade{font-size:.77rem;line-height:1.75;color:#637789;margin:0}
+.entrada-quadro-rodape{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:.78rem;color:#657987;margin:23px auto 0;max-width:500px;width:100%}
+.entrada-quadro-rodape a{color:#0f6d73;font-weight:750}
+@media(max-width:950px){.entrada-portal{grid-template-columns:1fr}.entrada-apresentacao{padding:35px 24px}.entrada-marca{margin-bottom:25px}.entrada-apresentacao h1{font-size:clamp(2.1rem,8vw,3.1rem)}.entrada-processos{display:none}.entrada-sobre{margin-top:10px}.entrada-quadro{padding:40px 20px}}
+@media(max-width:520px){.entrada-portal .entrar{padding:22px 17px}.entrada-apresentacao{padding:26px 20px}.entrada-quadro{padding:24px 14px}.entrada-quadro-rodape{flex-direction:column;text-align:center}.entrada-sobretitulo{letter-spacing:.11em}}
+@media(prefers-reduced-motion:reduce){.entrada-portal *{animation:none!important;transition:none!important}}
