@@ -40,3 +40,9 @@
 @media(max-width:950px){.entrada-portal{grid-template-columns:1fr}.entrada-apresentacao{padding:35px 24px}.entrada-marca{margin-bottom:25px}.entrada-apresentacao h1{font-size:clamp(2.1rem,8vw,3.1rem)}.entrada-processos{display:none}.entrada-sobre{margin-top:10px}.entrada-quadro{padding:40px 20px}}
 @media(max-width:520px){.entrada-portal .entrar{padding:22px 17px}.entrada-apresentacao{padding:26px 20px}.entrada-quadro{padding:24px 14px}.entrada-quadro-rodape{flex-direction:column;text-align:center}.entrada-sobretitulo{letter-spacing:.11em}}
 @media(prefers-reduced-motion:reduce){.entrada-portal *{animation:none!important;transition:none!important}}
+
+/* Informação de confiança para vitrines de parceiros, sem confundir lojista e plataforma. */
+.v-rodape{line-height:1.65}
+.v-rodape p{margin:6px 0}
+.v-rodape-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;margin-top:14px}
+.v-rodape-links a{font-size:.8rem;font-weight:650;text-decoration:underline;text-underline-offset:3px}
