@@ -7,6 +7,7 @@ import { IconePeca } from "../componentes/IconePeca.tsx";
 import { vistaDaArea } from "../lib/vistas.ts";
 import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
 import { SincroniaBling } from "../componentes/SincroniaBling.tsx";
+import { AtlasTecnico } from "../componentes/AtlasTecnico.tsx";
 import { conferir, type CategoriaBling, type Ligacao } from "../lib/taxonomiaBling.ts";
 
 type Dados = { nos: No[]; produtos: Map<string, number>; bling: Map<string, number>; categoriasBling: CategoriaBling[]; ligacoes: Ligacao[] };
@@ -69,13 +70,13 @@ export function Taxonomia({ loja }: { loja: Loja }) {
     <div className="janela" aria-label="Arquitetura espelhada">
       <div className="janela-barra">
         <span className="janela-pontos" aria-hidden="true"><i /><i /><i /></span>
-        <span className="janela-aba"><IconePeca nome="motor" tamanho={18} /> Espelho do ERP</span>
+        <span className="janela-aba"><IconePeca nome="motor" tamanho={18} /> Atlas OEM / Espelho do ERP</span>
         <code className="janela-endereco">conecta.ia/espelho/{loja.perfil_ramo}{trilha.map((t) => `/${t.slug}`).join("")}</code>
       </div>
       <div className="janela-corpo">
         <header className="esp-topo">
-          <div><h1>Arquitetura do catálogo</h1>
-            <p className="suave">A taxonomia que o agente usa para classificar as peças, espelhada do cadastro. {dados ? `${dados.nos.length} nós · ${totalProdutos} produto(s) classificado(s).` : ""}</p></div>
+          <div><h1>Atlas do catálogo técnico</h1>
+            <p className="suave">Montadora, veículo, motor, componentes e referências documentadas. Fotografias reais somente com direitos confirmados. {dados ? `${dados.nos.length} nós · ${totalProdutos} produto(s) classificado(s).` : ""}</p></div>
         </header>
         {dados === null ? <p className="suave">Carregando…</p> : (
           <div className="esp-colunas">
@@ -85,18 +86,13 @@ export function Taxonomia({ loja }: { loja: Loja }) {
             <aside className="esp-detalhe" aria-label="Detalhe do nó">
               {atual ? (
                 <>
-                  <IconePeca nome={iconeDaCategoria(atual.slug, atual.nome)} tamanho={72} titulo={atual.nome} />
-                  <h2>{atual.nome}</h2>
-                  <p className="mono suave">{atual.slug}</p>
-                  <dl className="dados">
-                    <dt>Produtos no Conecta</dt><dd>{atual.produtos}</dd>
-                    <dt>Categorias do Bling ligadas</dt><dd>{atual.categoriasBling}</dd>
-                    <dt>Subcategorias</dt><dd>{atual.filhos.length}</dd>
-                  </dl>
-                  {vistaDaArea(trilha[0]?.slug) && (
+                  <AtlasTecnico loja={loja} no={atual} />
+                  {vistaDaArea(trilha[0]?.slug) && <details className="atlas-ilustracao-legada">
+                    <summary>Visualizar ilustração genérica das peças (não é diagrama OEM)</summary>
+                    <p className="suave">Desenho técnico ilustrativo criado para navegação. Não valida peça, posição OEM, motor ou aplicação.</p>
                     <VistaExplodida vista={vistaDaArea(trilha[0]?.slug)!} ativo={atual.slug} aoEscolher={(slug) => { const n = dados?.nos.find((x) => x.slug === slug); if (n) setSel(n.id); }} />
-                  )}
-                  <p className="aviso-discreto">Só leitura. Quando falta um nó, o agente propõe um novo e você aprova na fila.</p>
+                  </details>}
+                  <p className="aviso-discreto">Somente leitura. Cadastros, imagens, aplicações e SEO exigem validação antes de publicação ou escrita no Bling.</p>
                 </>
               ) : <p className="suave">Escolha uma área para ver as subcategorias e o que está ligado ao Bling.</p>}
             </aside>
