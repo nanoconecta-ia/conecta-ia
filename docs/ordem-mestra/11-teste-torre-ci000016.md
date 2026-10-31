@@ -7,6 +7,10 @@ Regra: nenhum dado entra como fato sem fonte; o que não está provado fica "a c
 Validar, com **um** produto, se o painel lateral (Nano Guardião) funciona como central de operação: ler o pedido, achar o produto,
 montar a ficha comercial, reunir imagem real e preparar texto e cadastro para o atendimento. Tudo sob aprovação do lojista.
 
+## Convenção de linguagem
+- "8V" e "16V" significam **8 válvulas** e **16 válvulas** (motor a diesel; nada a ver com volts). Em texto para o cliente, escrever por extenso.
+- Potência é em cv e só entra com fonte; sem fonte fica "não homologado".
+
 ## Estado real do CI000016 hoje (consulta só leitura ao espelho do Conecta.IA, 31/10/2026)
 | Item | Estado |
 |---|---|
