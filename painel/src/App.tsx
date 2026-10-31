@@ -1,5 +1,5 @@
 import { AutorizarAgente } from "./paginas/AutorizarAgente.tsx";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { BACKUP_ATIVO, BANNERS_ATIVO, CONECTOR_ATIVO, PAIR_ATIVO, ROTAS_DO_CONECTOR } from "./lib/flags.ts";
 import { montarMenu } from "./lib/visibilidade.ts";
 import { Assistente } from "./paginas/Assistente.tsx";
@@ -11,7 +11,7 @@ import { EstudioAgente } from "./paginas/EstudioAgente.tsx";
 import { VisaoGeral } from "./paginas/VisaoGeral.tsx";
 import { Banners } from "./paginas/Banners.tsx";
 import { Catalogo } from "./paginas/Catalogo.tsx";
-import { PesquisaTecnica } from "./paginas/PesquisaTecnica.tsx";
+const PesquisaTecnica = lazy(() => import("./paginas/PesquisaTecnica.tsx").then((m) => ({ default: m.PesquisaTecnica })));
 import { Bling } from "./paginas/Bling.tsx";
 import { Contador } from "./paginas/Contador.tsx";
 import { Taxonomia } from "./paginas/Taxonomia.tsx";
@@ -205,7 +205,7 @@ export function App() {
         ) : bloqueada ? <VisaoGeral loja={loja} />
           : caminho === "/estudio" ? <EstudioAgente key={loja.id} loja={loja} />
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
-          : caminho === "/pesquisa" ? <PesquisaTecnica loja={loja} />
+          : caminho === "/pesquisa" ? <Suspense fallback={<p role="status" className="suave">Abrindo pesquisa técnica…</p>}><PesquisaTecnica loja={loja} /></Suspense>
           : caminho === "/fila" ? <Fila loja={loja} />
           : PAIR_ATIVO && caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao?.user.email ?? null} />
           : PAIR_ATIVO && caminho === "/meu-agente" ? <MeuAgente />
