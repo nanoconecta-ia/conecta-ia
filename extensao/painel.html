@@ -9,10 +9,10 @@
 <body>
   <header class="topo">
     <span class="esfera" aria-hidden="true"></span>
-    <div><strong>Nano.IA</strong><small>Guardião · nunca grava no ERP</small></div>
+    <div><strong>Nano.IA</strong><small>Guardião · você revisa e salva no ERP</small></div>
   </header>
   <main>
-    <p class="aviso">Lê a tela aberta no seu navegador. <b>Não preenche nem salva nada no ERP.</b> Conectado à loja, só envia propostas com fonte para a sua Fila de aprovação.</p>
+    <p class="aviso">Lê a tela aberta no seu navegador. <b>Nunca salva no ERP.</b> Conectado à loja, envia propostas com fonte para a Fila e só preenche na tela, campo a campo e com o seu clique, valores que você já aprovou.</p>
     <section id="loja" class="bloco-loja" aria-live="polite"></section>
     <button id="ler" type="button">Ler esta tela</button>
     <p id="erro" class="erro" role="alert"></p>
@@ -24,9 +24,11 @@
       <h2>Sugestões</h2>
       <ul id="sugestoes" class="lista"></ul>
       <div id="bloco-espelho" hidden><h2>Espelho do Conecta.IA</h2><ul id="espelho" class="lista"></ul></div>
+      <div id="bloco-aprovados" hidden><h2>Valores aprovados para a tela</h2><ul id="aprovados" class="lista"></ul></div>
       <h2>Pendências</h2>
       <ul id="pendencias" class="lista"></ul>
     </section>
+    <div id="bloco-historico" hidden><h2>Nesta sessão</h2><ul id="historico" class="lista historico"></ul></div>
     <button id="registrar" type="button" class="sec" disabled title="Exporta só a estrutura da tela (rótulos e tipos, sem valores) para confirmar o mapa">Registrar esta tela</button>
   </main>
   <script type="module" src="painel.js"></script>

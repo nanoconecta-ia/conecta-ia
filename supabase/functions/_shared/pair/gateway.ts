@@ -48,6 +48,8 @@ export interface Dados {
   proporAprovacao(p: PropostaAprovacao): Promise<unknown>;
   aprovacoesPendentes(loja: string, limite: number): Promise<unknown[]>;
   statusTarefa(loja: string, id: string): Promise<unknown | null>;
+  /** Nano Guardião (fase 3): valores JÁ APROVADOS na Fila para o SKU (lista fechada de campos; nunca fiscal, custo ou preço). */
+  camposAprovados(loja: string, sku: string): Promise<unknown | null>;
 }
 export interface Portas {
   validar(tokenHash: string, salHash: string): Promise<Sessao | null>;
@@ -222,6 +224,13 @@ export const FERRAMENTAS: readonly Ferramenta[] = [
         grupo: a.versao_de as string | undefined,
       });
     },
+  },
+  {
+    nome: "conecta.get_validated_fields", escopo: "produtos:ler", somenteLeitura: true,
+    descricao: "Valores JÁ APROVADOS pelo lojista na Fila para um SKU (marca, descrições, peso, categoria sugerida e EAN), com fonte e data. Só o que foi aprovado; nunca fiscal, custo ou preço. Serve para o lojista conferir/preencher na tela do ERP com o OK dele.",
+    esquema: { obrig: ["sku"], props: { sku: { tipo: "string", max: 80 } } },
+    inputSchema: js({ sku: { type: "string", minLength: 1, maxLength: 80 } }, ["sku"]),
+    executar: async (s, a, d) => (await d.camposAprovados(s.loja_id, a.sku as string)) ?? { erro: "Produto não encontrado nesta loja." },
   },
   {
     nome: "conecta.get_pending_approvals", escopo: "aprovacoes:ler", somenteLeitura: true,

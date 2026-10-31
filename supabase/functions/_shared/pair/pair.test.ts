@@ -154,6 +154,7 @@ function ambiente(s: Sessao | null, opcoes: { limite?: (c: string) => boolean; d
     proporAprovacao: async (p) => { propostas.push(p); return { id: "ap-1", versao: 1, hash_proposta: "h".repeat(64), estado: "pendente" }; },
     aprovacoesPendentes: async (loja, l) => { chamadasDados.push({ metodo: "aprovacoesPendentes", loja, args: l }); return []; },
     statusTarefa: async (loja, id) => { chamadasDados.push({ metodo: "statusTarefa", loja, args: id }); return null; },
+    camposAprovados: async (loja, sku) => { chamadasDados.push({ metodo: "camposAprovados", loja, args: sku }); return sku === "P1" ? { sku, campos: [{ id: "e1", campo: "marca_peca", valor: "Cobreq", fonte: "https://fab.exemplo", aprovado_em: "2026-10-30T00:00:00Z" }] } : null; },
     ...opcoes.dados,
   };
   const validadas: [string, string][] = [];
@@ -212,9 +213,9 @@ test("gateway: initialize negocia a versão do protocolo e instrui o modelo a tr
 });
 test("gateway: tools/list mostra só o que o escopo da sessão permite", async () => {
   const nomes = async (escopos: string[]) => ((await chamar(ambiente(sessao(escopos)), rpc("tools/list"))).corpo as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name).sort();
-  assert.deepEqual(await nomes(["produtos:ler"]), ["conecta.get_part_by_code", "conecta.get_product", "conecta.list_products"]);
+  assert.deepEqual(await nomes(["produtos:ler"]), ["conecta.get_part_by_code", "conecta.get_product", "conecta.get_validated_fields", "conecta.list_products"]);
   assert.deepEqual(await nomes([]), []);
-  assert.equal((await nomes([...ESCOPOS])).length, 12);
+  assert.equal((await nomes([...ESCOPOS])).length, 13);
 });
 test("gateway: ferramenta sem o escopo é NEGADA, auditada e não toca os dados", async () => {
   const a = ambiente(sessao(["produtos:ler"]));
@@ -468,4 +469,13 @@ test("gateway: as instruções entregues ao agente trazem as regras do sistema (
   const a = ambiente(sessao([...ESCOPOS]));
   const r = (await chamar(a, rpc("initialize", { protocolVersion: "2025-06-18" }))).corpo as { result: { instructions: string } };
   for (const trecho of [/nunca apaga notas fiscais/, /cadastro espelhado do Bling/, /pausou o cadastro autom/, /VERSÃO do veículo/, /fonte/i, /SKU, EAN, código OEM/]) assert.match(r.result.instructions, trecho);
+});
+
+test("Guardião fase 3: valores aprovados por SKU só com produtos:ler, sem loja nos argumentos", async () => {
+  const r = await chamar(ambiente(sessao(["produtos:ler"])), rpc("tools/call", { name: "conecta.get_validated_fields", arguments: { sku: "P1" } }));
+  assert.match(JSON.stringify(r.corpo), /Cobreq/);
+  const outro = await chamar(ambiente(sessao(["produtos:ler"])), rpc("tools/call", { name: "conecta.get_validated_fields", arguments: { sku: "P1", loja_id: "x" } }));
+  assert.match(JSON.stringify(outro.corpo), /isError|não permitido|desconhecid/i);
+  const nada = await chamar(ambiente(sessao(["enriquecimento:propor"])), rpc("tools/call", { name: "conecta.get_validated_fields", arguments: { sku: "P1" } }));
+  assert.match(JSON.stringify(nada.corpo), /Permissão negada/);
 });

@@ -3262,7 +3262,8 @@ const ALIASES_PAIR = {
     "conecta.propose_bula": null,
     "conecta.propose_banner": null,
     "conecta.get_pending_approvals": null,
-    "conecta.get_task_status": null
+    "conecta.get_task_status": null,
+    "conecta.get_validated_fields": null
 };
 const definicaoDoAssistente = (nome)=>{
     const id = ALIASES_ASSISTENTE[nome];
