@@ -8,6 +8,8 @@ import { vistaDaArea } from "../lib/vistas.ts";
 import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
 import { SincroniaBling } from "../componentes/SincroniaBling.tsx";
 import { AtlasTecnico } from "../componentes/AtlasTecnico.tsx";
+import { publicar, despublicar } from "../lib/contextoPagina.ts";
+import type { MapaNo } from "../lib/mapaPagina.ts";
 import { conferir, type CategoriaBling, type Ligacao } from "../lib/taxonomiaBling.ts";
 
 type Dados = { nos: No[]; produtos: Map<string, number>; bling: Map<string, number>; categoriasBling: CategoriaBling[]; ligacoes: Ligacao[] };
@@ -65,6 +67,22 @@ export function Taxonomia({ loja }: { loja: Loja }) {
   const atual = trilha.at(-1) ?? null;
   const colunas: NoComTotais[][] = [raizes, ...trilha.map((t) => t.filhos)];
   const totalProdutos = raizes.reduce((s, r) => s + r.produtos, 0);
+  // Só contagens e rótulos de categoria autorizados; nada é enviado ao modelo automaticamente.
+  useEffect(() => {
+    if (!dados) return;
+    const caminho: MapaNo[] = trilha.map((n, i) => ({
+      id: "categoria:"+i, rotulo: n.nome, valor: n.produtos,
+    }));
+    const mapa: MapaNo = { id:"atlas-taxonomia", rotulo:"Taxonomia e atlas técnico",
+      valor: totalProdutos, filhos:[
+        {id:"categoria-atual",rotulo:"Categoria selecionada",filhos:caminho},
+        {id:"categorias-bling",rotulo:"Categorias do Bling vinculadas",valor:atual?.categoriasBling??0},
+        {id:"subcategorias",rotulo:"Subcategorias",valor:atual?.filhos.length??0}
+      ] };
+    publicar("/taxonomia", "Atlas técnico"+(atual?" · "+atual.nome:""), mapa);
+    return () => despublicar("/taxonomia");
+  }, [dados, sel, totalProdutos, atual?.id]);
+
 
   return (
     <div className="janela" aria-label="Arquitetura espelhada">
