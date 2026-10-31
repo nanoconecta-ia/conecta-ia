@@ -7,6 +7,7 @@ import { mapaParaTexto } from "../lib/mapaPagina.ts";
 import { ajustarLargura, larguraPeloPonteiro, LARGURA_MAX, LARGURA_MIN, passoDeTeclado, TELA_MIN_PARA_FIXO, type EstadoPainel } from "../lib/painelLateral.ts";
 import { VERSAO_LOCAL, rotuloVersao } from "../lib/versao.ts";
 import { MapaMental } from "./MapaMental.tsx";
+import { Esfera } from "./Esfera.tsx";
 import { ResumoPagina } from "./ResumoPagina.tsx";
 
 type Aba = "conversa" | "ferramentas" | "mapa" | "resumo";
@@ -79,6 +80,7 @@ export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, ao
           tabIndex={0} onPointerDown={aoPressionar} onPointerMove={aoMover} onPointerUp={aoSoltar} onPointerCancel={aoSoltar} onKeyDown={aoTeclar} />
       )}
       <div className="dock-topo">
+        <span className="dock-esfera-viva" aria-hidden="true"><Esfera tamanho={26} estado="parado" /></span>
         <strong title="Nano.IA · Chat global">Nano.IA <small className="dock-versao mono" title="Versão do painel neste aparelho">v{rotuloVersao(VERSAO_LOCAL)}</small></strong><span className="suave">{loja.nome}</span>
         {telaW >= TELA_MIN_PARA_FIXO && ( // fixar só existe onde funciona: em tela estreita (celular) o painel é sempre flutuante
           <>
