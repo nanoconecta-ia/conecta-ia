@@ -17,6 +17,9 @@ const APROVADOS = [
   { id: 'aaaaaaaa-0000-4000-8000-000000000002', campo: 'descricao_curta', valor: 'Bomba d’água com juntas para HR/K2500 2.5 8V Euro III', fonte: 'https://fab.exemplo/ci000016', aprovado_em: '2026-10-30T12:00:00Z' },
   { id: 'aaaaaaaa-0000-4000-8000-000000000003', campo: 'peso_kg', valor: '1.35', fonte: 'Catálogo TRIM GO 2026, p. 40', aprovado_em: '2026-10-30T12:00:00Z' },
   { id: 'aaaaaaaa-0000-4000-8000-000000000004', campo: 'categoria_sugerida', valor: 'Arrefecimento > Bombas d’água', fonte: 'Taxonomia aprovada', aprovado_em: '2026-10-30T12:00:00Z' },
+  { id: 'aaaaaaaa-0000-4000-8000-000000000006', campo: 'espec:diametro_externo_mm', valor: '62', fonte: 'https://fab.exemplo/ci000016', aprovado_em: '2026-10-30T12:00:00Z' },
+  { id: 'aaaaaaaa-0000-4000-8000-000000000007', campo: 'imagem', valor: 'https://cdn.exemplo/ci000016.jpg', fonte: 'busca_web', aprovado_em: '2026-10-30T12:00:00Z' },
+  { id: 'aaaaaaaa-0000-4000-8000-000000000008', campo: 'seo_titulo', valor: 'Bomba d’água HR/K2500 2.5 8V | TRIM GO AUTOPARTS', fonte: 'Cadastro do ERP', aprovado_em: '2026-10-30T12:00:00Z' },
   { id: 'aaaaaaaa-0000-4000-8000-000000000005', campo: 'ncm_sugerido', valor: '8413.30.90', fonte: 'x', aprovado_em: '2026-10-30T12:00:00Z' },
 ];
 let browser;
@@ -72,6 +75,13 @@ try {
     await cat.getByRole('button', { name: 'Preencher na tela' }).click();
     await cat.getByText(/não existe na lista do ERP/).waitFor();
     assert.equal(await erp.$eval('#cat', (e) => e.selectedOptions[0].textContent), 'Arrefecimento', `${r}: select intacto`);
+    // especificação técnica (campo customizado), imagem aprovada e SEO
+    for (const [rotulo, sel, valor] of [['Diâmetro externo (mm)', '#cc1', '62'], ['URL da imagem', '#img', 'https://cdn.exemplo/ci000016.jpg'], ['Título SEO', '#seot', 'Bomba d’água HR/K2500 2.5 8V | TRIM GO AUTOPARTS']]) {
+      const item = lista.locator('li', { hasText: rotulo });
+      await item.getByRole('button', { name: 'Preencher na tela' }).click();
+      await item.getByText(/conferido/).waitFor();
+      assert.equal(await erp.inputValue(sel), valor, `${r}: ${rotulo} preenchido`);
+    }
     await mkdir(repo + 'evidencias-issue-166', { recursive: true }); await p.screenshot({ path: `${repo}evidencias-issue-166/guardiao-fase3-${w}.png`, fullPage: true });
     // desfazer a descrição
     await desc.getByRole('button', { name: 'Desfazer' }).click();
@@ -85,5 +95,5 @@ try {
     assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${r}: sem rolagem horizontal`);
     assert.deepEqual(erros, []); await p.close(); await erp.close();
   }
-  console.log('fase 3 ok (360/420px): só aprovados, um clique por campo, conferência na tela, substituir exige confirmação, select inexistente não mexe, desfazer, nunca salva; servidor antigo = aviso');
+  console.log('fase 3 ok (360/420px): só aprovados (inclui espec técnica, imagem e SEO), um clique por campo, conferência na tela, substituir exige confirmação, select inexistente não mexe, desfazer, nunca salva; servidor antigo = aviso');
 } finally { await browser?.close(); srv.close(); }

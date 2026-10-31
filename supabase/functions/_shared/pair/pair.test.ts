@@ -479,3 +479,11 @@ test("Guardião fase 3: valores aprovados por SKU só com produtos:ler, sem loja
   const nada = await chamar(ambiente(sessao(["enriquecimento:propor"])), rpc("tools/call", { name: "conecta.get_validated_fields", arguments: { sku: "P1" } }));
   assert.match(JSON.stringify(nada.corpo), /Permissão negada/);
 });
+
+test("loja virtual: propose_enrichment aceita tags/SEO/espec:<campo> e recusa campo fora da lista antes de chegar aos dados", async () => {
+  const a = ambiente(sessao(["enriquecimento:propor"]));
+  const ok = await chamar(a, rpc("tools/call", { name: "conecta.propose_enrichment", arguments: { sku: "P1", campo: "espec:diametro_externo_mm", valor: "62", fonte: "https://fab.exemplo" } }));
+  assert.match(JSON.stringify(ok.corpo), /a_confirmar/);
+  const ruim = await chamar(a, rpc("tools/call", { name: "conecta.propose_enrichment", arguments: { sku: "P1", campo: "preco_venda", valor: "1", fonte: "https://fab.exemplo" } }));
+  assert.match(JSON.stringify(ruim.corpo), /espec:<campo>/);
+});

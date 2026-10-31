@@ -165,3 +165,12 @@ Consulta direta e só leitura ao espelho, feita pelo engenheiro, **não pelo Nan
 - **Servidor:** nova ferramenta `conecta.get_validated_fields` no gateway Pair (`produtos:ler`, por SKU). Devolve só valores aprovados de uma lista fechada, nunca NCM, custo ou preço. **Exige publicar o `conecta-gateway`.**
 - **Extensão:** um clique preenche um campo. Substituir um valor existente exige confirmação. Depois de preencher, a extensão confere a tela e oferece desfazer. **Nunca salva**: o lojista revisa e salva no ERP.
 - **Registro:** fica no histórico local do painel. Uma ferramenta de registro no servidor foi barrada pela regra de segurança do gateway (só leitura e proposta), e a regra **não foi afrouxada**. O registro no servidor fica para a C2, com contrato no Tool Registry.
+
+## Loja virtual no Guardião: tags, SEO, especificações técnicas e imagens
+- **Pedido do proprietário:** a tela do Bling no Guardião precisa cobrir as partes customizadas que aparecem no site ligado ao Bling: tags, especificações técnicas, SEO e imagens que o Nano.IA busca na web.
+- **Servidor (sem migração):**
+  - Novos campos de enriquecimento: `tags`, `seo_titulo`, `seo_descricao` e `espec:<campo>`, com limites validados em `escrita.ts` e no gateway.
+  - `get_validated_fields` devolve também esses valores e as imagens aprovadas.
+  - **Exige publicar o `conecta-gateway` e o `assistente`.**
+- **Extensão:** o mapa reconhece SEO e URL de imagem, os campos customizados viram especificações técnicas pelo nome, as sugestões de SEO usam só dados da tela, e há propostas e preenchimento com as mesmas travas.
+- **Pendente:** a captura real da tela do Bling, para confirmar os rótulos da loja virtual e dos campos customizados.

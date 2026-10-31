@@ -50,9 +50,9 @@ try {
     await p.locator('#loja').getByText('Conectado à loja').waitFor();
     await p.click('#ler');
     await p.getByText('Ainda não publicado').waitFor();
-    const esp = await p.innerText('#espelho');
-    assert.match(esp, /GTIN\/EAN difere do espelho|Marca difere do espelho/, `${r}: divergência tela x espelho`);
-    assert.match(esp, /Falta para publicar: descrição, GTIN, peso/);
+    const espTxt = await p.innerText('#espelho');
+    assert.match(espTxt, /GTIN\/EAN difere do espelho|Marca difere do espelho/, `${r}: divergência tela x espelho`);
+    assert.match(espTxt, /Falta para publicar: descrição, GTIN, peso/);
     // proposta sem fonte é barrada no próprio painel; com fonte vai para a Fila
     const li = p.locator('#pendencias li[data-canonico="descricaoCurta"]');
     await li.getByRole('button', { name: 'Propor com fonte' }).click();
@@ -64,14 +64,26 @@ try {
     await li.getByLabel('Fonte (link ou documento)').fill('https://fabricante.exemplo/ci000016');
     await li.getByRole('button', { name: 'Enviar proposta' }).click();
     await li.getByText(/Proposta enviada à Fila de aprovação/).waitFor();
+    // SEO a partir da sugestão (pré-preenchida, editável) e especificação técnica de campo customizado
+    const sugSeo = p.locator('#sugestoes li', { hasText: 'Título SEO' });
+    await sugSeo.getByRole('button', { name: 'Propor para a Fila' }).click();
+    assert.ok((await sugSeo.getByLabel('Valor').inputValue()).length <= 70, `${r}: título SEO sugerido até 70`);
+    await sugSeo.getByRole('button', { name: 'Enviar proposta' }).click();
+    await sugSeo.getByText(/Proposta enviada/).waitFor();
+    const esp = p.locator('#especs li', { hasText: 'Diâmetro externo (mm)' });
+    await esp.getByRole('button', { name: 'Propor com fonte' }).click();
+    await esp.getByLabel('Valor').fill('62'); await esp.getByLabel('Fonte (link ou documento)').fill('https://fab.exemplo/ci000016');
+    await esp.getByRole('button', { name: 'Enviar proposta' }).click();
+    await esp.getByText(/Proposta enviada/).waitFor();
     const iniciar = chamadas.find((x) => x.corpo.acao === 'iniciar');
     assert.equal(iniciar.corpo.tipo, 'navegador'); assert.deepEqual(iniciar.corpo.escopos, ['produtos:ler', 'enriquecimento:propor']);
     const gw = chamadas.filter((x) => x.caminho.endsWith('/conecta-gateway'));
     assert.ok(gw.every((x) => /^Bearer [A-Za-z0-9_-]{43}\.S{43}$/.test(x.auth)), `${r}: token <metade>.<sal> em toda chamada`);
     assert.ok(gw.every((x) => !('loja_id' in (x.corpo.params?.arguments ?? {}))), `${r}: nunca manda loja_id (a sessão decide)`);
-    const prop = gw.find((x) => x.corpo.params.name === 'conecta.propose_enrichment');
+    const prop = gw.find((x) => x.corpo.params.name === 'conecta.propose_enrichment' && x.corpo.params.arguments.campo === 'descricao_curta');
     assert.deepEqual(prop.corpo.params.arguments, { sku: 'CI000016', campo: 'descricao_curta', valor: 'Bomba d’água com juntas para HR/K2500 2.5 8V', fonte: 'https://fabricante.exemplo/ci000016' });
-    assert.equal(gw.filter((x) => x.corpo.params.name === 'conecta.propose_enrichment').length, 1, `${r}: proposta sem fonte não saiu`);
+    const props = gw.filter((x) => x.corpo.params.name === 'conecta.propose_enrichment').map((x) => x.corpo.params.arguments.campo);
+    assert.deepEqual(props, ['descricao_curta', 'seo_titulo', 'espec:diametro_externo_mm'], `${r}: proposta sem fonte não saiu; SEO e espec com o campo certo`);
     const txt = await p.innerText('main'); for (const v of ['41,90', 'Distribuidora X', '8413.30.90']) assert.ok(!txt.includes(v), `${r}: não mostra ${v}`);
     assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${r}: sem rolagem horizontal`);
     assert.deepEqual(erros, []); await p.close();

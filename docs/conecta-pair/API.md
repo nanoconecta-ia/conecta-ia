@@ -40,9 +40,9 @@ Headers: `Authorization: Bearer <token>.<sal>`, `Content-Type: application/json`
 |---|---|---|---|
 | `conecta.list_products` | `produtos:ler` | `busca?` ≤80, `apenas_publicados?`, `limite?` 1–20 | lista (nome, SKU, preço, estoque, marca, publicado, situação) |
 | `conecta.get_product` | `produtos:ler` | `sku` | detalhe + o que falta para publicar |
-| `conecta.propose_enrichment` | `enriquecimento:propor` | `sku, campo (lista fechada), valor ≤2000, fonte (obrigatória), confianca? 0–1` | grava `a_confirmar` na **Fila de aprovação** existente |
+| `conecta.propose_enrichment` | `enriquecimento:propor` | `sku, campo (lista fechada + tags, seo_titulo ≤70, seo_descricao ≤160, espec:<campo> ≤200), valor ≤2000, fonte (obrigatória), confianca? 0–1` | grava `a_confirmar` na **Fila de aprovação** existente |
 | `conecta.propose_banner` | `banners:propor` | `titulo ≤80, imagem_url (https público), subtitulo?, link_url?, link_sku?, inicio?, fim?, idempotency_key?, versao_de? (grupo_id)` | cria aprovação `banner_publicacao` (MEDIUM+). **Não publica** |
-| `conecta.get_validated_fields` | `produtos:ler` | `sku` | valores **já aprovados** na Fila para o SKU (marca, descrições, peso, categoria sugerida, EAN), com fonte e data; nunca fiscal, custo ou preço. Usado pelo Nano Guardião (fase 3) para o lojista preencher na tela do ERP com o OK dele. **Não implantada até publicar o `conecta-gateway`** |
+| `conecta.get_validated_fields` | `produtos:ler` | `sku` | valores **já aprovados** na Fila para o SKU (marca, descrições, peso, categoria sugerida, tags, SEO, especificações `espec:*`, EAN e imagens aprovadas), com fonte e data; nunca fiscal, custo ou preço. Usado pelo Nano Guardião (fase 3) para o lojista preencher na tela do ERP com o OK dele. **Não implantada até publicar o `conecta-gateway`** |
 | `conecta.get_pending_approvals` | `aprovacoes:ler` | `limite?` | metadados das pendentes (sem o conteúdo das propostas) |
 | `conecta.get_task_status` | `tarefas:ler` | `id` (UUID) | estado de uma aprovação ou tarefa de enriquecimento **da loja da sessão** |
 

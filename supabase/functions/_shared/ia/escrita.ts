@@ -3,7 +3,21 @@
 // Cada RPC confere, no banco, que o produto pertence à loja (defesa em profundidade além da checagem aqui).
 export const CAMPOS_ENRIQUECIMENTO = [
   "marca_peca", "descricao_curta", "descricao_longa", "peso_kg", "dimensoes", "categoria_sugerida", "ncm_sugerido",
+  // Loja virtual / site ligado ao Bling (issue #166): busca, SEO. Especificações técnicas vão como "espec:<campo>" (ver abaixo).
+  "tags", "seo_titulo", "seo_descricao",
 ] as const;
+/** Especificação técnica / campo customizado do ERP: "espec:" + nome do campo normalizado (a-z, 0-9, _), ex.: espec:diametro_externo_mm. */
+export const CAMPO_ESPEC = /^espec:[a-z0-9_]{2,30}$/;
+export const campoEnriquecimentoValido = (c: string) => (CAMPOS_ENRIQUECIMENTO as readonly string[]).includes(c) || CAMPO_ESPEC.test(c);
+/** Limites por campo (o que vai para o site precisa caber nos campos do ERP/loja). null = ok; texto = motivo da recusa. */
+export function problemaNoValor(campo: string, valor: unknown): string | null {
+  const t = typeof valor === "string" ? valor.trim() : typeof valor === "number" ? String(valor) : "";
+  if (campo === "tags") { const tags = t.split(",").map((x) => x.trim()).filter(Boolean); return !tags.length ? "Informe ao menos uma tag." : tags.length > 20 ? "No máximo 20 tags." : tags.some((x) => x.length > 40) ? "Cada tag deve ter até 40 caracteres." : null; }
+  if (campo === "seo_titulo") return t.length < 10 || t.length > 70 ? "Título SEO deve ter de 10 a 70 caracteres." : null;
+  if (campo === "seo_descricao") return t.length < 50 || t.length > 160 ? "Descrição SEO deve ter de 50 a 160 caracteres." : null;
+  if (CAMPO_ESPEC.test(campo)) return !t || t.length > 200 ? "Especificação deve ter de 1 a 200 caracteres." : null;
+  return null;
+}
 export const TIPOS_CODIGO = ["oem", "fabricante", "ean", "similar", "substituto", "antigo"] as const; // "sku" é do Bling, o agente não propõe
 
 // deno-lint-ignore no-explicit-any
@@ -20,9 +34,11 @@ async function idDoSku(admin: AdminRpc, lojaId: string, sku: string): Promise<st
 export async function proporEnriquecimento(admin: AdminRpc, lojaId: string, e: Record<string, unknown>): Promise<unknown> {
   const sku = txt(e.sku, 80), campo = txt(e.campo, 40), fonte = txt(e.fonte, 400);
   if (!sku) return { erro: "Informe o SKU do produto." };
-  if (!(CAMPOS_ENRIQUECIMENTO as readonly string[]).includes(campo)) return { erro: `Campo não reconhecido. Use um de: ${CAMPOS_ENRIQUECIMENTO.join(", ")}.` };
+  if (!campoEnriquecimentoValido(campo)) return { erro: `Campo não reconhecido. Use um de: ${CAMPOS_ENRIQUECIMENTO.join(", ")} ou espec:<campo> para especificação técnica.` };
   if (!fonte) return { erro: "Informe a fonte (URL ou documento) de onde veio o dado. Sem fonte, não posso propor." };
   if (e.valor == null || e.valor === "") return { erro: "Informe o valor proposto." };
+  const problema = problemaNoValor(campo, e.valor);
+  if (problema) return { erro: problema };
   const produtoId = await idDoSku(admin, lojaId, sku);
   if (!produtoId) return { erro: "Produto não encontrado nesta loja." };
   const { error } = await admin.rpc("enriquecimento_propor", { p_loja: lojaId, p_produto: produtoId, p_campo: campo, p_valor: JSON.stringify(e.valor), p_fonte: fonte, p_confianca: conf(e.confianca) });
