@@ -3,6 +3,7 @@ import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { Icone } from "../componentes/Icone.tsx";
 import { totalLegivel, estadoBling, linkFonteSegura } from "../lib/dashboard.ts";
+import { diagnosticarSkus, avisoPublicacao } from "../lib/diagnosticoCatalogo.ts";
 import "./visao-geral.css";
 
 type Notificacao = { id: string; titulo: string; corpo: string | null; severidade: string; fonte_url: string | null; lida_em: string | null };
@@ -26,6 +27,7 @@ const ACESSOS = [
 export function VisaoGeral({ loja }: { loja: Loja }) {
   const [conexao, setConexao] = useState<string | null>(null);
   const [contadores, setContadores] = useState<Contadores>({ produtos: null, publicados: null, pendentes: null });
+  const [skusRepetidos, setSkusRepetidos] = useState<number | null>(null);
   const [avisos, setAvisos] = useState<Notificacao[]>([]);
   const [avisosErro, setAvisosErro] = useState("");
   const [carregandoAvisos, setCarregandoAvisos] = useState(true);
@@ -44,6 +46,7 @@ export function VisaoGeral({ loja }: { loja: Loja }) {
     let ativo = true;
     setConexao(null);
     setContadores({ produtos: null, publicados: null, pendentes: null });
+    setSkusRepetidos(null);
     setAvisos([]);
     setAvisosErro("");
     setCarregandoAvisos(true);
@@ -54,7 +57,8 @@ export function VisaoGeral({ loja }: { loja: Loja }) {
       supabase.from("produtos").select("id", { count: "exact", head: true }).eq("loja_id", loja.id).eq("publicado", true),
       supabase.from("produto_enriquecimento").select("id", { count: "exact", head: true }).eq("loja_id", loja.id).eq("status", "a_confirmar"),
       carregarAvisos(loja.id),
-    ]).then(([bling, produtos, publicados, pendentes, notificacoes]) => {
+      supabase.from("produtos").select("sku").eq("loja_id", loja.id).range(0, 999),
+    ]).then(([bling, produtos, publicados, pendentes, notificacoes, skus]) => {
       if (!ativo) return;
       setConexao(bling.error ? "indisponível" : bling.data?.status ?? "pendente");
       setContadores({
@@ -62,6 +66,7 @@ export function VisaoGeral({ loja }: { loja: Loja }) {
         publicados: publicados.error ? null : publicados.count ?? 0,
         pendentes: pendentes.error ? null : pendentes.count ?? 0,
       });
+      setSkusRepetidos(!skus.error && produtos.count != null && skus.data?.length === produtos.count ? diagnosticarSkus(skus.data).repetidos : null);
       setCarregandoAvisos(false);
       if (notificacoes.error) setAvisosErro("Não foi possível consultar os avisos desta loja.");
       else setAvisos((notificacoes.data ?? []) as Notificacao[]);
@@ -123,6 +128,16 @@ export function VisaoGeral({ loja }: { loja: Loja }) {
           <small>Estado informado pela conexão da loja</small>
         </div>
       </section>
+
+      {(avisoPublicacao(contadores.publicados, contadores.produtos) || (skusRepetidos != null && skusRepetidos > 0)) && (
+        <section className="visao-aviso-catalogo" aria-label="Verificações do catálogo" role="status">
+          <div><span className="visao-aviso-catalogo-titulo">Verificações antes da publicação</span>
+            {avisoPublicacao(contadores.publicados, contadores.produtos) && <p>{avisoPublicacao(contadores.publicados, contadores.produtos)}</p>}
+            {skusRepetidos != null && skusRepetidos > 0 && <p>{skusRepetidos} SKU(s) encontrado(s) em mais de um cadastro. Confira se são duplicidades reais ou variações legítimas antes de ajustar o ERP.</p>}
+          </div>
+          <a href="#/catalogo">Revisar catálogo ↗</a>
+        </section>
+      )}
 
       <div className="visao-colunas">
         <section className="visao-modulos" aria-labelledby="modulos-titulo">
