@@ -5527,7 +5527,7 @@ function validarConsultaPublica(entrada) {
     if (typeof entrada !== "string") throw new IaErro(400, "Informe uma referência técnica.");
     const q = entrada.trim().replace(/\s+/g, " ");
     if (q.length < 3 || q.length > 180) throw new IaErro(400, "Digite de 3 a 180 caracteres: SKU, OEM, motor e aplicação.");
-    if (/\b(?:senha|password|token|chave secreta|api key|cpf|cnpj|nota fiscal|fatura|conta bancária)\b/i.test(q) || /@|R\$\s*\d|\b(?:https?:\/\/|bearer\s)/i.test(q)) throw new IaErro(400, "Use somente códigos de peças, veículos e especificações públicas; não envie dados privados, preços ou links de sessão.");
+    if (/\b(?:senha|password|token|chave secreta|api key|cpf|cnpj|nota fiscal|fatura|conta bancária|custo|margem|desconto|preço de compra|preco de compra|tabela comercial|fornecedor privado)\b/i.test(q) || /@|R\$\s*\d|\b(?:https?:\/\/|bearer\s)/i.test(q)) throw new IaErro(400, "Use somente códigos de peças, veículos e especificações públicas; não envie dados privados, preços ou links de sessão.");
     return q;
 }
 function fontePublica(uri, titulo) {
