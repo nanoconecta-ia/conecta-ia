@@ -1,4 +1,4 @@
-// Painel lateral do Nano.ia no CELULAR (em pé, deitado e com texto grande 140/170%): nada fora da tela, cabeçalho sem sobreposição, caixa de texto e Enviar visíveis, balão fora do caminho. Sessão e rede 100% SINTÉTICAS.
+// Painel lateral do Nano.ia no CELULAR (em pé, deitado e com texto grande 140/170%): nada fora da tela, cabeçalho sem sobreposição, caixa de texto e Enviar visíveis, sem esfera nem sobreposição. Sessão e rede 100% SINTÉTICAS.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
@@ -32,7 +32,11 @@ try{
  
   await page.goto(`${base}/#/integracoes`);
   if(escala)await page.addStyleTag({content:`html{font-size:${escala}% !important}`}); // texto grande do aparelho
-  const balao=page.getByRole('button',{name:'Abrir o Nano.ia'});await balao.waitFor();await balao.click();
+  assert.equal(await page.locator('.balao-genesis').count(),0,'nenhuma esfera sobre a página');
+  const acionador=largura<760
+    ? page.locator('.workspace-mobile-tabs').getByRole('button',{name:'Nano.IA',exact:true})
+    : page.getByRole('button',{name:'Abrir painel Nano.IA'});
+  await acionador.waitFor();await acionador.click();
   const dock=page.locator('#dock-agente');await dock.waitFor({state:'visible'});await page.waitForTimeout(500);
   const rotulo=`${largura}x${altura}${escala?`@${escala}%`:''}`;
   // visível de verdade = dentro de todo ancestral que corta (overflow hidden/clip); rolar a página é permitido, ser cortado não
@@ -42,8 +46,7 @@ try{
   ver(dentro(d),`${rotulo}: a janela do Nano.ia cabe inteira na tela (${JSON.stringify(d)})`);
   // toda a barra de cima precisa estar à vista e ser tocável (fechar, ampliar...)
   for(const b of await dock.locator('.dock-topo button').all()){const r=await b.boundingBox();ver(r&&dentro(r),`${rotulo}: botão da barra de cima à vista (${await b.getAttribute('aria-label')})`);}
-  // o balão não pode cobrir o painel aberto
-  if(await balao.count()){const vis=await balao.isVisible();if(vis){const bb=await balao.boundingBox();const sobrepoe=!(bb.x+bb.width<=d.x||bb.x>=d.x+d.width||bb.y+bb.height<=d.y||bb.y>=d.y+d.height);ver(!sobrepoe,`${rotulo}: balão não cobre o painel`);}}
+  ver((await page.locator('.balao-genesis,.esfera').count())===0,`${rotulo}: nenhuma esfera sobreposta ao chat`);
   // fixar à esquerda/direita só existe onde funciona (>= 1100 px)
   ver((await dock.getByRole('button',{name:/Fixar à (esquerda|direita)/}).count())===0,`${rotulo}: sem botões de fixar onde não funcionam`);
   // trilho: todas as abas tocáveis e à vista
@@ -74,5 +77,5 @@ try{
   await context.close();
  }
  assert.deepEqual(todas,[],'problemas de layout no celular:\n'+todas.join('\n'));
- console.log('painel-lateral-mobile-visual ok (390x844, 360x740, 780x360, 844x390, 640x360 e 360x700/640 com texto a 140% e 170%: painel inteiro à vista, sem sobreposição, Enviar visível, balão fora do caminho)');
+ console.log('painel-lateral-mobile-visual ok (390x844, 360x740, 780x360, 844x390, 640x360 e 360x700/640 com texto a 140% e 170%: painel inteiro à vista, sem sobreposição, Enviar visível, sem esfera flutuante)');
 }finally{await browser?.close();servidor.kill()}
