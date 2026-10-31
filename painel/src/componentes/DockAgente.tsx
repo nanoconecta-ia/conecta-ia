@@ -3,6 +3,8 @@ import type { Loja } from "../lib/dados.ts";
 import { Assistente } from "../paginas/Assistente.tsx";
 import type { Item } from "../lib/comandosNL.ts";
 import { assinar, obter } from "../lib/contextoPagina.ts";
+import { useRota } from "../lib/rota.ts";
+import { orientarPagina } from "../lib/navegacaoContextual.ts";
 import { ajustarLargura, larguraPeloPonteiro, LARGURA_MAX, LARGURA_MIN, passoDeTeclado, TELA_MIN_PARA_FIXO, type EstadoPainel } from "../lib/painelLateral.ts";
 import { VERSAO_LOCAL, rotuloVersao } from "../lib/versao.ts";
 import { MapaMental } from "./MapaMental.tsx";
@@ -34,6 +36,8 @@ export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, ao
   const [aba, setAba] = useState<Aba>("conversa");
   const [arrastando, setArrastando] = useState(false);
   const contexto = useSyncExternalStore(assinar, obter);
+  const { caminho } = useRota();
+  const orientacao = orientarPagina(caminho, menu ?? []);
   const ref = useRef<HTMLElement>(null);
   useEffect(() => { if (aberto) setMontado(true); }, [aberto]);
   useEffect(() => {
@@ -55,7 +59,7 @@ export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, ao
   const aoTeclar = (e: React.KeyboardEvent) => { const d = passoDeTeclado(e.key, painel.lado, e.shiftKey); if (d) { e.preventDefault(); mudar({ largura: ajustarLargura(largura + d, telaW) }); } };
 
   if (!montado) return null;
-  const abas: [Aba, string, string, ReactNode][] = [["conversa", "Chat", "Chat global com o Nano.IA", I.conversa], ["ferramentas", "Ferramentas", "Ferramentas e ações do workspace", I.ferramentas], ["mapa", "Mapa", "Mapa mental da página", I.mapa], ["resumo", "Resumo", "Resumir a página", I.resumo]];
+  const abas: [Aba, string, string, ReactNode][] = [["conversa", "Chat", "Chat global com o Nano.IA", I.conversa], ["ferramentas", "Aqui", "Acompanhar o módulo atual e navegar", I.ferramentas], ["mapa", "Mapa", "Mapa mental da página", I.mapa], ["resumo", "Resumo", "Resumir a página", I.resumo]];
   return (
     <aside id="dock-agente" ref={ref} className="dock-agente" data-aberto={aberto} data-ampliado={ampliado} data-modo={dividindo ? "fixo" : "flutuante"} data-lado={painel.lado}
       data-arrastando={arrastando} style={dividindo ? ({ "--dock-w": `${largura}px` } as React.CSSProperties) : undefined} aria-label="Nano.ia" hidden={!aberto}>
@@ -68,7 +72,7 @@ export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, ao
         {telaW >= TELA_MIN_PARA_FIXO && ( // fixar só existe onde funciona: em tela estreita (celular) o painel é sempre flutuante
           <>
           <button className="sec mini dock-ico" onClick={() => mudar({ modo: "fixo", lado: "esq" })} aria-pressed={painel.modo === "fixo" && painel.lado === "esq"} aria-label="Fixar à esquerda" title="Fixar à esquerda">{I.esq}</button>
-          <button className="sec mini dock-ico" onClick={() => mudar({ modo: "fixo", lado: "dir" })} aria-pressed={painel.modo === "fixo" && painel.lado === "dir"} aria-label="Fixar à direita" title="Fixar à direita">{I.dir}</button>
+          <button className="sec mini dock-ico" onClick={() => mudar({ modo: "fixo", lado: "dir", largura: Math.min(580, telaW - 560) })} aria-pressed={painel.modo === "fixo" && painel.lado === "dir"} aria-label="Trabalhar lado a lado com Nano.IA" title="Trabalhar lado a lado">{I.dir}</button>
           <button className="sec mini dock-ico" onClick={() => mudar({ modo: "flutuante" })} aria-pressed={painel.modo === "flutuante"} aria-label="Flutuar" title="Flutuar sobre a página">{I.flutuar}</button>
           </>
         )}
@@ -85,13 +89,16 @@ export function DockAgente({ loja, aberto, aoFechar, menu, aoNavegar, painel, ao
         </nav>
         <div className="dock-painel">
           <div className="dock-corpo" hidden={aba !== "conversa"}><Assistente key={loja.id} loja={loja} menu={menu} aoNavegar={aoNavegar} /></div>
-          {aba === "ferramentas" && <section className="dock-corpo dock-ferramentas" aria-label="Ferramentas de pesquisa">
-            <header><h3>Pesquisa e evidências</h3><p>Acesse fontes externas e prepare uma revisão técnica. Uma pesquisa não modifica seu ERP.</p></header>
-            <div className="dock-ferramentas-preparar">
-              <button type="button" className="sec" onClick={() => aoNavegar?.("/pesquisa")}>Pesquisa Web e B2B ↗</button>
-              <button type="button" className="sec" onClick={() => aoNavegar?.("/catalogo")}>Abrir catálogo local ↗</button>
+          {aba === "ferramentas" && <section className="dock-corpo dock-ferramentas dock-contexto" aria-label="Acompanhar trabalho nesta página">
+            <header><span className="dock-contexto-kicker">VOCÊ ESTÁ AQUI</span><h3>{orientacao.titulo}</h3><p>{orientacao.descricao}</p></header>
+            <div className="dock-contexto-proximos"><h4>Como posso ajudar nesta etapa?</h4>
+              {orientacao.acoes.length ? orientacao.acoes.map(a => <button type="button" className="sec dock-acao-contextual" key={a.rota} onClick={() => aoNavegar?.(a.rota)}>
+                <span><strong>{a.rotulo}</strong><small>{a.descricao}</small></span><span aria-hidden="true">↗</span>
+              </button>) : <p className="suave">Nenhuma ação adicional foi liberada para esta página.</p>}
             </div>
-            <p className="suave">Portais privados exigem login no próprio fornecedor. O Nano.IA não recolhe senhas nem cookies.</p>
+            {telaW >= TELA_MIN_PARA_FIXO && painel.modo !== "fixo" && <button type="button" className="sec dock-contexto-expandir" onClick={() => mudar({ modo:"fixo", lado:"dir", largura:Math.min(580,telaW-560) })}>Abrir vista expandida ao lado do conteúdo ↗</button>}
+            {telaW < TELA_MIN_PARA_FIXO && !ampliado && <button type="button" className="sec dock-contexto-expandir" onClick={() => setAmpliado(true)}>Ampliar área de trabalho ↗</button>}
+            <p className="suave">Navegar não aprova, publica nem altera produtos. Pesquisa web e catálogos B2B têm permissões próprias.</p>
           </section>}
           {aba === "mapa" && (
             <div className="dock-corpo">{contexto ? <MapaMental key={contexto.rota} raiz={contexto.mapa} titulo={contexto.titulo} /> : <p className="suave">Esta tela ainda não publica um mapa. Abra o <b>Catálogo</b> para ver a árvore dele.</p>}</div>
