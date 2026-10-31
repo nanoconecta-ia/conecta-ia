@@ -1,0 +1,151 @@
+/* Conecta.IA Workstation: layout operacional global sobre os componentes reais. */
+.workspace-barra {
+  display:flex;align-items:center;gap:15px;min-height:64px;
+  padding:10px clamp(14px,2.1vw,30px);
+  background:var(--cartao);color:var(--texto);
+  border-bottom:1px solid var(--borda);
+  box-shadow:0 4px 18px rgba(7,18,28,.045);
+}
+.workspace-contexto {display:grid;gap:1px;min-width:0}
+.workspace-contexto strong {font-size:.93rem;font-weight:760;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.workspace-rota {font:700 .65rem var(--mono);letter-spacing:.09em;color:var(--suave);text-transform:uppercase}
+.workspace-ambiente {flex:none;font-size:.69rem;font-weight:780;border:1px solid var(--borda-forte);border-radius:30px;padding:5px 10px;color:var(--suave)}
+.workspace-ambiente[data-ambiente="teste"] {color:var(--atencao);border-color:color-mix(in srgb,var(--atencao) 50%,var(--borda))}
+.workspace-atalhos {margin-left:auto;display:flex;align-items:center;gap:8px}
+.workspace-atalhos button,.workspace-atalhos a {min-height:40px}
+.workspace-icone,.workspace-botao {display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:8px 12px;min-height:40px;border-radius:11px;font-size:.84rem;font-weight:720}
+button.workspace-icone,.workspace-link {width:41px;min-width:41px;padding:0;background:var(--realce);color:var(--texto);border:1px solid var(--borda);text-decoration:none}
+.workspace-link:hover {border-color:var(--marca)}
+.workspace-botao {background:var(--cartao);color:var(--texto);border:1px solid var(--borda)}
+.workspace-ia {background:var(--grafite);color:#fff;border-color:var(--grafite)}
+.workspace-ia:hover:not(:disabled) {background:var(--grafite-2);color:#fff}
+.workspace-ia kbd {margin-left:8px;font:600 .67rem var(--mono);opacity:.75}
+.topo-premium .topo-ferramentas {display:inline-flex;align-items:center;gap:8px;color:#fff;min-height:43px;border:1px solid rgba(255,255,255,.28);padding:8px 12px;border-radius:13px}
+.topo-premium .topo-ferramentas span {font-size:.78rem}
+.workspace-mobile-tabs {display:none}
+/* A navegação ocupa apenas uma faixa de ícones na primeira entrada; o usuário pode expandir a qualquer momento. */
+@media(min-width:960px) {
+  .layout-premium.layout--recolhido .menu-premium {padding-inline:7px}
+  .layout-premium.layout--recolhido .menu-premium .menu-destaque {margin-bottom:8px}
+  .layout-premium.layout--recolhido .menu-premium .menu-grupo {padding-bottom:6px}
+  .layout-premium.layout--recolhido .menu-premium a:not(.menu-nano-iniciar) {min-height:46px}
+  .layout-premium.layout--recolhido .menu-premium .menu-titulo {padding:8px 0 4px}
+  .layout-premium.layout--recolhido .menu-premium .menu-recolher {align-self:center}
+  .layout-premium.layout--recolhido .menu-premium .menu-titulo b {display:none}
+}
+@media(max-width:1050px) {
+  .topo-premium .topo-ferramentas span{display:none}
+  .workspace-ia kbd{display:none}
+}
+@media(max-width:760px) {
+  .workspace-barra{min-height:52px;padding:7px 14px}
+  .workspace-contexto strong{font-size:.82rem}
+  .workspace-rota{font-size:.59rem}
+  .workspace-ambiente{margin-left:auto;font-size:.63rem;padding:4px 7px}
+  .workspace-atalhos{margin-left:0}
+  .workspace-atalhos .workspace-botao,.workspace-atalhos .workspace-link,.workspace-atalhos .workspace-icone{display:none}
+  .topo-premium .topo-ferramentas {display:none}
+  .workspace-mobile-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:fixed;z-index:7;left:0;right:0;bottom:32px;min-height:60px;padding:5px 8px calc(5px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--cartao) 94%,transparent);border-top:1px solid var(--borda);box-shadow:0 -8px 25px rgba(0,0,0,.06);backdrop-filter:blur(16px)}
+  .workspace-mobile-tabs a,.workspace-mobile-tabs button {display:grid;align-content:center;justify-items:center;gap:1px;min-height:51px;padding:4px 1px;border:0;border-radius:11px;background:transparent;color:var(--texto);text-decoration:none;font-size:.69rem;font-weight:700;line-height:1.3}
+  .workspace-mobile-tabs a[aria-current="page"] {color:var(--marca-forte);background:var(--realce)}
+  .workspace-mobile-tabs button:hover,.workspace-mobile-tabs a:hover{background:var(--realce)}
+  .layout-premium main{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+  .balao-genesis{display:none!important}
+  .barra-status .versao{display:none}
+}
+/* Launcher: funciona como uma janela do workspace, só rotas visíveis no menu. */
+.centro-ferramentas{position:fixed;inset:0;max-width:min(940px,calc(100vw - 28px));width:940px;max-height:min(88dvh,880px);height:auto;padding:0;border:1px solid color-mix(in srgb,var(--marca) 35%,var(--borda));border-radius:22px;background:var(--cartao);color:var(--texto);box-shadow:0 30px 100px rgba(0,0,0,.36);overflow:hidden}
+.centro-ferramentas::backdrop{background:rgba(4,11,20,.78);backdrop-filter:blur(6px)}
+.centro-ferramentas .centro-superficie{display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;max-height:min(88dvh,880px)}
+.centro-cabecalho{display:flex;justify-content:space-between;gap:20px;align-items:start;padding:26px 28px 16px;background:radial-gradient(circle at 90% 0%,rgba(229,138,94,.16),transparent 52%),var(--cartao)}
+.centro-eyebrow{color:var(--marca-forte);font:.71rem var(--mono);font-weight:800;letter-spacing:.12em}
+.centro-cabecalho h2{margin:6px 0;font-size:clamp(1.3rem,3vw,2rem);letter-spacing:-.045em}
+.centro-cabecalho p{margin:0;color:var(--suave);font-size:.88rem}
+.centro-fechar{flex:none;min-width:40px;width:40px;padding:0;border:1px solid var(--borda);border-radius:12px}
+.centro-pesquisa{display:flex;align-items:center;gap:12px;padding:0 17px;margin:0 28px 16px;border:1px solid var(--borda-forte);border-radius:13px;background:var(--fundo);color:var(--suave)}
+.centro-pesquisa input{flex:1;min-width:0;min-height:50px;border:0;background:transparent;outline:0;padding:8px 0;color:var(--texto)}
+.centro-pesquisa:focus-within{outline:3px solid color-mix(in srgb,var(--marca) 38%,transparent)}
+.centro-atalhos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0 28px 18px}
+.centro-atalhos button{display:flex;text-align:left;justify-content:flex-start;gap:13px;padding:13px 17px;min-height:68px;border-radius:14px;background:var(--grafite);color:#fff}
+.centro-atalhos button:hover{background:var(--grafite-2)}
+.centro-atalhos button svg{flex:none;color:#f6a879}
+.centro-atalhos span{display:grid;gap:4px;min-width:0}
+.centro-atalhos b{font-size:.9rem}
+.centro-atalhos small{font-size:.72rem;color:#e1d5ca;line-height:1.3}
+.centro-lista{overflow:auto;padding:0 28px 18px;scrollbar-width:thin}
+.centro-grupo{margin:0 0 21px}
+.centro-grupo h3{font-size:.73rem;letter-spacing:.13em;text-transform:uppercase;margin:5px 0 9px;color:var(--suave)}
+.centro-grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.centro-tile{position:relative;display:flex;min-height:57px;background:var(--fundo);border:1px solid var(--borda);border-radius:12px;overflow:hidden}
+.centro-tile:focus-within,.centro-tile:hover{border-color:var(--marca)}
+.centro-tile>button:first-child{flex:1;min-width:0;justify-content:flex-start;gap:11px;padding:8px 7px 8px 12px;text-align:left;background:transparent;color:var(--texto);font-size:.82rem;font-weight:700}
+.centro-tile>button:first-child svg{flex:none;color:var(--marca-forte)}
+.centro-tile>button:first-child span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.centro-tile .centro-estrela{flex:none;min-width:40px;padding:0 8px;background:transparent;color:var(--atencao);font-size:1.13rem}
+.centro-tile .centro-estrela:hover{background:var(--realce)}
+.centro-vazio{padding:20px;text-align:center;color:var(--suave)}
+.centro-rodape{display:flex;align-items:center;gap:10px;padding:14px 28px;border-top:1px solid var(--borda);background:var(--realce);font-size:.76rem;color:var(--suave)}
+@media(max-width:700px){
+ .centro-ferramentas{inset:auto 6px 7px;max-width:calc(100vw - 12px);width:auto;max-height:calc(100dvh - 20px);border-radius:18px}
+ .centro-ferramentas .centro-superficie{max-height:calc(100dvh - 20px)}
+ .centro-cabecalho{padding:18px 17px 12px}
+ .centro-pesquisa{margin:0 17px 12px}
+ .centro-atalhos{padding:0 17px 13px;gap:7px}
+ .centro-atalhos button{padding:10px;min-height:60px}
+ .centro-atalhos small{display:none}
+ .centro-lista{padding:0 17px 12px}
+ .centro-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .centro-tile>button:first-child{font-size:.75rem;padding:8px 4px 8px 8px;gap:6px}
+ .centro-rodape{padding:12px 17px}
+}
+@media(prefers-reduced-motion:reduce){.centro-ferramentas *,.workspace-barra *{transition:none!important;animation:none!important}}
+
+/* Dock global: mais espaço útil para conversa, ferramentas visíveis e texto legível. */
+@media(min-width:761px) {
+ .dock-agente[data-modo="flutuante"]:not([data-ampliado="true"]){width:min(calc(100vw - 28px),510px);height:min(80dvh,780px);bottom:48px}
+}
+.dock-topo{min-height:55px;padding:10px 13px;gap:8px}
+.dock-topo>strong{font-size:.87rem;white-space:nowrap}
+.dock-topo .dock-versao{opacity:.72;font-size:.63rem}
+.dock-area{min-height:0}
+.dock-painel,.dock-corpo{min-width:0;min-height:0}
+.dock-ferramentas{gap:14px;padding:16px}
+.dock-ferramentas header h3{margin:0 0 6px;font-size:1.1rem}
+.dock-ferramentas header p,.dock-ferramentas-preparar p{color:var(--suave);font-size:.79rem;line-height:1.55;margin:0}
+.dock-ferramentas-lista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.dock-ferramentas-lista button{min-width:0;display:flex;justify-content:space-between;text-align:left;align-items:center;min-height:49px;padding:8px 10px;border-radius:10px;font-size:.76rem}
+.dock-ferramentas-lista button span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dock-ferramentas-lista button span:last-child{flex:none;color:var(--marca-forte)}
+.dock-ferramentas-preparar{display:grid;gap:8px;border-top:1px solid var(--borda);padding-top:15px}
+.dock-ferramentas-preparar h3{margin:0;font-size:.89rem}
+.dock-ferramentas-preparar button{display:flex;justify-content:flex-start;text-align:left;border-radius:10px;font-size:.81rem}
+.dock-trilho .dock-aba[aria-selected="true"]{background:color-mix(in srgb,var(--marca) 16%,var(--realce));outline:2px solid color-mix(in srgb,var(--marca) 50%,transparent);color:var(--texto)}
+@media(max-width:760px) {
+ html .dock-agente, html .dock-agente[data-ampliado="true"]{top:8px;bottom:8px;left:6px;right:6px;width:auto;height:auto;z-index:20;border-radius:17px}
+ .dock-ferramentas-lista{grid-template-columns:1fr}
+ .dock-topo .suave{display:none}
+}
+[data-tema="contraste"] .centro-ferramentas,.workspace-barra,.workspace-mobile-tabs{border-color:var(--borda)}
+
+/* Revisão visual: central realmente centralizada e sem herdar a cor primária de todos os botões. */
+html .centro-ferramentas[open]{
+  position:fixed;top:50%;left:50%;right:auto;bottom:auto;
+  inset:auto;transform:translate(-50%,-50%);margin:0;
+  width:min(860px,calc(100vw - 32px));max-width:calc(100vw - 32px);
+  max-height:min(86dvh,820px);
+}
+html .centro-atalhos button{background:#172532!important;color:#fff!important}
+html .centro-atalhos button:hover{background:#263d50!important}
+html .centro-tile>button:first-child{background:transparent!important;color:var(--texto)!important;box-shadow:none!important}
+html .centro-tile .centro-estrela{background:transparent!important;color:var(--atencao)!important;box-shadow:none!important}
+html .centro-tile>button:hover{background:var(--realce)!important}
+html .workspace-barra{width:100%;max-width:100%;min-width:0;overflow:hidden}
+html .workspace-atalhos{min-width:0;flex:0 1 auto}
+@media(max-width:700px){
+ html .centro-ferramentas[open]{top:50%;left:50%;width:calc(100vw - 16px);max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}
+}
+
+/* Inset deve anteceder top/left: shorthand posterior anulava a centralização. */
+html .centro-ferramentas[open]{inset:auto;top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);margin:0}
+
+.centro-atalhos:has(>button:only-child){grid-template-columns:1fr}

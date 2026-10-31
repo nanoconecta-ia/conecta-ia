@@ -37,6 +37,7 @@ import { MeuAgente } from "./paginas/MeuAgente.tsx";
 import { Backup } from "./paginas/Backup.tsx";
 import { agruparMenu } from "./lib/navegacao.ts";
 import { PaletaComandos } from "./componentes/PaletaComandos.tsx";
+import { CentroFerramentas } from "./componentes/CentroFerramentas.tsx";
 import { BarraStatus } from "./componentes/BarraStatus.tsx";
 import { AvisoVersao } from "./componentes/AvisoVersao.tsx";
 import { Icone } from "./componentes/Icone.tsx";
@@ -46,6 +47,7 @@ import { DockAgente } from "./componentes/DockAgente.tsx";
 import { dividePagina, gravar as gravarPainel, ler as lerPainel, reserva, TELA_MIN_PARA_FIXO, type EstadoPainel } from "./lib/painelLateral.ts";
 import { BalaoGenesis } from "./componentes/BalaoGenesis.tsx";
 import "./shell.css";
+import "./workspace.css";
 
 // Em domínio de cliente (fora do GitHub Pages/localhost) a raiz é a loja daquele domínio, resolvida pelo servidor.
 const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
@@ -99,9 +101,10 @@ export function App() {
   }, [sessao]);
 
   const [paleta, setPaleta] = useState(false);
+  const [centroAberto, setCentroAberto] = useState(false);
   const [menuMovel, setMenuMovel] = useState(false);
   useEffect(() => { setMenuMovel(false); }, [caminho]);
-  const [recolhido, setRecolhido] = useState(() => { try { return localStorage.getItem("conecta:menu") === "recolhido"; } catch { return false; } });
+  const [recolhido, setRecolhido] = useState(() => { try { return localStorage.getItem("conecta:menu") !== "aberto"; } catch { return true; } });
   const alternarMenu = () => setRecolhido((r) => { try { localStorage.setItem("conecta:menu", r ? "aberto" : "recolhido"); } catch { /* sem storage */ } return !r; });
   const [agente, setAgente] = useState(false);
   const [telaW, setTelaW] = useState(() => window.innerWidth);
@@ -110,11 +113,12 @@ export function App() {
   const mudarPainel = (p: EstadoPainel) => { setPainelEstado(p); gravarPainel(p); };
   useEffect(() => { // Ctrl/⌘+K abre a paleta de comandos; Ctrl/⌘+J abre o agente lateral, em qualquer tela do painel
     const h = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setMenuMovel(false); return; }
+      if (e.key === "Escape") { setMenuMovel(false); setCentroAberto(false); return; }
       if (!(e.ctrlKey || e.metaKey)) return;
       const k = e.key.toLowerCase();
       if (k === "k") { e.preventDefault(); setPaleta((p) => !p); }
       else if (k === "j") { e.preventDefault(); setAgente((a) => !a); }
+      else if (k === "g" && e.shiftKey) { e.preventDefault(); setCentroAberto((v) => !v); }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
@@ -157,12 +161,24 @@ export function App() {
         <div className="marca"><LogoConecta tamanho={40} /><div className="marca-identidade">Conecta<span>.IA</span><small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
         <span className="topo-selo" aria-label="Ambiente administrativo">WORKSPACE <b>ADMIN</b></span>
         <button className="busca-topo" onClick={() => setPaleta(true)} aria-label="Abrir paleta de comandos"><Icone nome="busca" tamanho={16} /><span>Buscar módulos e ações…</span><kbd>Ctrl K</kbd></button>
-        {!!loja && <a className="topo-atalho-nano" href={`#${ROTA_NANO}`}><Icone nome="agentes" tamanho={17} /><span>Nano.IA</span></a>}
+        {!!loja && <a className="topo-atalho-nano" href={`#${ROTA_NANO}`} title="Abrir o chat completo com Nano.IA"><Icone nome="agentes" tamanho={17} /><span>Nano.IA</span></a>}
         {!!loja && !demoAtivo && !paginaDeChat && <button className="sec agente-botao" onClick={() => setAgente((a) => !a)} aria-pressed={agente} aria-label="Agente lateral (Ctrl J)"><Icone nome="agentes" tamanho={16} /><span>Agente</span></button>}
         <SeletorTema />
         <button className="sec topo-sair" onClick={() => void supabase.auth.signOut()} disabled={demoAtivo}>Sair</button>
       </header>
       <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
+      <CentroFerramentas aberta={centroAberto} aoFechar={() => setCentroAberto(false)} itens={MENU} aoNavegar={ir}
+        aoAbrirAgente={() => setAgente(true)} rotaNano={ROTA_NANO} globalDisponivel={!demoAtivo && !paginaDeChat} />
+      {loja && <div className="workspace-barra" role="region" aria-label="Ações globais do workspace">
+        <div className="workspace-contexto"><span className="workspace-rota">WORKSPACE / {MENU.find((i) => i[0] === caminho)?.[1] ?? "Visão geral"}</span><strong>{loja.nome}</strong></div>
+        <span className="workspace-ambiente" data-ambiente={loja.ambiente === "teste" ? "teste" : "real"}>{loja.ambiente === "teste" ? "Ambiente de teste" : "Ambiente operacional"}</span>
+        <div className="workspace-atalhos">
+          <button className="sec workspace-icone" onClick={alternarMenu} title={recolhido ? "Expandir menu" : "Minimizar menu"} aria-label={recolhido ? "Expandir menu de módulos" : "Minimizar menu de módulos"} aria-pressed={recolhido}><Icone nome="menu" tamanho={18}/></button>
+          <button className="sec workspace-botao" onClick={() => setCentroAberto(true)}><Icone nome="caixas" tamanho={18}/><span>Todos os módulos</span></button>
+          {!paginaDeChat && !demoAtivo && <button className="workspace-botao workspace-ia" onClick={() => setAgente(true)} aria-controls="dock-agente" aria-expanded={dockAberto}><Icone nome="conversa" tamanho={18}/><span>Chat global</span><kbd>Ctrl J</kbd></button>}
+          <a className="workspace-icone workspace-link" href={`#${ROTA_NANO}`} aria-label="Abrir chat em tela inteira" title="Chat em tela inteira"><Icone nome="agentes" tamanho={19}/></a>
+        </div>
+      </div>}
       <div className={`layout layout-premium ${larga ? "layout--larga" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""} ${menuMovel ? "layout--menu-movel-aberto" : ""}`} style={{ "--res-esq": `${res.esq}px`, "--res-dir": `${res.dir}px` } as React.CSSProperties}>
       {menuMovel && <button type="button" className="menu-escurecedor" aria-label="Fechar menu de navegação" onClick={() => setMenuMovel(false)} />}
       <nav id="menu-principal" className="menu menu-premium" aria-label="Menu principal">
@@ -214,6 +230,12 @@ export function App() {
       </div>
       {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} menu={MENU} aoNavegar={ir} painel={painel} aoMudarPainel={mudarPainel} dividindo={dividindo} telaW={telaW} />}
       {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis aberto={dockAberto} aoAlternar={() => setAgente((a) => !a)} />}
+      {loja && !dockAberto && <nav className="workspace-mobile-tabs" aria-label="Acesso rápido no smartphone">
+        <a href="#/" aria-current={caminho === "/" ? "page" : undefined}><Icone nome="inicio" tamanho={21}/><span>Início</span></a>
+        <a href="#/catalogo" aria-current={caminho === "/catalogo" ? "page" : undefined}><Icone nome="catalogo" tamanho={21}/><span>Catálogo</span></a>
+        {!paginaDeChat && !demoAtivo ? <button onClick={() => setAgente(true)}><Icone nome="agentes" tamanho={22}/><span>Nano.IA</span></button> : <a href={`#${ROTA_NANO}`}><Icone nome="agentes" tamanho={22}/><span>Nano.IA</span></a>}
+        <button onClick={() => setCentroAberto(true)}><Icone nome="caixas" tamanho={21}/><span>Ferramentas</span></button>
+      </nav>}
       <BarraStatus loja={loja ? loja.nome : null} tela={MENU.find((i) => i[0] === caminho)?.[1] ?? "Visão geral"} demo={demoAtivo} />
     </>
   );
