@@ -190,3 +190,8 @@ html .centro-ferramentas[open]{inset:auto;top:50%;left:50%;right:auto;bottom:aut
 .dock-esfera-viva .esfera-bloco,.dock-esfera-viva .esfera-caixa{display:flex;align-items:center;justify-content:center;width:28px;height:28px;margin:0;min-width:0;min-height:0}
 .dock-esfera-viva .orbita,.dock-esfera-viva .sombra-chao{display:none}
 @media(max-width:390px){.dock-esfera-viva{width:22px;height:24px}.dock-esfera-viva .esfera{transform:scale(.79)}}
+
+/* Nano.IA sem esfera: identificação estática, clara e acessível no chat. */
+.agente-identidade-icone{display:inline-flex;align-items:center;justify-content:center;flex:none;width:42px;height:42px;border:1px solid var(--borda-forte);border-radius:12px;background:var(--realce);color:var(--marca-forte);box-shadow:none;animation:none}
+@media(max-width:390px){.agente-identidade-icone{width:36px;height:36px;border-radius:10px}}
+/* O Nano.IA deixa de ocupar um elemento flutuante separado; o painel só abre por ação explícita. */
