@@ -20,11 +20,16 @@ export function PesquisaTecnica({ loja }: { loja: Loja }) {
   const [ocupado, setOcupado] = useState(false);
   const [resposta, setResposta] = useState<Pesquisa | null>(null);
   const [erro, setErro] = useState("");
+  const [skuDestino, setSkuDestino] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [fonteEscolhida, setFonteEscolhida] = useState("");
+  const [propondo, setPropondo] = useState(false);
+  const [propostaOk, setPropostaOk] = useState(false);
   const urlGoogle = useMemo(() => "https://www.google.com/search?q=" + encodeURIComponent(consulta.trim()), [consulta]);
   async function pesquisar(e: FormEvent) {
     e.preventDefault();
     if (!consentiu || consulta.trim().length < 3 || ocupado) return;
-    setOcupado(true);setErro("");setResposta(null);
+    setOcupado(true);setErro("");setResposta(null);setPropostaOk(false);setFonteEscolhida("");
     try {
       const { data, error } = await supabase.functions.invoke("assistente", {body:{
         loja_id:loja.id, acao:"pesquisar_web", consulta:consulta.trim(), consentimento_web:true,
@@ -32,10 +37,31 @@ export function PesquisaTecnica({ loja }: { loja: Loja }) {
       if (error) throw new Error("Não foi possível concluir a consulta no servidor. Confira se a pesquisa está habilitada e a cota disponível.");
       if (data?.erro) throw new Error(data.erro);
       if (!data || !Array.isArray(data.fontes)) throw new Error("O servidor retornou uma pesquisa incompleta.");
-      setResposta({resumo:String(data.resumo||""),fontes:data.fontes.filter((f:Fonte)=>f && permitido(f.url)).slice(0,8),
+      const fontes = data.fontes.filter((f:Fonte)=>f && permitido(f.url)).slice(0,8);
+      setFonteEscolhida(fontes[0]?.url ?? "");
+      setResposta({resumo:String(data.resumo||""),fontes,
         consultas:Array.isArray(data.consultas)?data.consultas:[],modelo:String(data.modelo||"Gemini"),fundamentada:data.fundamentada===true});
     } catch(e) { setErro(e instanceof Error ? e.message : "Pesquisa indisponível."); }
     finally { setOcupado(false); }
+  }
+  async function proporDescricao(e: FormEvent) {
+    e.preventDefault();setErro("");setPropostaOk(false);
+    if(!resposta?.fundamentada || !fonteEscolhida || descricao.trim().length < 25 || !skuDestino.trim()) return;
+    setPropondo(true);
+    try {
+      const { data: encontrados, error: buscaErro }=await supabase.from("produtos")
+        .select("id").eq("loja_id",loja.id).eq("sku",skuDestino.trim()).limit(2);
+      if(buscaErro) throw new Error("Não foi possível localizar o produto na loja.");
+      if(encontrados?.length !== 1) throw new Error("SKU inexistente ou duplicado. Confira o catálogo antes de propor.");
+      const { data, error }=await supabase.functions.invoke("assistente",{body:{
+        loja_id:loja.id,acao:"propor_enriquecimento_web",produto_id:encontrados[0].id,
+        campo:"descricao_curta",valor:descricao.trim(),fonte:fonteEscolhida,
+      }});
+      if(error || data?.erro) throw new Error(String(data?.erro||"Não foi possível registrar a proposta."));
+      if(data?.status!=="a_confirmar" || data?.gravou_bling!==false) throw new Error("O servidor não confirmou que a proposta está apenas na fila.");
+      setPropostaOk(true);setDescricao("");
+    }catch(e){setErro(e instanceof Error?e.message:"Não foi possível propor.");}
+    finally{setPropondo(false);}
   }
   return <div className="navegador-ia" aria-label="Pesquisa técnica na web e nos fornecedores">
     <header className="navegador-topo">
@@ -63,6 +89,17 @@ export function PesquisaTecnica({ loja }: { loja: Loja }) {
           <div className="navegador-texto">{resposta.resumo}</div>
           <h3>Fontes para conferência ({resposta.fontes.length})</h3>
           <div className="navegador-fontes">{resposta.fontes.length ? resposta.fontes.map((f,i)=><article key={f.url}><span>{String(i+1).padStart(2,"0")} · {f.dominio}</span><a href={f.url} target="_blank" rel="noopener noreferrer">{f.titulo||f.dominio} ↗</a><small>Abra o catálogo e confirme código, ano, versão do motor e medidas.</small></article>) : <p>Nenhum link confiável foi retornado pelo provedor.</p>}</div>
+          {resposta.fundamentada && <form className="navegador-proposta" onSubmit={(e)=>void proporDescricao(e)}>
+            <h3>Preparar enriquecimento para revisão</h3>
+            <p>Use apenas uma descrição conferida com a fonte. Esta ação cria uma <b>proposta pendente</b> no Conecta.IA, sem atualizar o Bling.</p>
+            <label>SKU existente na loja<input value={skuDestino} onChange={e=>setSkuDestino(e.target.value)} placeholder="Código SKU no Bling" required maxLength={80}/></label>
+            <label>Descrição curta revisada<textarea value={descricao} onChange={e=>setDescricao(e.target.value)} rows={3} minLength={25} maxLength={320} required placeholder="Descrição comercial fiel ao catálogo e à aplicação validada."/></label>
+            <label>Fonte documental<select value={fonteEscolhida} onChange={e=>setFonteEscolhida(e.target.value)} required>
+              {resposta.fontes.map(f=><option value={f.url} key={f.url}>{f.dominio} · {f.titulo}</option>)}
+            </select></label>
+            <button type="submit" disabled={propondo||descricao.trim().length<25||!skuDestino.trim()} className="navegador-pesquisar">{propondo?"Registrando...":"Enviar à fila para aprovação"}</button>
+            {propostaOk && <p role="status" className="navegador-confirmacao">Proposta pendente registrada. <a href="#/fila">Abrir Fila de aprovação ↗</a></p>}
+          </form>}
           <p className="navegador-rodape-fonte">Resultados são candidatos de pesquisa, não homologação OEM nem equivalência técnica automática.</p>
         </div>}
         {!resposta && !ocupado && <div className="navegador-orientacao"><h2>Exemplos de consultas</h2><div className="navegador-exemplos">
