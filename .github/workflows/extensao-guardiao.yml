@@ -19,7 +19,7 @@ jobs:
       - run: npm ci
         working-directory: painel
       - run: painel/node_modules/.bin/tsc -p extensao/tsconfig.json
-      - run: node --experimental-strip-types --test extensao/testes/guardiao.test.ts extensao/testes/fase2.test.ts extensao/testes/fase3.test.ts
+      - run: node --experimental-strip-types --test extensao/testes/guardiao.test.ts extensao/testes/fase2.test.ts extensao/testes/fase3.test.ts extensao/testes/loja-virtual.test.ts
       - run: node extensao/construir.mjs
       - name: Navegador efêmero, sem alterar dependências do produto
         working-directory: painel

@@ -28,11 +28,16 @@ export const PROPONIVEIS: Record<string, { ferramenta: "conecta.propose_enrichme
   pesoLiquido: { ferramenta: "conecta.propose_enrichment", campo: "peso_kg" },
   categoria: { ferramenta: "conecta.propose_enrichment", campo: "categoria_sugerida" },
   gtin: { ferramenta: "conecta.propose_code", tipo: "ean" },
+  tags: { ferramenta: "conecta.propose_enrichment", campo: "tags" },
+  seoTitulo: { ferramenta: "conecta.propose_enrichment", campo: "seo_titulo" },
+  seoDescricao: { ferramenta: "conecta.propose_enrichment", campo: "seo_descricao" },
 };
+const ESPEC = /^espec:[a-z0-9_]{2,30}$/;
 
 /** Monta a chamada da proposta. Fonte é obrigatória (URL https ou documento); sem SKU não há proposta. Nunca grava no ERP. */
 export function montarProposta(canonico: string, sku: string, valor: string, fonte: string): { ferramenta: string; args: Record<string, unknown> } {
-  const alvo = PROPONIVEIS[canonico];
+  // especificação técnica / campo customizado do ERP: canonico = "espec:<campo>"
+  const alvo = ESPEC.test(canonico) ? { ferramenta: "conecta.propose_enrichment" as const, campo: canonico } : PROPONIVEIS[canonico];
   if (!alvo) throw new Error("Este campo não aceita proposta pelo Nano.");
   const v = valor.trim(), f = fonte.trim(), s = sku.trim();
   if (!s) throw new Error("Sem SKU na tela: não dá para saber qual produto propor.");
@@ -40,6 +45,10 @@ export function montarProposta(canonico: string, sku: string, valor: string, fon
   if (f.length < 5) throw new Error("Informe a fonte (link do fabricante, catálogo ou documento). Sem fonte não há proposta.");
   if (canonico === "gtin" && !/^\d{8}$|^\d{12,14}$/.test(v)) throw new Error("GTIN/EAN deve ter 8, 12, 13 ou 14 dígitos.");
   if (canonico === "pesoLiquido" && !(Number(v.replace(",", ".")) > 0)) throw new Error("Peso deve ser um número maior que zero (kg).");
+  if (canonico === "seoTitulo" && (v.length < 10 || v.length > 70)) throw new Error("Título SEO deve ter de 10 a 70 caracteres.");
+  if (canonico === "seoDescricao" && (v.length < 50 || v.length > 160)) throw new Error("Descrição SEO deve ter de 50 a 160 caracteres.");
+  if (canonico === "tags") { const t = v.split(",").map((x) => x.trim()).filter(Boolean); if (t.length > 20 || t.some((x) => x.length > 40)) throw new Error("Até 20 tags, cada uma com até 40 caracteres."); }
+  if (ESPEC.test(canonico) && v.length > 200) throw new Error("Especificação deve ter até 200 caracteres.");
   return alvo.ferramenta === "conecta.propose_code"
     ? { ferramenta: alvo.ferramenta, args: { sku: s, tipo: alvo.tipo, valor: v, fonte: f.slice(0, 400) } }
     : { ferramenta: alvo.ferramenta, args: { sku: s, campo: alvo.campo, valor: canonico === "pesoLiquido" ? v.replace(",", ".") : v.slice(0, 2000), fonte: f.slice(0, 400) } };

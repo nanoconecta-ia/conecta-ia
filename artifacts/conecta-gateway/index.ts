@@ -189,11 +189,190 @@ function codigoDaUrl(url) {
 return { aleatorioB64u: aleatorioB64u, sha256Hex: sha256Hex, codigoVerificacao: codigoVerificacao, iguais: iguais, SEGREDO_RE: SEGREDO_RE, HASH_RE: HASH_RE, separarToken: separarToken, montarUrlPareamento: montarUrlPareamento, codigoDaUrl: codigoDaUrl };
 })();
 
+// ---------- supabase/functions/_shared/ia/escrita.ts ----------
+const __m6 = (() => {
+const CAMPOS_ENRIQUECIMENTO = [
+    "marca_peca",
+    "descricao_curta",
+    "descricao_longa",
+    "peso_kg",
+    "dimensoes",
+    "categoria_sugerida",
+    "ncm_sugerido",
+    "tags",
+    "seo_titulo",
+    "seo_descricao"
+];
+const CAMPO_ESPEC = /^espec:[a-z0-9_]{2,30}$/;
+const campoEnriquecimentoValido = (c)=>CAMPOS_ENRIQUECIMENTO.includes(c) || CAMPO_ESPEC.test(c);
+function problemaNoValor(campo, valor) {
+    const t = typeof valor === "string" ? valor.trim() : typeof valor === "number" ? String(valor) : "";
+    if (campo === "tags") {
+        const tags = t.split(",").map((x)=>x.trim()).filter(Boolean);
+        return !tags.length ? "Informe ao menos uma tag." : tags.length > 20 ? "No máximo 20 tags." : tags.some((x)=>x.length > 40) ? "Cada tag deve ter até 40 caracteres." : null;
+    }
+    if (campo === "seo_titulo") return t.length < 10 || t.length > 70 ? "Título SEO deve ter de 10 a 70 caracteres." : null;
+    if (campo === "seo_descricao") return t.length < 50 || t.length > 160 ? "Descrição SEO deve ter de 50 a 160 caracteres." : null;
+    if (CAMPO_ESPEC.test(campo)) return !t || t.length > 200 ? "Especificação deve ter de 1 a 200 caracteres." : null;
+    return null;
+}
+const TIPOS_CODIGO = [
+    "oem",
+    "fabricante",
+    "ean",
+    "similar",
+    "substituto",
+    "antigo"
+];
+const txt = (v, max = 500)=>typeof v === "string" ? v.trim().slice(0, max) : "";
+const conf = (v)=>typeof v === "number" && v >= 0 && v <= 1 ? v : null;
+async function idDoSku(admin, lojaId, sku) {
+    const { data } = await admin.from("produtos").select("id").eq("loja_id", lojaId).eq("sku", sku).maybeSingle();
+    return data?.id ?? null;
+}
+async function proporEnriquecimento(admin, lojaId, e) {
+    const sku = txt(e.sku, 80), campo = txt(e.campo, 40), fonte = txt(e.fonte, 400);
+    if (!sku) return {
+        erro: "Informe o SKU do produto."
+    };
+    if (!campoEnriquecimentoValido(campo)) return {
+        erro: `Campo não reconhecido. Use um de: ${CAMPOS_ENRIQUECIMENTO.join(", ")} ou espec:<campo> para especificação técnica.`
+    };
+    if (!fonte) return {
+        erro: "Informe a fonte (URL ou documento) de onde veio o dado. Sem fonte, não posso propor."
+    };
+    if (e.valor == null || e.valor === "") return {
+        erro: "Informe o valor proposto."
+    };
+    const problema = problemaNoValor(campo, e.valor);
+    if (problema) return {
+        erro: problema
+    };
+    const produtoId = await idDoSku(admin, lojaId, sku);
+    if (!produtoId) return {
+        erro: "Produto não encontrado nesta loja."
+    };
+    const { error } = await admin.rpc("enriquecimento_propor", {
+        p_loja: lojaId,
+        p_produto: produtoId,
+        p_campo: campo,
+        p_valor: JSON.stringify(e.valor),
+        p_fonte: fonte,
+        p_confianca: conf(e.confianca)
+    });
+    if (error) return {
+        erro: "Não foi possível registrar a proposta (talvez já exista um valor aprovado para este campo)."
+    };
+    return {
+        ok: true,
+        status: "a_confirmar",
+        aviso: "Entrou na fila de aprovação. O lojista decide."
+    };
+}
+async function proporCodigo(admin, lojaId, e) {
+    const sku = txt(e.sku, 80), tipo = txt(e.tipo, 20), valor = txt(e.valor, 120), fonte = txt(e.fonte, 400);
+    if (!sku || !valor) return {
+        erro: "Informe o SKU e o código."
+    };
+    if (!TIPOS_CODIGO.includes(tipo)) return {
+        erro: `Tipo não reconhecido. Use um de: ${TIPOS_CODIGO.join(", ")}.`
+    };
+    if (!fonte) return {
+        erro: "Informe a fonte de onde veio o código."
+    };
+    const produtoId = await idDoSku(admin, lojaId, sku);
+    if (!produtoId) return {
+        erro: "Produto não encontrado nesta loja."
+    };
+    const { error } = await admin.rpc("codigo_propor", {
+        p_loja: lojaId,
+        p_produto: produtoId,
+        p_tipo: tipo,
+        p_valor: valor,
+        p_fonte: fonte,
+        p_confianca: conf(e.confianca)
+    });
+    if (error) return {
+        erro: "Não foi possível registrar o código (talvez já exista)."
+    };
+    return {
+        ok: true,
+        status: "a_confirmar"
+    };
+}
+async function proporAplicacao(admin, lojaId, e) {
+    const sku = txt(e.sku, 80), modelo = txt(e.modelo, 80), motor = txt(e.motorizacao, 60), fonte = txt(e.fonte, 400);
+    const ini = Number.isInteger(e.ano_inicial) ? e.ano_inicial : null, fim = Number.isInteger(e.ano_final) ? e.ano_final : null;
+    if (!sku || !modelo) return {
+        erro: "Informe o SKU e o modelo do veículo."
+    };
+    if (!fonte) return {
+        erro: "Informe a fonte da aplicação (catálogo, manual, cruzamento de código)."
+    };
+    if (ini != null && fim != null && fim < ini) return {
+        erro: "O ano final não pode ser antes do ano inicial."
+    };
+    const produtoId = await idDoSku(admin, lojaId, sku);
+    if (!produtoId) return {
+        erro: "Produto não encontrado nesta loja."
+    };
+    const { error } = await admin.rpc("aplicacao_propor", {
+        p_loja: lojaId,
+        p_produto: produtoId,
+        p_modelo: modelo,
+        p_motorizacao: motor || null,
+        p_ano_inicial: ini,
+        p_ano_final: fim,
+        p_fonte: fonte,
+        p_confianca: conf(e.confianca)
+    });
+    if (error) return {
+        erro: "Não foi possível registrar a aplicação."
+    };
+    return {
+        ok: true,
+        status: "a_confirmar"
+    };
+}
+async function proporImagem(admin, lojaId, e) {
+    const sku = txt(e.sku, 80), url = txt(e.url, 600), origem = txt(e.origem, 200), pagina = txt(e.pagina, 600);
+    if (!sku || !url) return {
+        erro: "Informe o SKU e o endereço da imagem."
+    };
+    if (!/^https:\/\//i.test(url)) return {
+        erro: "A imagem precisa ser um endereço https."
+    };
+    const produtoId = await idDoSku(admin, lojaId, sku);
+    if (!produtoId) return {
+        erro: "Produto não encontrado nesta loja."
+    };
+    const { error } = await admin.rpc("imagem_propor", {
+        p_loja: lojaId,
+        p_produto: produtoId,
+        p_url: url,
+        p_origem: origem || "busca_web",
+        p_sku: sku,
+        p_pagina: pagina || null
+    });
+    if (error) return {
+        erro: "Não foi possível propor a imagem."
+    };
+    return {
+        ok: true,
+        status: "a_confirmar",
+        aviso: "A imagem entrou pendente de aprovação na Fila; direitos de uso ainda não confirmados."
+    };
+}
+
+return { CAMPOS_ENRIQUECIMENTO: CAMPOS_ENRIQUECIMENTO, CAMPO_ESPEC: CAMPO_ESPEC, campoEnriquecimentoValido: campoEnriquecimentoValido, problemaNoValor: problemaNoValor, TIPOS_CODIGO: TIPOS_CODIGO, proporEnriquecimento: proporEnriquecimento, proporCodigo: proporCodigo, proporAplicacao: proporAplicacao, proporImagem: proporImagem };
+})();
+
 // ---------- supabase/functions/_shared/pair/gateway.ts ----------
 const __m1 = (() => {
 const { reduzirJson: reduzirJson } = __m2;
 const { ehEscopo: ehEscopo } = __m3;
 const { HASH_RE: HASH_RE, separarToken: separarToken, sha256Hex: sha256Hex } = __m4;
+const { CAMPOS_ENRIQUECIMENTO: CAMPOS_ENRIQUECIMENTO, campoEnriquecimentoValido: campoEnriquecimentoValido } = __m6;
 const VERSOES_PROTOCOLO = [
     "2025-11-25",
     "2025-06-18",
@@ -233,6 +412,7 @@ function validar(args, e) {
                     if (spec.formato === "iso" && Number.isNaN(Date.parse(t))) throw new ArgInvalido(`${k} deve ser data ISO`);
                     if (spec.formato === "uuid" && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t)) throw new ArgInvalido(`${k} deve ser UUID`);
                     if (spec.formato === "enum" && !spec.valores.includes(t)) throw new ArgInvalido(`${k} deve ser um de: ${spec.valores.join(", ")}`);
+                    if (spec.formato === "campo_enriquecimento" && !campoEnriquecimentoValido(t)) throw new ArgInvalido(`${k} deve ser um de: ${CAMPOS_ENRIQUECIMENTO.join(", ")} ou espec:<campo>`);
                     if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(t)) throw new ArgInvalido(`${k} contém caracteres inválidos`);
                     out[k] = t;
                     break;
@@ -402,7 +582,8 @@ const FERRAMENTAS = [
                 },
                 campo: {
                     tipo: "string",
-                    max: 40
+                    max: 40,
+                    formato: "campo_enriquecimento"
                 },
                 valor: {
                     tipo: "string",
@@ -425,15 +606,9 @@ const FERRAMENTAS = [
             },
             campo: {
                 type: "string",
-                enum: [
-                    "marca_peca",
-                    "descricao_curta",
-                    "descricao_longa",
-                    "peso_kg",
-                    "dimensoes",
-                    "categoria_sugerida",
-                    "ncm_sugerido"
-                ]
+                maxLength: 36,
+                pattern: "^(marca_peca|descricao_curta|descricao_longa|peso_kg|dimensoes|categoria_sugerida|ncm_sugerido|tags|seo_titulo|seo_descricao|espec:[a-z0-9_]{2,30})$",
+                description: "tags (lista separada por vírgula), seo_titulo (até 70), seo_descricao (até 160) ou espec:<campo> para especificação técnica / campo customizado do ERP"
             },
             valor: {
                 type: "string",
@@ -904,7 +1079,7 @@ const FERRAMENTAS = [
         nome: "conecta.get_validated_fields",
         escopo: "produtos:ler",
         somenteLeitura: true,
-        descricao: "Valores JÁ APROVADOS pelo lojista na Fila para um SKU (marca, descrições, peso, categoria sugerida e EAN), com fonte e data. Só o que foi aprovado; nunca fiscal, custo ou preço. Serve para o lojista conferir/preencher na tela do ERP com o OK dele.",
+        descricao: "Valores JÁ APROVADOS pelo lojista na Fila para um SKU (marca, descrições, peso, categoria sugerida, tags, SEO, especificações técnicas, EAN e imagens aprovadas), com fonte e data. Só o que foi aprovado; nunca fiscal, custo ou preço. Serve para o lojista conferir/preencher na tela do ERP com o OK dele.",
         esquema: {
             obrig: [
                 "sku"
@@ -1198,164 +1373,6 @@ async function tratar(req, p) {
 }
 
 return { VERSOES_PROTOCOLO: VERSOES_PROTOCOLO, MAX_CORPO: MAX_CORPO, MAX_SAIDA: MAX_SAIDA, urlHttps: urlHttps, FERRAMENTAS: FERRAMENTAS, INSTRUCOES: INSTRUCOES, tratar: tratar };
-})();
-
-// ---------- supabase/functions/_shared/ia/escrita.ts ----------
-const __m7 = (() => {
-const CAMPOS_ENRIQUECIMENTO = [
-    "marca_peca",
-    "descricao_curta",
-    "descricao_longa",
-    "peso_kg",
-    "dimensoes",
-    "categoria_sugerida",
-    "ncm_sugerido"
-];
-const TIPOS_CODIGO = [
-    "oem",
-    "fabricante",
-    "ean",
-    "similar",
-    "substituto",
-    "antigo"
-];
-const txt = (v, max = 500)=>typeof v === "string" ? v.trim().slice(0, max) : "";
-const conf = (v)=>typeof v === "number" && v >= 0 && v <= 1 ? v : null;
-async function idDoSku(admin, lojaId, sku) {
-    const { data } = await admin.from("produtos").select("id").eq("loja_id", lojaId).eq("sku", sku).maybeSingle();
-    return data?.id ?? null;
-}
-async function proporEnriquecimento(admin, lojaId, e) {
-    const sku = txt(e.sku, 80), campo = txt(e.campo, 40), fonte = txt(e.fonte, 400);
-    if (!sku) return {
-        erro: "Informe o SKU do produto."
-    };
-    if (!CAMPOS_ENRIQUECIMENTO.includes(campo)) return {
-        erro: `Campo não reconhecido. Use um de: ${CAMPOS_ENRIQUECIMENTO.join(", ")}.`
-    };
-    if (!fonte) return {
-        erro: "Informe a fonte (URL ou documento) de onde veio o dado. Sem fonte, não posso propor."
-    };
-    if (e.valor == null || e.valor === "") return {
-        erro: "Informe o valor proposto."
-    };
-    const produtoId = await idDoSku(admin, lojaId, sku);
-    if (!produtoId) return {
-        erro: "Produto não encontrado nesta loja."
-    };
-    const { error } = await admin.rpc("enriquecimento_propor", {
-        p_loja: lojaId,
-        p_produto: produtoId,
-        p_campo: campo,
-        p_valor: JSON.stringify(e.valor),
-        p_fonte: fonte,
-        p_confianca: conf(e.confianca)
-    });
-    if (error) return {
-        erro: "Não foi possível registrar a proposta (talvez já exista um valor aprovado para este campo)."
-    };
-    return {
-        ok: true,
-        status: "a_confirmar",
-        aviso: "Entrou na fila de aprovação. O lojista decide."
-    };
-}
-async function proporCodigo(admin, lojaId, e) {
-    const sku = txt(e.sku, 80), tipo = txt(e.tipo, 20), valor = txt(e.valor, 120), fonte = txt(e.fonte, 400);
-    if (!sku || !valor) return {
-        erro: "Informe o SKU e o código."
-    };
-    if (!TIPOS_CODIGO.includes(tipo)) return {
-        erro: `Tipo não reconhecido. Use um de: ${TIPOS_CODIGO.join(", ")}.`
-    };
-    if (!fonte) return {
-        erro: "Informe a fonte de onde veio o código."
-    };
-    const produtoId = await idDoSku(admin, lojaId, sku);
-    if (!produtoId) return {
-        erro: "Produto não encontrado nesta loja."
-    };
-    const { error } = await admin.rpc("codigo_propor", {
-        p_loja: lojaId,
-        p_produto: produtoId,
-        p_tipo: tipo,
-        p_valor: valor,
-        p_fonte: fonte,
-        p_confianca: conf(e.confianca)
-    });
-    if (error) return {
-        erro: "Não foi possível registrar o código (talvez já exista)."
-    };
-    return {
-        ok: true,
-        status: "a_confirmar"
-    };
-}
-async function proporAplicacao(admin, lojaId, e) {
-    const sku = txt(e.sku, 80), modelo = txt(e.modelo, 80), motor = txt(e.motorizacao, 60), fonte = txt(e.fonte, 400);
-    const ini = Number.isInteger(e.ano_inicial) ? e.ano_inicial : null, fim = Number.isInteger(e.ano_final) ? e.ano_final : null;
-    if (!sku || !modelo) return {
-        erro: "Informe o SKU e o modelo do veículo."
-    };
-    if (!fonte) return {
-        erro: "Informe a fonte da aplicação (catálogo, manual, cruzamento de código)."
-    };
-    if (ini != null && fim != null && fim < ini) return {
-        erro: "O ano final não pode ser antes do ano inicial."
-    };
-    const produtoId = await idDoSku(admin, lojaId, sku);
-    if (!produtoId) return {
-        erro: "Produto não encontrado nesta loja."
-    };
-    const { error } = await admin.rpc("aplicacao_propor", {
-        p_loja: lojaId,
-        p_produto: produtoId,
-        p_modelo: modelo,
-        p_motorizacao: motor || null,
-        p_ano_inicial: ini,
-        p_ano_final: fim,
-        p_fonte: fonte,
-        p_confianca: conf(e.confianca)
-    });
-    if (error) return {
-        erro: "Não foi possível registrar a aplicação."
-    };
-    return {
-        ok: true,
-        status: "a_confirmar"
-    };
-}
-async function proporImagem(admin, lojaId, e) {
-    const sku = txt(e.sku, 80), url = txt(e.url, 600), origem = txt(e.origem, 200), pagina = txt(e.pagina, 600);
-    if (!sku || !url) return {
-        erro: "Informe o SKU e o endereço da imagem."
-    };
-    if (!/^https:\/\//i.test(url)) return {
-        erro: "A imagem precisa ser um endereço https."
-    };
-    const produtoId = await idDoSku(admin, lojaId, sku);
-    if (!produtoId) return {
-        erro: "Produto não encontrado nesta loja."
-    };
-    const { error } = await admin.rpc("imagem_propor", {
-        p_loja: lojaId,
-        p_produto: produtoId,
-        p_url: url,
-        p_origem: origem || "busca_web",
-        p_sku: sku,
-        p_pagina: pagina || null
-    });
-    if (error) return {
-        erro: "Não foi possível propor a imagem."
-    };
-    return {
-        ok: true,
-        status: "a_confirmar",
-        aviso: "A imagem entrou pendente de aprovação na Fila; direitos de uso ainda não confirmados."
-    };
-}
-
-return { CAMPOS_ENRIQUECIMENTO: CAMPOS_ENRIQUECIMENTO, TIPOS_CODIGO: TIPOS_CODIGO, proporEnriquecimento: proporEnriquecimento, proporCodigo: proporCodigo, proporAplicacao: proporAplicacao, proporImagem: proporImagem };
 })();
 
 // ---------- supabase/functions/_shared/bling_ferramentas.ts ----------
@@ -2190,8 +2207,8 @@ return { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, LIMITE_MODELO: LIMITE_MODELO, par
 })();
 
 // ---------- supabase/functions/_shared/pair/gateway_dados.ts ----------
-const __m6 = (() => {
-const { proporAplicacao: proporAplicacao, proporCodigo: proporCodigo, proporEnriquecimento: proporEnriquecimento, proporImagem: proporImagem } = __m7;
+const __m7 = (() => {
+const { proporAplicacao: proporAplicacao, proporCodigo: proporCodigo, proporEnriquecimento: proporEnriquecimento, proporImagem: proporImagem } = __m6;
 const { consultarProduto: consultarProduto } = __m8;
 const seguro = (s)=>s.replace(/[%,()*\\]/g, " ");
 const COLUNAS_PRODUTO = "nome, sku, preco, estoque, marca, publicado, situacao";
@@ -2384,19 +2401,25 @@ function dadosSupabase(admin, agora = ()=>new Date(), bling) {
                 "descricao_curta",
                 "descricao_longa",
                 "peso_kg",
-                "categoria_sugerida"
+                "categoria_sugerida",
+                "tags",
+                "seo_titulo",
+                "seo_descricao"
             ];
-            const [{ data: enr }, { data: cod }] = await Promise.all([
-                admin.from("produto_enriquecimento").select("id, campo, valor, fonte, coletado_em").eq("loja_id", loja).eq("produto_id", id).eq("status", "aprovado").in("campo", CAMPOS).order("coletado_em", {
+            const [{ data: enr }, { data: cod }, { data: imgs }] = await Promise.all([
+                admin.from("produto_enriquecimento").select("id, campo, valor, fonte, coletado_em").eq("loja_id", loja).eq("produto_id", id).eq("status", "aprovado").or(`campo.in.(${CAMPOS.join(",")}),campo.like.espec:%`).order("coletado_em", {
                     ascending: false
-                }).limit(50),
+                }).limit(100),
                 admin.from("produto_codigos").select("id, valor, fonte, coletado_em").eq("loja_id", loja).eq("produto_id", id).eq("tipo", "ean").eq("status", "aprovado").order("coletado_em", {
                     ascending: false
-                }).limit(1)
+                }).limit(1),
+                admin.from("produto_imagens").select("id, url, origem, criado_em").eq("loja_id", loja).eq("produto_id", id).eq("aprovada", true).order("principal", {
+                    ascending: false
+                }).order("ordem").limit(10)
             ]);
             const vistos = new Set(), campos = [];
             for (const e of enr ?? []){
-                if (vistos.has(e.campo)) continue;
+                if (vistos.has(e.campo) || !(CAMPOS.includes(e.campo) || /^espec:[a-z0-9_]{2,30}$/.test(e.campo))) continue;
                 const v = typeof e.valor === "string" ? e.valor : typeof e.valor === "number" ? String(e.valor) : null;
                 if (v === null) continue;
                 vistos.add(e.campo);
@@ -2414,6 +2437,13 @@ function dadosSupabase(admin, agora = ()=>new Date(), bling) {
                 valor: c.valor,
                 fonte: c.fonte,
                 aprovado_em: c.coletado_em
+            });
+            for (const i of imgs ?? [])if (/^https:\/\//.test(i.url)) campos.push({
+                id: i.id,
+                campo: "imagem",
+                valor: i.url,
+                fonte: i.origem,
+                aprovado_em: i.criado_em
             });
             return {
                 sku,
@@ -2844,7 +2874,7 @@ return { LIMITE_SESSAO_DISPOSITIVO: LIMITE_SESSAO_DISPOSITIVO, LIMITE_FALHAS_DIS
 const __m0 = (() => {
 const { createClient: createClient } = __sdk;
 const { tratar: tratar } = __m1;
-const { dadosSupabase: dadosSupabase } = __m6;
+const { dadosSupabase: dadosSupabase } = __m7;
 const { chaveiroPlataforma: chaveiroPlataforma, segredoEstado: segredoEstado } = __m15;
 const { configuracaoPair: configuracaoPair } = __m16;
 const { tratarOAuth: tratarOAuth, desafioOAuth: desafioOAuth } = __m17;

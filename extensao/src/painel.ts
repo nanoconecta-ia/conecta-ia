@@ -3,6 +3,7 @@
 // Fase 2: conecta à loja pelo Conecta Pair (aprovação do lojista no painel), compara a tela com o ESPELHO do Conecta.IA
 // e envia PROPOSTAS com fonte para a Fila de aprovação. Nunca preenche, salva ou escreve no ERP.
 import { MAPA_PRODUTO_BLING } from "./mapa-produto.ts";
+import { slugCampo } from "./leitura.ts";
 import { reconhecer, type Reconhecimento } from "./reconhecer.ts";
 import { sugerir } from "./sugestoes.ts";
 import { estruturaParaRegistro, type Leitura } from "./registro.ts";
@@ -148,10 +149,10 @@ async function preencher(i: ItemPreenchimento, li: HTMLElement): Promise<void> {
   })());
 }
 
-function formProposta(li: HTMLElement, canonico: string): void {
+function formProposta(li: HTMLElement, canonico: string, inicial: { valor?: string; fonte?: string } = {}): void {
   if (li.querySelector("form")) return;
   const f = document.createElement("form"); f.className = "proposta";
-  f.innerHTML = `<label>Valor<input name="valor" required autocomplete="off"></label><label>Fonte (link ou documento)<input name="fonte" required autocomplete="off" placeholder="https://fabricante…"></label><div class="linha"><button type="submit">Enviar proposta</button><button type="button" class="sec cancelar">Cancelar</button></div><p class="msg" role="status"></p>`;
+  f.innerHTML = `<label>Valor<input name="valor" required autocomplete="off" value="${esc(inicial.valor ?? "")}"></label><label>Fonte (link ou documento)<input name="fonte" required autocomplete="off" placeholder="https://fabricante…" value="${esc(inicial.fonte ?? "")}"></label><div class="linha"><button type="submit">Enviar proposta</button><button type="button" class="sec cancelar">Cancelar</button></div><p class="msg" role="status"></p>`;
   li.append(f);
   f.querySelector(".cancelar")!.addEventListener("click", () => f.remove());
   f.addEventListener("submit", (ev) => {
@@ -178,7 +179,14 @@ export function mostrar(leitura: Leitura): void {
     : `<span class="ponto atencao"></span>Tela não reconhecida <small>— o Nano não sugere nada aqui</small>`;
   $("site").textContent = `${leitura.origem}${leitura.caminho}`;
   $("campos").innerHTML = reconhecida ? r.casados.map((c) => `<li><span class="rot">${esc(c.mapa.descricao)}</span><span class="val ${c.lido.mascarado ? "oculto" : c.lido.valor.trim() ? "" : "vazio"}">${c.lido.mascarado ? "oculto" : c.lido.valor.trim() ? esc(c.lido.valor.slice(0, 80)) : "vazio"}</span></li>`).join("") : "";
-  $("sugestoes").innerHTML = sugestoes.map((s) => `<li><b>${esc(s.campo)}</b><p>${esc(s.valor)}</p><small>Origem: ${esc(s.origem)}. Não aplicado: copie se quiser usar.</small></li>`).join("") || (reconhecida ? "<li class=\"suave\">Sem sugestões nesta tela.</li>" : "");
+  const nomeCampo = (c: string) => MAPA_PRODUTO_BLING.campos.find((m) => m.canonico === c)?.descricao ?? c;
+  $("sugestoes").innerHTML = sugestoes.map((s, n) => `<li data-n="${n}" data-campo="${esc(nomeCampo(s.campo))}"><b>${esc(nomeCampo(s.campo))}</b><p>${esc(s.valor)}</p><small>Origem: ${esc(s.origem)}. ${conexao && PROPONIVEIS[s.campo] ? "Revise e proponha para a Fila." : "Não aplicado: copie se quiser usar."}</small>${conexao && PROPONIVEIS[s.campo] ? ` <button type="button" class="sec mini propor-sugestao">Propor para a Fila</button>` : ""}</li>`).join("") || (reconhecida ? "<li class=\"suave\">Sem sugestões nesta tela.</li>" : "");
+  $("sugestoes").querySelectorAll<HTMLButtonElement>("button.propor-sugestao").forEach((b) => b.addEventListener("click", () => { const li = b.closest("li")!; const sg = sugestoes[Number(li.dataset.n)]; formProposta(li, sg.campo, { valor: sg.valor, fonte: "Cadastro do ERP (nome, marca e código desta tela)" }); }));
+  // Especificações técnicas: campos da tela que o mapa não conhece (campos customizados do ERP). Sensíveis nunca aparecem.
+  const especs = reconhecida ? r.naoMapeados.filter((l) => !l.mascarado && slugCampo(l.rotulo).length >= 2) : [];
+  $("bloco-especs").hidden = !especs.length;
+  $("especs").innerHTML = especs.map((l) => `<li data-canonico="espec:${esc(slugCampo(l.rotulo))}" data-campo="${esc(l.rotulo)}"><b>${esc(l.rotulo)}</b> <small>${l.valor.trim() ? esc(l.valor.slice(0, 80)) : "vazio"}</small>${conexao ? ` <button type="button" class="sec mini propor">Propor com fonte</button>` : ""}</li>`).join("");
+  $("especs").querySelectorAll<HTMLButtonElement>("button.propor").forEach((b) => b.addEventListener("click", () => formProposta(b.closest("li")!, b.closest("li")!.dataset.canonico!)));
   $("pendencias").innerHTML = pendencias.map((p) => `<li data-canonico="${esc(p.canonico)}" data-campo="${esc(p.campo)}"><b>${esc(p.campo)}</b> <small>${esc(p.motivo)}</small>${conexao && PROPONIVEIS[p.canonico] ? ` <button type="button" class="sec mini propor">Propor com fonte</button>` : ""}</li>`).join("") || (reconhecida ? "<li class=\"suave\">Nenhum campo essencial vazio.</li>" : "");
   $("pendencias").querySelectorAll<HTMLButtonElement>("button.propor").forEach((b) => b.addEventListener("click", () => formProposta(b.closest("li")!, b.closest("li")!.dataset.canonico!)));
   $("bloco-espelho").hidden = !(reconhecida && conexao);

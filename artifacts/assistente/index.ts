@@ -805,8 +805,24 @@ const CAMPOS_ENRIQUECIMENTO = [
     "peso_kg",
     "dimensoes",
     "categoria_sugerida",
-    "ncm_sugerido"
+    "ncm_sugerido",
+    "tags",
+    "seo_titulo",
+    "seo_descricao"
 ];
+const CAMPO_ESPEC = /^espec:[a-z0-9_]{2,30}$/;
+const campoEnriquecimentoValido = (c)=>CAMPOS_ENRIQUECIMENTO.includes(c) || CAMPO_ESPEC.test(c);
+function problemaNoValor(campo, valor) {
+    const t = typeof valor === "string" ? valor.trim() : typeof valor === "number" ? String(valor) : "";
+    if (campo === "tags") {
+        const tags = t.split(",").map((x)=>x.trim()).filter(Boolean);
+        return !tags.length ? "Informe ao menos uma tag." : tags.length > 20 ? "No máximo 20 tags." : tags.some((x)=>x.length > 40) ? "Cada tag deve ter até 40 caracteres." : null;
+    }
+    if (campo === "seo_titulo") return t.length < 10 || t.length > 70 ? "Título SEO deve ter de 10 a 70 caracteres." : null;
+    if (campo === "seo_descricao") return t.length < 50 || t.length > 160 ? "Descrição SEO deve ter de 50 a 160 caracteres." : null;
+    if (CAMPO_ESPEC.test(campo)) return !t || t.length > 200 ? "Especificação deve ter de 1 a 200 caracteres." : null;
+    return null;
+}
 const TIPOS_CODIGO = [
     "oem",
     "fabricante",
@@ -826,14 +842,18 @@ async function proporEnriquecimento(admin, lojaId, e) {
     if (!sku) return {
         erro: "Informe o SKU do produto."
     };
-    if (!CAMPOS_ENRIQUECIMENTO.includes(campo)) return {
-        erro: `Campo não reconhecido. Use um de: ${CAMPOS_ENRIQUECIMENTO.join(", ")}.`
+    if (!campoEnriquecimentoValido(campo)) return {
+        erro: `Campo não reconhecido. Use um de: ${CAMPOS_ENRIQUECIMENTO.join(", ")} ou espec:<campo> para especificação técnica.`
     };
     if (!fonte) return {
         erro: "Informe a fonte (URL ou documento) de onde veio o dado. Sem fonte, não posso propor."
     };
     if (e.valor == null || e.valor === "") return {
         erro: "Informe o valor proposto."
+    };
+    const problema = problemaNoValor(campo, e.valor);
+    if (problema) return {
+        erro: problema
     };
     const produtoId = await idDoSku(admin, lojaId, sku);
     if (!produtoId) return {
@@ -951,7 +971,7 @@ async function proporImagem(admin, lojaId, e) {
     };
 }
 
-return { CAMPOS_ENRIQUECIMENTO: CAMPOS_ENRIQUECIMENTO, TIPOS_CODIGO: TIPOS_CODIGO, proporEnriquecimento: proporEnriquecimento, proporCodigo: proporCodigo, proporAplicacao: proporAplicacao, proporImagem: proporImagem };
+return { CAMPOS_ENRIQUECIMENTO: CAMPOS_ENRIQUECIMENTO, CAMPO_ESPEC: CAMPO_ESPEC, campoEnriquecimentoValido: campoEnriquecimentoValido, problemaNoValor: problemaNoValor, TIPOS_CODIGO: TIPOS_CODIGO, proporEnriquecimento: proporEnriquecimento, proporCodigo: proporCodigo, proporAplicacao: proporAplicacao, proporImagem: proporImagem };
 })();
 
 // ---------- supabase/functions/_shared/ia/google.ts ----------
@@ -3418,7 +3438,7 @@ const FERRAMENTAS_DO_ASSISTENTE = [
     },
     {
         name: "propor_enriquecimento",
-        description: `Propõe um valor para um campo de enriquecimento do produto (entra como a_confirmar). Campos aceitos: ${CAMPOS_ENRIQUECIMENTO.join(", ")}.`,
+        description: `Propõe um valor para um campo de enriquecimento do produto (entra como a_confirmar). Campos aceitos: ${CAMPOS_ENRIQUECIMENTO.join(", ")} e espec:<campo> (especificação técnica). tags = lista separada por vírgula; seo_titulo até 70 e seo_descricao até 160 caracteres.`,
         input_schema: {
             type: "object",
             properties: {
@@ -3427,9 +3447,8 @@ const FERRAMENTAS_DO_ASSISTENTE = [
                 },
                 campo: {
                     type: "string",
-                    enum: [
-                        ...CAMPOS_ENRIQUECIMENTO
-                    ]
+                    maxLength: 36,
+                    description: `Um de: ${CAMPOS_ENRIQUECIMENTO.join(", ")}; ou espec:<campo> para especificação técnica (ex.: espec:diametro_externo_mm).`
                 },
                 valor: {
                     type: "string"

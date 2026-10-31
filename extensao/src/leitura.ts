@@ -37,3 +37,6 @@ export function lerCampos(brutos: readonly CampoBruto[]): CampoLido[] {
   }
   return saida.slice(0, 300);
 }
+
+/** Nome de especificação técnica a partir do rótulo de um campo customizado: "Diâmetro externo (mm)" -> "diametro_externo_mm". */
+export const slugCampo = (rotulo: string) => chaveDe(rotulo).replace(/ /g, "_").slice(0, 30);

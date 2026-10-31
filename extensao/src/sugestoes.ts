@@ -21,6 +21,18 @@ export function tagsDaTela(nome: string, marca: string, codigo: string): string[
   return tags.slice(0, 12);
 }
 
+/** Título SEO até 70 caracteres: "<nome> | <marca>" quando couber, senão o nome cortado em palavra inteira. */
+export function tituloSeo(nome: string, marca: string): string {
+  const cortar = (t: string, max: number) => t.length <= max ? t : t.slice(0, t.lastIndexOf(" ", max) > 20 ? t.lastIndexOf(" ", max) : max).trim();
+  const com = marca && !chaveDe(nome).includes(chaveDe(marca)) ? `${nome} | ${marca}` : nome;
+  return com.length <= 70 ? com : cortar(nome, 70);
+}
+/** Descrição SEO até 160 caracteres, só com dados da tela. */
+export function descricaoSeo(nome: string, marca: string, codigo: string): string {
+  const d = [nome.replace(/\.$/, ""), marca && `Marca ${marca}`, codigo && `Código ${codigo}`].filter(Boolean).join(". ") + ".";
+  return d.length <= 160 ? d : `${d.slice(0, 157).trim()}…`;
+}
+
 export function sugerir(r: Reconhecimento): { sugestoes: Sugestao[]; pendencias: Pendencia[] } {
   if (r.estado !== "reconhecida") return { sugestoes: [], pendencias: [] };
   const valor = (c: string) => r.casados.find((x) => x.mapa.canonico === c)?.lido.valor ?? "";
@@ -31,6 +43,11 @@ export function sugerir(r: Reconhecimento): { sugestoes: Sugestao[]; pendencias:
     const tags = tagsDaTela(valor("nome"), valor("marca"), valor("codigo"));
     if (tags.length) sugestoes.push({ campo: "tags", valor: tags.join(", "), origem: "Nome, marca e código já cadastrados nesta tela", aplicavel: false });
   }
+  // SEO só com o que já está na tela (nome, marca, código). Nada inventado; o lojista revisa antes de propor.
+  const nome = valor("nome").trim(), marca = valor("marca").trim(), codigo = valor("codigo").trim();
+  const vazio = (c: string) => r.vazios.some((v) => v.mapa.canonico === c);
+  if (nome && vazio("seoTitulo")) sugestoes.push({ campo: "seoTitulo", valor: tituloSeo(nome, marca), origem: "Nome e marca já cadastrados nesta tela", aplicavel: false });
+  if (nome && vazio("seoDescricao")) { const d = descricaoSeo(nome, marca, codigo); if (d.length >= 50) sugestoes.push({ campo: "seoDescricao", valor: d, origem: "Nome, marca e código já cadastrados nesta tela", aplicavel: false }); }
   for (const v of r.vazios) {
     if (!v.mapa.editavelPeloNano || v.mapa.canonico === "tags") continue;
     pendencias.push({ campo: v.mapa.descricao, canonico: v.mapa.canonico, motivo: ["gtin", "pesoLiquido", "pesoBruto", "largura", "altura", "profundidade"].includes(v.mapa.canonico)

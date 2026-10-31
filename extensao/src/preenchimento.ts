@@ -1,7 +1,7 @@
 // Fase 3 (issue #166): plano de preenchimento na tela do ERP com valores JÁ APROVADOS na Fila do Conecta.IA. Puro: testável no Node.
 // Regras: só tela reconhecida; só campo do mapa marcado como editável pelo Nano; nunca campo sensível/mascarado; nunca SKU,
 // preço ou estoque; valor diferente do atual exige OK explícito ("substituir"); o salvar é SEMPRE do lojista.
-import { chaveDe } from "./leitura.ts";
+import { chaveDe, slugCampo } from "./leitura.ts";
 import type { Reconhecimento } from "./reconhecer.ts";
 
 export interface ValorAprovado { id: string; campo: string; valor: string; fonte: string | null; aprovado_em: string | null }
@@ -16,12 +16,24 @@ export interface ItemPreenchimento {
 /** Campo aprovado no Conecta.IA -> campo canônico do mapa da tela. ncm_sugerido (fiscal) nunca entra. */
 export const APROVADO_PARA_CANONICO: Record<string, string> = {
   marca_peca: "marca", descricao_curta: "descricaoCurta", descricao_longa: "descricaoComplementar", peso_kg: "pesoLiquido", categoria_sugerida: "categoria", ean: "gtin",
+  tags: "tags", seo_titulo: "seoTitulo", seo_descricao: "seoDescricao", imagem: "imagemUrl",
 };
 
 export function planejarPreenchimento(r: Reconhecimento, aprovados: readonly ValorAprovado[]): ItemPreenchimento[] {
   if (r.estado !== "reconhecida") return [];
   const itens: ItemPreenchimento[] = [];
   for (const a of aprovados) {
+    // especificação técnica: casa com um campo da tela que o mapa não conhece (campo customizado) pelo nome normalizado
+    if (/^espec:[a-z0-9_]{2,30}$/.test(a.campo)) {
+      if (itens.some((i) => i.canonico === a.campo)) continue;
+      const lido = r.naoMapeados.find((l) => !l.mascarado && slugCampo(l.rotulo) === a.campo.slice(6));
+      const base = { canonico: a.campo, aprovadoId: a.id, fonte: a.fonte, aprovadoEm: a.aprovado_em, novo: a.valor.trim(), descricao: lido?.rotulo ?? a.campo.slice(6).replace(/_/g, " ") };
+      if (!lido) { itens.push({ ...base, atual: "", acao: "bloqueado", motivo: "Campo customizado não encontrado nesta tela.", alvo: { rotulo: "" } }); continue; }
+      const alvoE = { rotulo: lido.rotulo, ...(lido.id ? { id: lido.id } : {}), ...(lido.nome ? { nome: lido.nome } : {}) };
+      const atualE = lido.valor.trim();
+      itens.push({ ...base, atual: atualE, alvo: alvoE, acao: atualE === base.novo ? "igual" : atualE ? "substituir" : "preencher" });
+      continue;
+    }
     const canonico = APROVADO_PARA_CANONICO[a.campo];
     if (!canonico || itens.some((i) => i.canonico === canonico)) continue;
     const casado = r.casados.find((c) => c.mapa.canonico === canonico);

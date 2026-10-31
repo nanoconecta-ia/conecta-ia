@@ -20,7 +20,11 @@ export const MAPA_PRODUTO_BLING: MapaTela = {
     { canonico: "altura", descricao: "Altura", rotulos: ["altura", "altura cm"], editavelPeloNano: true, essencial: false },
     { canonico: "profundidade", descricao: "Profundidade", rotulos: ["profundidade", "comprimento", "profundidade cm"], editavelPeloNano: true, essencial: false },
     { canonico: "categoria", descricao: "Categoria", rotulos: ["categoria", "categoria do produto"], editavelPeloNano: true, essencial: true },
-    { canonico: "tags", descricao: "Tags / palavras-chave de busca", rotulos: ["tags", "tag", "palavras chave", "grupo de tags"], editavelPeloNano: true, essencial: false },
+    { canonico: "tags", descricao: "Tags / palavras-chave de busca", rotulos: ["tags", "tag", "palavras chave", "grupo de tags", "palavras chave seo"], editavelPeloNano: true, essencial: false },
+    // Loja virtual / site ligado ao Bling (hipóteses, a confirmar com a captura real)
+    { canonico: "seoTitulo", descricao: "Título SEO", rotulos: ["titulo seo", "titulo para seo", "seo titulo", "meta title", "titulo da pagina"], editavelPeloNano: true, essencial: false },
+    { canonico: "seoDescricao", descricao: "Descrição SEO", rotulos: ["descricao seo", "descricao para seo", "seo descricao", "meta description", "descricao da pagina"], editavelPeloNano: true, essencial: false },
+    { canonico: "imagemUrl", descricao: "URL da imagem", rotulos: ["url da imagem", "link da imagem", "imagem url", "url imagem", "endereco da imagem"], editavelPeloNano: true, essencial: false },
     { canonico: "preco", descricao: "Preço de venda (só leitura)", rotulos: ["preco", "preco de venda", "preco venda"], editavelPeloNano: false, essencial: false },
     { canonico: "estoque", descricao: "Estoque (só leitura)", rotulos: ["estoque", "estoque atual", "saldo"], editavelPeloNano: false, essencial: false },
   ],

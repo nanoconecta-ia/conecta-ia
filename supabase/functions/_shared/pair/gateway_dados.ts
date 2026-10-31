@@ -103,19 +103,23 @@ export function dadosSupabase(admin: AdminRpc, agora: () => Date = () => new Dat
     async camposAprovados(loja, sku) {
       const id = await idDoSku(loja, sku);
       if (!id) return null;
-      const CAMPOS = ["marca_peca", "descricao_curta", "descricao_longa", "peso_kg", "categoria_sugerida"]; // nunca ncm_sugerido (fiscal)
-      const [{ data: enr }, { data: cod }] = await Promise.all([
-        admin.from("produto_enriquecimento").select("id, campo, valor, fonte, coletado_em").eq("loja_id", loja).eq("produto_id", id).eq("status", "aprovado").in("campo", CAMPOS).order("coletado_em", { ascending: false }).limit(50),
+      // Lista fechada; nunca ncm_sugerido (fiscal). Especificações técnicas: espec:<campo>.
+      const CAMPOS = ["marca_peca", "descricao_curta", "descricao_longa", "peso_kg", "categoria_sugerida", "tags", "seo_titulo", "seo_descricao"];
+      const [{ data: enr }, { data: cod }, { data: imgs }] = await Promise.all([
+        admin.from("produto_enriquecimento").select("id, campo, valor, fonte, coletado_em").eq("loja_id", loja).eq("produto_id", id).eq("status", "aprovado").or(`campo.in.(${CAMPOS.join(",")}),campo.like.espec:%`).order("coletado_em", { ascending: false }).limit(100),
         admin.from("produto_codigos").select("id, valor, fonte, coletado_em").eq("loja_id", loja).eq("produto_id", id).eq("tipo", "ean").eq("status", "aprovado").order("coletado_em", { ascending: false }).limit(1),
+        // imagens aprovadas pelo lojista (inclui as que o Nano.IA achou na web e o lojista aprovou), na ordem da vitrine
+        admin.from("produto_imagens").select("id, url, origem, criado_em").eq("loja_id", loja).eq("produto_id", id).eq("aprovada", true).order("principal", { ascending: false }).order("ordem").limit(10),
       ]);
       const vistos = new Set<string>(), campos: { id: string; campo: string; valor: string; fonte: string | null; aprovado_em: string | null }[] = [];
       for (const e of (enr ?? []) as { id: string; campo: string; valor: unknown; fonte: string | null; coletado_em: string | null }[]) {
-        if (vistos.has(e.campo)) continue; // o mais recente de cada campo
+        if (vistos.has(e.campo) || !(CAMPOS.includes(e.campo) || /^espec:[a-z0-9_]{2,30}$/.test(e.campo))) continue; // o mais recente de cada campo; lista fechada
         const v = typeof e.valor === "string" ? e.valor : typeof e.valor === "number" ? String(e.valor) : null; // objeto (ex.: dimensões) não vira texto de campo
         if (v === null) continue;
         vistos.add(e.campo); campos.push({ id: e.id, campo: e.campo, valor: v, fonte: e.fonte, aprovado_em: e.coletado_em });
       }
       for (const c of (cod ?? []) as { id: string; valor: string; fonte: string | null; coletado_em: string | null }[]) campos.push({ id: c.id, campo: "ean", valor: c.valor, fonte: c.fonte, aprovado_em: c.coletado_em });
+      for (const i of (imgs ?? []) as { id: string; url: string; origem: string | null; criado_em: string | null }[]) if (/^https:\/\//.test(i.url)) campos.push({ id: i.id, campo: "imagem", valor: i.url, fonte: i.origem, aprovado_em: i.criado_em });
       return { sku, campos };
     },
     async statusTarefa(loja, id) {

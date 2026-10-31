@@ -49,6 +49,17 @@ Os dois serviços (`pair` e `conecta-gateway`) **já estão implantados**. A apr
 A ferramenta `conecta.get_validated_fields` está no código, mas **só funciona depois de publicar o `conecta-gateway`
 atualizado**. Antes disso, o painel avisa que o servidor ainda não tem a fase 3 e não preenche nada.
 
+## Loja virtual: tags, SEO, especificações técnicas e imagens (site ligado ao Bling)
+- **Mapa:** reconhece **Título SEO**, **Descrição SEO**, **URL da imagem** e **Tags**. Os rótulos são hipóteses, a confirmar com a captura real.
+- **Campos customizados do ERP** viram **especificações técnicas** pelo nome do campo. Por exemplo,
+  "Diâmetro externo (mm)" vira `espec:diametro_externo_mm`. Funciona sem conhecer os nomes antes. Campo sensível nunca entra.
+- **Sugestões só com dados da tela:** tags e SEO (título até 70 caracteres, descrição de 50 a 160) a partir de
+  nome, marca e código. O botão "Propor para a Fila" abre o formulário já preenchido, para o lojista revisar.
+- **Imagens:** o agente Nano.IA (chat) busca imagens na web e as propõe à Fila. As que o lojista **aprova**
+  aparecem para preencher o campo **URL da imagem** na tela, com um clique.
+- **Servidor:** `propose_enrichment` aceita `tags`, `seo_titulo`, `seo_descricao` e `espec:<campo>`, com limite por
+  campo. `get_validated_fields` devolve esses valores e as imagens aprovadas. Não precisa de migração.
+
 ## O que o Guardião NÃO faz
 - Não clica em salvar e não envia formulário. Só preenche, um campo por clique, valores já aprovados na Fila.
 - Sem conexão com a loja, não envia nada para fora. Conectado, só consulta o espelho e envia propostas. Nunca usa IA nem manda dado sensível.
@@ -70,7 +81,7 @@ Chrome: `chrome://extensions` · Edge: `edge://extensions`. Depois: Modo do dese
 
 ## Testes
 ```bash
-node --experimental-strip-types --test extensao/testes/*.test.ts         # leitura, mapa, sugestões, registro, pareamento, espelho, propostas
+node --experimental-strip-types --test extensao/testes/*.test.ts         # leitura, mapa, sugestões, registro, pareamento, espelho, propostas, preenchimento, loja virtual
 painel/node_modules/.bin/tsc -p extensao/tsconfig.json                     # tipos
 node extensao/testes/visual.mjs                                            # extensão carrega no Chromium + painel 360/420px
 node extensao/testes/visual-fase2.mjs                                      # pareamento, espelho e proposta com rede simulada

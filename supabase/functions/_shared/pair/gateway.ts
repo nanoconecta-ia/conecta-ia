@@ -12,6 +12,7 @@
 import { reduzirJson } from "../ia/reducao.ts";
 import { ehEscopo, type Escopo } from "./escopos.ts";
 import { HASH_RE, separarToken, sha256Hex } from "./cripto.ts";
+import { CAMPOS_ENRIQUECIMENTO, campoEnriquecimentoValido } from "../ia/escrita.ts";
 
 export const VERSOES_PROTOCOLO = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05", "2024-10-07"] as const; // do @modelcontextprotocol/sdk 1.32
 export const MAX_CORPO = 64 * 1024;
@@ -62,7 +63,7 @@ export interface Resposta { status: number; corpo?: unknown; headers?: Record<st
 
 // ---------------------------------------------------------------------------------------------------------------
 // Validação de argumentos (sem dependências; recusa o que não for exatamente o contrato)
-type Esquema = { obrig: string[]; props: Record<string, { tipo: "string" | "boolean" | "integer" | "number" | "object" | "array"; max?: number; min?: number; formato?: "https" | "iso" | "uuid" | "enum"; valores?: string[] }> };
+type Esquema = { obrig: string[]; props: Record<string, { tipo: "string" | "boolean" | "integer" | "number" | "object" | "array"; max?: number; min?: number; formato?: "https" | "iso" | "uuid" | "enum" | "campo_enriquecimento"; valores?: string[] }> };
 class ArgInvalido extends Error {}
 
 function validar(args: unknown, e: Esquema): Record<string, unknown> {
@@ -84,6 +85,7 @@ function validar(args: unknown, e: Esquema): Record<string, unknown> {
         if (spec.formato === "iso" && Number.isNaN(Date.parse(t))) throw new ArgInvalido(`${k} deve ser data ISO`);
         if (spec.formato === "uuid" && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t)) throw new ArgInvalido(`${k} deve ser UUID`);
         if (spec.formato === "enum" && !spec.valores!.includes(t)) throw new ArgInvalido(`${k} deve ser um de: ${spec.valores!.join(", ")}`);
+        if (spec.formato === "campo_enriquecimento" && !campoEnriquecimentoValido(t)) throw new ArgInvalido(`${k} deve ser um de: ${CAMPOS_ENRIQUECIMENTO.join(", ")} ou espec:<campo>`);
         // eslint-disable-next-line no-control-regex
         if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(t)) throw new ArgInvalido(`${k} contém caracteres inválidos`);
         out[k] = t; break;
@@ -152,8 +154,8 @@ export const FERRAMENTAS: readonly Ferramenta[] = [
   {
     nome: "conecta.propose_enrichment", escopo: "enriquecimento:propor", somenteLeitura: false,
     descricao: "Propõe um valor para um campo de enriquecimento. Exige FONTE real (URL ou documento). Entra como 'a_confirmar' na Fila de aprovação; nada é aprovado automaticamente.",
-    esquema: { obrig: ["sku", "campo", "valor", "fonte"], props: { sku: { tipo: "string", max: 80 }, campo: { tipo: "string", max: 40 }, valor: { tipo: "string", max: 2000 }, fonte: { tipo: "string", max: 400 }, confianca: { tipo: "number", min: 0, max: 1 } } },
-    inputSchema: js({ sku: { type: "string" }, campo: { type: "string", enum: ["marca_peca", "descricao_curta", "descricao_longa", "peso_kg", "dimensoes", "categoria_sugerida", "ncm_sugerido"] },
+    esquema: { obrig: ["sku", "campo", "valor", "fonte"], props: { sku: { tipo: "string", max: 80 }, campo: { tipo: "string", max: 40, formato: "campo_enriquecimento" }, valor: { tipo: "string", max: 2000 }, fonte: { tipo: "string", max: 400 }, confianca: { tipo: "number", min: 0, max: 1 } } },
+    inputSchema: js({ sku: { type: "string" }, campo: { type: "string", maxLength: 36, pattern: "^(marca_peca|descricao_curta|descricao_longa|peso_kg|dimensoes|categoria_sugerida|ncm_sugerido|tags|seo_titulo|seo_descricao|espec:[a-z0-9_]{2,30})$", description: "tags (lista separada por vírgula), seo_titulo (até 70), seo_descricao (até 160) ou espec:<campo> para especificação técnica / campo customizado do ERP" },
       valor: { type: "string", maxLength: 2000 }, fonte: { type: "string", maxLength: 400, description: "URL ou documento de onde veio o dado (obrigatório)" }, confianca: { type: "number", minimum: 0, maximum: 1 } }, ["sku", "campo", "valor", "fonte"]),
     executar: (s, a, d) => d.proporEnriquecimento(s.loja_id, a),
   },
@@ -227,7 +229,7 @@ export const FERRAMENTAS: readonly Ferramenta[] = [
   },
   {
     nome: "conecta.get_validated_fields", escopo: "produtos:ler", somenteLeitura: true,
-    descricao: "Valores JÁ APROVADOS pelo lojista na Fila para um SKU (marca, descrições, peso, categoria sugerida e EAN), com fonte e data. Só o que foi aprovado; nunca fiscal, custo ou preço. Serve para o lojista conferir/preencher na tela do ERP com o OK dele.",
+    descricao: "Valores JÁ APROVADOS pelo lojista na Fila para um SKU (marca, descrições, peso, categoria sugerida, tags, SEO, especificações técnicas, EAN e imagens aprovadas), com fonte e data. Só o que foi aprovado; nunca fiscal, custo ou preço. Serve para o lojista conferir/preencher na tela do ERP com o OK dele.",
     esquema: { obrig: ["sku"], props: { sku: { tipo: "string", max: 80 } } },
     inputSchema: js({ sku: { type: "string", minLength: 1, maxLength: 80 } }, ["sku"]),
     executar: async (s, a, d) => (await d.camposAprovados(s.loja_id, a.sku as string)) ?? { erro: "Produto não encontrado nesta loja." },
