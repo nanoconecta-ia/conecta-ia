@@ -1101,3 +1101,15 @@ html[data-orbe="cristal"] .orbe[data-estado="ocioso"] { --orbe-cor: #6f5bff; }
 .editor-banner .eb-aprovacao { margin: 14px 0; padding: 10px 12px; border: 1px solid var(--borda); border-radius: 10px; }
 .editor-banner .eb-aprovacao summary { cursor: pointer; font-weight: 600; min-height: var(--alvo); display: flex; align-items: center; }
 .editor-banner .marcar-linha { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; }
+
+/* Chat em TELA CHEIA (pedido do dono, 2026-11-01): nas telas de conversa a coluna não tem largura máxima nem margens, e o chat ocupa tudo entre o cabeçalho
+   e a barra de status. A conversa rola por inteiro (do começo ao fim) dentro dele; o compositor fica fixo no rodapé. */
+body .layout.layout--chat { min-height: 0; height: calc(100dvh - var(--cab-altura, 56px) - var(--barra-altura, 32px)); overflow: hidden; }
+body .layout.layout--chat .menu { height: 100%; top: 0; }
+body .layout.layout--chat main { max-width: none; width: 100%; padding: 0; } /* body na frente: a regra 'body .layout main' (teto de 1760px) tem peso maior */
+.layout--chat .abas-caixa, .layout--chat .conector { height: calc(100dvh - var(--cab-altura, 56px) - var(--barra-altura, 32px)); min-height: 0; }
+.layout--chat .abas { padding: 6px; gap: 6px; grid-template-rows: minmax(0, 1fr); }
+.layout--chat .conector { gap: 8px; }
+.layout--chat .abas-centro > .chat { min-height: 0; }
+.chat-ferramentas { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 959px) { .layout--chat .abas { padding: 4px; } }

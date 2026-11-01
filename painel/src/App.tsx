@@ -96,6 +96,17 @@ export function App() {
   const demoAtivo = import.meta.env.DEV && DEMO;
   const lojas = useLojas(!!sessao && !demoAtivo);
   const estadoNano = useEstadoNano(lojas?.[0]?.id);
+  // O chat em tela cheia usa as alturas REAIS do cabeçalho e da barra de status (mudam com o tema e a janela), não um número fixo.
+  useEffect(() => {
+    const ajustar = () => {
+      const raiz = document.documentElement.style;
+      const cab = document.querySelector<HTMLElement>(".topo")?.offsetHeight, barra = document.querySelector<HTMLElement>(".barra-status")?.offsetHeight;
+      if (cab) raiz.setProperty("--cab-altura", `${cab}px`);
+      if (barra) raiz.setProperty("--barra-altura", `${barra}px`);
+    };
+    ajustar(); window.addEventListener("resize", ajustar);
+    return () => window.removeEventListener("resize", ajustar);
+  });
   const [demo, setDemo] = useState<{ FAIXA: string; lojaDemo: LojaTipo } | null>(null);
   useEffect(() => { if (import.meta.env.DEV && DEMO) void import("./lib/demo.ts").then((m) => setDemo({ FAIXA: m.FAIXA, lojaDemo: m.lojaDemo })); }, []);
   useEffect(() => { // volta ao link do QR de pareamento depois do login com Google (o retorno do OAuth descarta o #)
@@ -178,7 +189,7 @@ export function App() {
         <button className="sec topo-sair" onClick={() => void supabase.auth.signOut()} disabled={demoAtivo}>Sair</button>
       </header>
       <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
-      <div className={`layout layout-premium ${larga ? "layout--larga" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""} ${menuMovel ? "layout--menu-movel-aberto" : ""}`} style={{ "--res-esq": `${res.esq}px`, "--res-dir": `${res.dir}px` } as React.CSSProperties}>
+      <div className={`layout layout-premium ${larga ? "layout--larga" : ""} ${paginaDeChat ? "layout--chat" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""} ${menuMovel ? "layout--menu-movel-aberto" : ""}`} style={{ "--res-esq": `${res.esq}px`, "--res-dir": `${res.dir}px` } as React.CSSProperties}>
       {menuMovel && <button type="button" className="menu-escurecedor" aria-label="Fechar menu de navegação" onClick={() => setMenuMovel(false)} />}
       <nav id="menu-principal" className="menu menu-premium" aria-label="Menu principal">
         <div className="menu-destaque">
