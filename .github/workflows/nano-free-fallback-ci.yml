@@ -1,0 +1,24 @@
+name: Nano Free LLM - seguranca e fallback sem deploy
+on:
+  pull_request:
+    paths:
+      - "supabase/functions/_shared/assistente/fallback_free.ts"
+      - "supabase/functions/_shared/assistente/fallback_free.test.ts"
+      - "supabase/functions/_shared/assistente/chat.ts"
+      - ".github/workflows/nano-free-fallback-ci.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validar-roteador:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.19.0"
+      - name: Validar isolamento, consentimento e erro 429/502/504 sem API real
+        run: node --experimental-strip-types --test supabase/functions/_shared/assistente/fallback_free.test.ts
