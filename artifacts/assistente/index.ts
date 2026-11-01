@@ -5383,12 +5383,18 @@ function perguntaPublica(texto) {
     const assunto = m[1].replace(/[?.,!]+$/, "").trim().replace(/\s+/g, " ");
     return ASSUNTOS_PERMITIDOS.has(assunto);
 }
+const LOJA_PILOTO_MOBIS = "cd9d7570-f095-44f2-be28-b9b9cba6578e";
 function configFallbackFree(get, lojaId) {
-    if (get("NANO_FREE_FALLBACK_ATIVO") !== "1" || !UUID.test(lojaId)) return null;
-    const lojas = (get("NANO_FREE_FALLBACK_LOJAS") ?? "").split(",").map((s)=>s.trim().toLowerCase());
-    if (!lojas.includes(lojaId.toLowerCase())) return null;
-    const chave = get("NANO_FREE_FALLBACK_OPENROUTER_KEY");
-    if (!chave || chave.trim().length < 12 || chave.length > 600) return null;
+    if (!UUID.test(lojaId)) return null;
+    const flag = get("NANO_FREE_FALLBACK_ATIVO");
+    if (flag === "0") return null;
+    const lojasRegistradas = get("NANO_FREE_FALLBACK_LOJAS");
+    const lojas = (lojasRegistradas ?? "").split(",").map((s)=>s.trim().toLowerCase());
+    const modoPadrao = flag === "1" && lojas.includes(lojaId.toLowerCase());
+    const modoPiloto = flag === undefined && !lojasRegistradas && lojaId.toLowerCase() === LOJA_PILOTO_MOBIS;
+    if (!modoPadrao && !modoPiloto) return null;
+    const chave = get("NANO_FREE_FALLBACK_OPENROUTER_KEY") || get("freellm") || get("FREELLM");
+    if (!chave || !/^sk-or-v1-[A-Za-z0-9_-]{15,}$/.test(chave) || chave.length > 600) return null;
     return {
         chave,
         modelo: FALLBACK_FREE_MODELO,

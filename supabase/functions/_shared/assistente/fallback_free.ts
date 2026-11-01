@@ -37,12 +37,26 @@ export function perguntaPublica(texto: unknown): boolean {
 }
 
 export type ConfigFallback = { chave: string; modelo: typeof FALLBACK_FREE_MODELO; baseUrl: typeof FALLBACK_FREE_URL };
+// Adaptação transitória para a chave já registrada como "freellm" na loja piloto.
+// Não converte chave de outros provedores, não habilita outras lojas e mantém consentimento no chat.
+const LOJA_PILOTO_MOBIS = "cd9d7570-f095-44f2-be28-b9b9cba6578e";
 export function configFallbackFree(get: (nome: string) => string | undefined, lojaId: string): ConfigFallback | null {
-  if (get("NANO_FREE_FALLBACK_ATIVO") !== "1" || !UUID.test(lojaId)) return null;
-  const lojas = (get("NANO_FREE_FALLBACK_LOJAS") ?? "").split(",").map(s => s.trim().toLowerCase());
-  if (!lojas.includes(lojaId.toLowerCase())) return null;
-  const chave = get("NANO_FREE_FALLBACK_OPENROUTER_KEY");
-  if (!chave || chave.trim().length < 12 || chave.length > 600) return null;
+  if (!UUID.test(lojaId)) return null;
+  const flag = get("NANO_FREE_FALLBACK_ATIVO");
+  if (flag === "0") return null; // desligamento explícito sempre prevalece
+  const lojasRegistradas = get("NANO_FREE_FALLBACK_LOJAS");
+  const lojas = (lojasRegistradas ?? "").split(",").map(s => s.trim().toLowerCase());
+  const modoPadrao = flag === "1" && lojas.includes(lojaId.toLowerCase());
+  // Compatibilidade com a instalação já autorizada: um único tenant, e apenas
+  // enquanto não houver configuração explícita de ativação/allowlist.
+  const modoPiloto = flag === undefined && !lojasRegistradas &&
+    lojaId.toLowerCase() === LOJA_PILOTO_MOBIS;
+  if (!modoPadrao && !modoPiloto) return null;
+  const chave = get("NANO_FREE_FALLBACK_OPENROUTER_KEY") ||
+    get("freellm") || get("FREELLM");
+  // A variável "freellm" pode designar outro serviço; aceitar SOMENTE chave OpenRouter.
+  // Nunca enviar para openrouter.ai uma credencial de provedor diferente.
+  if (!chave || !/^sk-or-v1-[A-Za-z0-9_-]{15,}$/.test(chave) || chave.length > 600) return null;
   return { chave, modelo: FALLBACK_FREE_MODELO, baseUrl: FALLBACK_FREE_URL };
 }
 
