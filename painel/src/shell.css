@@ -473,8 +473,8 @@ html .dock-trilho button.dock-aba:focus-visible { outline: 2px solid var(--verde
 .mapa svg { display: block; }
 .mapa-aresta { fill: none; stroke: color-mix(in srgb, var(--suave) 55%, transparent); stroke-width: 1.4; }
 .mapa-no { cursor: default; outline: none; } .mapa-no[aria-expanded] { cursor: pointer; }
-.mapa-no rect:first-child { fill: var(--cartao); stroke-width: 1.4; transition: filter .15s, stroke-width .15s; }
-.mapa-no:hover rect:first-child, .mapa-no:focus-visible rect:first-child { stroke-width: 2.4; filter: drop-shadow(0 3px 8px rgba(0,0,0,.28)); }
+.mapa-no rect:nth-of-type(1) { fill: var(--cartao); stroke-width: 1.4; transition: filter .15s, stroke-width .15s; }
+.mapa-no:hover rect:nth-of-type(1), .mapa-no:focus-visible rect:nth-of-type(1) { stroke-width: 2.4; filter: drop-shadow(0 3px 8px rgba(0,0,0,.28)); }
 .mapa-rotulo { fill: var(--texto); font: 600 12px var(--fonte); } .mapa-valor { font: 700 12px var(--mono); } .mapa-seta { fill: var(--suave); font: 700 16px var(--fonte); }
 .mapa-nota { margin: 0; font-size: .8rem; }
 .resumo-lista { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; } .resumo-atencao { color: var(--atencao); font-weight: 600; }
