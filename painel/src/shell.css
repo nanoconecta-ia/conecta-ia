@@ -922,3 +922,23 @@ html .abas .compositor-acoes .compositor-enviar { flex: none; min-width: 44px; w
 .bolha .mini.copiar { font-weight: 600; }
 .chat .bolha.ia .bolha-topo { opacity: .75; }
 .chat .bolha.ia p, .chat .bolha.ia li { overflow-wrap: anywhere; }
+/* Legibilidade e uso da largura em telas de notebook (fotos do dono, 2026-10-31):
+   1) o conteúdo ficava preso em 1100px à esquerda, com a direita vazia, e a tabela do Catálogo era cortada ("Ver fich");
+   2) o menu lateral rolava sem barra visível: Bling, Backup e Contador (ERP e fiscal) ficavam escondidos abaixo da barra de status;
+   3) títulos de grupo, cabeçalhos de tabela e textos auxiliares eram pequenos demais. Só CSS: nenhum componente nem dado muda. */
+@media (min-width: 960px) {
+  body .layout main { max-width: min(100%, 1760px); }
+  .layout .menu { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--verde) 55%, #fff) transparent; padding-bottom: 40px; }
+  .layout .menu::-webkit-scrollbar { width: 9px; }
+  .layout .menu::-webkit-scrollbar-track { background: transparent; }
+  .layout .menu::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--verde) 55%, #fff); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+  .layout .menu a { font-size: 1rem; }
+  .layout .menu-titulo { font-size: .8rem; }
+}
+.rolagem { scrollbar-width: thin; }
+.rolagem::-webkit-scrollbar { height: 10px; }
+.rolagem::-webkit-scrollbar-thumb { background: var(--borda-forte, #9a9a9a); border-radius: 8px; }
+table { font-size: .97rem; }
+th { font-size: .85rem; }
+.suave { font-size: .97rem; }
+.rotulo { font-size: .93rem; }
