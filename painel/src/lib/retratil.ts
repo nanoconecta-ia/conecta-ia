@@ -1,7 +1,6 @@
-// Regras do chat retrátil (como no chat do Claude): só as últimas respostas ficam abertas, as antigas viram uma linha
-// e as muito longas mostram só o começo. Funções puras: a tela só desenha o que elas decidem.
+// Regras do chat: a conversa aparece inteira, como nos chats modernos; recolher é escolha da pessoa e só respostas enormes mostram o começo. Funções puras: a tela só desenha o que elas decidem.
 export const MANTER_ABERTAS = 2;       // últimas mensagens sempre abertas
-export const LIMITE_LONGA = 520;       // acima disso a resposta mostra só o começo
+export const LIMITE_LONGA = 4000;      // acima disso a resposta mostra só o começo (chat moderno: a resposta aparece inteira)
 export const TRECHO_RECOLHIDO = 120;
 
 /** Resumo de uma linha: sem marcação, sem quebra de linha, terminando em reticências quando cortado. */
@@ -17,7 +16,7 @@ export function mensagemRecolhida(indice: number, total: number, abertas: Readon
   if (modo === "expandir") return false;
   if (abertas.has(indice)) return false;
   if (modo === "recolher") return true;
-  return indice < total - MANTER_ABERTAS;
+  return false; // chat moderno: nada recolhe sozinho; recolher é escolha da pessoa (modo "recolher" ou clique)
 }
 
 export const ehLonga = (texto: string): boolean => texto.length > LIMITE_LONGA;
