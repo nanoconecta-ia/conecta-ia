@@ -6,9 +6,14 @@ on:
   workflow_dispatch:
     inputs:
       confirmar:
-        description: 'Digite exatamente: publicar-assistente'
+        # Lista de escolha, não texto livre: assim ninguém consegue colar um segredo neste campo (o valor aparece em log público).
+        description: 'Escolha publicar-assistente para publicar. NUNCA cole token ou senha em formulários deste workflow.'
         required: true
-        type: string
+        type: choice
+        default: nao-publicar
+        options:
+          - nao-publicar
+          - publicar-assistente
 
 permissions:
   contents: read
