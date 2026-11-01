@@ -97,3 +97,29 @@ test('artefato: com a consulta Bling desligada as ferramentas de proposta não e
  const a=await ambiente({bling:false,tool:'bling_propor_categoria',args:'{"nome":"Freios"}'});await a.perguntar();
  assert.ok(!a.rpcs.some(x=>x.fn==='agente_proposta_criar'));assert.equal(a.rede.filter(c=>c.url.includes('bling')).length,0);
 });
+
+
+test('artefato: /ficha consulta Bling sem LLM mesmo sem chave do provedor, com auditoria e sem escrita',async()=>{
+ const a=await ambiente({provedorErro:true});
+ const r=await a.perguntar({acao:'chat_ficha_produto',codigo:'SKU-1',provedor:undefined});
+ assert.equal(r.status,200);
+ assert.equal(r.body.ia,false);
+ assert.equal(r.body.autoriza_criacao,false);
+ assert.equal(r.body.modo,'ficha_sem_llm');
+ assert.match(r.body.resposta,/NENHUM PRODUTO FOI CADASTRADO/);
+ assert.equal(a.rede.every(x=>x.url.includes('api.bling.com.br') && x.op.method==='GET'),true);
+ assert.ok(a.rede.length>0,'consulta GET na API');
+ assert.ok(a.audits.some(x=>x.acao==='chat.bling_ficha'),'auditoria propria da ficha');
+ assert.equal(a.rpcs.some(x=>x.fn==='ia_chave_ativa'),false,'nenhuma chave LLM consultada');
+});
+test('artefato: /ficha exige flag Bling, valida entrada e nao usa LLM quando rejeitado',async()=>{
+ for(const [opts,extra] of [
+  [{bling:false},{acao:'chat_ficha_produto',codigo:'SKU-1',provedor:undefined}],
+  [{},{acao:'chat_ficha_produto',codigo:'../segredo',provedor:undefined}],
+  [{},{acao:'chat_ficha_produto',codigo:'SKU-1',provedor:'gemini'}],
+  [{},{acao:'chat_ficha_produto',codigo:'SKU-1',provedor:undefined,anexos:[{}]}],
+ ]) {
+  const a=await ambiente(opts);const r=await a.perguntar(extra);
+  assert.ok(r.status>=400);assert.equal(a.rede.length,0);
+ }
+});
