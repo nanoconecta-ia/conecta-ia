@@ -7,7 +7,7 @@ const ALIASES: readonly [RegExp, Peca][] = [
   [/filtro/, "filtros"],
   [/embreagem|plato|transmissao|caixa.{0,8}marchas|rolamento/, "transmissao"],
   [/alternador|partida|eletric|sensor|vela.{0,8}aquecimento/, "eletrica"],
-  [/pistao|anel.{0,8}segmento|camisa|biela|virabrequim|bronzina|cabecote|comando|tucho|valvula.{0,8}motor|correia|tensor|turbin|junta|retentor|bloco.{0,8}motor/, "motor"],
+  [/pist|anel.{0,8}segmento|camisa|biela|virabrequim|bronzina|cabecote|comando|tucho|valvula.{0,8}motor|correia|tensor|turbin|junta|retentor|bloco.{0,8}motor/, "motor"],
   [/combustivel|injetor|injecao|bico/, "alimentacao"],
   [/suspensao|amortecedor|pivo|terminal|mola/, "suspensao"],
   [/freio|pastilha|disco.{0,8}freio/, "freios"],
