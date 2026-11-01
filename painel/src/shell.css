@@ -1245,3 +1245,23 @@ html[data-orbe="cristal"] .orbe-faiscas b { box-shadow: 0 0 5px 1px color-mix(in
   .layout--nano-chat .nano-mini-agentes { display:none; }
   .layout--nano-chat .chat-ferramentas small { display:none; }
 }
+
+
+/* Paisagem com pouca altura: uma linha para digitação e ações; prioriza histórico.
+   O controle de fala permanece no compositor, só o seletor de voz é omitido até girar a tela. */
+@media (max-width:959px) and (max-height:440px) {
+  .layout--nano-chat .abas .abas-centro { overflow:hidden; }
+  .layout--nano-chat .abas .abas-centro > .chat { min-height:0; flex:1 1 0; overflow-y:auto; }
+  .layout--nano-chat .abas .chat-compositor { position:relative; bottom:auto; padding:3px 8px max(3px,env(safe-area-inset-bottom)); }
+  .layout--nano-chat .abas .compositor-grade { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:6px; }
+  .layout--nano-chat .abas .compositor-campo textarea { min-height:42px; height:42px; }
+  .layout--nano-chat .abas .compositor-acoes { gap:4px; }
+  .layout--nano-chat .abas .compositor-acoes > button { min-width:34px; width:34px; height:34px; min-height:34px; }
+  .layout--nano-chat .abas .compositor-enviar { flex:0 0 36px; width:36px; }
+  .layout--nano-chat .voz-escolha { display:none; }
+  .layout--nano-chat .barra-extras .consent-linha { gap:4px; padding:4px 6px; font-size:.76rem; line-height:1.2; }
+  .layout--nano-chat .barra-extras .consent-linha span { flex-basis:180px; }
+  .layout--nano-chat .barra-extras .consent-linha button { min-height:34px; padding:4px 8px; }
+  .layout--nano-chat .nano-motor-status { min-height:25px; padding-block:2px; }
+  .layout--nano-chat .abas .agente { min-height:48px; padding-block:3px; }
+}
