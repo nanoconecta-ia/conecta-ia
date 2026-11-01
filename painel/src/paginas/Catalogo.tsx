@@ -154,7 +154,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
       total: itens.length, publicados: itens.filter((p) => p.publicado).length, inativos: itens.filter((p) => p.situacao !== "A").length,
       semCategoria: itens.filter((p) => semCategoria(p, ids)).length, semLugarNaTaxonomia: itens.filter((p) => p.taxonomia_no_id == null).length,
       incompletos: itens.filter((p) => camposFaltando(p).length > 0).length, faltando,
-      porNo: [...nos.values()].map((n) => ({ id: n.id, pai_id: n.pai_id, nome: n.nome, produtos: porNo.get(n.id) ?? 0 })),
+      porNo: [...nos.values()].map((n) => ({ id: n.id, pai_id: n.pai_id, nome: n.nome, slug: n.slug ?? null, produtos: porNo.get(n.id) ?? 0 })),
     });
   }, [itens, categorias, nos, totalBanco, buscaAplicada]);
   useEffect(() => { if (mapa) publicar("/catalogo", "Catálogo", mapa); return () => despublicar("/catalogo"); }, [mapa]);

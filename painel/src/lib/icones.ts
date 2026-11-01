@@ -31,6 +31,12 @@ const POR_SLUG: Record<string, Peca> = {
   "filtro-ar": "filtros", "filtro-cabine": "filtros", "filtro-combustivel": "filtros", "filtro-oleo": "filtros", "cilindros-flexiveis": "freios", discos: "freios", "lonas-tambores": "freios", pastilhas: "freios",
   "farois-lanternas": "iluminacao", lampadas: "iluminacao", "fluidos-freio-arrefecimento": "lubrificantes", "oleos-motor": "lubrificantes", bielas: "motor", "cabecote-valvulas": "motor", "correias-tensores": "motor",
   "juntas-retentores": "motor", "pistoes-aneis": "motor", amortecedores: "suspensao", "barras-estabilizadoras": "suspensao", "buchas-batentes": "suspensao", molas: "suspensao", "pivos-terminais": "suspensao",
+  // Categorias reais sem desenho próprio herdam o desenho da sua área (a mesma da taxonomia do banco).
+  reservatorios: "arrefecimento", mangueiras: "arrefecimento", macanetas: "carroceria", suportes: "carroceria",
+  "correia-dentada": "motor", "tensor-correia-dentada": "motor", "rolete-polia-correia-dentada": "motor", "kit-correia-dentada": "motor",
+  alternadores: "eletrica", "motores-partida": "eletrica", "chicotes-eletricos": "eletrica", "separadores-agua": "filtros", "filtros-hidraulicos": "filtros", "filtros-transmissao": "filtros", "filtros-desumidificadores": "filtros",
+  pincas: "freios", "servo-freio": "freios", aditivos: "lubrificantes", "oleos-transmissao": "lubrificantes", virabrequins: "motor", "bronzinas-mancal": "motor", "bronzinas-biela": "motor", "camisas-cilindro": "motor",
+  turbocompressores: "motor", "blocos-motores": "motor", bieletas: "suspensao", bandejas: "suspensao", "injecao-diesel": "alimentacao",
 };
 
 const POR_PALAVRA: [RegExp, Peca][] = [

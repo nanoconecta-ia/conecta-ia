@@ -1,0 +1,7 @@
+/* Microinteração do Nano.IA: o pictograma acompanha as quatro esferas já existentes.
+   Estado é controlado pelo chat; a animação não simula chamadas ao Bling. */
+.nano-atividade { display: inline-flex; align-items: center; gap: 5px; vertical-align: middle; }
+.nano-atividade-icone { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; color: var(--marca); animation: nano-icone-atividade 1.15s ease-in-out infinite; }
+.nano-atividade-icone .ico-peca { max-width: 100%; }
+@keyframes nano-icone-atividade { 0%, 100% { opacity: .8; transform: scale(.93); } 50% { opacity: 1; transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .nano-atividade-icone { animation: none; } }
