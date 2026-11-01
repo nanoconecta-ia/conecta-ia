@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { escolherVoz, gravarPreferenciaFala, lerPreferenciaFala, useVoz } from "../lib/voz.ts";
-import type { EstadoEsfera } from "../componentes/Esfera.tsx";
+import { normalizarEstado, type EstadoEsfera } from "../componentes/Esfera.tsx";
+import type { EstadoAgente } from "../lib/estadoAgente.ts";
+import { publicarNano } from "../lib/nanoEstado.ts";
 import { Icone } from "../componentes/Icone.tsx";
 import { PontosPensando } from "../componentes/PontosPensando.tsx";
 import { MODELOS_ORBE, aplicarOrbe, gravarOrbe, lerOrbe, type ModeloOrbe } from "../lib/orbe.ts";
@@ -274,7 +276,9 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const estado: EstadoEsfera = acaoLocal ? acaoLocal.estado : voz.ouvindo ? "ouvindo" : ocupado ? "pensando" : voz.falando ? "falando" : "parado";
   const [modeloOrbe, setModeloOrbe] = useState<ModeloOrbe>(() => lerOrbe(armazemLocal()));
   useEffect(() => { aplicarOrbe(modeloOrbe); }, [modeloOrbe]);
-  useEffect(() => { document.documentElement.dataset.nanoEstado = estado; return () => { delete document.documentElement.dataset.nanoEstado; }; }, [estado]);
+  // publica no store por loja o que realmente está acontecendo (microfone, requisição em curso, voz, ação local); ao sair, volta ao repouso
+  useEffect(() => { publicarNano(loja.id, { tipo: "local", estado: normalizarEstado(estado) === "falando" ? "ocioso" : normalizarEstado(estado) as EstadoAgente }); if (estado === "falando") publicarNano(loja.id, { tipo: "fala", falando: true }); }, [estado, loja.id]);
+  useEffect(() => () => publicarNano(loja.id, { tipo: "repouso" }), [loja.id]);
   const onSubmit = (e: FormEvent) => { e.preventDefault(); void enviar(texto); };
   const alternarFala = () => { const v = !lerAlto; setLerAlto(v); gravarPreferenciaFala(v); if (!v) voz.calar(); };
 

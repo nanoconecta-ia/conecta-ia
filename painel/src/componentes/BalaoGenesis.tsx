@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Esfera } from "./Esfera.tsx";
+import { Orbe } from "./Esfera.tsx";
+import { useEstadoNano } from "../lib/nanoEstado.ts";
+import { ROTULO_ESTADO } from "../lib/estadoAgente.ts";
 import { coordenadas, encaixar, gravar, ler, pontoDeGuia, type PosicaoSalva } from "../lib/posicaoBalao.ts";
 
 const TAMANHO = { w: 168, h: 68 };
@@ -7,7 +9,8 @@ const ARRASTO_MIN = 6;
 
 /** Balão flutuante do Nano.ia: acompanha o lojista em qualquer tela. Arrasta e gruda na borda, lembra onde ficou, e quando o agente abre uma tela
  *  ele sobe até o título dela ("guia") e depois volta. Abre/fecha o agente; sem chamada ao servidor por si só. */
-export function BalaoGenesis({ aberto, aoAlternar }: { aberto: boolean; aoAlternar: () => void }) {
+export function BalaoGenesis({ lojaId, aberto, aoAlternar }: { lojaId: string; aberto: boolean; aoAlternar: () => void }) {
+  const estado = useEstadoNano(lojaId); // o mesmo estado do chat e do cabeçalho: só eventos reais (a navegação guiada não conta como execução)
   const ref = useRef<HTMLButtonElement>(null);
   const [pos, setPos] = useState<PosicaoSalva>(ler);
   const [tela, setTela] = useState({ w: window.innerWidth, h: window.innerHeight });
@@ -63,8 +66,8 @@ export function BalaoGenesis({ aberto, aoAlternar }: { aberto: boolean; aoAltern
     <button ref={ref} type="button" className={`sec balao-genesis ${pulo ? "balao-pulo" : ""} ${guia ? "balao-guia" : ""} ${arrastando ? "balao-arrastando" : ""}`}
       style={{ left: c.x, top: c.y }} data-lado={efetiva.lado}
       onClick={aoClicar} onPointerDown={aoPressionar} onPointerMove={aoMover} onPointerUp={aoSoltar} onPointerCancel={aoSoltar} onKeyDown={aoTeclar}
-      aria-expanded={aberto} aria-controls="dock-agente" aria-label={aberto ? "Fechar o Nano.ia" : "Abrir o Nano.ia"} aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown Alt+ArrowLeft Alt+ArrowRight">
-      <Esfera estado={guia ? "executando" : "parado"} tamanho={52} peso />
+      aria-expanded={aberto} aria-controls="dock-agente" aria-label={`${aberto ? "Fechar o Nano.ia" : "Abrir o Nano.ia"} — ${estado === "falando" ? "Falando" : ROTULO_ESTADO[estado]}`} aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown Alt+ArrowLeft Alt+ArrowRight">
+      <Orbe estado={estado} tamanho={56} decorativo />
       <span className="balao-texto"><b>Nano.ia</b><small>{guia ? `Aqui: ${guia}` : aberto ? "Conversando" : "Toque para falar"}</small></span>
     </button>
   );

@@ -7,7 +7,7 @@ const root=new URL('../../',import.meta.url).pathname,painel=root+'painel/';
 const require=createRequire(painel+'package.json'),{chromium}=require('playwright');
 const fixture=painel+'.retratil-demo.html',porta=4186;
 const L='aaaaaaaa-0000-0000-0000-000000000001',C='cccccccc-0000-0000-0000-000000000002';
-await writeFile(fixture,`<html lang="pt-BR"><meta name="viewport" content="width=device-width, initial-scale=1.0"><div id="root"></div><script type="module">import React from 'react';import {createRoot} from 'react-dom/client';import {Assistente} from '/src/paginas/Assistente.tsx';import '/src/styles.css';import '/src/shell.css';createRoot(document.getElementById('root')).render(React.createElement(Assistente,{loja:{id:'${L}',nome:'Loja DEMO SIMULADA'}}));</script></html>`);
+await writeFile(fixture,`<html lang="pt-BR"><meta name="viewport" content="width=device-width, initial-scale=1.0"><div id="root"></div><script type="module">import React from 'react';import {createRoot} from 'react-dom/client';import {Assistente} from '/src/paginas/Assistente.tsx';import {LogoConecta} from '/src/componentes/LogoConecta.tsx';import {useEstadoNano} from '/src/lib/nanoEstado.ts';function Cab(){const e=useEstadoNano('${L}');return React.createElement('div',{id:'cab-nano','data-estado':e},React.createElement(LogoConecta,{estado:e}))}import '/src/styles.css';import '/src/shell.css';createRoot(document.getElementById('root')).render(React.createElement(React.Fragment,null,React.createElement(Cab),React.createElement(Assistente,{loja:{id:'${L}',nome:'Loja DEMO SIMULADA'}})));</script></html>`);
 const servidor=spawn(process.execPath,[painel+'node_modules/vite/bin/vite.js','--host','127.0.0.1','--port',String(porta)],{cwd:painel,stdio:'ignore'});
 const LONGA='Achei três registros do kit 833333. '.repeat(30);
 let browser;
@@ -40,10 +40,10 @@ try{
   await campo.fill('Consulte o kit 833333');await enviar.click();
   const faixa=page.locator('.faixa-acao');await faixa.waitFor();
   assert.match(await faixa.innerText(),/Consultando/);
-  // esfera única: fica no cabeçalho do app; o chat só publica o estado em html[data-nano-estado]
-  assert.equal(await page.evaluate(()=>document.documentElement.dataset.nanoEstado),'pensando');assert.equal(await page.locator('.esfera').count(),0,'sem segunda esfera dentro do chat');
+  // esfera única: fica no cabeçalho do app; o chat publica o estado real no store por loja e o cabeçalho (Cab) lê dele
+  await page.waitForFunction(()=>document.querySelector('#cab-nano')?.dataset.estado==='interpretando');assert.equal(await page.locator('.orbe').count(),1,'uma só esfera: a do cabeçalho');
   await page.getByText('Resposta 1 da Nano.ia.').waitFor();await faixa.waitFor({state:'detached'});
-  assert.equal(await page.evaluate(()=>document.documentElement.dataset.nanoEstado),'parado');
+  await page.waitForFunction(()=>document.querySelector('#cab-nano')?.dataset.estado==='ocioso');
   // 2) mais três perguntas: chat moderno, nada recolhe sozinho e cada mensagem tem Copiar
   let esperado=3; // saudação + 1ª pergunta + 1ª resposta
   for(const t of ['segunda','terceira','quarta']){await campo.fill(t);await enviar.click();esperado+=2;await page.waitForFunction(n=>document.querySelectorAll('.bolha, .bolha-linha').length===n,esperado);await page.locator('.faixa-acao').waitFor({state:'detached'});}
