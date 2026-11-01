@@ -6,6 +6,7 @@ import { normalizarEstado, type EstadoEsfera } from "../componentes/Esfera.tsx";
 import type { EstadoAgente } from "../lib/estadoAgente.ts";
 import { publicarNano } from "../lib/nanoEstado.ts";
 import { Icone } from "../componentes/Icone.tsx";
+import { consumirPedidoPendente } from "../lib/contextoPagina.ts";
 import { PontosPensando } from "../componentes/PontosPensando.tsx";
 import { MODELOS_ORBE, aplicarOrbe, gravarOrbe, lerOrbe, type ModeloOrbe } from "../lib/orbe.ts";
 import { armazemLocal } from "../lib/tema.ts";
@@ -87,7 +88,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   }
   const [texto, setTexto] = useState("");
   useEffect(() => { // o painel lateral (mapa, resumo, atalhos) pede uma pergunta: só preenche a caixa; quem envia é o lojista
-    const f = (e: Event) => { const t = (e as CustomEvent<{ texto?: string }>).detail?.texto; if (typeof t === "string" && t.trim()) setTexto(t.slice(0, 4000)); };
+    const f = (e: Event) => { const t = (e as CustomEvent<{ texto?: string }>).detail?.texto; if (typeof t === "string" && t.trim()) setTexto(t.slice(0, 4000)); consumirPedidoPendente(); };
+    const antes = consumirPedidoPendente(); if (antes) setTexto(antes.slice(0, 4000)); // pedido vindo de outra tela (ficha do produto)
     window.addEventListener("nano:perguntar", f); return () => window.removeEventListener("nano:perguntar", f);
   }, []);
   const [ocupado, setOcupado] = useState(false);

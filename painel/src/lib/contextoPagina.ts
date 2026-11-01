@@ -20,3 +20,18 @@ export const obter = () => atual;
 export function perguntarAoNano(texto: string): void {
   window.dispatchEvent(new CustomEvent("nano:perguntar", { detail: { texto } }));
 }
+
+/** Pedido que sai de OUTRA tela (ex.: a ficha do produto) e ainda não tem a conversa aberta: guardado por poucos segundos
+ *  para a conversa preencher a caixa ao montar. Só preenche; quem envia é o lojista. */
+let pendente: { texto: string; em: number } | null = null;
+export const VALIDADE_PEDIDO_MS = 15_000;
+export function pedirAoNanoNaConversa(texto: string, irPara: () => void = () => { window.location.hash = "#/assistente"; }): void {
+  pendente = { texto, em: Date.now() };
+  irPara();
+  perguntarAoNano(texto); // se a conversa já estiver aberta, o evento a preenche na hora
+}
+/** Entrega o pedido pendente uma única vez; vencido ou já consumido devolve null. */
+export function consumirPedidoPendente(agora = Date.now()): string | null {
+  const p = pendente; pendente = null;
+  return p && agora - p.em <= VALIDADE_PEDIDO_MS ? p.texto : null;
+}
