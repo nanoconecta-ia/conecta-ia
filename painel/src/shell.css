@@ -1030,3 +1030,25 @@ html[data-orbe="aurora"] .orbe-faiscas b { background: #fff; box-shadow: 0 0 8px
 .icone-btn[data-copiado="nao"] { color: var(--erro); border-color: var(--erro); }
 .ic-aba, .nova-conv, .mic, .compositor-enviar { display: inline-grid; place-items: center; }
 .ic-aba svg, .nova-conv svg, .mic svg, .compositor-enviar svg { display: block; }
+
+/* Modelo Cristal (referência do dono, 2026-11-01): esfera de vidro com fitas de luz azuis e magenta, faíscas por dentro, arco de brilho no topo
+   e luz rosa embaixo. CSS puro, sem imagem. É o modelo padrão. */
+html[data-orbe="cristal"] .orbe { --orbe-cor: #6f5bff; --orbe-gira: 7s; }
+html[data-orbe="cristal"] .orbe-pupila { display: none; }
+html[data-orbe="cristal"] .orbe-aura { inset: -50%; background: radial-gradient(closest-side at 50% 62%, #ff4fd8aa, #5b6bffaa 46%, transparent 74%); animation: orbe-aura var(--orbe-pulso) ease-in-out infinite; }
+html[data-orbe="cristal"] .orbe-nucleo { width: calc(var(--d) * .92); height: calc(var(--d) * .92); overflow: hidden; animation: none;
+  background:
+    radial-gradient(ellipse 52% 22% at 42% 16%, #fffffff2 0 40%, #ffffff00 100%),
+    radial-gradient(circle at 50% 118%, #ff4fd8 0 22%, #b04bff88 44%, #00000000 72%),
+    radial-gradient(circle at 30% 30%, #2a49d8 0, #101a6b 46%, #070a2e 100%);
+  border: 1px solid #ffffff99;
+  box-shadow: inset 0 0 calc(var(--d) * .22) #7fa2ffcc, inset 0 calc(var(--d) * -.1) calc(var(--d) * .2) #ff4fd8aa, 0 0 calc(var(--d) * .5) #6f5bffaa; }
+html[data-orbe="cristal"] .orbe-anel, html[data-orbe="cristal"] .orbe-anel-2 { inset: 8%; border: 0; border-radius: 50%; box-shadow: none; z-index: 2; transform: rotate(-24deg) scaleY(.5); animation: orbe-gira var(--orbe-gira) linear infinite;
+  background: conic-gradient(from 0deg, #00000000 0 18%, #2f6bff 30%, #6ef0ff 46%, #00000000 62%);
+  mask: radial-gradient(closest-side, transparent 58%, #000 62% 82%, transparent 86%); -webkit-mask: radial-gradient(closest-side, transparent 58%, #000 62% 82%, transparent 86%); }
+html[data-orbe="cristal"] .orbe-anel-2 { transform: rotate(38deg) scaleY(.42); animation-duration: calc(var(--orbe-gira) * 1.5); animation-direction: reverse;
+  background: conic-gradient(from 90deg, #00000000 0 20%, #ff4fd8 34%, #b6a2ff 48%, #00000000 64%); }
+html[data-orbe="cristal"] .orbe-faiscas b { z-index: 3; width: 2px; height: 2px; background: #fff; box-shadow: 0 0 4px 1px #8fd9ff; }
+html[data-orbe="cristal"] .orbe-faiscas b:nth-child(1) { left: 36%; top: 40%; }
+html[data-orbe="cristal"] .orbe-faiscas b:nth-child(2) { left: 58%; right: auto; top: 52%; animation-delay: -.8s; }
+html[data-orbe="cristal"] .orbe-faiscas b:nth-child(3) { left: 46%; bottom: auto; top: 30%; animation-delay: -1.6s; }
