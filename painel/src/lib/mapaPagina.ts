@@ -2,7 +2,7 @@
 // e que o Nano.ia usa como contexto. Só contagens e rótulos: nunca custo, preço de compra, dado fiscal nem fornecedor.
 // Puro e testável (sem DOM).
 export type Tom = "ok" | "atencao" | "erro" | "neutro";
-export interface MapaNo { id: string; rotulo: string; valor?: number | string; tom?: Tom; dica?: string; filhos?: MapaNo[] }
+export interface MapaNo { id: string; rotulo: string; valor?: number | string; tom?: Tom; dica?: string; slug?: string; filhos?: MapaNo[] }
 
 /** Chaves que NUNCA entram no mapa nem no resumo (regra do projeto: custo, fiscal e fornecedor não vão a provedor de IA). */
 const PROIBIDAS = /(custo|compra|margem|ncm|cfop|cest|cst|icms|fiscal|tribut|fornecedor|importador|senha|token|chave)/i;
@@ -18,7 +18,7 @@ export function higienizar(no: MapaNo): MapaNo | null {
 export interface Contagens {
   total: number; publicados: number; inativos: number; semCategoria: number; semLugarNaTaxonomia: number; incompletos: number;
   faltando: Record<string, number>;                       // campo vazio -> quantos produtos
-  porNo: { id: string; pai_id: string | null; nome: string; produtos: number }[]; // taxonomia: produtos por nó (só o nó)
+  porNo: { id: string; pai_id: string | null; nome: string; produtos: number; slug?: string | null }[]; // taxonomia: produtos por nó (só o nó)
 }
 
 /** Mapa do catálogo. Pontos de atenção ganham tom para chamar o olho; a taxonomia entra como ramo com a soma por nó + descendentes. */
@@ -33,7 +33,7 @@ export function mapaDoCatalogo(c: Contagens): MapaNo {
     vistos.add(n.id);
     const filhos = (porPai.get(n.id) ?? []).filter((f) => !vistos.has(f.id)).sort((a, b) => b.produtos - a.produtos || a.nome.localeCompare(b.nome, "pt-BR")).map(ramo);
     const soma = n.produtos + filhos.reduce((s, f) => s + Number(f.valor ?? 0), 0);
-    return { id: `tx:${n.id}`, rotulo: n.nome, valor: soma, ...(filhos.length ? { filhos } : {}) };
+    return { id: `tx:${n.id}`, rotulo: n.nome, valor: soma, ...(n.slug ? { slug: n.slug } : {}), ...(filhos.length ? { filhos } : {}) };
   };
   const raizes = (porPai.get(null) ?? []).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map(ramo);
   const raiz: MapaNo = {
@@ -54,7 +54,7 @@ export function mapaDoCatalogo(c: Contagens): MapaNo {
   return higienizar(raiz)!;
 }
 
-export interface NoPosicionado { id: string; rotulo: string; valor?: number | string; tom: Tom; dica?: string; profundidade: number; x: number; y: number; temFilhos: boolean; recolhido: boolean }
+export interface NoPosicionado { id: string; rotulo: string; valor?: number | string; tom: Tom; dica?: string; slug?: string; profundidade: number; x: number; y: number; temFilhos: boolean; recolhido: boolean }
 export interface Aresta { de: string; para: string }
 export interface Layout { nos: NoPosicionado[]; arestas: Aresta[]; largura: number; altura: number }
 export interface OpcoesLayout { colunaLargura?: number; linhaAltura?: number; margem?: number; recolhidos?: ReadonlySet<string> }
@@ -71,7 +71,7 @@ export function layoutArvore(raiz: MapaNo, o: OpcoesLayout = {}): Layout {
     const filhos = recolhido ? [] : n.filhos ?? [];
     const ys = filhos.map((f) => { const y = visita(f, prof + 1); arestas.push({ de: n.id, para: f.id }); return y; });
     const y = ys.length ? (ys[0] + ys[ys.length - 1]) / 2 : proximaLinha++;
-    nos.push({ id: n.id, rotulo: n.rotulo, valor: n.valor, tom: n.tom ?? "neutro", dica: n.dica, profundidade: prof, x: m + prof * col, y: m + y * linha, temFilhos: !!n.filhos?.length, recolhido });
+    nos.push({ id: n.id, rotulo: n.rotulo, valor: n.valor, tom: n.tom ?? "neutro", dica: n.dica, slug: n.slug, profundidade: prof, x: m + prof * col, y: m + y * linha, temFilhos: !!n.filhos?.length, recolhido });
     return y;
   };
   visita(raiz, 0);

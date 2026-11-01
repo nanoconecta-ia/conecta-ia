@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { SeletorCor } from "./SeletorCor.tsx";
 import { PREFERENCIAS, aplicarTema, armazemLocal, gravarPreferencia, lerPreferencia, type Preferencia } from "../lib/tema.ts";
 
 /** Aparência: Automático, Claro, Escuro, Noturno ou Alto contraste. Um botão compacto abre a lista (funciona também no celular);
@@ -45,7 +46,8 @@ export function SeletorTema() {
         <span className="seletor-rotulo">{atual.rotulo}</span>
       </button>
       {aberto && (
-        <div id={`${id}-lista`} className="seletor-painel" role="radiogroup" aria-label="Aparência">
+        <div id={`${id}-lista`} className="seletor-painel">
+          <div className="seletor-tema-grupo" role="radiogroup" aria-label="Aparência">
           {PREFERENCIAS.map((p, i) => (
             <button key={p.valor} type="button" role="radio" aria-checked={pref === p.valor} tabIndex={pref === p.valor ? 0 : -1} ref={(el) => { opcoes.current[i] = el; }}
               className="sec seletor-opcao" onClick={() => escolher(p.valor)} onKeyDown={(e) => teclar(e, i)}>
@@ -58,6 +60,8 @@ export function SeletorTema() {
               <span className="seletor-marca" aria-hidden="true">{pref === p.valor ? "✓" : ""}</span>
             </button>
           ))}
+          </div>
+          <div className="seletor-cor-bloco"><b>Cor do painel e do Nano.IA</b><SeletorCor /></div>
         </div>
       )}
     </div>

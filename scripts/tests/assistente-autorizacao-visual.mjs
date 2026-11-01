@@ -34,7 +34,7 @@ try{
   await page.goto(`http://127.0.0.1:${porta}/.autorizacao-demo.html`);
   const aviso=page.locator('.aviso-envio');await aviso.waitFor();
   const r=`${largura}x${altura}`;
-  assert.match(await aviso.innerText(),/ainda não pode responder[\s\S]*autorização[\s\S]*Gemini/,`${r}: aviso diz o motivo e para quem vai`);
+  assert.match(await aviso.innerText(),/Enviar esta pergunta[\s\S]*Gemini[\s\S]*cobrança/,`${r}: aviso diz o motivo e para quem vai`);
   const enviar=page.getByRole('button',{name:'Enviar',exact:true});
   assert.equal(await enviar.isDisabled(),true,`${r}: sem autorização, Enviar fica desabilitado`);
   await page.getByLabel('Pergunte',{exact:true}).fill('Oi');

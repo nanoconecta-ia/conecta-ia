@@ -9,10 +9,14 @@ import { resumoDoLote } from "../lib/catalogoExperiencia.ts";
 import { TAMANHO_LOTE_CATALOGO, expressaoBuscaCatalogo, juntarProdutosPorId, existemMaisProdutos } from "../lib/catalogoPaginacao.ts";
 import { Icone } from "../componentes/Icone.tsx";
 import "./catalogo-workspace.css";
+import { IconePeca } from "../componentes/IconePeca.tsx";
+import { iconeDaCategoria } from "../lib/icones.ts";
+import { pedirAoNanoNaConversa } from "../lib/contextoPagina.ts";
+import { montarPedidoCorrecao, pendenciasDaFicha } from "../lib/pedidoCorrecao.ts";
 import { camposFaltando, contagens, filtrar, ROTULO_FILTRO, semCategoria, situacaoTexto, type Filtro, type LinhaPlanilha } from "../lib/planilha.ts";
 
 type Produto = LinhaPlanilha & { preco: number | null; estoque: number | null; publicado: boolean };
-type No = { id: string; pai_id: string | null; nome: string };
+type No = { id: string; pai_id: string | null; nome: string; slug?: string | null };
 const FILTROS: Filtro[] = ["todos", "sem_categoria", "incompletos", "inativos", "sem_no"];
 const brl = (v: number | null) => (v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
 
@@ -34,6 +38,8 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const [vista, setVista] = useState<"tabela" | "cartoes">(() =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? "cartoes" : "tabela");
   const [fichaId, setFichaId] = useState<string | null>(null);
+  const [obsFicha, setObsFicha] = useState("");
+  const [noSugerido, setNoSugerido] = useState("");
   const [categorias, setCategorias] = useState<Map<string, string>>(new Map());
   const [nos, setNos] = useState<Map<string, No>>(new Map());
   const carregar = useCallback(async (offset = 0) => {
@@ -64,7 +70,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
       const [prod, cats, tx] = await Promise.all([
         produtosQuery,
         inicial ? supabase.from("bling_categorias").select("bling_id, nome").eq("loja_id", loja.id).limit(2000) : Promise.resolve(null),
-        inicial ? supabase.from("taxonomia_nos").select("id, pai_id, nome").eq("perfil_ramo", loja.perfil_ramo).limit(2000) : Promise.resolve(null),
+        inicial ? supabase.from("taxonomia_nos").select("id, pai_id, nome, slug").eq("perfil_ramo", loja.perfil_ramo).limit(2000) : Promise.resolve(null),
       ]);
       if (sequenciaConsulta.current !== chamada) return;
       if (prod.error || !Array.isArray(prod.data)) {
@@ -110,6 +116,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
     const timer = window.setTimeout(() => setBuscaAplicada(busca.trim()), 350);
     return () => window.clearTimeout(timer);
   }, [busca]);
+  useEffect(() => { setObsFicha(""); setNoSugerido(""); }, [fichaId]);
   useEffect(() => { setFichaId(null); setSelecionados(new Set()); setBusca(""); setBuscaAplicada(""); }, [loja.id]);
   useEffect(() => {
     if (!fichaId) return;
@@ -147,7 +154,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
       total: itens.length, publicados: itens.filter((p) => p.publicado).length, inativos: itens.filter((p) => p.situacao !== "A").length,
       semCategoria: itens.filter((p) => semCategoria(p, ids)).length, semLugarNaTaxonomia: itens.filter((p) => p.taxonomia_no_id == null).length,
       incompletos: itens.filter((p) => camposFaltando(p).length > 0).length, faltando,
-      porNo: [...nos.values()].map((n) => ({ id: n.id, pai_id: n.pai_id, nome: n.nome, produtos: porNo.get(n.id) ?? 0 })),
+      porNo: [...nos.values()].map((n) => ({ id: n.id, pai_id: n.pai_id, nome: n.nome, slug: n.slug ?? null, produtos: porNo.get(n.id) ?? 0 })),
     });
   }, [itens, categorias, nos, totalBanco, buscaAplicada]);
   useEffect(() => { if (mapa) publicar("/catalogo", "Catálogo", mapa); return () => despublicar("/catalogo"); }, [mapa]);
@@ -157,6 +164,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const pesquisaPendente = busca.trim() !== buscaAplicada;
   const resumo = resumoDoLote(itens ?? []);
   const ficha = itens?.find((p) => p.id === fichaId) ?? null;
+  const pedidoDaFicha = (p: Produto, sugerido = "") => ({ taxonomiaSugerida: sugerido ? nomeNo(sugerido) : undefined, sku: p.sku, nome: p.nome, marca: p.marca, gtin: p.gtin, peso_kg: p.peso_kg, imagens: p.imagens, categoria: categorias.get(p.categoria_bling_id ?? "") ?? null, taxonomia: p.taxonomia_no_id ? nomeNo(p.taxonomia_no_id) : null, descricaoVazia: camposFaltando(p).includes("descrição") });
   const idsVisiveis = visiveis.map((p) => p.id);
   const nomeNo = (id: string | null) => {
     const n = id ? nos.get(id) : undefined;
@@ -166,7 +174,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
   };
 
   return (
-    <div className="catalogo-workspace">
+    <div className={ficha ? "catalogo-workspace catalogo-workspace--com-ficha" : "catalogo-workspace"}>
       <header className="catalogo-intro">
         <div>
           <span className="catalogo-sobretitulo"><Icone nome="catalogo" tamanho={16} /> INTELIGÊNCIA DE PRODUTOS · ERP BLING</span>
@@ -263,8 +271,8 @@ export function Catalogo({ loja }: { loja: Loja }) {
         </div>
       )}
       {ficha && (
-        <div className="catalogo-ficha-fundo" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setFichaId(null); }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="catalogo-ficha-titulo" className="catalogo-ficha">
+        <div className="catalogo-ficha-fundo" role="presentation">
+          <section role="dialog" aria-modal="false" aria-labelledby="catalogo-ficha-titulo" className="catalogo-ficha">
             <div className="catalogo-ficha-topo"><span>FICHA ADMINISTRATIVA · ESPELHO BLING</span><button type="button" className="sec" onClick={() => setFichaId(null)} aria-label="Fechar ficha técnica"><Icone nome="fechar" tamanho={20}/></button></div>
             <h2 id="catalogo-ficha-titulo">{ficha.nome ?? "Produto sem nome"}</h2>
             <p className="catalogo-ficha-sku">SKU: <strong>{ficha.sku ?? "não cadastrado"}</strong> · {situacaoTexto(ficha.situacao)}</p>
@@ -278,11 +286,34 @@ export function Catalogo({ loja }: { loja: Loja }) {
               <div><dt>Peso cadastrado</dt><dd>{ficha.peso_kg != null && ficha.peso_kg > 0 ? `${ficha.peso_kg.toLocaleString("pt-BR")} kg` : "Pendente"}</dd></div>
               <div><dt>Imagens registradas</dt><dd>{ficha.imagens}</dd></div>
             </dl>
+            <div className="catalogo-ficha-tax">
+              <strong>Posição na taxonomia</strong>
+              <p className="catalogo-ficha-caminho"><IconePeca nome={iconeDaCategoria(nos.get(ficha.taxonomia_no_id ?? "")?.slug, nos.get(ficha.taxonomia_no_id ?? "")?.nome)} tamanho={24} /> <span>{nomeNo(ficha.taxonomia_no_id)}</span></p>
+              <label>Propor outra posição
+                <select value={noSugerido} onChange={(e) => setNoSugerido(e.target.value)}>
+                  <option value="">Manter a atual</option>
+                  {[...nos.values()].filter((n) => !n.pai_id).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((raiz) => (
+                    <optgroup key={raiz.id} label={raiz.nome}>
+                      {[...nos.values()].filter((n) => n.pai_id === raiz.id).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
+                    </optgroup>
+                  ))}
+                </select>
+              </label>
+              <small>Isto não grava nada: a posição escolhida vai no pedido ao Nano, que propõe com fonte e você aprova na fila.</small>
+            </div>
             <div className="catalogo-ficha-pendencias">
               <strong>Campos faltando no espelho</strong>
               <p>{camposFaltando(ficha).length ? camposFaltando(ficha).join(" · ") : "Nenhuma das lacunas básicas detectadas. Aplicações e equivalências exigem comprovação independente."}</p>
             </div>
             <p className="catalogo-ficha-ressalva">As informações acima vêm do espelho interno; não provam compatibilidade com outros modelos, referências OEM ou procedência. Preço de custo, fornecedor e dados fiscais não são exibidos.</p>
+            <div className="catalogo-ficha-correcao">
+              <strong>Corrigir este produto com o Nano.IA</strong>
+              <p>{pendenciasDaFicha(pedidoDaFicha(ficha)).length ? `${pendenciasDaFicha(pedidoDaFicha(ficha)).length} pendência(s) vão no pedido. O Nano pesquisa, propõe com fonte e data, e você aprova na fila; ele não grava no Bling.` : "Sem pendências básicas; você ainda pode pedir uma conferência."}</p>
+              <label>O que você sabe sobre ele (opcional; entra como hipótese, sem fonte)
+                <textarea value={obsFicha} maxLength={600} rows={2} onChange={(e) => setObsFicha(e.target.value)} placeholder="Ex.: acho que o fabricante é…" />
+              </label>
+              <button type="button" onClick={() => { pedirAoNanoNaConversa(montarPedidoCorrecao({ ...pedidoDaFicha(ficha, noSugerido), observacaoLojista: obsFicha })); setFichaId(null); }}><Icone nome="agentes" tamanho={18}/> Pedir correção ao Nano.IA</button>
+            </div>
             <div className="catalogo-ficha-links"><a href="#/assistente" onClick={() => setFichaId(null)}><Icone nome="agentes" tamanho={18}/> Consultar Nano.IA</a><a href="#/fila" onClick={() => setFichaId(null)}>Abrir aprovações</a></div>
           </section>
         </div>

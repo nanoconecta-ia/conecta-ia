@@ -48,7 +48,10 @@
 .catalogo-produto-acoes label { display:inline-flex; align-items:center; gap:7px; font-size:.78rem; }
 .catalogo-produto-acoes input { width:19px; height:19px; min-height:19px; margin:0; }
 .catalogo-produto-acoes button { min-height:42px; border-radius:10px; font-size:.8rem; }
-.catalogo-ficha-fundo { position:fixed; inset:0; background:rgba(8,12,19,.72); z-index:120; display:flex; justify-content:flex-end; backdrop-filter:blur(4px); }
+/* Ficha LATERAL (não modal): o catálogo continua visível e clicável ao lado; no celular ocupa a tela toda. */
+.catalogo-ficha-fundo { position:fixed; inset:0; z-index:120; display:flex; justify-content:flex-end; pointer-events:none; }
+.catalogo-ficha-fundo > * { pointer-events:auto; }
+@media (min-width:960px) { .catalogo-ficha-fundo { top:var(--cab-altura,56px); bottom:var(--barra-altura,32px); } .catalogo-workspace--com-ficha { padding-right:min(530px,42vw); } }
 .catalogo-ficha { width:min(100%,530px); height:100dvh; overflow:auto; padding:clamp(22px,3vw,36px); background:var(--cartao); color:var(--texto); border-left:1px solid var(--borda); box-shadow:-15px 0 54px rgba(0,0,0,.2); display:flex; flex-direction:column; gap:14px; }
 .catalogo-ficha-topo { display:flex; justify-content:space-between; align-items:center; gap:13px; }
 .catalogo-ficha-topo span { font:700 .65rem var(--mono); color:var(--marca); letter-spacing:.08em; }
@@ -79,3 +82,15 @@
 .catalogo-paginacao button { min-height:44px; border-radius:12px; padding-inline:18px; font-weight:750; }
 .catalogo-workspace .msg-erro button { margin-left:10px; min-height:38px; }
 @media(max-width:520px) { .catalogo-paginacao button { width:100%; } }
+.catalogo-ficha-correcao { display:grid; gap:8px; padding:12px; border:1px solid var(--borda); border-radius:12px; background:var(--realce); }
+.catalogo-ficha-correcao p { margin:0; font-size:.9rem; color:var(--suave); }
+.catalogo-ficha-correcao label { display:grid; gap:4px; font-size:.85rem; color:var(--suave); }
+.catalogo-ficha-correcao textarea { width:100%; box-sizing:border-box; resize:vertical; font:inherit; color:var(--texto); background:var(--cartao); border:var(--campo-bw) solid var(--borda-forte); border-radius:8px; padding:8px; }
+.catalogo-ficha-correcao button { justify-self:start; display:inline-flex; align-items:center; gap:8px; min-height:44px; }
+
+.catalogo-ficha-tax { display:grid; gap:8px; padding:14px; border:1px solid var(--borda); border-radius:12px; }
+.catalogo-ficha-caminho { display:flex; align-items:center; gap:10px; margin:0; font-weight:700; font-size:.92rem; }
+.catalogo-ficha-tax label { display:grid; gap:4px; font-size:.85rem; color:var(--suave); }
+.catalogo-ficha-tax select { width:100%; min-height:44px; font:inherit; color:var(--texto); background:var(--cartao); border:var(--campo-bw) solid var(--borda-forte); border-radius:8px; padding:6px 8px; }
+.catalogo-ficha-tax small { color:var(--suave); font-size:.78rem; line-height:1.45; }
+@media (min-width:960px) { .catalogo-ficha-fundo .catalogo-ficha { height:100%; } } /* depois da regra base (100dvh): a ficha termina acima da barra de status */
