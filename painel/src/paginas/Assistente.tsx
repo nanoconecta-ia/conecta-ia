@@ -32,6 +32,12 @@ type Msg = { de: "eu" | "ia"; texto: string; anexos?: string[]; evidencias?: Evi
 type Conversa = { id: string; titulo: string; atualizada_em: string };
 type Registro = { id: string; papel: string; conteudo: string; criada_em: string; metadados?: Record<string, unknown> & { evidencias?: Evidencia[]; simulado?: boolean; propostas?: unknown } };
 
+const GRUPOS_NANO = [
+  { titulo: "Catálogo e conteúdo", icone: "catalogo", rotas: ["/catalogo", "/taxonomia", "/imagens", "/banners", "/studio"] },
+  { titulo: "Bling e operação", icone: "erp", rotas: ["/bling", "/fila", "/aprovacoes", "/backup", "/contador"] },
+  { titulo: "IA e agentes", icone: "agentes", rotas: ["/integracoes", "/estudio", "/meu-agente", "/dispositivos", "/gateway", "/central"] },
+  { titulo: "Loja e design", icone: "paleta", rotas: ["/aparencia", "/condicoes", "/design", "/videos", "/indicadores"] },
+] as const;
 const espera = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** `menu` e `aoNavegar` ligam o agente às telas do painel: ele abre, em sequência, o que o lojista pedir (só telas do menu da loja). */
@@ -363,18 +369,29 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         <div className="aba-corpo nano-menu-corpo">
           <label className="nano-busca-menu"><span className="so-leitor">Buscar ferramentas ou conversas</span><input type="search" value={buscaMenu} onChange={(e) => setBuscaMenu(e.target.value)} placeholder="Buscar neste painel" /></label>
           <button type="button" className="nano-acao-nova" disabled={ocupado} onClick={() => { nova(); setEsq(false); }}>✎ <span>Nova conversa</span></button>
-          <h2 className="nano-grupo-titulo">Ferramentas</h2>
-          <nav className="nano-links" aria-label="Ferramentas da loja">
-            {(menu ?? []).filter(([rota]) => ["/catalogo", "/imagens", "/fila", "/taxonomia", "/bling", "/integracoes", "/aprovacoes", "/estudio"].includes(rota))
-              .filter(([,titulo]) => titulo.toLocaleLowerCase("pt-BR").includes(buscaMenu.toLocaleLowerCase("pt-BR")))
-              .map(([rota,titulo]) => (
-                <button type="button" key={rota} className="nano-link" onClick={() => { setEsq(false); aoNavegar?.(rota); }}>
-                  <span className="nano-icone-rota" aria-hidden="true">{({ "/catalogo":"▦", "/imagens":"▧", "/fila":"✓", "/taxonomia":"⌘", "/bling":"↗", "/integracoes":"✧", "/aprovacoes":"☑", "/estudio":"◈" } as Record<string,string>)[rota] ?? "•"}</span>
-                  <span>{titulo}</span>
-                </button>
-              ))}
-          </nav>
-          <h2 className="nano-grupo-titulo">Conversas</h2>
+          <details className="nano-pasta nano-pasta-principal" defaultOpen>
+            <summary><Icone nome="caixas" tamanho={17} /> Ferramentas <span className="nano-pasta-seta" aria-hidden="true">⌄</span></summary>
+            <nav className="nano-arvore" aria-label="Ferramentas da loja">
+              {GRUPOS_NANO.map(grupo => {
+                const itens = (menu ?? []).filter(([rota, titulo]) =>
+                  (grupo.rotas as readonly string[]).includes(rota) &&
+                  titulo.toLocaleLowerCase("pt-BR").includes(buscaMenu.toLocaleLowerCase("pt-BR")));
+                return itens.length ? <details key={grupo.titulo} className="nano-pasta nano-pasta-nivel2">
+                  <summary><Icone nome={grupo.icone} tamanho={16} /> {grupo.titulo}<span className="nano-pasta-seta" aria-hidden="true">⌄</span></summary>
+                  <div className="nano-pasta-itens">
+                    {itens.map(([rota, titulo]) => <button type="button" key={rota} className="nano-link"
+                      onClick={() => { setEsq(false); aoNavegar?.(rota); }}>
+                      <span className="nano-icone-rota" aria-hidden="true"><Icone nome={grupo.icone} tamanho={15} /></span>
+                      <span>{titulo}</span>
+                    </button>)}
+                  </div>
+                </details> : null;
+              })}
+            </nav>
+          </details>
+          <details className="nano-pasta nano-conversas-pasta">
+            <summary><Icone nome="conversa" tamanho={17} /> Conversas <span className="nano-pasta-seta" aria-hidden="true">⌄</span></summary>
+            <div className="nano-conversas-corpo">
           {!(config.persistente || conversas.length > 0) && <p className="suave">O histórico privado aparece aqui quando estiver habilitado.</p>}
           {(config.persistente || conversas.length > 0) && (
             <div className="nano-lista-conversas" role="list">
@@ -393,12 +410,20 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
           {conversaId && <p className="suave nano-codigo-conversa">Conversa: {conversaId}{administrando ? " · Acesso auditado" : ""}</p>}
           {podeAdministrar && <details><summary>Retenção e acesso administrativo</summary><p>A auditoria tem política própria e não é excluída junto com as conversas.</p><label>Retenção em dias (7–730)<input type="number" min={7} max={730} value={dias} onChange={e => setDias(Number(e.target.value))} /></label><button className="sec" disabled={ocupado} onClick={() => void reter()}>Salvar retenção</button>
           {config.leitura_administrativa && <><p>Somente conversas desta empresa. Cada consulta registra usuário, motivo e conversa na auditoria.</p><label>Código da conversa<input value={adminId} onChange={e => setAdminId(e.target.value)} /></label><label>Motivo administrativo<input value={motivo} maxLength={300} onChange={e => setMotivo(e.target.value)} /></label><button className="sec" disabled={ocupado || motivo.trim().length < 10 || !adminId} onClick={() => void abrir(adminId, false, true)}>Consultar e auditar acesso</button></>}</details>}
+            </div>
+          </details>
         </div>
       </aside>
       <section className="abas-centro" aria-label="Conversa com o Nano.ia">
       <div className="agente">
         <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Abrir menu do Nano.IA" onClick={() => { setEsq((v) => !v); setMenuAnexos(false); if (estreito()) setDir(false); }}><Icone nome="menu" tamanho={20} /></button>
         <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite"><span className="nano-agente-estado">{estado === "pensando" && !acaoLocal && <PontosPensando />}{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span><span className="nano-motor-compacto" title={textoMotor} aria-label={textoMotor}>{nomeMotorCompacto}</span></span></div>
+        <nav className="nano-mini-agentes" aria-label="Acesso rápido aos módulos">
+          {(["/catalogo", "/bling", "/integracoes"] as const).filter(rota => (menu ?? []).some(([r]) => r === rota)).map(rota =>
+            <button type="button" key={rota} className="sec nano-mini-acao" title={rota === "/catalogo" ? "Catálogo" : rota === "/bling" ? "Bling" : "Integrações de IA"}
+              aria-label={rota === "/catalogo" ? "Abrir catálogo" : rota === "/bling" ? "Abrir Bling" : "Abrir integrações de IA"}
+              onClick={() => aoNavegar?.(rota)}><Icone nome={rota === "/catalogo" ? "catalogo" : rota === "/bling" ? "erp" : "agentes"} tamanho={16} /></button>)}
+        </nav>
         {<button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span aria-hidden="true"><Icone nome="mais" tamanho={20} /></span></button>}
         <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}><Icone nome="ajustes" tamanho={20} /></button>
       </div>
