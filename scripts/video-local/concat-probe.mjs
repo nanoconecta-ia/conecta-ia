@@ -1,6 +1,7 @@
 // Homologacao SOMENTE LEITURA do MCP nativo do Concat.
 // Nao instala programas, nao importa arquivos e nao executa edicoes/exportacoes.
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync, createReadStream } from "node:fs";
+import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { resolve, isAbsolute } from "node:path";
@@ -21,23 +22,31 @@ export function caminhoConcat(env = process.env) {
   return candidatas.find(x => existsSync(x)) ?? null;
 }
 export function argumentosProbe(argv) {
-  let bin = null, modo = "headless";
+  let bin = null, modo = "headless", sha256 = null;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--bin" && i + 1 < argv.length && !bin) bin = argv[++i];
+    else if (argv[i] === "--sha256" && i + 1 < argv.length && !sha256) sha256 = argv[++i];
     else if (argv[i] === "--window") modo = "window";
-    else throw Error("Use --bin caminho-absoluto e, opcionalmente, --window.");
+    else throw Error("Use --bin caminho-absoluto --sha256 hash-oficial e, opcionalmente, --window.");
   }
-  return { bin, modo };
+  return { bin, modo, sha256 };
 }
 function ambienteMinimo(env) {
   const nomes = ["PATH", "Path", "HOME", "USERPROFILE", "LOCALAPPDATA", "APPDATA", "ProgramFiles", "TMP", "TEMP", "SYSTEMROOT", "SystemRoot", "WINDIR"];
   return Object.fromEntries(nomes.filter(n => typeof env[n] === "string").map(n => [n, env[n]]));
 }
-export async function sondarConcat({ bin, modo = "headless", timeoutMs = 9000, lancar = spawn, env = process.env } = {}) {
-  const executavel = bin ?? caminhoConcat(env);
-  if (!executavel || !isAbsolute(executavel) || !existsSync(executavel)) {
-    throw Error("Concat nao instalado em caminho conhecido. Informe --bin com o executavel oficial, apos verificacao.");
-  }
+/** Procedência do executável do Concat: caminho absoluto + SHA-256 do lançamento oficial verificado pela pessoa. */
+export async function verificarExecutavel(caminho, sha256Esperado) {
+  if (typeof caminho !== "string" || !isAbsolute(caminho) || !existsSync(caminho)) throw Error("Concat nao instalado em caminho conhecido. Informe --bin com o executavel oficial, apos verificacao.");
+  if (typeof sha256Esperado !== "string" || !/^[0-9a-f]{64}$/i.test(sha256Esperado)) throw Error("Informe --sha256 com o SHA-256 (64 hex) do executavel oficial do Concat.");
+  const real = realpathSync(caminho); const h = createHash("sha256");
+  await new Promise((ok, fail) => { const r = createReadStream(real); r.on("data", d => h.update(d)); r.once("error", fail); r.once("end", ok); });
+  if (h.digest("hex") !== sha256Esperado.toLowerCase()) throw Error("SHA-256 do executavel nao confere: nao sera executado.");
+  return real;
+}
+export async function sondarConcat({ bin, sha256, modo = "headless", timeoutMs = 9000, lancar = spawn, env = process.env } = {}) {
+  // Sem descoberta automática: caminhoConcat só SUGERE onde procurar; nunca executa um binário que ninguém verificou.
+  const executavel = await verificarExecutavel(bin ?? null, sha256 ?? null);
   if (!["headless", "window"].includes(modo)) throw Error("Modo MCP invalido.");
   const proc = lancar(resolve(executavel), ["--mcp", modo], {
     env: ambienteMinimo(env), stdio: ["pipe", "pipe", "pipe"], shell: false, windowsHide: true,

@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
-import { argumentos, prepararRenderizacao, parametrosFfmpeg, executarRenderizacao } from "./render.mjs";
+import { argumentos, prepararRenderizacao, parametrosFfmpeg, executarRenderizacao, verificarBinario } from "./render.mjs";
 
 function fixture() {
   const root=mkdtempSync(join(tmpdir(),"nano-video-teste-")), media=join(root,"fotos"), output=join(root,"saida");
@@ -59,5 +59,29 @@ test("video: nao sobrescreve exportacao existente",()=>{
  const f=fixture();try{
   writeFileSync(join(f.output,"nano-video-CI000016.mp4"),Buffer.from("anterior"));
   assert.throws(()=>prepararRenderizacao(f),/já existe/);
+ }finally{f.limpar();}
+});
+
+test("video: FFmpeg so roda com caminho absoluto e SHA-256 conferido; sem isso nada executa",async()=>{
+ const f=fixture();try{
+  const bin=join(f.root,"ffmpeg-falso");writeFileSync(bin,"ffmpeg de teste");
+  const sha=createHash("sha256").update("ffmpeg de teste").digest("hex");
+  const nuncaLanca=()=>{throw Error("nao deveria executar");};
+  await assert.rejects(()=>executarRenderizacao({...f,approve:true,dryRun:false,ffmpeg:null,ffmpegSha256:sha},nuncaLanca),/ABSOLUTO/);
+  await assert.rejects(()=>executarRenderizacao({...f,approve:true,dryRun:false,ffmpeg:bin,ffmpegSha256:null},nuncaLanca),/--ffmpeg-sha256/);
+  await assert.rejects(()=>executarRenderizacao({...f,approve:true,dryRun:false,ffmpeg:bin,ffmpegSha256:"0".repeat(64)},nuncaLanca),/não confere/);
+  assert.equal(await verificarBinario(bin,sha.toUpperCase()),bin);
+ }finally{f.limpar();}
+});
+test("video: falha do FFmpeg apaga o MP4 parcial e permite nova tentativa",async()=>{
+ const f=fixture();try{
+  const bin=join(f.root,"ffmpeg-falso");writeFileSync(bin,"ffmpeg de teste");
+  const sha=createHash("sha256").update("ffmpeg de teste").digest("hex");
+  const { EventEmitter } = await import("node:events");
+  const { writeFileSync: gravar, existsSync } = await import("node:fs");
+  const lancarQueFalha=(_b,args)=>{const p=new EventEmitter();p.stderr=new EventEmitter();gravar(args.at(-1),"parcial");setImmediate(()=>p.emit("close",1));return p;};
+  await assert.rejects(()=>executarRenderizacao({...f,approve:true,dryRun:false,ffmpeg:bin,ffmpegSha256:sha},lancarQueFalha),/FFmpeg falhou/);
+  assert.equal(existsSync(join(f.output,"nano-video-CI000016.mp4")),false,"parcial removido");
+  assert.doesNotThrow(()=>prepararRenderizacao(f),"nova tentativa nao e bloqueada");
  }finally{f.limpar();}
 });

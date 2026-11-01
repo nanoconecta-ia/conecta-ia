@@ -25,7 +25,7 @@ node --experimental-strip-types scripts/video-local/render.mjs --manifest "C:\te
 node --experimental-strip-types scripts/video-local/render.mjs --manifest "C:\teste\nano-video-CI000016.json" --media "C:\teste\fotos" --output "C:\teste\saida" --approve
 
 # Depois de verificar a origem e instalar o Concat oficial, leitura MCP:
-node scripts/video-local/concat-probe.mjs
+node scripts/video-local/concat-probe.mjs --bin <caminho-absoluto-do-concat> --sha256 <hash-oficial>
 ```
 
 > FFmpeg deve ser instalado/verificado separadamente. Concat para Windows costuma ficar em `%LOCALAPPDATA%\Programs\Concat\concat.exe` ou `C:\Program Files\Concat\concat.exe`. Guia primário: https://github.com/jub0t/Concat/blob/main/docs/MCP.md. Concat ainda é beta e tem licença AGPL-3.0; avaliar implicações antes de distribuir binários, incorporar código ou ofertar serviço de edição.
@@ -46,3 +46,8 @@ node scripts/video-local/concat-probe.mjs
 - Não há servidor MCP remoto, Edge Function nova, login de Concat ou ponte de envio automático; tudo é local e com autorização explícita.
 - O vídeo exportado monta fotografias em sequência com barras de enquadramento. Não há legendagem automática, efeitos, locução ou mídia sintética nesta PR.
 - Próxima fase, após homologação do Concat: integrar `project_create`, `media_import`, `clip_add` e `export_start` pelo **schema real descoberto via `tools/list`**, com pasta restrita, política de ferramentas e aprovação por tarefa.
+
+## Procedência dos executáveis (revisão técnica)
+- **Nada é executado sem prova.** O renderizador (`--approve`) exige `--ffmpeg <caminho absoluto>` e `--ffmpeg-sha256 <64 hex>` do lançamento oficial que a pessoa verificou; o probe do Concat exige `--bin` absoluto e `--sha256`. Hash diferente: recusa antes de lançar o processo. Não há descoberta automática de binário em pastas graváveis.
+- Falha do FFmpeg apaga o MP4 parcial (a saída não existia antes), para não bloquear a nova tentativa nem ser confundido com vídeo válido.
+- A instalação do FFmpeg e do Concat e o teste real no Windows dependem de **autorização específica do dono**; este documento não instala nada.

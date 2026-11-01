@@ -1,8 +1,8 @@
 // Renderizador local Nano.IA: nenhuma rede, sem shell, sem escrita em ERP, sem publicacao.
 // node --experimental-strip-types scripts/video-local/render.mjs --manifest ... --media ... --output ... --dry-run|--approve
-import { readFileSync, realpathSync, statSync, existsSync } from "node:fs";
+import { readFileSync, realpathSync, statSync, existsSync, createReadStream, unlinkSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { dirname, basename, join, resolve } from "node:path";
+import { dirname, basename, join, resolve, isAbsolute } from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { validarPlanoVideo, FORMATOS_VIDEO } from "../../painel/src/lib/videoPlano.ts";
@@ -12,14 +12,25 @@ export function argumentos(argv) {
   for (let i = 0; i < argv.length; i++) {
     const key = argv[i];
     if (key === "--dry-run" || key === "--approve") { if (opts.has(key)) throw Error("Opção duplicada: " + key); opts.set(key, true); continue; }
-    if (!["--manifest", "--media", "--output", "--ffmpeg"].includes(key) || opts.has(key) || i === argv.length - 1)
+    if (!["--manifest", "--media", "--output", "--ffmpeg", "--ffmpeg-sha256"].includes(key) || opts.has(key) || i === argv.length - 1)
       throw Error("Argumentos inválidos. Informe --manifest, --media, --output e --dry-run ou --approve.");
     const val = argv[++i]; if (!val || val.startsWith("--")) throw Error("Caminho ausente para " + key);
     opts.set(key, val);
   }
   if (!opts.has("--manifest") || !opts.has("--media") || !opts.has("--output") ||
       opts.has("--dry-run") === opts.has("--approve")) throw Error("Informe manifesto, pasta de fotos, saída e apenas um de --dry-run/--approve.");
-  return { manifest: opts.get("--manifest"), media: opts.get("--media"), output: opts.get("--output"), ffmpeg: opts.get("--ffmpeg") ?? "ffmpeg", dryRun: opts.has("--dry-run") };
+  return { manifest: opts.get("--manifest"), media: opts.get("--media"), output: opts.get("--output"), ffmpeg: opts.get("--ffmpeg") ?? null, ffmpegSha256: opts.get("--ffmpeg-sha256") ?? null, dryRun: opts.has("--dry-run") };
+}
+/** Procedência do binário: caminho ABSOLUTO + SHA-256 igual ao do lançamento oficial verificado pela pessoa. Sem isso, nada é executado. */
+export async function verificarBinario(caminho, sha256Esperado) {
+  if (typeof caminho !== "string" || !isAbsolute(caminho)) throw Error("Informe --ffmpeg com o caminho ABSOLUTO do executável verificado.");
+  if (typeof sha256Esperado !== "string" || !/^[0-9a-f]{64}$/i.test(sha256Esperado)) throw Error("Informe --ffmpeg-sha256 com o SHA-256 (64 hex) do executável oficial.");
+  const real = realpathSync(caminho);
+  if (!statSync(real).isFile()) throw Error("O executável precisa ser um arquivo.");
+  const h = createHash("sha256");
+  await new Promise((ok, fail) => { const r = createReadStream(real); r.on("data", d => h.update(d)); r.once("error", fail); r.once("end", ok); });
+  if (h.digest("hex") !== sha256Esperado.toLowerCase()) throw Error("SHA-256 do executável não confere: não será executado.");
+  return real;
 }
 const hash = b => createHash("sha256").update(b).digest("hex");
 function assinatura(buf, nome) {
@@ -80,14 +91,18 @@ export async function executarRenderizacao(cfg, lancar = spawn) {
     duracao_s: preparado.fotos.length * preparado.plano.segundos_por_foto, formato: preparado.plano.formato,
     destino: preparado.arquivo, verificado: true, gerado: false };
   if (!cfg.approve) throw Error("Renderização exige autorização --approve.");
-  const binario = cfg.ffmpeg ?? "ffmpeg";
-  await new Promise((ok, fail) => {
+  const binario = await verificarBinario(cfg.ffmpeg, cfg.ffmpegSha256);
+  try { await new Promise((ok, fail) => {
     const proc = lancar(binario, args, { shell: false, stdio: ["ignore", "ignore", "pipe"], windowsHide: true });
     let erro = "";
     proc.stderr?.on("data", buf => { if (erro.length < 4000) erro += String(buf).slice(0, 4000 - erro.length); });
     proc.once("error", fail);
     proc.once("close", code => code === 0 ? ok() : fail(Error("FFmpeg falhou (código " + code + "). " + erro.slice(-900))));
-  });
+  }); } catch (e) {
+    // A saída não existia antes (conferido em prepararRenderizacao): remove o MP4 parcial para não bloquear nova tentativa nem ser confundido com um vídeo válido.
+    try { if (existsSync(preparado.arquivo)) unlinkSync(preparado.arquivo); } catch { /* sem permissão: mensagem original segue */ }
+    throw e;
+  }
   if (!existsSync(preparado.arquivo) || !statSync(preparado.arquivo).isFile() || !statSync(preparado.arquivo).size)
     throw Error("Processo terminou mas nenhum MP4 válido foi encontrado.");
   return { modo: "renderizado_local", gerado: true, arquivo: preparado.arquivo,
