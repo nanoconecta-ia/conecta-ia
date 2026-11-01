@@ -1,6 +1,6 @@
 // Seleciona um unico ProvedorBusca por chamada. SearXNG privado tem prioridade; Google e legado.
 // Nenhuma configuracao chega do frontend ou da entrada do LLM.
-import { type ProvedorBusca } from "./busca.ts";
+import type { ProvedorBusca } from "./busca.ts";
 import { provedorGoogle } from "./google.ts";
 import { provedorSearxng, type ConfigSearxng } from "./searxng.ts";
 
