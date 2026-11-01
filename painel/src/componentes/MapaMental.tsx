@@ -5,12 +5,12 @@ import { iconeNoMapa } from "../lib/iconeNoMapa.ts";
 import "./MapaMentalIcones.css";
 
 const COR: Record<Tom, string> = { ok: "var(--ok)", atencao: "var(--atencao)", erro: "var(--erro)", neutro: "var(--ciano)" };
-const LARG_NO = 176, ALT_NO = 26;
+const LARG_NO = 208, ALT_NO = 26; // 208: com o ícone, o nome da categoria ainda cabe sem cortar na maioria dos casos (o nome completo fica no tooltip)
 
 /** Mapa mental da página: árvore horizontal em SVG. Clique (ou Enter/Espaço) recolhe e expande um ramo. Só mostra números e rótulos já higienizados. */
 export function MapaMental({ raiz, titulo }: { raiz: MapaNo; titulo: string }) {
   const [recolhidos, setRecolhidos] = useState<Set<string>>(() => new Set(raiz.filhos?.filter((f) => f.id === "taxonomia").map((f) => f.id)));
-  const l = useMemo(() => layoutArvore(raiz, { colunaLargura: 200, linhaAltura: 34, margem: 14, recolhidos }), [raiz, recolhidos]);
+  const l = useMemo(() => layoutArvore(raiz, { colunaLargura: 232, linhaAltura: 34, margem: 14, recolhidos }), [raiz, recolhidos]);
   const posicao = useMemo(() => new Map(l.nos.map((n) => [n.id, n])), [l]);
   const alternar = (id: string) => setRecolhidos((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const comFilhos = useMemo(() => { const ids: string[] = []; const a = (n: MapaNo) => { if (n.filhos?.length) ids.push(n.id); n.filhos?.forEach(a); }; a(raiz); return ids; }, [raiz]);
@@ -30,8 +30,8 @@ export function MapaMental({ raiz, titulo }: { raiz: MapaNo; titulo: string }) {
           })}
           {l.nos.map((n) => {
             const cor = COR[n.tom];
-            const icone = iconeNoMapa(n.id, n.rotulo);
-            const maxRotulo = icone ? 14 : 19;
+            const icone = iconeNoMapa(n.id, n.rotulo, n.slug);
+            const maxRotulo = icone ? 20 : 25;
             const rotulo = n.rotulo.length > maxRotulo ? `${n.rotulo.slice(0, maxRotulo - 1)}…` : n.rotulo;
             const valor = n.valor !== undefined ? String(n.valor) : "";
             return (

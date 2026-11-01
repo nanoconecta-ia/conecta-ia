@@ -12,7 +12,7 @@ import "./catalogo-workspace.css";
 import { camposFaltando, contagens, filtrar, ROTULO_FILTRO, semCategoria, situacaoTexto, type Filtro, type LinhaPlanilha } from "../lib/planilha.ts";
 
 type Produto = LinhaPlanilha & { preco: number | null; estoque: number | null; publicado: boolean };
-type No = { id: string; pai_id: string | null; nome: string };
+type No = { id: string; pai_id: string | null; nome: string; slug?: string | null };
 const FILTROS: Filtro[] = ["todos", "sem_categoria", "incompletos", "inativos", "sem_no"];
 const brl = (v: number | null) => (v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
 
@@ -64,7 +64,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
       const [prod, cats, tx] = await Promise.all([
         produtosQuery,
         inicial ? supabase.from("bling_categorias").select("bling_id, nome").eq("loja_id", loja.id).limit(2000) : Promise.resolve(null),
-        inicial ? supabase.from("taxonomia_nos").select("id, pai_id, nome").eq("perfil_ramo", loja.perfil_ramo).limit(2000) : Promise.resolve(null),
+        inicial ? supabase.from("taxonomia_nos").select("id, pai_id, nome, slug").eq("perfil_ramo", loja.perfil_ramo).limit(2000) : Promise.resolve(null),
       ]);
       if (sequenciaConsulta.current !== chamada) return;
       if (prod.error || !Array.isArray(prod.data)) {
@@ -147,7 +147,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
       total: itens.length, publicados: itens.filter((p) => p.publicado).length, inativos: itens.filter((p) => p.situacao !== "A").length,
       semCategoria: itens.filter((p) => semCategoria(p, ids)).length, semLugarNaTaxonomia: itens.filter((p) => p.taxonomia_no_id == null).length,
       incompletos: itens.filter((p) => camposFaltando(p).length > 0).length, faltando,
-      porNo: [...nos.values()].map((n) => ({ id: n.id, pai_id: n.pai_id, nome: n.nome, produtos: porNo.get(n.id) ?? 0 })),
+      porNo: [...nos.values()].map((n) => ({ id: n.id, pai_id: n.pai_id, nome: n.nome, slug: n.slug ?? null, produtos: porNo.get(n.id) ?? 0 })),
     });
   }, [itens, categorias, nos, totalBanco, buscaAplicada]);
   useEffect(() => { if (mapa) publicar("/catalogo", "Catálogo", mapa); return () => despublicar("/catalogo"); }, [mapa]);
