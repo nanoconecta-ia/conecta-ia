@@ -230,7 +230,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     if (!repetir && /^\/ficha\s+/i.test(t.trim())) {
      if (ocupado || administrando || !!retentativa || anexos.length) { setErroHistorico("A ficha sem IA exige uma consulta isolada, sem anexos ou outra ação em andamento."); return; }
      const codigo = t.trim().replace(/^\/ficha\s+/i, "");
-     if (!/^[A-Za-z0-9_.\/-]{1,60}$/.test(codigo)) { setErroHistorico("Use /ficha seguido de um SKU/código, por exemplo /ficha CI000016."); return; }
+     if (!/^[A-Za-z0-9_.\/-]{1,60}$/.test(codigo) || codigo.startsWith(".")) { setErroHistorico("Use /ficha seguido de um SKU/código, por exemplo /ficha CI000016."); return; }
      const origem = loja.id; setMsgs(m => [...m, { de: "eu", texto: t }]); setTexto(""); setOcupado(true); setErroHistorico("");
      try {
        const d = await chamada("chat_ficha_produto", { codigo });
