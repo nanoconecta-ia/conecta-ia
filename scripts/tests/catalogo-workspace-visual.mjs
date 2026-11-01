@@ -48,7 +48,8 @@ try {
         return route.fulfill({status:200,contentType:"application/json",headers:{...h,"content-range":range},body:JSON.stringify(lote)});
       }
       if(u.pathname.endsWith("/rest/v1/produto_imagens"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([{produto_id:"bbbbbbbb-0000-0000-0000-000000000003"}])});
-      if(u.pathname.endsWith("/rest/v1/bling_categorias")||u.pathname.endsWith("/rest/v1/taxonomia_nos")||u.pathname.endsWith("/rest/v1/produto_automacao"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:"[]"});
+      if(u.pathname.endsWith("/rest/v1/taxonomia_nos"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([{id:"n1",pai_id:null,nome:"Arrefecimento",slug:"arrefecimento",ordem:1},{id:"n2",pai_id:"n1",nome:"Bombas d'água",slug:"bombas-agua",ordem:1}])});
+      if(u.pathname.endsWith("/rest/v1/bling_categorias")||u.pathname.endsWith("/rest/v1/produto_automacao"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:"[]"});
       if(u.pathname.endsWith("/functions/v1/assistente")){const a=JSON.parse(req.postData()||"{}").acao;return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify(a==="provedores"?{verificado:true,provedores:[]}:a==="chat_config"?{persistente:false,bling:false,leitura_administrativa:false,retencao_dias:180}:{conversas:[],registros:[]})});}
       return route.fulfill({status:200,contentType:"application/json",headers:h,body:u.pathname.includes("/rest/v1/")?"[]":"{}"});
     });
@@ -88,14 +89,18 @@ try {
       await page.getByRole("status").filter({hasText:"1 encontrado(s)"}).waitFor();
       await page.getByRole("button",{name:"Ver ficha técnica"}).click();
       const ficha=page.getByRole("dialog");await ficha.waitFor();
+      assert.equal(await ficha.getAttribute("aria-modal"),"false","ficha lateral não é modal");
+      if(width>=960){const f=await ficha.boundingBox(),b=await page.getByRole("searchbox",{name:"Buscar produto por SKU, nome, marca ou GTIN"}).boundingBox();assert.ok(b.x+b.width<=f.x+1,`ficha ao lado do catálogo, sem cobrir a busca (${Math.round(b.x+b.width)} vs ${Math.round(f.x)})`);}
+      await ficha.getByLabel("Propor outra posição").selectOption({label:"Bombas d'água"});
       await ficha.getByLabel(/O que você sabe sobre ele/).fill("acho que o fabricante é teste");
+      await page.screenshot({path:root+`evidencias-chat/ficha-lateral-${width}.png`});
       const antesEnvios=writes.length;
       await ficha.getByRole("button",{name:"Pedir correção ao Nano.IA"}).click();
       await page.waitForFunction(()=>location.hash==="#/assistente");
       const caixa=page.getByRole("textbox").last();await caixa.waitFor();
       await page.waitForFunction(()=>[...document.querySelectorAll("textarea")].some(t=>t.value.includes("Corrigir o cadastro do produto SKU")));
       const v=await page.evaluate(()=>[...document.querySelectorAll("textarea")].find(t=>t.value.includes("Corrigir o cadastro"))?.value??"");
-      assert.match(v,/854008/);assert.match(v,/hipótese, SEM fonte: confirme antes de usar\): acho que o fabricante é teste/);assert.match(v,/não aprova nem grava no Bling/);
+      assert.match(v,/854008/);assert.match(v,/hipótese, SEM fonte: confirme antes de usar\): acho que o fabricante é teste/);assert.match(v,/não aprova nem grava no Bling/);assert.match(v,/Posição na taxonomia sugerida pelo lojista \(hipótese, SEM fonte\): Arrefecimento › Bombas d'água/);
       assert.equal(v.includes("151,00"),false,"pedido sem custo");
       assert.deepEqual(writes.slice(antesEnvios).filter(x=>!x.url.endsWith("/functions/v1/assistente")&&!x.url.includes("/rest/v1/rpc/pode_")),[],"preencher a caixa não grava em nenhuma tabela nem no ERP (só leituras e checagem de permissão)");
       assert.ok((await page.evaluate(()=>[...document.querySelectorAll("textarea")].find(t=>t.value.includes("Corrigir o cadastro"))?.value??"")).length>0,"o texto continua na caixa: nada foi enviado");

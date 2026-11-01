@@ -37,3 +37,9 @@ test("observação enorme é cortada e produto sem lacunas não inventa pendênc
   assert.ok(t.length < 2500);
   assert.match(t, /Nenhuma lacuna básica detectada/);
 });
+
+test("a posição sugerida na taxonomia entra como hipótese sem fonte", () => {
+  const t = montarPedidoCorrecao({ ...base, taxonomiaSugerida: "Motor › Juntas e retentores" });
+  assert.match(t, /Posição na taxonomia sugerida pelo lojista \(hipótese, SEM fonte\): Motor › Juntas e retentores/);
+  assert.doesNotMatch(montarPedidoCorrecao(base), /Posição na taxonomia sugerida/);
+});
