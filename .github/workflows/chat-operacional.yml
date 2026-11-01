@@ -67,6 +67,7 @@ jobs:
       - run: node scripts/tests/sw-atualiza.mjs
       - run: node scripts/tests/fidelidade-visual.mjs
       - run: node scripts/tests/painel-lateral-mobile-visual.mjs
+      - run: node scripts/tests/nano-mobile-immersivo-visual.mjs
       - run: node scripts/tests/visao-geral-visual.mjs
       - run: node scripts/tests/catalogo-workspace-visual.mjs
       - uses: actions/upload-artifact@v4
