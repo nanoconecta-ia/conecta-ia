@@ -16,6 +16,14 @@ test("só as 2 últimas ficam abertas; o que a pessoa abriu continua aberto; mod
   assert.equal(mensagemRecolhida(0, 1, nenhuma, "auto"), false, "conversa curta nunca recolhe");
 });
 
+test("só recolhe o que a pessoa fechou, e abrir à mão vence", () => {
+  const nenhuma = new Set<number>();
+  assert.equal(mensagemRecolhida(1, 5, nenhuma, "auto", new Set([1])), true);
+  assert.equal(mensagemRecolhida(2, 5, nenhuma, "auto", new Set([1])), false);
+  assert.equal(mensagemRecolhida(1, 5, new Set([1]), "auto", new Set([1])), false);
+  assert.equal(mensagemRecolhida(1, 5, nenhuma, "expandir", new Set([1])), false);
+});
+
 test("resposta longa mostra só o começo, em fim de frase", () => {
   const longa = "Frase completa aqui. ".repeat(260); // acima do limite de 4000 caracteres
   assert.equal(ehLonga("Frase completa aqui. ".repeat(60)), false, "1.200 caracteres aparecem inteiros");

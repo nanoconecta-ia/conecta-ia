@@ -12,11 +12,12 @@ export function resumoLinha(texto: string, max = TRECHO_RECOLHIDO): string {
 }
 
 /** Quais mensagens aparecem recolhidas. `abertas` = o que a pessoa abriu à mão; `todas` força tudo aberto/recolhido. */
-export function mensagemRecolhida(indice: number, total: number, abertas: ReadonlySet<number>, modo: "auto" | "recolher" | "expandir"): boolean {
+export function mensagemRecolhida(indice: number, total: number, abertas: ReadonlySet<number>, modo: "auto" | "recolher" | "expandir", fechadas: ReadonlySet<number> = new Set()): boolean {
   if (modo === "expandir") return false;
   if (abertas.has(indice)) return false;
   if (modo === "recolher") return true;
-  return false; // chat moderno: nada recolhe sozinho; recolher é escolha da pessoa (modo "recolher" ou clique)
+  void total; // chat moderno: nada recolhe sozinho; só recolhe o que a pessoa fechou (clique) ou "Recolher tudo"
+  return fechadas.has(indice);
 }
 
 export const ehLonga = (texto: string): boolean => texto.length > LIMITE_LONGA;
