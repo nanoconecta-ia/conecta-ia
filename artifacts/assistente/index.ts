@@ -2187,7 +2187,7 @@ const FERRAMENTAS_CONECTOR = [
         sku,
         preco_novo: {
             type: "number",
-            exclusiveMinimum: 0,
+            minimum: 0.01,
             maximum: 10000000,
             description: "Novo preço de venda em reais, até 2 casas decimais"
         },
