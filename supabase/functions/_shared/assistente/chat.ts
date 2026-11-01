@@ -6,6 +6,7 @@ import type { AdaptadorStream } from "../ia/adaptadores_stream.ts";
 import { modeloDaChave, validarProvedor } from "./provedores.ts";
 import { CONSULTAR_PRODUTO, consultarProduto } from "./bling_consultar.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../ia/ferramentas.ts";
+import { configSearxngPorLoja } from "../ia/searxng.ts";
 import { dadosSupabase } from "../conector/dados.ts";
 import { BlingLeituraReal } from "../conector/porta_bling.ts";
 import { armazemSupabase } from "../bling_armazem.ts";
@@ -13,6 +14,8 @@ import { conteudoComAnexos, REGRAS_ANEXO, resumoParaRegistro, validarAnexos, typ
 
 /** Ferramentas de PROPOSTA do Bling liberadas neste fluxo (nenhuma grava no Bling; o lojista aprova a versão exata na Central de Inteligência). */
 export const FERRAMENTAS_PROPOSTA_BLING = ["bling_categorias", "bling_propor_categoria", "bling_propor_trocar_categoria", "bling_propor_reativar_produto", "bling_propor_ajuste_produto"] as const;
+/** Pesquisa somente leitura; passa pelo mesmo Policy Engine e pelo limite do chat por loja/usuario. */
+export const FERRAMENTAS_PESQUISA = ["buscar_imagem_web", "buscar_dados_tecnicos_web"] as const;
 export interface ChatContexto {
  usuario: any; admin: any; loja: { id: string; nome: string }; userId: string; get(n: string): string | undefined; fetch?: typeof fetch;
  /** B2b (#166): texto da resposta assim que existir (streaming). Opcional: sem ele o turno é idêntico ao de antes. */
@@ -113,19 +116,27 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   modelo = modeloDaChave(k);
   meta.host_provedor = provedor === "compativel_openai" ? new URL(k.base_url).hostname : provedor === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
   const propostas: Record<string, unknown>[] = [];
+  const searxng = configSearxngPorLoja(ctx.get, loja.id); // Ambiente privado + allowlist por loja; nunca vem do usuario.
   const r = await conversar({ provedor, baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo, mensagens,
-   sistema: `${SISTEMA}\nLoja: ${loja.nome}. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto e bling_propor_ajuste_produto: nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
-   maxPassos: 5, maxTokens: 1536, aoTexto: ctx.aoTexto, adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(provedor) : undefined, ferramentas: ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,
+   sistema: `${SISTEMA}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto e bling_propor_ajuste_produto: nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
+   maxPassos: 5, maxTokens: 1536, aoTexto: ctx.aoTexto, adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(provedor) : undefined, ferramentas: ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name) || (FERRAMENTAS_PESQUISA as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,
    onPasso: p => { tokens += p.tokens; respostaId = p.respostaId; modelo = p.modelo ?? modelo; },
    executar: async (nome, entrada) => {
     const t0 = Date.now();
     try {
-     if (!ativo("chat_consulta_bling") || (nome !== CONSULTAR_PRODUTO.name && !(FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(nome))) throw new Error("Ferramenta não permitida.");
+     if (!ativo("chat_consulta_bling") || (nome !== CONSULTAR_PRODUTO.name && !(FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(nome) && !(FERRAMENTAS_PESQUISA as readonly string[]).includes(nome))) throw new Error("Ferramenta não permitida.");
      if (nome !== CONSULTAR_PRODUTO.name) {
       // O chat persistente grava em `conversas`; as propostas do motor ligam a `agente_conversas`. Sem vínculo (conversaId null): a proposta nasce igual, só não aponta para esta conversa.
       const bling = new BlingLeituraReal(armazemSupabase(admin), loja.id, { chaveCifra: chaveiro, fetch: ctx.fetch });
       const conector = { origem: "chat" as const, lojaId: loja.id, userId, dados: dadosSupabase(admin, loja.id), rpc: (fn: string, args: Record<string, unknown>) => admin.rpc(fn, args), admin, bling, conversaId: null, agente: { nome: "Nano.ia", provedor, modelo } };
-      const out = await executarFerramenta(nome, entrada, { usuario, admin, lojaId: loja.id, plugins: [], credencial: async () => null, fetch: ctx.fetch, conector }) as Record<string, any>;
+      let buscaImagem: { chave: string; cx: string } | null = null;
+      if ((FERRAMENTAS_PESQUISA as readonly string[]).includes(nome) && !searxng) {
+       const { data: biRows, error: biError } = await admin.rpc("busca_imagem_ler", { p_loja: loja.id });
+       if (biError) throw new Error("Não foi possível consultar configuração da busca.");
+       const bi = (biRows as { api_key_cifrada: string; cx: string }[] | null)?.[0];
+       if (bi) buscaImagem = { chave: await decifrar(bi.api_key_cifrada, chaveiro), cx: bi.cx };
+      }
+      const out = await executarFerramenta(nome, entrada, { usuario, admin, lojaId: loja.id, plugins: [], credencial: async () => null, fetch: ctx.fetch, conector, buscaImagem, searxng }) as Record<string, any>;
       tentativas.push({ ferramenta: nome, ok: !out?.erro });
       if (out?.proposta_id) { propostas.push({ id: out.proposta_id, titulo: out.titulo, versao: out.versao, hash: out.hash, risco: out.risco }); meta.propostas = propostas; }
       return out;
