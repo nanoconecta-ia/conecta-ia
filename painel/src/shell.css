@@ -942,3 +942,84 @@ table { font-size: .97rem; }
 th { font-size: .85rem; }
 .suave { font-size: .97rem; }
 .rotulo { font-size: .93rem; }
+
+/* Esfera única do Nano.IA (pedido do dono, 2026-11-01): menor, com cara de olho de máquina de IA (núcleo de sol com pupila),
+   órbita de átomo e faíscas. Fica no cabeçalho e reage ao estado do Nano por html[data-nano-estado]. Só tokens do tema. */
+.orbe { --d: 30px; --orbe-cor: var(--marca); --orbe-gira: 9s; --orbe-pulso: 4.6s; position: relative; width: var(--d); height: var(--d); display: inline-grid; place-items: center; flex: none; }
+.orbe-aura { position: absolute; inset: -34%; border-radius: 50%; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--orbe-cor) 42%, transparent), transparent 72%); animation: orbe-aura var(--orbe-pulso) ease-in-out infinite; }
+.orbe-nucleo { position: relative; width: calc(var(--d) * .54); height: calc(var(--d) * .54); border-radius: 50%; z-index: 1;
+  background: radial-gradient(circle at 34% 28%, #fff 0 7%, color-mix(in srgb, var(--orbe-cor) 50%, #fff) 26%, var(--orbe-cor) 58%, color-mix(in srgb, var(--orbe-cor) 40%, #000) 100%);
+  box-shadow: 0 0 calc(var(--d) * .38) color-mix(in srgb, var(--orbe-cor) 75%, transparent), inset 0 -2px 5px rgba(0, 0, 0, .28); animation: orbe-pulsa var(--orbe-pulso) ease-in-out infinite; }
+.orbe-pupila { position: absolute; left: 50%; top: 50%; width: 26%; height: 26%; border-radius: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle at 35% 30%, #fff 0 14%, #1c130d 38%); box-shadow: 0 0 0 1px rgba(255, 255, 255, .4); }
+.orbe-anel { position: absolute; inset: 0; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--ciano) 78%, transparent); transform: rotate(-26deg) scaleY(.36); animation: orbe-gira var(--orbe-gira) linear infinite; pointer-events: none; }
+.orbe-anel-2 { transform: rotate(34deg) scaleY(.36); border-color: color-mix(in srgb, var(--orbe-cor) 70%, transparent); animation-direction: reverse; animation-duration: calc(var(--orbe-gira) * 1.4); }
+.orbe-faiscas b { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px 1px var(--ciano); opacity: 0; animation: orbe-faisca 2.6s ease-in-out infinite; z-index: 2; }
+.orbe-faiscas b:nth-child(1) { left: 6%; top: 22%; }
+.orbe-faiscas b:nth-child(2) { right: 4%; top: 56%; animation-delay: -.9s; box-shadow: 0 0 6px 1px var(--orbe-cor); }
+.orbe-faiscas b:nth-child(3) { left: 40%; bottom: 0; animation-delay: -1.7s; }
+@keyframes orbe-pulsa { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+@keyframes orbe-aura { 0%, 100% { opacity: .7; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes orbe-gira { to { rotate: 360deg; } }
+@keyframes orbe-faisca { 0%, 100% { opacity: 0; transform: scale(.4); } 45%, 55% { opacity: 1; transform: scale(1.15); } }
+/* Estados: ativo = mais rápido e mais brilhante; atenção e erro mudam a cor. */
+html[data-nano-estado="ouvindo"] .orbe { --orbe-cor: var(--verde); --orbe-gira: 4s; --orbe-pulso: 1.6s; }
+html[data-nano-estado="pensando"] .orbe, html[data-nano-estado="interpretando"] .orbe { --orbe-gira: 2.4s; --orbe-pulso: 1.4s; }
+html[data-nano-estado="falando"] .orbe { --orbe-cor: var(--verde); --orbe-gira: 3.2s; --orbe-pulso: .9s; }
+html[data-nano-estado="aguardando_aprovacao"] .orbe, html[data-nano-estado="preparando_proposta"] .orbe { --orbe-cor: var(--atencao); --orbe-gira: 6s; }
+html[data-nano-estado="erro"] .orbe, html[data-nano-estado="bloqueado"] .orbe { --orbe-cor: var(--erro); --orbe-gira: 14s; }
+@media (prefers-reduced-motion: reduce) { .orbe-aura, .orbe-nucleo, .orbe-anel, .orbe-faiscas b { animation: none !important; } .orbe-faiscas b { opacity: .8; } }
+
+/* Respostas do Nano em texto rico (pedido do dono, 2026-11-01): títulos, tabelas e destaques com cor, para explicar proposta e orçamento.
+   O mesmo texto aprovado pelo lojista pode virar descrição de produto (site) e descrição técnica (Bling). Só tokens do tema. */
+.md h2, .md h3, .md h4 { color: color-mix(in srgb, var(--marca) 78%, var(--texto)); letter-spacing: -.01em; margin: 14px 0 6px; }
+.md strong { color: color-mix(in srgb, var(--marca) 30%, var(--texto)); }
+.md table { border-collapse: separate; border-spacing: 0; width: 100%; border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; font-size: .95rem; }
+.md th { background: color-mix(in srgb, var(--marca) 16%, var(--cartao)); color: var(--texto); font-weight: 700; text-transform: none; letter-spacing: 0; font-size: .88rem; }
+.md th, .md td { padding: 9px 12px; border-bottom: 1px solid var(--borda); }
+.md tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--realce) 70%, transparent); }
+.md tbody tr:last-child td { border-bottom: 0; }
+.md td:last-child, .md th:last-child { text-align: left; }
+.md blockquote { margin: 10px 0; padding: 8px 12px; border-left: 4px solid var(--atencao); background: color-mix(in srgb, var(--atencao) 12%, var(--cartao)); border-radius: 0 10px 10px 0; }
+.md code { background: color-mix(in srgb, var(--ciano) 14%, var(--realce)); padding: 1px 6px; border-radius: 6px; }
+.md ul, .md ol { padding-left: 1.3em; } .md li::marker { color: var(--marca); }
+
+/* Esfera mais clara e com destaque no cabeçalho escuro (feedback do dono, 2026-11-01: "muito escuro"). Vale para todos os modelos. */
+.orbe-aura { inset: -48%; background: radial-gradient(closest-side, color-mix(in srgb, var(--orbe-cor) 62%, transparent), color-mix(in srgb, var(--orbe-cor) 20%, transparent) 55%, transparent 74%); }
+.orbe-nucleo { background: radial-gradient(circle at 34% 28%, #fff 0 10%, color-mix(in srgb, var(--orbe-cor) 38%, #fff) 30%, color-mix(in srgb, var(--orbe-cor) 88%, #fff) 60%, var(--orbe-cor) 100%);
+  box-shadow: 0 0 calc(var(--d) * .55) color-mix(in srgb, var(--orbe-cor) 90%, transparent), 0 0 calc(var(--d) * .2) #fff3, inset 0 -2px 4px rgba(0, 0, 0, .18); }
+.orbe-anel { border-color: color-mix(in srgb, var(--ciano) 85%, #fff); box-shadow: 0 0 5px color-mix(in srgb, var(--ciano) 80%, transparent); }
+.orbe-anel-2 { border-color: color-mix(in srgb, var(--orbe-cor) 55%, #fff); box-shadow: 0 0 5px color-mix(in srgb, var(--orbe-cor) 80%, transparent); }
+.orbe-faiscas b { width: 4px; height: 4px; box-shadow: 0 0 8px 2px var(--ciano); }
+
+/* Modelos da esfera: html[data-orbe]. O olho é o padrão. */
+html[data-orbe="sol"] .orbe { --orbe-cor: #ffb02e; }
+html[data-orbe="sol"] .orbe-pupila, html[data-orbe="sol"] .orbe-anel, html[data-orbe="sol"] .orbe-faiscas { display: none; }
+html[data-orbe="sol"] .orbe-nucleo { width: calc(var(--d) * .62); height: calc(var(--d) * .62); background: radial-gradient(circle at 40% 35%, #fff 0 14%, #ffe9a8 34%, #ffb02e 70%, #ff7a1a 100%); }
+html[data-orbe="sol"] .orbe-aura { inset: -60%; background: conic-gradient(from 0deg, transparent 0 8%, #ffb02eaa 10% 14%, transparent 16% 33%, #ffb02eaa 35% 39%, transparent 41% 58%, #ffb02eaa 60% 64%, transparent 66% 83%, #ffb02eaa 85% 89%, transparent 91%); mask: radial-gradient(closest-side, transparent 42%, #000 46%, transparent 100%); -webkit-mask: radial-gradient(closest-side, transparent 42%, #000 46%, transparent 100%); animation: orbe-gira calc(var(--orbe-gira) * 1.6) linear infinite; }
+
+html[data-orbe="atomo"] .orbe { --orbe-cor: #5ad7ff; }
+html[data-orbe="atomo"] .orbe-pupila { display: none; }
+html[data-orbe="atomo"] .orbe-nucleo { width: calc(var(--d) * .32); height: calc(var(--d) * .32); }
+html[data-orbe="atomo"] .orbe-anel { inset: -4%; border-width: 1.5px; transform: rotate(0deg) scaleY(.42); }
+html[data-orbe="atomo"] .orbe-anel-2 { transform: rotate(60deg) scaleY(.42); }
+html[data-orbe="atomo"] .orbe-faiscas b { width: 5px; height: 5px; background: #fff; opacity: 1; animation: orbe-gira 3.4s linear infinite; transform-origin: 50% 50%; }
+html[data-orbe="atomo"] .orbe-faiscas b:nth-child(1) { left: 48%; top: 6%; transform-origin: 50% calc(var(--d) * .44); }
+html[data-orbe="atomo"] .orbe-faiscas b:nth-child(2) { right: auto; left: 48%; top: 6%; transform-origin: 50% calc(var(--d) * .44); animation-duration: 4.6s; animation-direction: reverse; }
+html[data-orbe="atomo"] .orbe-faiscas b:nth-child(3) { left: 48%; bottom: auto; top: 6%; transform-origin: 50% calc(var(--d) * .44); animation-duration: 5.8s; }
+
+html[data-orbe="aurora"] .orbe { --orbe-cor: #8f7bff; }
+html[data-orbe="aurora"] .orbe-anel, html[data-orbe="aurora"] .orbe-pupila { display: none; }
+html[data-orbe="aurora"] .orbe-aura { inset: -42%; background: conic-gradient(from 0deg, #ff6bd6, #ffb02e, #5ad7ff, #8f7bff, #ff6bd6); filter: blur(calc(var(--d) * .18)); opacity: .85; animation: orbe-gira calc(var(--orbe-gira) * 1.2) linear infinite; mask: radial-gradient(closest-side, #000 55%, transparent 100%); -webkit-mask: radial-gradient(closest-side, #000 55%, transparent 100%); }
+html[data-orbe="aurora"] .orbe-nucleo { width: calc(var(--d) * .6); height: calc(var(--d) * .6); background: radial-gradient(circle at 36% 30%, #fff 0 16%, #ffffffcc 40%, #ffffff66 100%); backdrop-filter: blur(2px); box-shadow: 0 0 calc(var(--d) * .5) #fff9; }
+html[data-orbe="aurora"] .orbe-faiscas b { background: #fff; box-shadow: 0 0 8px 2px #ff6bd6; }
+
+/* Quatro esferas em movimento enquanto o Nano pensa. */
+.pontos-pensando { display: inline-flex; align-items: center; gap: 4px; margin-right: 7px; vertical-align: middle; }
+.pontos-pensando span { width: 7px; height: 7px; border-radius: 50%; background: var(--marca); box-shadow: 0 0 7px var(--marca); animation: pontos-pula 1.05s ease-in-out infinite; }
+.pontos-pensando span:nth-child(2) { background: var(--ciano); box-shadow: 0 0 7px var(--ciano); animation-delay: .13s; }
+.pontos-pensando span:nth-child(3) { background: var(--verde); box-shadow: 0 0 7px var(--verde); animation-delay: .26s; }
+.pontos-pensando span:nth-child(4) { background: var(--atencao); box-shadow: 0 0 7px var(--atencao); animation-delay: .39s; }
+@keyframes pontos-pula { 0%, 80%, 100% { transform: translateY(0) scale(.8); opacity: .65; } 40% { transform: translateY(-6px) scale(1.15); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pontos-pensando span { animation: none; opacity: .9; } }
+.grupo-orbe { border: 1px solid var(--borda); border-radius: 12px; padding: 8px 12px 12px; margin: 0 0 12px; } .grupo-orbe legend { font-weight: 600; padding: 0 6px; }
+.grupo-orbe-opcoes { display: flex; flex-wrap: wrap; gap: 6px; } .grupo-orbe-opcoes [aria-checked="true"] { background: var(--marca); color: var(--marca-texto); border-color: var(--marca); }

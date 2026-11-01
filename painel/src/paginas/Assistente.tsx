@@ -2,7 +2,10 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { escolherVoz, gravarPreferenciaFala, lerPreferenciaFala, useVoz } from "../lib/voz.ts";
-import { Esfera, type EstadoEsfera } from "../componentes/Esfera.tsx";
+import type { EstadoEsfera } from "../componentes/Esfera.tsx";
+import { PontosPensando } from "../componentes/PontosPensando.tsx";
+import { MODELOS_ORBE, aplicarOrbe, gravarOrbe, lerOrbe, type ModeloOrbe } from "../lib/orbe.ts";
+import { armazemLocal } from "../lib/tema.ts";
 import { apagarVarias, mensagemApagar } from "../lib/apagar-historico.ts";
 import { MensagemRetratil } from "../componentes/MensagemRetratil.tsx";
 import { Retratil } from "../componentes/Retratil.tsx";
@@ -25,6 +28,9 @@ const SUGESTOES = ["Resumo da loja", "O que está pendente?", "Produtos incomple
 const espera = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** `menu` e `aoNavegar` ligam o agente às telas do painel: ele abre, em sequência, o que o lojista pedir (só telas do menu da loja). */
+/** Texto de erro para a tela: sem o prefixo técnico "Error:". */
+const msgErro = (e: unknown): string => (e instanceof Error ? e.message : String(e)).replace(/^Error:\s*/, "");
+
 export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[]; aoNavegar?: (rota: string) => void }) {
   const [msgs, setMsgs] = useState<Msg[]>([{ de: "ia", texto: "Olá! Posso resumir a loja, mostrar o que aguarda aprovação e o que falta para publicar. Para conversar com IA e usar plugins, configure um provedor em Integrações de IA." }]);
   const fonte = useFonte(); // B2b: cartões de proposta leem a proposta do banco (RLS), nunca do texto do modelo
@@ -141,7 +147,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       const d = await chamada("chat_listar", mais && ultima ? { antes: ultima.atualizada_em, antes_id: ultima.id } : {});
       if (lojaAtual.current !== origem) return;
       setConversas(v => mais ? [...v, ...d.conversas] : d.conversas); setMaisConversas(d.conversas.length === 50);
-    } catch (e) { if (lojaAtual.current === origem) setErroHistorico(String(e)); }
+    } catch (e) { if (lojaAtual.current === origem) setErroHistorico(msgErro(e)); }
   }
   function mostrar(rs: Registro[]) {
     setRegistros(rs); setMsgs(rs.map(m => ({ de: m.papel === "usuario" ? "eu" : "ia", texto: m.conteudo, evidencias: m.metadados?.evidencias, simulado: m.metadados?.simulado, propostas: propostasDoTurno(m.metadados?.propostas) })));
@@ -154,7 +160,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       if (lojaAtual.current !== origem) return;
       const linhas: Registro[] = admin ? [...d.mensagens].reverse() : d.mensagens;
       mostrar(mais ? [...linhas, ...registros] : linhas); setConversaId(id); setAdministrando(admin); setRetentativa(null);
-    } catch (e) { if (lojaAtual.current === origem) setErroHistorico(String(e)); }
+    } catch (e) { if (lojaAtual.current === origem) setErroHistorico(msgErro(e)); }
     finally { if (lojaAtual.current === origem) setOcupado(false); }
   }
   // B2 (#166): dock e tela /assistente retomam a mesma conversa. Restaurar não é auditado como "abrir" de propósito:
@@ -177,7 +183,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     if (!conversaId || !window.confirm("Excluir definitivamente esta conversa? A auditoria será preservada.")) return;
     setOcupado(true);
     try { const d = await chamada("chat_excluir", { conversa_id: conversaId }); if (!d.excluida) throw new Error("Exclusão não permitida."); nova(); await listarConversas(false); }
-    catch (e) { setErroHistorico(String(e)); } finally { setOcupado(false); }
+    catch (e) { setErroHistorico(msgErro(e)); } finally { setOcupado(false); }
   }
   async function apagarTudo() {
     if (conversas.length === 0 || !window.confirm(`Excluir definitivamente ${conversas.length} conversa(s) do histórico${maisConversas ? " carregadas (há mais antigas)" : ""}? A auditoria será preservada.`)) return;
@@ -186,12 +192,12 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       const r = await apagarVarias(conversas.map((c) => c.id), async (id) => { const d = await chamada("chat_excluir", { conversa_id: id }); if (!d.excluida) throw new Error("Exclusão não permitida."); });
       if (r.apagadas.includes(conversaId ?? "")) nova();
       await listarConversas(false); setErroHistorico(mensagemApagar(r));
-    } catch (e) { setErroHistorico(String(e)); } finally { setOcupado(false); }
+    } catch (e) { setErroHistorico(msgErro(e)); } finally { setOcupado(false); }
   }
   async function reter() {
     setOcupado(true); setErroHistorico("");
     try { await chamada("chat_retencao", { dias }); setConfig(v => ({ ...v, retencao_dias: dias })); setErroHistorico("Retenção alterada e auditada."); }
-    catch (e) { setErroHistorico(String(e)); } finally { setOcupado(false); }
+    catch (e) { setErroHistorico(msgErro(e)); } finally { setOcupado(false); }
   }
   async function enviar(t: string, repetir = false) {
     if (!repetir && menu && t.trim() && !ocupado && !acaoLocal && !administrando && !retentativa) { const cmd = interpretar(t, menu); if (cmd.tipo !== "nenhum") { await comandoLocal(t, cmd); return; } }
@@ -219,7 +225,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       setRetentativa(null);
       if (persistente) { setConversaId(data.conversa_id); await listarConversas(false); }
       if (lerAltoRef.current) voz.falar(resposta);
-    } catch (e) { if (lojaAtual.current === lojaDoEnvio) { setMsgs(m => m.filter((x) => !x.parcial)); setErroHistorico(String(e)); } }
+    } catch (e) { if (lojaAtual.current === lojaDoEnvio) { setMsgs(m => m.filter((x) => !x.parcial)); setErroHistorico(msgErro(e)); } }
     finally { if (lojaAtual.current === lojaDoEnvio) setOcupado(false); }
   }
   /** Turno com streaming: a prévia vai numa mensagem `parcial` que some quando chega o resultado (ou o erro). Erro HTTP vira exceção, como em `chamada`. */
@@ -265,6 +271,9 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   useEffect(() => { fim.current?.scrollIntoView({ block: "end", behavior: "smooth" }); }, [msgs.length]);
 
   const estado: EstadoEsfera = acaoLocal ? acaoLocal.estado : voz.ouvindo ? "ouvindo" : ocupado ? "pensando" : voz.falando ? "falando" : "parado";
+  const [modeloOrbe, setModeloOrbe] = useState<ModeloOrbe>(() => lerOrbe(armazemLocal()));
+  useEffect(() => { aplicarOrbe(modeloOrbe); }, [modeloOrbe]);
+  useEffect(() => { document.documentElement.dataset.nanoEstado = estado; return () => { delete document.documentElement.dataset.nanoEstado; }; }, [estado]);
   const onSubmit = (e: FormEvent) => { e.preventDefault(); void enviar(texto); };
   const alternarFala = () => { const v = !lerAlto; setLerAlto(v); gravarPreferenciaFala(v); if (!v) voz.calar(); };
 
@@ -314,8 +323,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       <section className="abas-centro" aria-label="Conversa com o Nano.ia">
       <div className="agente">
         <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Abrir menu do Nano.IA" onClick={() => { setEsq((v) => !v); setMenuAnexos(false); if (estreito()) setDir(false); }}>☰<span> Conversas</span></button>
-        <Esfera estado={estado} tamanho={estado === "parado" ? 40 : 56} />
-        <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite">{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span></div>
+        <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite">{estado === "pensando" && !acaoLocal && <PontosPensando />}{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span></div>
         {<button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span className="rot-longo">Nova conversa</span><span className="rot-curto" aria-hidden="true">＋<span className="rot-curto-txt"> Nova</span></span></button>}
         <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}>⚙<span> Modelo</span></button>
       </div>
@@ -324,7 +332,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       {erroConfig && <p role="alert" className="msg-erro">{erroConfig}</p>}
       {erroHistorico && <p role="status">{erroHistorico}</p>}
       {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
-      {retentativa && <div><p>Recupere a mesma pergunta para verificar se o turno terminou. Isso preserva a chave de idempotência.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Recuperar pergunta</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button>{conversaId && !administrando && <button className="sec" disabled={ocupado} onClick={() => void excluir()}>Apagar esta conversa</button>}</div>}
+      {retentativa && <div><p>Não deu certo agora. Toque em Tentar de novo para repetir a mesma pergunta sem duplicar, ou comece uma conversa nova.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Tentar de novo</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button>{conversaId && !administrando && <button className="sec" disabled={ocupado} onClick={() => void excluir()}>Apagar esta conversa</button>}</div>}
       {msgs.length > 10 && <div className="chat-ferramentas"><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button><small className="suave">{msgs.length} mensagens</small></div>}
       <div className="chat" style={{ flex: "1 1 auto", minHeight: 0, minWidth: 0, overflowY: "auto", overflowX: "hidden" }} aria-live="polite">{msgs.map((m, i) => (
         <div key={i}>
@@ -384,6 +392,11 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
           <option value="">Resumo local (sem IA externa)</option>
           {provedores.map((p) => <option key={p.id} value={p.id} disabled={p.estado !== "disponivel"}>{p.nome}{p.modelo ? ` · ${p.modelo}` : ""} — {ESTADO_PROVEDOR[p.estado]}</option>)}
         </select></label>
+        <fieldset className="grupo-orbe"><legend>Esfera do Nano.IA</legend>
+          <div className="grupo-orbe-opcoes" role="radiogroup" aria-label="Modelo da esfera">
+            {MODELOS_ORBE.map((m) => <button key={m.valor} type="button" role="radio" aria-checked={modeloOrbe === m.valor} className="sec mini" title={m.descricao} onClick={() => { setModeloOrbe(m.valor); gravarOrbe(armazemLocal(), m.valor); }}>{m.rotulo}</button>)}
+          </div>
+        </fieldset>
         <p className="suave">Os estados refletem a configuração e o limite de uso; a API será consultada somente ao enviar.</p>
         <p className="suave">{provedor ? "Se o provedor falhar, escolha outro; não há troca automática." : "Só consultas por palavras-chave, sem enviar a um provedor de IA."} {config.persistente && provedor ? ` Histórico privado no servidor, com retenção de ${config.retencao_dias} dias por mensagem.` : " Histórico temporário nesta tela."}</p>
         {(voz.suporteMic || voz.suporteFala) && <p className="aviso-voz">A voz usa o reconhecimento do próprio navegador; no Chrome o áudio é processado pelo Google. O Conecta.IA não guarda o áudio; o texto segue a política de histórico indicada acima.</p>}

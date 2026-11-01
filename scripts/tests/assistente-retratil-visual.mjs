@@ -36,13 +36,14 @@ try{
   await page.getByRole('button',{name:/Nova conversa|Enviar/}).first().waitFor();
   await page.getByLabel(/Enviar esta pergunta/).check();
   const campo=page.getByLabel('Pergunte',{exact:true}),enviar=page.getByRole('button',{name:'Enviar',exact:true});
-  // 1) esfera em ação: durante a requisição a faixa e a esfera mostram o que está acontecendo; depois voltam ao repouso
+  // 1) estado em ação: durante a requisição a faixa e o estado do Nano mostram o que está acontecendo; depois voltam ao repouso
   await campo.fill('Consulte o kit 833333');await enviar.click();
   const faixa=page.locator('.faixa-acao');await faixa.waitFor();
-  assert.match(await faixa.innerText(),/Consultando/);assert.equal(await page.locator('.esfera').first().getAttribute('data-estado'),'interpretando');
-  const aumentou=await page.locator('.esfera').first().evaluate(e=>e.offsetWidth);assert.ok(aumentou>=54,'esfera cresce quando está em ação');
+  assert.match(await faixa.innerText(),/Consultando/);
+  // esfera única: fica no cabeçalho do app; o chat só publica o estado em html[data-nano-estado]
+  assert.equal(await page.evaluate(()=>document.documentElement.dataset.nanoEstado),'pensando');assert.equal(await page.locator('.esfera').count(),0,'sem segunda esfera dentro do chat');
   await page.getByText('Resposta 1 da Nano.ia.').waitFor();await faixa.waitFor({state:'detached'});
-  assert.equal(await page.locator('.esfera').first().getAttribute('data-estado'),'ocioso');
+  assert.equal(await page.evaluate(()=>document.documentElement.dataset.nanoEstado),'parado');
   // 2) mais três perguntas: chat moderno, nada recolhe sozinho e cada mensagem tem Copiar
   let esperado=3; // saudação + 1ª pergunta + 1ª resposta
   for(const t of ['segunda','terceira','quarta']){await campo.fill(t);await enviar.click();esperado+=2;await page.waitForFunction(n=>document.querySelectorAll('.bolha, .bolha-linha').length===n,esperado);await page.locator('.faixa-acao').waitFor({state:'detached'});}
