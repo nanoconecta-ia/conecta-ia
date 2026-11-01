@@ -72,7 +72,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   // Consulta autenticada e auditada que independe de qualquer chave/provedor LLM.
   // NÃO persiste como mensagem de conversa nem cria/propoe produto.
   if (!ativo("chat_consulta_bling")) return resultado({ erro: "Consulta Bling indisponível nesta loja." }, 403);
-  if (typeof c.codigo !== "string" || !/^[A-Za-z0-9_.\\/-]{1,60}$/.test(c.codigo) ||
+  if (typeof c.codigo !== "string" || !/^[A-Za-z0-9_.\\/-]{1,60}$/.test(c.codigo) || c.codigo.startsWith(".") ||
       c.anexos != null || c.conversa_id != null || c.provedor != null) return resultado({ erro: "Informe um único SKU ou código de fabricante (até 60 caracteres), sem anexos." }, 400);
   const chamadas: Record<string, unknown>[] = [], evidencias: Record<string, unknown>[] = [];
   try {
