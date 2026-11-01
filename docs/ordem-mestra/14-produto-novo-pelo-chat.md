@@ -18,6 +18,11 @@ Pedido do dono (2026-11-01): descrever uma peça ("virabrequim aço forjado STD 
 
 **Fatos do Bling (do esquema `createProduct`, não de memória):** só `nome`, `tipo`, `situacao` e `formato` são obrigatórios; `nome` até 120 caracteres; categoria vai por id; imagens por link (`midia.imagens.imagensURL`, só escrita); campos customizados por id; `situacao` aceita A ou I.
 
+## 1b. Dois caminhos (esclarecimento do dono, 2026-11-01)
+- **Caminho A, produto que já está no Bling** (os 42 do espelho, como o CI001086): o sistema vê o produto no Bling e o **leva para o site**. O Bling continua sendo a fonte; o Nano.IA só completa o que falta (taxonomia, imagens, marca de peça, código, bula) com fonte e aprovação. **Preço e custo são completados pelo lojista**, e a IA não os preenche. O **custo nunca vai ao site nem à tela do cliente**; só o preço de venda aprovado.
+- **Caminho B, produto que ainda não existe no Bling:** a ficha do chat cria o cadastro no Bling (seções 2 a 5) e, com aprovação total, ele segue o caminho A. Aqui o lojista **digita SKU, preço e NCM na própria ficha**.
+- No caminho A, o preço vem do Bling; se faltar ou parecer errado (por exemplo, o CI001086 tem 939,466667 com seis casas decimais), a ficha marca "o lojista confere no Bling". Alterar preço no Bling continua fora do alcance da IA.
+
 ## 2. Arquitetura e fluxo
 1. O dono descreve a peça ou anexa o catálogo.
 2. O Nano.IA extrai campos **só do que o texto ou o catálogo diz**, cada campo com fonte (arquivo e página, ou texto do dono). O que não tem fonte fica "a confirmar".
@@ -57,7 +62,7 @@ Pedido do dono (2026-11-01): descrever uma peça ("virabrequim aço forjado STD 
 - **F4:** botão "Cadastrar no site" amarrado ao portão de publicação, ligado só com aprovação total (teste: com um item pendente o botão não liga e a publicação é recusada no servidor).
 
 ## 6. Decisões do dono
-- **D1.** SKU, preço e NCM digitados por você na ficha (a IA nunca preenche)? Recomendado: sim.
+- **D1.** SKU, preço e NCM completados por você, nunca pela IA (digitados na ficha, no caminho B; conferidos no Bling, no caminho A). Resposta do dono em 2026-11-01: o lojista completa custo e preço. A confirmar por ele só o texto acima.
 - **D2.** Criar o produto inativo no Bling e ativar depois? Recomendado: sim.
 - **D3.** Existe chave do Google para busca de imagens? Se não, a F3 espera.
 - **D4.** Provedor de IA para catálogos: o Gemini atual aceita PDF; a cota gratuita limitou hoje.
