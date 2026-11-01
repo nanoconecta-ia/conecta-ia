@@ -72,3 +72,21 @@ test("contingencia: erro ou resposta truncada do gratuito nao vira falso sucesso
  const proibida=(async()=>{throw Error("Nao deve enviar");}) as typeof fetch;
  assert.equal(await tentarFallbackFree(pedido({texto:"qual estoque?" ,fetch:proibida})),null);
 });
+
+
+test("piloto Mobis: segredo freellm OpenRouter ativa somente a loja autorizada e exige consentimento no turno",()=>{
+ const mobis="cd9d7570-f095-44f2-be28-b9b9cba6578e";
+ const alias:Record<string,string>={freellm:"sk-or-v1-chave-piloto-sintetica"};
+ const val=(n:string)=>alias[n];
+ assert.equal(configFallbackFree(val,mobis)?.modelo,"openrouter/free");
+ assert.equal(configFallbackFree(val,loja),null,"outra loja nao pode usar a chave");
+ assert.equal(configFallbackFree(n=>n==="NANO_FREE_FALLBACK_ATIVO"?"0":val(n),mobis),null,"kill switch bloqueia");
+ assert.equal(configFallbackFree(n=>n==="NANO_FREE_FALLBACK_LOJAS"?loja:val(n),mobis),null,"allowlist explicita divergente bloqueia");
+ assert.equal(configFallbackFree(n=>n==="NANO_FREE_FALLBACK_ATIVO"?"1":val(n),mobis),null,"flag com allowlist ausente nao bypassa");
+ assert.equal(configFallbackFree(n=>n==="freellm"?"sk-outra-api-sem-ser-openrouter":val(n),mobis),null,"outro provedor recusado");
+ assert.equal(configFallbackFree(n=>n==="freellm"?"chave curta":val(n),mobis),null,"credencial invalida");
+ const pedidoPublico=pedido({lojaId:mobis,get:val});
+ assert.equal(podeTentarFallback(pedidoPublico),true);
+ assert.equal(podeTentarFallback({...pedidoPublico,consentimento:false}),false);
+ assert.equal(podeTentarFallback({...pedidoPublico,texto:"Qual o preco do fornecedor?"}),false);
+});
