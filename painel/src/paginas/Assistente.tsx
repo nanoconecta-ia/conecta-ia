@@ -3,6 +3,7 @@ import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { escolherVoz, gravarPreferenciaFala, lerPreferenciaFala, useVoz } from "../lib/voz.ts";
 import { Esfera, type EstadoEsfera } from "../componentes/Esfera.tsx";
+import { apagarVarias, mensagemApagar } from "../lib/apagar-historico.ts";
 import { MensagemRetratil } from "../componentes/MensagemRetratil.tsx";
 import { Retratil } from "../componentes/Retratil.tsx";
 import { mensagemRecolhida } from "../lib/retratil.ts";
@@ -178,6 +179,15 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     try { const d = await chamada("chat_excluir", { conversa_id: conversaId }); if (!d.excluida) throw new Error("Exclusão não permitida."); nova(); await listarConversas(false); }
     catch (e) { setErroHistorico(String(e)); } finally { setOcupado(false); }
   }
+  async function apagarTudo() {
+    if (conversas.length === 0 || !window.confirm(`Excluir definitivamente ${conversas.length} conversa(s) do histórico${maisConversas ? " carregadas (há mais antigas)" : ""}? A auditoria será preservada.`)) return;
+    setOcupado(true); setErroHistorico("");
+    try {
+      const r = await apagarVarias(conversas.map((c) => c.id), async (id) => { const d = await chamada("chat_excluir", { conversa_id: id }); if (!d.excluida) throw new Error("Exclusão não permitida."); });
+      if (r.apagadas.includes(conversaId ?? "")) nova();
+      await listarConversas(false); setErroHistorico(mensagemApagar(r));
+    } catch (e) { setErroHistorico(String(e)); } finally { setOcupado(false); }
+  }
   async function reter() {
     setOcupado(true); setErroHistorico("");
     try { await chamada("chat_retencao", { dias }); setConfig(v => ({ ...v, retencao_dias: dias })); setErroHistorico("Retenção alterada e auditada."); }
@@ -293,6 +303,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
               ))}
               {maisConversas && <button type="button" className="sec" disabled={ocupado} onClick={() => void listarConversas(true)}>Carregar mais conversas</button>}
               {conversaId && !administrando && <button type="button" className="sec mini" disabled={ocupado} onClick={() => void excluir()}>Excluir conversa atual</button>}
+              {conversas.length > 0 && !administrando && <button type="button" className="sec mini" disabled={ocupado} onClick={() => void apagarTudo()}>Apagar todo o histórico</button>}
             </div>
           )}
           {conversaId && <p className="suave nano-codigo-conversa">Conversa: {conversaId}{administrando ? " · Acesso auditado" : ""}</p>}
@@ -313,7 +324,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       {erroConfig && <p role="alert" className="msg-erro">{erroConfig}</p>}
       {erroHistorico && <p role="status">{erroHistorico}</p>}
       {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
-      {retentativa && <div><p>Recupere a mesma pergunta para verificar se o turno terminou. Isso preserva a chave de idempotência.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Recuperar pergunta</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button></div>}
+      {retentativa && <div><p>Recupere a mesma pergunta para verificar se o turno terminou. Isso preserva a chave de idempotência.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Recuperar pergunta</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button>{conversaId && !administrando && <button className="sec" disabled={ocupado} onClick={() => void excluir()}>Apagar esta conversa</button>}</div>}
       {msgs.length > 10 && <div className="chat-ferramentas"><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button><small className="suave">{msgs.length} mensagens</small></div>}
       <div className="chat" style={{ flex: "1 1 auto", minHeight: 0, minWidth: 0, overflowY: "auto", overflowX: "hidden" }} aria-live="polite">{msgs.map((m, i) => (
         <div key={i}>
