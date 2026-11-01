@@ -21,6 +21,7 @@ const ACESSOS = [
   { titulo: "Conexão com o Bling", descricao: "Consultar a situação do espelhamento", rota: "/bling", icone: "erp" },
   { titulo: "Taxonomia técnica", descricao: "Organizar famílias e categorias de peças", rota: "/taxonomia", icone: "arvore" },
   { titulo: "Imagens e SEO", descricao: "Conferir fotos e dados de publicação", rota: "/imagens", icone: "imagem" },
+  { titulo: "Nano Video Studio", descricao: "Montagem local de vídeos com fotos reais e revisão humana", rota: "/videos", icone: "video" },
 ] as const;
 
 /** Tela de comando: apenas leituras. Nenhuma ação do dashboard escreve no Bling. */

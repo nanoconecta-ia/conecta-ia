@@ -49,7 +49,8 @@ try {
     await page.locator(".visao-kpi-conexao .visao-status[data-tipo=ok]").waitFor();
     assert.equal((await page.locator(".visao-kpi-conexao .visao-status").innerText()).trim(), "Conectado");
     assert.equal(await page.getByRole("link", { name:"Ver referência" }).count(),0,"URL javascript bloqueada");
-    assert.equal(await page.locator(".visao-acesso").count(),6,"seis módulos reais disponíveis");
+    assert.equal(await page.locator(".visao-acesso").count(),7,"sete módulos reais disponíveis, incluindo Nano Video Studio");
+    assert.equal(await page.locator(".visao-acessos a[href='#/videos']").count(),1,"Video Studio indexado no grid sem duplicação");
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`sem rolagem horizontal em ${width}px`);
     await page.screenshot({path:root+`evidencias-chat/visao-geral-${width}.png`,fullPage:true});
     await page.getByRole("button", {name:"Marcar resolvido"}).click();

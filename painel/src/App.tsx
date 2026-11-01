@@ -24,6 +24,7 @@ import { Studio } from "./paginas/Studio.tsx";
 import { GatewayMCP } from "./paginas/GatewayMCP.tsx";
 import { Design } from "./paginas/Design.tsx";
 import { Imagens } from "./paginas/Imagens.tsx";
+import { Videos } from "./paginas/Videos.tsx";
 import { VitrineDemo } from "./paginas/VitrineDemo.tsx";
 import { Loja } from "./paginas/Loja.tsx";
 import { Aparencia } from "./paginas/Aparencia.tsx";
@@ -56,7 +57,7 @@ const ICONES_ROTAS: Record<string, string> = {
   "/": "inicio", "/conector": "agentes", "/central": "escudo", "/indicadores": "grafico",
   "/studio": "caixas", "/estudio": "ajustes", "/assistente": "conversa", "/catalogo": "catalogo",
   "/fila": "fila", "/taxonomia": "arvore", "/aparencia": "paleta", "/condicoes": "cartao",
-  "/integracoes": "conexoes", "/gateway": "rede", "/imagens": "imagem", "/design": "paleta",
+  "/integracoes": "conexoes", "/gateway": "rede", "/imagens": "imagem", "/videos": "video", "/design": "paleta",
   "/bling": "erp", "/backup": "arquivo", "/banners": "imagem", "/contador": "grafico",
   "/aprovacoes": "escudo", "/meu-agente": "agentes", "/dispositivos": "monitor"
 };
@@ -81,6 +82,7 @@ const ITENS: [string, string][] = [
   ["/integracoes", "Integrações de IA"],
   ["/gateway", "Gateway MCP/API"],
   ["/imagens", "Imagens e SEO"],
+  ["/videos", "Nano Video Studio"],
   ["/design", "Design System"],
   ["/bling", "Bling"],
   ["/contador", "Contador"],
@@ -237,6 +239,7 @@ export function App() {
           : caminho === "/condicoes" ? <Condicoes loja={loja} />
           : caminho === "/integracoes" ? <Integracoes loja={loja} />
           : caminho === "/imagens" ? <Imagens loja={loja} />
+          : caminho === "/videos" ? <Videos loja={loja} />
           : caminho === "/design" ? <Design />
           : BACKUP_ATIVO && caminho === "/backup" ? <Backup loja={loja} />
           : caminho === "/bling" ? <Bling loja={loja} query={query} />

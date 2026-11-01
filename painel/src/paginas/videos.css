@@ -1,0 +1,24 @@
+/* Studio de vídeo: reutiliza tokens do Design System da loja. */
+.videos-estudio{display:grid;gap:14px;min-width:0;max-width:1140px;margin:0 auto;padding-bottom:24px}
+.videos-estudio h1{font-size:clamp(1.45rem,2.5vw,2rem);margin:8px 0}
+.videos-estudio h2{margin:0 0 12px;font-size:1.1rem}
+.videos-cabecalho{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(210px,.6fr);gap:20px;align-items:center}
+.videos-status{display:grid;gap:5px;border:1px solid var(--borda);border-radius:var(--raio);padding:15px;background:var(--realce)}
+.videos-status small,.videos-foto small,.videos-formato small{display:block;color:var(--suave);font-size:.77rem}
+.videos-campos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.videos-campos label{display:grid;gap:7px;font-weight:650}
+.videos-campos input{width:100%;min-width:0}
+.videos-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+.videos-foto{min-width:0;margin:0;border:1px solid var(--borda);border-radius:var(--raio);overflow:hidden}
+.videos-foto img{display:block;width:100%;aspect-ratio:1;object-fit:contain;background:var(--realce)}
+.videos-foto figcaption{padding:9px;overflow-wrap:anywhere}
+.videos-foto strong{font-size:.8rem}
+.videos-vazio{grid-column:1/-1;min-height:125px;border:1px dashed var(--borda-forte);border-radius:var(--raio);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center;color:var(--suave);padding:18px}
+.videos-formatos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.videos-formato{display:flex;gap:9px;border:1px solid var(--borda);border-radius:var(--raio);padding:12px;align-items:flex-start;cursor:pointer}
+.videos-formato input{margin-top:3px;accent-color:var(--marca)}
+.videos-duracao{display:flex;align-items:center;gap:12px;margin:15px 0}
+.videos-duracao input{width:min(220px,100%)}
+.videos-execucao pre{font-size:.78rem;padding:14px;background:var(--realce);border:1px solid var(--borda);border-radius:var(--raio);overflow-x:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+.videos-estudio button{min-height:44px;display:inline-flex;gap:8px;align-items:center;justify-content:center}
+@media(max-width:760px){.videos-cabecalho{grid-template-columns:1fr}.videos-campos{grid-template-columns:1fr}.videos-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.videos-formatos{grid-template-columns:1fr}.videos-duracao{flex-wrap:wrap}}

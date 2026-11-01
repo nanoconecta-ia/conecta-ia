@@ -13,6 +13,7 @@ const CAMINHOS: Record<string, string> = {
   conexoes: "M7 7h5M12 7l-2-2M12 7l-2 2M17 17h-5M12 17l2-2M12 17l2 2M4 4h16v16H4z",
   rede: "M12 3v6M6 12l6-3 6 3M6 12v7M18 12v7M3 19h6M15 19h6",
   imagem: "M3 4h18v16H3zM7 9h.01M3 17l6-6 4 4 3-3 5 5",
+  video: "M3 5h13v14H3zM16 9l5-3v12l-5-3M7 9v6M10 9v6M13 9v6",
   arquivo: "M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5",
   monitor: "M3 4h18v14H3zM8 22h8M12 18v4",
   menu: "M4 6h16M4 12h16M4 18h16",

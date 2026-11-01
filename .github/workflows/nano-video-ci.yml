@@ -1,0 +1,25 @@
+name: Nano Video Studio - testes locais sem deploy
+on:
+  pull_request:
+    paths:
+      - "painel/src/lib/videoPlano.ts"
+      - "painel/src/lib/videoPlano.test.ts"
+      - "painel/src/paginas/Videos.tsx"
+      - "scripts/video-local/**"
+      - ".github/workflows/nano-video-ci.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validar-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.19.0"
+      - name: Verificar contrato, seguranca e dry-run sem Concat nem FFmpeg
+        run: node --experimental-strip-types --test painel/src/lib/videoPlano.test.ts scripts/video-local/render.test.mjs scripts/video-local/concat-probe.test.mjs
