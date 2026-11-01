@@ -1,0 +1,60 @@
+name: Deploy pontual da função assistente (Supabase conecta-ia)
+
+# Publica a função `assistente` a partir do main. NUNCA roda sozinho: só por disparo manual, com a frase de confirmação.
+# Precisa do segredo SUPABASE_ACCESS_TOKEN no GitHub (criado pelo dono; o token nunca aparece em log).
+on:
+  workflow_dispatch:
+    inputs:
+      confirmar:
+        description: 'Digite exatamente: publicar-assistente'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-assistente
+  cancel-in-progress: false
+
+env:
+  # Projeto conecta-ia. O ref do NanoShell IA (ptilvkzuhjnqnfydjcly) NUNCA pode ser usado aqui.
+  PROJECT_REF: dsfzhsrudriqkumtlqwj
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Travas de segurança
+        env:
+          CONFIRMAR: ${{ inputs.confirmar }}
+          REF_NAME: ${{ github.ref_name }}
+          TOKEN_OK: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+        run: |
+          test "$CONFIRMAR" = "publicar-assistente" || { echo "Frase de confirmação incorreta"; exit 1; }
+          test "$REF_NAME" = "main" || { echo "Só a partir do main"; exit 1; }
+          test "$PROJECT_REF" = "dsfzhsrudriqkumtlqwj" || exit 1
+          test "$PROJECT_REF" != "ptilvkzuhjnqnfydjcly" || exit 1
+          test "$TOKEN_OK" = "true" || { echo "Segredo SUPABASE_ACCESS_TOKEN ausente"; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Testes das funções e pacote autocontido atualizado
+        run: |
+          node --experimental-strip-types --test supabase/functions/_shared/*.test.ts supabase/functions/_shared/*/*.test.ts
+          node --experimental-vm-modules scripts/gerar-autocontido.mjs --check
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Publicar a função assistente (verify_jwt ligado, empacotamento no servidor)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy assistente --project-ref "$PROJECT_REF" --use-api
+      - name: Registrar a versão publicada
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions list --project-ref "$PROJECT_REF" | grep -i assistente
