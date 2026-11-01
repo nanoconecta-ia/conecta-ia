@@ -10,6 +10,7 @@ import { PontosPensando } from "../componentes/PontosPensando.tsx";
 import { MODELOS_ORBE, aplicarOrbe, gravarOrbe, lerOrbe, type ModeloOrbe } from "../lib/orbe.ts";
 import { armazemLocal } from "../lib/tema.ts";
 import { apagarVarias, mensagemApagar } from "../lib/apagar-historico.ts";
+import { SeletorCor } from "../componentes/SeletorCor.tsx";
 import { lerSessao, registrarNaSessao, removerDaSessao } from "../lib/conversasDaSessao.ts";
 import { MensagemRetratil } from "../componentes/MensagemRetratil.tsx";
 import { Retratil } from "../componentes/Retratil.tsx";
@@ -418,6 +419,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
             {MODELOS_ORBE.map((m) => <button key={m.valor} type="button" role="radio" aria-checked={modeloOrbe === m.valor} className="sec mini" title={m.descricao} onClick={() => { setModeloOrbe(m.valor); gravarOrbe(armazemLocal(), m.valor); }}>{m.rotulo}</button>)}
           </div>
         </fieldset>
+        <fieldset className="grupo-orbe"><legend>Cor do painel e do Nano.IA</legend><SeletorCor /></fieldset>
         <p className="suave">Os estados refletem a configuração e o limite de uso; a API será consultada somente ao enviar.</p>
         <p className="suave">{provedor ? "Se o provedor falhar, escolha outro; não há troca automática." : "Só consultas por palavras-chave, sem enviar a um provedor de IA."} {config.persistente && provedor ? ` Histórico privado no servidor, com retenção de ${config.retencao_dias} dias por mensagem.` : " Histórico temporário nesta tela."}</p>
         {(voz.suporteMic || voz.suporteFala) && <p className="aviso-voz">A voz usa o reconhecimento do próprio navegador; no Chrome o áudio é processado pelo Google. O Conecta.IA não guarda o áudio; o texto segue a política de histórico indicada acima.</p>}

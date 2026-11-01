@@ -4,11 +4,13 @@ import { App } from "./App.tsx";
 import { SpriteIcones } from "./componentes/SpriteIcones.tsx";
 import { aplicarTema, armazemLocal, lerPreferencia } from "./lib/tema.ts";
 import { aplicarOrbe, lerOrbe } from "./lib/orbe.ts";
+import { aplicarPerfil, lerPerfil } from "./lib/perfilCor.ts";
 import "@fontsource-variable/inter";
 import "./styles.css";
 
 aplicarTema(lerPreferencia(armazemLocal())); // antes de pintar: sem piscar o tema errado
 aplicarOrbe(lerOrbe(armazemLocal())); // modelo da esfera do Nano.IA escolhido neste aparelho
+aplicarPerfil(lerPerfil(armazemLocal())); // perfil de cor: o painel e a esfera mudam juntos
 
 createRoot(document.getElementById("raiz")!).render(
   <StrictMode>
