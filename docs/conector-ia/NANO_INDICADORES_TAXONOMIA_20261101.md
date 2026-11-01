@@ -10,7 +10,7 @@
 1. `iconeNoMapa`: classificação puramente **visual** do nó `tx:`, reaproveitando os símbolos do sprite; sem dados inventados, sem inferir compatibilidade ou identidade da peça.
 2. `MapaMental.tsx`: pictograma SVG na árvore real do Catálogo, com rótulo, contagem, navegação por teclado e origem atual preservados.
 3. `PontosPensando.tsx`: ícone de ferramenta para atividade genérica; ícone de catálogo na rota de Catálogo ou Taxonomia, junto às quatro bolinhas existentes. Só aparece durante uma chamada de verdade porque quem monta é o `Assistente` atual.
-4. Favicon SVG opcional do **painel Conecta.IA** com esfera Cristal lisa, alinhado ao padrão já aprovado do avatar; ícone PNG anterior permanece como alternativa. Não altera a identidade da Mobis nem o bucket de logos por loja.
+4. Favicon: **não há favicon novo**. A decisão do dono é que a esfera da marca seja a MESMA do chat; o SVG azul proposto foi descartado e os PNGs aprovados (esfera do chat) continuam. Quando o padrão da esfera mudar, os PNGs e o manifest são regenerados da mesma esfera.
 
 ## Descrições Bling: contrato e limite de escopo
 - `descricaoCurta` / `descricaoLonga` (nomes ilustrativos, mapear para o contrato real da API antes da implementação): **texto SEO técnico** formado só com dados confirmados (SKU, MPN, OEM, aplicação homologada, medidas, marca, garantia quando comprovada).
@@ -23,6 +23,6 @@
 2. Executar `cd painel && npm run build && npm test`; inspecionar aparência a 390/768/1440 px com tema claro/escuro, contraste, teclado e `prefers-reduced-motion`.
 3. Conferir via Supabase **somente leitura** o vínculo de `taxonomia_nos` ao catálogo e as situações homologadas; não confundir contagem de links com produtos classificados.
 4. Testar com produto real do Bling após revisão: descrições permanecem texto, fotos exigem procedência e nenhuma escrita deve ocorrer sem aprovação.
-5. Confirmar se “falco do logo” significa **favicon**; esta branch apenas propõe favicon do painel, preservando logo da loja e símbolo principal.
+5. Confirmar se “falco do logo” significa **favicon**; esta branch não altera favicon nem logo: a esfera da marca é a do chat.
 
 Sem merge, deploy, migração, mudança de DNS, upload de mídia nem edição no Bling.
