@@ -1023,3 +1023,10 @@ html[data-orbe="aurora"] .orbe-faiscas b { background: #fff; box-shadow: 0 0 8px
 @media (prefers-reduced-motion: reduce) { .pontos-pensando span { animation: none; opacity: .9; } }
 .grupo-orbe { border: 1px solid var(--borda); border-radius: 12px; padding: 8px 12px 12px; margin: 0 0 12px; } .grupo-orbe legend { font-weight: 600; padding: 0 6px; }
 .grupo-orbe-opcoes { display: flex; flex-wrap: wrap; gap: 6px; } .grupo-orbe-opcoes [aria-checked="true"] { background: var(--marca); color: var(--marca-texto); border-color: var(--marca); }
+
+/* Botões só com ícone (pedido do dono, 2026-11-01): ações do chat sem texto; o nome fica em aria-label e title. */
+.icone-btn { display: inline-grid; place-items: center; min-width: 34px; width: 34px; height: 34px; padding: 0; }
+.icone-btn[data-copiado="sim"] { color: var(--ok); border-color: var(--ok); }
+.icone-btn[data-copiado="nao"] { color: var(--erro); border-color: var(--erro); }
+.ic-aba, .nova-conv, .mic, .compositor-enviar { display: inline-grid; place-items: center; }
+.ic-aba svg, .nova-conv svg, .mic svg, .compositor-enviar svg { display: block; }

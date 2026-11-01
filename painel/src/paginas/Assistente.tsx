@@ -3,6 +3,7 @@ import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { escolherVoz, gravarPreferenciaFala, lerPreferenciaFala, useVoz } from "../lib/voz.ts";
 import type { EstadoEsfera } from "../componentes/Esfera.tsx";
+import { Icone } from "../componentes/Icone.tsx";
 import { PontosPensando } from "../componentes/PontosPensando.tsx";
 import { MODELOS_ORBE, aplicarOrbe, gravarOrbe, lerOrbe, type ModeloOrbe } from "../lib/orbe.ts";
 import { armazemLocal } from "../lib/tema.ts";
@@ -322,10 +323,10 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       </aside>
       <section className="abas-centro" aria-label="Conversa com o Nano.ia">
       <div className="agente">
-        <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Abrir menu do Nano.IA" onClick={() => { setEsq((v) => !v); setMenuAnexos(false); if (estreito()) setDir(false); }}>☰<span> Conversas</span></button>
+        <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Abrir menu do Nano.IA" onClick={() => { setEsq((v) => !v); setMenuAnexos(false); if (estreito()) setDir(false); }}><Icone nome="menu" tamanho={20} /></button>
         <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite">{estado === "pensando" && !acaoLocal && <PontosPensando />}{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span></div>
-        {<button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span className="rot-longo">Nova conversa</span><span className="rot-curto" aria-hidden="true">＋<span className="rot-curto-txt"> Nova</span></span></button>}
-        <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}>⚙<span> Modelo</span></button>
+        {<button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span aria-hidden="true"><Icone nome="mais" tamanho={20} /></span></button>}
+        <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}><Icone nome="ajustes" tamanho={20} /></button>
       </div>
       {estado !== "parado" && <div className="faixa-acao" role="status" data-estado={estado}><span className="faixa-pulso" aria-hidden="true" />{acaoLocal?.texto ?? { ouvindo: "Ouvindo você…", pensando: "Consultando o modelo e os dados da loja…", falando: "Lendo a resposta em voz alta…" }[estado as string] ?? ""}{estado === "falando" && <button type="button" className="mini sec" onClick={voz.calar}>Parar</button>}</div>}
       {carregando && <p role="status">Verificando provedores…</p>}
@@ -362,11 +363,11 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
           <div className="compositor-campo"><span id="rotulo-pergunta" className="so-leitor">Pergunte</span><textarea aria-labelledby="rotulo-pergunta" value={texto} rows={1} style={{ display: "block", width: "100%", minWidth: 0, height: "48px", minHeight: "48px", maxHeight: "96px", overflowY: "auto", resize: "none", boxSizing: "border-box" }} enterKeyHint="send" placeholder="Pergunte ao Nano.ia…" onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void enviar(texto); } }} maxLength={1000} /></div>
           <div className="compositor-acoes">
           <button type="button" className="sec mic nano-mais" aria-expanded={menuAnexos} aria-label="Adicionar foto, câmera ou arquivo" title="Adicionar ao Nano.IA"
-            onClick={() => { setMenuAnexos(v => !v); setEsq(false); setDir(false); }}>＋</button>
-          {voz.suporteMic && <button type="button" className="sec mic" aria-pressed={voz.ouvindo} aria-label={voz.ouvindo ? "Parar de ouvir" : "Falar com o assistente"} onClick={() => (voz.ouvindo ? voz.parar() : voz.ouvir())} disabled={ocupado}>🎤</button>}
-          {voz.suporteFala && <button type="button" className="sec mic" aria-pressed={lerAlto} aria-label={lerAlto ? "Desligar a leitura das respostas em voz alta" : "Ler as respostas em voz alta"} title={lerAlto ? "Leitura em voz alta ligada" : "Leitura em voz alta desligada"} onClick={alternarFala}>{lerAlto ? "🔊" : "🔈"}</button>}
+            onClick={() => { setMenuAnexos(v => !v); setEsq(false); setDir(false); }}><Icone nome="mais" tamanho={20} /></button>
+          {voz.suporteMic && <button type="button" className="sec mic" aria-pressed={voz.ouvindo} aria-label={voz.ouvindo ? "Parar de ouvir" : "Falar com o assistente"} onClick={() => (voz.ouvindo ? voz.parar() : voz.ouvir())} disabled={ocupado}><Icone nome="mic" tamanho={20} /></button>}
+          {voz.suporteFala && <button type="button" className="sec mic" aria-pressed={lerAlto} aria-label={lerAlto ? "Desligar a leitura das respostas em voz alta" : "Ler as respostas em voz alta"} title={lerAlto ? "Leitura em voz alta ligada" : "Leitura em voz alta desligada"} onClick={alternarFala}><Icone nome={lerAlto ? "voz" : "voz-mudo"} tamanho={20} /></button>}
             <span className="compositor-espaco" />
-          <button className="compositor-enviar" aria-label="Enviar" title="Enviar (Enter)" disabled={ocupado || !podeEnviar || administrando || !!retentativa}><span aria-hidden="true">➤</span></button>
+          <button className="compositor-enviar" aria-label="Enviar" title="Enviar (Enter)" disabled={ocupado || !podeEnviar || administrando || !!retentativa}><span aria-hidden="true"><Icone nome="enviar" tamanho={20} /></span></button>
           </div>
         </div>
         {voz.erro && <p className="msg-erro">{voz.erro}</p>}

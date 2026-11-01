@@ -55,7 +55,7 @@ try{
   // recolher uma mensagem à mão e reabrir; Copiar mostra o resultado
   await page.locator('.bolha').first().getByRole('button',{name:'Recolher esta mensagem'}).click();assert.equal(await page.locator('.bolha-linha').count(),1);
   await page.locator('.bolha-linha').first().click();assert.equal(await page.locator('.bolha-linha').count(),0);
-  await page.locator('.bolha.ia .copiar').last().click();await page.waitForFunction(()=>[...document.querySelectorAll('.bolha .copiar')].some(b=>/Copiado|Selecione/.test(b.textContent||'')));
+  await page.locator('.bolha.ia .copiar').last().click();await page.waitForFunction(()=>[...document.querySelectorAll('.bolha .copiar')].some(b=>b.getAttribute('data-copiado')==='sim'||b.getAttribute('data-copiado')==='nao'));assert.equal((await page.locator('.bolha.ia .copiar').last().innerText()).trim(),'','Copiar é só ícone, sem texto');
   // conversa grande (mais de 10 mensagens): aparecem Recolher tudo e Expandir tudo
   await campo.fill('quinta');await enviar.click();await page.waitForFunction(n=>document.querySelectorAll('.bolha, .bolha-linha').length===n,total+2);
   await page.getByRole('button',{name:'Recolher tudo'}).click();assert.equal(await page.locator('.bolha').count(),0);
