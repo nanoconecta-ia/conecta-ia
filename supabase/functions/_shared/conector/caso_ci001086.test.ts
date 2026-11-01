@@ -6,6 +6,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { escreverEConfirmarNoBling, reconciliar, type ItemExecucao, type Rpc } from "./executor.ts";
 import { BlingMock } from "./bling_mock.ts";
+import { HANDLERS } from "./handlers.ts";
+import type { PortaBling } from "./porta_bling.ts";
 
 const ID = "16719530080";
 const NOME = "BOMBA OLEO HR/K2500 2.5 16V 13/ D4CB EURO V 26 DTS ALUMINIO - MARCA: TRIM GO";
@@ -71,4 +73,51 @@ test("CI001086: Bling devolve outra marca na leitura de confirmação => 'falhou
   const b = semear(); b.falhas = ["leitura_diverge"];
   const v = await escreverEConfirmarNoBling(b, "bling.produtos.alterar", item({ marca: "TRIM GO" }));
   assert.notEqual(v.estado, "confirmada");
+});
+
+// A LISTAGEM do Bling é um resumo (sem marca, descrições, peso, medidas). Antes desta correção a proposta lia o "antes" dela e
+// gravava marca = null, escondendo o valor real " MARCA: TRIM GO" e perdendo o texto do desfazer.
+function portaComListagemResumida(): PortaBling & { lidos: string[] } {
+  const lidos: string[] = [];
+  return {
+    simulado: true, lidos,
+    async chamar() { throw new Error("a preparação da proposta não escreve"); },
+    async ler(ferramenta: string, args: { id?: string; sku?: string }) {
+      lidos.push(ferramenta);
+      if (ferramenta === "bling.produtos.consultar") return { status: 200, corpo: { data: [{ id: Number(ID), codigo: "CI001086", nome: NOME, situacao: "A", preco: 939.466667 }] } };
+      if (ferramenta === "bling.produtos.confirmar" && args.id === ID) return { status: 200, corpo: { data: { id: Number(ID), codigo: "CI001086", nome: NOME, situacao: "A", marca: MARCA_ANTIGA } } };
+      return { status: 404 };
+    },
+  };
+}
+function contextoDeProposta(bling: PortaBling) {
+  const itens: Record<string, unknown>[] = [];
+  const rpc: Rpc = async (fn, args) => {
+    if (fn === "agente_proposta_item_adicionar") itens.push(args);
+    const dados: Record<string, unknown> = { agente_tarefa_criar: "t1", agente_proposta_criar: "p1", agente_proposta_enviar: { versao: 1, hash: "h", risco: "MEDIUM" } };
+    return { data: dados[fn] ?? null, error: null };
+  };
+  const ctx = { lojaId: "L", userId: "u1", bling, rpc, dados: { produtoPorSku: async () => ({ id: "prod-1" }) }, agente: { nome: "Nano.ia" } } as any;
+  return { ctx, itens };
+}
+
+test("CI001086: a proposta registra o valor REAL anterior da marca (lido pelo id), não null", async () => {
+  const bling = portaComListagemResumida();
+  const { ctx, itens } = contextoDeProposta(bling);
+  const r = await HANDLERS["bling.produtos.preparar_atualizacao"]({ sku: "CI001086", campos: { marca: "TRIM GO" }, fontes: [{ documento: "cadastro do Bling" }] }, ctx) as any;
+  assert.equal(r.proposta_id, "p1", JSON.stringify(r));
+  assert.equal(itens.length, 1);
+  assert.deepEqual(itens[0].p_antes, { marca: MARCA_ANTIGA });
+  assert.deepEqual(itens[0].p_depois, { marca: "TRIM GO" });
+  assert.equal(itens[0].p_alvo, ID);
+  assert.deepEqual(bling.lidos, ["bling.produtos.consultar", "bling.produtos.confirmar"], "lê a listagem para achar o id e a leitura completa para o antes");
+});
+
+test("CI001086: se a leitura completa falha, NÃO cria proposta (sem o antes não há desfazer)", async () => {
+  const bling = portaComListagemResumida();
+  const falha: PortaBling = { ...bling, ler: async (f: string, a: any) => (f === "bling.produtos.confirmar" ? { status: 503 } : bling.ler(f as any, a)) };
+  const { ctx, itens } = contextoDeProposta(falha);
+  const r = await HANDLERS["bling.produtos.preparar_atualizacao"]({ sku: "CI001086", campos: { marca: "TRIM GO" }, fontes: [{ documento: "x" }] }, ctx) as any;
+  assert.match(r.erro, /503/);
+  assert.equal(itens.length, 0);
 });

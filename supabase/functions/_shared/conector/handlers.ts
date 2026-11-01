@@ -244,9 +244,14 @@ export const HANDLERS: Record<string, Handler> = {
     if (campos.length === 0) return { erro: "Informe ao menos um campo em 'campos'." };
     const m = montarCorpoProduto(e.campos);
     if (m.erros.length) return { erro: "Campos recusados", detalhes: m.erros };
+    // A listagem do Bling é um RESUMO (sem marca, descrições, peso, medidas): o "antes" tem de vir da leitura completa pelo id,
+    // senão a proposta mostra vazio onde há valor e o desfazer perde o texto original (caso CI001086: marca " MARCA: TRIM GO").
+    const completo = await c.bling!.ler("bling.produtos.confirmar", { id: String(r.produto.id) });
+    const atual = (completo.corpo as any)?.data;
+    if (completo.status !== 200 || !atual || typeof atual !== "object") return { erro: `O Bling respondeu ${completo.status} ao ler o produto completo; sem o valor atual não há como registrar o "antes". Tente de novo.` };
     const antes = Object.fromEntries(campos.map((k) => {
       const mp = MAPA_CAMPOS.find((x) => x.conecta === k)!;
-      const v = valorEm(r.produto, mp.caminho);
+      const v = valorEm(atual, mp.caminho);
       return [k, v === undefined || v === "" || v === 0 ? null : (mp.tipo === "id_numerico" ? String(v) : v)];
     }));
     const local = await c.dados.produtoPorSku(e.sku);

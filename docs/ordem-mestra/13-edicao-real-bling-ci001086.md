@@ -25,6 +25,9 @@ Rodar: `node --test supabase/functions/_shared/conector/caso_ci001086.test.ts`.
 
 **Evidência: MOCK.** Nada disto prova que o Bling real aceita o PATCH com o escopo atual do app.
 
+## 2b. Defeito encontrado na primeira proposta real (2026-11-01) e corrigido neste PR
+As propostas criadas pelo Nano.IA para o CI001086 gravaram `antes: { marca: null }`, mas o Bling guarda `" MARCA: TRIM GO"`. Causa: `bling.produtos.preparar_atualizacao` lia o "antes" da LISTAGEM do Bling (resumo, sem marca, descrições, peso, medidas). Efeito: a tela de aprovação mostrava vazio onde havia valor e o desfazer pela auditoria perderia o texto original. Correção em `conector/handlers.ts`: o "antes" vem da leitura completa por id (`bling.produtos.confirmar`); se essa leitura falhar, a proposta NÃO é criada. Dois testes novos (7 e 8) falham sem a correção e passam com ela. Exige republicar a edge `assistente` (artefato regenerado em `artifacts/assistente`): **não feito aqui, depende de autorização do dono**. Propostas criadas antes da correção continuam com `antes: null`.
+
 ## 3. O que falta para a execução REAL (nada disto é feito por este PR)
 | # | Item | Quem | Estado |
 |---|---|---|---|
