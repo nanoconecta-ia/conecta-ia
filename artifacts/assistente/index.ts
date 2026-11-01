@@ -1438,6 +1438,18 @@ function configSearxngPorLoja(get, lojaId) {
         token
     });
 }
+function configSearxngOuNulo(get, lojaId) {
+    try {
+        return {
+            config: configSearxngPorLoja(get, lojaId)
+        };
+    } catch (e) {
+        return {
+            config: null,
+            erro: e instanceof Error ? e.message : "configuracao SearXNG invalida"
+        };
+    }
+}
 function consultaPublica(q) {
     const s = typeof q === "string" ? q.trim().slice(0, 160) : "";
     if (s.length < 3 || DADOS_PRIVADOS.test(s)) throw new BuscaErro(400, "recusada", "Consulta invalida ou contendo dado interno. Pesquise apenas referencia, fabricante e aplicacao publicos.");
@@ -1553,7 +1565,7 @@ function provedorSearxng(config, f = fetch) {
     };
 }
 
-return { validarConfigSearxng: validarConfigSearxng, configSearxngPorLoja: configSearxngPorLoja, provedorSearxng: provedorSearxng };
+return { validarConfigSearxng: validarConfigSearxng, configSearxngPorLoja: configSearxngPorLoja, configSearxngOuNulo: configSearxngOuNulo, provedorSearxng: provedorSearxng };
 })();
 
 // ---------- supabase/functions/_shared/ia/provedor_busca.ts ----------
@@ -5840,7 +5852,7 @@ const { conversar: conversar, IaErro: IaErro } = __m5;
 const { modeloDaChave: modeloDaChave, validarProvedor: validarProvedor } = __m33;
 const { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, consultarProduto: consultarProduto } = __m37;
 const { executarFerramenta: executarFerramenta, FERRAMENTAS: FERRAMENTAS, SISTEMA: SISTEMA } = __m10;
-const { configSearxngPorLoja: configSearxngPorLoja } = __m17;
+const { configSearxngOuNulo: configSearxngOuNulo } = __m17;
 const { dadosSupabase: dadosSupabase } = __m28;
 const { BlingLeituraReal: BlingLeituraReal } = __m29;
 const { armazemSupabase: armazemSupabase } = __m32;
@@ -6076,7 +6088,8 @@ async function atenderChat(c, ctx) {
         modelo = modeloDaChave(k);
         meta.host_provedor = provedor === "compativel_openai" ? new URL(k.base_url).hostname : provedor === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
         const propostas = [];
-        const searxng = configSearxngPorLoja(ctx.get, loja.id);
+        const { config: searxng, erro: erroSearxng } = configSearxngOuNulo(ctx.get, loja.id);
+        if (erroSearxng) console.warn("SearXNG desligado nesta loja:", erroSearxng);
         const r = await conversar({
             provedor,
             baseUrl: k.base_url ?? undefined,
@@ -6853,7 +6866,7 @@ const { decifrar: decifrar } = __m2;
 const { chaveiroPlataforma: chaveiroPlataforma } = __m4;
 const { conversar: conversar, IaErro: IaErro } = __m5;
 const { executarFerramenta: executarFerramenta, FERRAMENTAS: FERRAMENTAS, SISTEMA: SISTEMA } = __m10;
-const { configSearxngPorLoja: configSearxngPorLoja } = __m17;
+const { configSearxngOuNulo: configSearxngOuNulo } = __m17;
 const { dadosSupabase: dadosSupabase } = __m28;
 const { BlingLeituraReal: BlingLeituraReal } = __m29;
 const { armazemSupabase: armazemSupabase } = __m32;
@@ -7139,7 +7152,7 @@ Deno.serve(async (req)=>{
                         lojaId: loja.id,
                         plugins: plugs ?? [],
                         buscaImagem,
-                        searxng: configSearxngPorLoja((n)=>Deno.env.get(n), loja.id),
+                        searxng: configSearxngOuNulo((n)=>Deno.env.get(n), loja.id).config,
                         conector,
                         credencial: async (pid)=>{
                             const { data } = await sb.rpc("plugin_credencial", {

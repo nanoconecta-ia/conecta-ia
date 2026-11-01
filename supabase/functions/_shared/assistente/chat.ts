@@ -6,7 +6,7 @@ import type { AdaptadorStream } from "../ia/adaptadores_stream.ts";
 import { modeloDaChave, validarProvedor } from "./provedores.ts";
 import { CONSULTAR_PRODUTO, consultarProduto } from "./bling_consultar.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../ia/ferramentas.ts";
-import { configSearxngPorLoja } from "../ia/searxng.ts";
+import { configSearxngOuNulo } from "../ia/searxng.ts";
 import { dadosSupabase } from "../conector/dados.ts";
 import { BlingLeituraReal } from "../conector/porta_bling.ts";
 import { armazemSupabase } from "../bling_armazem.ts";
@@ -116,7 +116,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   modelo = modeloDaChave(k);
   meta.host_provedor = provedor === "compativel_openai" ? new URL(k.base_url).hostname : provedor === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
   const propostas: Record<string, unknown>[] = [];
-  const searxng = configSearxngPorLoja(ctx.get, loja.id); // Ambiente privado + allowlist por loja; nunca vem do usuario.
+  const { config: searxng, erro: erroSearxng } = configSearxngOuNulo(ctx.get, loja.id); if (erroSearxng) console.warn("SearXNG desligado nesta loja:", erroSearxng); // Ambiente privado + allowlist por loja; nunca vem do usuario.
   const r = await conversar({ provedor, baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo, mensagens,
    sistema: `${SISTEMA}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto e bling_propor_ajuste_produto: nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
    maxPassos: 5, maxTokens: 1536, aoTexto: ctx.aoTexto, adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(provedor) : undefined, ferramentas: ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name) || (FERRAMENTAS_PESQUISA as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,

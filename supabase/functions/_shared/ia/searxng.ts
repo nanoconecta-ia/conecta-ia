@@ -35,6 +35,11 @@ export function configSearxngPorLoja(get: (n: string) => string | undefined, loj
   if (!baseUrl || !token) return null;
   return validarConfigSearxng({ baseUrl, token });
 }
+/** Versão que NUNCA derruba o chat: configuração malformada (URL, token) desliga só a pesquisa e devolve o motivo para o log do servidor. */
+export function configSearxngOuNulo(get: (n: string) => string | undefined, lojaId: string): { config: ConfigSearxng | null; erro?: string } {
+  try { return { config: configSearxngPorLoja(get, lojaId) }; }
+  catch (e) { return { config: null, erro: e instanceof Error ? e.message : "configuracao SearXNG invalida" }; }
+}
 function consultaPublica(q: string): string {
   const s = typeof q === "string" ? q.trim().slice(0, 160) : "";
   if (s.length < 3 || DADOS_PRIVADOS.test(s))

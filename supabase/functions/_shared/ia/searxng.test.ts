@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { configSearxngPorLoja, provedorSearxng, validarConfigSearxng } from "./searxng.ts";
+import { configSearxngOuNulo, configSearxngPorLoja, provedorSearxng, validarConfigSearxng } from "./searxng.ts";
 import { escolherProvedorBusca } from "./provedor_busca.ts";
 import { BuscaErro } from "./busca.ts";
 
@@ -87,4 +87,15 @@ test("nao cria segundo contrato; preserva Google legado e falta de provedor", ()
   assert.equal(escolherProvedorBusca({}), null);
   assert.equal(escolherProvedorBusca({ buscaImagem: { chave: 'x', cx: 'y' } })?.id, 'google-legado');
   assert.equal(escolherProvedorBusca({ searxng: config, buscaImagem: { chave: 'x', cx: 'y' } })?.id, 'searxng-privado');
+});
+
+test("configuração malformada de uma loja liberada desliga só a pesquisa e não derruba o chat", () => {
+  const LOJA = "aaaaaaaa-0000-0000-0000-000000000001";
+  const env = (v: Record<string, string>) => (n: string) => v[n];
+  const ruim = configSearxngOuNulo(env({ SEARXNG_LOJAS_PERMITIDAS: LOJA, SEARXNG_BASE_URL: "http://localhost:8080", SEARXNG_BEARER_TOKEN: "x" }), LOJA);
+  assert.equal(ruim.config, null); assert.ok(ruim.erro);
+  const bom = configSearxngOuNulo(env({ SEARXNG_LOJAS_PERMITIDAS: LOJA, SEARXNG_BASE_URL: "https://busca.exemplo.com.br", SEARXNG_BEARER_TOKEN: "token-de-teste-1234" }), LOJA);
+  assert.equal(bom.config?.baseUrl, "https://busca.exemplo.com.br"); assert.equal(bom.erro, undefined);
+  const outra = configSearxngOuNulo(env({ SEARXNG_LOJAS_PERMITIDAS: LOJA, SEARXNG_BASE_URL: "https://busca.exemplo.com.br", SEARXNG_BEARER_TOKEN: "token-de-teste-1234" }), "bbbbbbbb-0000-0000-0000-000000000002");
+  assert.equal(outra.config, null, "loja fora da allowlist nunca usa a instância");
 });
