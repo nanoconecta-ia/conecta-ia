@@ -2183,6 +2183,27 @@ const FERRAMENTAS_CONECTOR = [
             mcp: false
         }
     }),
+    proposta("bling.produtos.preparar_alteracao_preco", "bling", "Prepara (sem gravar) a troca do PREÇO DE VENDA de um produto: compara com o preço do espelho, calcula a diferença no servidor e cria a proposta para aprovação humana. Só preço de venda: custo, compra, margem, fornecedor e fiscal são recusados. Regras em _shared/preco/regras_preco.ts (decisão do dono, ARQUITETURA seção 10).", obj({
+        sku,
+        preco_novo: {
+            type: "number",
+            minimum: 0.01,
+            maximum: 10000000,
+            description: "Novo preço de venda em reais, até 2 casas decimais"
+        },
+        motivo: txt("Motivo comercial (10 a 300 caracteres), sem custo, margem, fornecedor nem dado fiscal", 300)
+    }, [
+        "sku",
+        "preco_novo",
+        "motivo"
+    ]), livre, "MEDIUM", {
+        estado: "planejada",
+        simulacao: true,
+        exposicao: {
+            chat: false,
+            mcp: false
+        }
+    }),
     proposta("bling.categorias.preparar_criacao", "bling", "Prepara (sem gravar) a criação de uma categoria de produto no Bling: confere duplicidade e pai nas categorias do Bling agora e cria a proposta de aprovação.", obj({
         nome: txt(undefined, 120),
         pai_id: txt(undefined, 30),
@@ -5804,7 +5825,7 @@ function paraModelo(ev, limite = LIMITE_MODELO) {
     return monta(n);
 }
 async function consultarProduto(entrada, c) {
-    if (!!c.conversaId === !!c.pair) throw new Error("Contexto de auditoria inválido.");
+    if (Number(!!c.conversaId) + Number(!!c.pair) + Number(!!c.ficha) !== 1) throw new Error("Contexto de auditoria inválido.");
     const e = entrada;
     const permitidas = new Set([
         "codigo",
@@ -5929,6 +5950,8 @@ async function consultarProduto(entrada, c) {
         sessao_id: c.pair.sessaoId,
         dispositivo_id: c.pair.dispositivoId,
         ambiente: c.pair.ambiente
+    } : c.ficha ? {
+        modo: "ficha_sem_llm"
     } : {
         conversa_id: c.conversaId
     };
@@ -5946,7 +5969,7 @@ async function consultarProduto(entrada, c) {
     const { error: auditError } = await c.admin.from("auditoria").insert({
         loja_id: c.lojaId,
         user_id: c.userId,
-        acao: c.pair ? "pair.bling_consulta" : "chat.bling_consulta",
+        acao: c.pair ? "pair.bling_consulta" : c.ficha ? "chat.bling_ficha" : "chat.bling_consulta",
         tabela: "produtos",
         depois: chamada
     });
@@ -5959,6 +5982,54 @@ async function consultarProduto(entrada, c) {
 return { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, LIMITE_MODELO: LIMITE_MODELO, paraModelo: paraModelo, consultarProduto: consultarProduto };
 })();
 
+// ---------- supabase/functions/_shared/assistente/ficha_sem_llm.ts ----------
+const __m41 = (() => {
+const campo = (valor, limite = 120)=>typeof valor === "string" && valor.trim() ? valor.replace(/[\x00-\x1F]/g, " ").slice(0, limite) : "não informado";
+const numero = (n)=>Number.isInteger(n) && Number(n) >= 0 ? Number(n) : 0;
+function gerarFichaSemLLM(v) {
+    if (!v || typeof v !== "object" || Array.isArray(v)) throw Error("Evidência da consulta inválida.");
+    const e = v;
+    if (!Array.isArray(e.candidatos) || !Array.isArray(e.fontes) || !e.conclusao || !Number.isInteger(e.total_candidatos) || (e.total_candidatos ?? -1) < 0) throw Error("Evidência incompleta.");
+    const total = numero(e.total_candidatos), exibidos = e.candidatos.slice(0, 8);
+    const parcial = e.truncado === true || e.lista_parcial === true || numero(e.candidatos_omitidos) > 0 || total > e.candidatos.length;
+    const apiCompleta = e.conclusao.api_completa === true;
+    const apiConsultada = e.fontes.some((f)=>f.origem === "api_bling" && f.consultada === true);
+    const situacao = total === 0 ? "sem_candidatos_no_escopo" : total === 1 && !parcial ? "um_candidato" : "conflito_ou_lista_parcial";
+    const linhas = [
+        "FICHA-BASE DO BLING — CONSULTA SEM INTELIGÊNCIA ARTIFICIAL",
+        "Código pesquisado: " + campo(e.termo, 80),
+        "Origem: " + (apiConsultada ? "API do Bling e/ou espelho" : "espelho ou consulta API não concluída") + "; API completa: " + (apiCompleta ? "sim" : "não") + "; ambiente: " + (e.simulado ? "SIMULADO" : "não identificado como simulado"),
+        "Consulta em: " + campo(e.consultado_em, 35),
+        "Candidatos identificados: " + total + (parcial ? " (LISTA PARCIAL)" : "")
+    ];
+    if (!total) {
+        linhas.push("Não encontrei candidato NOS FILTROS consultados. Isso NÃO prova que o produto inexiste no ERP.");
+        linhas.push("Cadastro novo BLOQUEADO: verificar códigos OEM, fabricante/importador, descrição, excluídos e catálogo do fornecedor.");
+    } else {
+        for (const c of exibidos){
+            linhas.push("- Bling ID " + campo(c.id, 32) + " | SKU " + campo(c.sku, 80) + " | " + campo(c.nome, 160) + " | situação " + campo(c.situacao, 30) + " | origem " + campo(c.origem, 30));
+        }
+        if (total > 1 || parcial) linhas.push("Múltiplos candidatos/consulta parcial: escolha a identidade correta antes de qualquer proposta.");
+        if (total === 1 && !parcial) linhas.push("Um candidato encontrado: conferir identidade e aplicações antes de propor atualização/reativação.");
+    }
+    if (!apiCompleta) linhas.push("ATENÇÃO: consulta ao ERP incompleta ou não confirmada. Não concluir ausência nem criar cadastro.");
+    linhas.push("Campos que exigem confirmação por fonte: fabricante real, código OEM, GTIN, aplicação por motor/ano/versão, medidas, peso, imagens e licença de uso.");
+    linhas.push("Preço e estoque são controlados pelo Bling. SKU, NCM e preço para produto novo são campos de responsabilidade do lojista; fiscal requer validação adequada.");
+    linhas.push("NENHUM PRODUTO FOI CADASTRADO, ALTERADO, APROVADO OU PUBLICADO.");
+    return {
+        modo: "ficha_sem_llm",
+        situacao,
+        candidatos: total,
+        api_completa: apiCompleta,
+        parcial,
+        autoriza_criacao: false,
+        resposta: linhas.join("\n")
+    };
+}
+
+return { gerarFichaSemLLM: gerarFichaSemLLM };
+})();
+
 // ---------- supabase/functions/_shared/assistente/chat.ts ----------
 const __m36 = (() => {
 const { chaveiroPlataforma: chaveiroPlataforma } = __m4;
@@ -5967,6 +6038,7 @@ const { conversar: conversar, IaErro: IaErro } = __m5;
 const { modeloDaChave: modeloDaChave, validarProvedor: validarProvedor } = __m33;
 const { configFallbackFree: configFallbackFree, tentarFallbackFree: tentarFallbackFree } = __m37;
 const { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, consultarProduto: consultarProduto } = __m38;
+const { gerarFichaSemLLM: gerarFichaSemLLM } = __m41;
 const { executarFerramenta: executarFerramenta, FERRAMENTAS: FERRAMENTAS, SISTEMA: SISTEMA } = __m10;
 const { configSearxngOuNulo: configSearxngOuNulo } = __m17;
 const { dadosSupabase: dadosSupabase } = __m28;
@@ -6092,6 +6164,54 @@ async function atenderChat(c, ctx) {
         }, 503) : resultado({
             mensagens: (data ?? []).reverse()
         });
+    }
+    if (c.acao === "chat_ficha_produto") {
+        if (!ativo("chat_consulta_bling")) return resultado({
+            erro: "Consulta Bling indisponível nesta loja."
+        }, 403);
+        if (typeof c.codigo !== "string" || !/^[A-Za-z0-9_.\\/-]{1,60}$/.test(c.codigo) || c.codigo.startsWith(".") || c.anexos != null || c.conversa_id != null || c.provedor != null) return resultado({
+            erro: "Informe um único SKU ou código de fabricante (até 60 caracteres), sem anexos."
+        }, 400);
+        const chamadas = [], evidencias = [];
+        try {
+            const chaveCifra = await chaveiroPlataforma(admin, ctx.get);
+            if (!chaveCifra) return resultado({
+                erro: "Credencial do conector não disponível para consulta."
+            }, 503);
+            const simulado = ctx.get("CHAT_AMBIENTE") === "sintetico";
+            const prova = await consultarProduto({
+                codigo: c.codigo,
+                incluir_excluidos: true
+            }, {
+                usuario,
+                admin,
+                lojaId: loja.id,
+                userId,
+                cfg: {
+                    chaveCifra,
+                    fetch: ctx.fetch
+                },
+                simulado,
+                chamadas,
+                evidencias,
+                ficha: true
+            });
+            const ficha = gerarFichaSemLLM(prova);
+            return resultado({
+                ...ficha,
+                evidencias,
+                chamadas,
+                simulado,
+                ia: false,
+                ferramentas: [
+                    CONSULTAR_PRODUTO.name
+                ]
+            });
+        } catch  {
+            return resultado({
+                erro: "A ficha não foi concluída. Verifique conexão, autorização ou auditoria do Bling; nenhum cadastro foi criado."
+            }, 503);
+        }
     }
     if (c.acao !== "chat_perguntar") return resultado({
         erro: "Ação inválida."
@@ -6429,7 +6549,7 @@ return { FERRAMENTAS_PROPOSTA_BLING: FERRAMENTAS_PROPOSTA_BLING, FERRAMENTAS_PES
 })();
 
 // ---------- supabase/functions/_shared/ia/adaptadores_stream.ts ----------
-const __m41 = (() => {
+const __m42 = (() => {
 const { IaErro: IaErro, temAnexo: temAnexo } = __m8;
 const { urlPublicaSegura: urlPublicaSegura } = __m9;
 const { paradaClaude: paradaClaude, paradaGemini: paradaGemini, paradaOpenAI: paradaOpenAI } = __m7;
@@ -6957,7 +7077,7 @@ return { lerEventosSse: lerEventosSse, chamarClaudeStream: chamarClaudeStream, c
 })();
 
 // ---------- supabase/functions/_shared/assistente/streaming.ts ----------
-const __m42 = (() => {
+const __m43 = (() => {
 const quadro = (evento, dados)=>`event: ${evento}\ndata: ${JSON.stringify(dados)}\n\n`;
 function turnoComStreaming(turno, cors) {
     const enc = new TextEncoder();
@@ -7027,8 +7147,8 @@ const { listarProvedores: listarProvedores, modeloDaChave: modeloDaChave, valida
 const { MSG_SO_LOJISTA: MSG_SO_LOJISTA, podeDecidir: podeDecidir } = __m34;
 const { conteudoComAnexos: conteudoComAnexos, REGRAS_ANEXO: REGRAS_ANEXO, validarAnexos: validarAnexos } = __m35;
 const { atenderChat: atenderChat } = __m36;
-const { ADAPTADORES_STREAM: ADAPTADORES_STREAM } = __m41;
-const { turnoComStreaming: turnoComStreaming } = __m42;
+const { ADAPTADORES_STREAM: ADAPTADORES_STREAM } = __m42;
+const { turnoComStreaming: turnoComStreaming } = __m43;
 const CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",

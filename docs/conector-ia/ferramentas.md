@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 58 ferramentas — 40 ativas, 16 planejadas, 2 desligadas.
+Resumo: 59 ferramentas — 40 ativas, 17 planejadas, 2 desligadas.
 
 ## Grupo: conecta
 
@@ -107,6 +107,7 @@ Resumo: 58 ferramentas — 40 ativas, 16 planejadas, 2 desligadas.
 | `bling.produtos.preparar_reativacao` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `bling_id*:string` `fontes*:array` |
 | `bling.produtos.preparar_atualizacao` | ativa | propor | MEDIUM | não | sim | sim | sim | chave | `sku*:string` `campos*:object` `fontes*:array` |
 | `bling.categorias.preparar_alteracao_lote` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `skus*:array` `escolhas:object` |
+| `bling.produtos.preparar_alteracao_preco` | planejada | propor | MEDIUM | não | não | não | sim | chave | `sku*:string` `preco_novo*:number` `motivo*:string` |
 | `bling.categorias.preparar_criacao` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `nome*:string` `pai_id:string` `fontes*:array` |
 | `bling.produtos.criar` | desligada | executar | MEDIUM | sim | não | não | sim | chave | `corpo*:object` |
 | `bling.produtos.alterar` | ativa | executar | MEDIUM | sim | não | não | sim | chave | `id*:string` `corpo*:object` |
@@ -138,6 +139,9 @@ Resumo: 58 ferramentas — 40 ativas, 16 planejadas, 2 desligadas.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
 - **`bling.categorias.preparar_alteracao_lote`** — Prepara (sem gravar) a troca da categoria de produtos no Bling a partir das sugestões de categoria JÁ APROVADAS pelo lojista: lê a categoria atual no Bling agora, monta antes/depois e cria a proposta. Só a categoria; só os SKUs informados.
+  - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
+  - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
+- **`bling.produtos.preparar_alteracao_preco`** — Prepara (sem gravar) a troca do PREÇO DE VENDA de um produto: compara com o preço do espelho, calcula a diferença no servidor e cria a proposta para aprovação humana. Só preço de venda: custo, compra, margem, fornecedor e fiscal são recusados. Regras em _shared/preco/regras_preco.ts (decisão do dono, ARQUITETURA seção 10).
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
 - **`bling.categorias.preparar_criacao`** — Prepara (sem gravar) a criação de uma categoria de produto no Bling: confere duplicidade e pai nas categorias do Bling agora e cria a proposta de aprovação.

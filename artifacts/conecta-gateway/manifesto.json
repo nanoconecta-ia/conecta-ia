@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/conecta-gateway/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "e1ad85b31d81cfb0cd1efd92855ff48f8759b3d4dc49ee8dfbc86fc2cc1fa129",
+  "artefato_sha256": "f2118c5315bb3bfa440fa7349632fa47289cfac86a88b40a70bfe2db543956f0",
   "fontes": [
     {
       "path": "supabase/functions/_shared/ia/reducao.ts",
@@ -62,7 +62,7 @@
     },
     {
       "path": "supabase/functions/_shared/assistente/bling_consultar.ts",
-      "sha256": "b362430572124c2aa7e56097b757d040a26f700da8a5a7d3dd96dbde48d1f539"
+      "sha256": "db227a3ee0f6895a0ef8e54db80178e082d956023652bb7528b77b8a04f070b6"
     },
     {
       "path": "supabase/functions/_shared/pair/gateway_dados.ts",

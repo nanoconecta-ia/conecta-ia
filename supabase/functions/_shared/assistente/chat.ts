@@ -6,6 +6,7 @@ import type { AdaptadorStream } from "../ia/adaptadores_stream.ts";
 import { modeloDaChave, validarProvedor } from "./provedores.ts";
 import { configFallbackFree, tentarFallbackFree } from "./fallback_free.ts";
 import { CONSULTAR_PRODUTO, consultarProduto } from "./bling_consultar.ts";
+import { gerarFichaSemLLM } from "./ficha_sem_llm.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../ia/ferramentas.ts";
 import { configSearxngOuNulo } from "../ia/searxng.ts";
 import { dadosSupabase } from "../conector/dados.ts";
@@ -67,6 +68,25 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   if (c.antes) q = q.or(`criada_em.lt.${c.antes},and(criada_em.eq.${c.antes},id.lt.${c.antes_id})`);
   const { data, error } = await q;
   return error ? resultado({ erro: "Não foi possível ler as mensagens." }, 503) : resultado({ mensagens: (data ?? []).reverse() });
+ }
+ if (c.acao === "chat_ficha_produto") {
+  // Consulta autenticada e auditada que independe de qualquer chave/provedor LLM.
+  // NÃO persiste como mensagem de conversa nem cria/propoe produto.
+  if (!ativo("chat_consulta_bling")) return resultado({ erro: "Consulta Bling indisponível nesta loja." }, 403);
+  if (typeof c.codigo !== "string" || !/^[A-Za-z0-9_.\\/-]{1,60}$/.test(c.codigo) || c.codigo.startsWith(".") ||
+      c.anexos != null || c.conversa_id != null || c.provedor != null) return resultado({ erro: "Informe um único SKU ou código de fabricante (até 60 caracteres), sem anexos." }, 400);
+  const chamadas: Record<string, unknown>[] = [], evidencias: Record<string, unknown>[] = [];
+  try {
+   const chaveCifra = await chaveiroPlataforma(admin, ctx.get);
+   if (!chaveCifra) return resultado({ erro: "Credencial do conector não disponível para consulta." }, 503);
+   const simulado = ctx.get("CHAT_AMBIENTE") === "sintetico";
+   const prova = await consultarProduto({ codigo: c.codigo, incluir_excluidos: true },
+     { usuario, admin, lojaId: loja.id, userId, cfg: { chaveCifra, fetch: ctx.fetch }, simulado, chamadas, evidencias, ficha: true });
+   const ficha = gerarFichaSemLLM(prova);
+   return resultado({ ...ficha, evidencias, chamadas, simulado, ia: false, ferramentas: [CONSULTAR_PRODUTO.name] });
+  } catch {
+   return resultado({ erro: "A ficha não foi concluída. Verifique conexão, autorização ou auditoria do Bling; nenhum cadastro foi criado." }, 503);
+  }
  }
  if (c.acao !== "chat_perguntar") return resultado({ erro: "Ação inválida." }, 400);
  if (!ativo("chat_persistente")) return resultado({ erro: "Histórico desligado nesta loja." }, 409);

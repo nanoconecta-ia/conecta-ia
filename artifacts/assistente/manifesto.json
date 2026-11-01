@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "d77d238aeeb465546d5eb386a494ec3b95cc6c24c64fe54887e68cc1e1a296d0",
+  "artefato_sha256": "e643e5491ddb3d870db73934a2bc195b722d86b93c5467bd45d588f3b0b17843",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -70,7 +70,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/registro.ts",
-      "sha256": "625f56f6a2c3c4cf2c62e14001a7cc9c9010b7e461f29e15ad309aa3adfaa111"
+      "sha256": "cb561bd79e5eeadae18b1bb845c3e1540e7c8b6e76f177bb26b21780dfcac754"
     },
     {
       "path": "supabase/functions/_shared/conector/bling_campos.ts",
@@ -158,11 +158,15 @@
     },
     {
       "path": "supabase/functions/_shared/assistente/bling_consultar.ts",
-      "sha256": "b362430572124c2aa7e56097b757d040a26f700da8a5a7d3dd96dbde48d1f539"
+      "sha256": "db227a3ee0f6895a0ef8e54db80178e082d956023652bb7528b77b8a04f070b6"
+    },
+    {
+      "path": "supabase/functions/_shared/assistente/ficha_sem_llm.ts",
+      "sha256": "c090a8484c9caeaa718ee343e9990da3d3548c0d60898ed3b68166075232ff2d"
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "fd7161287a2b6927dc6f67fde429f4c51a0694c744e39973142b40e30b3ea8a7"
+      "sha256": "02ee9a45707f2c8196a45fc0ebdb2aa9c0f8a03f90ae41e33c1dab0f3ebfde98"
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores_stream.ts",

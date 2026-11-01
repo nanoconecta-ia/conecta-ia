@@ -116,7 +116,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   useEffect(() => { setAceitaEnvio(provedor ? lerConsentimento(armazemSessao, loja.id, provedor) : false); setAutorizaFallbackFree(false); }, [provedor, loja.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const autorizarEnvio = () => { if (!provedor) return; gravarConsentimento(armazemSessao, loja.id, provedor, true); setAceitaEnvio(true); };
   const revogarEnvio = () => { if (provedor) gravarConsentimento(armazemSessao, loja.id, provedor, false); setAceitaEnvio(false); };
-  const podeEnviar = !carregandoChat && !carregando && !erroConfig && (!provedor || (selecao?.estado === "disponivel" && aceitaEnvio));
+  const modoFichaSemIA = /^\/ficha\s+[A-Za-z0-9_.\/-]{1,60}$/i.test(texto.trim());
+  const podeEnviar = !ocupado && ((!carregandoChat && config.bling && modoFichaSemIA) || (!carregandoChat && !carregando && !erroConfig && (!provedor || (selecao?.estado === "disponivel" && aceitaEnvio))));
   useEffect(() => {
     let ativo = true;
     setConfig({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 }); setConversas([]); setConversaId(null); setRegistros([]); setRetentativa(null); setAdministrando(false); setErroHistorico("");
@@ -227,7 +228,19 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   }
   async function enviar(t: string, repetir = false) {
     if (!repetir && menu && t.trim() && !ocupado && !acaoLocal && !administrando && !retentativa) { const cmd = interpretar(t, menu); if (cmd.tipo !== "nenhum") { await comandoLocal(t, cmd); return; } }
-    if (!t.trim() || ocupado || !podeEnviar || administrando || retentativa && !repetir) return;
+    if (!repetir && /^\/ficha\s+/i.test(t.trim())) {
+     if (ocupado || administrando || !!retentativa || anexos.length) { setErroHistorico("A ficha sem IA exige uma consulta isolada, sem anexos ou outra ação em andamento."); return; }
+     const codigo = t.trim().replace(/^\/ficha\s+/i, "");
+     if (!/^[A-Za-z0-9_.\/-]{1,60}$/.test(codigo) || codigo.startsWith(".")) { setErroHistorico("Use /ficha seguido de um SKU/código, por exemplo /ficha CI000016."); return; }
+     const origem = loja.id; setMsgs(m => [...m, { de: "eu", texto: t }]); setTexto(""); setOcupado(true); setErroHistorico("");
+     try {
+       const d = await chamada("chat_ficha_produto", { codigo });
+       if (lojaAtual.current === origem) setMsgs(m => [...m, { de: "ia", texto: String(d.resposta ?? "Consulta sem resultado."), evidencias: d.evidencias, simulado: d.simulado }]);
+     } catch (e) { if (lojaAtual.current === origem) setErroHistorico(msgErro(e)); }
+     finally { if (lojaAtual.current === origem) setOcupado(false); }
+     return;
+   }
+   if (!t.trim() || ocupado || !podeEnviar || administrando || retentativa && !repetir) return;
     const lojaDoEnvio = loja.id;
     const persistente = !!provedor && config.persistente;
     const tentativa = repetir ? retentativa : null;
@@ -390,7 +403,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
           <input ref={entradaArquivo} type="file" hidden multiple accept={CHAT_ACEITA} onChange={(e) => void escolherArquivos(e.target.files)} />
           <input ref={entradaCamera} type="file" hidden accept="image/*" capture="environment" onChange={(e) => void escolherArquivos(e.target.files)} />
           <input ref={entradaFotos} type="file" hidden multiple accept="image/*" onChange={(e) => void escolherArquivos(e.target.files)} />
-          <div className="compositor-campo"><span id="rotulo-pergunta" className="so-leitor">Pergunte</span><textarea aria-labelledby="rotulo-pergunta" value={texto} rows={1} style={{ display: "block", width: "100%", minWidth: 0, height: "48px", minHeight: "48px", maxHeight: "96px", overflowY: "auto", resize: "none", boxSizing: "border-box" }} enterKeyHint="send" placeholder="Pergunte ao Nano.ia…" onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void enviar(texto); } }} maxLength={1000} /></div>
+          <div className="compositor-campo"><span id="rotulo-pergunta" className="so-leitor">Pergunte</span><textarea aria-labelledby="rotulo-pergunta" value={texto} rows={1} style={{ display: "block", width: "100%", minWidth: 0, height: "48px", minHeight: "48px", maxHeight: "96px", overflowY: "auto", resize: "none", boxSizing: "border-box" }} enterKeyHint="send" placeholder={config.bling ? "Pergunte ou use /ficha SKU (sem IA)" : "Pergunte ao Nano.IA…"} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void enviar(texto); } }} maxLength={1000} /></div>
           <div className="compositor-acoes">
           <button type="button" className="sec mic nano-mais" aria-expanded={menuAnexos} aria-label="Adicionar foto, câmera ou arquivo" title="Adicionar ao Nano.IA"
             onClick={() => { setMenuAnexos(v => !v); setEsq(false); setDir(false); }}><Icone nome="mais" tamanho={20} /></button>
