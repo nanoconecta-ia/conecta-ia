@@ -25,6 +25,9 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # Ambiente de produção: configure em Settings > Environments > producao-assistente os revisores obrigatórios
+    # (só o dono publica). Sem aprovação do revisor, o job não começa.
+    environment: producao-assistente
     steps:
       - name: Travas de segurança
         env:
@@ -50,11 +53,24 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+      - name: Registrar a versão ANTES (para voltar atrás se preciso)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions list --project-ref "$PROJECT_REF" -o json | tee antes.json | jq -r '.[] | select(.slug=="assistente") | "antes: versao=\(.version) status=\(.status)"'
       - name: Publicar a função assistente (verify_jwt ligado, empacotamento no servidor)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: supabase functions deploy assistente --project-ref "$PROJECT_REF" --use-api
-      - name: Registrar a versão publicada
+      - name: Registrar a versão DEPOIS
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: supabase functions list --project-ref "$PROJECT_REF" | grep -i assistente
+        run: |
+          supabase functions list --project-ref "$PROJECT_REF" -o json | tee depois.json | jq -r '.[] | select(.slug=="assistente") | "depois: versao=\(.version) status=\(.status)"'
+          jq -e '.[] | select(.slug=="assistente" and .status=="ACTIVE")' depois.json > /dev/null
+      - name: Prova de que o JWT continua exigido (sem token deve ser recusado)
+        run: |
+          codigo=$(curl -s -o /dev/null -w '%{http_code}' -X POST "https://${PROJECT_REF}.supabase.co/functions/v1/assistente" -H 'content-type: application/json' -d '{"acao":"chat_config"}')
+          echo "sem token: HTTP $codigo"
+          test "$codigo" = "401"
+      - name: Como voltar atrás
+        run: echo "Rollback: dispare este workflow a partir de um commit anterior do main (git revert + novo disparo) com a mesma frase de confirmação."
