@@ -1,0 +1,73 @@
+name: Validar token Supabase (somente leitura)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validar-token-supabase
+  cancel-in-progress: false
+
+jobs:
+  validar:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: producao-assistente
+    env:
+      PROJECT_REF: dsfzhsrudriqkumtlqwj
+    steps:
+      - name: Verificar presenca da credencial sem mostra-la
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "::error::Secret ausente"; exit 1; }
+          echo "Secret configurado. Nao foi exibido."
+
+      - name: Validar token via Management API (somente GET)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          codigo=$(curl --silent --show-error --retry 0 --max-time 25 --output /tmp/funcoes.json --write-out '%{http_code}' \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            --header 'Accept: application/json' \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/functions")
+          echo "Supabase Management API: HTTP $codigo"
+          test "$codigo" = "200" || { echo "::error::Acesso nao autorizado ou projeto fora do escopo (HTTP $codigo)"; exit 1; }
+          jq -e 'type == "array" and any(.[]; .slug == "assistente")' /tmp/funcoes.json >/dev/null || {
+            echo "::error::Token aceito, mas a funcao assistente nao foi encontrada"; exit 1;
+          }
+          echo "Acesso de leitura ao projeto e a funcao assistente: OK"
+
+      - name: Instalar mesma CLI do workflow de deploy
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+
+      - name: Validar compatibilidade da CLI com o token (somente listagem)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          supabase functions list --project-ref "$PROJECT_REF" -o json >/tmp/cli-funcoes.json
+          jq -e 'any(.[]; .slug == "assistente")' /tmp/cli-funcoes.json >/dev/null || {
+            echo "::error::CLI nao localizou assistente"; exit 1;
+          }
+          echo "CLI 2.122.0 aceitou o token: OK"
+
+      - name: Validar backup remoto (somente leitura; SEM deploy)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/backup-assistente
+          cd /tmp/backup-assistente
+          supabase functions download assistente --project-ref "$PROJECT_REF" --use-api
+          test -n "$(find . -type f -print -quit)" || {
+            echo "::error::Download de backup vazio"; exit 1;
+          }
+          echo "Leitura e download de backup: OK. Nenhuma funcao foi publicada."
