@@ -8,6 +8,7 @@ export const CAMPOS_ENRIQUECIMENTO = [
 ] as const;
 /** Especificação técnica / campo customizado do ERP: "espec:" + nome do campo normalizado (a-z, 0-9, _), ex.: espec:diametro_externo_mm. */
 export const CAMPO_ESPEC = /^espec:[a-z0-9_]{2,30}$/;
+const CAMPOS_TEXTO_SEO = new Set(["seo_titulo", "seo_descricao", "descricao_curta", "descricao_longa", "tags"]);
 export const campoEnriquecimentoValido = (c: string) => (CAMPOS_ENRIQUECIMENTO as readonly string[]).includes(c) || CAMPO_ESPEC.test(c);
 /** Limites por campo (o que vai para o site precisa caber nos campos do ERP/loja). null = ok; texto = motivo da recusa. */
 export function problemaNoValor(campo: string, valor: unknown): string | null {
@@ -19,6 +20,9 @@ export function problemaNoValor(campo: string, valor: unknown): string | null {
   return null;
 }
 export const TIPOS_CODIGO = ["oem", "fabricante", "ean", "similar", "substituto", "antigo"] as const; // "sku" é do Bling, o agente não propõe
+
+import { validarAplicacao, type BaseAplicacao, type Fonte, type PropostaAplicacao, type TipoAno, type TipoFonte } from "../aplicacoes/regras_aplicacao.ts";
+import { validarTextoSeo } from "../aplicacoes/regras_seo.ts";
 
 // deno-lint-ignore no-explicit-any
 export interface AdminRpc { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: any; error: any }>; from: (t: string) => any }
@@ -41,6 +45,16 @@ export async function proporEnriquecimento(admin: AdminRpc, lojaId: string, e: R
   if (problema) return { erro: problema };
   const produtoId = await idDoSku(admin, lojaId, sku);
   if (!produtoId) return { erro: "Produto não encontrado nesta loja." };
+  if (CAMPOS_TEXTO_SEO.has(campo)) {
+    // Texto que vai ao site só pode citar aplicações e códigos já APROVADOS deste produto; "original/genuína/homologada" nunca, sem prova.
+    const apps = await listar(admin.from("produto_aplicacoes").select("modelo, motorizacao, ano_inicial, ano_final").eq("produto_id", produtoId).eq("status", "aprovado"));
+    const cods = await listar(admin.from("produto_codigos").select("valor").eq("produto_id", produtoId).eq("status", "aprovado"));
+    const r = validarTextoSeo(String(e.valor), {
+      sku, codigosAprovados: cods.map((c) => String(c?.valor ?? "")).filter(Boolean),
+      aplicacoesAprovadas: apps.map((a) => ({ marca: "", modelo: String(a?.modelo ?? ""), motor: a?.motorizacao ?? null, ano_inicial: a?.ano_inicial ?? null, ano_final: a?.ano_final ?? null })),
+    });
+    if (!r.ok) return { erro: `Texto recusado: ${r.bloqueios.map((b) => b.mensagem).join(" ")}`, bloqueios: r.bloqueios };
+  }
   const { error } = await admin.rpc("enriquecimento_propor", { p_loja: lojaId, p_produto: produtoId, p_campo: campo, p_valor: JSON.stringify(e.valor), p_fonte: fonte, p_confianca: conf(e.confianca) });
   if (error) return { erro: "Não foi possível registrar a proposta (talvez já exista um valor aprovado para este campo)." };
   return { ok: true, status: "a_confirmar", aviso: "Entrou na fila de aprovação. O lojista decide." };
@@ -58,17 +72,44 @@ export async function proporCodigo(admin: AdminRpc, lojaId: string, e: Record<st
   return { ok: true, status: "a_confirmar" };
 }
 
+export const TIPOS_FONTE: readonly TipoFonte[] = ["catalogo_fabricante", "manual_montadora", "cruzamento_codigo_oem", "catalogo_distribuidor", "nota_fiscal", "anuncio_marketplace", "outra"];
+export const BASES: readonly BaseAplicacao[] = ["versao_do_veiculo", "somente_motor", "somente_modelo", "referencia_cruzada_similar"];
+export const TIPOS_ANO: readonly TipoAno[] = ["importacao_brasil", "comercializacao_brasil", "ano_modelo_crlv", "fabricacao", "lancamento_mundial"];
+export const REGIMES = ["importado", "ckd", "skd", "nacional"] as const;
+const hojeIso = () => new Date().toISOString().slice(0, 10);
+const noLista = <T extends string>(lista: readonly T[], v: unknown): T | null => (typeof v === "string" && (lista as readonly string[]).includes(v) ? (v as T) : null);
+/** Leitura tolerante: se a consulta falhar, devolve lista vazia (o lado seguro: nada aprovado, nada para cruzar). */
+// deno-lint-ignore no-explicit-any
+async function listar(consulta: any): Promise<any[]> { try { const r = await consulta; return Array.isArray(r?.data) ? r.data : []; } catch { return []; } }
+
+/** Aplicação veicular: o agente precisa trazer a VERSÃO do veículo, um tipo de ano, a base da afirmação e uma fonte com localizador e data.
+ *  A trava é o validador (aplicacoes/regras_aplicacao.ts), não o prompt. O agente só propõe: entra a_confirmar, com confiança limitada. */
 export async function proporAplicacao(admin: AdminRpc, lojaId: string, e: Record<string, unknown>): Promise<unknown> {
-  const sku = txt(e.sku, 80), modelo = txt(e.modelo, 80), motor = txt(e.motorizacao, 60), fonte = txt(e.fonte, 400);
-  const ini = Number.isInteger(e.ano_inicial) ? e.ano_inicial as number : null, fim = Number.isInteger(e.ano_final) ? e.ano_final as number : null;
-  if (!sku || !modelo) return { erro: "Informe o SKU e o modelo do veículo." };
-  if (!fonte) return { erro: "Informe a fonte da aplicação (catálogo, manual, cruzamento de código)." };
-  if (ini != null && fim != null && fim < ini) return { erro: "O ano final não pode ser antes do ano inicial." };
+  const sku = txt(e.sku, 80);
+  if (!sku) return { erro: "Informe o SKU." };
   const produtoId = await idDoSku(admin, lojaId, sku);
   if (!produtoId) return { erro: "Produto não encontrado nesta loja." };
-  const { error } = await admin.rpc("aplicacao_propor", { p_loja: lojaId, p_produto: produtoId, p_modelo: modelo, p_motorizacao: motor || null, p_ano_inicial: ini, p_ano_final: fim, p_fonte: fonte, p_confianca: conf(e.confianca) });
+  const codigos = await listar(admin.from("produto_codigos").select("tipo, valor").eq("produto_id", produtoId).eq("status", "aprovado"));
+  const valores = (t: string) => codigos.filter((c) => c?.tipo === t && typeof c.valor === "string").map((c) => c.valor as string);
+  const fonte: Fonte = {
+    tipo: noLista(TIPOS_FONTE, e.fonte_tipo) ?? "outra", url: txt(e.fonte_url, 600) || null, documento: txt(e.fonte_documento ?? e.fonte, 400) || null,
+    data: txt(e.fonte_data, 10), codigo_conferido: txt(e.codigo_conferido, 80) || null,
+  };
+  const ini = Number.isInteger(e.ano_inicial) ? e.ano_inicial as number : null, fim = Number.isInteger(e.ano_final) ? e.ano_final as number : null;
+  const proposta: PropostaAplicacao = {
+    loja_id: lojaId, sku, base: noLista(BASES, e.base) ?? "somente_modelo", fontes: [fonte], declara_genuina: e.declara_genuina === true,
+    veiculo: { marca: txt(e.marca_veiculo, 60), modelo: txt(e.modelo, 80), motor: txt(e.motorizacao, 60), ano_inicial: ini, ano_final: fim, em_producao: e.em_producao === true,
+      tipo_ano: noLista(TIPOS_ANO, e.tipo_ano), regime: noLista(REGIMES, e.regime), versao: txt(e.versao, 80) || null },
+  };
+  const r = validarAplicacao(proposta, { loja_id: lojaId, sku, oem: valores("oem"), fabricante: valores("fabricante"), marca_tipo: "desconhecido" }, { acao: "propor", ator: "agente", hoje: hojeIso() });
+  if (!r.ok) return { erro: `Aplicação recusada: ${r.bloqueios.map((b) => b.mensagem).join(" ")}`, bloqueios: r.bloqueios };
+  const v = proposta.veiculo;
+  const resumoFonte = [fonte.tipo, fonte.url ?? fonte.documento, fonte.data, `ano=${v.tipo_ano}`, `marca=${v.marca}`, v.regime ? `regime=${v.regime}` : null, fonte.codigo_conferido ? `codigo=${fonte.codigo_conferido}` : null, `base=${proposta.base}`].filter(Boolean).join(" | ").slice(0, 400);
+  const limite = r.nivel === "confirmavel" ? 0.7 : 0.4; // quem aprova é a pessoa: a confiança do agente nunca passa disso
+  const pedida = conf(e.confianca);
+  const { error } = await admin.rpc("aplicacao_propor", { p_loja: lojaId, p_produto: produtoId, p_modelo: v.modelo, p_motorizacao: v.motor, p_ano_inicial: ini, p_ano_final: fim, p_fonte: resumoFonte, p_confianca: pedida == null ? limite : Math.min(pedida, limite) });
   if (error) return { erro: "Não foi possível registrar a aplicação." };
-  return { ok: true, status: "a_confirmar" };
+  return { ok: true, status: "a_confirmar", nivel: r.nivel, avisos: r.avisos };
 }
 
 export async function proporImagem(admin: AdminRpc, lojaId: string, e: Record<string, unknown>): Promise<unknown> {

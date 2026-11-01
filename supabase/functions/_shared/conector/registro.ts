@@ -3,6 +3,7 @@
 // Regras: LLM nunca recebe o MCP do Bling cru; escrita externa só pelo executor, após aprovação humana;
 // "ativa" significa handler implementado E testado — o resto é contrato (planejada) ou está travado (desligada).
 import type { DefinicaoFerramenta, JsonSchema, Permissao, Risco } from "./tipos.ts";
+import { BASES, REGIMES, TIPOS_ANO, TIPOS_FONTE } from "../ia/escrita.ts";
 
 const obj = (properties: Record<string, JsonSchema>, required: string[] = []): JsonSchema => ({ type: "object", properties, required, additionalProperties: false });
 const txt = (descricao?: string, maxLength = 200): JsonSchema => ({ type: "string", maxLength, description: descricao });
@@ -61,8 +62,11 @@ export const FERRAMENTAS_CONECTOR: readonly DefinicaoFerramenta[] = [
     obj({ sku, campo: txt(undefined, 40), valor: txt(undefined, 4000), fonte: txt("URL ou documento", 500), confianca: { type: "number", minimum: 0, maximum: 1 } }, ["sku", "campo", "valor", "fonte"]), livre, "LOW", { estado: "ativa" }),
   proposta("conecta.codigo.propor", "engenharia", "Propõe um código de referência (OEM/fabricante/cruzado) com fonte.",
     obj({ sku, tipo: txt(undefined, 30), valor: txt(undefined, 80), fonte: txt(undefined, 500), confianca: { type: "number", minimum: 0, maximum: 1 } }, ["sku", "tipo", "valor", "fonte"]), livre, "LOW", { estado: "ativa" }),
-  proposta("conecta.aplicacao.propor", "engenharia", "Propõe aplicação veicular (modelo, motor, anos) com fonte.",
-    obj({ sku, modelo: txt(), motorizacao: txt(), ano_inicial: { type: "integer" }, ano_final: { type: "integer" }, fonte: txt(undefined, 500), confianca: { type: "number", minimum: 0, maximum: 1 } }, ["sku", "modelo", "fonte"]), livre, "LOW", { estado: "ativa" }),
+  proposta("conecta.aplicacao.propor", "engenharia", "Propõe a aplicação de UMA versão de veículo (marca, modelo, motor, anos com tipo_ano) com base e fonte (tipo, URL ou documento, data). Só o motor ou só o modelo é recusado; só uma pessoa aprova.",
+    obj({ sku, marca_veiculo: txt(), modelo: txt(), motorizacao: txt(), ano_inicial: { type: "integer" }, ano_final: { type: "integer" }, em_producao: { type: "boolean" },
+      tipo_ano: { type: "string", enum: [...TIPOS_ANO] }, regime: { type: "string", enum: [...REGIMES] }, base: { type: "string", enum: [...BASES] },
+      fonte_tipo: { type: "string", enum: [...TIPOS_FONTE] }, fonte_url: txt(undefined, 600), fonte_documento: txt(undefined, 400), fonte_data: txt(undefined, 10), codigo_conferido: txt(undefined, 80),
+      confianca: { type: "number", minimum: 0, maximum: 1 } }, ["sku", "marca_veiculo", "modelo", "motorizacao", "tipo_ano", "base", "fonte_tipo", "fonte_data"]), livre, "LOW", { estado: "ativa" }),
   proposta("conecta.imagem.propor", "conecta", "Propõe uma imagem candidata para o produto (pendente de aprovação; direitos ainda não confirmados).",
     obj({ sku, url: txt(undefined, 1000), origem: txt(), pagina: txt(undefined, 1000) }, ["sku", "url"]), livre, "LOW", { estado: "ativa" }),
   leitura("conecta.imagem.buscar_web", "conecta", "Busca imagens candidatas na web (não salva nada).", obj({ consulta: txt(undefined, 200) }, ["consulta"]), livre, "Resultado é dado a conferir.", { estado: "ativa", exposicao: { chat: true, mcp: false } }),

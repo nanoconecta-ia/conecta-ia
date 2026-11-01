@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 57 ferramentas — 39 ativas, 16 planejadas, 2 desligadas.
+Resumo: 58 ferramentas — 40 ativas, 16 planejadas, 2 desligadas.
 
 ## Grupo: conecta
 
@@ -23,6 +23,7 @@ Resumo: 57 ferramentas — 39 ativas, 16 planejadas, 2 desligadas.
 | `conecta.enriquecimento.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `campo*:string` `valor*:string` `fonte*:string` `confianca:number` |
 | `conecta.imagem.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `url*:string` `origem:string` `pagina:string` |
 | `conecta.imagem.buscar_web` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `consulta*:string` |
+| `conecta.web.pesquisar_tecnico` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `consulta*:string` |
 | `conecta.plugins.listar` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | — |
 | `conecta.plugins.chamar` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `plugin*:string` `capacidade*:string` `entrada:object` |
 | `conhecimento.buscar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `texto*:string` `tipo:string` `limite:integer` |
@@ -64,6 +65,9 @@ Resumo: 57 ferramentas — 39 ativas, 16 planejadas, 2 desligadas.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
 - **`conecta.imagem.buscar_web`** — Busca imagens candidatas na web (não salva nada).
   - *Verificação:* Resultado é dado a conferir.
+  - *Recuperação:* Repetir a leitura; é segura.
+- **`conecta.web.pesquisar_tecnico`** — Pesquisa páginas técnicas públicas por SKU, fabricante, referência e aplicação. Retorna links e resumos CANDIDATOS: não valida OEM, GTIN, peso nem compatibilidade. Nunca inclua custo, fornecedor, dado fiscal ou pessoal na consulta.
+  - *Verificação:* Resumos são pistas, não prova; confirmar na página do fabricante antes de propor.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`conecta.plugins.listar`** — Plugins ativos da loja e suas capacidades.
   - *Verificação:* Leitura.
@@ -112,7 +116,7 @@ Resumo: 57 ferramentas — 39 ativas, 16 planejadas, 2 desligadas.
 - **`bling.status.consultar`** — Situação da conexão com o Bling e da última sincronização.
   - *Verificação:* Leitura de bling_conexoes.
   - *Recuperação:* Repetir a leitura; é segura.
-- **`bling.produtos.consultar`** — Consulta um produto no Bling pelo SKU (leitura em tempo real, sem custo nem fornecedor).
+- **`bling.produtos.consultar`** — Consulta um produto no Bling pelo SKU exato, incluindo excluídos e inativos (leitura em tempo real, sem custo nem fornecedor).
   - *Verificação:* Resposta do Bling filtrada por lista de campos permitidos.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`bling.categorias.consultar`** — Lista as categorias de produto do Bling.
@@ -158,7 +162,7 @@ Resumo: 57 ferramentas — 39 ativas, 16 planejadas, 2 desligadas.
 |---|---|---|---|---|---|---|---|---|---|
 | `engenharia.oem.buscar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `codigo*:string` `incluir_a_confirmar:boolean` |
 | `conecta.codigo.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `tipo*:string` `valor*:string` `fonte*:string` `confianca:number` |
-| `conecta.aplicacao.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `modelo*:string` `motorizacao:string` `ano_inicial:integer` `ano_final:integer` `fonte*:string` `confianca:number` |
+| `conecta.aplicacao.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `marca_veiculo*:string` `modelo*:string` `motorizacao*:string` `ano_inicial:integer` `ano_final:integer` `em_producao:boolean` `tipo_ano*:string` `regime:string` `base*:string` `fonte_tipo*:string` `fonte_url:string` `fonte_documento:string` `fonte_data*:string` `codigo_conferido:string` `confianca:number` |
 | `engenharia.taxonomia.buscar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `texto*:string` |
 | `engenharia.duplicidade.detectar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `gtin:string` `nome:string` |
 | `engenharia.compartilhamento.sugerir` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `codigo*:string` `incluir_a_confirmar:boolean` |
@@ -182,7 +186,7 @@ Resumo: 57 ferramentas — 39 ativas, 16 planejadas, 2 desligadas.
 - **`conecta.codigo.propor`** — Propõe um código de referência (OEM/fabricante/cruzado) com fonte.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
-- **`conecta.aplicacao.propor`** — Propõe aplicação veicular (modelo, motor, anos) com fonte.
+- **`conecta.aplicacao.propor`** — Propõe a aplicação de UMA versão de veículo (marca, modelo, motor, anos com tipo_ano) com base e fonte (tipo, URL ou documento, data). Só o motor ou só o modelo é recusado; só uma pessoa aprova.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
 - **`engenharia.taxonomia.buscar`** — Busca nós da taxonomia de autopeças por texto.

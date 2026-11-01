@@ -50,7 +50,7 @@ export const CONTRATOS: readonly Contrato[] = [
   L("chamar_plugin", "Chama plugin tipo api, ativo, capacidade declarada, risco LOW. Retorno é dado a conferir.", ["loja_plugins"], { operacao: "externa", obrigatorios: ["plugin", "capacidade"] }),
   P("propor_enriquecimento", "Propõe valor de campo de enriquecimento.", ["rpc enriquecimento_propor → produto_enriquecimento"], ["sku", "campo", "valor", "fonte"]),
   P("propor_codigo", "Propõe código de referência (nunca sku).", ["rpc codigo_propor → produto_codigos"], ["sku", "tipo", "valor", "fonte"]),
-  P("propor_aplicacao", "Propõe aplicação veicular.", ["rpc aplicacao_propor → produto_aplicacoes"], ["sku", "modelo", "fonte"]),
+  P("propor_aplicacao", "Propõe aplicação veicular de uma versão de veículo, validada por aplicacoes/regras_aplicacao.ts.", ["rpc aplicacao_propor → produto_aplicacoes"], ["sku", "marca_veiculo", "modelo", "motorizacao", "tipo_ano", "base", "fonte_tipo", "fonte_data"]),
   L("buscar_dados_tecnicos_web", "Pesquisa textual pública com links e resumos candidatos, sem validar automaticamente especificações.", [], { operacao: "externa", obrigatorios: ["consulta"] }),
   L("buscar_imagem_web", "Busca imagens candidatas (não grava).", [], { operacao: "externa", obrigatorios: ["consulta"] }),
   P("propor_imagem", "Propõe imagem https; nasce aprovada=false.", ["rpc imagem_propor → produto_imagens"], ["sku", "url"]),
@@ -106,7 +106,7 @@ export const contratoDe = (nome: string): Contrato | undefined => CONTRATOS.find
 /** Valida a coerência interna de um contrato; devolve a lista de violações (vazia = ok). Usado pelo teste e por futuros registros. */
 export function validarContrato(c: Contrato): string[] {
   const v: string[] = [];
-  if (c.operacao === "proposta" && !c.obrigatorios.includes("fonte") && c.nome.startsWith("propor_") && c.nome !== "propor_imagem" && c.nome !== "propor_campanha")
+  if (c.operacao === "proposta" && !c.obrigatorios.some((o) => o === "fonte" || o.startsWith("fonte_")) && c.nome.startsWith("propor_") && c.nome !== "propor_imagem" && c.nome !== "propor_campanha")
     v.push(`${c.nome}: proposta sem "fonte" obrigatória`);
   if (c.operacao === "proposta" && !c.aprovacaoHumana) v.push(`${c.nome}: proposta precisa de aprovação humana`);
   if (c.operacao === "escrita_erp") {
