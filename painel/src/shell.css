@@ -1085,3 +1085,8 @@ html[data-orbe="cristal"] .orbe[data-estado="concluido"] { --orbe-cor: var(--ok)
 html[data-orbe="cristal"] .orbe[data-estado="erro"] { --orbe-cor: var(--erro); }
 html[data-orbe="cristal"] .orbe[data-estado="bloqueado"] { --orbe-cor: #8a94a0; }
 html[data-orbe="cristal"] .orbe[data-estado="ocioso"] { --orbe-cor: #6f5bff; }
+
+/* Bloqueios do validador de fidelidade visual: vermelho do tema, nunca cor solta. */
+.bloqueio-fidelidade { border: 1px solid var(--erro); border-left-width: 6px; border-radius: 10px; padding: 10px 14px; background: color-mix(in srgb, var(--erro) 10%, var(--cartao)); }
+.bloqueio-fidelidade h3 { font-size: .95rem; margin: 10px 0 4px; }
+.bloqueio-fidelidade ul { margin: 0; padding-left: 1.2em; }
