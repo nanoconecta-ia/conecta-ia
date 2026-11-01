@@ -9,7 +9,8 @@ import { buscarDefinicao } from "./registro.ts";
 import { montarItensCategoria, type Pendencia } from "./categoria_bling.ts";
 import { proporAplicacao, proporCodigo, proporEnriquecimento, proporImagem, type AdminRpc } from "../ia/escrita.ts";
 import { chamarPlugin, type PluginRegistro } from "../ia/plugin.ts";
-import { provedorGoogle } from "../ia/google.ts";
+import { escolherProvedorBusca } from "../ia/provedor_busca.ts";
+import type { ConfigSearxng } from "../ia/searxng.ts";
 import { SEM_PROVEDOR, erroDeBusca } from "../ia/busca.ts";
 
 export interface ContextoFerramenta {
@@ -26,6 +27,7 @@ export interface ContextoFerramenta {
   plugins?: PluginRegistro[];
   credencialPlugin?: (id: string) => Promise<string | null>;
   buscaImagem?: { chave: string; cx: string } | null;
+  searxng?: ConfigSearxng | null;
   fetch?: typeof fetch;
 }
 
@@ -129,13 +131,15 @@ export const HANDLERS: Record<string, Handler> = {
   "conecta.aplicacao.propor": (e, c) => proporAplicacao(c.admin, c.lojaId, e),
   "conecta.imagem.propor": (e, c) => proporImagem(c.admin, c.lojaId, e),
   "conecta.imagem.buscar_web": async (e, c) => {
-    if (!c.buscaImagem) return SEM_PROVEDOR();
-    try { return { candidatas: await provedorGoogle(c.buscaImagem.chave, c.buscaImagem.cx, c.fetch).imagens(String(e.consulta ?? "")), aviso: "Candidatas: origem e direitos de uso NÃO confirmados. Nada foi salvo nem publicado." }; }
+    const provedor = escolherProvedorBusca(c);
+    if (!provedor) return SEM_PROVEDOR();
+    try { return { candidatas: await provedor.imagens(String(e.consulta ?? "")), aviso: "Candidatas: origem e direitos de uso NÃO confirmados. Nada foi salvo nem publicado." }; }
     catch (err) { return erroDeBusca(err, "Falha na busca de imagens."); }
   },
   "conecta.web.pesquisar_tecnico": async (e, c) => {
-    if (!c.buscaImagem) return SEM_PROVEDOR();
-    try { return { resultados_candidatos: await provedorGoogle(c.buscaImagem.chave, c.buscaImagem.cx, c.fetch).tecnico(String(e.consulta ?? "").trim().slice(0, 200)), aviso: "Resumos não comprovam aplicação, OEM, GTIN ou medidas. Confirme na página do fabricante antes de propor alterações." }; }
+    const provedor = escolherProvedorBusca(c);
+    if (!provedor) return SEM_PROVEDOR();
+    try { return { resultados_candidatos: await provedor.tecnico(String(e.consulta ?? "").trim().slice(0, 200)), aviso: "Resumos não comprovam aplicação, OEM, GTIN ou medidas. Confirme na página do fabricante antes de propor alterações." }; }
     catch (err) { return erroDeBusca(err, "Falha na pesquisa técnica."); }
   },
   "conecta.plugins.listar": async (_e, c) => (c.plugins ?? []).filter((p) => p.ativo).map((p) => ({ nome: p.nome, tipo: p.tipo, capacidades: p.capacidades, risco: p.risco })),
