@@ -1,6 +1,6 @@
 /* Shell "torre de controle": menu em grupos que recolhe, busca/paleta de comandos, barra de status e acabamento dos cartões.
    Só usa os tokens do Design System (styles.css): nenhuma cor solta. Carregado depois de styles.css para refinar, não substituir. */
-@import "./perfis-cor.css"; /* variáveis da esfera e do cabeçalho (perfil padrão) + perfis: tudo que usa --orbe-*/--acento-* precisa disto, em qualquer tela */
+@import "./perfis-cor.css"; /* variáveis da esfera e do cabeçalho (perfil padrão) + perfis: tudo que usa as variaveis orbe e acento precisa disto, em qualquer tela */
 
 body { padding-bottom: 32px; background:
   radial-gradient(1200px 500px at 85% -10%, color-mix(in srgb, var(--marca) 14%, transparent), transparent 60%),
