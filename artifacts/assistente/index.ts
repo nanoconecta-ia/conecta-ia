@@ -2183,6 +2183,27 @@ const FERRAMENTAS_CONECTOR = [
             mcp: false
         }
     }),
+    proposta("bling.produtos.preparar_alteracao_preco", "bling", "Prepara (sem gravar) a troca do PREÇO DE VENDA de um produto: compara com o preço do espelho, calcula a diferença no servidor e cria a proposta para aprovação humana. Só preço de venda: custo, compra, margem, fornecedor e fiscal são recusados. Regras em _shared/preco/regras_preco.ts (decisão do dono, ARQUITETURA seção 10).", obj({
+        sku,
+        preco_novo: {
+            type: "number",
+            minimum: 0.01,
+            maximum: 10000000,
+            description: "Novo preço de venda em reais, até 2 casas decimais"
+        },
+        motivo: txt("Motivo comercial (10 a 300 caracteres), sem custo, margem, fornecedor nem dado fiscal", 300)
+    }, [
+        "sku",
+        "preco_novo",
+        "motivo"
+    ]), livre, "MEDIUM", {
+        estado: "planejada",
+        simulacao: true,
+        exposicao: {
+            chat: false,
+            mcp: false
+        }
+    }),
     proposta("bling.categorias.preparar_criacao", "bling", "Prepara (sem gravar) a criação de uma categoria de produto no Bling: confere duplicidade e pai nas categorias do Bling agora e cria a proposta de aprovação.", obj({
         nome: txt(undefined, 120),
         pai_id: txt(undefined, 30),
