@@ -16,6 +16,7 @@ const APELIDOS: Record<string, string[]> = {
   "/taxonomia": ["taxonomia", "categorias", "arvore de categorias", "tags de busca", "tags", "filtros laterais", "filtros da vitrine", "filtros", "arvore"],
   "/fila": ["fila de aprovacao", "fila", "pendencias", "pendentes", "itens pendentes", "aprovacao de itens"],
   "/imagens": ["imagens e seo", "imagens", "fotos", "seo", "otimizacao para busca"],
+  "/videos": ["nano video studio", "estudio de video", "editor de video", "videos", "video", "montar video", "criar video", "concat"],
   "/studio": ["studio de produtos", "studio", "estudio de produtos", "ficha de produto"],
   "/estudio": ["estudio do agente", "estudio", "configurar agente"],
   "/assistente": ["assistente", "chat completo", "conversa com nano", "nano ia"],
