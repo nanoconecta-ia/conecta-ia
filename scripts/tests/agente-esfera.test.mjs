@@ -39,19 +39,19 @@ try {
     return p;
   };
   const ir = async (p, caminho) => { await p.goto(`http://127.0.0.1:${PORTA}/#${caminho}`, { waitUntil: 'networkidle' }); await p.waitForSelector('main', { timeout: 8000 }); };
-  const movimento = (p) => p.evaluate(() => { const a = document.getAnimations().filter((x) => x.effect && x.effect.target?.closest?.('.esfera, .esfera-caixa')); return { total: a.length, rodando: a.filter((x) => x.playState === 'running').length }; });
+  const movimento = (p) => p.evaluate(() => { const a = document.getAnimations().filter((x) => x.effect && x.effect.target?.closest?.('.esfera, .esfera-caixa, .orbe')); return { total: a.length, rodando: a.filter((x) => x.playState === 'running').length }; });
   const verifica = (ok, msg) => { if (!ok) falhas.push(msg); console.log((ok ? 'ok      ' : 'FALHOU  ') + msg); };
 
   // 1) Esfera em repouso no celular: precisa ter movimento discreto
   let p = await novaPagina(390, 844); await ir(p, '/assistente');
-  await p.getByRole('img', { name: /Nano.ia/ }).first().waitFor();
+  await p.getByRole('img', { name: /Conecta.IA/ }).first().waitFor();
   const m = await movimento(p);
   verifica(m.rodando > 0, `esfera em repouso (celular) tem animação rodando: ${m.rodando} de ${m.total}`);
   verifica(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'assistente no celular sem rolagem horizontal');
   const campo = p.getByLabel(/Pergunte/).first();
   verifica(await campo.count() > 0 && await campo.isVisible().catch(() => false), 'campo de mensagem visível no celular');
   // interface em modo conversa: compositor visível sem rolar, esfera discreta, configurações recolhidas, consentimento nunca marcado sozinho
-  const dim = await p.evaluate(() => { const c = document.querySelector('.chat-compositor'); const e = document.querySelector('.esfera'); const abas = document.querySelector('.abas'); const r = c?.getBoundingClientRect(); const barra = document.querySelector('.barra-status')?.getBoundingClientRect(); return { compositorBase: r ? Math.round(r.bottom) : null, barraTopo: barra ? Math.round(barra.top) : null, esfera: e ? Math.round(e.getBoundingClientRect().width) : null, configAberta: abas ? (abas.dataset.esq === 'aberto' || abas.dataset.dir === 'aberto') : null, consentimentoMarcado: [...document.querySelectorAll('.chat-compositor input[type=checkbox]')].some((i) => i.checked && /Enviar esta pergunta/.test(i.closest('label')?.textContent ?? '')) }; });
+  const dim = await p.evaluate(() => { const c = document.querySelector('.chat-compositor'); const e = document.querySelector('.orbe'); const abas = document.querySelector('.abas'); const r = c?.getBoundingClientRect(); const barra = document.querySelector('.barra-status')?.getBoundingClientRect(); return { compositorBase: r ? Math.round(r.bottom) : null, barraTopo: barra ? Math.round(barra.top) : null, esfera: e ? Math.round(e.getBoundingClientRect().width) : null, configAberta: abas ? (abas.dataset.esq === 'aberto' || abas.dataset.dir === 'aberto') : null, consentimentoMarcado: [...document.querySelectorAll('.chat-compositor input[type=checkbox]')].some((i) => i.checked && /Enviar esta pergunta/.test(i.closest('label')?.textContent ?? '')) }; });
   verifica(dim.compositorBase !== null && dim.compositorBase <= dim.barraTopo + 1, `compositor visível na primeira tela, acima da barra inferior (base ${dim.compositorBase}px, barra em ${dim.barraTopo}px)`);
   verifica(dim.esfera !== null && dim.esfera <= 48, `esfera discreta no cabeçalho (${dim.esfera}px)`);
   verifica(dim.configAberta === false, 'abas laterais (conversas e modelo) recolhidas por padrão');
@@ -62,7 +62,7 @@ try {
   await p.getByRole('button', { name: 'Recolher conversas' }).click();
   await p.waitForTimeout(350); await p.screenshot({ path: `${SAIDA}/assistente-conversa-celular.png` });
   // movimento visível de verdade: duas capturas da esfera com 2,5 s de intervalo precisam ser diferentes
-  const caixaEsfera = p.locator('.esfera-caixa').first();
+  const caixaEsfera = p.locator('.orbe').first();
   const foto = async () => createHash('sha1').update(await caixaEsfera.screenshot()).digest('hex');
   const f1 = await foto(); await p.waitForTimeout(2500); const f2 = await foto();
   verifica(f1 !== f2, 'esfera em repouso muda de aparência ao longo do tempo (movimento discreto)');
@@ -75,7 +75,7 @@ try {
   await p.context().close();
 
   // 1b) desktop: o compositor também fica no rodapé e a conversa ocupa a área principal
-  p = await novaPagina(1280, 800); await ir(p, '/assistente'); await p.getByRole('img', { name: /Nano.ia/ }).first().waitFor();
+  p = await novaPagina(1280, 800); await ir(p, '/assistente'); await p.getByRole('img', { name: /Conecta.IA/ }).first().waitFor();
   const d = await p.evaluate(() => ({ overflowX: document.documentElement.scrollWidth > innerWidth, compositor: !!document.querySelector('.chat-compositor'), base: Math.round(document.querySelector('.chat-compositor').getBoundingClientRect().bottom), barra: Math.round(document.querySelector('.barra-status').getBoundingClientRect().top) }));
   verifica(!d.overflowX && d.compositor && d.base <= d.barra + 1, `desktop: sem rolagem horizontal e compositor acima da barra (${d.base}px / ${d.barra}px)`);
   await p.getByRole('button', { name: 'Conversas', exact: true }).click(); await p.getByRole('button', { name: 'Modelo e privacidade' }).click(); await p.waitForTimeout(350);
@@ -84,9 +84,9 @@ try {
   await p.context().close();
 
   // 2) prefers-reduced-motion: sem movimento (a preferência do aparelho é respeitada)
-  p = await novaPagina(390, 844, true); await ir(p, '/assistente'); await p.getByRole('img', { name: /Nano.ia/ }).first().waitFor();
+  p = await novaPagina(390, 844, true); await ir(p, '/assistente'); await p.getByRole('img', { name: /Conecta.IA/ }).first().waitFor();
   const r = await movimento(p); verifica(r.rodando === 0, `com movimento reduzido nada anima: ${r.rodando} rodando`);
-  const cx = p.locator('.esfera-caixa').first(); const g1 = createHash('sha1').update(await cx.screenshot()).digest('hex'); await p.waitForTimeout(1500);
+  const cx = p.locator('.orbe').first(); const g1 = createHash('sha1').update(await cx.screenshot()).digest('hex'); await p.waitForTimeout(1500);
   verifica(g1 === createHash('sha1').update(await cx.screenshot()).digest('hex'), 'com movimento reduzido a esfera fica estática (preferência respeitada)');
   await p.context().close();
 

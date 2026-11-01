@@ -7,7 +7,7 @@ const root=new URL('../../',import.meta.url).pathname,painel=root+'painel/';
 const require=createRequire(painel+'package.json'),{chromium}=require('playwright');
 const fixture=painel+'.retratil-demo.html',porta=4186;
 const L='aaaaaaaa-0000-0000-0000-000000000001',C='cccccccc-0000-0000-0000-000000000002';
-await writeFile(fixture,`<html lang="pt-BR"><meta name="viewport" content="width=device-width, initial-scale=1.0"><div id="root"></div><script type="module">import React from 'react';import {createRoot} from 'react-dom/client';import {Assistente} from '/src/paginas/Assistente.tsx';import '/src/styles.css';import '/src/shell.css';createRoot(document.getElementById('root')).render(React.createElement(Assistente,{loja:{id:'${L}',nome:'Loja DEMO SIMULADA'}}));</script></html>`);
+await writeFile(fixture,`<html lang="pt-BR"><meta name="viewport" content="width=device-width, initial-scale=1.0"><div id="root"></div><script type="module">import React from 'react';import {createRoot} from 'react-dom/client';import {Assistente} from '/src/paginas/Assistente.tsx';import {LogoConecta} from '/src/componentes/LogoConecta.tsx';import {useEstadoNano} from '/src/lib/nanoEstado.ts';function Cab(){const e=useEstadoNano('${L}');return React.createElement('div',{id:'cab-nano','data-estado':e},React.createElement(LogoConecta,{estado:e}))}import '/src/styles.css';import '/src/shell.css';createRoot(document.getElementById('root')).render(React.createElement(React.Fragment,null,React.createElement(Cab),React.createElement(Assistente,{loja:{id:'${L}',nome:'Loja DEMO SIMULADA'}})));</script></html>`);
 const servidor=spawn(process.execPath,[painel+'node_modules/vite/bin/vite.js','--host','127.0.0.1','--port',String(porta)],{cwd:painel,stdio:'ignore'});
 const LONGA='Achei três registros do kit 833333. '.repeat(30);
 let browser;
@@ -36,13 +36,14 @@ try{
   await page.getByRole('button',{name:/Nova conversa|Enviar/}).first().waitFor();
   await page.getByLabel(/Enviar esta pergunta/).check();
   const campo=page.getByLabel('Pergunte',{exact:true}),enviar=page.getByRole('button',{name:'Enviar',exact:true});
-  // 1) esfera em ação: durante a requisição a faixa e a esfera mostram o que está acontecendo; depois voltam ao repouso
+  // 1) estado em ação: durante a requisição a faixa e o estado do Nano mostram o que está acontecendo; depois voltam ao repouso
   await campo.fill('Consulte o kit 833333');await enviar.click();
   const faixa=page.locator('.faixa-acao');await faixa.waitFor();
-  assert.match(await faixa.innerText(),/Consultando/);assert.equal(await page.locator('.esfera').first().getAttribute('data-estado'),'interpretando');
-  const aumentou=await page.locator('.esfera').first().evaluate(e=>e.offsetWidth);assert.ok(aumentou>=54,'esfera cresce quando está em ação');
+  assert.match(await faixa.innerText(),/Consultando/);
+  // esfera única: fica no cabeçalho do app; o chat publica o estado real no store por loja e o cabeçalho (Cab) lê dele
+  await page.waitForFunction(()=>document.querySelector('#cab-nano')?.dataset.estado==='interpretando');assert.equal(await page.locator('.orbe').count(),1,'uma só esfera: a do cabeçalho');
   await page.getByText('Resposta 1 da Nano.ia.').waitFor();await faixa.waitFor({state:'detached'});
-  assert.equal(await page.locator('.esfera').first().getAttribute('data-estado'),'ocioso');
+  await page.waitForFunction(()=>document.querySelector('#cab-nano')?.dataset.estado==='ocioso');
   // 2) mais três perguntas: chat moderno, nada recolhe sozinho e cada mensagem tem Copiar
   let esperado=3; // saudação + 1ª pergunta + 1ª resposta
   for(const t of ['segunda','terceira','quarta']){await campo.fill(t);await enviar.click();esperado+=2;await page.waitForFunction(n=>document.querySelectorAll('.bolha, .bolha-linha').length===n,esperado);await page.locator('.faixa-acao').waitFor({state:'detached'});}
@@ -54,7 +55,7 @@ try{
   // recolher uma mensagem à mão e reabrir; Copiar mostra o resultado
   await page.locator('.bolha').first().getByRole('button',{name:'Recolher esta mensagem'}).click();assert.equal(await page.locator('.bolha-linha').count(),1);
   await page.locator('.bolha-linha').first().click();assert.equal(await page.locator('.bolha-linha').count(),0);
-  await page.locator('.bolha.ia .copiar').last().click();await page.waitForFunction(()=>[...document.querySelectorAll('.bolha .copiar')].some(b=>/Copiado|Selecione/.test(b.textContent||'')));
+  await page.locator('.bolha.ia .copiar').last().click();await page.waitForFunction(()=>[...document.querySelectorAll('.bolha .copiar')].some(b=>b.getAttribute('data-copiado')==='sim'||b.getAttribute('data-copiado')==='nao'));assert.equal((await page.locator('.bolha.ia .copiar').last().innerText()).trim(),'','Copiar é só ícone, sem texto');
   // conversa grande (mais de 10 mensagens): aparecem Recolher tudo e Expandir tudo
   await campo.fill('quinta');await enviar.click();await page.waitForFunction(n=>document.querySelectorAll('.bolha, .bolha-linha').length===n,total+2);
   await page.getByRole('button',{name:'Recolher tudo'}).click();assert.equal(await page.locator('.bolha').count(),0);

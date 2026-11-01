@@ -1,8 +1,10 @@
-/** Marca do Conecta.IA: esfera com nuvem e órbita (símbolo "conecta" do sprite). Com `nome`, mostra também o nome. */
-export function LogoConecta({ tamanho = 32, nome = false }: { tamanho?: number; nome?: boolean }) {
+import { Orbe, type EstadoEsfera } from "./Esfera.tsx";
+
+/** Marca do Conecta.IA no cabeçalho: o mesmo avatar orbital do Nano.IA. O estado vem do store por loja (passado por quem renderiza). */
+export function LogoConecta({ tamanho = 40, nome = false, estado = "ocioso" }: { tamanho?: number; nome?: boolean; estado?: EstadoEsfera }) {
   return (
     <span className="logo-conecta">
-      <svg width={tamanho} height={tamanho} viewBox="0 0 64 64" role={nome ? undefined : "img"} aria-label={nome ? undefined : "Conecta.IA"} aria-hidden={nome ? true : undefined} focusable="false"><use href="#conecta" /></svg>
+      <Orbe estado={estado} tamanho={tamanho} decorativo={nome} rotulo="Conecta.IA" />
       {nome && <b>Conecta<span>.IA</span></b>}
     </span>
   );

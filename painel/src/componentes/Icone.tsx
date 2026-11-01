@@ -25,6 +25,14 @@ const CAMINHOS: Record<string, string> = {
   outros: "M5 12h.01M12 12h.01M19 12h.01",
   busca: "M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-4.3-4.3",
   recolher: "M15 6l-6 6 6 6",
+  copiar: "M8 8h12v12H8zM16 8V4H4v12h4",
+  check: "M5 12.5l4.5 4.5L19 7.5",
+  "recolher-msg": "M6 15l6-6 6 6",
+  mais: "M12 5v14M5 12h14",
+  mic: "M12 3a3 3 0 013 3v6a3 3 0 01-6 0V6a3 3 0 013-3zM6 11a6 6 0 0012 0M12 17v4M9 21h6",
+  voz: "M4 10v4h4l5 4V6l-5 4zM16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11",
+  "voz-mudo": "M4 10v4h4l5 4V6l-5 4zM17 9l4 6M21 9l-4 6",
+  enviar: "M12 19V5M6 11l6-6 6 6",
 };
 
 export function Icone({ nome, tamanho = 20 }: { nome: string; tamanho?: number }) {

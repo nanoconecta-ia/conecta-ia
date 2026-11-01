@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { copiarTexto } from "../lib/copiar.ts";
+import { Icone } from "./Icone.tsx";
 import { Markdown } from "./Markdown.tsx";
 import { EvidenciaProduto, type EvidenciaBusca } from "./EvidenciaProduto.tsx";
 import { comecoDaLonga, ehLonga, resumoEvidencia, resumoLinha } from "../lib/retratil.ts";
@@ -22,7 +23,7 @@ export function MensagemRetratil({ m, recolhida, onAlternar }: { m: MensagemChat
   const longa = ehLonga(m.texto) && !completa;
   return (
     <div className={`bolha ${m.de}`}>
-      <div className="bolha-topo"><b>{quem}</b><span className="bolha-acoes"><button type="button" className="mini sec copiar" onClick={() => void copiar()} aria-label="Copiar esta mensagem">{copiado === true ? "Copiado ✓" : copiado === false ? "Selecione e copie" : "Copiar"}</button><button type="button" className="mini sec" aria-expanded onClick={onAlternar} aria-label="Recolher esta mensagem">Recolher</button></span></div>
+      <div className="bolha-topo"><b>{quem}</b><span className="bolha-acoes"><button type="button" className="mini sec icone-btn copiar" data-copiado={copiado === true ? "sim" : copiado === false ? "nao" : undefined} onClick={() => void copiar()} aria-label={copiado === true ? "Mensagem copiada" : copiado === false ? "Não foi possível copiar; selecione o texto" : "Copiar esta mensagem"} title="Copiar"><Icone nome={copiado === true ? "check" : "copiar"} tamanho={16} /></button><button type="button" className="mini sec icone-btn" aria-expanded onClick={onAlternar} aria-label="Recolher esta mensagem" title="Recolher"><Icone nome="recolher-msg" tamanho={16} /></button></span></div>
       {m.de === "ia" ? <Markdown texto={longa ? comecoDaLonga(m.texto) : m.texto} /> : (longa ? comecoDaLonga(m.texto) : m.texto)}
       {m.anexos?.length ? <p className="anexos-enviados">{m.anexos.map((n) => `📎 ${n}`).join("  ")}</p> : null}
       {ehLonga(m.texto) && <button type="button" className="mini sec mais" onClick={() => setCompleta((v) => !v)}>{completa ? "Mostrar menos" : "Mostrar mais"}</button>}

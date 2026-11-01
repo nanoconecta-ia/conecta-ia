@@ -41,6 +41,7 @@ import { BarraStatus } from "./componentes/BarraStatus.tsx";
 import { AvisoVersao } from "./componentes/AvisoVersao.tsx";
 import { Icone } from "./componentes/Icone.tsx";
 import { LogoConecta } from "./componentes/LogoConecta.tsx";
+import { useEstadoNano } from "./lib/nanoEstado.ts";
 import { SeletorTema } from "./componentes/SeletorTema.tsx";
 import { DockAgente } from "./componentes/DockAgente.tsx";
 import { dividePagina, gravar as gravarPainel, ler as lerPainel, reserva, TELA_MIN_PARA_FIXO, type EstadoPainel } from "./lib/painelLateral.ts";
@@ -94,6 +95,7 @@ export function App() {
   const { caminho, query } = useRota();
   const demoAtivo = import.meta.env.DEV && DEMO;
   const lojas = useLojas(!!sessao && !demoAtivo);
+  const estadoNano = useEstadoNano(lojas?.[0]?.id);
   const [demo, setDemo] = useState<{ FAIXA: string; lojaDemo: LojaTipo } | null>(null);
   useEffect(() => { if (import.meta.env.DEV && DEMO) void import("./lib/demo.ts").then((m) => setDemo({ FAIXA: m.FAIXA, lojaDemo: m.lojaDemo })); }, []);
   useEffect(() => { // volta ao link do QR de pareamento depois do login com Google (o retorno do OAuth descarta o #)
@@ -167,7 +169,7 @@ export function App() {
           aria-label={menuMovel ? "Fechar navegação" : "Abrir navegação"} aria-controls="menu-principal" aria-expanded={menuMovel}>
           <Icone nome={menuMovel ? "fechar" : "menu"} tamanho={20} />
         </button>
-        <div className="marca"><LogoConecta tamanho={40} /><div className="marca-identidade">Conecta<span>.IA</span><small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
+        <div className="marca"><LogoConecta tamanho={40} estado={estadoNano} /><div className="marca-identidade">Conecta<span>.IA</span><small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
         <span className="topo-selo" aria-label="Ambiente administrativo">WORKSPACE <b>ADMIN</b></span>
         <button className="busca-topo" onClick={() => setPaleta(true)} aria-label="Abrir paleta de comandos"><Icone nome="busca" tamanho={16} /><span>Buscar módulos e ações…</span><kbd>Ctrl K</kbd></button>
         {!!loja && <a className="topo-atalho-nano" href={`#${ROTA_NANO}`}><Icone nome="agentes" tamanho={17} /><span>Nano.IA</span></a>}
@@ -232,7 +234,7 @@ export function App() {
       </main>
       </div>
       {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} menu={MENU} aoNavegar={ir} painel={painel} aoMudarPainel={mudarPainel} dividindo={dividindo} telaW={telaW} />}
-      {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis aberto={dockAberto} aoAlternar={() => setAgente((a) => !a)} />}
+      {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis lojaId={loja.id} aberto={dockAberto} aoAlternar={() => setAgente((a) => !a)} />}
       <BarraStatus loja={loja ? loja.nome : null} tela={MENU.find((i) => i[0] === caminho)?.[1] ?? "Visão geral"} demo={demoAtivo} />
     </>
   );

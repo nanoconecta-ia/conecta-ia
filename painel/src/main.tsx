@@ -3,10 +3,12 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { SpriteIcones } from "./componentes/SpriteIcones.tsx";
 import { aplicarTema, armazemLocal, lerPreferencia } from "./lib/tema.ts";
+import { aplicarOrbe, lerOrbe } from "./lib/orbe.ts";
 import "@fontsource-variable/inter";
 import "./styles.css";
 
 aplicarTema(lerPreferencia(armazemLocal())); // antes de pintar: sem piscar o tema errado
+aplicarOrbe(lerOrbe(armazemLocal())); // modelo da esfera do Nano.IA escolhido neste aparelho
 
 createRoot(document.getElementById("raiz")!).render(
   <StrictMode>

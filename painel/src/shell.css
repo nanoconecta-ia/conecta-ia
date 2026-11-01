@@ -254,14 +254,6 @@ button.seletor-opcao[aria-checked="true"] { border-color:var(--marca); backgroun
 .v-tipo { flex-direction:column; gap:6px; min-height:104px; padding:12px 8px 8px; background:var(--cartao); color:var(--texto); border:1px solid var(--borda); box-shadow:var(--sombra); font-weight:600; font-size:.88rem; transition:transform .15s, border-color .15s; }
 .v-tipo:hover:not(:disabled) { background:var(--cartao); border-color:var(--marca); transform:translateY(-2px); }
 .v-tipo.ativo { border:2px solid var(--marca); background:color-mix(in srgb, var(--marca) 8%, var(--cartao)); }
-.esfera-caixa { position:relative; display:inline-grid; place-items:center; }
-.esfera-caixa .orbita { position:absolute; inset:-12%; pointer-events:none; animation:esf-gira 9s linear infinite; }
-.esfera-caixa .orbita b { position:absolute; border-radius:50%; background:var(--ciano); box-shadow:0 0 10px var(--ciano); width:5px; height:5px; left:50%; top:0; }
-.esfera-caixa .orbita b:nth-child(2) { left:100%; top:52%; width:4px; height:4px; background:var(--marca); box-shadow:0 0 8px var(--marca); }
-.esfera-caixa .orbita b:nth-child(3) { left:26%; top:94%; width:3px; height:3px; background:#ffe3a8; box-shadow:0 0 6px #ffe3a8; }
-.esfera-caixa:has(.esfera[data-ativo="false"]:not([data-estado="ocioso"])) .orbita { animation-play-state:paused; }
-.esfera-caixa:has(.esfera[data-estado="ocioso"]) .orbita { animation-duration:36s; }
-@media (prefers-reduced-motion:reduce) { .esfera-caixa .orbita, .v-tipo { animation:none !important; transition:none !important; } }
 .galeria-veiculos { grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); }
 .galeria-vistas { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); align-items:start; margin-top:8px; }
 .v-vista .v-caixa { text-align:center; } .v-vista .vista { width:100%; }
@@ -342,16 +334,10 @@ a.ficha-wa { display: block; text-align: center; padding: 12px; background: #1f9
 .bolha-linha.eu { justify-self: end; } .bolha-linha span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .85; } .bolha-linha b { flex: none; }
 .evid-retratil { margin-top: 8px; border-top: 1px dashed var(--borda); padding-top: 6px; } .evid-retratil > summary { cursor: pointer; font-size: .85rem; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
 
-/* Esfera em ação: a esfera cresce, ganha halo e a faixa abaixo diz, com palavras, o que realmente está acontecendo */
-.abas .esfera-caixa { transition: transform .35s ease; }
-.abas .esfera-caixa:has(.esfera[data-ativo="true"]) .esfera, .abas .esfera-caixa:has(.esfera[data-estado="interpretando"]) .esfera, .abas .esfera-caixa:has(.esfera[data-estado="escutando"]) .esfera { box-shadow: 0 0 0 4px color-mix(in srgb, var(--esf-cor, var(--marca)) 35%, transparent), 0 0 22px color-mix(in srgb, var(--esf-cor, var(--marca)) 70%, transparent); animation: esf-halo 1.1s ease-in-out infinite alternate; }
-.abas .esfera-caixa:has(.esfera[data-estado="interpretando"]) .orbita { animation-duration: 2.4s; animation-play-state: running; }
-@keyframes esf-halo { from { transform: scale(.96); } to { transform: scale(1.06); } }
 .faixa-acao { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--realce); border: 1px solid var(--borda); font-size: .88rem; }
 .faixa-pulso { width: 10px; height: 10px; border-radius: 50%; background: var(--ciano); box-shadow: 0 0 0 0 var(--ciano); animation: faixa-pulso 1.2s ease-out infinite; flex: none; }
 @keyframes faixa-pulso { to { box-shadow: 0 0 0 10px transparent; } }
 .faixa-acao[data-estado="ouvindo"] .faixa-pulso { background: var(--ok); } .faixa-acao[data-estado="falando"] .faixa-pulso { background: var(--marca); }
-@media (prefers-reduced-motion: reduce) { .abas .esfera-caixa .esfera, .faixa-pulso { animation: none !important; } }
 /* cabeçotes e linhas retráteis não são botões de ação: sem fundo de marca */
 .retratil > button.retratil-cabecote, .retratil > button.retratil-cabecote:hover:not(:disabled) { background: transparent; color: var(--texto); box-shadow: none; border: 0; }
 .retratil > button.retratil-cabecote:hover:not(:disabled) { background: var(--realce); }
@@ -373,18 +359,6 @@ html button.balao-genesis { color: #fff; left: 0; top: 0; right: auto; bottom: a
 .balao-guia { border-color: var(--verde); box-shadow: 0 14px 36px rgba(0,0,0,.45), 0 0 0 4px color-mix(in srgb, var(--verde) 35%, transparent), 0 0 34px color-mix(in srgb, var(--verde) 55%, transparent); }
 .balao-pulo { animation: balao-pulo .7s ease-out; } @keyframes balao-pulo { 30% { transform: translateY(-14px) scale(1.06); } 60% { transform: translateY(0) scale(.98); } }
 .balao-genesis:focus-visible { outline: 3px solid var(--verde); outline-offset: 3px; }
-/* esfera de peso: aura giratória, vidro, núcleo luminoso, reflexo e sombra no chão */
-.esfera-caixa[data-peso="true"] .aura { position: absolute; inset: -26%; border-radius: 50%; pointer-events: none; filter: blur(7px); opacity: .6;
-  background: conic-gradient(from 0deg, transparent 0 12%, var(--ciano) 24%, transparent 40%, var(--marca) 62%, transparent 78%, var(--verde) 90%, transparent); animation: esf-gira 7s linear infinite; }
-.esfera-caixa[data-peso="true"][data-estado="interpretando"] .aura, .esfera-caixa[data-peso="true"][data-estado="executando"] .aura, .esfera-caixa[data-peso="true"][data-estado="consultando_ferramentas"] .aura { animation-duration: 1.8s; opacity: .9; }
-.esfera-caixa[data-peso="true"][data-ativo="false"]:not([data-estado="ocioso"]) .aura { animation-play-state: paused; }
-.esfera-caixa[data-peso="true"] .esfera { box-shadow: inset -10px -14px 26px rgba(0,0,0,.5), inset 7px 9px 18px rgba(255,255,255,.34), 0 0 0 2px rgba(255,255,255,.12), 0 10px 26px rgba(0,0,0,.5); }
-.esfera .vidro { position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(155deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.08) 38%, rgba(255,255,255,0) 52%, rgba(0,0,0,.22) 100%); mix-blend-mode: soft-light; pointer-events: none; }
-.esfera .nucleo { position: absolute; left: 50%; top: 52%; width: 34%; height: 34%; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, #fff 0%, color-mix(in srgb, var(--esf-cor, var(--ciano)) 70%, #fff) 35%, transparent 72%); filter: blur(1px); animation: nucleo-pulsa 3.2s ease-in-out infinite; }
-.esfera[data-ativo="true"] .nucleo, .esfera[data-estado="interpretando"] .nucleo, .esfera[data-estado="escutando"] .nucleo { animation-duration: .9s; }
-@keyframes nucleo-pulsa { 0%,100% { opacity: .55; transform: translate(-50%, -50%) scale(.85); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); } }
-.esfera-caixa[data-peso="true"] .sombra-chao { position: absolute; left: 12%; right: 12%; bottom: -12%; height: 10%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.45), transparent); filter: blur(2px); }
-@media (prefers-reduced-motion: reduce) { .esfera-caixa[data-peso="true"] .aura, .esfera .nucleo, .balao-pulo { animation: none !important; } .balao-genesis { transition: none; } }
 
 /* janela do agente: espaçosa; segue o lado do balão; "Ampliar" ocupa quase a tela; no smartphone vira uma folha de tela quase cheia */
 .dock-agente { width: min(calc(100vw - 32px), 460px); height: min(78vh, 760px); bottom: 96px; transition: width .3s, height .3s; }
@@ -795,7 +769,7 @@ html .abas .compositor-acoes .compositor-enviar { flex: none; min-width: 44px; w
 
 /* Telas grandes: a esfera sai do cabeçalho quando o Nano.ia está parado; volta quando ele trabalha */
 @media (min-width: 900px) {
-  .agente .esfera-bloco:has(.esfera[data-estado="ocioso"]) { display: none; }
+  .agente .esfera-bloco:has(.orbe[data-estado="ocioso"]) { display: none; }
 }
 
 @media (max-width: 360px) {
@@ -942,3 +916,172 @@ table { font-size: .97rem; }
 th { font-size: .85rem; }
 .suave { font-size: .97rem; }
 .rotulo { font-size: .93rem; }
+
+/* Esfera única do Nano.IA (pedido do dono, 2026-11-01): menor, com cara de olho de máquina de IA (núcleo de sol com pupila),
+   órbita de átomo e faíscas. Fica no cabeçalho e reage ao estado do Nano por html[data-nano-estado]. Só tokens do tema. */
+.orbe { --d: 30px; --orbe-cor: var(--marca); --orbe-gira: 9s; --orbe-pulso: 4.6s; position: relative; width: var(--d); height: var(--d); display: inline-grid; place-items: center; flex: none; }
+.orbe-aura { position: absolute; inset: -34%; border-radius: 50%; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--orbe-cor) 42%, transparent), transparent 72%); animation: orbe-aura var(--orbe-pulso) ease-in-out infinite; }
+.orbe-nucleo { position: relative; width: calc(var(--d) * .54); height: calc(var(--d) * .54); border-radius: 50%; z-index: 1;
+  background: radial-gradient(circle at 34% 28%, #fff 0 7%, color-mix(in srgb, var(--orbe-cor) 50%, #fff) 26%, var(--orbe-cor) 58%, color-mix(in srgb, var(--orbe-cor) 40%, #000) 100%);
+  box-shadow: 0 0 calc(var(--d) * .38) color-mix(in srgb, var(--orbe-cor) 75%, transparent), inset 0 -2px 5px rgba(0, 0, 0, .28); animation: orbe-pulsa var(--orbe-pulso) ease-in-out infinite; }
+.orbe-pupila { position: absolute; left: 50%; top: 50%; width: 26%; height: 26%; border-radius: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle at 35% 30%, #fff 0 14%, #1c130d 38%); box-shadow: 0 0 0 1px rgba(255, 255, 255, .4); }
+.orbe-anel { position: absolute; inset: 0; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--ciano) 78%, transparent); transform: rotate(-26deg) scaleY(.36); animation: orbe-gira var(--orbe-gira) linear infinite; pointer-events: none; }
+.orbe-anel-2 { transform: rotate(34deg) scaleY(.36); border-color: color-mix(in srgb, var(--orbe-cor) 70%, transparent); animation-direction: reverse; animation-duration: calc(var(--orbe-gira) * 1.4); }
+.orbe-faiscas b { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px 1px var(--ciano); opacity: 0; animation: orbe-faisca 2.6s ease-in-out infinite; z-index: 2; }
+.orbe-faiscas b:nth-child(1) { left: 6%; top: 22%; }
+.orbe-faiscas b:nth-child(2) { right: 4%; top: 56%; animation-delay: -.9s; box-shadow: 0 0 6px 1px var(--orbe-cor); }
+.orbe-faiscas b:nth-child(3) { left: 40%; bottom: 0; animation-delay: -1.7s; }
+@keyframes orbe-pulsa { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+@keyframes orbe-aura { 0%, 100% { opacity: .7; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes orbe-gira { to { rotate: 360deg; } }
+@keyframes orbe-faisca { 0%, 100% { opacity: 0; transform: scale(.4); } 45%, 55% { opacity: 1; transform: scale(1.15); } }
+/* Estados: ativo = mais rápido e mais brilhante; atenção e erro mudam a cor. */
+/* Estados do Nano.IA: .orbe[data-estado] (vindo do store por loja). Cor = significado; movimento só quando há atividade real.
+   ocioso azul sutil; escutando verde pulsando; interpretando azul claro; pesquisando violeta; ferramentas ciano; proposta âmbar;
+   aguardando aprovação âmbar imóvel; sincronizando Bling ciano; concluído verde imóvel; erro vermelho; bloqueado cinza imóvel. */
+.orbe { --orbe-azul: #4c8dff; --orbe-azul-claro: #8cc4ff; --orbe-cor: var(--orbe-azul); --orbe-gira: 26s; --orbe-pulso: 6s; }
+.orbe[data-estado="escutando"] { --orbe-cor: var(--verde); --orbe-gira: 4s; --orbe-pulso: 1.2s; }
+.orbe[data-estado="interpretando"] { --orbe-cor: var(--orbe-azul-claro); --orbe-gira: 2.4s; --orbe-pulso: 1.4s; }
+.orbe[data-estado="pesquisando_fontes"] { --orbe-cor: var(--roxo); --orbe-gira: 3.2s; --orbe-pulso: 1.6s; }
+.orbe[data-estado="consultando_ferramentas"] { --orbe-cor: var(--ciano); --orbe-gira: 2.6s; --orbe-pulso: 1.5s; }
+.orbe[data-estado="preparando_proposta"] { --orbe-cor: var(--atencao); --orbe-gira: 4.5s; --orbe-pulso: 1.8s; }
+.orbe[data-estado="aguardando_aprovacao"] { --orbe-cor: var(--atencao); }
+.orbe[data-estado="executando"] { --orbe-cor: var(--verde); --orbe-gira: 2.2s; --orbe-pulso: 1.1s; }
+.orbe[data-estado="sincronizando_bling"] { --orbe-cor: var(--ciano); --orbe-gira: 2s; --orbe-pulso: 1.3s; }
+.orbe[data-estado="falando"] { --orbe-cor: var(--verde); --orbe-gira: 3.2s; --orbe-pulso: .9s; }
+.orbe[data-estado="concluido"] { --orbe-cor: var(--ok); }
+.orbe[data-estado="erro"] { --orbe-cor: var(--erro); }
+.orbe[data-estado="bloqueado"] { --orbe-cor: #8a94a0; }
+/* Estados sem atividade ficam parados (cor + texto informam); o repouso respira bem devagar. */
+.orbe[data-ativo="false"]:not([data-estado="ocioso"]) :is(.orbe-aura, .orbe-nucleo, .orbe-anel, .orbe-faiscas b) { animation-play-state: paused; }
+.orbe[data-estado="bloqueado"]::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid #8a94a0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .orbe-aura, .orbe-nucleo, .orbe-anel, .orbe-faiscas b { animation: none !important; } .orbe-faiscas b { opacity: .8; } }
+
+/* Respostas do Nano em texto rico (pedido do dono, 2026-11-01): títulos, tabelas e destaques com cor, para explicar proposta e orçamento.
+   O mesmo texto aprovado pelo lojista pode virar descrição de produto (site) e descrição técnica (Bling). Só tokens do tema. */
+.md h2, .md h3, .md h4 { color: color-mix(in srgb, var(--marca) 78%, var(--texto)); letter-spacing: -.01em; margin: 14px 0 6px; }
+.md strong { color: color-mix(in srgb, var(--marca) 30%, var(--texto)); }
+.md table { border-collapse: separate; border-spacing: 0; width: 100%; border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; font-size: .95rem; }
+.md th { background: color-mix(in srgb, var(--marca) 16%, var(--cartao)); color: var(--texto); font-weight: 700; text-transform: none; letter-spacing: 0; font-size: .88rem; }
+.md th, .md td { padding: 9px 12px; border-bottom: 1px solid var(--borda); }
+.md tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--realce) 70%, transparent); }
+.md tbody tr:last-child td { border-bottom: 0; }
+.md td:last-child, .md th:last-child { text-align: left; }
+.md blockquote { margin: 10px 0; padding: 8px 12px; border-left: 4px solid var(--atencao); background: color-mix(in srgb, var(--atencao) 12%, var(--cartao)); border-radius: 0 10px 10px 0; }
+.md code { background: color-mix(in srgb, var(--ciano) 14%, var(--realce)); padding: 1px 6px; border-radius: 6px; }
+.md ul, .md ol { padding-left: 1.3em; } .md li::marker { color: var(--marca); }
+
+/* Esfera mais clara e com destaque no cabeçalho escuro (feedback do dono, 2026-11-01: "muito escuro"). Vale para todos os modelos. */
+.orbe-aura { inset: -48%; background: radial-gradient(closest-side, color-mix(in srgb, var(--orbe-cor) 62%, transparent), color-mix(in srgb, var(--orbe-cor) 20%, transparent) 55%, transparent 74%); }
+.orbe-nucleo { background: radial-gradient(circle at 34% 28%, #fff 0 10%, color-mix(in srgb, var(--orbe-cor) 38%, #fff) 30%, color-mix(in srgb, var(--orbe-cor) 88%, #fff) 60%, var(--orbe-cor) 100%);
+  box-shadow: 0 0 calc(var(--d) * .55) color-mix(in srgb, var(--orbe-cor) 90%, transparent), 0 0 calc(var(--d) * .2) #fff3, inset 0 -2px 4px rgba(0, 0, 0, .18); }
+.orbe-anel { border-color: color-mix(in srgb, var(--ciano) 85%, #fff); box-shadow: 0 0 5px color-mix(in srgb, var(--ciano) 80%, transparent); }
+.orbe-anel-2 { border-color: color-mix(in srgb, var(--orbe-cor) 55%, #fff); box-shadow: 0 0 5px color-mix(in srgb, var(--orbe-cor) 80%, transparent); }
+.orbe-faiscas b { width: 4px; height: 4px; box-shadow: 0 0 8px 2px var(--ciano); }
+
+/* Modelos da esfera: html[data-orbe]. O olho é o padrão. */
+html[data-orbe="sol"] .orbe { --orbe-cor: #ffb02e; }
+html[data-orbe="sol"] .orbe-pupila, html[data-orbe="sol"] .orbe-anel, html[data-orbe="sol"] .orbe-faiscas { display: none; }
+html[data-orbe="sol"] .orbe-nucleo { width: calc(var(--d) * .62); height: calc(var(--d) * .62); background: radial-gradient(circle at 40% 35%, #fff 0 14%, #ffe9a8 34%, #ffb02e 70%, #ff7a1a 100%); }
+html[data-orbe="sol"] .orbe-aura { inset: -60%; background: conic-gradient(from 0deg, transparent 0 8%, #ffb02eaa 10% 14%, transparent 16% 33%, #ffb02eaa 35% 39%, transparent 41% 58%, #ffb02eaa 60% 64%, transparent 66% 83%, #ffb02eaa 85% 89%, transparent 91%); mask: radial-gradient(closest-side, transparent 42%, #000 46%, transparent 100%); -webkit-mask: radial-gradient(closest-side, transparent 42%, #000 46%, transparent 100%); animation: orbe-gira calc(var(--orbe-gira) * 1.6) linear infinite; }
+
+html[data-orbe="atomo"] .orbe { --orbe-cor: #5ad7ff; }
+html[data-orbe="atomo"] .orbe-pupila { display: none; }
+html[data-orbe="atomo"] .orbe-nucleo { width: calc(var(--d) * .32); height: calc(var(--d) * .32); }
+html[data-orbe="atomo"] .orbe-anel { inset: -4%; border-width: 1.5px; transform: rotate(0deg) scaleY(.42); }
+html[data-orbe="atomo"] .orbe-anel-2 { transform: rotate(60deg) scaleY(.42); }
+html[data-orbe="atomo"] .orbe-faiscas b { width: 5px; height: 5px; background: #fff; opacity: 1; animation: orbe-gira 3.4s linear infinite; transform-origin: 50% 50%; }
+html[data-orbe="atomo"] .orbe-faiscas b:nth-child(1) { left: 48%; top: 6%; transform-origin: 50% calc(var(--d) * .44); }
+html[data-orbe="atomo"] .orbe-faiscas b:nth-child(2) { right: auto; left: 48%; top: 6%; transform-origin: 50% calc(var(--d) * .44); animation-duration: 4.6s; animation-direction: reverse; }
+html[data-orbe="atomo"] .orbe-faiscas b:nth-child(3) { left: 48%; bottom: auto; top: 6%; transform-origin: 50% calc(var(--d) * .44); animation-duration: 5.8s; }
+
+html[data-orbe="aurora"] .orbe { --orbe-cor: #8f7bff; }
+html[data-orbe="aurora"] .orbe-anel, html[data-orbe="aurora"] .orbe-pupila { display: none; }
+html[data-orbe="aurora"] .orbe-aura { inset: -42%; background: conic-gradient(from 0deg, #ff6bd6, #ffb02e, #5ad7ff, #8f7bff, #ff6bd6); filter: blur(calc(var(--d) * .18)); opacity: .85; animation: orbe-gira calc(var(--orbe-gira) * 1.2) linear infinite; mask: radial-gradient(closest-side, #000 55%, transparent 100%); -webkit-mask: radial-gradient(closest-side, #000 55%, transparent 100%); }
+html[data-orbe="aurora"] .orbe-nucleo { width: calc(var(--d) * .6); height: calc(var(--d) * .6); background: radial-gradient(circle at 36% 30%, #fff 0 16%, #ffffffcc 40%, #ffffff66 100%); backdrop-filter: blur(2px); box-shadow: 0 0 calc(var(--d) * .5) #fff9; }
+html[data-orbe="aurora"] .orbe-faiscas b { background: #fff; box-shadow: 0 0 8px 2px #ff6bd6; }
+
+/* Quatro esferas em movimento enquanto o Nano pensa. */
+.pontos-pensando { display: inline-flex; align-items: center; gap: 4px; margin-right: 7px; vertical-align: middle; }
+.pontos-pensando span { width: 7px; height: 7px; border-radius: 50%; background: var(--marca); box-shadow: 0 0 7px var(--marca); animation: pontos-pula 1.05s ease-in-out infinite; }
+.pontos-pensando span:nth-child(2) { background: var(--ciano); box-shadow: 0 0 7px var(--ciano); animation-delay: .13s; }
+.pontos-pensando span:nth-child(3) { background: var(--verde); box-shadow: 0 0 7px var(--verde); animation-delay: .26s; }
+.pontos-pensando span:nth-child(4) { background: var(--atencao); box-shadow: 0 0 7px var(--atencao); animation-delay: .39s; }
+@keyframes pontos-pula { 0%, 80%, 100% { transform: translateY(0) scale(.8); opacity: .65; } 40% { transform: translateY(-6px) scale(1.15); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pontos-pensando span { animation: none; opacity: .9; } }
+.grupo-orbe { border: 1px solid var(--borda); border-radius: 12px; padding: 8px 12px 12px; margin: 0 0 12px; } .grupo-orbe legend { font-weight: 600; padding: 0 6px; }
+.grupo-orbe-opcoes { display: flex; flex-wrap: wrap; gap: 6px; } .grupo-orbe-opcoes [aria-checked="true"] { background: var(--marca); color: var(--marca-texto); border-color: var(--marca); }
+
+/* Botões só com ícone (pedido do dono, 2026-11-01): ações do chat sem texto; o nome fica em aria-label e title. */
+.icone-btn { display: inline-grid; place-items: center; min-width: 34px; width: 34px; height: 34px; padding: 0; }
+.icone-btn[data-copiado="sim"] { color: var(--ok); border-color: var(--ok); }
+.icone-btn[data-copiado="nao"] { color: var(--erro); border-color: var(--erro); }
+.ic-aba, .nova-conv, .mic, .compositor-enviar { display: inline-grid; place-items: center; }
+.ic-aba svg, .nova-conv svg, .mic svg, .compositor-enviar svg { display: block; }
+
+/* Modelo Cristal (referência do dono, 2026-11-01): esfera de vidro com fitas de luz azuis e magenta, faíscas por dentro, arco de brilho no topo
+   e luz rosa embaixo. CSS puro, sem imagem. É o modelo padrão. */
+html[data-orbe="cristal"] .orbe { --orbe-cor: #6f5bff; --orbe-gira: 7s; }
+html[data-orbe="cristal"] .orbe-pupila { display: none; }
+html[data-orbe="cristal"] .orbe-aura { inset: -50%; background: radial-gradient(closest-side at 50% 62%, #ff4fd8aa, #5b6bffaa 46%, transparent 74%); animation: orbe-aura var(--orbe-pulso) ease-in-out infinite; }
+html[data-orbe="cristal"] .orbe-nucleo { width: calc(var(--d) * .92); height: calc(var(--d) * .92); overflow: hidden; animation: none;
+  background:
+    radial-gradient(ellipse 52% 22% at 42% 16%, #fffffff2 0 40%, #ffffff00 100%),
+    radial-gradient(circle at 50% 118%, #ff4fd8 0 22%, #b04bff88 44%, #00000000 72%),
+    radial-gradient(circle at 30% 30%, #2a49d8 0, #101a6b 46%, #070a2e 100%);
+  border: 1px solid #ffffff99;
+  box-shadow: inset 0 0 calc(var(--d) * .22) #7fa2ffcc, inset 0 calc(var(--d) * -.1) calc(var(--d) * .2) #ff4fd8aa, 0 0 calc(var(--d) * .5) #6f5bffaa; }
+html[data-orbe="cristal"] .orbe-anel, html[data-orbe="cristal"] .orbe-anel-2 { inset: 8%; border: 0; border-radius: 50%; box-shadow: none; z-index: 2; transform: rotate(-24deg) scaleY(.5); animation: orbe-gira var(--orbe-gira) linear infinite;
+  background: conic-gradient(from 0deg, #00000000 0 18%, #2f6bff 30%, #6ef0ff 46%, #00000000 62%);
+  mask: radial-gradient(closest-side, transparent 58%, #000 62% 82%, transparent 86%); -webkit-mask: radial-gradient(closest-side, transparent 58%, #000 62% 82%, transparent 86%); }
+html[data-orbe="cristal"] .orbe-anel-2 { transform: rotate(38deg) scaleY(.42); animation-duration: calc(var(--orbe-gira) * 1.5); animation-direction: reverse;
+  background: conic-gradient(from 90deg, #00000000 0 20%, #ff4fd8 34%, #b6a2ff 48%, #00000000 64%); }
+html[data-orbe="cristal"] .orbe-faiscas b { z-index: 3; width: 2px; height: 2px; background: #fff; box-shadow: 0 0 4px 1px #8fd9ff; }
+html[data-orbe="cristal"] .orbe-faiscas b:nth-child(1) { left: 36%; top: 40%; }
+html[data-orbe="cristal"] .orbe-faiscas b:nth-child(2) { left: 58%; right: auto; top: 52%; animation-delay: -.8s; }
+html[data-orbe="cristal"] .orbe-faiscas b:nth-child(3) { left: 46%; bottom: auto; top: 30%; animation-delay: -1.6s; }
+
+/* Identidade 3D do Nano.IA (#187/#188): olho inteligente com íris e pupila, duas órbitas com satélite, reflexo e iluminação Aurora.
+   Vale para o modelo "olho" (padrão); os demais modelos (html[data-orbe]) continuam sobrescrevendo. Só transform/opacity animam. */
+.orbe-aura { background: conic-gradient(from 0deg, color-mix(in srgb, var(--orbe-cor) 55%, transparent), color-mix(in srgb, var(--roxo) 38%, transparent), color-mix(in srgb, var(--ciano) 45%, transparent), color-mix(in srgb, var(--orbe-cor) 55%, transparent));
+  -webkit-mask: radial-gradient(closest-side, #000 52%, transparent 78%); mask: radial-gradient(closest-side, #000 52%, transparent 78%); inset: -40%; opacity: .7; animation: orbe-aurora calc(var(--orbe-gira) * 2.2) linear infinite; }
+@keyframes orbe-aurora { to { transform: rotate(360deg); } }
+.orbe-nucleo { background: radial-gradient(circle at 36% 30%, #ffffffb0 0 6%, transparent 20%), radial-gradient(circle at 38% 30%, color-mix(in srgb, var(--orbe-cor) 35%, #fff) 0, var(--orbe-cor) 34%, color-mix(in srgb, var(--orbe-cor) 55%, #000) 70%, color-mix(in srgb, var(--orbe-cor) 25%, #000) 100%);
+  border: 1px solid color-mix(in srgb, var(--orbe-cor) 45%, #fff);
+  box-shadow: inset calc(var(--d) * -.1) calc(var(--d) * -.12) calc(var(--d) * .2) #031520aa, inset 2px 2px 6px #ffffff4a, 0 0 calc(var(--d) * .4) color-mix(in srgb, var(--orbe-cor) 60%, transparent); }
+.orbe-pupila { width: 34%; height: 34%; background: radial-gradient(circle at 34% 28%, #fff 0 8%, #a4e7f9 18%, #06253b 62%, #020e16 100%); box-shadow: 0 0 0 1px #ffffff26, 0 0 calc(var(--d) * .16) color-mix(in srgb, var(--orbe-cor) 60%, transparent); }
+.orbe-anel { inset: 10% -9%; z-index: 3; border-width: max(1.2px, calc(var(--d) * .03)); }
+.orbe-anel i { position: absolute; top: 24%; right: -6%; width: 13%; height: 53%; border-radius: 50%; background: #fff; box-shadow: 0 0 calc(var(--d) * .2) var(--orbe-cor); }
+.orbe-reflexo { position: absolute; z-index: 4; left: 29%; top: 26%; width: 22%; height: 16%; border-radius: 50%; transform: rotate(-25deg); background: #ffffffb3; pointer-events: none; }
+html[data-orbe]:not([data-orbe="olho"]) .orbe-reflexo, html[data-orbe]:not([data-orbe="olho"]) .orbe-anel i { display: none; }
+@media (prefers-reduced-motion: reduce) { .orbe-aura { animation: none !important; } }
+
+/* Cristal (padrão) reage ao estado: halo, brilho externo e fita principal tomam a cor do estado; ocioso mantém o azul/magenta de repouso. */
+html[data-orbe="cristal"] .orbe:not([data-estado="ocioso"]) .orbe-aura { background: radial-gradient(closest-side at 50% 58%, color-mix(in srgb, var(--orbe-cor) 80%, transparent), color-mix(in srgb, var(--orbe-cor) 35%, transparent) 50%, transparent 76%); }
+html[data-orbe="cristal"] .orbe:not([data-estado="ocioso"]) .orbe-nucleo { box-shadow: inset 0 0 calc(var(--d) * .22) color-mix(in srgb, var(--orbe-cor) 70%, #fff), inset 0 calc(var(--d) * -.1) calc(var(--d) * .2) color-mix(in srgb, var(--orbe-cor) 80%, transparent), 0 0 calc(var(--d) * .55) color-mix(in srgb, var(--orbe-cor) 75%, transparent); border-color: color-mix(in srgb, var(--orbe-cor) 60%, #fff); }
+html[data-orbe="cristal"] .orbe:not([data-estado="ocioso"]) .orbe-anel:not(.orbe-anel-2) { background: conic-gradient(from 0deg, #00000000 0 18%, color-mix(in srgb, var(--orbe-cor) 70%, #2f6bff) 30%, color-mix(in srgb, var(--orbe-cor) 60%, #fff) 46%, #00000000 62%); }
+html[data-orbe="cristal"] .orbe:not([data-estado="ocioso"]) .orbe-nucleo::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(ellipse 100% 36% at 50% 112%, color-mix(in srgb, var(--orbe-cor) 70%, transparent) 0 40%, transparent 80%); pointer-events: none; }
+
+/* Cristal fiel à referência do dono (esfera de vidro, interior escuro, fitas azuis luminosas, faíscas, arco branco no topo, borda rosa embaixo). */
+html[data-orbe="cristal"] .orbe-nucleo {
+  background:
+    radial-gradient(ellipse 50% 20% at 40% 14%, #ffffffee 0 35%, #ffffff00 100%),
+    radial-gradient(ellipse 120% 40% at 50% 112%, #ff5fe0 0 24%, #b04bff55 48%, #00000000 72%),
+    radial-gradient(circle at 38% 38%, #0b1a63 0, #060a30 52%, #02030f 100%);
+  border: 1.5px solid #ffffffaa;
+  box-shadow: inset 0 calc(var(--d) * -.07) calc(var(--d) * .1) #ff5fe0cc, inset calc(var(--d) * .06) 0 calc(var(--d) * .1) #3f6bff88, inset calc(var(--d) * -.05) 0 calc(var(--d) * .08) #7bffa044, 0 0 calc(var(--d) * .45) #6f5bff88; }
+html[data-orbe="cristal"] .orbe-anel { inset: 6%; background: conic-gradient(from 0deg, #00000000 0 12%, #1d4dff 26%, #4fb4ff 42%, #ffffffcc 50%, #00000000 66%);
+  mask: radial-gradient(closest-side, transparent 52%, #000 58% 84%, transparent 90%); -webkit-mask: radial-gradient(closest-side, transparent 52%, #000 58% 84%, transparent 90%); filter: blur(.3px); }
+html[data-orbe="cristal"] .orbe-anel-2 { background: conic-gradient(from 90deg, #00000000 0 18%, #2b5bff 32%, #6ef0ff 46%, #00000000 62%); }
+html[data-orbe="cristal"] .orbe-faiscas b { width: 2.5px; height: 2.5px; background: #fff; box-shadow: 0 0 5px 1px #8fd9ff; }
+
+/* A cor do estado precisa vencer a cor fixa do Cristal (mesma ordem de significado dos demais modelos). */
+html[data-orbe="cristal"] .orbe[data-estado="escutando"], html[data-orbe="cristal"] .orbe[data-estado="executando"], html[data-orbe="cristal"] .orbe[data-estado="falando"] { --orbe-cor: var(--verde); }
+html[data-orbe="cristal"] .orbe[data-estado="interpretando"] { --orbe-cor: var(--orbe-azul-claro); }
+html[data-orbe="cristal"] .orbe[data-estado="pesquisando_fontes"] { --orbe-cor: var(--roxo); }
+html[data-orbe="cristal"] .orbe[data-estado="consultando_ferramentas"], html[data-orbe="cristal"] .orbe[data-estado="sincronizando_bling"] { --orbe-cor: var(--ciano); }
+html[data-orbe="cristal"] .orbe[data-estado="preparando_proposta"], html[data-orbe="cristal"] .orbe[data-estado="aguardando_aprovacao"] { --orbe-cor: var(--atencao); }
+html[data-orbe="cristal"] .orbe[data-estado="concluido"] { --orbe-cor: var(--ok); }
+html[data-orbe="cristal"] .orbe[data-estado="erro"] { --orbe-cor: var(--erro); }
+html[data-orbe="cristal"] .orbe[data-estado="bloqueado"] { --orbe-cor: #8a94a0; }
+html[data-orbe="cristal"] .orbe[data-estado="ocioso"] { --orbe-cor: #6f5bff; }
