@@ -65,5 +65,5 @@ test("pesquisa técnica na web: leitura, só no chat (fora do MCP), e sem config
   assert.equal(def.permissao, "leitura");
   assert.deepEqual(def.exposicao, { chat: true, mcp: false });
   const r = await HANDLERS["conecta.web.pesquisar_tecnico"]({ consulta: "bomba d'água HR 2.5" }, { buscaImagem: null } as never) as { erro: string };
-  assert.match(r.erro, /não configurada/);
+  assert.match(r.erro, /não há provedor de pesquisa configurado/);
 });

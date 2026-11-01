@@ -20,8 +20,9 @@ test("busca técnica rejeita consulta curta", async () => {
 });
 
 test("busca técnica identifica credenciais e cota", async () => {
-  await assert.rejects(buscarDadosTecnicos("key", "cx", "82892", fake(403) as typeof fetch), /Credencial/);
-  await assert.rejects(buscarDadosTecnicos("key", "cx", "82892", fake(429) as typeof fetch), /Limite/);
+  await assert.rejects(buscarDadosTecnicos("key", "cx", "82892", fake(401) as typeof fetch), /chave de busca/);
+  await assert.rejects(buscarDadosTecnicos("key", "cx", "82892", fake(403) as typeof fetch), /recusou a chamada/);
+  await assert.rejects(buscarDadosTecnicos("key", "cx", "82892", fake(429) as typeof fetch), /limite/);
 });
 
 test("busca técnica utiliza pesquisa textual, não imagens", async () => {
