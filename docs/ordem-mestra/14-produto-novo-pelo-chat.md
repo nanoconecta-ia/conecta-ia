@@ -48,6 +48,7 @@ Pedido do dono (2026-11-01): descrever uma peça ("virabrequim aço forjado STD 
 |---|---|
 | Inventar compatibilidade ou medida | só com fonte e data; sem prova fica "a confirmar"; teste automático cobre isso |
 | Criar duplicata | busca obrigatória incluindo excluídos antes de qualquer proposta de criação |
+| Preço ou custo errados por IA | só pedido explícito do lojista, proposta HIGH com antes e depois, nunca a partir de texto de terceiros (D5) |
 | SKU, preço, NCM e estoque errados | **campos humanos**: a ficha os pede ao dono, a IA não os preenche (decisão D1) |
 | Publicar com algo pendente | o portão é revalidado **no servidor** na hora de publicar; o botão desligado na tela não é a única proteção |
 | Produto novo difícil de desfazer no Bling | criar **inativo** e ativar em segunda proposta (decisão D2); não existe ferramenta de excluir |
@@ -64,6 +65,13 @@ Pedido do dono (2026-11-01): descrever uma peça ("virabrequim aço forjado STD 
 ## 6. Decisões do dono
 - **D1.** SKU, preço e NCM completados por você, nunca pela IA (digitados na ficha, no caminho B; conferidos no Bling, no caminho A). Resposta do dono em 2026-11-01: o lojista completa custo e preço. A confirmar por ele só o texto acima.
 - **D2.** Criar o produto inativo no Bling e ativar depois? Recomendado: sim.
+- **D5 (novo, pedido do dono em 2026-11-01).** O lojista pode **pedir ao Nano.IA para ajustar preço de venda e preço de custo**. Hoje isso é proibido por decisão de 2026-10-29 (`CAMPOS_BLING_PROIBIDOS` e `CAMPOS_ESCRITA_LIBERADOS`; a IA nunca altera preço, custo, estoque, fornecedor, SKU nem fiscal). Mudar exige esta decisão por escrito, mudança da lista fechada com o teste que a trava, e as regras abaixo:
+  - só a **pedido do lojista no chat**, nunca por iniciativa da IA, nem a partir de texto de catálogo ou de cliente;
+  - sempre por **proposta com antes e depois, aprovação da versão exata, auditoria e leitura de confirmação**; risco **HIGH** para preço (aprovação reforçada);
+  - **estoque, fornecedor e fiscal continuam proibidos**;
+  - o **custo nunca vai ao site nem ao cliente**;
+  - fato do Bling (esquema `patchProduct`): `preco` é gravável no PATCH do produto; o **custo não é**: `fornecedor.precoCusto` é somente leitura nesse PATCH, e o custo fica no vínculo produto-fornecedor, que tem endpoint próprio, ainda **não conferido** para alteração;
+  - o custo passaria pelo provedor de IA (Gemini) quando aparecer no chat; hoje as ferramentas escondem custo e fornecedor. Isso precisa de aceite do dono.
 - **D3.** Existe chave do Google para busca de imagens? Se não, a F3 espera.
 - **D4.** Provedor de IA para catálogos: o Gemini atual aceita PDF; a cota gratuita limitou hoje.
 
