@@ -85,3 +85,21 @@ Pedido: o Nano.IA ajudar o lojista a **não ter prejuízo**: ver custo e preço,
 - **P4, sugestão de preço:** vira proposta HIGH com antes e depois (D5). Nunca grava sozinho.
 - **Fora desta trilha:** venda direta ao cliente pelo WhatsApp (webhook Meta, fila) é outro projeto; entra depois do site publicar o primeiro produto.
 - Custo e fornecedor passam a entrar no contexto do chat do lojista: exige aceite do dono (provedor de IA) e continua **fora do site e da tela do cliente**.
+
+## 8. Visão do dono: Nano.IA comercial, com cliente, proposta e pedido (2026-11-01) — fases propostas
+Pedido: o lojista escreve "faz uma proposta para a empresa tal, Hyundai HR 2012, pistão STD metal leve, biela, pagamento em 3x, entrega em 3 dias", e o Nano.IA cadastra o cliente, monta a proposta ou o pedido de venda e pede aprovação. Também atuar no B2B junto do lojista com a extensão (custo dos produtos e dados para cadastro e fiscal).
+
+**O que existe (conferido nas ferramentas do Bling e no registro):** o Bling tem contatos, propostas comerciais e pedidos de venda (criar e listar). No registro do Conecta.IA, `bling.contatos.criar/alterar` e `bling.pedidos_venda.criar` estão **desligadas**; proposta comercial não existe como ferramenta. Nota fiscal é **só consulta** (decisão do dono de 2026-10-17: emitir e enviar são proibidos).
+
+**Regras:**
+- O Nano só cota **itens do catálogo com preço e estoque lidos do Bling na hora**; aplicação "HR 2012" só entra com fonte (aplicação aprovada). Peça pedida e não encontrada vira linha "não encontrada", nunca inventada.
+- Pagamento (3x) e prazo (3 dias) são **termos ditos pelo lojista**, gravados como tal; o Nano não promete frete, prazo nem pagamento que o lojista não informou (já é regra de `engenharia.loja.condicoes`).
+- Cliente é dado pessoal (CPF/CNPJ, telefone, e-mail): busca por duplicidade antes de cadastrar, máscara antes de ir ao provedor de IA, e sem consentimento nada sai da loja.
+- Pedido de venda e cadastro de cliente são escrita externa de risco **MEDIUM/HIGH**: proposta com versão e hash, aprovação humana, `idempotency_key`, leitura de confirmação e auditoria. **Nunca emite nota fiscal.**
+
+**Fases:**
+- **C1, rascunho no chat (sem gravar nada):** o Nano acha o cliente (se já existe no Bling) e monta a proposta em texto, com itens, preços, termos e o que faltou. O lojista copia ou manda.
+- **C2, cliente:** cadastrar contato novo no Bling, por proposta aprovada, depois de conferir duplicidade por CNPJ.
+- **C3, proposta comercial e pedido de venda no Bling,** por proposta aprovada. Aprovação reforçada no pedido.
+- **C4, B2B com a extensão:** a extensão captura custo, dados de cadastro e fiscal do portal do fornecedor e os envia como **propostas com fonte** para a Fila; nada é gravado nem preenchido sem o clique do lojista.
+- Ordem geral: **primeiro o site publicar o primeiro produto (CI001086)**, depois P1 (margem), depois C1. O resto só com cada fase anterior provada.
