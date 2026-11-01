@@ -376,7 +376,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
             <span>Enviar esta pergunta e até 20 mensagens recentes a {selecao.nome}? Pode gerar cobrança na sua chave.{anexos.length > 0 && " Os anexos também são enviados."}</span>
             <button type="button" disabled={ocupado} onClick={() => autorizarEnvio()}>Autorizar e continuar</button>
           </div>)}
-        {persistente && provedor === "gemini" && config.fallback_free_disponivel === true && <label className="consent-linha" style={{ alignItems: "center", gap: 8 }}>
+        {config.persistente && provedor === "gemini" && config.fallback_free_disponivel === true && <label className="consent-linha" style={{ alignItems: "center", gap: 8 }}>
           <input type="checkbox" checked={autorizaFallbackFree} disabled={ocupado || !aceitaEnvio} onChange={e => setAutorizaFallbackFree(e.target.checked)} style={{ width: "auto" }} />
           <span>Se o Gemini cair, autorizo enviar SOMENTE esta pergunta de glossário público a modelos gratuitos do OpenRouter. Nunca enviar histórico, anexos, dados da loja ou consultar o Bling pelo fallback.</span>
         </label>}
