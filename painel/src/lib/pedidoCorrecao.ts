@@ -4,6 +4,8 @@
 export interface FichaParaPedido {
   sku: string | null; nome: string | null; marca: string | null; gtin: string | null; peso_kg: number | null; imagens: number;
   categoria: string | null; taxonomia: string | null; descricaoVazia: boolean;
+  /** Posição da taxonomia que o lojista quer propor (nome do caminho): vai como hipótese; o Nano confirma e propõe. */
+  taxonomiaSugerida?: string;
   /** O que o lojista sabe e escreveu: entra como HIPÓTESE sem fonte, nunca como fato. */
   observacaoLojista?: string;
 }
@@ -46,6 +48,7 @@ export function montarPedidoCorrecao(f: FichaParaPedido): string {
     pend.length ? "Pendências detectadas:" : "Nenhuma lacuna básica detectada; confira apenas se os dados acima estão corretos.",
     ...pend.map((x, i) => `${i + 1}. ${x}`),
   ];
+  if (f.taxonomiaSugerida) partes.push("", `Posição na taxonomia sugerida pelo lojista (hipótese, SEM fonte): ${f.taxonomiaSugerida}. Verifique se cabe e proponha a classificação com fonte.`);
   if (obs) partes.push("", `Informação do lojista (hipótese, SEM fonte: confirme antes de usar): ${obs}`);
   partes.push(
     "", "Regras:",
