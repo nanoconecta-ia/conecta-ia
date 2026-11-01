@@ -3,7 +3,8 @@
 import type { Ferramenta } from "./claude.ts";
 import { chamarPlugin, type PluginRegistro } from "./plugin.ts";
 import { BASES, CAMPOS_ENRIQUECIMENTO, REGIMES, TIPOS_ANO, TIPOS_FONTE, proporAplicacao, proporCodigo, proporEnriquecimento, proporImagem, TIPOS_CODIGO, type AdminRpc } from "./escrita.ts";
-import { provedorGoogle } from "./google.ts";
+import { escolherProvedorBusca } from "./provedor_busca.ts";
+import type { ConfigSearxng } from "./searxng.ts";
 import { SEM_PROVEDOR, erroDeBusca } from "./busca.ts";
 import { despachar, type ContextoDespacho } from "../conector/despacho.ts";
 import { ALIASES_ASSISTENTE, politicaDoAssistente } from "../conector/aliases.ts";
@@ -62,6 +63,7 @@ export interface Contexto {
   usuario: any; admin: AdminRpc; lojaId: string; plugins: PluginRegistro[];
   credencial(pluginId: string): Promise<string | null>; fetch?: typeof fetch;
   buscaImagem?: { chave: string; cx: string } | null;
+  searxng?: ConfigSearxng | null;
   /** Despacho do motor de propostas (Policy Engine -> handler -> auditoria). Sem ele, as ferramentas bling_* respondem que estão indisponíveis. */
   conector?: ContextoDespacho;
 }
@@ -127,13 +129,15 @@ export async function executarFerramenta(nome: string, entrada: unknown, c: Cont
     case "propor_aplicacao": return proporAplicacao(c.admin, c.lojaId, e);
     case "propor_imagem": return proporImagem(c.admin, c.lojaId, e);
     case "buscar_dados_tecnicos_web": {
-      if (!c.buscaImagem) return SEM_PROVEDOR();
-      try { return { resultados_candidatos: await provedorGoogle(c.buscaImagem.chave, c.buscaImagem.cx, c.fetch).tecnico(txt(e.consulta)), aviso: "Resumos não comprovam aplicação, OEM, GTIN ou medidas. Confirme na página do fabricante antes de propor alterações." }; }
+      const provedor = escolherProvedorBusca(c);
+      if (!provedor) return SEM_PROVEDOR();
+      try { return { resultados_candidatos: await provedor.tecnico(txt(e.consulta)), aviso: "Resumos não comprovam aplicação, OEM, GTIN ou medidas. Confirme na página do fabricante antes de propor alterações." }; }
       catch (err) { return erroDeBusca(err, "Falha na pesquisa técnica."); }
     }
     case "buscar_imagem_web": {
-      if (!c.buscaImagem) return SEM_PROVEDOR();
-      try { return { candidatas: await provedorGoogle(c.buscaImagem.chave, c.buscaImagem.cx, c.fetch).imagens(txt(e.consulta) || ""), aviso: "Candidatas: origem e direitos de uso NÃO confirmados. Nada foi salvo nem publicado." }; }
+      const provedor = escolherProvedorBusca(c);
+      if (!provedor) return SEM_PROVEDOR();
+      try { return { candidatas: await provedor.imagens(txt(e.consulta) || ""), aviso: "Candidatas: origem e direitos de uso NÃO confirmados. Nada foi salvo nem publicado." }; }
       catch (err) { return erroDeBusca(err, "Falha na busca de imagens."); }
     }
     case "bling_categorias": case "bling_propor_categoria": case "bling_propor_trocar_categoria": case "bling_propor_reativar_produto": case "bling_propor_ajuste_produto": {
