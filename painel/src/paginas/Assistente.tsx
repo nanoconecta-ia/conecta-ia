@@ -115,7 +115,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   useEffect(() => { setAceitaEnvio(provedor ? lerConsentimento(armazemSessao, loja.id, provedor) : false); }, [provedor, loja.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const autorizarEnvio = () => { if (!provedor) return; gravarConsentimento(armazemSessao, loja.id, provedor, true); setAceitaEnvio(true); };
   const revogarEnvio = () => { if (provedor) gravarConsentimento(armazemSessao, loja.id, provedor, false); setAceitaEnvio(false); };
-  const podeEnviar = !carregandoChat && !carregando && !erroConfig && (!provedor || (selecao?.estado === "disponivel" && aceitaEnvio));
+  const modoFichaSemIA = /^\/ficha\s+[A-Za-z0-9_.\/-]{1,60}$/i.test(texto.trim());
+  const podeEnviar = !ocupado && ((!carregandoChat && config.bling && modoFichaSemIA) || (!carregandoChat && !carregando && !erroConfig && (!provedor || (selecao?.estado === "disponivel" && aceitaEnvio))));
   useEffect(() => {
     let ativo = true;
     setConfig({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 }); setConversas([]); setConversaId(null); setRegistros([]); setRetentativa(null); setAdministrando(false); setErroHistorico("");
@@ -226,7 +227,19 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   }
   async function enviar(t: string, repetir = false) {
     if (!repetir && menu && t.trim() && !ocupado && !acaoLocal && !administrando && !retentativa) { const cmd = interpretar(t, menu); if (cmd.tipo !== "nenhum") { await comandoLocal(t, cmd); return; } }
-    if (!t.trim() || ocupado || !podeEnviar || administrando || retentativa && !repetir) return;
+    if (!repetir && /^\/ficha\s+/i.test(t.trim())) {
+     if (ocupado || administrando || !!retentativa || anexos.length) { setErroHistorico("A ficha sem IA exige uma consulta isolada, sem anexos ou outra ação em andamento."); return; }
+     const codigo = t.trim().replace(/^\/ficha\s+/i, "");
+     if (!/^[A-Za-z0-9_.\/-]{1,60}$/.test(codigo)) { setErroHistorico("Use /ficha seguido de um SKU/código, por exemplo /ficha CI000016."); return; }
+     const origem = loja.id; setMsgs(m => [...m, { de: "eu", texto: t }]); setTexto(""); setOcupado(true); setErroHistorico("");
+     try {
+       const d = await chamada("chat_ficha_produto", { codigo });
+       if (lojaAtual.current === origem) setMsgs(m => [...m, { de: "ia", texto: String(d.resposta ?? "Consulta sem resultado."), evidencias: d.evidencias, simulado: d.simulado }]);
+     } catch (e) { if (lojaAtual.current === origem) setErroHistorico(msgErro(e)); }
+     finally { if (lojaAtual.current === origem) setOcupado(false); }
+     return;
+   }
+   if (!t.trim() || ocupado || !podeEnviar || administrando || retentativa && !repetir) return;
     const lojaDoEnvio = loja.id;
     const persistente = !!provedor && config.persistente;
     const tentativa = repetir ? retentativa : null;
@@ -395,6 +408,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
           <button className="compositor-enviar" aria-label="Enviar" title="Enviar (Enter)" disabled={ocupado || !podeEnviar || administrando || !!retentativa}><span aria-hidden="true"><Icone nome="enviar" tamanho={20} /></span></button>
           </div>
         </div>
+        {config.bling && <small className="suave">Sem Gemini: digite <code>/ficha CI000016</code> para consultar o Bling diretamente, sem IA e sem criar cadastro.</small>}
         {voz.erro && <p className="msg-erro">{voz.erro}</p>}
         {voz.suporteFala && lerAlto && <details className="voz-escolha"><summary>Voz</summary><label><span className="so-leitor">Voz</span><select value={voz.vozEscolhida ?? ""} onChange={(e) => voz.escolherVozPreferida(e.target.value || null)}><option value="">Automática (a mais natural)</option>{voz.vozes.map((v) => <option key={v.voiceURI} value={v.voiceURI}>{v.name} ({v.lang})</option>)}</select></label><small className="suave">{voz.vozes.length === 0 ? "Nenhuma voz em português encontrada; uso a padrão do aparelho." : `Em uso: ${escolherVoz(voz.vozes, voz.vozEscolhida)?.name ?? "padrão do aparelho"}${voz.vozes.length === 1 ? " (é a única em português neste aparelho)" : ""}`}</small></details>}
         {!voz.suporteMic && <p className="aviso-voz">Este navegador não oferece microfone para sites. Use o campo de texto.</p>}
