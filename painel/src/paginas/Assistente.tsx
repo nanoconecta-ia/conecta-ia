@@ -102,7 +102,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [ocupado, setOcupado] = useState(false);
   const [esq, setEsq] = useState(false), [dir, setDir] = useState(false);
   const [menuAnexos, setMenuAnexos] = useState(false);
-  const [buscaMenu, setBuscaMenu] = useState(""); // abas laterais retráteis (conversas / modelo e privacidade)
+  const [buscaMenu, setBuscaMenu] = useState("");
+  const [ferramentasAbertas, setFerramentasAbertas] = useState(true); // abas laterais retráteis (conversas / modelo e privacidade)
   const caixa = useRef<HTMLDivElement>(null);
   const estreito = () => (caixa.current?.clientWidth ?? 0) < 820; // em tela estreita as abas são gavetas sobrepostas: só uma por vez
   const [provedores, setProvedores] = useState<OpcaoProvedor[]>([]);
@@ -369,7 +370,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         <div className="aba-corpo nano-menu-corpo">
           <label className="nano-busca-menu"><span className="so-leitor">Buscar ferramentas ou conversas</span><input type="search" value={buscaMenu} onChange={(e) => setBuscaMenu(e.target.value)} placeholder="Buscar neste painel" /></label>
           <button type="button" className="nano-acao-nova" disabled={ocupado} onClick={() => { nova(); setEsq(false); }}>✎ <span>Nova conversa</span></button>
-          <details className="nano-pasta nano-pasta-principal" defaultOpen>
+          <details className="nano-pasta nano-pasta-principal" open={ferramentasAbertas} onToggle={e => setFerramentasAbertas(e.currentTarget.open)}>
             <summary><Icone nome="caixas" tamanho={17} /> Ferramentas <span className="nano-pasta-seta" aria-hidden="true">⌄</span></summary>
             <nav className="nano-arvore" aria-label="Ferramentas da loja">
               {GRUPOS_NANO.map(grupo => {
