@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "5da74725c19e87607a4e7c7a18503e1bec1201712547df92e2563bc7d2a308a0",
+  "artefato_sha256": "2046f321a4bbc7037fff90854fae7ed55ca3f04c429464ce7eae545f49fd24ed",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -61,6 +61,14 @@
       "sha256": "0103a61d838d4fb825c623b336186e9b79245e798a9405d971e3ce98d73fb105"
     },
     {
+      "path": "supabase/functions/_shared/ia/searxng.ts",
+      "sha256": "6d4b6cec9237222568abc6a9c8558f2c9a71adf61565b02003d222057b664d74"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/provedor_busca.ts",
+      "sha256": "9bc39105922eb85c9b07d018290dc69236341359ef467c73ca250309ab8c79dc"
+    },
+    {
       "path": "supabase/functions/_shared/conector/registro.ts",
       "sha256": "625f56f6a2c3c4cf2c62e14001a7cc9c9010b7e461f29e15ad309aa3adfaa111"
     },
@@ -78,7 +86,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/handlers.ts",
-      "sha256": "8f43959c05c98fbad3144ecb135fd2100748cfd50ba3d7f8878ac84132c875be"
+      "sha256": "fe8775d54ae461fe0663d9c02e505bbd3932c2e10ac5ced7f162d55808866471"
     },
     {
       "path": "supabase/functions/_shared/conector/tipos.ts",
@@ -102,7 +110,7 @@
     },
     {
       "path": "supabase/functions/_shared/ia/ferramentas.ts",
-      "sha256": "b2653977e92c6a2a6b49c588874963cb5eb10386c9778f6eec8cf6c467ceb541"
+      "sha256": "b5cc3aefb7e7639eb9b78ba4aeb5eced44fef8a087137ea1b1a739640b31b304"
     },
     {
       "path": "supabase/functions/_shared/conector/dados.ts",
@@ -150,7 +158,7 @@
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "979f0b2ebd796db693d4ce8cfaf799fc47a9c15118da41f0a2b6e8967f958c8e"
+      "sha256": "363557b5820515128850a72935fde1df57024dfbb387db08b976729ebac35d6b"
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores_stream.ts",
@@ -162,7 +170,7 @@
     },
     {
       "path": "supabase/functions/assistente/index.ts",
-      "sha256": "85a59717d7f97d4f1078529999bac4e58f351456d52f01c79ad251fbd6de57ca"
+      "sha256": "737ca571fcfa2a179d206d20519f3c136dc4d990e31534074ed6d2e4a8f46667"
     }
   ]
 }
