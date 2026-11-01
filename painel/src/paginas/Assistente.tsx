@@ -389,10 +389,6 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
             <span>Enviar esta pergunta e até 20 mensagens recentes a {selecao.nome}? Pode gerar cobrança na sua chave.{anexos.length > 0 && " Os anexos também são enviados."}</span>
             <button type="button" disabled={ocupado} onClick={() => autorizarEnvio()}>Autorizar e continuar</button>
           </div>)}
-        {config.persistente && provedor === "gemini" && config.fallback_free_disponivel === true && <label className="consent-linha" style={{ alignItems: "center", gap: 8 }}>
-          <input type="checkbox" checked={autorizaFallbackFree} disabled={ocupado || !aceitaEnvio} onChange={e => setAutorizaFallbackFree(e.target.checked)} style={{ width: "auto" }} />
-          <span>Se o Gemini cair, autorizo enviar SOMENTE esta pergunta de glossário público a modelos gratuitos do OpenRouter. Nunca enviar histórico, anexos, dados da loja ou consultar o Bling pelo fallback.</span>
-        </label>}
       </div>
       <div className="chat-compositor" style={{ flex: "0 0 auto", minWidth: 0, maxHeight: "min(42dvh, 280px)", overflowY: "auto", overflowX: "hidden", boxSizing: "border-box" }}>
       {selecao?.motivo && <p role="status">{selecao.motivo}</p>}
@@ -436,6 +432,29 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
           <option value="">Resumo local (sem IA externa)</option>
           {provedores.map((p) => <option key={p.id} value={p.id} disabled={p.estado !== "disponivel"}>{p.nome}{p.modelo ? ` · ${p.modelo}` : ""} — {ESTADO_PROVEDOR[p.estado]}</option>)}
         </select></label>
+        <fieldset className="grupo-orbe" aria-label="Nano Auto: IA auxiliar de contingência">
+          <legend>Nano Auto · IA auxiliar</legend>
+          <p className="suave" role="status">{carregandoChat
+            ? "Verificando a contingência no servidor…"
+            : erroHistorico && !config.persistente
+              ? "Não foi possível verificar a contingência. Nenhuma troca automática será feita."
+              : !config.persistente
+                ? "Indisponível: chat persistente não está ativo."
+                : config.fallback_free_disponivel !== true
+                  ? "Não habilitado nesta loja: verifique a configuração no servidor."
+                  : provedor !== "gemini"
+                    ? "Auxiliar configurado, mas só acompanha o Gemini."
+                    : autorizaFallbackFree
+                      ? "Autorizado nesta sessão para perguntas públicas elegíveis."
+                      : "Auxiliar disponível; precisa de autorização para usar."}</p>
+          {config.persistente && config.fallback_free_disponivel === true && provedor === "gemini" && (
+            <label className="consent-linha" style={{ alignItems: "center", gap: 8 }}>
+              <input type="checkbox" checked={autorizaFallbackFree} disabled={ocupado || !aceitaEnvio} onChange={e => setAutorizaFallbackFree(e.target.checked)} style={{ width: "auto" }} />
+              <span>Autorizar contingência automática gratuita para perguntas públicas de glossário nesta sessão.</span>
+            </label>
+          )}
+          <small className="suave">O roteador Nano usa OpenRouter gratuito apenas quando o Gemini falha com HTTP 429, 502 ou 504. Não é outra opção do seletor. Não envia histórico, anexos, SKU, custos ou dados da loja; não atende nem altera o Bling. Para cadastros e consultas comerciais, a continuidade automática com outro LLM ainda não está disponível.</small>
+        </fieldset>
         <fieldset className="grupo-orbe"><legend>Esfera do Nano.IA</legend>
           <div className="grupo-orbe-opcoes" role="radiogroup" aria-label="Modelo da esfera">
             {MODELOS_ORBE.map((m) => <button key={m.valor} type="button" role="radio" aria-checked={modeloOrbe === m.valor} className="sec mini" title={m.descricao} onClick={() => { setModeloOrbe(m.valor); gravarOrbe(armazemLocal(), m.valor); }}>{m.rotulo}</button>)}
@@ -443,7 +462,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         </fieldset>
         <fieldset className="grupo-orbe"><legend>Cor do painel e do Nano.IA</legend><SeletorCor /></fieldset>
         <p className="suave">Os estados refletem a configuração e o limite de uso; a API será consultada somente ao enviar.</p>
-        <p className="suave">{provedor ? "Se o provedor falhar, escolha outro; não há troca automática." : "Só consultas por palavras-chave, sem enviar a um provedor de IA."} {config.persistente && provedor ? ` Histórico privado no servidor, com retenção de ${config.retencao_dias} dias por mensagem.` : " Histórico temporário nesta tela."}</p>
+        <p className="suave">{provedor ? "Em tarefas comerciais não há troca automática de LLM; consulte o status do Nano Auto acima." : "Só consultas por palavras-chave, sem enviar a um provedor de IA."} {config.persistente && provedor ? ` Histórico privado no servidor, com retenção de ${config.retencao_dias} dias por mensagem.` : " Histórico temporário nesta tela."}</p>
         {(voz.suporteMic || voz.suporteFala) && <p className="aviso-voz">A voz usa o reconhecimento do próprio navegador; no Chrome o áudio é processado pelo Google. O Conecta.IA não guarda o áudio; o texto segue a política de histórico indicada acima.</p>}
         </div>
       </aside>
