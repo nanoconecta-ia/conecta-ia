@@ -57,6 +57,7 @@ jobs:
       - run: node scripts/tests/chat-visual.mjs
       - run: node scripts/tests/assistente-retratil-visual.mjs
       - run: node scripts/tests/nano-avatar-visual.mjs
+      - run: node scripts/tests/editor-banner-visual.mjs
       - run: node scripts/tests/assistente-autorizacao-visual.mjs
       - run: node scripts/tests/anexo-chat-visual.mjs
       - run: node scripts/tests/assistente-streaming-visual.mjs
