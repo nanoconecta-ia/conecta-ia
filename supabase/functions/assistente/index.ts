@@ -6,6 +6,7 @@ import { decifrar } from "../_shared/cripto.ts";
 import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 import { conversar, IaErro, type Mensagem } from "../_shared/ia/claude.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../_shared/ia/ferramentas.ts";
+import { configSearxngPorLoja } from "../_shared/ia/searxng.ts";
 import { dadosSupabase } from "../_shared/conector/dados.ts";
 import { BlingLeituraReal } from "../_shared/conector/porta_bling.ts";
 import { armazemSupabase } from "../_shared/bling_armazem.ts";
@@ -131,7 +132,8 @@ Deno.serve(async (req) => {
       const r = await conversar({
         provedor: k.provedor, baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: modeloDaChave(k), sistema: `${SISTEMA}\nLoja: ${loja.nome}.${va?.ok && va.anexos.length ? `\n${REGRAS_ANEXO}` : ""}`, mensagens, ferramentas: FERRAMENTAS,
         executar: (nome, entrada) => executarFerramenta(nome, entrada, {
-          usuario, admin: sb, lojaId: loja.id, plugins: (plugs ?? []) as PluginRegistro[], buscaImagem, conector,
+          usuario, admin: sb, lojaId: loja.id, plugins: (plugs ?? []) as PluginRegistro[], buscaImagem,
+          searxng: configSearxngPorLoja((n) => Deno.env.get(n), loja.id), conector,
           credencial: async (pid) => { const { data } = await sb.rpc("plugin_credencial", { p_loja: loja.id, p_id: pid }); return typeof data === "string" ? await decifrar(data, chaveiro) : null; },
         }),
       });
