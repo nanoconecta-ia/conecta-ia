@@ -177,7 +177,7 @@ export function App() {
     <>
       {demo && <div className="faixa-demo" role="status">{demo.FAIXA}</div>}
       <AvisoVersao />
-      <header className="topo topo-premium">
+      <header className={`topo topo-premium ${caminho === "/assistente" ? "topo--nano-chat" : ""}`}>
         <button type="button" className="sec menu-movel-acionar" onClick={() => setMenuMovel((v) => !v)}
           aria-label={menuMovel ? "Fechar navegação" : "Abrir navegação"} aria-controls="menu-principal" aria-expanded={menuMovel}>
           <Icone nome={menuMovel ? "fechar" : "menu"} tamanho={20} />
@@ -191,7 +191,7 @@ export function App() {
         <button className="sec topo-sair" onClick={() => void supabase.auth.signOut()} disabled={demoAtivo}>Sair</button>
       </header>
       <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
-      <div className={`layout layout-premium ${larga ? "layout--larga" : ""} ${paginaDeChat ? "layout--chat" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""} ${menuMovel ? "layout--menu-movel-aberto" : ""}`} style={{ "--res-esq": `${res.esq}px`, "--res-dir": `${res.dir}px` } as React.CSSProperties}>
+      <div className={`layout layout-premium ${larga ? "layout--larga" : ""} ${paginaDeChat ? "layout--chat" : ""} ${caminho === "/assistente" ? "layout--nano-chat" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""} ${menuMovel ? "layout--menu-movel-aberto" : ""}`} style={{ "--res-esq": `${res.esq}px`, "--res-dir": `${res.dir}px` } as React.CSSProperties}>
       {menuMovel && <button type="button" className="menu-escurecedor" aria-label="Fechar menu de navegação" onClick={() => setMenuMovel(false)} />}
       <nav id="menu-principal" className="menu menu-premium" aria-label="Menu principal">
         <div className="menu-destaque">
