@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "72f39182853faff4ce5ef1e0fb0a132465a802bafe35208aca7069a01f5851a4",
+  "artefato_sha256": "3ecf8f7dfac01b661c8aa0c6a3d42da942e36bbeefeaf2c39dc402438f279bd6",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -45,8 +45,12 @@
       "sha256": "ccedfb2373a61f18664c7f887ac2f1b3b8ee34eaa9452af4dc63d61f44df412e"
     },
     {
+      "path": "supabase/functions/_shared/ia/busca.ts",
+      "sha256": "1c53dfd294f27b03ecddc1e81d9ca95536f4f5dd00f7a50580793c40644d932d"
+    },
+    {
       "path": "supabase/functions/_shared/ia/google.ts",
-      "sha256": "42ebc87142c086e1dc8f94e2c9636501f7950e64c44ce208133a93c8ce125ac5"
+      "sha256": "0103a61d838d4fb825c623b336186e9b79245e798a9405d971e3ce98d73fb105"
     },
     {
       "path": "supabase/functions/_shared/conector/registro.ts",
@@ -66,7 +70,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/handlers.ts",
-      "sha256": "6a86a512c3ae3d13c6632c0eb36d95334e6aeabce68af3ad327b2b15c496b2f7"
+      "sha256": "8f43959c05c98fbad3144ecb135fd2100748cfd50ba3d7f8878ac84132c875be"
     },
     {
       "path": "supabase/functions/_shared/conector/tipos.ts",
@@ -90,7 +94,7 @@
     },
     {
       "path": "supabase/functions/_shared/ia/ferramentas.ts",
-      "sha256": "973359213c2feccca0e7b0d9f448d06c182baaf71f8b124b30ab8fa046f26189"
+      "sha256": "8cf79a749ebe6e8ec36b9c9b068318e00774dad4e10a5e847b6736d5e02d3751"
     },
     {
       "path": "supabase/functions/_shared/conector/dados.ts",

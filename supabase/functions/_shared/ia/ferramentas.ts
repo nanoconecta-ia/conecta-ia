@@ -3,13 +3,15 @@
 import type { Ferramenta } from "./claude.ts";
 import { chamarPlugin, type PluginRegistro } from "./plugin.ts";
 import { CAMPOS_ENRIQUECIMENTO, proporAplicacao, proporCodigo, proporEnriquecimento, proporImagem, TIPOS_CODIGO, type AdminRpc } from "./escrita.ts";
-import { buscarImagens, buscarDadosTecnicos } from "./google.ts";
+import { provedorGoogle } from "./google.ts";
+import { SEM_PROVEDOR, erroDeBusca } from "./busca.ts";
 import { despachar, type ContextoDespacho } from "../conector/despacho.ts";
 import { ALIASES_ASSISTENTE, politicaDoAssistente } from "../conector/aliases.ts";
 
 export const SISTEMA = [
   "Você é o Nano.ia, o assistente do lojista no Conecta.IA. Seu nome é Nano.ia. Fale em português do Brasil, como um colega de balcão experiente: natural, direto e caloroso, em frases curtas e do jeito que se fala em voz alta.",
   "Seja ESPECÍFICO: cite o SKU, o nome do produto, os números, a origem (API do Bling ou espelho) e a data. Nada de resposta genérica, de enrolação nem de frases de robô como 'como assistente de IA' ou 'espero ter ajudado'. Responda primeiro o que foi perguntado e, se fizer sentido, diga o próximo passo concreto em uma frase.",
+  "Busca de imagens e pesquisa técnica na web: se a ferramenta devolver motivo sem_provedor, credencial_invalida, api_indisponivel, recusada, limite ou timeout, diga o motivo REAL com as suas palavras e o que o lojista pode fazer (por exemplo, mandar o link da imagem com a fonte). Nunca diga que não tem a ferramenta quando ela existe. Imagem de terceiros nunca vira publicada: é só candidata, com origem e direitos a confirmar.",
   "Evite listas e tabelas quando uma frase resolve; use lista só para vários itens. Não repita a pergunta e não peça desculpa à toa.",
   "Use as ferramentas para consultar os dados da loja; nunca invente preço, estoque, GTIN, NCM, compatibilidade ou especificação.",
   "Se a ferramenta não trouxer o dado, diga exatamente qual dado falta e o que é preciso para ter (fonte, data, aprovação), sem inventar.",
@@ -124,14 +126,14 @@ export async function executarFerramenta(nome: string, entrada: unknown, c: Cont
     case "propor_aplicacao": return proporAplicacao(c.admin, c.lojaId, e);
     case "propor_imagem": return proporImagem(c.admin, c.lojaId, e);
     case "buscar_dados_tecnicos_web": {
-      if (!c.buscaImagem) return { erro: "Pesquisa técnica não configurada. Configure Google API Key e CX em Integrações de IA." };
-      try { return { resultados_candidatos: await buscarDadosTecnicos(c.buscaImagem.chave, c.buscaImagem.cx, txt(e.consulta), c.fetch), aviso: "Resumos não comprovam aplicação, OEM, GTIN ou medidas. Confirme na página do fabricante antes de propor alterações." }; }
-      catch (err) { return { erro: err instanceof Error ? err.message : "Falha na pesquisa técnica." }; }
+      if (!c.buscaImagem) return SEM_PROVEDOR();
+      try { return { resultados_candidatos: await provedorGoogle(c.buscaImagem.chave, c.buscaImagem.cx, c.fetch).tecnico(txt(e.consulta)), aviso: "Resumos não comprovam aplicação, OEM, GTIN ou medidas. Confirme na página do fabricante antes de propor alterações." }; }
+      catch (err) { return erroDeBusca(err, "Falha na pesquisa técnica."); }
     }
     case "buscar_imagem_web": {
-      if (!c.buscaImagem) return { erro: "Busca de imagens não configurada. Cole a chave do Google em Integrações de IA." };
-      try { return { candidatas: await buscarImagens(c.buscaImagem.chave, c.buscaImagem.cx, txt(e.consulta) || "", c.fetch) }; }
-      catch (err) { return { erro: err instanceof Error ? err.message : "Falha na busca de imagens." }; }
+      if (!c.buscaImagem) return SEM_PROVEDOR();
+      try { return { candidatas: await provedorGoogle(c.buscaImagem.chave, c.buscaImagem.cx, c.fetch).imagens(txt(e.consulta) || ""), aviso: "Candidatas: origem e direitos de uso NÃO confirmados. Nada foi salvo nem publicado." }; }
+      catch (err) { return erroDeBusca(err, "Falha na busca de imagens."); }
     }
     case "bling_categorias": case "bling_propor_categoria": case "bling_propor_trocar_categoria": case "bling_propor_reativar_produto": case "bling_propor_ajuste_produto": {
       if (!c.conector) return { erro: "O motor de propostas do Bling não está disponível neste ambiente." };
