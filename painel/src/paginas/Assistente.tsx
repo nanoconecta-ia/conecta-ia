@@ -128,6 +128,11 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         : `Selecionado: ${selecao?.nome ?? provedor}${selecao?.modelo ? ` · ${selecao.modelo}` : ""} · ainda não testado`;
   const estadoMotor = motorPendente ? "consultando" : ultimoMotorFalhou ? "falha"
     : ultimoModelo?.modeloUsado ? "confirmado" : "configurado";
+  const nomeMotorCompacto = motorPendente ? (selecao?.nome ?? provedor ?? "IA") + " · consultando"
+    : ultimoMotorFalhou ? "IA · falha"
+    : ultimoModelo?.modeloUsado ? ultimoModelo.modeloUsado.split(" · ")[0] + " · respondeu"
+    : provedor ? (selecao?.nome ?? provedor) + " · selecionado"
+    : "Sem LLM";
   const armazemSessao = typeof sessionStorage === "undefined" ? null : sessionStorage;
   useEffect(() => { setAceitaEnvio(provedor ? lerConsentimento(armazemSessao, loja.id, provedor) : false); setAutorizaFallbackFree(false); }, [provedor, loja.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const autorizarEnvio = () => { if (!provedor) return; gravarConsentimento(armazemSessao, loja.id, provedor, true); setAceitaEnvio(true); };
@@ -393,7 +398,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       <section className="abas-centro" aria-label="Conversa com o Nano.ia">
       <div className="agente">
         <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Abrir menu do Nano.IA" onClick={() => { setEsq((v) => !v); setMenuAnexos(false); if (estreito()) setDir(false); }}><Icone nome="menu" tamanho={20} /></button>
-        <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite">{estado === "pensando" && !acaoLocal && <PontosPensando />}{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span></div>
+        <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite"><span className="nano-agente-estado">{estado === "pensando" && !acaoLocal && <PontosPensando />}{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span><span className="nano-motor-compacto" title={textoMotor} aria-label={textoMotor}>{nomeMotorCompacto}</span></span></div>
         {<button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span aria-hidden="true"><Icone nome="mais" tamanho={20} /></span></button>}
         <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}><Icone nome="ajustes" tamanho={20} /></button>
       </div>
