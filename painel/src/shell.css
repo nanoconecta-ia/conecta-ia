@@ -913,6 +913,15 @@ html .abas .compositor-acoes .compositor-enviar { flex: none; min-width: 44px; w
   .menu-premium details.menu-grupo > summary.menu-titulo::after { transition: none; }
 }
 
+/* Chat moderno (pedido do dono, 2026-11-01): a resposta aparece inteira, sem caixa, com texto selecionável e botão Copiar sempre visível.
+   Antes: respostas antigas viravam uma linha, as longas mostravam só o começo e não havia como copiar. */
+.chat .bolha { user-select: text; -webkit-user-select: text; }
+.chat .bolha.ia { background: transparent; border: 0; border-radius: 0; padding: 6px 2px 10px; max-width: 100%; font-size: 1.03rem; line-height: 1.65; }
+.chat .bolha.eu { font-size: 1.03rem; line-height: 1.5; max-width: min(88%, 720px); }
+.bolha-acoes { display: inline-flex; gap: 6px; }
+.bolha .mini.copiar { font-weight: 600; }
+.chat .bolha.ia .bolha-topo { opacity: .75; }
+.chat .bolha.ia p, .chat .bolha.ia li { overflow-wrap: anywhere; }
 /* Legibilidade e uso da largura em telas de notebook (fotos do dono, 2026-10-31):
    1) o conteúdo ficava preso em 1100px à esquerda, com a direita vazia, e a tabela do Catálogo era cortada ("Ver fich");
    2) o menu lateral rolava sem barra visível: Bling, Backup e Contador (ERP e fiscal) ficavam escondidos abaixo da barra de status;

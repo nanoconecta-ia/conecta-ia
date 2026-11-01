@@ -41,10 +41,15 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [retentativa, setRetentativa] = useState<{ texto: string; chave: string; provedor: ProvedorChat; conversa: string | null } | null>(null);
   const [abertas, setAbertas] = useState<Set<number>>(new Set());
   const [modoMsgs, setModoMsgs] = useState<"auto" | "recolher" | "expandir">("auto");
+  const [fechadas, setFechadas] = useState<Set<number>>(new Set());
   const alternarMsg = (i: number) => {
-    const recolhida = mensagemRecolhida(i, msgs.length, abertas, modoMsgs);
-    setModoMsgs("auto");
-    setAbertas((a) => { const n = new Set(modoMsgs === "expandir" ? msgs.map((_, k) => k) : a); if (recolhida) n.add(i); else n.delete(i); return n; });
+    const recolhida = mensagemRecolhida(i, msgs.length, abertas, modoMsgs, fechadas);
+    const todos = msgs.map((_, k) => k);
+    let ab = new Set(abertas), fe = new Set(fechadas);
+    if (modoMsgs === "expandir") { ab = new Set(todos); fe = new Set(); }
+    else if (modoMsgs === "recolher") { ab = new Set(); fe = new Set(todos); }
+    if (recolhida) { ab.add(i); fe.delete(i); } else { ab.delete(i); fe.add(i); }
+    setModoMsgs("auto"); setAbertas(ab); setFechadas(fe);
   };
   const [acaoLocal, setAcaoLocal] = useState<{ estado: EstadoEsfera; texto: string } | null>(null);
   async function comandoLocal(t: string, cmd: Exclude<Comando, { tipo: "nenhum" }>) {
@@ -246,7 +251,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   }
   // microfone: o texto vai aparecendo no campo; quando a fala termina, envia sozinho
   const voz = useVoz((t, final) => { setTexto(t); if (final && t) void enviar(t); });
-  useEffect(() => { setAbertas(new Set()); setModoMsgs("auto"); }, [conversaId]);
+  useEffect(() => { setAbertas(new Set()); setFechadas(new Set()); setModoMsgs("auto"); }, [conversaId]);
   useEffect(() => { fim.current?.scrollIntoView({ block: "end", behavior: "smooth" }); }, [msgs.length]);
 
   const estado: EstadoEsfera = acaoLocal ? acaoLocal.estado : voz.ouvindo ? "ouvindo" : ocupado ? "pensando" : voz.falando ? "falando" : "parado";
@@ -309,10 +314,10 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       {erroHistorico && <p role="status">{erroHistorico}</p>}
       {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
       {retentativa && <div><p>Recupere a mesma pergunta para verificar se o turno terminou. Isso preserva a chave de idempotência.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Recuperar pergunta</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button></div>}
-      {msgs.length > 3 && <div className="chat-ferramentas"><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button><small className="suave">{msgs.length} mensagens</small></div>}
+      {msgs.length > 10 && <div className="chat-ferramentas"><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button><small className="suave">{msgs.length} mensagens</small></div>}
       <div className="chat" style={{ flex: "1 1 auto", minHeight: 0, minWidth: 0, overflowY: "auto", overflowX: "hidden" }} aria-live="polite">{msgs.map((m, i) => (
         <div key={i}>
-          <MensagemRetratil m={m.parcial && !m.texto ? { ...m, texto: "Escrevendo…" } : m} recolhida={!m.parcial && mensagemRecolhida(i, msgs.length, abertas, modoMsgs)} onAlternar={() => alternarMsg(i)} />
+          <MensagemRetratil m={m.parcial && !m.texto ? { ...m, texto: "Escrevendo…" } : m} recolhida={!m.parcial && mensagemRecolhida(i, msgs.length, abertas, modoMsgs, fechadas)} onAlternar={() => alternarMsg(i)} />
           {m.propostas?.map((p) => <PropostaCompacta key={p.id} p={p} fonte={fonte} lojaId={loja.id} />)}
         </div>
       ))}<div ref={fim} /></div>

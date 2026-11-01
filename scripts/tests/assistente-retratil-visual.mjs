@@ -43,22 +43,25 @@ try{
   const aumentou=await page.locator('.esfera').first().evaluate(e=>e.offsetWidth);assert.ok(aumentou>=54,'esfera cresce quando está em ação');
   await page.getByText('Resposta 1 da Nano.ia.').waitFor();await faixa.waitFor({state:'detached'});
   assert.equal(await page.locator('.esfera').first().getAttribute('data-estado'),'ocioso');
-  // 2) mais três perguntas: as mensagens antigas viram uma linha, só as 2 últimas ficam abertas
+  // 2) mais três perguntas: chat moderno, nada recolhe sozinho e cada mensagem tem Copiar
   let esperado=3; // saudação + 1ª pergunta + 1ª resposta
   for(const t of ['segunda','terceira','quarta']){await campo.fill(t);await enviar.click();esperado+=2;await page.waitForFunction(n=>document.querySelectorAll('.bolha, .bolha-linha').length===n,esperado);await page.locator('.faixa-acao').waitFor({state:'detached'});}
   const total=await page.locator('.bolha, .bolha-linha').count();
-  assert.equal(await page.locator('.bolha').count(),2,'só as 2 últimas abertas');assert.equal(await page.locator('.bolha-linha').count(),total-2);
+  assert.equal(await page.locator('.bolha').count(),total,'nada recolhe sozinho');assert.equal(await page.locator('.bolha-linha').count(),0);assert.equal(await page.locator('.bolha .copiar').count(),total,'Copiar em cada mensagem');assert.equal(await page.getByRole('button',{name:'Recolher tudo'}).count(),0,'Recolher tudo só aparece em conversa grande');
   await mkdir(root+'evidencias-chat',{recursive:true});await page.screenshot({path:root+`evidencias-chat/assistente-retratil-recolhido-${largura}.png`});
   // markdown do agente renderizado (negrito, itálico, lista), sem asteriscos crus
   const ultima=page.locator('.bolha.ia').last();assert.ok(await ultima.locator('strong', {hasText:'Achei'}).count()>=1);assert.equal(await ultima.locator('li').count(),2);assert.ok(!(await ultima.innerText()).includes('**'),'sem asteriscos crus');
-  // abrir uma antiga à mão, recolher tudo, expandir tudo
-  await page.locator('.bolha-linha').first().click();assert.equal(await page.locator('.bolha').count(),3);
+  // recolher uma mensagem à mão e reabrir; Copiar mostra o resultado
+  await page.locator('.bolha').first().getByRole('button',{name:'Recolher esta mensagem'}).click();assert.equal(await page.locator('.bolha-linha').count(),1);
+  await page.locator('.bolha-linha').first().click();assert.equal(await page.locator('.bolha-linha').count(),0);
+  await page.locator('.bolha.ia .copiar').last().click();await page.waitForFunction(()=>[...document.querySelectorAll('.bolha .copiar')].some(b=>/Copiado|Selecione/.test(b.textContent||'')));
+  // conversa grande (mais de 10 mensagens): aparecem Recolher tudo e Expandir tudo
+  await campo.fill('quinta');await enviar.click();await page.waitForFunction(n=>document.querySelectorAll('.bolha, .bolha-linha').length===n,total+2);
   await page.getByRole('button',{name:'Recolher tudo'}).click();assert.equal(await page.locator('.bolha').count(),0);
   await page.getByRole('button',{name:'Expandir tudo'}).click();assert.equal(await page.locator('.bolha-linha').count(),0);
   // 3) resposta longa mostra o começo; evidência recolhida até abrir
   const longa=page.locator('.bolha',{hasText:'Achei três registros'}).first();
-  assert.ok((await longa.innerText()).length<LONGA.length,'resposta longa cortada');
-  await longa.getByRole('button',{name:'Mostrar mais'}).click();await longa.getByRole('button',{name:'Mostrar menos'}).waitFor();
+  assert.ok((await longa.innerText()).replace(/\s+/g,' ').includes(LONGA.trim()),'resposta de cerca de 1.000 caracteres aparece inteira');assert.equal(await longa.getByRole('button',{name:'Mostrar mais'}).count(),0);
   const det=longa.locator('details.evid-retratil');assert.equal(await det.evaluate(d=>d.open),false);assert.match(await det.locator('summary').innerText(),/Consulta ao Bling \(API\) · 3 candidatos/);
   await det.locator('summary').click();assert.equal(await det.evaluate(d=>d.open),true);
   // 5) voz: botão 🔊 no próprio compositor liga a leitura e mostra a escolha de voz (não fica escondido na aba lateral)
@@ -73,5 +76,5 @@ try{
   await mkdir(root+'evidencias-chat',{recursive:true});await page.screenshot({path:root+`evidencias-chat/assistente-retratil-${largura}.png`});
   await page.close();
  }
- console.log('assistente-retratil-visual ok (390px e 1280px: esfera em ação, mensagens recolhidas, mostrar mais, evidência retrátil, atalhos)');
+ console.log('assistente-retratil-visual ok (390px e 1280px: esfera em ação, mensagens inteiras com Copiar, recolher à mão, evidência retrátil, atalhos)');
 }finally{await browser?.close();servidor.kill('SIGTERM');await rm(fixture,{force:true})}
