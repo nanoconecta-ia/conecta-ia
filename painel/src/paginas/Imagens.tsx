@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { Loja } from "../lib/dados.ts";
 import {
-  CHECAGENS, CONFIG_PADRAO, FILTRO_MELHORADA, FORMATOS_BANNER, MODOS, RECURSOS, bannerLigado, comparadorLigado, gravarConfig, lerConfig,
+  CHECAGENS, CONFIG_PADRAO, FILTRO_MELHORADA, MODOS, RECURSOS, bannerLigado, comparadorLigado, gravarConfig, lerConfig,
   limitarZoom, podeAprovar, pontoDoClique, sha256Hex, validarArquivo, type Config, type Recurso,
 } from "../lib/fidelidade.ts";
+
+const EditorBanner = lazy(() => import("../componentes/EditorBanner.tsx")); // o Konva só é baixado quando a pessoa abre o editor
 
 type Foto = { url: string; nome: string; tamanho: number; sha: string };
 
@@ -40,7 +42,7 @@ export function Imagens({ loja }: { loja: Loja }) {
       </div>
 
       {foto && comparadorLigado(config) && <Comparador key={foto.sha} foto={foto} />}
-      {foto && bannerLigado(config) && <Banner foto={foto} loja={loja} />}
+      {foto && bannerLigado(config) && <Suspense fallback={<p className="suave" role="status">Abrindo o editor…</p>}><EditorBanner key={foto.sha} foto={foto} loja={loja} /></Suspense>}
       {!foto && config.modo !== "desligado" && <p className="suave">Escolha uma fotografia para comparar o original com a versão melhorada e preparar o banner.</p>}
 
       <Configuracao config={config} alterar={alterar} />
@@ -81,26 +83,6 @@ function Comparador({ foto }: { foto: Foto }) {
           {decisao === "aprovada" ? "Aprovada para uso interno nesta sessão. Isso não publica nada e não é gravado." : decisao === "mantida" ? "Original mantido. Nenhuma versão melhorada foi aprovada." : "Aprovar só libera depois das 3 checagens. Aprovar não publica."}
         </p>
       </fieldset>
-    </section>
-  );
-}
-
-function Banner({ foto, loja }: { foto: Foto; loja: Loja }) {
-  const [titulo, setTitulo] = useState("");
-  return (
-    <section className="cartao" aria-labelledby="fid-banner">
-      <h2 id="fid-banner">Banner demonstrativo <span className="selo">foto preservada</span></h2>
-      <p className="suave">A foto fica livre: sem texto por cima, só enquadramento (recorte), sem alterar pixels. Sem preço, sem código e sem aplicação. Não publica.</p>
-      <label className="fid-campo">Nome da peça no banner <input value={titulo} maxLength={40} placeholder="ex.: nome como no cadastro" onChange={(e) => setTitulo(e.target.value)} /></label>
-      <div className="fid-banners">
-        {FORMATOS_BANNER.map((f) => (
-          <figure key={f.id} className="fid-banner" style={{ aspectRatio: `${f.w} / ${f.h}` }} data-formato={f.id}>
-            <div className="fid-banner-texto"><small>{loja.nome}</small><strong>{titulo.trim() || "Nome da peça"}</strong><span className="fid-cta" aria-hidden="true">Ver peça</span></div>
-            <div className="fid-banner-foto" role="img" aria-label={`Fotografia original recortada em ${f.rotulo}`} style={{ backgroundImage: `url(${foto.url})` }} />
-            <figcaption className="selo">{f.rotulo}</figcaption>
-          </figure>
-        ))}
-      </div>
     </section>
   );
 }

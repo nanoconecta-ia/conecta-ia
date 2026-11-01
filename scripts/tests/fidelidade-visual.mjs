@@ -62,23 +62,22 @@ try{
   for(const c of await caixas.all()){const l=await c.locator('xpath=ancestor::label').boundingBox();ver(l.height>=44,`${r}: checagem com alvo >= 44px (${Math.round(l.height)})`)}
   await caixas.nth(2).check();ver(await aprovar.isEnabled(),`${r}: aprovar libera com 3 de 3`);
   await aprovar.click();ver(/não publica|Aprovada para uso interno/.test(await comp.getByRole('status').innerText()),`${r}: aprovação diz que não publica`);
-  // banner: 3 formatos, tudo dentro da tela, nenhum texto sobre a foto
-  const ban=page.locator('section[aria-labelledby="fid-banner"]');await ban.waitFor();
-  await ban.getByLabel('Nome da peça no banner').fill('Bomba d’água');
-  for(const f of await ban.locator('figure.fid-banner').all()){
-   const bx=await f.boundingBox();ver(bx.x>=-0.5&&bx.x+bx.width<=w+0.5,`${r}: banner ${await f.getAttribute('data-formato')} dentro da tela`);
-   const t=await f.locator('.fid-banner-texto').boundingBox(),ft=await f.locator('.fid-banner-foto').boundingBox();
-   const cruza=Math.max(0,Math.min(t.x+t.width,ft.x+ft.width)-Math.max(t.x,ft.x))*Math.max(0,Math.min(t.y+t.height,ft.y+ft.height)-Math.max(t.y,ft.y));
-   ver(cruza<2,`${r}: texto do banner não cobre a foto (${Math.round(cruza)} px²)`);
-   ver((await f.locator('.fid-banner-foto').innerText()).trim()==='',`${r}: nenhum texto dentro da foto`);
-  }
-  ver(!/R\$|\d{3,}/.test((await ban.innerText()).replace(/SHA.*/,'')),`${r}: banner sem preço nem código`);
+  // editor de banner (Konva): abre com o SKU; peça inteira, nada sobre ela, sem preço nem código inventado; tudo dentro da tela
+  const ban=page.locator('section[aria-labelledby="eb-titulo"]');await ban.waitFor();
+  ver(/Informe o SKU/.test(await ban.innerText()),`${r}: sem SKU o editor não abre`);
+  await ban.getByLabel('SKU do cadastro').fill('FIX-001');await ban.locator('.eb-palco canvas').first().waitFor();
+  await ban.getByLabel('Título (nome como no cadastro)').fill('Bomba d’água');
+  await ban.getByText('Composição válida').waitFor();
+  for(const f of ['1:1','4:5','16:9']){await ban.getByLabel('Formato').selectOption(f);await ban.getByText('Composição válida').waitFor();
+   const bx=await ban.locator('.eb-palco').boundingBox();ver(bx.x>=-0.5&&bx.x+bx.width<=w+0.5,`${r}: banner ${f} dentro da tela`)}
+  ver(await ban.getByRole('alert').filter({hasText:'Bloqueado'}).count()===0,`${r}: composição inicial sem bloqueios`);
+  ver(!/R\$|garantia/i.test((await ban.innerText()).replace(/Preço, garantia e medidas não são oferecidos aqui.*/,'')),`${r}: editor sem preço nem garantia inventados`);
   // desligar esconde a ferramenta; indisponíveis ficam bloqueados; config vale no aparelho (recarregar mantém)
   const conf=page.locator('section[aria-labelledby="fid-config"]');
   ver(await conf.getByRole('radio',{name:/Automático restrito/}).isDisabled(),`${r}: automático restrito indisponível`);
   ver(await conf.getByRole('checkbox',{name:/veículos compatíveis/}).isDisabled(),`${r}: veículos compatíveis indisponível (sem documentação)`);
   await conf.getByRole('radio',{name:/Desligado/}).check();
-  ver(await page.locator('section[aria-labelledby="fid-comp"]').count()===0&&await page.locator('section[aria-labelledby="fid-banner"]').count()===0,`${r}: desligado esconde comparador e banner`);
+  ver(await page.locator('section[aria-labelledby="fid-comp"]').count()===0&&await page.locator('section[aria-labelledby="eb-titulo"]').count()===0,`${r}: desligado esconde comparador e banner`);
   await page.reload();await page.getByRole('heading',{name:/Nano Visual Fidelity/}).waitFor();
   ver(await page.locator('section[aria-labelledby="fid-config"]').getByRole('radio',{name:/Desligado/}).isChecked(),`${r}: modo lembrado neste aparelho`);
   await page.locator('section[aria-labelledby="fid-config"]').getByRole('button',{name:'Restaurar padrão'}).click();

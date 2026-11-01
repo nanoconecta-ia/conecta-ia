@@ -1090,3 +1090,14 @@ html[data-orbe="cristal"] .orbe[data-estado="ocioso"] { --orbe-cor: #6f5bff; }
 .bloqueio-fidelidade { border: 1px solid var(--erro); border-left-width: 6px; border-radius: 10px; padding: 10px 14px; background: color-mix(in srgb, var(--erro) 10%, var(--cartao)); }
 .bloqueio-fidelidade h3 { font-size: .95rem; margin: 10px 0 4px; }
 .bloqueio-fidelidade ul { margin: 0; padding-left: 1.2em; }
+
+/* Editor de banner (Konva): só tokens do tema na interface; a arte do banner tem cores próprias e iguais em qualquer tema. */
+.editor-banner .eb-palco { width: 100%; max-width: 760px; margin: 12px 0; border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; background: var(--realce); touch-action: none; }
+.editor-banner .eb-campos { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.editor-banner .eb-controles { display: grid; gap: 8px; margin: 8px 0 12px; }
+.editor-banner .eb-controles input[type="range"] { width: 100%; min-height: var(--alvo); }
+.editor-banner .eb-textos { display: grid; gap: 10px; margin: 12px 0; }
+.editor-banner .eb-ok { color: var(--ok); font-weight: 600; }
+.editor-banner .eb-aprovacao { margin: 14px 0; padding: 10px 12px; border: 1px solid var(--borda); border-radius: 10px; }
+.editor-banner .eb-aprovacao summary { cursor: pointer; font-weight: 600; min-height: var(--alvo); display: flex; align-items: center; }
+.editor-banner .marcar-linha { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; }
