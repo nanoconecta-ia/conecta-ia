@@ -2375,7 +2375,7 @@ function paraModelo(ev, limite = LIMITE_MODELO) {
     return monta(n);
 }
 async function consultarProduto(entrada, c) {
-    if (!!c.conversaId === !!c.pair) throw new Error("Contexto de auditoria inválido.");
+    if (Number(!!c.conversaId) + Number(!!c.pair) + Number(!!c.ficha) !== 1) throw new Error("Contexto de auditoria inválido.");
     const e = entrada;
     const permitidas = new Set([
         "codigo",
@@ -2500,6 +2500,8 @@ async function consultarProduto(entrada, c) {
         sessao_id: c.pair.sessaoId,
         dispositivo_id: c.pair.dispositivoId,
         ambiente: c.pair.ambiente
+    } : c.ficha ? {
+        modo: "ficha_sem_llm"
     } : {
         conversa_id: c.conversaId
     };
@@ -2517,7 +2519,7 @@ async function consultarProduto(entrada, c) {
     const { error: auditError } = await c.admin.from("auditoria").insert({
         loja_id: c.lojaId,
         user_id: c.userId,
-        acao: c.pair ? "pair.bling_consulta" : "chat.bling_consulta",
+        acao: c.pair ? "pair.bling_consulta" : c.ficha ? "chat.bling_ficha" : "chat.bling_consulta",
         tabela: "produtos",
         depois: chamada
     });

@@ -14,7 +14,7 @@ export const CONSULTAR_PRODUTO: Ferramenta = {
 export type ContextoConsulta = {
  usuario: any; admin: any; lojaId: string; userId: string; cfg: Config; simulado: boolean;
  chamadas: Record<string, unknown>[]; evidencias: Record<string, unknown>[];
-} & ({ conversaId: string; pair?: never } | { conversaId?: never; pair: { sessaoId: string; dispositivoId: string; ambiente: "real" | "sintetico" | "nao_validado" } });
+} & ({ conversaId: string; pair?: never; ficha?: never } | { conversaId?: never; pair: { sessaoId: string; dispositivoId: string; ambiente: "real" | "sintetico" | "nao_validado" }; ficha?: never } | { conversaId?: never; pair?: never; ficha: true });
 const numero = (v: unknown): number | null => (typeof v === "number" || typeof v === "string" && v.trim() !== "") && Number.isFinite(Number(v)) ? Number(v) : null;
 const texto = (v: unknown) => typeof v === "string" ? v.slice(0, 200) : null;
 /** Teto do que o modelo recebe de uma consulta (menor que o limite do laço, para nunca ser cortado depois). */
@@ -31,7 +31,7 @@ export function paraModelo(ev: Record<string, any>, limite = LIMITE_MODELO): Rec
  return monta(n);
 }
 export async function consultarProduto(entrada: unknown, c: ContextoConsulta): Promise<unknown> {
- if (!!c.conversaId === !!c.pair) throw new Error("Contexto de auditoria inválido.");
+ if (Number(!!c.conversaId) + Number(!!c.pair) + Number(!!c.ficha) !== 1) throw new Error("Contexto de auditoria inválido.");
  const e = entrada as Record<string, unknown> | null;
  const permitidas = new Set(["codigo", "sku", "incluir_excluidos"]);
  if (!e || typeof e !== "object" || Array.isArray(e) || Object.keys(e).some(k => !permitidas.has(k))) throw new Error("Informe apenas um código válido (e, opcionalmente, incluir_excluidos).");
@@ -85,10 +85,10 @@ export async function consultarProduto(entrada: unknown, c: ContextoConsulta): P
  const evidencia = { ferramenta: CONSULTAR_PRODUTO.name, origem, simulado: c.simulado, ...(c.pair ? { ambiente: c.pair.ambiente } : {}), consultado_em: new Date().toISOString(), sincronizado_em: sinc, motivo, termo: r.termo,
   total_candidatos: r.total_candidatos, truncado: r.truncado, candidatos: r.candidatos, fontes: r.fontes, conclusao: r.conclusao, dados };
  const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(evidencia))))).map(b => b.toString(16).padStart(2, "0")).join("");
- const identidade = c.pair ? { sessao_id: c.pair.sessaoId, dispositivo_id: c.pair.dispositivoId, ambiente: c.pair.ambiente } : { conversa_id: c.conversaId };
+ const identidade = c.pair ? { sessao_id: c.pair.sessaoId, dispositivo_id: c.pair.dispositivoId, ambiente: c.pair.ambiente } : c.ficha ? { modo: "ficha_sem_llm" } : { conversa_id: c.conversaId };
  const chamada = { ...identidade, ferramenta: CONSULTAR_PRODUTO.name, origem, status: ultimoStatus, ms: Date.now() - inicio, hash, simulado: c.simulado, candidatos: r.total_candidatos, ausencia_nos_filtros_pesquisados: r.conclusao.ausencia_nos_filtros_pesquisados };
  // Falha na auditoria bloqueia a devolução ao modelo e à UI.
- const { error: auditError } = await c.admin.from("auditoria").insert({ loja_id: c.lojaId, user_id: c.userId, acao: c.pair ? "pair.bling_consulta" : "chat.bling_consulta", tabela: "produtos", depois: chamada });
+ const { error: auditError } = await c.admin.from("auditoria").insert({ loja_id: c.lojaId, user_id: c.userId, acao: c.pair ? "pair.bling_consulta" : c.ficha ? "chat.bling_ficha" : "chat.bling_consulta", tabela: "produtos", depois: chamada });
  if (auditError) throw new Error("Não foi possível auditar a consulta.");
  c.chamadas.push(chamada); c.evidencias.push(evidencia); // a UI/auditoria guardam a lista COMPLETA
  return paraModelo(evidencia);
