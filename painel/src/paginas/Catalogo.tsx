@@ -9,6 +9,8 @@ import { resumoDoLote } from "../lib/catalogoExperiencia.ts";
 import { TAMANHO_LOTE_CATALOGO, expressaoBuscaCatalogo, juntarProdutosPorId, existemMaisProdutos } from "../lib/catalogoPaginacao.ts";
 import { Icone } from "../componentes/Icone.tsx";
 import "./catalogo-workspace.css";
+import { pedirAoNanoNaConversa } from "../lib/contextoPagina.ts";
+import { montarPedidoCorrecao, pendenciasDaFicha } from "../lib/pedidoCorrecao.ts";
 import { camposFaltando, contagens, filtrar, ROTULO_FILTRO, semCategoria, situacaoTexto, type Filtro, type LinhaPlanilha } from "../lib/planilha.ts";
 
 type Produto = LinhaPlanilha & { preco: number | null; estoque: number | null; publicado: boolean };
@@ -34,6 +36,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const [vista, setVista] = useState<"tabela" | "cartoes">(() =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? "cartoes" : "tabela");
   const [fichaId, setFichaId] = useState<string | null>(null);
+  const [obsFicha, setObsFicha] = useState("");
   const [categorias, setCategorias] = useState<Map<string, string>>(new Map());
   const [nos, setNos] = useState<Map<string, No>>(new Map());
   const carregar = useCallback(async (offset = 0) => {
@@ -110,6 +113,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
     const timer = window.setTimeout(() => setBuscaAplicada(busca.trim()), 350);
     return () => window.clearTimeout(timer);
   }, [busca]);
+  useEffect(() => { setObsFicha(""); }, [fichaId]);
   useEffect(() => { setFichaId(null); setSelecionados(new Set()); setBusca(""); setBuscaAplicada(""); }, [loja.id]);
   useEffect(() => {
     if (!fichaId) return;
@@ -157,6 +161,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const pesquisaPendente = busca.trim() !== buscaAplicada;
   const resumo = resumoDoLote(itens ?? []);
   const ficha = itens?.find((p) => p.id === fichaId) ?? null;
+  const pedidoDaFicha = (p: Produto) => ({ sku: p.sku, nome: p.nome, marca: p.marca, gtin: p.gtin, peso_kg: p.peso_kg, imagens: p.imagens, categoria: categorias.get(p.categoria_bling_id ?? "") ?? null, taxonomia: p.taxonomia_no_id ? nomeNo(p.taxonomia_no_id) : null, descricaoVazia: camposFaltando(p).includes("descrição") });
   const idsVisiveis = visiveis.map((p) => p.id);
   const nomeNo = (id: string | null) => {
     const n = id ? nos.get(id) : undefined;
@@ -283,6 +288,14 @@ export function Catalogo({ loja }: { loja: Loja }) {
               <p>{camposFaltando(ficha).length ? camposFaltando(ficha).join(" · ") : "Nenhuma das lacunas básicas detectadas. Aplicações e equivalências exigem comprovação independente."}</p>
             </div>
             <p className="catalogo-ficha-ressalva">As informações acima vêm do espelho interno; não provam compatibilidade com outros modelos, referências OEM ou procedência. Preço de custo, fornecedor e dados fiscais não são exibidos.</p>
+            <div className="catalogo-ficha-correcao">
+              <strong>Corrigir este produto com o Nano.IA</strong>
+              <p>{pendenciasDaFicha(pedidoDaFicha(ficha)).length ? `${pendenciasDaFicha(pedidoDaFicha(ficha)).length} pendência(s) vão no pedido. O Nano pesquisa, propõe com fonte e data, e você aprova na fila; ele não grava no Bling.` : "Sem pendências básicas; você ainda pode pedir uma conferência."}</p>
+              <label>O que você sabe sobre ele (opcional; entra como hipótese, sem fonte)
+                <textarea value={obsFicha} maxLength={600} rows={2} onChange={(e) => setObsFicha(e.target.value)} placeholder="Ex.: acho que o fabricante é…" />
+              </label>
+              <button type="button" onClick={() => { pedirAoNanoNaConversa(montarPedidoCorrecao({ ...pedidoDaFicha(ficha), observacaoLojista: obsFicha })); setFichaId(null); }}><Icone nome="agentes" tamanho={18}/> Pedir correção ao Nano.IA</button>
+            </div>
             <div className="catalogo-ficha-links"><a href="#/assistente" onClick={() => setFichaId(null)}><Icone nome="agentes" tamanho={18}/> Consultar Nano.IA</a><a href="#/fila" onClick={() => setFichaId(null)}>Abrir aprovações</a></div>
           </section>
         </div>

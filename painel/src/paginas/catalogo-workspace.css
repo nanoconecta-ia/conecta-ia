@@ -79,3 +79,8 @@
 .catalogo-paginacao button { min-height:44px; border-radius:12px; padding-inline:18px; font-weight:750; }
 .catalogo-workspace .msg-erro button { margin-left:10px; min-height:38px; }
 @media(max-width:520px) { .catalogo-paginacao button { width:100%; } }
+.catalogo-ficha-correcao { display:grid; gap:8px; padding:12px; border:1px solid var(--borda); border-radius:12px; background:var(--realce); }
+.catalogo-ficha-correcao p { margin:0; font-size:.9rem; color:var(--suave); }
+.catalogo-ficha-correcao label { display:grid; gap:4px; font-size:.85rem; color:var(--suave); }
+.catalogo-ficha-correcao textarea { width:100%; box-sizing:border-box; resize:vertical; font:inherit; color:var(--texto); background:var(--cartao); border:var(--campo-bw) solid var(--borda-forte); border-radius:8px; padding:8px; }
+.catalogo-ficha-correcao button { justify-self:start; display:inline-flex; align-items:center; gap:8px; min-height:44px; }

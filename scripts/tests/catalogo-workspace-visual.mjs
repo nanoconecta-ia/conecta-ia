@@ -82,6 +82,25 @@ try {
       assert.ok(consultas.some(c=>c.offset>=500),"registro acima da posição 500 foi consultado");
       assert.equal(await page.getByRole("button",{name:"Carregar mais 100"}).count(),0,"última página não exibe Carregar mais");
     }
+    { // ponte ficha -> Nano.IA: o pedido leva o produto e as pendências à caixa do chat, sem enviar nada
+      await page.goto(base+"/#/catalogo");await page.getByRole("heading",{name:/Catálogo técnico/}).waitFor();
+      await page.getByRole("searchbox",{name:"Buscar produto por SKU, nome, marca ou GTIN"}).fill("854008");
+      await page.getByRole("status").filter({hasText:"1 encontrado(s)"}).waitFor();
+      await page.getByRole("button",{name:"Ver ficha técnica"}).click();
+      const ficha=page.getByRole("dialog");await ficha.waitFor();
+      await ficha.getByLabel(/O que você sabe sobre ele/).fill("acho que o fabricante é teste");
+      const antesEnvios=writes.length;
+      await ficha.getByRole("button",{name:"Pedir correção ao Nano.IA"}).click();
+      await page.waitForFunction(()=>location.hash==="#/assistente");
+      const caixa=page.getByRole("textbox").last();await caixa.waitFor();
+      await page.waitForFunction(()=>[...document.querySelectorAll("textarea")].some(t=>t.value.includes("Corrigir o cadastro do produto SKU")));
+      const v=await page.evaluate(()=>[...document.querySelectorAll("textarea")].find(t=>t.value.includes("Corrigir o cadastro"))?.value??"");
+      assert.match(v,/854008/);assert.match(v,/hipótese, SEM fonte: confirme antes de usar\): acho que o fabricante é teste/);assert.match(v,/não aprova nem grava no Bling/);
+      assert.equal(v.includes("151,00"),false,"pedido sem custo");
+      assert.deepEqual(writes.slice(antesEnvios).filter(x=>!x.url.endsWith("/functions/v1/assistente")&&!x.url.includes("/rest/v1/rpc/pode_")),[],"preencher a caixa não grava em nenhuma tabela nem no ERP (só leituras e checagem de permissão)");
+      assert.ok((await page.evaluate(()=>[...document.querySelectorAll("textarea")].find(t=>t.value.includes("Corrigir o cadastro"))?.value??"")).length>0,"o texto continua na caixa: nada foi enviado");
+      await page.screenshot({path:root+`evidencias-chat/ficha-pedir-correcao-${width}.png`});
+    }
     assert.deepEqual(writes.filter(x=>/bling|produtos|produto_automacao/.test(x.url)),[],"nenhuma escrita no ERP ou catálogo");
     assert.deepEqual(errors,[],"sem exceções no navegador");
     await context.close();
