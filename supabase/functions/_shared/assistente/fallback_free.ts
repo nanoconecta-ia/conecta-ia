@@ -22,7 +22,7 @@ const ASSUNTOS = [
   "bomba de oleo", "bomba de combustivel", "injetor diesel",
   "sincronismo do motor", "arrefecimento do motor", "sistema de lubrificacao",
 ];
-const SEM_ACENTO = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+const SEM_ACENTO = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’\x27]/g, " ").toLowerCase().trim();
 const ASSUNTOS_PERMITIDOS = new Set(ASSUNTOS.map(SEM_ACENTO));
 
 export function perguntaPublica(texto: unknown): boolean {
