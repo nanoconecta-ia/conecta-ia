@@ -76,3 +76,12 @@ Pedido do dono (2026-11-01): descrever uma peça ("virabrequim aço forjado STD 
 - **D4.** Provedor de IA para catálogos: o Gemini atual aceita PDF; a cota gratuita limitou hoje.
 
 Nada deste documento foi implementado, publicado ou gravado no Bling.
+
+## 7. Visão do dono: Nano.IA como condutor de venda (2026-11-01) — fases propostas
+Pedido: o Nano.IA ajudar o lojista a **não ter prejuízo**: ver custo e preço, custo-benefício, fiscal e logística, custo de compra, e **pesquisar no Google** se o produto está bem posicionado no preço. Regra de ouro: **analisar é leitura (risco baixo); mudar preço é proposta com aprovação (risco alto)**.
+- **P1, análise de margem (só leitura, conta feita em código, não pela IA):** custo de compra e de custo, preço de venda, margem bruta, e o que falta para calcular frete e imposto (peso, medidas, NCM, CEST, origem). Regras fiscais **só como alerta**, validadas pelo contador do cliente (CLAUDE.md).
+- **P2, mercado:** busca na web de preços e anúncios do mesmo código, **sempre com fonte e data**, tratada como pista e não como prova. Exige chave de busca (Google Programmable Search) e respeito aos termos dos marketplaces.
+- **P3, histórico próprio:** vendas e giro lidos dos pedidos do Bling (leitura).
+- **P4, sugestão de preço:** vira proposta HIGH com antes e depois (D5). Nunca grava sozinho.
+- **Fora desta trilha:** venda direta ao cliente pelo WhatsApp (webhook Meta, fila) é outro projeto; entra depois do site publicar o primeiro produto.
+- Custo e fornecedor passam a entrar no contexto do chat do lojista: exige aceite do dono (provedor de IA) e continua **fora do site e da tela do cliente**.
