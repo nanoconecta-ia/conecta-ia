@@ -9,7 +9,7 @@ const require=createRequire(painel+'package.json'),{chromium}=require('playwrigh
 const fixture=painel+'.avatar-demo.html',porta=4188,saida=process.env.SAIDA||root+'docs/evidencias/nano-avatar/';
 const ESTADOS=['ocioso','escutando','interpretando','pesquisando_fontes','consultando_ferramentas','preparando_proposta','aguardando_aprovacao','executando','sincronizando_bling','concluido','erro','bloqueado','falando'];
 await mkdir(saida,{recursive:true});
-await writeFile(fixture,`<html lang="pt-BR"><meta name="viewport" content="width=device-width, initial-scale=1.0"><div id="root"></div><script type="module">import React from 'react';import {createRoot} from 'react-dom/client';import './src/styles.css';import './src/shell.css';import {Orbe} from './src/componentes/Esfera.tsx';import {ROTULO_ESTADO} from './src/lib/estadoAgente.ts';
+await writeFile(fixture,`<html lang="pt-BR"><meta name="viewport" content="width=device-width, initial-scale=1.0"><div id="root"></div><script type="module">import React from 'react';import {createRoot} from 'react-dom/client';import './src/styles.css';import './src/shell.css';import {Orbe} from './src/componentes/Esfera.tsx';import {ROTULO_ESTADO} from './src/lib/estadoAgente.ts';import {aplicarOrbe,lerOrbe} from './src/lib/orbe.ts';aplicarOrbe(lerOrbe(null));
 const E=${JSON.stringify(ESTADOS)};const h=React.createElement;
 createRoot(document.getElementById('root')).render(h('main',{style:{padding:16,background:'var(--fundo)',color:'var(--texto)'}},
  h('h1',{style:{fontSize:'1.1rem'}},'Nano.IA — avatar orbital'),
@@ -28,6 +28,7 @@ try{
   await page.evaluate(t=>{document.documentElement.dataset.tema=t},tema);
   const n=await page.locator('.orbe').count();assert.equal(n,ESTADOS.length*3);
   const cores=await page.$$eval('.orbe-nucleo',els=>els.map(e=>getComputedStyle(e).boxShadow));
+  assert.equal(await page.evaluate(()=>document.documentElement.dataset.orbe),'cristal','padrão = cristal');assert.equal(await page.locator('.orbe-pupila:visible').count(),0,'cristal: sem pupila/íris');
   assert.ok(cores.every(c=>c&&c!=='none'),'todo estado tem brilho próprio');
   const ov=await page.evaluate(()=>{const W=window.innerWidth;return [...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>W+1&&!e.closest('.orbe')).map(e=>e.tagName+'.'+e.className).slice(0,5)});assert.deepEqual(ov,[],'sem rolagem horizontal em '+largura);
   await page.screenshot({path:`${saida}estados-${tema}-${largura}.png`,fullPage:true});

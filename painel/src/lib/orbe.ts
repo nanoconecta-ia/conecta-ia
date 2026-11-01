@@ -1,4 +1,4 @@
-// Modelo da esfera do Nano.IA no cabeçalho: olho (padrão: átomo com pupila, conforme a especificação), cristal, sol, átomo ou aurora. Escolha guardada no aparelho; sem storage, volta ao olho.
+// Modelo da esfera do Nano.IA no cabeçalho: cristal (padrão por decisão do dono em 01/11/2026: esfera orbital lisa, sem olho/íris/pupila), olho, sol, átomo ou aurora. Escolha guardada no aparelho; sem storage, volta ao cristal.
 // Puro e testável: quem toca no DOM é aplicarOrbe.
 export type ModeloOrbe = "cristal" | "olho" | "sol" | "atomo" | "aurora";
 export const MODELOS_ORBE: { valor: ModeloOrbe; rotulo: string; descricao: string }[] = [
@@ -11,13 +11,13 @@ export const MODELOS_ORBE: { valor: ModeloOrbe; rotulo: string; descricao: strin
 const CHAVE = "conecta:orbe";
 
 export function orbeValido(v: unknown): ModeloOrbe {
-  return v === "cristal" || v === "sol" || v === "atomo" || v === "aurora" ? v : "olho";
+  return v === "olho" || v === "sol" || v === "atomo" || v === "aurora" ? v : "cristal";
 }
 export function lerOrbe(armazem: Pick<Storage, "getItem"> | null): ModeloOrbe {
-  try { return orbeValido(armazem?.getItem(CHAVE)); } catch { return "olho"; }
+  try { return orbeValido(armazem?.getItem(CHAVE)); } catch { return "cristal"; }
 }
 export function gravarOrbe(armazem: Pick<Storage, "setItem" | "removeItem"> | null, m: ModeloOrbe): void {
-  try { if (m === "olho") armazem?.removeItem(CHAVE); else armazem?.setItem(CHAVE, m); } catch { /* sem storage: vale só nesta sessão */ }
+  try { if (m === "cristal") armazem?.removeItem(CHAVE); else armazem?.setItem(CHAVE, m); } catch { /* sem storage: vale só nesta sessão */ }
 }
 export function aplicarOrbe(m: ModeloOrbe, raiz: HTMLElement = document.documentElement): void {
   raiz.dataset.orbe = m;

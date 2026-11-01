@@ -1055,3 +1055,33 @@ html[data-orbe="cristal"] .orbe-faiscas b:nth-child(3) { left: 46%; bottom: auto
 .orbe-reflexo { position: absolute; z-index: 4; left: 29%; top: 26%; width: 22%; height: 16%; border-radius: 50%; transform: rotate(-25deg); background: #ffffffb3; pointer-events: none; }
 html[data-orbe]:not([data-orbe="olho"]) .orbe-reflexo, html[data-orbe]:not([data-orbe="olho"]) .orbe-anel i { display: none; }
 @media (prefers-reduced-motion: reduce) { .orbe-aura { animation: none !important; } }
+
+/* Cristal (padrão) reage ao estado: halo, brilho externo e fita principal tomam a cor do estado; ocioso mantém o azul/magenta de repouso. */
+html[data-orbe="cristal"] .orbe:not([data-estado="ocioso"]) .orbe-aura { background: radial-gradient(closest-side at 50% 58%, color-mix(in srgb, var(--orbe-cor) 80%, transparent), color-mix(in srgb, var(--orbe-cor) 35%, transparent) 50%, transparent 76%); }
+html[data-orbe="cristal"] .orbe:not([data-estado="ocioso"]) .orbe-nucleo { box-shadow: inset 0 0 calc(var(--d) * .22) color-mix(in srgb, var(--orbe-cor) 70%, #fff), inset 0 calc(var(--d) * -.1) calc(var(--d) * .2) color-mix(in srgb, var(--orbe-cor) 80%, transparent), 0 0 calc(var(--d) * .55) color-mix(in srgb, var(--orbe-cor) 75%, transparent); border-color: color-mix(in srgb, var(--orbe-cor) 60%, #fff); }
+html[data-orbe="cristal"] .orbe:not([data-estado="ocioso"]) .orbe-anel:not(.orbe-anel-2) { background: conic-gradient(from 0deg, #00000000 0 18%, color-mix(in srgb, var(--orbe-cor) 70%, #2f6bff) 30%, color-mix(in srgb, var(--orbe-cor) 60%, #fff) 46%, #00000000 62%); }
+html[data-orbe="cristal"] .orbe:not([data-estado="ocioso"]) .orbe-nucleo::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(ellipse 100% 36% at 50% 112%, color-mix(in srgb, var(--orbe-cor) 70%, transparent) 0 40%, transparent 80%); pointer-events: none; }
+
+/* Cristal fiel à referência do dono (esfera de vidro, interior escuro, fitas azuis luminosas, faíscas, arco branco no topo, borda rosa embaixo). */
+html[data-orbe="cristal"] .orbe-nucleo {
+  background:
+    radial-gradient(ellipse 50% 20% at 40% 14%, #ffffffee 0 35%, #ffffff00 100%),
+    radial-gradient(ellipse 120% 40% at 50% 112%, #ff5fe0 0 24%, #b04bff55 48%, #00000000 72%),
+    radial-gradient(circle at 38% 38%, #0b1a63 0, #060a30 52%, #02030f 100%);
+  border: 1.5px solid #ffffffaa;
+  box-shadow: inset 0 calc(var(--d) * -.07) calc(var(--d) * .1) #ff5fe0cc, inset calc(var(--d) * .06) 0 calc(var(--d) * .1) #3f6bff88, inset calc(var(--d) * -.05) 0 calc(var(--d) * .08) #7bffa044, 0 0 calc(var(--d) * .45) #6f5bff88; }
+html[data-orbe="cristal"] .orbe-anel { inset: 6%; background: conic-gradient(from 0deg, #00000000 0 12%, #1d4dff 26%, #4fb4ff 42%, #ffffffcc 50%, #00000000 66%);
+  mask: radial-gradient(closest-side, transparent 52%, #000 58% 84%, transparent 90%); -webkit-mask: radial-gradient(closest-side, transparent 52%, #000 58% 84%, transparent 90%); filter: blur(.3px); }
+html[data-orbe="cristal"] .orbe-anel-2 { background: conic-gradient(from 90deg, #00000000 0 18%, #2b5bff 32%, #6ef0ff 46%, #00000000 62%); }
+html[data-orbe="cristal"] .orbe-faiscas b { width: 2.5px; height: 2.5px; background: #fff; box-shadow: 0 0 5px 1px #8fd9ff; }
+
+/* A cor do estado precisa vencer a cor fixa do Cristal (mesma ordem de significado dos demais modelos). */
+html[data-orbe="cristal"] .orbe[data-estado="escutando"], html[data-orbe="cristal"] .orbe[data-estado="executando"], html[data-orbe="cristal"] .orbe[data-estado="falando"] { --orbe-cor: var(--verde); }
+html[data-orbe="cristal"] .orbe[data-estado="interpretando"] { --orbe-cor: var(--orbe-azul-claro); }
+html[data-orbe="cristal"] .orbe[data-estado="pesquisando_fontes"] { --orbe-cor: var(--roxo); }
+html[data-orbe="cristal"] .orbe[data-estado="consultando_ferramentas"], html[data-orbe="cristal"] .orbe[data-estado="sincronizando_bling"] { --orbe-cor: var(--ciano); }
+html[data-orbe="cristal"] .orbe[data-estado="preparando_proposta"], html[data-orbe="cristal"] .orbe[data-estado="aguardando_aprovacao"] { --orbe-cor: var(--atencao); }
+html[data-orbe="cristal"] .orbe[data-estado="concluido"] { --orbe-cor: var(--ok); }
+html[data-orbe="cristal"] .orbe[data-estado="erro"] { --orbe-cor: var(--erro); }
+html[data-orbe="cristal"] .orbe[data-estado="bloqueado"] { --orbe-cor: #8a94a0; }
+html[data-orbe="cristal"] .orbe[data-estado="ocioso"] { --orbe-cor: #6f5bff; }
