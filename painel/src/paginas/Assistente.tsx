@@ -40,7 +40,7 @@ const msgErro = (e: unknown): string => (e instanceof Error ? e.message : String
 export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[]; aoNavegar?: (rota: string) => void }) {
   const [msgs, setMsgs] = useState<Msg[]>([{ de: "ia", texto: "Olá! Posso resumir a loja, mostrar o que aguarda aprovação e o que falta para publicar. Para conversar com IA e usar plugins, configure um provedor em Integrações de IA." }]);
   const fonte = useFonte(); // B2b: cartões de proposta leem a proposta do banco (RLS), nunca do texto do modelo
-  const [config, setConfig] = useState<{ persistente: boolean; bling: boolean; leitura_administrativa: boolean; retencao_dias: number; streaming?: boolean }>({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 });
+  const [config, setConfig] = useState<{ persistente: boolean; bling: boolean; leitura_administrativa: boolean; retencao_dias: number; streaming?: boolean; fallback_free_disponivel?: boolean }>({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 });
   const [conversas, setConversas] = useState<Conversa[]>([]);
   const [conversaId, setConversaId] = useState<string | null>(null);
   const [idsSessao, setIdsSessao] = useState<string[]>(() => lerSessao(typeof sessionStorage === "undefined" ? null : sessionStorage, loja.id));
@@ -104,6 +104,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [carregando, setCarregando] = useState(true);
   const [erroConfig, setErroConfig] = useState("");
   const [aceitaEnvio, setAceitaEnvio] = useState(false);
+  const [autorizaFallbackFree, setAutorizaFallbackFree] = useState(false); // autorização separada por sessão; desligado inicialmente
   const lojaAtual = useRef(loja.id); lojaAtual.current = loja.id;
   const [anexos, setAnexos] = useState<AnexoChat[]>([]);
   const [erroAnexo, setErroAnexo] = useState("");
@@ -112,7 +113,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const entradaFotos = useRef<HTMLInputElement>(null);
   const selecao = provedores.find((p) => p.id === provedor);
   const armazemSessao = typeof sessionStorage === "undefined" ? null : sessionStorage;
-  useEffect(() => { setAceitaEnvio(provedor ? lerConsentimento(armazemSessao, loja.id, provedor) : false); }, [provedor, loja.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setAceitaEnvio(provedor ? lerConsentimento(armazemSessao, loja.id, provedor) : false); setAutorizaFallbackFree(false); }, [provedor, loja.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const autorizarEnvio = () => { if (!provedor) return; gravarConsentimento(armazemSessao, loja.id, provedor, true); setAceitaEnvio(true); };
   const revogarEnvio = () => { if (provedor) gravarConsentimento(armazemSessao, loja.id, provedor, false); setAceitaEnvio(false); };
   const modoFichaSemIA = /^\/ficha\s+[A-Za-z0-9_.\/-]{1,60}$/i.test(texto.trim());
@@ -120,7 +121,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   useEffect(() => {
     let ativo = true;
     setConfig({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 }); setConversas([]); setConversaId(null); setRegistros([]); setRetentativa(null); setAdministrando(false); setErroHistorico("");
-    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false);
+    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false); setAutorizaFallbackFree(false);
     setMsgs([{ de: "ia", texto: "Olá! Posso consultar os dados desta loja. Escolha um provedor para conversar com IA." }]);
     supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao: "provedores" } })
       .then(({ data, error }) => {
@@ -254,7 +255,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     setTexto(""); setOcupado(true); setErroHistorico("");
     if (persistente && prov) setRetentativa({ texto: t, chave, provedor: prov, conversa: conv });
     try {
-      const campos = { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio } : { historico }), ...(prov ? { provedor: prov } : { sem_ia: true }), ...(anexosEnvio.length ? { anexos: anexosEnvio.map(({ nome, tipo, dados }) => ({ nome, tipo, dados })) } : {}) };
+      const campos = { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio, consentimento_fallback_free: autorizaFallbackFree && prov === "gemini" && config.fallback_free_disponivel === true } : { historico }), ...(prov ? { provedor: prov } : { sem_ia: true }), ...(anexosEnvio.length ? { anexos: anexosEnvio.map(({ nome, tipo, dados }) => ({ nome, tipo, dados })) } : {}) };
       // B2b (#166): com o servidor anunciando streaming, o texto aparece enquanto o provedor escreve; o que vale é o resultado final registrado.
       const data = persistente && config.streaming ? await perguntarStreaming(campos, lojaDoEnvio) : await chamada(persistente ? "chat_perguntar" : "perguntar", campos);
       if (lojaAtual.current !== lojaDoEnvio) return;
@@ -388,6 +389,10 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
             <span>Enviar esta pergunta e até 20 mensagens recentes a {selecao.nome}? Pode gerar cobrança na sua chave.{anexos.length > 0 && " Os anexos também são enviados."}</span>
             <button type="button" disabled={ocupado} onClick={() => autorizarEnvio()}>Autorizar e continuar</button>
           </div>)}
+        {config.persistente && provedor === "gemini" && config.fallback_free_disponivel === true && <label className="consent-linha" style={{ alignItems: "center", gap: 8 }}>
+          <input type="checkbox" checked={autorizaFallbackFree} disabled={ocupado || !aceitaEnvio} onChange={e => setAutorizaFallbackFree(e.target.checked)} style={{ width: "auto" }} />
+          <span>Se o Gemini cair, autorizo enviar SOMENTE esta pergunta de glossário público a modelos gratuitos do OpenRouter. Nunca enviar histórico, anexos, dados da loja ou consultar o Bling pelo fallback.</span>
+        </label>}
       </div>
       <div className="chat-compositor" style={{ flex: "0 0 auto", minWidth: 0, maxHeight: "min(42dvh, 280px)", overflowY: "auto", overflowX: "hidden", boxSizing: "border-box" }}>
       {selecao?.motivo && <p role="status">{selecao.motivo}</p>}
