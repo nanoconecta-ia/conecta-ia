@@ -1,0 +1,10 @@
+/* Ícones da taxonomia dentro do mapa existente: não criam outra árvore. */
+.mapa-peca {
+  pointer-events: none;
+  overflow: visible;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .16));
+}
+.mapa-no:focus-visible .mapa-peca, .mapa-no:hover .mapa-peca { filter: drop-shadow(0 1px 5px var(--marca)); }
+@media (prefers-reduced-motion: reduce) {
+  .mapa-peca { transition: none; }
+}
