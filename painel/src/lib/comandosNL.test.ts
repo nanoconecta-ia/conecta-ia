@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { acharRota, interpretar, textoAjuda, type Item } from "./comandosNL.ts";
 
-const MENU: Item[] = [["/", "Visão geral"], ["/catalogo", "Catálogo"], ["/fila", "Fila de aprovação"], ["/taxonomia", "Taxonomia"], ["/imagens", "Imagens e SEO"], ["/aparencia", "Aparência da loja"], ["/bling", "Bling"]];
+const MENU: Item[] = [["/", "Visão geral"], ["/catalogo", "Catálogo"], ["/fila", "Fila de aprovação"], ["/taxonomia", "Taxonomia"], ["/imagens", "Imagens e SEO"], ["/videos", "Nano Video Studio"], ["/aparencia", "Aparência da loja"], ["/bling", "Bling"]];
 const rotas = (c: ReturnType<typeof interpretar>) => c.tipo === "navegar" ? c.passos.map((p) => p[0]) : [];
 
 test("abre uma tela pelo nome ou apelido, com acento ou sem", () => {
@@ -10,6 +10,7 @@ test("abre uma tela pelo nome ou apelido, com acento ou sem", () => {
   assert.deepEqual(rotas(interpretar("me leva para a taxonomia", MENU)), ["/taxonomia"]);
   assert.deepEqual(rotas(interpretar("quero ver as fotos", MENU)), ["/imagens"]);
   assert.deepEqual(rotas(interpretar("mostra o SEO", MENU)), ["/imagens"]);
+  assert.deepEqual(rotas(interpretar("abra o editor de vídeo", MENU)), ["/videos"]);
   assert.deepEqual(rotas(interpretar("vai para as tags de busca", MENU)), ["/taxonomia"]);
 });
 
