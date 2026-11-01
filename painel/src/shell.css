@@ -1040,3 +1040,18 @@ html[data-orbe="cristal"] .orbe-faiscas b { z-index: 3; width: 2px; height: 2px;
 html[data-orbe="cristal"] .orbe-faiscas b:nth-child(1) { left: 36%; top: 40%; }
 html[data-orbe="cristal"] .orbe-faiscas b:nth-child(2) { left: 58%; right: auto; top: 52%; animation-delay: -.8s; }
 html[data-orbe="cristal"] .orbe-faiscas b:nth-child(3) { left: 46%; bottom: auto; top: 30%; animation-delay: -1.6s; }
+
+/* Identidade 3D do Nano.IA (#187/#188): olho inteligente com íris e pupila, duas órbitas com satélite, reflexo e iluminação Aurora.
+   Vale para o modelo "olho" (padrão); os demais modelos (html[data-orbe]) continuam sobrescrevendo. Só transform/opacity animam. */
+.orbe-aura { background: conic-gradient(from 0deg, color-mix(in srgb, var(--orbe-cor) 55%, transparent), color-mix(in srgb, var(--roxo) 38%, transparent), color-mix(in srgb, var(--ciano) 45%, transparent), color-mix(in srgb, var(--orbe-cor) 55%, transparent));
+  -webkit-mask: radial-gradient(closest-side, #000 52%, transparent 78%); mask: radial-gradient(closest-side, #000 52%, transparent 78%); inset: -40%; opacity: .7; animation: orbe-aurora calc(var(--orbe-gira) * 2.2) linear infinite; }
+@keyframes orbe-aurora { to { transform: rotate(360deg); } }
+.orbe-nucleo { background: radial-gradient(circle at 36% 30%, #ffffffb0 0 6%, transparent 20%), radial-gradient(circle at 38% 30%, color-mix(in srgb, var(--orbe-cor) 35%, #fff) 0, var(--orbe-cor) 34%, color-mix(in srgb, var(--orbe-cor) 55%, #000) 70%, color-mix(in srgb, var(--orbe-cor) 25%, #000) 100%);
+  border: 1px solid color-mix(in srgb, var(--orbe-cor) 45%, #fff);
+  box-shadow: inset calc(var(--d) * -.1) calc(var(--d) * -.12) calc(var(--d) * .2) #031520aa, inset 2px 2px 6px #ffffff4a, 0 0 calc(var(--d) * .4) color-mix(in srgb, var(--orbe-cor) 60%, transparent); }
+.orbe-pupila { width: 34%; height: 34%; background: radial-gradient(circle at 34% 28%, #fff 0 8%, #a4e7f9 18%, #06253b 62%, #020e16 100%); box-shadow: 0 0 0 1px #ffffff26, 0 0 calc(var(--d) * .16) color-mix(in srgb, var(--orbe-cor) 60%, transparent); }
+.orbe-anel { inset: 10% -9%; z-index: 3; border-width: max(1.2px, calc(var(--d) * .03)); }
+.orbe-anel i { position: absolute; top: 24%; right: -6%; width: 13%; height: 53%; border-radius: 50%; background: #fff; box-shadow: 0 0 calc(var(--d) * .2) var(--orbe-cor); }
+.orbe-reflexo { position: absolute; z-index: 4; left: 29%; top: 26%; width: 22%; height: 16%; border-radius: 50%; transform: rotate(-25deg); background: #ffffffb3; pointer-events: none; }
+html[data-orbe]:not([data-orbe="olho"]) .orbe-reflexo, html[data-orbe]:not([data-orbe="olho"]) .orbe-anel i { display: none; }
+@media (prefers-reduced-motion: reduce) { .orbe-aura { animation: none !important; } }

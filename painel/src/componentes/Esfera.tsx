@@ -18,9 +18,10 @@ export function Orbe({ estado = "ocioso", tamanho = 40, decorativo = false, rotu
     <span className="orbe" data-estado={e} data-ativo={ativo ? "true" : "false"} style={{ ["--d" as string]: `${tamanho}px` }}
       role={decorativo ? undefined : "img"} aria-label={decorativo ? undefined : (rotulo ?? `Nano.IA: ${texto}`)} aria-hidden={decorativo ? true : undefined}>
       <span className="orbe-aura" aria-hidden="true" />
-      <span className="orbe-anel" aria-hidden="true" />
-      <span className="orbe-anel orbe-anel-2" aria-hidden="true" />
+      <span className="orbe-anel" aria-hidden="true"><i /></span>
+      <span className="orbe-anel orbe-anel-2" aria-hidden="true"><i /></span>
       <span className="orbe-nucleo" aria-hidden="true"><span className="orbe-pupila" /></span>
+      <span className="orbe-reflexo" aria-hidden="true" />
       <span className="orbe-faiscas" aria-hidden="true"><b /><b /><b /></span>
     </span>
   );
