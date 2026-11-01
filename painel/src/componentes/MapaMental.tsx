@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { layoutArvore, mapaParaTexto, type MapaNo, type Tom } from "../lib/mapaPagina.ts";
 import { perguntarAoNano } from "../lib/contextoPagina.ts";
+import { iconeNoMapa } from "../lib/iconeNoMapa.ts";
+import "./MapaMentalIcones.css";
 
 const COR: Record<Tom, string> = { ok: "var(--ok)", atencao: "var(--atencao)", erro: "var(--erro)", neutro: "var(--ciano)" };
 const LARG_NO = 176, ALT_NO = 26;
@@ -28,7 +30,9 @@ export function MapaMental({ raiz, titulo }: { raiz: MapaNo; titulo: string }) {
           })}
           {l.nos.map((n) => {
             const cor = COR[n.tom];
-            const rotulo = n.rotulo.length > 19 ? `${n.rotulo.slice(0, 18)}…` : n.rotulo;
+            const icone = iconeNoMapa(n.id, n.rotulo);
+            const maxRotulo = icone ? 14 : 19;
+            const rotulo = n.rotulo.length > maxRotulo ? `${n.rotulo.slice(0, maxRotulo - 1)}…` : n.rotulo;
             const valor = n.valor !== undefined ? String(n.valor) : "";
             return (
               <g key={n.id} transform={`translate(${n.x},${n.y})`} className={`mapa-no mapa-no--${n.tom}`} role="treeitem" aria-expanded={n.temFilhos ? !n.recolhido : undefined}
@@ -36,7 +40,8 @@ export function MapaMental({ raiz, titulo }: { raiz: MapaNo; titulo: string }) {
                 <title>{n.dica ?? `${n.rotulo}${valor ? `: ${valor}` : ""}`}</title>
                 <rect width={LARG_NO} height={ALT_NO} rx={8} style={{ stroke: cor }} />
                 <rect width={5} height={ALT_NO} rx={2} style={{ fill: cor }} />
-                <text x={14} y={ALT_NO / 2 + 4} className="mapa-rotulo">{rotulo}</text>
+                {icone && <svg className="mapa-peca" x={8} y={3} width={21} height={21} viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href={`#i-${icone}`} /></svg>}
+                <text x={icone ? 36 : 14} y={ALT_NO / 2 + 4} className="mapa-rotulo">{rotulo}</text>
                 {valor && <text x={LARG_NO - 10} y={ALT_NO / 2 + 4} textAnchor="end" className="mapa-valor" style={{ fill: cor }}>{valor}</text>}
                 {n.temFilhos && <text x={LARG_NO + 6} y={ALT_NO / 2 + 4} className="mapa-seta" aria-hidden="true">{n.recolhido ? "›" : "‹"}</text>}
               </g>
