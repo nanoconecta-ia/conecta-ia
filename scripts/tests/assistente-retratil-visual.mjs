@@ -34,7 +34,7 @@ try{
   });
   await page.goto(`http://127.0.0.1:${porta}/.retratil-demo.html`);
   await page.getByRole('button',{name:/Nova conversa|Enviar/}).first().waitFor();
-  await page.getByLabel(/Enviar esta pergunta/).check();
+  await page.getByRole('button',{name:'Autorizar e continuar'}).click();
   const campo=page.getByLabel('Pergunte',{exact:true}),enviar=page.getByRole('button',{name:'Enviar',exact:true});
   // 1) estado em ação: durante a requisição a faixa e o estado do Nano mostram o que está acontecendo; depois voltam ao repouso
   await campo.fill('Consulte o kit 833333');await enviar.click();
@@ -70,8 +70,8 @@ try{
   assert.ok(await som.count(),'botão de leitura em voz alta no compositor');
   {const antes=await som.getAttribute('aria-pressed');await som.click();assert.notEqual(await som.getAttribute('aria-pressed'),antes);
    if(await som.getAttribute('aria-pressed')==='true'){await page.locator('.voz-escolha').waitFor();assert.ok((await page.locator('.voz-escolha').innerText()).includes('Voz'));}}
-  // 4) bloco retrátil (atalhos): recolhe e reabre, com o estado lembrado
-  const atalhos=page.getByRole('button',{name:/Atalhos/});const exp=await atalhos.getAttribute('aria-expanded');await atalhos.click();assert.notEqual(await atalhos.getAttribute('aria-expanded'),exp);
+  // 4) as gavetas de atalhos e de privacidade foram eliminadas (pedido do dono): a autorização é uma linha só
+  assert.equal(await page.getByRole('button',{name:/^Atalhos/}).count(),0,'sem gaveta de Atalhos');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false,`sem transbordamento horizontal a ${largura}px`);
   assert.deepEqual(erros,[]);
   await mkdir(root+'evidencias-chat',{recursive:true});await page.screenshot({path:root+`evidencias-chat/assistente-retratil-${largura}.png`});

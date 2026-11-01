@@ -39,7 +39,7 @@ try{
   page.on('dialog',d=>void d.accept());
   await page.goto(`http://127.0.0.1:${porta}/.conversa-demo.html`);
   await page.getByRole('button',{name:/Nova conversa|Enviar/}).first().waitFor();
-  await page.getByLabel(/Enviar esta pergunta/).check();
+  await page.getByRole('button',{name:'Autorizar e continuar'}).click();
   const campo=page.getByLabel('Pergunte',{exact:true}),enviar=page.getByRole('button',{name:'Enviar',exact:true});
   assert.equal(await page.getByRole('button',{name:'Ir ao começo da conversa'}).count(),0,'sem ferramentas de rolagem com a conversa curta');
   for(let k=1;k<=4;k++){await campo.fill(`Pergunta número ${k}`);await enviar.click();await page.getByText('Linha 14 da resposta').nth(k-1).waitFor()}

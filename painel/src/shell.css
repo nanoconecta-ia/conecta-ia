@@ -902,7 +902,7 @@ html .abas .compositor-acoes .compositor-enviar { flex: none; min-width: 44px; w
    2) o menu lateral rolava sem barra visível: Bling, Backup e Contador (ERP e fiscal) ficavam escondidos abaixo da barra de status;
    3) títulos de grupo, cabeçalhos de tabela e textos auxiliares eram pequenos demais. Só CSS: nenhum componente nem dado muda. */
 @media (min-width: 960px) {
-  body .layout main { max-width: min(100%, 1760px); }
+  body .layout main { max-width: none; padding-inline: 16px; } /* torre = celular: livre de ponta a ponta, só a calha de 16px */
   .layout .menu { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--verde) 55%, #fff) transparent; padding-bottom: 40px; }
   .layout .menu::-webkit-scrollbar { width: 9px; }
   .layout .menu::-webkit-scrollbar-track { background: transparent; }
@@ -1109,11 +1109,11 @@ body .layout.layout--chat { min-height: 0; height: calc(100dvh - var(--cab-altur
 body .layout.layout--chat .menu { height: 100%; top: 0; }
 body .layout.layout--chat main { max-width: none; width: 100%; padding: 0; } /* body na frente: a regra 'body .layout main' (teto de 1760px) tem peso maior */
 .layout--chat .abas-caixa, .layout--chat .conector { height: calc(100dvh - var(--cab-altura, 56px) - var(--barra-altura, 32px)); min-height: 0; }
-.layout--chat .abas { padding: 6px; gap: 6px; grid-template-rows: minmax(0, 1fr); }
+.layout--chat .abas { padding: 12px 16px; gap: 10px; grid-template-rows: minmax(0, 1fr); }
 .layout--chat .conector { gap: 8px; }
 .layout--chat .abas-centro > .chat { min-height: 0; }
 .chat-ferramentas { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-@media (max-width: 959px) { .layout--chat .abas { padding: 4px; } }
+@media (max-width: 959px) { .layout--chat .abas { padding: 8px 12px; } }
 
 
 /* A esfera do Nano.IA lê as MESMAS variáveis do perfil de cor do painel (perfis-cor.css): escolher um perfil muda o layout e a esfera juntos.
@@ -1142,3 +1142,14 @@ html[data-orbe="cristal"] .orbe-faiscas b { box-shadow: 0 0 5px 1px color-mix(in
 .topo .seletor-painel .seletor-cor button.sec:hover:not(:disabled) { background: var(--realce); color: var(--texto); }
 .topo .seletor-painel .seletor-cor button.sec[aria-checked="true"] { border-color: var(--marca-forte); }
 .seletor-tema-grupo { display: grid; gap: 2px; }
+
+/* Chat folgado: sem gavetas de atalhos/privacidade; autorização numa linha só; botões de erro numa fileira com respiro. */
+.abas .chat-compositor { gap: 10px; padding-top: 12px; }
+.consent-linha { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--atencao); border-left-width: 4px; border-radius: 10px; background: color-mix(in srgb, var(--atencao) 8%, var(--cartao)); font-size: .92rem; line-height: 1.4; }
+.consent-linha span { flex: 1 1 260px; min-width: 0; }
+.consent-linha button { min-height: 44px; }
+.consent-ok { margin: 0; font-size: .85rem; color: var(--suave); }
+.consent-ok button.link { background: none; border: 0; padding: 0; min-height: 0; color: var(--marca-forte); text-decoration: underline; font: inherit; cursor: pointer; }
+.retentativa-linha { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 4px; }
+.retentativa-linha button { min-height: 44px; }
+.abas .chat { padding: 4px 2px 8px; }

@@ -6,6 +6,7 @@ import { normalizarEstado, type EstadoEsfera } from "../componentes/Esfera.tsx";
 import type { EstadoAgente } from "../lib/estadoAgente.ts";
 import { publicarNano } from "../lib/nanoEstado.ts";
 import { Icone } from "../componentes/Icone.tsx";
+import { gravarConsentimento, lerConsentimento } from "../lib/consentimentoEnvio.ts";
 import { consumirPedidoPendente } from "../lib/contextoPagina.ts";
 import { PontosPensando } from "../componentes/PontosPensando.tsx";
 import { MODELOS_ORBE, aplicarOrbe, gravarOrbe, lerOrbe, type ModeloOrbe } from "../lib/orbe.ts";
@@ -29,7 +30,6 @@ type Evidencia = { origem: string; simulado: boolean; consultado_em: string; sin
 type Msg = { de: "eu" | "ia"; texto: string; anexos?: string[]; evidencias?: Evidencia[]; simulado?: boolean; propostas?: PropostaTurno[]; parcial?: boolean };
 type Conversa = { id: string; titulo: string; atualizada_em: string };
 type Registro = { id: string; papel: string; conteudo: string; criada_em: string; metadados?: { evidencias?: Evidencia[]; simulado?: boolean; propostas?: unknown } };
-const SUGESTOES = ["Resumo da loja", "O que está pendente?", "Produtos incompletos", "Bling conectado?"];
 
 const espera = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -111,6 +111,10 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const entradaCamera = useRef<HTMLInputElement>(null);
   const entradaFotos = useRef<HTMLInputElement>(null);
   const selecao = provedores.find((p) => p.id === provedor);
+  const armazemSessao = typeof sessionStorage === "undefined" ? null : sessionStorage;
+  useEffect(() => { setAceitaEnvio(provedor ? lerConsentimento(armazemSessao, loja.id, provedor) : false); }, [provedor, loja.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const autorizarEnvio = () => { if (!provedor) return; gravarConsentimento(armazemSessao, loja.id, provedor, true); setAceitaEnvio(true); };
+  const revogarEnvio = () => { if (provedor) gravarConsentimento(armazemSessao, loja.id, provedor, false); setAceitaEnvio(false); };
   const podeEnviar = !carregandoChat && !carregando && !erroConfig && (!provedor || (selecao?.estado === "disponivel" && aceitaEnvio));
   useEffect(() => {
     let ativo = true;
@@ -356,7 +360,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       {erroConfig && <p role="alert" className="msg-erro">{erroConfig}</p>}
       {erroHistorico && <p role="status">{erroHistorico}</p>}
       {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
-      {retentativa && <div><p>Não deu certo agora. Toque em Tentar de novo para repetir a mesma pergunta sem duplicar, ou comece uma conversa nova.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Tentar de novo</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button>{conversaId && !administrando && <button className="sec" disabled={ocupado} onClick={() => void excluir()}>Apagar esta conversa</button>}</div>}
+      {retentativa && <div className="retentativa-linha"><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Tentar de novo</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button>{conversaId && !administrando && <button className="sec" disabled={ocupado} onClick={() => void excluir()}>Apagar esta conversa</button>}</div>}
       {msgs.length > 3 && <div className="chat-ferramentas"><button type="button" className="sec icone-btn" aria-label="Ir ao começo da conversa" title="Ir ao começo da conversa" onClick={() => chatRef.current?.scrollTo({ top: 0, behavior: "smooth" })}><Icone nome="topo" tamanho={18} /></button><button type="button" className="sec icone-btn" aria-label="Ir ao fim da conversa" title="Ir ao fim da conversa" onClick={() => chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" })}><Icone nome="fundo" tamanho={18} /></button>{msgs.length > 10 && <><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button></>}<small className="suave">{msgs.length} mensagens</small></div>}
       <div className="chat" ref={chatRef} style={{ flex: "1 1 auto", minHeight: 0, minWidth: 0, overflowY: "auto", overflowX: "hidden" }} aria-live="polite">{msgs.map((m, i) => (
         <div key={i}>
@@ -365,17 +369,15 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         </div>
       ))}<div ref={fim} /></div>
       <div className="barra-extras">
-      <Retratil id="atalhos" titulo="Atalhos" resumo="perguntas rápidas" aberto={false} recolherQuando={true}><p className="linha">{SUGESTOES.map((s) => <button key={s} className="sec" disabled={ocupado || !podeEnviar || administrando || !!retentativa} onClick={() => void enviar(s)}>{s}</button>)}</p></Retratil>
-      {selecao && <Retratil id="consentimento" titulo="Privacidade" resumo={aceitaEnvio ? "autorizado" : "autorize para enviar"} status={aceitaEnvio ? "go" : "warn"} recolherQuando={aceitaEnvio}><label className="consentimento" style={{ display: "flex", gap: 8, alignItems: "start" }}><input type="checkbox" style={{ width: "auto" }} checked={aceitaEnvio} disabled={ocupado} onChange={(e) => setAceitaEnvio(e.target.checked)} />Enviar esta pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.{anexos.length > 0 && " Os anexos desta pergunta também são enviados."}</label></Retratil>}
+      {selecao && (aceitaEnvio
+        ? <p className="consent-ok" role="status">✓ Envio autorizado a {selecao.nome} nesta sessão · <button type="button" className="link" disabled={ocupado} onClick={() => revogarEnvio()}>desfazer</button></p>
+        : <div className="consent-linha aviso-envio" role="status">
+            <span>Enviar esta pergunta e até 20 mensagens recentes a {selecao.nome}? Pode gerar cobrança na sua chave.{anexos.length > 0 && " Os anexos também são enviados."}</span>
+            <button type="button" disabled={ocupado} onClick={() => autorizarEnvio()}>Autorizar e continuar</button>
+          </div>)}
       </div>
       <div className="chat-compositor" style={{ flex: "0 0 auto", minWidth: 0, maxHeight: "min(42dvh, 280px)", overflowY: "auto", overflowX: "hidden", boxSizing: "border-box" }}>
       {selecao?.motivo && <p role="status">{selecao.motivo}</p>}
-      {selecao?.estado === "disponivel" && !aceitaEnvio && (
-        <div className="aviso-envio" role="status">
-          <p><strong>O Nano.ia ainda não pode responder.</strong> Falta a sua autorização para enviar a pergunta e até 20 mensagens recentes desta conversa a {selecao.nome}. O uso pode gerar cobrança na sua chave.</p>
-          <button type="button" disabled={ocupado} onClick={() => setAceitaEnvio(true)}>Autorizar e continuar</button>
-        </div>
-      )}
       <form onSubmit={onSubmit} style={{ maxWidth: "none" }}>
         {anexos.length > 0 && <ul className="anexos-lista" style={{ width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box", marginInline: 0, paddingInline: 0, overflowX: "hidden" }} aria-label="Anexos desta pergunta">{anexos.map((a, i) => <li key={`${a.nome}-${i}`}><span className="anexo-nome" title={a.nome}>{a.tipo.startsWith("image/") ? "🖼" : "📄"} {a.nome}</span><span className="suave">{rotuloBytes(a.bytes)}</span><button type="button" className="sec mini" aria-label={`Remover ${a.nome}`} onClick={() => setAnexos((l) => l.filter((_, k) => k !== i))}>✕</button></li>)}</ul>}
         {erroAnexo && <p role="alert" className="msg-erro">{erroAnexo}</p>}
