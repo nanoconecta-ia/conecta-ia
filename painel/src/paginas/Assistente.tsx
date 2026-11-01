@@ -10,6 +10,8 @@ import { PontosPensando } from "../componentes/PontosPensando.tsx";
 import { MODELOS_ORBE, aplicarOrbe, gravarOrbe, lerOrbe, type ModeloOrbe } from "../lib/orbe.ts";
 import { armazemLocal } from "../lib/tema.ts";
 import { apagarVarias, mensagemApagar } from "../lib/apagar-historico.ts";
+import { SeletorCor } from "../componentes/SeletorCor.tsx";
+import { lerSessao, registrarNaSessao, removerDaSessao } from "../lib/conversasDaSessao.ts";
 import { MensagemRetratil } from "../componentes/MensagemRetratil.tsx";
 import { Retratil } from "../componentes/Retratil.tsx";
 import { mensagemRecolhida } from "../lib/retratil.ts";
@@ -40,6 +42,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [config, setConfig] = useState<{ persistente: boolean; bling: boolean; leitura_administrativa: boolean; retencao_dias: number; streaming?: boolean }>({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 });
   const [conversas, setConversas] = useState<Conversa[]>([]);
   const [conversaId, setConversaId] = useState<string | null>(null);
+  const [idsSessao, setIdsSessao] = useState<string[]>(() => lerSessao(typeof sessionStorage === "undefined" ? null : sessionStorage, loja.id));
+  const chatRef = useRef<HTMLDivElement>(null);
   const [erroHistorico, setErroHistorico] = useState("");
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [maisConversas, setMaisConversas] = useState(false);
@@ -197,6 +201,18 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       await listarConversas(false); setErroHistorico(mensagemApagar(r));
     } catch (e) { setErroHistorico(msgErro(e)); } finally { setOcupado(false); }
   }
+  async function apagarSessao() {
+    const ids = idsSessao.filter((id) => conversas.some((c) => c.id === id) || id === conversaId);
+    if (ids.length === 0) { setIdsSessao(removerDaSessao(typeof sessionStorage === "undefined" ? null : sessionStorage, loja.id, idsSessao)); return; }
+    if (!window.confirm(`Excluir definitivamente as ${ids.length} conversa(s) criadas nesta sessão? As conversas antigas não são afetadas. A auditoria será preservada.`)) return;
+    setOcupado(true); setErroHistorico("");
+    try {
+      const r = await apagarVarias(ids, async (id) => { const d = await chamada("chat_excluir", { conversa_id: id }); if (!d.excluida) throw new Error("Exclusão não permitida."); });
+      setIdsSessao(removerDaSessao(typeof sessionStorage === "undefined" ? null : sessionStorage, loja.id, r.apagadas));
+      if (r.apagadas.includes(conversaId ?? "")) nova();
+      await listarConversas(false); setErroHistorico(mensagemApagar(r));
+    } catch (e) { setErroHistorico(msgErro(e)); } finally { setOcupado(false); }
+  }
   async function reter() {
     setOcupado(true); setErroHistorico("");
     try { await chamada("chat_retencao", { dias }); setConfig(v => ({ ...v, retencao_dias: dias })); setErroHistorico("Retenção alterada e auditada."); }
@@ -226,7 +242,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       const resposta = String(data.resposta ?? "");
       setMsgs(m => [...m.filter((x) => !x.parcial), { de: "ia", texto: resposta, evidencias: data.evidencias, simulado: data.simulado, propostas: propostasDoTurno(data.propostas) }]);
       setRetentativa(null);
-      if (persistente) { setConversaId(data.conversa_id); await listarConversas(false); }
+      if (persistente) { setConversaId(data.conversa_id); if (!conv && data.conversa_id) setIdsSessao(registrarNaSessao(typeof sessionStorage === "undefined" ? null : sessionStorage, loja.id, String(data.conversa_id))); await listarConversas(false); }
       if (lerAltoRef.current) voz.falar(resposta);
     } catch (e) { if (lojaAtual.current === lojaDoEnvio) { setMsgs(m => m.filter((x) => !x.parcial)); setErroHistorico(msgErro(e)); } }
     finally { if (lojaAtual.current === lojaDoEnvio) setOcupado(false); }
@@ -284,7 +300,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
 
   return (
     <div className="abas-caixa" ref={caixa}>
-    <div className="cartao chat-tela abas" style={{ minHeight: 0, minWidth: 0, width: "100%", boxSizing: "border-box", height: "calc(100dvh - 170px)", maxHeight: "calc(100dvh - 170px)", overflow: "hidden" }} data-esq={esq ? "aberto" : "fechado"} data-dir={dir ? "aberto" : "fechado"}>
+    <div className="cartao chat-tela abas" style={{ minHeight: 0, minWidth: 0, width: "100%", boxSizing: "border-box", overflow: "hidden" }} data-esq={esq ? "aberto" : "fechado"} data-dir={dir ? "aberto" : "fechado"}>
       {(esq || dir) && <button type="button" className="abas-fundo" aria-label="Fechar painel lateral" onClick={() => { setEsq(false); setDir(false); }} />}
       <aside className="aba aba-esq nano-navegacao" id="aba-conversas" aria-label="Menu do Nano.IA">
         <div className="aba-topo nano-menu-topo">
@@ -317,6 +333,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
               ))}
               {maisConversas && <button type="button" className="sec" disabled={ocupado} onClick={() => void listarConversas(true)}>Carregar mais conversas</button>}
               {conversaId && !administrando && <button type="button" className="sec mini" disabled={ocupado} onClick={() => void excluir()}>Excluir conversa atual</button>}
+              {idsSessao.length > 0 && !administrando && <button type="button" className="sec mini" disabled={ocupado} onClick={() => void apagarSessao()}>Apagar as conversas desta sessão</button>}
               {conversas.length > 0 && !administrando && <button type="button" className="sec mini" disabled={ocupado} onClick={() => void apagarTudo()}>Apagar todo o histórico</button>}
             </div>
           )}
@@ -338,8 +355,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       {erroHistorico && <p role="status">{erroHistorico}</p>}
       {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
       {retentativa && <div><p>Não deu certo agora. Toque em Tentar de novo para repetir a mesma pergunta sem duplicar, ou comece uma conversa nova.</p><button className="sec" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Tentar de novo</button><button className="sec" disabled={ocupado} onClick={nova}>Começar nova conversa</button>{conversaId && !administrando && <button className="sec" disabled={ocupado} onClick={() => void excluir()}>Apagar esta conversa</button>}</div>}
-      {msgs.length > 10 && <div className="chat-ferramentas"><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button><small className="suave">{msgs.length} mensagens</small></div>}
-      <div className="chat" style={{ flex: "1 1 auto", minHeight: 0, minWidth: 0, overflowY: "auto", overflowX: "hidden" }} aria-live="polite">{msgs.map((m, i) => (
+      {msgs.length > 3 && <div className="chat-ferramentas"><button type="button" className="sec icone-btn" aria-label="Ir ao começo da conversa" title="Ir ao começo da conversa" onClick={() => chatRef.current?.scrollTo({ top: 0, behavior: "smooth" })}><Icone nome="topo" tamanho={18} /></button><button type="button" className="sec icone-btn" aria-label="Ir ao fim da conversa" title="Ir ao fim da conversa" onClick={() => chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" })}><Icone nome="fundo" tamanho={18} /></button>{msgs.length > 10 && <><button type="button" className="sec mini" onClick={() => { setModoMsgs("recolher"); setAbertas(new Set()); }}>Recolher tudo</button><button type="button" className="sec mini" onClick={() => setModoMsgs("expandir")}>Expandir tudo</button></>}<small className="suave">{msgs.length} mensagens</small></div>}
+      <div className="chat" ref={chatRef} style={{ flex: "1 1 auto", minHeight: 0, minWidth: 0, overflowY: "auto", overflowX: "hidden" }} aria-live="polite">{msgs.map((m, i) => (
         <div key={i}>
           <MensagemRetratil m={m.parcial && !m.texto ? { ...m, texto: "Escrevendo…" } : m} recolhida={!m.parcial && mensagemRecolhida(i, msgs.length, abertas, modoMsgs, fechadas)} onAlternar={() => alternarMsg(i)} />
           {m.propostas?.map((p) => <PropostaCompacta key={p.id} p={p} fonte={fonte} lojaId={loja.id} />)}
@@ -402,6 +419,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
             {MODELOS_ORBE.map((m) => <button key={m.valor} type="button" role="radio" aria-checked={modeloOrbe === m.valor} className="sec mini" title={m.descricao} onClick={() => { setModeloOrbe(m.valor); gravarOrbe(armazemLocal(), m.valor); }}>{m.rotulo}</button>)}
           </div>
         </fieldset>
+        <fieldset className="grupo-orbe"><legend>Cor do painel e do Nano.IA</legend><SeletorCor /></fieldset>
         <p className="suave">Os estados refletem a configuração e o limite de uso; a API será consultada somente ao enviar.</p>
         <p className="suave">{provedor ? "Se o provedor falhar, escolha outro; não há troca automática." : "Só consultas por palavras-chave, sem enviar a um provedor de IA."} {config.persistente && provedor ? ` Histórico privado no servidor, com retenção de ${config.retencao_dias} dias por mensagem.` : " Histórico temporário nesta tela."}</p>
         {(voz.suporteMic || voz.suporteFala) && <p className="aviso-voz">A voz usa o reconhecimento do próprio navegador; no Chrome o áudio é processado pelo Google. O Conecta.IA não guarda o áudio; o texto segue a política de histórico indicada acima.</p>}

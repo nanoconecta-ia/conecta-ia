@@ -28,6 +28,8 @@ const CAMINHOS: Record<string, string> = {
   copiar: "M8 8h12v12H8zM16 8V4H4v12h4",
   check: "M5 12.5l4.5 4.5L19 7.5",
   "recolher-msg": "M6 15l6-6 6 6",
+  topo: "M6 5h12M12 19V9M7 14l5-5 5 5",
+  fundo: "M6 19h12M12 5v10M7 10l5 5 5-5",
   mais: "M12 5v14M5 12h14",
   mic: "M12 3a3 3 0 013 3v6a3 3 0 01-6 0V6a3 3 0 013-3zM6 11a6 6 0 0012 0M12 17v4M9 21h6",
   voz: "M4 10v4h4l5 4V6l-5 4zM16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11",
