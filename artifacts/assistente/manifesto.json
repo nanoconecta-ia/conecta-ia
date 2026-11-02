@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "625b1045b392754596c2857e7252b3aadf5ef4fe96cf673096c49854052ad10d",
+  "artefato_sha256": "9f95bdef3cc13da0900510c69579394113e431e96f4b2b03258e1b3ab4d06378",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -74,7 +74,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/registro.ts",
-      "sha256": "c227fa10a7cd8b7d71bf71dae4d36278d6452f172d21a5efa17e70e26c7f3c41"
+      "sha256": "6558dffbf06736f8bed916095b7ded10165cd74666ceb08a79a0cd420c00b0e9"
     },
     {
       "path": "supabase/functions/_shared/conector/bling_campos.ts",
@@ -94,7 +94,7 @@
     },
     {
       "path": "supabase/functions/_shared/busca_segura/evidencia.ts",
-      "sha256": "8cb35be7f90807530bc12939f32c7e673b2a67a295370d5e04ff8a9f49378724"
+      "sha256": "ec71dbb196613eeae42a36b4f0ea10bba692650ad6cd7219500f69336d53f1d7"
     },
     {
       "path": "supabase/functions/_shared/imagens/regras.ts",
@@ -105,12 +105,24 @@
       "sha256": "799fd2387d3912117b60299223f84d6f84836b3cdf29173c28b1f4aea1484984"
     },
     {
+      "path": "supabase/functions/_shared/busca_segura/fabricantes.ts",
+      "sha256": "722fc30403a9a9d7b33092c84e178cb6ddd8cb6bd56e4d2a0ffcbb4e6676eedd"
+    },
+    {
+      "path": "supabase/functions/_shared/busca_segura/plano_pesquisa.ts",
+      "sha256": "05a4df240a937b9dafd0d103a8f3c4b1c7212e7a9a90f18e4aa7a4ec5015c174"
+    },
+    {
+      "path": "supabase/functions/_shared/busca_segura/investigacao.ts",
+      "sha256": "e026aaefc78358cb27b2183a2bef94c7ed32f52ba13f1064ce7b653211195b35"
+    },
+    {
       "path": "supabase/functions/_shared/conector/categoria_bling.ts",
       "sha256": "412f8d475e4e387aa4a7a39170f0e51cdf57dcbfe3af86cade82dee555f8d366"
     },
     {
       "path": "supabase/functions/_shared/conector/handlers.ts",
-      "sha256": "3b115547fa7348fa20db012d4b86e2b4d2dae839c5593e0942a76871263d9a88"
+      "sha256": "f0a19df4c835db5e62fdd9de4d55e46a694f2e28a4a213b0b353e69d0cbf11f6"
     },
     {
       "path": "supabase/functions/_shared/conector/tipos.ts",

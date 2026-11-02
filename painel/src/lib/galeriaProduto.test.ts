@@ -4,7 +4,7 @@ import { galeriaDaFicha, hostDaOrigem, LIMITE_GALERIA, pedidoDeImagens, resumirI
 
 const base = (n: number, p: Partial<LinhaImagem> = {}): LinhaImagem => ({
   id: `i${n}`, url: `https://cdn.exemplo.com/${n}.jpg`, tipo: "real", origem: "busca_web", url_original: `https://www.fabricante.exemplo.com.br/pagina/${n}`, licenca_tipo: "fabricante",
-  cruzamento_tipo: "oem", cruzamento_valor: "20910-4AU07", confianca: 0.9, largura_px: 1200, altura_px: 900, aprovada: false, principal: false,
+  cruzamento_tipo: "oem", cruzamento_valor: "20910-4AU07", largura_px: 1200, altura_px: 900, aprovada: false, principal: false,
   direitos_confirmados_em: "2026-11-01", removida_em: null, ordem: n, ...p });
 
 test("a galeria mostra no máximo 8 imagens ativas, em ordem, e informa as vagas", () => {
@@ -36,12 +36,12 @@ test("imagem servida igual à de terceiros, retirada ou não-https nunca é publ
   assert.equal(resumirImagem(base(1, { aprovada: true, removida_em: "2026-11-02" })).publicavel, false);
   assert.equal(resumirImagem(base(1, { aprovada: true, url: "http://x.com/a.jpg" })).publicavel, false);
 });
-test("rótulo e avisos para imagem não real e resolução baixa/desconhecida; resolução e confiança formatadas", () => {
+test("rótulo e avisos para imagem não real e resolução baixa/desconhecida; resolução formatada e SEM porcentagem de confiança", () => {
   const r = resumirImagem(base(1, { tipo: "ilustrativa", largura_px: 200, altura_px: 150 }));
   assert.equal(r.rotulo, "Imagem ilustrativa"); assert.ok(r.avisos.some((a) => /resolução baixa/.test(a)) && r.avisos.some((a) => /ilustrativa/.test(a)));
   assert.equal(resumirImagem(base(1, { tipo: "gerada_ia" })).rotulo, "Imagem gerada por IA, apenas ilustração");
   assert.equal(resumirImagem(base(1, { largura_px: null, altura_px: null })).resolucao, "desconhecida");
-  assert.equal(resumirImagem(base(1)).resolucao, "1200×900"); assert.equal(resumirImagem(base(1)).confianca, "90%");
+  assert.equal(resumirImagem(base(1)).resolucao, "1200×900"); assert.ok(!("confianca" in resumirImagem(base(1))), "porcentagem arbitrária não é mostrada");
   assert.equal(resumirImagem(base(1, { tipo: "real" })).rotulo, null);
 });
 test("a origem mostra só o host (a URL de terceiros não vira link)", () => {

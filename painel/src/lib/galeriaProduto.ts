@@ -5,7 +5,7 @@ export const LIMITE_GALERIA = 8;
 export type Licenca = "propria" | "fornecedor" | "fabricante" | "publica_web" | "licenciada";
 export interface LinhaImagem {
   id: string; url: string; tipo: "real" | "gerada_ia" | "ilustrativa"; origem: string | null; url_original: string | null; licenca_tipo: Licenca | null;
-  cruzamento_tipo: string | null; cruzamento_valor: string | null; confianca: number | null; largura_px: number | null; altura_px: number | null;
+  cruzamento_tipo: string | null; cruzamento_valor: string | null; largura_px: number | null; altura_px: number | null;
   aprovada: boolean; principal: boolean; direitos_confirmados_em: string | null; removida_em: string | null; ordem: number | null;
 }
 export type EstadoImagem = "aprovada" | "pendente";
@@ -13,7 +13,7 @@ export interface ResumoImagem {
   id: string; url: string; estado: EstadoImagem;
   identidade: "confere" | "nao_prova" | "sem_cruzamento";
   direitos: boolean; publicavel: boolean; principal: boolean;
-  origem: string; resolucao: string; confianca: string; licenca: string; rotulo: string | null;
+  origem: string; resolucao: string; licenca: string; rotulo: string | null;
   avisos: string[];
 }
 
@@ -43,7 +43,7 @@ export function resumirImagem(l: LinhaImagem): ResumoImagem {
   return {
     id: l.id, url: l.url, estado: l.aprovada ? "aprovada" : "pendente", identidade, direitos, publicavel, principal: l.principal,
     origem: hostDaOrigem(l), resolucao: l.largura_px && l.altura_px ? `${l.largura_px}×${l.altura_px}` : "desconhecida",
-    confianca: l.confianca == null ? "—" : `${Math.round(l.confianca * 100)}%`, licenca: l.licenca_tipo ? LICENCA[l.licenca_tipo] : "desconhecida",
+    licenca: l.licenca_tipo ? LICENCA[l.licenca_tipo] : "desconhecida",
     rotulo: l.tipo === "real" ? null : l.tipo === "gerada_ia" ? "Imagem gerada por IA, apenas ilustração" : "Imagem ilustrativa", avisos,
   };
 }
