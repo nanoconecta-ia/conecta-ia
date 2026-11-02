@@ -8,6 +8,7 @@ import { publicarNano } from "../lib/nanoEstado.ts";
 import { Icone } from "../componentes/Icone.tsx";
 import { gravarConsentimento, lerConsentimento } from "../lib/consentimentoEnvio.ts";
 import { consumirPedidoPendente } from "../lib/contextoPagina.ts";
+import { DICA_SEM_IA, falhaDoProvedor, PREFIXO_FICHA, skuEmFoco } from "../lib/recuperacaoSemIa.ts";
 import { PontosPensando } from "../componentes/PontosPensando.tsx";
 import { MODELOS_ORBE, aplicarOrbe, gravarOrbe, lerOrbe, type ModeloOrbe } from "../lib/orbe.ts";
 import { armazemLocal } from "../lib/tema.ts";
@@ -314,8 +315,19 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       setRetentativa(null);
       if (persistente) { setConversaId(data.conversa_id); if (!conv && data.conversa_id) setIdsSessao(registrarNaSessao(typeof sessionStorage === "undefined" ? null : sessionStorage, loja.id, String(data.conversa_id))); await listarConversas(false); }
       if (lerAltoRef.current) voz.falar(resposta);
-    } catch (e) { if (lojaAtual.current === lojaDoEnvio) { setMsgs(m => m.filter((x) => !x.parcial)); setUltimoMotorFalhou(true); setErroHistorico(msgErro(e)); } }
+    } catch (e) { if (lojaAtual.current === lojaDoEnvio) { setMsgs(m => m.filter((x) => !x.parcial)); setUltimoMotorFalhou(true); setErroHistorico(msgErro(e)); await recuperarSemIa(t, msgErro(e), lojaDoEnvio); } }
     finally { if (lojaAtual.current === lojaDoEnvio) { setOcupado(false); setMotorPendente(null); } }
+  }
+  /** Provedor de IA falhou (cota/sobrecarga): mostra a ficha direta do último SKU citado (ação SEM IA) ou diz o que dá para fazer sem IA. Não troca de LLM nem grava. */
+  async function recuperarSemIa(pergunta: string, erro: string, lojaDoEnvio: string) {
+    if (!falhaDoProvedor(erro)) return;
+    const sku = config.bling ? skuEmFoco(pergunta, msgsRef.current.map((m) => m.texto)) : null;
+    if (!sku) { setMsgs(m => [...m, { de: "ia", texto: DICA_SEM_IA }]); return; }
+    try {
+      const d = await chamada("chat_ficha_produto", { codigo: sku });
+      if (lojaAtual.current !== lojaDoEnvio) return;
+      setMsgs(m => [...m, { de: "ia", texto: d.erro ? DICA_SEM_IA : PREFIXO_FICHA + String(d.resposta ?? ""), evidencias: d.evidencias, simulado: d.simulado }]);
+    } catch { if (lojaAtual.current === lojaDoEnvio) setMsgs(m => [...m, { de: "ia", texto: DICA_SEM_IA }]); }
   }
   /** Turno com streaming: a prévia vai numa mensagem `parcial` que some quando chega o resultado (ou o erro). Erro HTTP vira exceção, como em `chamada`. */
   async function perguntarStreaming(campos: Record<string, unknown>, lojaDoEnvio: string) {
