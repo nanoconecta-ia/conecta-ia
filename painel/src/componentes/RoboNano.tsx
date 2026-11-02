@@ -1,3 +1,4 @@
+import "./RoboNano.css";
 import { useId } from "react";
 import type { EstadoEsfera } from "./Esfera.tsx";
 
