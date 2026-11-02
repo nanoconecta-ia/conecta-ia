@@ -22,7 +22,7 @@ Resumo: 59 ferramentas — 41 ativas, 16 planejadas, 2 desligadas.
 | `conecta.proposta.criar` | ativa | propor | MEDIUM | não | sim | sim | sim | chave | `titulo*:string` `resumo:string` `lote:boolean` `itens*:array` |
 | `conecta.enriquecimento.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `campo*:string` `valor*:string` `fonte*:string` `confianca:number` |
 | `conecta.imagem.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `url*:string` `origem:string` `pagina:string` |
-| `conecta.imagem.buscar_web` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `consulta*:string` |
+| `conecta.imagem.buscar_web` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `consulta*:string` `sku:string` |
 | `conecta.web.pesquisar_tecnico` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `consulta*:string` |
 | `conecta.plugins.listar` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | — |
 | `conecta.plugins.chamar` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `plugin*:string` `capacidade*:string` `entrada:object` |
@@ -63,8 +63,8 @@ Resumo: 59 ferramentas — 41 ativas, 16 planejadas, 2 desligadas.
 - **`conecta.imagem.propor`** — Propõe uma imagem candidata para o produto (pendente de aprovação; direitos ainda não confirmados).
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
-- **`conecta.imagem.buscar_web`** — Busca imagens candidatas na web (não salva nada).
-  - *Verificação:* Resultado é dado a conferir.
+- **`conecta.imagem.buscar_web`** — Busca imagens candidatas na web (não salva nada). Informe o sku para receber a galeria de até 8 candidatas com estado, origem, licença e prova do código; sem aprovação automática.
+  - *Verificação:* Resultado é dado a conferir. Com sku devolve a GALERIA (máx. 8) com estado, origem e prova do código.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`conecta.web.pesquisar_tecnico`** — Pesquisa páginas técnicas públicas por SKU, fabricante, referência e aplicação. Retorna links e resumos CANDIDATOS: não valida OEM, GTIN, peso nem compatibilidade. Nunca inclua custo, fornecedor, dado fiscal ou pessoal na consulta.
   - *Verificação:* Resumos são pistas, não prova; confirmar na página do fabricante antes de propor.
