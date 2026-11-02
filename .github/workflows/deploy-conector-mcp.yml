@@ -1,0 +1,92 @@
+name: Deploy pontual do servidor MCP conector-mcp (Supabase conecta-ia)
+
+# Publica a função `conector-mcp` (servidor MCP do Nano.IA para agentes externos) a partir do main. NUNCA roda sozinho: só por disparo manual, com a escolha de confirmação.
+# Diferente do `assistente`, esta função é PÚBLICA (verify_jwt desligado): a autenticação é a chave MCP por loja (hash no banco, escopos, expiração, revogação).
+# Só consulta e PROPÕE; nunca aprova nem executa. Precisa do segredo SUPABASE_ACCESS_TOKEN (com escrita em Edge Functions) no GitHub.
+on:
+  workflow_dispatch:
+    inputs:
+      confirmar:
+        description: 'Escolha publicar-conector-mcp para publicar. NUNCA cole token ou senha em formulários deste workflow.'
+        required: true
+        type: choice
+        default: nao-publicar
+        options:
+          - nao-publicar
+          - publicar-conector-mcp
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-conector-mcp
+  cancel-in-progress: false
+
+env:
+  # Projeto conecta-ia. O ref do NanoShell IA (ptilvkzuhjnqnfydjcly) NUNCA pode ser usado aqui.
+  PROJECT_REF: dsfzhsrudriqkumtlqwj
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Mesmo ambiente protegido do `assistente`: só o revisor obrigatório (o dono) libera.
+    environment: producao-assistente
+    steps:
+      - name: Travas de segurança
+        env:
+          CONFIRMAR: ${{ inputs.confirmar }}
+          REF_NAME: ${{ github.ref_name }}
+          TOKEN_OK: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+        run: |
+          test "$CONFIRMAR" = "publicar-conector-mcp" || { echo "Escolha de confirmação incorreta"; exit 1; }
+          test "$REF_NAME" = "main" || { echo "Só a partir do main"; exit 1; }
+          test "$PROJECT_REF" = "dsfzhsrudriqkumtlqwj" || exit 1
+          test "$PROJECT_REF" != "ptilvkzuhjnqnfydjcly" || exit 1
+          test "$TOKEN_OK" = "true" || { echo "Segredo SUPABASE_ACCESS_TOKEN ausente"; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Testes das funções (o protocolo MCP e as travas do gateway precisam passar antes de publicar)
+        run: node --experimental-strip-types --test supabase/functions/_shared/*.test.ts supabase/functions/_shared/*/*.test.ts
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+      - name: Registrar a versão ANTES (a função pode ainda não existir)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions list --project-ref "$PROJECT_REF" -o json > antes.json
+          VERSAO_ANTES=$(jq -r '[.[] | select(.slug=="conector-mcp") | .version] | first // 0' antes.json)
+          echo "VERSAO_ANTES=$VERSAO_ANTES" >> "$GITHUB_ENV"
+          echo "antes versao=$VERSAO_ANTES commit=$GITHUB_SHA"
+      - name: "Publicar a função conector-mcp (sem JWT do Supabase; a chave MCP por loja é a autenticação; empacotamento no servidor)"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy conector-mcp --project-ref "$PROJECT_REF" --use-api --no-verify-jwt
+      - name: Registrar a versão DEPOIS (deve estar ACTIVE e com versão maior)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions list --project-ref "$PROJECT_REF" -o json > depois.json
+          jq -e '.[] | select(.slug=="conector-mcp" and .status=="ACTIVE")' depois.json > /dev/null || { echo "Função não está ACTIVE"; exit 1; }
+          VERSAO_DEPOIS=$(jq -r '.[] | select(.slug=="conector-mcp") | .version' depois.json)
+          echo "depois versao=$VERSAO_DEPOIS commit=$GITHUB_SHA"
+          test "$VERSAO_DEPOIS" -gt "$VERSAO_ANTES" || { echo "A versão não avançou"; exit 1; }
+      - name: Prova de que o endpoint recusa quem não tem chave (nenhuma chamada autenticada é feita aqui)
+        run: |
+          url="https://${PROJECT_REF}.supabase.co/functions/v1/conector-mcp"
+          sem=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url" -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
+          ruim=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url" -H 'content-type: application/json' -H 'authorization: Bearer chave-invalida' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
+          get=$(curl -s -o /dev/null -w '%{http_code}' -X GET "$url")
+          nav=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url" -H 'origin: https://exemplo.com' -H 'content-type: application/json' -d '{}')
+          echo "sem chave HTTP $sem | chave inválida HTTP $ruim | GET HTTP $get | com Origin de navegador HTTP $nav"
+          test "$sem" = "401" && test "$ruim" = "401" && test "$get" = "405" && test "$nav" = "403"
+      - name: Como voltar atrás
+        run: |
+          echo "Rollback: função nova, sem dado a desfazer. Para tirar do ar: supabase functions delete conector-mcp --project-ref $PROJECT_REF (o dono autoriza)."
+          echo "Para neutralizar sem apagar: revogar as chaves MCP no painel (Gateway MCP). Sem chave válida o endpoint só devolve 401."
+          echo "Depois do deploy falta o teste autenticado com uma chave MCP de homologação (fora deste workflow)."
