@@ -61,7 +61,7 @@ Enriquecer catálogo e atendimento automotivo usando IA como geradora de hipóte
 
 ## Estado da implementação (Claude Code, 02/11/2026)
 
-Status: **implementação PARCIAL, sem merge e sem deploy.** Migrações novas **não aplicadas**. Nada foi gravado no Bling, no fiscal ou em produção.
+Status: **implementação PARCIAL, sem merge e sem deploy.** As duas migrações foram aplicadas em produção por ordem do dono (ver item 10). Nada foi gravado no Bling nem no fiscal.
 
 ### Mapa de reaproveitamento (nada paralelo foi criado)
 | Requisito | Já existia (reaproveitado) | Acrescentado neste PR |
@@ -96,7 +96,7 @@ Status: **implementação PARCIAL, sem merge e sem deploy.** Migrações novas *
 - **Marketplace** e fonte não classificada = descoberta (pista), nunca prova nem direito de uso.
 
 ### Pendências (não implementado neste commit)
-1. **Interface da galeria** no painel (Imagens/Catálogo/chat) com as oito candidatas, evidências clicáveis e aprovação **por imagem**. Hoje a galeria só existe na resposta da ferramenta `conecta.imagem.buscar_web` (com `sku`).
+1. ~~Interface da galeria~~ **FEITA** (`painel/src/componentes/GaleriaProduto.tsx` na ficha do Catálogo): até 8 imagens, origem, resolução, licença, prova do código, estado e aprovação **por imagem** (ação `decidir_imagem` existente, só lojista). Ainda falta o lado a lado original × tratado (depende do serviço de tratamento, item 5) e o botão de retirada (takedown) de imagem já aprovada.
 2. **Persistência** da evidência/estado da candidata em `produto_imagens` (a RPC `imagem_propor` continua gravando como "ilustrativa" com cruzamento `sku`). Requer desenho de migração a aprovar.
 3. **Classe de fonte "fabricante oficial" e "distribuidor B2B"** depende de um cadastro de domínios confiáveis (dado) que **não existe**: hoje tudo que não é marketplace vira "outra" e nenhuma imagem sai "forte".
 4. **Provedor de busca:** o Google Custom Search está fechado a novos clientes (`ia/busca.ts`); sem SearXNG (ou outro provedor) configurado, `buscar_web` responde "sem_provedor".
@@ -105,7 +105,7 @@ Status: **implementação PARCIAL, sem merge e sem deploy.** Migrações novas *
 7. **Enriquecimento/taxonomia/tags/descrição** (prioridade 3): este commit **não** acrescenta geração de tags/descrição; segue valendo o que existe (`conecta.enriquecimento.propor`, `espec:*`, `regras_seo`, `regras_taxonomia`).
 8. **Glossário de motores:** `glossario_de_motores()` lê `motores`/`versao_motor`; se essas tabelas estiverem vazias em produção, o resultado é "sem candidato" (falha fechada). Não verifiquei o conteúdo em produção.
 9. **Documentos acrescentados pelo GPT no mesmo PR** (`docs/nano-busca-imagens-implementacao.md`, `docs/nano-voz-arquitetura.md`): a galeria implementada segue o contrato de imagens (≤ 8, estados, origem, evidência, licença). **Ainda não feito** do documento de imagens: adaptador SearXNG novo (já existe `ia/searxng.ts`; falta configurar a instância e validar `format=json`), Crawl4AI, deduplicação por **hash perceptual** (hoje deduplica por SHA-256/URL), e a UI com original/tratado lado a lado. A **voz** é só especificação: nada foi implementado.
-10. **Migrações** `20261102000002_glossario_de_motores.sql` e `20261102000003_galeria_limite_oito.sql`: validadas só em banco descartável; **não aplicadas**.
+10. **Migrações** `20261102000002_glossario_de_motores.sql` e `20261102000003_galeria_limite_oito.sql`: **APLICADAS em produção em 02/11/2026** (ordem expressa do dono), conferidas por leitura (função e gatilho existem; `anon` e usuário logado não executam o glossário). Em produção `motores` tem 10 registros e `versao_motor` está **vazio**: nenhum motor tem aplicação cadastrada, então o resolver não sugere candidato por modelo (falha fechada).
 
 ### Riscos para homologação
 - O deploy do `assistente` precisa ser refeito (artefato mudou); sem ele, nada disto vale em produção.
