@@ -3,6 +3,8 @@
 export const ESCOPOS = [
   "produtos:ler", "bling:consultar", "enriquecimento:propor", "banners:propor", "categorias:propor", "paginas:propor",
   "catalogo:propor", "campanhas:propor", "aprovacoes:ler", "tarefas:ler",
+  // Recurso conector-mcp (só valem para ele; os de cima só para o conecta-gateway). Nenhum aprova, executa ou administra.
+  "mcp:leitura", "mcp:propor",
 ] as const;
 export type Escopo = typeof ESCOPOS[number];
 
@@ -17,6 +19,8 @@ export const ROTULOS: Record<Escopo, string> = {
   "campanhas:propor": "Sugerir campanhas e orçamentos",
   "aprovacoes:ler": "Ver quais aprovações estão pendentes",
   "tarefas:ler": "Ver o andamento das tarefas que ele pediu",
+  "mcp:leitura": "Consultar produtos, taxonomia e códigos da sua loja (não altera nada)",
+  "mcp:propor": "Preparar propostas “a confirmar” (nada é aprovado nem publicado sem você)",
 };
 
 export const TIPOS_DISPOSITIVO = ["navegador", "computador", "smartphone", "agente_externo", "agente_desktop"] as const;

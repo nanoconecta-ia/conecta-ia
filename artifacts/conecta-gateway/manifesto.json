@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/conecta-gateway/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "973143014228de46ef0f78661560f00cb99b9981d452ba590a31044fbd77ec37",
+  "artefato_sha256": "4b7902cde443e4086442edb62c25bc3c920b1aa6857a913d96234369e3187dcd",
   "fontes": [
     {
       "path": "supabase/functions/_shared/ia/reducao.ts",
@@ -10,7 +10,7 @@
     },
     {
       "path": "supabase/functions/_shared/pair/escopos.ts",
-      "sha256": "4b6b38eb0373894fd3ccae92e2afff97ec361753f304e74b36396bb809fea53a"
+      "sha256": "69f86227f668748c81fc1eb288b12187459a14766bdff4e43566212f90585b7e"
     },
     {
       "path": "supabase/functions/_shared/estado.ts",
@@ -82,7 +82,7 @@
     },
     {
       "path": "supabase/functions/_shared/pair/oauth.ts",
-      "sha256": "2b86acae6559acadff37ed178de97a3c8fc89b74e94b04b18255a6360e2812a4"
+      "sha256": "ebe418c879a55c1bc4dd6ddc52fe235210569b5d5b341206aaeff6420a0b57a6"
     },
     {
       "path": "supabase/functions/_shared/exec_local/rotas_dispositivo.ts",
@@ -90,7 +90,7 @@
     },
     {
       "path": "supabase/functions/conecta-gateway/index.ts",
-      "sha256": "d75d69eb84687c30677cdfbb3090f56b4f82ce286e7bbeebaf6ae68c1af14804"
+      "sha256": "40c37b17e2b06de353ea90309aa8735e09a5f6946835f5f22eac4e07bea87472"
     }
   ]
 }

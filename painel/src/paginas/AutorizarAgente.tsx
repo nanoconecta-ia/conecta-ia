@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import {supabase} from '../supabase.ts';
 import {ROTULOS_ESCOPO} from '../lib/pair.ts';
-type Pedido={nome:string;redirect_uri:string;state:string;escopos:string[];offline:boolean;lojas:{id:string;nome:string}[];duracao_min:number};
+type Pedido={nome:string;redirect_uri:string;state:string;escopos:string[];offline:boolean;recurso?:string;lojas:{id:string;nome:string}[];duracao_min:number};
 export function AutorizarAgente({codigo}:{codigo:string}) {
   const [pedido,setPedido]=useState<Pedido|null>(null),[erro,setErro]=useState(''),[loja,setLoja]=useState('');
   const [escopos,setEscopos]=useState<string[]>([]),[duracao,setDuracao]=useState(15),[offline,setOffline]=useState(false),[ocupado,setOcupado]=useState(false),[reentrar,setReentrar]=useState(false);
@@ -26,6 +26,7 @@ export function AutorizarAgente({codigo}:{codigo:string}) {
     {!pedido&&!erro&&<p role="status">Conferindo pedido…</p>}
     {pedido&&<>
       <div className="cartao"><h2>{pedido.nome}</h2><p>Retorno ao cliente: <strong style={{overflowWrap:'anywhere'}}>{new URL(pedido.redirect_uri).host}</strong></p><p>Verifique se reconhece este aplicativo. A conexão entrega acesso apenas à empresa e às ferramentas abaixo.</p></div>
+      <p className="suave">Serviço autorizado: <strong>{pedido.recurso==='conector-mcp'?'Agente externo (MCP) — consulta e propostas':'Pareamento do agente'}</strong>. Nada é aprovado nem publicado sem a sua decisão.</p>
       <label>Empresa<select value={loja} onChange={e=>setLoja(e.target.value)} disabled={ocupado}><option value="">Selecione a empresa</option>{pedido.lojas.map(l=><option key={l.id} value={l.id}>{l.nome}</option>)}</select></label>
       {!pedido.lojas.length&&<p>Seu usuário não administra uma empresa disponível para este pedido.</p>}
       <fieldset disabled={ocupado}><legend>Permissões solicitadas</legend>{pedido.escopos.map(e=><label className="marcar" key={e}><input type="checkbox" checked={escopos.includes(e)} onChange={()=>setEscopos(v=>v.includes(e)?v.filter(x=>x!==e):[...v,e])}/>{ROTULOS_ESCOPO[e]??e}</label>)}</fieldset>

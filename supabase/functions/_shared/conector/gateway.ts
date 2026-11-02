@@ -5,6 +5,7 @@ import { reduzirJson } from "../ia/reducao.ts";
 import { despachar, type ContextoDespacho } from "./despacho.ts";
 import { ferramentasVisiveis, nomeParaLlm, idDoNomeLlm } from "./registro.ts";
 import { pareceTokenMcp, sha256Hex } from "./cripto.ts";
+import { separarToken } from "../pair/cripto.ts";
 import type { Permissao } from "./tipos.ts";
 
 export const VERSAO_GATEWAY = "0.1.0";
@@ -12,10 +13,15 @@ const VERSOES_MCP = ["2025-06-18", "2025-03-26", "2024-11-05"];
 const MAX_CORPO = 100_000;
 const MAX_SAIDA = 20_000;
 
-export interface ChaveMcp { chave_id: string; loja_id: string; escopos: Permissao[]; criada_por: string; nome: string }
+/** `via` = como autenticou: chave MCP (padrão) ou sessão OAuth (nesse caso `chave_id` é o id da SESSÃO e nenhuma chave existe). */
+export interface ChaveMcp { chave_id: string; loja_id: string; escopos: Permissao[]; criada_por: string; nome: string; via?: "chave" | "oauth" }
 export interface PortasGateway {
   /** Procura a chave pelo hash (não revogada, não expirada, loja ativa). null = recusar. */
   validarChave(hash: string): Promise<ChaveMcp | null>;
+  /** Token OAuth (sessão emitida PARA ESTE recurso). Sem esta porta, só chave MCP é aceita. null = recusar. */
+  validarOAuth?(tokenHash: string, salHash: string): Promise<ChaveMcp | null>;
+  /** URL pública deste recurso (para a descoberta OAuth no cabeçalho WWW-Authenticate). */
+  urlRecurso?: string;
   /** Limite de chamadas por chave. false = estourou. */
   limite(chaveId: string): Promise<boolean>;
   /** Monta o contexto de ferramentas da loja (dados, rpc, leitura do Bling). Nunca expõe segredos ao cliente. */
@@ -40,9 +46,13 @@ export async function tratarMcp(req: RequisicaoMcp, p: PortasGateway): Promise<R
   if (req.cabecalhos["origin"]) return http(403, "Requisições de navegador não são aceitas neste endpoint.");
   const auth = req.cabecalhos["authorization"] ?? "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-  if (!pareceTokenMcp(token)) return http(401, "Chave ausente ou inválida.", { "www-authenticate": 'Bearer realm="conecta-ia-mcp"' });
-  const chave = await p.validarChave(await sha256Hex(token));
-  if (!chave) return http(401, "Chave ausente, expirada ou revogada.", { "www-authenticate": 'Bearer realm="conecta-ia-mcp"' });
+  const desafio = { "www-authenticate": `Bearer realm="conecta-ia-mcp"${p.urlRecurso ? `, resource_metadata="${p.urlRecurso}/.well-known/oauth-protected-resource"` : ""}` };
+  const partesOAuth = p.validarOAuth ? separarToken(token) : null;
+  if (!pareceTokenMcp(token) && !partesOAuth) return http(401, "Chave ausente ou inválida.", desafio);
+  let chave: ChaveMcp | null;
+  if (pareceTokenMcp(token)) chave = await p.validarChave(await sha256Hex(token));
+  else chave = await p.validarOAuth!(await sha256Hex(partesOAuth!.token), await sha256Hex(partesOAuth!.sal));
+  if (!chave) return http(401, "Chave ausente, expirada ou revogada.", desafio);
   if (req.corpo.length > MAX_CORPO) return http(413, "Corpo grande demais.");
   if (!(await p.limite(chave.chave_id))) return http(429, "Muitas chamadas. Aguarde um instante.", { "retry-after": "30" });
 
@@ -73,7 +83,7 @@ export async function tratarMcp(req: RequisicaoMcp, p: PortasGateway): Promise<R
       const nome = params?.name;
       if (typeof nome !== "string" || !/^[A-Za-z0-9_-]{1,100}$/.test(nome)) return rpcErro(id, -32602, "Parâmetro 'name' inválido");
       const ctx = await p.contexto(chave);
-      const r = await despachar(idDoNomeLlm(nome), params?.arguments ?? {}, { ...ctx, origem: "gateway_mcp", escopos: chave.escopos, mcpChaveId: chave.chave_id });
+      const r = await despachar(idDoNomeLlm(nome), params?.arguments ?? {}, { ...ctx, origem: "gateway_mcp", escopos: chave.escopos, mcpChaveId: chave.via === "oauth" ? null : chave.chave_id, pairSessaoId: chave.via === "oauth" ? chave.chave_id : null });
       let texto = JSON.stringify(r.ok ? r.resultado : { erro: r.erro, decisao: r.decisao });
       texto = reduzirJson(r.ok ? r.resultado : { erro: r.erro, decisao: r.decisao }, MAX_SAIDA);
       return rpcOk(id, { content: [{ type: "text", text: texto }], isError: !r.ok });

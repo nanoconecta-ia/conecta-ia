@@ -4,7 +4,7 @@ import {b64u,unb64u} from '../estado.ts';
 import {aleatorioB64u,sha256Hex,separarToken} from './cripto.ts';
 import {ESCOPOS} from './escopos.ts';
 export interface OAuthPortas {
-  baseURL:string; appURL:string; segredo():Promise<string|undefined>;
+  baseURL:string; /** URL do recurso conector-mcp (audiência alternativa). */ recursoMcp?:string; appURL:string; segredo():Promise<string|undefined>;
   rpc(fn:string,p:Record<string,unknown>):PromiseLike<{data:any;error?:unknown}>;
   limite(chave:string,max:number,janela:number):Promise<boolean>;
 }
@@ -33,7 +33,8 @@ async function lerCliente(v:unknown,s:string):Promise<Cliente|null>{
     const c=JSON.parse(dec.decode(unb64u(b)));return typeof c.nome==='string'&&Array.isArray(c.uris)&&c.uris.every(redirectValido)?c:null;
   }catch{return null}
 }
-export const metadataRecurso=(base:string)=>({resource:base,authorization_servers:[base+'/oauth'],scopes_supported:[...ESCOPOS,'offline_access'],bearer_methods_supported:['header'],resource_name:'Conecta IA — loja autorizada'});
+export const metadataRecursoMcp=(recurso:string,emissorBase:string)=>({resource:recurso,authorization_servers:[emissorBase+'/oauth'],scopes_supported:['mcp:leitura','mcp:propor'],bearer_methods_supported:['header'],resource_name:'Conecta IA — agente externo (MCP)'});
+export const metadataRecurso=(base:string)=>({resource:base,authorization_servers:[base+'/oauth'],scopes_supported:[...ESCOPOS.filter(x=>!x.startsWith('mcp:')),'offline_access'],bearer_methods_supported:['header'],resource_name:'Conecta IA — loja autorizada'});
 export const desafioOAuth=(base:string)=>`Bearer resource_metadata="${base}/.well-known/oauth-protected-resource"`;
 export async function tratarOAuth(req:Request,p:OAuthPortas):Promise<Response|null>{
   const u=new URL(req.url),basePath=new URL(p.baseURL).pathname.replace(/\/$/,'');
@@ -71,16 +72,19 @@ export async function tratarOAuth(req:Request,p:OAuthPortas):Promise<Response|nu
     const raw=req.method==='GET'?null:await req.text();if(raw&&raw.length>16000)return erro('invalid_request',413);
     const args=req.method==='GET'?u.searchParams:new URLSearchParams(raw??'');
     const clientId=exato(args,'client_id'),c=await lerCliente(clientId,s);if(!c)return erro('invalid_client',401);
-    const resource=exato(args,'resource');if(resource&&resource!==p.baseURL)return erro('invalid_target');
+    const resource=exato(args,'resource');if(resource&&resource!==p.baseURL&&resource!==p.recursoMcp)return erro('invalid_target');
+    const recurso=resource&&resource===p.recursoMcp?'conector-mcp':'conecta-gateway';
     if(req.headers.has('authorization'))return erro('invalid_client',401); // clientes públicos, sem client_secret ou Basic
     const clienteHash=await sha256Hex(clientId!);
     if(path==='/oauth/authorize'){
       const redirect=exato(args,'redirect_uri');if(!redirect||!c.uris.includes(redirect))return erro('invalid_request');
       const state=exato(args,'state'),challenge=exato(args,'code_challenge');
       if(exato(args,'response_type')!=='code'||exato(args,'code_challenge_method')!=='S256'||!challenge||!/^[A-Za-z0-9_-]{43}$/.test(challenge)||!state||state.length<8||state.length>512)return erro('invalid_request');
-      const scopes=(exato(args,'scope')??'bling:consultar').split(' ').filter(Boolean),offline=scopes.includes('offline_access');
-      const escopos=[...new Set(scopes.filter(x=>x!=='offline_access'))];if(!escopos.length||escopos.some(x=>!(ESCOPOS as readonly string[]).includes(x)))return erro('invalid_scope');
-      const codigo=aleatorioB64u();const r=await p.rpc('oauth_pair_iniciar',{p_codigo_hash:await sha256Hex(codigo),p_cliente_hash:clienteHash,p_redirect:redirect,p_challenge:challenge,p_state:state,p_nome:c.nome,p_escopos:escopos,p_offline:offline});
+      const scopes=(exato(args,'scope')??(recurso==='conector-mcp'?'mcp:leitura':'bling:consultar')).split(' ').filter(Boolean),offline=scopes.includes('offline_access');
+      const pedidos=[...new Set(scopes.filter(x=>x!=='offline_access'))];if(!pedidos.length||pedidos.some(x=>!(ESCOPOS as readonly string[]).includes(x)))return erro('invalid_scope');
+      // Clientes costumam pedir TODOS os escopos anunciados: concede só os do recurso pedido (menos, nunca mais). Sem nenhum do recurso, recusa.
+      const escopos=pedidos.filter(x=>x.startsWith('mcp:')===(recurso==='conector-mcp'));if(!escopos.length)return erro('invalid_scope');
+      const codigo=aleatorioB64u();const r=await p.rpc('oauth_pair_iniciar',{p_codigo_hash:await sha256Hex(codigo),p_cliente_hash:clienteHash,p_redirect:redirect,p_challenge:challenge,p_state:state,p_nome:c.nome,p_escopos:escopos,p_offline:offline,p_recurso:recurso});
       if(r.error||r.data?.ok!==true)return erro('temporarily_unavailable',503);
       const destino=new URL(p.appURL);destino.hash='/autorizar-agente?c='+encodeURIComponent(codigo);
       return new Response(null,{status:302,headers:{...headers,Location:destino.toString()}});

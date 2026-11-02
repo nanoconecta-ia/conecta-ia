@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     const baseURL = Deno.env.get("SUPABASE_URL")!.replace(/\/$/, "") + "/functions/v1/conecta-gateway";
     const config = configuracaoPair(get);
     const oauth = await tratarOAuth(req, {
-      baseURL, appURL: config.appUrl ?? "", segredo: () => segredoEstado(admin, get),
+      baseURL, recursoMcp: Deno.env.get("SUPABASE_URL")!.replace(/\/$/, "") + "/functions/v1/conector-mcp", appURL: config.appUrl ?? "", segredo: () => segredoEstado(admin, get),
       rpc: (fn, p) => admin.rpc(fn, p),
       limite: async (chave, max, janela) => (await admin.rpc("limite_chamada", {p_chave:chave,p_max:max,p_janela_s:janela})).data === true,
     });
