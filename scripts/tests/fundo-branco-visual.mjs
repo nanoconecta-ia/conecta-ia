@@ -13,7 +13,7 @@ try{
  browser=await chromium.launch({headless:true});
  for(const largura of [390,1280]){
    const page=await browser.newPage({viewport:{width:largura,height:830}});
-   page.on("request",req=>{ if(new URL(req.url()).hostname!=="127.0.0.1")throw Error("Rede externa não permitida");});
+   page.on("request",req=>{ const u=new URL(req.url()); if(u.protocol!=="blob:" && u.hostname!=="127.0.0.1")throw Error("Rede externa não permitida");});
    await page.goto(base+"/.foto-branca-demo.html");
    const png=await page.evaluate(async()=>{
      const c=document.createElement("canvas");c.width=320;c.height=160;
