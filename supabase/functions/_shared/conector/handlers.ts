@@ -1,6 +1,12 @@
 // Handlers das ferramentas ATIVAS do registro. Cada um recebe a entrada já validada pelo esquema e o contexto da loja.
 // Nenhum handler escreve no Bling: as ferramentas "preparar_*" só montam PROPOSTA; quem escreve é o executor, depois da aprovação.
 import { registrarResumo } from "./atividade.ts";
+import { baixarImagemOriginal } from "../busca_segura/imagem_original.ts";
+/** Resolvedor DNS do runtime (Deno). Fora dele (testes), fica indefinido e vale só a checagem estática do endereço. */
+const denoDns = (globalThis as { Deno?: { resolveDns?: (h: string, t: string) => Promise<string[]> } }).Deno?.resolveDns;
+const resolverDns: ((host: string) => Promise<string[]>) | undefined = denoDns
+  ? async (host) => { const [a, aaaa] = await Promise.all([denoDns(host, "A").catch(() => []), denoDns(host, "AAAA").catch(() => [])]); return [...a, ...aaaa]; }
+  : undefined;
 import { conflitoDeMarca, validarMarca } from "../cadastro/regras_marca.ts";
 import { MAPA_CAMPOS, montarCorpoCriacao, montarCorpoProduto } from "./bling_campos.ts";
 import { validarRascunho } from "../cadastro/regras_cadastro.ts";
@@ -191,7 +197,7 @@ export const HANDLERS: Record<string, Handler> = {
   "conecta.enriquecimento.propor": (e, c) => proporEnriquecimento(c.admin, c.lojaId, e),
   "conecta.codigo.propor": (e, c) => proporCodigo(c.admin, c.lojaId, e),
   "conecta.aplicacao.propor": (e, c) => proporAplicacao(c.admin, c.lojaId, e),
-  "conecta.imagem.propor": (e, c) => proporImagem(c.admin, c.lojaId, e),
+  "conecta.imagem.propor": (e, c) => proporImagem(c.admin, c.lojaId, e, (u) => baixarImagemOriginal(u, { resolver: resolverDns })),
   "conecta.imagem.buscar_web": async (e, c) => {
     const provedor = escolherProvedorBusca(c);
     if (!provedor) return SEM_PROVEDOR();
