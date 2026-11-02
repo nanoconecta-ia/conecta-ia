@@ -36,3 +36,19 @@ Principais achados:
 4. **Histórico de evidências no banco** (tabela e desenho de migração a aprovar).
 5. **Extração automática de códigos cruzados/OEM** das páginas e detecção de **conflito entre fontes** (hoje só se registra o que aparece escrito).
 6. **Publicação** do `assistente` e do painel, depois de homologar.
+
+---
+
+## Política de domínios e origem pública (regra do dono, 02/11/2026)
+Implementada em `busca_segura/dominios.ts` (pura, com testes):
+1. O **domínio e a página do fabricante da marca do próprio produto** podem aparecer na **descrição do produto como origem**, porque quem fabrica responde pela garantia (Código de Defesa do Consumidor, segundo o dono). Só vira origem pública se o domínio está **cadastrado e verificado por uma pessoa** como de fabricante/montadora, **a marca do produto é uma das marcas dessa entidade** e o **código do produto está confirmado na página**. A URL pública sai sem rastreadores. No máximo **uma** origem pública por produto.
+2. Domínio de **outra marca, concorrente, distribuidor ou marketplace** fica **só como referência técnica na base do produto**, nunca na descrição pública nem no site ("não fazemos propaganda para a concorrência").
+3. O relatório da investigação agora separa `referencias.publicas` (no máximo uma) e `referencias.internas` (com o motivo de cada uma).
+
+### Domínios da MAHLE (verificação pendente)
+O domínio ditado, "malimetalleve.com.br", **não apareceu** na pesquisa. Os domínios reais encontrados da MAHLE / Metal Leve são **`catalogo.mahle.com`** (catálogo eletrônico), **`loja.mahle.com`** (loja da MAHLE Metal Leve S.A., com bronzinas) e **`mahle-aftermarket.com`** (lista de aplicação em PDF). **Nenhum foi cadastrado**: só entram no registro depois que você confirmar quais valem.
+
+### Desenho das tabelas (NÃO criadas; aguardam sua aprovação)
+- `fonte_dominios`: `dominio` (único), `entidade`, `marcas text[]`, `tipo` (fabricante, montadora, distribuidor, outro), `status` (nao_verificado, verificado), `verificado_por`, `verificado_em`. Escrita só por pessoa (lojista); leitura pelo servidor. Sem isso o registro hoje só existe em memória (testes).
+- `produto_fonte_referencia`: `produto_id`, `url_pagina`, `dominio`, `papel` (origem_do_fabricante, referencia_tecnica), `codigo_confirmado`, `coletada_em`, `evidencia_sha256`. Só `origem_do_fabricante` pode alimentar a descrição pública; `referencia_tecnica` é interna (RLS sem leitura pública). Evidência apenas acrescenta, nunca edita.
+Perguntas: aprova o desenho? E cadastro dos domínios da lista abaixo?

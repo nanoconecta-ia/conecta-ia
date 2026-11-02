@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "9f95bdef3cc13da0900510c69579394113e431e96f4b2b03258e1b3ab4d06378",
+  "artefato_sha256": "686e2e179c109c26b3ffa461c0504807aa1276c4287e3d882892f8f9b3a05dcb",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -105,6 +105,10 @@
       "sha256": "799fd2387d3912117b60299223f84d6f84836b3cdf29173c28b1f4aea1484984"
     },
     {
+      "path": "supabase/functions/_shared/busca_segura/dominios.ts",
+      "sha256": "1de21809818926262bce61b610a861ca5a7ce2c19ca81f25a54d6379d5475a9b"
+    },
+    {
       "path": "supabase/functions/_shared/busca_segura/fabricantes.ts",
       "sha256": "722fc30403a9a9d7b33092c84e178cb6ddd8cb6bd56e4d2a0ffcbb4e6676eedd"
     },
@@ -114,7 +118,11 @@
     },
     {
       "path": "supabase/functions/_shared/busca_segura/investigacao.ts",
-      "sha256": "e026aaefc78358cb27b2183a2bef94c7ed32f52ba13f1064ce7b653211195b35"
+      "sha256": "510b40315f7a7a9eacbbb8dc9f5ae1ef1a9048da7e7e85d62e4694fdccbc588e"
+    },
+    {
+      "path": "supabase/functions/_shared/busca_segura/regras_sku.ts",
+      "sha256": "882d91777f78d43749c0cda708243debf248ef0a8ad1f465140a44b4333cbb39"
     },
     {
       "path": "supabase/functions/_shared/conector/categoria_bling.ts",
@@ -122,7 +130,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/handlers.ts",
-      "sha256": "f0a19df4c835db5e62fdd9de4d55e46a694f2e28a4a213b0b353e69d0cbf11f6"
+      "sha256": "001e00ef3488796eaf8ce0aa704c662eb02ed9c5e4536aa3be8d8f03544c1698"
     },
     {
       "path": "supabase/functions/_shared/conector/tipos.ts",

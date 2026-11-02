@@ -1,4 +1,4 @@
-# Balanço, cadastro inicial e notas antigas (desenho para aprovação; NADA implementado)
+# Balanço, cadastro inicial e notas antigas (desenho; respostas do dono registradas; balanço AINDA não implementado)
 
 Origem: ordem do dono de 02/11/2026 (piloto Mobis). Este documento só desenha. Nenhuma tabela, ferramenta de escrita ou migração foi criada. Regras que seguem valendo: Bling só com aprovação humana por versão/hash + Policy Engine + `idempotency_key` + auditoria; estoque e fiscal nunca por conta do agente; custo/fornecedor nunca vão ao site, a clientes ou ao LLM.
 
@@ -53,3 +53,25 @@ Origem: ordem do dono de 02/11/2026 (piloto Mobis). Este documento só desenha. 
 - **D.** Quem é o contador que valida fiscal e balanço?
 - **E.** Confirma o piloto: 1 por vez, teto de 10, com parada para conferir a taxonomia depois de cada produto?
 - **F.** Posso rodar a **F0** (diagnóstico só leitura do Bling, sem gravar nada)?
+
+---
+
+## 7. Respostas do dono (02/11/2026) e estado
+Resposta ditada por voz: **"Proposta sim, pode mexer"** para A a F. Entendi assim, e o que ficou ambíguo está marcado:
+
+| # | Pergunta | Como entendi | Estado |
+|---|---|---|---|
+| A | Formato do SKU automático | **Sim, a proposta: `CI` + 6 dígitos** (como CI000016 e CI001086). O agente só propõe; você aprova. | **Implementado** (`busca_segura/regras_sku.ts`, ligado a `bling.produtos.preparar_cadastro` quando o rascunho vem sem código). |
+| B | Ferramenta de proposta de ajuste de estoque (balanço) | "Proposta sim": entendi que a ferramenta **só propõe**, nunca grava estoque. **Preciso que você confirme esta leitura.** | **Não implementado**: faltam C e D e a conferência do contrato de estoque no OpenAPI do Bling. |
+| C | Data de referência do balanço e período de notas antigas | **Sem resposta com data.** | Pendente. |
+| D | Contador que valida fiscal e balanço | **Sem resposta com nome.** | Pendente. |
+| E | Piloto: 1 por vez, teto de 10, conferir taxonomia a cada um | **Sim.** | **Implementado**: o freio do piloto recusa um novo cadastro enquanto houver outro aguardando decisão (limite 1; subir até 10 é decisão do dono, loja a loja). |
+| F | Diagnóstico só de leitura do Bling | **Sim.** | **Parcial**: módulo `busca_segura/diagnostico_cadastro.ts` (contagens, duplicidade provável por código e por nome, maior sequência CI; em páginas, com estado). **A execução completa no servidor ainda não existe**: a porta de leitura atual do Bling não lista produtos em páginas. |
+
+### O que a amostra real já mostra (somente leitura, 1ª página do Bling, 100 registros)
+A listagem de "todos" vem em ordem alfabética e a primeira página é **toda de produtos excluídos**, com muita repetição: o mesmo nome sob códigos diferentes (ex.: um retentor aparece 5 vezes com 5 códigos; uma correia, 10 vezes) e o mesmo código em registros diferentes (ex.: `03044-BREF`, `190191`). **Isto é uma amostra, não o catálogo inteiro e não é representativa**; serve só para confirmar que o saneamento é necessário. Nada foi alterado.
+
+### Decisões de segurança mantidas
+- SKU e preço de produto novo só entram com o produto aprovado; o SKU automático nunca reutiliza código conhecido e a sequência é conferida no Bling na hora (falha fechada se o Bling não responde).
+- **Limite assumido:** a reserva atômica da sequência exige o banco; no piloto (um por vez) a colisão é evitada conferindo o espelho e o Bling. Códigos de produtos excluídos podem não aparecer na consulta do Bling (a listagem padrão traz ativos): **a conferir antes de ampliar o piloto**.
+- Estoque, balanço e notas antigas continuam **sem nenhuma escrita**.

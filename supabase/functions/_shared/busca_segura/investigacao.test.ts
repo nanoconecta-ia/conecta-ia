@@ -97,3 +97,23 @@ test("só marketplace como fonte: nunca confirma aplicação", async () => {
   const r = await investigar(base(pv));
   assert.equal(r.compatibilidade.status, "nao_confirmada"); assert.ok(r.fontes.every((f) => f.nivel !== "forte"));
 });
+
+// ── Política de domínio/origem pública (regra do dono, 02/11/2026)
+test("referências: só o fabricante verificado da PRÓPRIA marca vira origem pública; distribuidor e marketplace ficam como referência técnica interna", async () => {
+  const registro = [
+    { dominio: "fabricante-teste.exemplo", entidade: "Fabricante Teste", marcas: ["TRIM GO"], tipo: "fabricante" as const, status: "verificado" as const },
+    { dominio: "quatrodistribuidora.com.br", entidade: "Distribuidora", marcas: ["TRIM GO"], tipo: "distribuidor" as const, status: "verificado" as const },
+  ];
+  const pv = provedor({ tecnico: async () => [...REAIS, { titulo: "Bomba CI000016 HR", pagina: "https://www.fabricante-teste.exemplo/p/ci000016", resumo: "código CI000016", fonte: "x" }] });
+  const r = await investigar(base(pv, { registroDominios: registro }));
+  assert.equal(r.referencias.publicas.length, 1); assert.equal(r.referencias.publicas[0].host, "fabricante-teste.exemplo");
+  assert.match(r.referencias.publicas[0].texto, /^Fabricante: TRIM GO AUTOPARTS\. Origem e garantia do fabricante: https:\/\/www\.fabricante-teste\.exemplo\/p\/ci000016$/);
+  const internas = r.referencias.internas.map((i) => i.host);
+  assert.ok(internas.includes("quatrodistribuidora.com.br") && internas.includes("importvans.com.br"));
+  assert.ok(!JSON.stringify(r.referencias.publicas).includes("quatrodistribuidora") && !JSON.stringify(r.referencias.publicas).includes("mercadolivre"));
+  assert.ok(r.fontes.filter((f) => f.publico).length === 1 && r.fontes.every((f) => f.papel === "origem_do_fabricante" || f.papel === "referencia_tecnica"));
+});
+test("sem registro de domínios nenhuma referência é pública (tudo fica interno)", async () => {
+  const r = await investigar(base(provedor()));
+  assert.equal(r.referencias.publicas.length, 0); assert.ok(r.referencias.internas.length > 0); assert.ok(r.fontes.every((f) => f.publico === false));
+});
