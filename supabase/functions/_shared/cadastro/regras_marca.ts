@@ -38,3 +38,11 @@ export function validarMarca(marca: unknown, fontes: FonteMarca[] | undefined, c
     return { ok: true, marca: m, evidencia: "documento_da_pessoa", verificada: false, aviso: "Fonte descrita pela pessoa: confira antes de aprovar." };
   return { ok: false, erro: `Sem evidência para a marca "${m}": cite a URL do fabricante ou use a marca que está escrita no cadastro/nota. Não chuto marca.` };
 }
+
+/** Marca ATUAL do Bling x marca PROPOSTA (PR #242, teste de aceite 4). Mesma marca com outra grafia (caixa, acento, pontuação, prefixo "MARCA:") não é conflito. */
+export function conflitoDeMarca(atual: string | null | undefined, proposta: string): { conflito: boolean; atual: string | null; proposta: string } {
+  const a = (atual ?? "").replace(/^\s*marca\s*:\s*/i, "").trim();
+  const p = proposta.replace(/^\s*marca\s*:\s*/i, "").trim();
+  if (!a) return { conflito: false, atual: null, proposta: p };
+  return { conflito: sem(a) !== sem(p), atual: a, proposta: p };
+}

@@ -37,3 +37,12 @@ test("palavra parcial não conta: 'GO' não está em 'ALGO'; marca precisa apare
   assert.equal(validarMarca("GO", [], { textosDoCadastro: ["PECA ALGO NOVA"] }).ok, false);
   assert.equal(validarMarca("TRIM", [], { textosDoCadastro: ["PECA TRIMESTRAL"] }).ok, false);
 });
+
+import { conflitoDeMarca } from "./regras_marca.ts";
+test("conflitoDeMarca: mesma marca com outra grafia não é conflito; marca diferente é", () => {
+  assert.equal(conflitoDeMarca(" MARCA: TRIM GO", "TRIM GO").conflito, false);
+  assert.equal(conflitoDeMarca("SABÓ", "Sabo").conflito, false);
+  assert.equal(conflitoDeMarca("Sabó", "Jusa").conflito, true);
+  assert.equal(conflitoDeMarca("", "Jusa").conflito, false);
+  assert.equal(conflitoDeMarca(null, "Jusa").atual, null);
+});

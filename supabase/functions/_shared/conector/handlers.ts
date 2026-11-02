@@ -1,9 +1,12 @@
 // Handlers das ferramentas ATIVAS do registro. Cada um recebe a entrada já validada pelo esquema e o contexto da loja.
 // Nenhum handler escreve no Bling: as ferramentas "preparar_*" só montam PROPOSTA; quem escreve é o executor, depois da aprovação.
-import { validarMarca } from "../cadastro/regras_marca.ts";
+import { conflitoDeMarca, validarMarca } from "../cadastro/regras_marca.ts";
 import { MAPA_CAMPOS, montarCorpoCriacao, montarCorpoProduto } from "./bling_campos.ts";
 import { validarRascunho } from "../cadastro/regras_cadastro.ts";
-import { interpretarConsulta, type Vocabulario } from "../consulta/interpretar.ts";
+import type { Vocabulario } from "../consulta/interpretar.ts";
+import { resolverEntidades, type GlossarioMotor } from "../busca_segura/entidades.ts";
+import { classeDaFonte, hashTrecho, type EvidenciaBusca } from "../busca_segura/evidencia.ts";
+import { montarGaleria, type CandidataEntrada } from "../busca_segura/galeria.ts";
 import type { PortaDados } from "./dados.ts";
 import type { PortaBling } from "./porta_bling.ts";
 import type { Rpc } from "./executor.ts";
@@ -105,6 +108,20 @@ export async function criarPropostaVersionada(c: ContextoFerramenta, o: { titulo
   return { proposta_id: propostaId, titulo: o.titulo, versao: env.versao, hash: env.hash, risco: env.risco, itens: resolvidos.length, aviso: "Nada foi alterado. O lojista precisa aprovar esta versão exata na Central de Inteligência." };
 }
 
+/** Códigos que PROVAM identidade do produto (SKU, GTIN e códigos aprovados oem/fabricante/ean/antigo). similar/substituto nunca entram. */
+async function codigosConhecidosDoProduto(c: ContextoFerramenta, sku: string): Promise<{ lista: string[] } | { erro: string }> {
+  const p = await c.dados.verProduto(sku) as Record<string, unknown>;
+  if ("erro" in p) return { erro: String(p.erro) };
+  const lista = new Set<string>([sku]);
+  if (typeof p.gtin === "string" && p.gtin.trim()) lista.add(p.gtin.trim());
+  const loc = await c.dados.produtoPorSku(sku);
+  if (loc) {
+    const { data } = await c.admin.from("produto_codigos").select("tipo, valor, status").eq("produto_id", loc.id).eq("status", "aprovado");
+    for (const r of (data ?? []) as { tipo: string; valor: string }[]) if (["oem", "fabricante", "ean", "antigo", "sku"].includes(r.tipo) && r.valor?.trim()) lista.add(r.valor.trim());
+  }
+  return { lista: [...lista] };
+}
+
 export const HANDLERS: Record<string, Handler> = {
   "conecta.catalogo.resumo": (_e, c) => c.dados.resumo(),
   "conecta.catalogo.listar": (e, c) => c.dados.listarProdutos({ apenasNaoPublicados: e.apenas_nao_publicados === true, busca: e.busca, limite: e.limite }),
@@ -118,7 +135,16 @@ export const HANDLERS: Record<string, Handler> = {
   "engenharia.intercambio.listar": (e, c) => rpc(c, "intercambio_da_peca", { p_codigo: e.codigo, p_apenas_aprovados: e.incluir_a_confirmar !== true }),
   "engenharia.bula.verificar": (e, c) => rpc(c, "bula_tecnica_do_sku", { p_loja: c.lojaId, p_sku: e.sku }),
   "engenharia.loja.filtros": (_e, c) => rpc(c, "filtros_da_vitrine", { p_loja: c.lojaId }),
-  "engenharia.consulta.interpretar": async (e, c) => interpretarConsulta(String(e.texto), (await rpc(c, "vocabulario_de_busca", {})) as Vocabulario),
+  // PR #242: a interpretação passa pela resolução de entidades (ano não é motor; códigos de motor são só termos candidatos). Saída retrocompatível:
+  // todos os campos antigos continuam, com `motor` e `ano_e_motor` acrescentados. Sem glossário no banco (ou falha ao ler) = vazio: nunca presume motor.
+  "engenharia.consulta.interpretar": async (e, c) => {
+    const vocab = (await rpc(c, "vocabulario_de_busca", {})) as Vocabulario;
+    let gloss: GlossarioMotor = { termos: [] }, glossarioIndisponivel = false;
+    try { const g = (await rpc(c, "glossario_de_motores", {})) as GlossarioMotor | null; if (g && Array.isArray(g.termos)) gloss = g; else glossarioIndisponivel = true; }
+    catch { glossarioIndisponivel = true; }
+    const r = resolverEntidades(String(e.texto), vocab, gloss);
+    return { ...r.interpretacao, perguntas: r.perguntas, avisos: [...r.avisos, ...(glossarioIndisponivel ? ["Glossário de motores indisponível: nenhum motor é presumido."] : [])], motor: r.motor, ano_e_motor: false };
+  },
   "engenharia.loja.condicoes": (e, c) => rpc(c, "condicoes_comerciais", { p_loja: c.lojaId, p_cep: e.cep ?? null }),
   "conecta.enriquecimento.pendentes": (e, c) => c.dados.itensPendentes(e.limite),
   "conecta.travas.consultar": (e, c) => c.dados.travas({ produtoId: e.produto_id, sku: e.sku }),
@@ -135,7 +161,24 @@ export const HANDLERS: Record<string, Handler> = {
   "conecta.imagem.buscar_web": async (e, c) => {
     const provedor = escolherProvedorBusca(c);
     if (!provedor) return SEM_PROVEDOR();
-    try { return { candidatas: await provedor.imagens(String(e.consulta ?? "")), aviso: "Candidatas: origem e direitos de uso NÃO confirmados. Nada foi salvo nem publicado." }; }
+    try {
+      const candidatas = await provedor.imagens(String(e.consulta ?? ""));
+      const sku = typeof e.sku === "string" ? e.sku.trim() : "";
+      // Sem SKU: comportamento antigo (lista crua). Com SKU: GALERIA de até 8, com estado, origem e prova do código (PR #242). Nada é aprovado nem salvo.
+      if (!sku) return { candidatas, aviso: "Candidatas: origem e direitos de uso NÃO confirmados. Nada foi salvo nem publicado." };
+      const codigos = await codigosConhecidosDoProduto(c, sku);
+      if ("erro" in codigos) return codigos;
+      const hoje = new Date().toISOString().slice(0, 10);
+      const entradas: CandidataEntrada[] = [];
+      for (const k of candidatas) {
+        const achado = codigos.lista.find((cd) => (k.titulo ?? "").toUpperCase().replace(/[\s_-]+/g, "").includes(cd.toUpperCase().replace(/[\s_-]+/g, "")));
+        const evidencia: EvidenciaBusca | null = achado ? { url: k.pagina, titulo: k.titulo, coletada_em: hoje, trecho: k.titulo, codigo_exato: achado, contexto_aplicacao: null,
+          sha256: await hashTrecho(k.titulo), confianca: 0.5, classe: classeDaFonte(k.pagina) } : null;
+        entradas.push({ url: k.url, pagina: k.pagina, titulo: k.titulo, evidencia });
+      }
+      const galeria = montarGaleria(entradas, { codigos: codigos.lista }, hoje);
+      return { sku, galeria, aviso: "Galeria de candidatas (máx. 8): nenhuma está aprovada nem publicável. Marca d'água, resolução e licença ainda precisam ser conferidas por uma pessoa; marketplace dá pista, não direito de uso. Nada foi salvo." };
+    }
     catch (err) { return erroDeBusca(err, "Falha na busca de imagens."); }
   },
   "conecta.web.pesquisar_tecnico": async (e, c) => {
@@ -287,6 +330,15 @@ export const HANDLERS: Record<string, Handler> = {
     if (campos.includes("marca")) {
       const vm = validarMarca(e.campos.marca, e.fontes, { textosDoCadastro: [r.produto.nome, (atual as any).nome, (atual as any).descricaoCurta, (atual as any).descricaoComplementar], porPessoa: c.agente?.provedor === "nenhum" });
       if (!vm.ok) return { erro: "Marca recusada", detalhes: [vm.erro] };
+      const cf = conflitoDeMarca(antes.marca as string | null, vm.marca);
+      if (cf.conflito) {
+        // PR #242 (teste de aceite 4): marca diferente da que já está no Bling. O MODELO só propõe a troca com prova VERIFICADA (URL externa); com prova fraca
+        // (marca só "declarada" no próprio cadastro/nota) bloqueia e mostra a evidência. Uma PESSOA (formulário) pode sempre. Toda troca fica registrada na proposta.
+        const pessoa = c.agente?.provedor === "nenhum";
+        if (!pessoa && vm.evidencia !== "url_externa") return { erro: "Marca conflitante com o cadastro do Bling", detalhes: [`O Bling tem "${cf.atual}" e a proposta é "${cf.proposta}", e a evidência é fraca (${vm.evidencia}). O agente não troca marca já cadastrada sem URL de fonte externa: peça pelo formulário do Catálogo, com a fonte.`],
+          evidencia: { marca_atual_no_bling: cf.atual, marca_proposta: cf.proposta, tipo_da_evidencia: vm.evidencia, verificada: vm.verificada, fontes: e.fontes } };
+        extras.push(`TROCA DE MARCA: de "${cf.atual}" para "${cf.proposta}" (conflita com o cadastro do Bling; evidência ${vm.evidencia}${pessoa ? "; pedido de uma pessoa" : ""})`);
+      }
       e.campos.marca = vm.marca;
       extras.push(`marca: evidência ${vm.evidencia}${vm.verificada ? "" : " (não verificada)"}${vm.aviso ? ` — ${vm.aviso}` : ""}`);
     }

@@ -47,7 +47,14 @@ try {
         const range=`${offset}-${Math.max(offset,offset+lote.length-1)}/${listados.length}`;
         return route.fulfill({status:200,contentType:"application/json",headers:{...h,"content-range":range},body:JSON.stringify(lote)});
       }
-      if(u.pathname.endsWith("/rest/v1/produto_imagens"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([{produto_id:"bbbbbbbb-0000-0000-0000-000000000003"}])});
+      if(u.pathname.endsWith("/rest/v1/produto_imagens")){
+        // consulta da galeria da ficha (filtra por produto e pede as colunas completas) x contagem de imagens da lista (só produto_id)
+        if((u.searchParams.get("select")||"").includes("url_original")){
+          const img=(n,p={})=>({id:`cccccccc-0000-0000-0000-00000000000${n}`,url:"data:image/gif;base64,R0lGODlhAQABAAAAACw=",tipo:"real",origem:"busca_web",url_original:`https://www.fabricante.exemplo.com.br/pagina/${n}`,licenca_tipo:"fabricante",cruzamento_tipo:"oem",cruzamento_valor:"20910-4AU07",confianca:0.9,largura_px:1200,altura_px:900,aprovada:false,principal:false,direitos_confirmados_em:null,removida_em:null,ordem:n,...p});
+          return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([img(1),img(2,{tipo:"ilustrativa",licenca_tipo:null,cruzamento_tipo:"similar",largura_px:200,altura_px:150}),img(3,{aprovada:true,principal:true,licenca_tipo:"propria"})])});
+        }
+        return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([{produto_id:"bbbbbbbb-0000-0000-0000-000000000003"}])});
+      }
       if(u.pathname.endsWith("/rest/v1/taxonomia_nos"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([{id:"n1",pai_id:null,nome:"Arrefecimento",slug:"arrefecimento",ordem:1},{id:"n2",pai_id:"n1",nome:"Bombas d'água",slug:"bombas-agua",ordem:1}])});
       if(u.pathname.endsWith("/rest/v1/bling_categorias")||u.pathname.endsWith("/rest/v1/produto_automacao"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:"[]"});
       if(u.pathname.endsWith("/functions/v1/assistente")){const a=JSON.parse(req.postData()||"{}").acao;if(a==="chat_corrigir_produto"){corrigirChamadas.push(JSON.parse(req.postData()));return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify({ia:false,modo:"correcao_sem_llm",proposta:{id:"p1",titulo:"Atualizar marca, gtin de 854008 no Bling",versao:1,hash:"h",risco:"MEDIUM"},resposta:"Proposta criada: Atualizar marca, gtin de 854008 no Bling. Revise o antes/depois e aprove na fila; nada foi gravado no Bling."})})}return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify(a==="provedores"?{verificado:true,provedores:[]}:a==="chat_config"?{persistente:false,bling:false,leitura_administrativa:false,retencao_dias:180}:{conversas:[],registros:[]})});}
@@ -68,6 +75,14 @@ try {
     assert.match(await modal.innerText(),/IN D I S A|INDISA/);
     assert.match(await modal.innerText(),/GTIN\/EAN/);
     assert.equal((await modal.innerText()).includes("151,00"),false,"custo confidencial não exibido");
+    // PR #242: galeria de até 8 imagens na ficha: estado, origem, licença e aprovação por imagem; nada publicável sem direitos
+    const galeria=modal.locator(".galeria-produto");await galeria.waitFor();
+    assert.equal(await galeria.locator(".galeria-item").count(),3,"as três imagens do produto aparecem");
+    const txtGaleria=await galeria.innerText();
+    assert.match(txtGaleria,/3 de 8/);assert.match(txtGaleria,/fabricante\.exemplo\.com\.br/);assert.match(txtGaleria,/Imagem ilustrativa/);assert.match(txtGaleria,/não prova a peça/);assert.match(txtGaleria,/aprovar não publica/);
+    assert.equal(await galeria.locator(".galeria-item").nth(0).getByText("publicável",{exact:true}).count(),0,"pendente sem direitos nunca é publicável");
+    assert.equal(await galeria.getByRole("button",{name:"Aprovar esta"}).count(),2,"só as pendentes têm botão de aprovar");
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,`galeria sem overflow a ${width}px`);
     await page.keyboard.press("Escape");await modal.waitFor({state:"hidden"});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,`sem overflow a ${width}px`);
     await page.screenshot({path:root+`evidencias-chat/catalogo-${width}.png`,fullPage:true});

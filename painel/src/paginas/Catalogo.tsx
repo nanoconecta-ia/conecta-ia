@@ -8,6 +8,7 @@ import { mapaDoCatalogo } from "../lib/mapaPagina.ts";
 import { resumoDoLote } from "../lib/catalogoExperiencia.ts";
 import { TAMANHO_LOTE_CATALOGO, expressaoBuscaCatalogo, juntarProdutosPorId, existemMaisProdutos } from "../lib/catalogoPaginacao.ts";
 import { Icone } from "../componentes/Icone.tsx";
+import { GaleriaProduto } from "../componentes/GaleriaProduto.tsx";
 import "./catalogo-workspace.css";
 import { IconePeca } from "../componentes/IconePeca.tsx";
 import { iconeDaCategoria } from "../lib/icones.ts";
@@ -316,6 +317,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
               </label>
               <small>Isto não grava nada: a posição escolhida vai no pedido ao Nano, que propõe com fonte e você aprova na fila.</small>
             </div>
+            <GaleriaProduto key={ficha.id} loja={loja} produtoId={ficha.id} sku={ficha.sku} aoFechar={() => setFichaId(null)} />
             <div className="catalogo-ficha-pendencias">
               <strong>Campos faltando no espelho</strong>
               <p>{camposFaltando(ficha).length ? camposFaltando(ficha).join(" · ") : "Nenhuma das lacunas básicas detectadas. Aplicações e equivalências exigem comprovação independente."}</p>

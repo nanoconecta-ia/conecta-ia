@@ -102,3 +102,21 @@
 .catalogo-ficha-corrigir input, .catalogo-ficha-corrigir textarea { width:100%; box-sizing:border-box; font:inherit; color:var(--texto); background:var(--cartao); border:var(--campo-bw) solid var(--borda-forte); border-radius:8px; padding:8px; min-height:44px; }
 .catalogo-ficha-corrigir button { justify-self:start; min-height:44px; }
 .correcao-ok { color:var(--ok) !important; font-weight:600; } .correcao-erro { color:var(--erro) !important; font-weight:600; }
+
+/* Galeria de imagens do produto (PR #242): só tokens do tema; mobile-first (2 colunas), 4 a partir de lg. */
+.galeria-produto { display:grid; gap:10px; margin:14px 0; padding:14px; border:1px solid var(--borda); border-radius:14px; background:var(--cartao); min-width:0; }
+.galeria-topo { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.galeria-aviso { margin:0; font-size:.76rem; line-height:1.5; color:var(--suave); }
+.galeria-grade { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.galeria-item { display:grid; align-content:start; gap:8px; padding:8px; border:1px solid var(--borda); border-radius:12px; background:var(--realce); min-width:0; }
+.galeria-item--aprovada { border-color:var(--marca); }
+.galeria-quadro { position:relative; aspect-ratio:1/1; border-radius:10px; overflow:hidden; background:var(--cartao); border:1px solid var(--borda); }
+.galeria-quadro img { width:100%; height:100%; object-fit:contain; display:block; background:#fff; }
+.galeria-rotulo { position:absolute; left:6px; right:6px; bottom:6px; padding:3px 6px; border-radius:8px; font-size:.68rem; font-weight:700; text-align:center; background:var(--cartao); color:var(--texto); border:1px solid var(--borda); }
+.galeria-selos { display:flex; flex-wrap:wrap; gap:4px; }
+.galeria-dados { display:grid; grid-template-columns:1fr 1fr; gap:4px 8px; margin:0; font-size:.72rem; }
+.galeria-dados div { min-width:0; } .galeria-dados dt { color:var(--suave); } .galeria-dados dd { margin:0; overflow-wrap:anywhere; }
+.galeria-avisos { margin:0; padding-left:16px; font-size:.7rem; color:var(--suave); }
+.galeria-acoes { display:flex; flex-wrap:wrap; gap:6px; }
+.galeria-acoes button { min-height:40px; flex:1 1 90px; }
+@media (min-width:1024px) { .galeria-grade { grid-template-columns:repeat(4,minmax(0,1fr)); } }
