@@ -1,5 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { Loja } from "../lib/dados.ts";
+import { FundoBrancoPreview } from "../componentes/FundoBrancoPreview.tsx";
+import { RoboNano } from "../componentes/RoboNano.tsx";
+import "./nano-visual.css";
 import {
   CHECAGENS, CONFIG_PADRAO, FILTRO_MELHORADA, MODOS, RECURSOS, bannerLigado, comparadorLigado, gravarConfig, lerConfig,
   limitarZoom, podeAprovar, pontoDoClique, sha256Hex, validarArquivo, type Config, type Recurso,
@@ -7,7 +10,7 @@ import {
 
 const EditorBanner = lazy(() => import("../componentes/EditorBanner.tsx")); // o Konva só é baixado quando a pessoa abre o editor
 
-type Foto = { url: string; nome: string; tamanho: number; sha: string };
+type Foto = { url: string; nome: string; tamanho: number; sha: string; arquivo: File };
 
 /** Nano Visual Fidelity. A foto escolhida fica SÓ no navegador (nada é enviado, salvo ou publicado); a "melhorada" é simulação de luz por CSS;
  *  o banner não escreve nada por cima da peça; aprovar é uso interno e exige as 3 checagens humanas. */
@@ -25,14 +28,22 @@ export function Imagens({ loja }: { loja: Loja }) {
     if (problema) { setErro(problema); return; }
     setErro("");
     const sha = await sha256Hex(await arquivo.arrayBuffer());
-    setFoto({ url: URL.createObjectURL(arquivo), nome: arquivo.name, tamanho: arquivo.size, sha });
+    setFoto({ url: URL.createObjectURL(arquivo), nome: arquivo.name, tamanho: arquivo.size, sha, arquivo });
   }
 
   return (
-    <>
-      <div className="cartao">
-        <h1>Nano Visual Fidelity <span className="selo atencao">demonstração local</span></h1>
-        <p className="suave">Melhore a apresentação de uma fotografia <strong>sem alterar a peça</strong>. A foto escolhida fica só neste navegador: nada é enviado, salvo ou publicado. “Melhorada” é uma simulação de luz e enquadramento; não remove fundo e não redesenha nada.</p>
+    <div className="nano-visual">
+      <header className="nano-visual-cabecalho">
+        <div className="nano-visual-intro"><span className="nano-visual-selo">CON~ECTA IA · IMAGENS E SEO</span>
+          <h1>Nano Visual Fidelity <span className="selo atencao">demonstração local</span></h1>
+          <p>Estúdio de imagens com apresentação avançada para autopeças: <strong>original preservado</strong>, prévia lado a lado e nova cópia quadrada sobre fundo branco.</p>
+          <div className="nano-visual-beneficios"><span>✓ Original intocado</span><span>✓ Prévia 1200 × 1200</span><span>✓ Sem envio automático</span></div>
+        </div>
+        <div className="nano-visual-agente"><RoboNano tamanho={94} decorativo /><div><b>Nano.IA</b><small>Assistente visual</small><span>Prévia local · sem API</span></div></div>
+      </header>
+      <div className="cartao nano-visual-arquivo">
+        <h2>Fotografia de origem</h2>
+        <p className="suave">Selecione um arquivo JPG, PNG ou WebP. A prévia utiliza somente este navegador; o original continua disponível sem nenhuma mudança.</p>
         <div className="linha">
           <input ref={entrada} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { void escolher(e.target.files?.[0]); e.target.value = ""; }} />
           <button type="button" disabled={config.modo === "desligado"} onClick={() => entrada.current?.click()}>Escolher fotografia da peça</button>
@@ -41,12 +52,13 @@ export function Imagens({ loja }: { loja: Loja }) {
         {erro && <p className="msg-erro" role="alert">{erro}</p>}
       </div>
 
+      {foto && comparadorLigado(config) && <FundoBrancoPreview key={foto.sha + "-branco"} arquivo={foto.arquivo} original={foto.url} nome={foto.nome} />}
       {foto && comparadorLigado(config) && <Comparador key={foto.sha} foto={foto} />}
       {foto && bannerLigado(config) && <Suspense fallback={<p className="suave" role="status">Abrindo o editor…</p>}><EditorBanner key={foto.sha} foto={foto} loja={loja} /></Suspense>}
       {!foto && config.modo !== "desligado" && <p className="suave">Escolha uma fotografia para comparar o original com a versão melhorada e preparar o banner.</p>}
 
       <Configuracao config={config} alterar={alterar} />
-    </>
+    </div>
   );
 }
 
