@@ -45,7 +45,8 @@ try {
     assert.ok(medidas.chat.height>=Math.min(140,altura*.20),"historico utilizavel "+JSON.stringify(medidas));
     assert.ok(medidas.campo.bottom<=altura+1 && medidas.enviar.bottom<=altura+1,"campo e Enviar visiveis "+JSON.stringify(medidas));
     assert.ok(medidas.scroll<=largura+1,"sem scroll horizontal "+JSON.stringify(medidas));
-    assert.equal(await page.locator(".nano-mini-agentes .nano-mini-acao").count(),3,"atalhos para modulos existentes");
+    assert.equal(await page.locator(".nano-mini-agentes .nano-mini-acao").count(),0,"sem duplicar ferramentas no cabecalho");
+    assert.equal(await page.locator(".abas .agente .nano-robo").count(),1,"avatar Nano no chat");
     await page.getByRole("button",{name:"Abrir menu do Nano.IA"}).click();
     const drawer=page.locator(".nano-navegacao");
     await drawer.locator(".nano-pasta-principal[open]").waitFor();
