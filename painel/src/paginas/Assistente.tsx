@@ -106,6 +106,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [esq, setEsq] = useState(false), [dir, setDir] = useState(false);
   const [menuAnexos, setMenuAnexos] = useState(false);
   const [fotoEstudio, setFotoEstudio] = useState<File | null>(null);
+  const [evidencias, setEvidencias] = useState<Array<{ arquivo: File; fonte: string; codigo: string; selecionada: boolean }>>([]);
   const entradaEstudio = useRef<HTMLInputElement>(null);
   const [buscaMenu, setBuscaMenu] = useState("");
   const [ferramentasAbertas, setFerramentasAbertas] = useState(true); // abas laterais retráteis (conversas / modelo e privacidade)
@@ -507,6 +508,34 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
             <button type="button" className="sec mini" onClick={() => setFotoEstudio(null)} aria-label="Fechar estúdio de imagens">Fechar</button>
           </div>
           <PreviaBranca key={fotoEstudio.name + fotoEstudio.lastModified} arquivo={fotoEstudio} />
+          <div style={{ padding: 12 }}>
+            <strong>Galeria de evidências · até 8 imagens</strong>
+            <p className="suave">Comparação local. Seleção não comprova compatibilidade, licença ou autenticidade. Nenhuma imagem é enviada ao Bling.</p>
+            <label>Adicionar fotografias candidatas
+              <input type="file" accept="image/*" multiple onChange={(e) => {
+                const novos = Array.from(e.target.files ?? []).filter(f => f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024);
+                setEvidencias(antigas => [...antigas, ...novos.map(arquivo => ({ arquivo, fonte: "", codigo: "", selecionada: false }))].slice(0, 8));
+                e.target.value = "";
+              }} />
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginTop: 12 }}>
+              {Array.from({ length: 8 }, (_, i) => {
+                const item = evidencias[i];
+                return <div key={i} style={{ border: "1px solid var(--borda, #aaa)", borderRadius: 10, padding: 8 }}>
+                  <strong>Imagem {i + 1}</strong>
+                  {item ? <>
+                    <PreviaBranca arquivo={item.arquivo} />
+                    <small>{item.arquivo.name}</small>
+                    <label>Fonte / URL<input aria-label={`Fonte da imagem ${i + 1}`} value={item.fonte} onChange={e => setEvidencias(a => a.map((x, k) => k === i ? { ...x, fonte: e.target.value } : x))} /></label>
+                    <label>SKU / OEM na origem<input aria-label={`Código da imagem ${i + 1}`} value={item.codigo} onChange={e => setEvidencias(a => a.map((x, k) => k === i ? { ...x, codigo: e.target.value } : x))} /></label>
+                    <label><input type="checkbox" checked={item.selecionada} onChange={e => setEvidencias(a => a.map((x, k) => k === i ? { ...x, selecionada: e.target.checked } : x))} /> Seleção preliminar</label>
+                    <button type="button" className="sec mini" onClick={() => setEvidencias(a => a.filter((_, k) => k !== i))}>Remover</button>
+                  </> : <p className="suave">Sem imagem</p>}
+                </div>;
+              })}
+            </div>
+            <p className="suave" role="status">{evidencias.filter(x => x.selecionada).length} selecionada(s) para revisão humana. Publicação bloqueada nesta galeria.</p>
+          </div>
         </section>
       </>}
       <aside className="aba aba-dir" id="aba-modelo" aria-label="Modelo e privacidade">
