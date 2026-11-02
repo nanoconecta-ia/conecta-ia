@@ -224,7 +224,7 @@ export function App() {
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />
           : PAIR_ATIVO && caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao?.user.email ?? null} />
-          : PAIR_ATIVO && caminho === "/meu-agente" ? <MeuAgente />
+          : PAIR_ATIVO && caminho === "/meu-agente" ? <MeuAgente loja={loja} />
           : PAIR_ATIVO && caminho === "/dispositivos" ? <Dispositivos loja={loja} />
           : caminho === "/taxonomia" ? <Taxonomia loja={loja} />
           : caminho === "/conector" ? <ConectorIA loja={loja} query={query} />
