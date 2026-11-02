@@ -1334,3 +1334,29 @@ html[data-orbe="cristal"] .orbe-faiscas b { box-shadow: 0 0 5px 1px color-mix(in
  .layout--nano-chat .abas.chat-tela .chat .bolha.eu { max-width: 86%; }
  .layout--nano-chat .abas-centro > .chat { padding: 9px 10px; }
 }
+
+
+/* Escala responsiva: smartphones, tablets, HD, Full HD e 4K.
+   Preserva os tokens e as escolhas de cor do perfil, sem alterar dados ou lógica. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { min-width: 0; }
+.layout, .conteudo, main { min-width: 0; }
+img, video, canvas, svg { max-width: 100%; }
+img, video { height: auto; }
+@media (max-width: 767px) {
+  .layout, .conteudo, main { max-width: 100%; }
+  .cartao, .v-cartao { min-width: 0; }
+  .cartao, .v-cartao, .prop-item { overflow-wrap: anywhere; }
+  .topo { max-width: 100%; }
+}
+@media (min-width: 1920px) {
+  .conteudo, main { font-size: clamp(1rem, .82rem + .16vw, 1.125rem); }
+}
+@media (min-width: 2560px) {
+  .conteudo, main { font-size: 1.125rem; }
+  .layout { grid-template-columns: 280px minmax(0, 1fr); }
+  .layout--recolhido, .layout--recolhido.layout--larga { grid-template-columns: 72px minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .layout, .menu, .menu a, .indicador, .prop-item { transition-duration: .01ms; }
+}
