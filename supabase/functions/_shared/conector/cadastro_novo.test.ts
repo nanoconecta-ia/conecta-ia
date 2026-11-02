@@ -30,9 +30,9 @@ function contexto(bling: BlingMock, extra: Record<string, unknown> = {}) {
   return { ctx: { lojaId: "L", userId: "u1", bling, rpc, dados: { produtoPorSku: async () => null }, admin: adminFake(), agente: { nome: "Nano.ia" }, ...extra } as any, itens };
 }
 
-test("a ferramenta é ativa só no chat, MEDIUM, e a criação de produto não tem nenhum campo liberado", () => {
+test("a ferramenta é ativa no chat e no MCP (só propõe), MEDIUM, e a criação de produto não tem nenhum campo liberado", () => {
   const d = buscarDefinicao("bling.produtos.preparar_cadastro")!;
-  assert.equal(d.estado, "ativa"); assert.equal(d.risco, "MEDIUM"); assert.deepEqual(d.exposicao, { chat: true, mcp: false });
+  assert.equal(d.estado, "ativa"); assert.equal(d.risco, "MEDIUM"); assert.deepEqual(d.exposicao, { chat: true, mcp: true }, "ordem do dono 02/11/2026: o agente externo propõe produto novo pelo MCP");
   assert.equal(CAMPOS_ESCRITA_LIBERADOS["bling.produtos.criar"], undefined);
 });
 test("propõe produto novo, sem gravar no Bling, com pendências e fiscal 'a confirmar'", async () => {
