@@ -12,6 +12,7 @@ import "./catalogo-workspace.css";
 import { IconePeca } from "../componentes/IconePeca.tsx";
 import { iconeDaCategoria } from "../lib/icones.ts";
 import { pedirAoNanoNaConversa } from "../lib/contextoPagina.ts";
+import { montarPedidoCorrecao as montarPedidoCorrecaoCadastro } from "../lib/correcaoCadastro.ts";
 import { montarPedidoCorrecao, pendenciasDaFicha } from "../lib/pedidoCorrecao.ts";
 import { camposFaltando, contagens, filtrar, ROTULO_FILTRO, semCategoria, situacaoTexto, type Filtro, type LinhaPlanilha } from "../lib/planilha.ts";
 
@@ -40,6 +41,9 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const [fichaId, setFichaId] = useState<string | null>(null);
   const [obsFicha, setObsFicha] = useState("");
   const [noSugerido, setNoSugerido] = useState("");
+  const [form, setForm] = useState({ marca: "", gtin: "", pesoKg: "", descricaoCurta: "", fonte: "" });
+  const [corrigindo, setCorrigindo] = useState(false);
+  const [msgCorrecao, setMsgCorrecao] = useState<{ ok: boolean; texto: string } | null>(null);
   const [categorias, setCategorias] = useState<Map<string, string>>(new Map());
   const [nos, setNos] = useState<Map<string, No>>(new Map());
   const carregar = useCallback(async (offset = 0) => {
@@ -116,7 +120,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
     const timer = window.setTimeout(() => setBuscaAplicada(busca.trim()), 350);
     return () => window.clearTimeout(timer);
   }, [busca]);
-  useEffect(() => { setObsFicha(""); setNoSugerido(""); }, [fichaId]);
+  useEffect(() => { setObsFicha(""); setNoSugerido(""); setForm({ marca: "", gtin: "", pesoKg: "", descricaoCurta: "", fonte: "" }); setMsgCorrecao(null); }, [fichaId]);
   useEffect(() => { setFichaId(null); setSelecionados(new Set()); setBusca(""); setBuscaAplicada(""); }, [loja.id]);
   useEffect(() => {
     if (!fichaId) return;
@@ -164,6 +168,17 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const pesquisaPendente = busca.trim() !== buscaAplicada;
   const resumo = resumoDoLote(itens ?? []);
   const ficha = itens?.find((p) => p.id === fichaId) ?? null;
+  async function criarPropostaCorrecao() {
+    if (!ficha?.sku) { setMsgCorrecao({ ok: false, texto: "Este produto não tem SKU cadastrado." }); return; }
+    const pedido = montarPedidoCorrecaoCadastro(form);
+    if (!pedido.ok) { setMsgCorrecao({ ok: false, texto: pedido.erro }); return; }
+    setCorrigindo(true); setMsgCorrecao(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao: "chat_corrigir_produto", sku: ficha.sku, campos: pedido.campos, fonte: pedido.fonte } });
+      if (error) { let m = "Não foi possível criar a proposta."; try { const j = await (error as { context?: Response }).context?.json(); if (typeof j?.erro === "string") m = j.erro; if (Array.isArray(j?.detalhes) && j.detalhes.length) m += " " + j.detalhes.join("; "); } catch { /* mensagem segura */ } setMsgCorrecao({ ok: false, texto: m }); return; }
+      setMsgCorrecao({ ok: true, texto: String(data?.resposta ?? "Proposta criada. Aprove na fila.") });
+    } finally { setCorrigindo(false); }
+  }
   const pedidoDaFicha = (p: Produto, sugerido = "") => ({ taxonomiaSugerida: sugerido ? nomeNo(sugerido) : undefined, sku: p.sku, nome: p.nome, marca: p.marca, gtin: p.gtin, peso_kg: p.peso_kg, imagens: p.imagens, categoria: categorias.get(p.categoria_bling_id ?? "") ?? null, taxonomia: p.taxonomia_no_id ? nomeNo(p.taxonomia_no_id) : null, descricaoVazia: camposFaltando(p).includes("descrição") });
   const idsVisiveis = visiveis.map((p) => p.id);
   const nomeNo = (id: string | null) => {
@@ -313,6 +328,19 @@ export function Catalogo({ loja }: { loja: Loja }) {
                 <textarea value={obsFicha} maxLength={600} rows={2} onChange={(e) => setObsFicha(e.target.value)} placeholder="Ex.: acho que o fabricante é…" />
               </label>
               <button type="button" onClick={() => { pedirAoNanoNaConversa(montarPedidoCorrecao({ ...pedidoDaFicha(ficha, noSugerido), observacaoLojista: obsFicha })); setFichaId(null); }}><Icone nome="agentes" tamanho={18}/> Pedir correção ao Nano.IA</button>
+            </div>
+            <div className="catalogo-ficha-corrigir">
+              <strong>Corrigir o cadastro agora (sem IA)</strong>
+              <p>Preencha só o que você sabe e a fonte. Isto cria uma <b>proposta</b>: nada é gravado no Bling até você aprovar na fila.</p>
+              <div className="catalogo-ficha-corrigir-campos">
+                <label>Marca (fabricante real)<input value={form.marca} maxLength={80} onChange={(e) => setForm({ ...form, marca: e.target.value })} placeholder="Não use IMPORTADO ou NACIONAL" /></label>
+                <label>GTIN/EAN<input value={form.gtin} inputMode="numeric" maxLength={14} onChange={(e) => setForm({ ...form, gtin: e.target.value })} /></label>
+                <label>Peso líquido (kg)<input value={form.pesoKg} inputMode="decimal" maxLength={10} onChange={(e) => setForm({ ...form, pesoKg: e.target.value })} /></label>
+                <label>Descrição curta (só texto)<textarea value={form.descricaoCurta} rows={3} maxLength={500} onChange={(e) => setForm({ ...form, descricaoCurta: e.target.value })} /></label>
+                <label>Fonte (URL do fabricante ou documento) *<input value={form.fonte} maxLength={500} onChange={(e) => setForm({ ...form, fonte: e.target.value })} placeholder="https://…" /></label>
+              </div>
+              <button type="button" disabled={corrigindo} onClick={() => void criarPropostaCorrecao()}>{corrigindo ? "Criando…" : "Criar proposta de correção"}</button>
+              {msgCorrecao && <p role="status" className={msgCorrecao.ok ? "correcao-ok" : "correcao-erro"}>{msgCorrecao.texto}{msgCorrecao.ok && <> <a href="#/fila" onClick={() => setFichaId(null)}>Abrir aprovações</a></>}</p>}
             </div>
             <div className="catalogo-ficha-links"><a href="#/assistente" onClick={() => setFichaId(null)}><Icone nome="agentes" tamanho={18}/> Consultar Nano.IA</a><a href="#/fila" onClick={() => setFichaId(null)}>Abrir aprovações</a></div>
           </section>

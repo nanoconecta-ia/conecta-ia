@@ -1371,3 +1371,6 @@ img, video { height: auto; }
   .layout--nano-chat .abas .agente { min-height: 46px; padding-block: 4px; }
   .layout--nano-chat .abas .agente .agente-titulo .estado { font-size: .75rem; }
 }
+
+/* "desfazer" da autorização: o botão global (degradê) cobria o texto; aqui volta a ser um link discreto. */
+.consent-ok button.link { background: none !important; box-shadow: none !important; border: 0; padding: 0 2px; min-height: 0; width: auto; color: var(--marca-forte); text-decoration: underline; font: inherit; }

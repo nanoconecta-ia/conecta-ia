@@ -4544,7 +4544,10 @@ async function executarFerramenta(nome, entrada, c) {
                 }, c.conector);
                 return r.ok ? r.resultado : {
                     erro: r.erro,
-                    decisao: r.decisao
+                    decisao: r.decisao,
+                    ...r.resultado?.detalhes ? {
+                        detalhes: r.resultado.detalhes
+                    } : {}
                 };
             }
         default:
@@ -6216,6 +6219,87 @@ async function atenderChat(c, ctx) {
         } catch  {
             return resultado({
                 erro: "A ficha não foi concluída. Verifique conexão, autorização ou auditoria do Bling; nenhum cadastro foi criado."
+            }, 503);
+        }
+    }
+    if (c.acao === "chat_corrigir_produto") {
+        if (!ativo("chat_consulta_bling")) return resultado({
+            erro: "Consulta Bling indisponível nesta loja."
+        }, 403);
+        const campos = c.campos, fonte = typeof c.fonte === "string" ? c.fonte.trim() : "";
+        if (typeof c.sku !== "string" || !/^[A-Za-z0-9_.\\/-]{1,60}$/.test(c.sku) || c.sku.startsWith(".") || !campos || typeof campos !== "object" || Array.isArray(campos) || !Object.keys(campos).length || Object.keys(campos).length > 8 || c.anexos != null || c.conversa_id != null || c.provedor != null) return resultado({
+            erro: "Informe o SKU e de 1 a 8 campos de cadastro, sem anexos."
+        }, 400);
+        if (fonte.length < 5 || fonte.length > 500) return resultado({
+            erro: "Informe a fonte (URL ou documento) dos valores; sem fonte não proponho."
+        }, 400);
+        try {
+            const { data: limitado, error: le } = await admin.rpc("limite_chamada", {
+                p_chave: `corrigir:${loja.id}:${userId}`,
+                p_max: 20,
+                p_janela_s: 60
+            });
+            if (le || limitado !== true) return resultado({
+                erro: "Limite temporário de correções. Aguarde um minuto."
+            }, 429);
+            const chaveCifra = await chaveiroPlataforma(admin, ctx.get);
+            if (!chaveCifra) return resultado({
+                erro: "Credencial do conector não disponível."
+            }, 503);
+            const bling = new BlingLeituraReal(armazemSupabase(admin), loja.id, {
+                chaveCifra,
+                fetch: ctx.fetch
+            });
+            const conector = {
+                origem: "chat",
+                lojaId: loja.id,
+                userId,
+                dados: dadosSupabase(admin, loja.id),
+                rpc: (fn, args)=>admin.rpc(fn, args),
+                admin,
+                bling,
+                conversaId: null,
+                agente: {
+                    nome: "Nano.ia (sem IA)",
+                    provedor: "nenhum",
+                    modelo: "deterministico"
+                }
+            };
+            const out = await executarFerramenta("bling_propor_ajuste_produto", {
+                sku: c.sku,
+                campos,
+                fonte
+            }, {
+                usuario,
+                admin,
+                lojaId: loja.id,
+                plugins: [],
+                credencial: async ()=>null,
+                fetch: ctx.fetch,
+                conector,
+                buscaImagem: null,
+                searxng: null
+            });
+            if (out?.erro) return resultado({
+                erro: String(out.erro),
+                detalhes: out.detalhes,
+                ia: false
+            }, 422);
+            return resultado({
+                ia: false,
+                modo: "correcao_sem_llm",
+                proposta: {
+                    id: out.proposta_id,
+                    titulo: out.titulo,
+                    versao: out.versao,
+                    hash: out.hash,
+                    risco: out.risco
+                },
+                resposta: `Proposta criada: ${out.titulo ?? "atualização de cadastro"}. Revise o antes/depois e aprove na fila; nada foi gravado no Bling.`
+            });
+        } catch  {
+            return resultado({
+                erro: "A proposta não foi criada. Verifique conexão, autorização ou o produto no Bling; nada foi alterado."
             }, 503);
         }
     }

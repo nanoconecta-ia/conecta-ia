@@ -151,7 +151,8 @@ export async function executarFerramenta(nome: string, entrada: unknown, c: Cont
         : nome === "bling_categorias" ? await despachar("bling.categorias.consultar", { busca: txt(e.busca) }, c.conector)
         : nome === "bling_propor_categoria" ? await despachar("bling.categorias.preparar_criacao", { nome: typeof e.nome === "string" ? e.nome.trim().slice(0, 120) : "", ...(e.pai_id ? { pai_id: String(e.pai_id).slice(0, 30) } : {}), fontes }, c.conector)
         : await despachar("bling.categorias.preparar_alteracao_lote", { skus: e.skus, ...(e.escolhas ? { escolhas: e.escolhas } : {}) }, c.conector);
-      return r.ok ? r.resultado : { erro: r.erro, decisao: r.decisao };
+      // detalhes (ex.: campo recusado, produto fora do espelho) voltam ao lojista/modelo: sem eles o erro é genérico demais para corrigir.
+      return r.ok ? r.resultado : { erro: r.erro, decisao: r.decisao, ...((r as { resultado?: { detalhes?: unknown } }).resultado?.detalhes ? { detalhes: (r as { resultado: { detalhes: unknown } }).resultado.detalhes } : {}) };
     }
     default: return { erro: "Ferramenta desconhecida." };
   }
