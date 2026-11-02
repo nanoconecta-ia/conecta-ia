@@ -19,6 +19,7 @@ export interface ContextoProduto {
 }
 export interface StatusSync { status: string; ultimo_sync_ok_em: string | null; ultimo_erro: string | null }
 export interface ChamadaFerramenta { id: number; quando: string; origem: string; ferramenta: string; risco: string | null; decisao: string; motivo: string | null }
+import type { AtividadeExterna } from "./atividadeExterna.ts";
 export interface DocumentoFonte { id: string; tipo: string; titulo: string; fonte: string; fonte_versao: string | null; status: string }
 export interface LinhaLista { cols: (string | number | null)[]; href?: string }
 export interface ListaIndicador { titulo: string; colunas: string[]; linhas: LinhaLista[]; vazio: string }
@@ -47,6 +48,7 @@ export interface FonteDados {
   contexto(lojaId: string, produtoId: string): Promise<ContextoProduto | null>;
   statusSync(lojaId: string): Promise<StatusSync | null>;
   chamadas(lojaId: string, limite: number): Promise<ChamadaFerramenta[]>;
+  atividadesExternas(lojaId: string, limite: number): Promise<AtividadeExterna[]>;
   documentos(lojaId: string): Promise<DocumentoFonte[]>;
   produtosEmAnalise(lojaId: string): Promise<ProdutoResumo[]>;
   propostas(lojaId: string, estado: string | null): Promise<Proposta[]>;
@@ -153,6 +155,19 @@ export const fonteReal: FonteDados = {
   async chamadas(lojaId, limite) {
     const { data } = await supabase.from("agente_chamadas_ferramenta").select("id, quando, origem, ferramenta, risco, decisao, motivo").eq("loja_id", lojaId).order("quando", { ascending: false }).limit(limite);
     return lista<ChamadaFerramenta>(data);
+  },
+  async atividadesExternas(lojaId, limite) {
+    const { data } = await supabase.from("agente_atividades").select("id, criado_em, tipo, ferramenta, resumo, produtos(sku, nome, categoria_bling_id)").eq("loja_id", lojaId).order("criado_em", { ascending: false }).limit(limite);
+    type L = { id: string; criado_em: string; tipo: string; ferramenta: string | null; resumo: string | null; produtos: { sku: string | null; nome: string | null; categoria_bling_id: string | null } | null };
+    const linhas = lista<L>(data);
+    const ids = [...new Set(linhas.map((l) => l.produtos?.categoria_bling_id).filter((x): x is string => !!x))];
+    const porCat = new Map<string, { slug: string; nome: string }>();
+    if (ids.length) {
+      const { data: t } = await supabase.from("bling_categoria_taxonomia").select("bling_categoria_id, taxonomia_nos(slug, nome)").eq("loja_id", lojaId).in("bling_categoria_id", ids);
+      for (const x of lista<{ bling_categoria_id: string; taxonomia_nos: { slug: string; nome: string } | null }>(t)) if (x.taxonomia_nos) porCat.set(x.bling_categoria_id, x.taxonomia_nos);
+    }
+    return linhas.map((l) => ({ id: l.id, criado_em: l.criado_em, tipo: l.tipo, ferramenta: l.ferramenta, resumo: l.resumo,
+      produto: l.produtos ? { sku: l.produtos.sku, nome: l.produtos.nome } : null, categoria: (l.produtos?.categoria_bling_id && porCat.get(l.produtos.categoria_bling_id)) || null }));
   },
   async documentos(lojaId) {
     const { data } = await supabase.from("agente_conhecimento").select("id, tipo, titulo, fonte, fonte_versao, status").or(`loja_id.eq.${lojaId},loja_id.is.null`).in("tipo", ["documentacao", "validado"]).order("criado_em", { ascending: false }).limit(30);
