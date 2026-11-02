@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { Loja } from "../lib/dados.ts";
+import { Icone } from "../componentes/Icone.tsx";
 import { PreviaBranca } from "../componentes/PreviaBranca.tsx";
 import {
   CHECAGENS, CONFIG_PADRAO, FILTRO_MELHORADA, MODOS, RECURSOS, bannerLigado, comparadorLigado, gravarConfig, lerConfig,
@@ -33,7 +34,22 @@ export function Imagens({ loja }: { loja: Loja }) {
 
   return (
     <>
-      <div className="cartao">
+      <section className="nano-visual-hero" aria-label="Estúdio visual Nano">
+        <div className="nano-visual-hero-copy">
+          <span className="nano-visual-eyebrow">MOBIS AUTOPEÇAS · CONECTA.IA</span>
+          <h1>Estúdio visual <span>Nano.IA</span></h1>
+          <p>Apresentação profissional para autopeças. Preserve o arquivo original e prepare uma cópia de fundo branco para revisão.</p>
+          <div className="nano-visual-tags"><span>Original preservado</span><span>1200 × 1200</span><span>Aprovação humana</span></div>
+        </div>
+        <div className="nano-visual-mascote" role="img" aria-label="Mascote gráfico Nano.IA">
+          <div className="nano-visual-robo-cabeca"><span className="nano-visual-olhos"><i /><i /></span><span className="nano-visual-sorriso" /></div>
+          <div className="nano-visual-robo-corpo"><Icone nome="imagem" tamanho={22}/></div>
+          <span className="nano-visual-mascote-legenda">Nano Visual</span>
+        </div>
+      </section>
+      <div className="nano-visual-layout">
+      <div className="nano-visual-principal">
+      <div className="cartao nano-visual-upload">
         <h1>Nano Visual Fidelity <span className="selo atencao">demonstração local</span></h1>
         <p className="suave">Melhore a apresentação de uma fotografia <strong>sem alterar a peça</strong>. A foto escolhida fica só neste navegador: nada é enviado, salvo ou publicado. “Melhorada” simula luz e enquadramento. O estúdio branco cria uma cópia JPG 1200 × 1200 com preenchimento branco sem remover o fundo original da foto nem redesenhar a peça.</p>
         <div className="linha">
@@ -49,6 +65,14 @@ export function Imagens({ loja }: { loja: Loja }) {
       {foto && bannerLigado(config) && <Suspense fallback={<p className="suave" role="status">Abrindo o editor…</p>}><EditorBanner key={foto.sha} foto={foto} loja={loja} /></Suspense>}
       {!foto && config.modo !== "desligado" && <p className="suave">Escolha uma fotografia para comparar o original com a versão melhorada e preparar o banner.</p>}
 
+      </div>
+      <aside className="nano-visual-painel" aria-label="Orientações do Nano.IA">
+        <div className="nano-visual-assistente"><span className="nano-visual-avatar">● ●</span><div><strong>Nano.IA</strong><small>Assistente visual · modo local</small></div></div>
+        <p>Selecione uma foto para preparar o enquadramento. A peça não será redesenhada e o arquivo original continuará intacto.</p>
+        <div className="nano-visual-etapas"><span>01 · Escolher fotografia</span><span>02 · Comparar e conferir detalhes</span><span>03 · Gerar cópia branca</span><span>04 · Aprovar manualmente</span></div>
+        <p className="nano-visual-aviso">Esta versão não remove automaticamente o fundo nem publica no Bling. Nenhum arquivo é enviado para IA externa.</p>
+      </aside>
+      </div>
       <Configuracao config={config} alterar={alterar} />
     </>
   );
