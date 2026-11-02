@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 59 ferramentas — 40 ativas, 17 planejadas, 2 desligadas.
+Resumo: 59 ferramentas — 41 ativas, 16 planejadas, 2 desligadas.
 
 ## Grupo: conecta
 
@@ -103,7 +103,7 @@ Resumo: 59 ferramentas — 40 ativas, 17 planejadas, 2 desligadas.
 | `bling.categorias.consultar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `busca:string` |
 | `bling.estoque.consultar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
 | `bling.precos.consultar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
-| `bling.produtos.preparar_cadastro` | planejada | propor | MEDIUM | não | sim | sim | sim | chave | `rascunho*:object` `fontes*:array` |
+| `bling.produtos.preparar_cadastro` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `rascunho*:object` `fontes*:array` |
 | `bling.produtos.preparar_reativacao` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `bling_id*:string` `fontes*:array` |
 | `bling.produtos.preparar_atualizacao` | ativa | propor | MEDIUM | não | sim | sim | sim | chave | `sku*:string` `campos*:object` `fontes*:array` |
 | `bling.categorias.preparar_alteracao_lote` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `skus*:array` `escolhas:object` |

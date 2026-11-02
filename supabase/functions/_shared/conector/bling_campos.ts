@@ -61,6 +61,14 @@ export function chaveProibida(o: unknown, caminho = ""): string | null {
   return null;
 }
 
+/** Chave proibida no corpo de uma escrita. Só a CRIAÇÃO de produto novo pode enviar codigo, formato e preco (SKU e preço de venda nascem aqui, após aprovação). */
+export function chaveProibidaNaEscrita(ferramenta: string, corpo: unknown): string | null {
+  if (ferramenta === "bling.produtos.criar" && corpo && typeof corpo === "object" && !Array.isArray(corpo)) {
+    return chaveProibida(Object.fromEntries(Object.entries(corpo as Record<string, unknown>).filter(([k]) => !["codigo", "formato", "preco"].includes(k))));
+  }
+  return chaveProibida(corpo);
+}
+
 function valida(m: MapaCampo, v: unknown): string | null {
   switch (m.tipo) {
     case "texto": return typeof v === "string" && v.trim() !== "" ? null : "texto vazio ou inválido";
@@ -89,6 +97,25 @@ export function montarCorpoProduto(depois: Record<string, unknown>): CorpoMontad
   }
   if (Object.keys(corpo).length === 0 && erros.length === 0) erros.push("nada para enviar");
   const proibida = chaveProibida(corpo);
+  if (proibida) erros.push(`${proibida}: campo proibido no corpo`);
+  return { corpo, erros };
+}
+
+/**
+ * Corpo do POST /produtos (PRODUTO NOVO). É o ÚNICO lugar onde código (SKU) e preço de venda seguem para o Bling, e só na criação aprovada.
+ * Tipo, formato e situação são fixos (produto simples ativo). Fiscal, custo, fornecedor e estoque continuam proibidos (chaveProibida confere o corpo
+ * final, exceto codigo/formato/preco, que a criação envia de propósito). Campos do contrato ainda `conferido: false` até a conferência no OpenAPI do Bling.
+ */
+export function montarCorpoCriacao(depois: Record<string, unknown>): CorpoMontado {
+  const erros: string[] = [];
+  const { codigo, nome, preco_venda, ...resto } = depois;
+  if (typeof codigo !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{2,39}$/.test(codigo)) erros.push("codigo: inválido");
+  if (typeof nome !== "string" || nome.trim().length < 5) erros.push("nome: inválido");
+  if (preco_venda !== undefined && !(typeof preco_venda === "number" && Number.isFinite(preco_venda) && preco_venda > 0)) erros.push("preco_venda: deve ser maior que zero");
+  const parte = montarCorpoProduto(resto);
+  for (const e of parte.erros) if (e !== "nada para enviar") erros.push(e);
+  const corpo: Record<string, unknown> = { ...parte.corpo, codigo, nome, tipo: "P", formato: "S", situacao: "A", ...(preco_venda !== undefined ? { preco: preco_venda } : {}) };
+  const proibida = chaveProibida(Object.fromEntries(Object.entries(corpo).filter(([k]) => !["codigo", "formato", "preco"].includes(k))));
   if (proibida) erros.push(`${proibida}: campo proibido no corpo`);
   return { corpo, erros };
 }

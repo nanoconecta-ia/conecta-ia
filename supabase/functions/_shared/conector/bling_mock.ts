@@ -1,6 +1,6 @@
 // Bling simulado: guarda produtos/categorias em memória, valida o que RECEBE (nada fiscal/custo/fornecedor/estoque/SKU)
 // e injeta falhas de forma controlada — inclusive "deu timeout mas gravou" e "deu timeout e não gravou".
-import { chaveProibida } from "./bling_campos.ts";
+import { chaveProibidaNaEscrita } from "./bling_campos.ts";
 import { TimeoutBling, type PortaBling, type RespostaBling } from "./porta_bling.ts";
 
 export type Falha = "timeout_gravou" | "timeout_nao_gravou" | "http_500_gravou" | "http_422" | "http_429" | "http_401" | "leitura_timeout" | "leitura_diverge";
@@ -18,7 +18,7 @@ export class BlingMock implements PortaBling {
   semear(id: string, produto: Record<string, unknown>) { this.produtos.set(id, structuredClone(produto)); return this; }
 
   async chamar(ferramenta: string, args: { id?: string; corpo: unknown }, idem: string): Promise<RespostaBling> {
-    const proibida = chaveProibida(args.corpo);
+    const proibida = chaveProibidaNaEscrita(ferramenta, args.corpo);
     if (proibida || typeof args.corpo !== "object" || args.corpo === null) {
       this.rejeitados.push({ ferramenta, motivo: proibida ? `campo proibido: ${proibida}` : "corpo inválido" });
       return { status: 422, corpo: { erro: "campo não permitido" } };

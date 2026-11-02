@@ -92,7 +92,7 @@ export const FERRAMENTAS_CONECTOR: readonly DefinicaoFerramenta[] = [
   leitura("bling.estoque.consultar", "bling", "Saldo de estoque de um produto no Bling.", obj({ sku }, ["sku"]), livre, "Resposta do Bling.", { estado: "planejada" }),
   leitura("bling.precos.consultar", "bling", "Preço atual de um produto no Bling (sem preço de compra/custo).", obj({ sku }, ["sku"]), livre, "Resposta do Bling.", { estado: "planejada" }),
   proposta("bling.produtos.preparar_cadastro", "bling", "Prepara (sem gravar) o cadastro de um produto novo no Bling: confere duplicidade por SKU/GTIN e monta a proposta.",
-    obj({ rascunho: livre, fontes: { ...lista(fonte, 10), minItems: 1 } }, ["rascunho", "fontes"]), livre, "MEDIUM", { estado: "planejada", simulacao: true }),
+    obj({ rascunho: livre, fontes: { ...lista(fonte, 10), minItems: 1 } }, ["rascunho", "fontes"]), livre, "MEDIUM", { estado: "ativa", simulacao: true, exposicao: { chat: true, mcp: false } }),
   proposta("bling.produtos.preparar_reativacao", "bling", "Prepara (sem gravar) a REATIVAÇÃO de um produto excluído ou inativo no Bling: lê o produto pelo id agora, confere que não existe outro ATIVO com o mesmo código ou GTIN e cria a proposta (só a situação vai para ativo).",
     obj({ bling_id: txt(undefined, 20), fontes: { ...lista(fonte, 10), minItems: 1 } }, ["bling_id", "fontes"]), livre, "MEDIUM", { estado: "ativa", simulacao: true, exposicao: { chat: true, mcp: false } }),
   proposta("bling.produtos.preparar_atualizacao", "bling", "Prepara (sem gravar) a alteração de campos permitidos de um produto: lê o Bling agora, monta antes/depois e cria a proposta.",
