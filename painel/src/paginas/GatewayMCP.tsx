@@ -5,6 +5,7 @@ import { SUPABASE_URL } from "../config.ts";
 import type { ChaveMcp } from "../lib/conectorDados.ts";
 import type { Loja } from "../lib/dados.ts";
 import { useFonte } from "../lib/useFonte.ts";
+import { CLIENTES, PERMISSOES, nomeSugerido, passosDeConexao, resumoConexao, type ClienteMcp, type PermissaoInicial } from "../lib/conectarAgente.ts";
 
 const ESCOPOS: [string, string, string][] = [
   ["leitura", "Leitura", "Consultar catálogo, taxonomia e status. Não altera nada."],
@@ -22,18 +23,21 @@ export function GatewayMCP({ loja }: { loja: Loja }) {
   const [novo, setNovo] = useState<{ token: string; prefixo: string; aviso: string } | null>(null); const [copiado, setCopiado] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [cliente, setCliente] = useState<ClienteMcp>("chatgpt"); const [permissao, setPermissao] = useState<PermissaoInicial>("consulta"); const [passosDe, setPassosDe] = useState<ClienteMcp | null>(null);
   const [revogar, setRevogar] = useState<ChaveMcp | null>(null);
   const carregar = useCallback(() => { if (fonte) void fonte.chaves(loja.id).then(setChaves).catch(() => setChaves([])); }, [fonte, loja.id]);
   useEffect(carregar, [carregar]);
   if (!fonte) return <p className="suave">Carregando…</p>;
 
-  async function criar(e: FormEvent) {
+  async function criar(e: FormEvent, assistente = false) {
     e.preventDefault(); setOcupado(true); setMsg(null);
+    const escopos_ = assistente ? PERMISSOES.find((p) => p.id === permissao)!.escopos : escopos;
+    const nome_ = assistente ? nomeSugerido(cliente) : nome.trim();
     const expira = new Date(Date.now() + dias * 86_400_000).toISOString();
-    const r = await fonte!.chamar<{ id: string; token: string; prefixo?: string; aviso?: string }>("conector-chaves", { loja_id: loja.id, acao: "criar", nome: nome.trim(), escopos, expira_em: expira });
+    const r = await fonte!.chamar<{ id: string; token: string; prefixo?: string; aviso?: string }>("conector-chaves", { loja_id: loja.id, acao: "criar", nome: nome_, escopos: escopos_, expira_em: expira });
     setOcupado(false);
     if (!r.ok || !r.dados?.token) { setMsg({ ok: false, t: r.erro ?? "Não foi possível criar a chave." }); return; }
-    setNovo({ token: r.dados.token, prefixo: r.dados.prefixo ?? r.dados.token.slice(0, 12), aviso: r.dados.aviso ?? "Ela não será mostrada de novo." }); setNome(""); setEscopos(["leitura"]); setCopiado(false); carregar();
+    setPassosDe(assistente ? cliente : null); setNovo({ token: r.dados.token, prefixo: r.dados.prefixo ?? r.dados.token.slice(0, 12), aviso: r.dados.aviso ?? "Ela não será mostrada de novo." }); setNome(""); setEscopos(["leitura"]); setCopiado(false); carregar();
   }
   async function revogarChave() {
     if (!revogar) return; setOcupado(true);
@@ -65,7 +69,27 @@ export function GatewayMCP({ loja }: { loja: Loja }) {
       )}
 
       <div className="cartao">
-        <h2>Nova chave</h2>
+        <h2>Conectar meu Agente</h2>
+        <p className="suave">Escolha o agente e a permissão. Será gerada uma chave real, só desta loja. A conexão é feita por você, no cliente escolhido: o Conecta.IA não instala nada na sua conta.</p>
+        <form onSubmit={(e) => void criar(e, true)}>
+          <fieldset><legend>Agente</legend>
+            {CLIENTES.map((c) => <label key={c.id} className="linha marcar-linha"><input type="radio" name="cliente" checked={cliente === c.id} onChange={() => setCliente(c.id)} /><span><strong>{c.nome}</strong> — {c.nota}</span></label>)}
+          </fieldset>
+          <fieldset><legend>Permissão inicial</legend>
+            {PERMISSOES.map((p) => <label key={p.id} className="linha marcar-linha"><input type="radio" name="permissao" checked={permissao === p.id} onChange={() => setPermissao(p.id)} /><span><strong>{p.titulo}</strong> — {p.descricao}</span></label>)}
+          </fieldset>
+          <label>Validade<select value={dias} onChange={(e) => setDias(Number(e.target.value))}>{VALIDADES.map(([d, t]) => <option key={d} value={d}>{t}</option>)}</select></label>
+          <ul className="suave">{(() => { const r = resumoConexao(cliente, permissao, dias); return [`Agente: ${r.agente}`, `Acesso: ${r.acesso}`, `Expiração: ${r.expiracao}`, "Escrita no Bling: bloqueada"].map((t) => <li key={t}>{t}</li>); })()}</ul>
+          <button disabled={ocupado}>Gerar chave e ver instruções</button>
+        </form>
+      </div>
+      {novo && passosDe && (
+        <div className="cartao"><h2>Como conectar</h2><ol>{passosDeConexao(passosDe, `${SUPABASE_URL}/functions/v1/conector-mcp`).map((t) => <li key={t}>{t}</li>)}</ol>
+          <p className="suave">Estado do endereço: <strong>não verificado</strong> por esta tela (o navegador não pode sondar o gateway).</p></div>
+      )}
+
+      <div className="cartao">
+        <h2>Nova chave (avançado)</h2>
         <form onSubmit={(e) => void criar(e)}>
           <label>Nome (para você reconhecer)<input value={nome} onChange={(e) => setNome(e.target.value)} required minLength={3} maxLength={60} placeholder="Ex.: Assistente GPT do escritório" /></label>
           <fieldset><legend>Escopos</legend>
