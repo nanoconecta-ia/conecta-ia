@@ -1,7 +1,7 @@
 // Porta do Bling usada pelo executor. Três implementações: BlingMock (testes e simulação), BlingLeituraReal (só GET)
 // e BlingEscritaReal (POST/PATCH de uma lista FECHADA de ferramentas, DESLIGADA por padrão: precisa do segredo BLING_ESCRITA_REAL=1).
 import { blingFetch } from "../bling_api.ts";
-import { chaveProibida } from "./bling_campos.ts";
+import { chaveProibidaNaEscrita } from "./bling_campos.ts";
 import type { Armazem, Config } from "../bling_token.ts";
 
 export interface RespostaBling { status: number; corpo?: unknown }
@@ -69,7 +69,7 @@ export class BlingEscritaReal implements PortaBling {
     const caminho = rota.caminho(args.id);
     if (!caminho) throw new Error("alvo_invalido: id do produto ausente ou não numérico");
     if (!args.corpo || typeof args.corpo !== "object" || Array.isArray(args.corpo)) throw new Error("corpo_invalido");
-    const proibida = chaveProibida(args.corpo);
+    const proibida = chaveProibidaNaEscrita(ferramenta, args.corpo);
     if (proibida) throw new Error(`campo_proibido: ${proibida}`);
     const espera = this.cfg.espera ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
     const agora = Date.now(), falta = this.ultimaEm + INTERVALO_ESCRITA_MS - agora;

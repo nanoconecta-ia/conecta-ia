@@ -3,7 +3,7 @@
 // LÊ DE VOLTA e só então confirma. Timeout/5xx em escrita => "desconhecida" (nunca "falhou" e nunca repetir às cegas).
 import { buscarDefinicao } from "./registro.ts";
 import { decidir } from "./policy.ts";
-import { antesIntacto, CAMPOS_ESCRITA_LIBERADOS, camposNaoLiberados, divergencias, montarCorpoProduto } from "./bling_campos.ts";
+import { antesIntacto, CAMPOS_ESCRITA_LIBERADOS, camposNaoLiberados, divergencias, montarCorpoCriacao, montarCorpoProduto } from "./bling_campos.ts";
 import { TimeoutBling, type PortaBling } from "./porta_bling.ts";
 import type { DefinicaoFerramenta } from "./tipos.ts";
 
@@ -43,7 +43,7 @@ export async function escreverEConfirmarNoBling(bling: PortaBling, op: string, i
   } else {
     const fora = camposNaoLiberados(op, item.depois, item.campos, liberados);
     if (fora.length) return { estado: "falhou", motivo: `campo_nao_liberado: ${fora.join(", ")} (liberado para ${op}: ${(liberados[op] ?? []).join(", ") || "nenhum"})` };
-    const m = montarCorpoProduto(item.depois ?? {});
+    const m = criarProduto ? montarCorpoCriacao(item.depois ?? {}) : montarCorpoProduto(item.depois ?? {});
     if (m.erros.length) return { estado: "falhou", motivo: `corpo_invalido: ${m.erros.join("; ")}` };
     corpo = m.corpo;
   }

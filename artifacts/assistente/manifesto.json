@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "20131d46aa4f45801c91838df9c2aa84d7144169a2fbbdf6f30b08603dd0a4d1",
+  "artefato_sha256": "19d11d2ef9c0c6f2e2f0f3d40123445585329d31501392c8aee5018ede51efb2",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -74,11 +74,15 @@
     },
     {
       "path": "supabase/functions/_shared/conector/registro.ts",
-      "sha256": "cb561bd79e5eeadae18b1bb845c3e1540e7c8b6e76f177bb26b21780dfcac754"
+      "sha256": "94c05f8bbc02b18e9047ec4e0367aa5756f4836502a5e73b87df2a8af5e202da"
     },
     {
       "path": "supabase/functions/_shared/conector/bling_campos.ts",
-      "sha256": "945af96365402f9945137263d2e44c3e77e7d29cf10499f4f19ea24fc74c16d2"
+      "sha256": "c199600a584bf7d1f699b8256d227763628d700f4591ff3ec5bcccbef473df6a"
+    },
+    {
+      "path": "supabase/functions/_shared/cadastro/regras_cadastro.ts",
+      "sha256": "119e4cff7f415d9f51c527020fbdc616b861d3143533555b2272a156a7394f4e"
     },
     {
       "path": "supabase/functions/_shared/consulta/interpretar.ts",
@@ -90,7 +94,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/handlers.ts",
-      "sha256": "966d5c7a0a608d188ce556473ae64975ee67b70f388d56f283fb7d354c8f26cc"
+      "sha256": "32d4137015a12a173b766aebbfa34b2290e0c4f60b925fc32bcfcf262e5a213f"
     },
     {
       "path": "supabase/functions/_shared/conector/tipos.ts",
@@ -130,7 +134,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/porta_bling.ts",
-      "sha256": "ffd77fc0476ef81db06e7f7904e5b19e270fd9ec7ad1af7e17b22a8e008b65fa"
+      "sha256": "ce31b78ff97fcb603c2b332c83412bf3d2aaba376be5c347c358f69c0dd1240d"
     },
     {
       "path": "supabase/functions/_shared/bling_armazem.ts",

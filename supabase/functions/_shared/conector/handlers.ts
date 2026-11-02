@@ -1,7 +1,8 @@
 // Handlers das ferramentas ATIVAS do registro. Cada um recebe a entrada já validada pelo esquema e o contexto da loja.
 // Nenhum handler escreve no Bling: as ferramentas "preparar_*" só montam PROPOSTA; quem escreve é o executor, depois da aprovação.
 import { validarMarca } from "../cadastro/regras_marca.ts";
-import { MAPA_CAMPOS, montarCorpoProduto } from "./bling_campos.ts";
+import { MAPA_CAMPOS, montarCorpoCriacao, montarCorpoProduto } from "./bling_campos.ts";
+import { validarRascunho } from "../cadastro/regras_cadastro.ts";
 import { interpretarConsulta, type Vocabulario } from "../consulta/interpretar.ts";
 import type { PortaDados } from "./dados.ts";
 import type { PortaBling } from "./porta_bling.ts";
@@ -82,9 +83,9 @@ export async function criarPropostaVersionada(c: ContextoFerramenta, o: { titulo
     if (!produtoId && it.sku) produtoId = (await c.dados.produtoPorSku(it.sku))?.id;
     // exceções sem produto no espelho: criar categoria, e reativar (o espelho só tem ATIVOS; o alvo é o id do Bling, lido agora)
     const reativacao = it.operacao === "bling.produtos.alterar" && /^\d{1,20}$/.test(it.alvo ?? "") && JSON.stringify(it.campos ?? Object.keys(it.depois)) === '["situacao"]';
-    if (!produtoId && it.operacao !== "bling.categorias.criar" && !reativacao) { erros.push(`item ${i}: produto não encontrado nesta loja`); continue; }
+    if (!produtoId && it.operacao !== "bling.categorias.criar" && it.operacao !== "bling.produtos.criar" && !reativacao) { erros.push(`item ${i}: produto não encontrado nesta loja`); continue; }
     if (it.operacao === "bling.produtos.alterar" || it.operacao === "bling.produtos.criar") {
-      const m = montarCorpoProduto(it.depois);
+      const m = it.operacao === "bling.produtos.criar" ? montarCorpoCriacao(it.depois) : montarCorpoProduto(it.depois);
       if (m.erros.length) { erros.push(`item ${i}: ${m.erros.join("; ")}`); continue; }
     }
     resolvidos.push({ ...it, produto_id: produtoId });
@@ -235,6 +236,27 @@ export const HANDLERS: Record<string, Handler> = {
     return criarPropostaVersionada(c, { titulo: `Reativar no Bling o produto ${p.codigo ?? id} (${String(p.nome ?? "").slice(0, 80)})`, resumo: "Só a situação: de excluído/inativo para ativo. Nenhum outro campo é alterado.", itens: [{
       produto_id: local?.id, sku: p.codigo ?? undefined, operacao: "bling.produtos.alterar", alvo: id, campos: ["situacao"], antes: { situacao }, depois: { situacao: "A" }, fontes: e.fontes,
       validacoes: [`produto ${id} lido no Bling em ${new Date().toISOString()}: situação ${situacao}`, `nenhum outro produto ATIVO com o código ${p.codigo ?? "(sem código)"}${p.gtin ? ` ou o GTIN ${p.gtin}` : ""}`] }] });
+  },
+  // Produto NOVO: valida o rascunho (regras_cadastro), confere duplicidade no espelho e no Bling AGORA e cria a proposta. Não grava nada no Bling.
+  "bling.produtos.preparar_cadastro": async (e, c) => {
+    const v = validarRascunho(e.rascunho, e.fontes, { lojaId: c.lojaId, porPessoa: c.agente?.provedor === "nenhum" });
+    if (!v.ok) return { erro: "Rascunho recusado", detalhes: v.erros };
+    const p = v.proposta;
+    if (!c.bling) return { erro: "Sem acesso de leitura ao Bling; não confiro duplicidade, então nada foi proposto." };
+    const conflitos: { id?: string; codigo: unknown; nome: unknown; por: string }[] = [];
+    const local = await c.dados.produtoPorSku(p.codigo);
+    if (local) conflitos.push({ id: local.id, codigo: p.codigo, nome: (local as any).nome ?? null, por: "codigo (espelho)" });
+    for (const [por, args] of [["codigo", { sku: p.codigo }], ["gtin", p.depois.gtin ? { gtin: String(p.depois.gtin) } : null]] as const) {
+      if (!args) continue;
+      const r = await c.bling.ler("bling.produtos.consultar_ativos", args);
+      if (r.status !== 200) return { erro: `Não consegui conferir duplicidade por ${por} no Bling (${r.status}); nada foi proposto.` };
+      for (const x of ((r.corpo as any)?.data ?? []) as any[]) conflitos.push({ id: String(x.id), codigo: x.codigo ?? null, nome: x.nome ?? null, por: `${por} (Bling)` });
+    }
+    if (conflitos.length) return { aviso: "Já existe produto com o mesmo código ou GTIN; criar duplicaria o cadastro. Nada foi proposto. Use a atualização do produto existente ou vincule como origem do mesmo mestre.", conflitos };
+    return criarPropostaVersionada(c, { titulo: `Cadastrar no Bling o produto novo ${p.codigo} (${String(p.depois.nome).slice(0, 80)})`,
+      resumo: `Produto novo. Pendências para publicar: ${p.pendencias.join("; ")}.`, itens: [{
+        sku: p.codigo, operacao: "bling.produtos.criar", campos: Object.keys(p.depois), depois: p.depois, antes: null, fontes: e.fontes,
+        validacoes: [`nenhum produto com o código ${p.codigo}${p.depois.gtin ? ` ou o GTIN ${p.depois.gtin}` : ""} no espelho nem no Bling em ${new Date().toISOString()}`, ...p.validacoes, ...p.pendencias.map((x) => `pendente: ${x}`)] }] });
   },
   // Lê o Bling AGORA, calcula antes/depois dos campos pedidos e cria a proposta. Não grava nada no Bling.
   "bling.produtos.preparar_atualizacao": async (e, c) => {
