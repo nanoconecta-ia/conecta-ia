@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { Loja } from "../lib/dados.ts";
+import { PreviaBranca } from "../componentes/PreviaBranca.tsx";
 import {
   CHECAGENS, CONFIG_PADRAO, FILTRO_MELHORADA, MODOS, RECURSOS, bannerLigado, comparadorLigado, gravarConfig, lerConfig,
   limitarZoom, podeAprovar, pontoDoClique, sha256Hex, validarArquivo, type Config, type Recurso,
@@ -14,6 +15,7 @@ type Foto = { url: string; nome: string; tamanho: number; sha: string };
 export function Imagens({ loja }: { loja: Loja }) {
   const [config, setConfig] = useState<Config>(() => lerConfig(localStorage));
   const [foto, setFoto] = useState<Foto | null>(null);
+  const [fotoArquivo, setFotoArquivo] = useState<File | null>(null);
   const [erro, setErro] = useState("");
   const entrada = useRef<HTMLInputElement>(null);
   useEffect(() => () => { if (foto) URL.revokeObjectURL(foto.url); }, [foto]);
@@ -26,13 +28,14 @@ export function Imagens({ loja }: { loja: Loja }) {
     setErro("");
     const sha = await sha256Hex(await arquivo.arrayBuffer());
     setFoto({ url: URL.createObjectURL(arquivo), nome: arquivo.name, tamanho: arquivo.size, sha });
+    setFotoArquivo(arquivo);
   }
 
   return (
     <>
       <div className="cartao">
         <h1>Nano Visual Fidelity <span className="selo atencao">demonstração local</span></h1>
-        <p className="suave">Melhore a apresentação de uma fotografia <strong>sem alterar a peça</strong>. A foto escolhida fica só neste navegador: nada é enviado, salvo ou publicado. “Melhorada” é uma simulação de luz e enquadramento; não remove fundo e não redesenha nada.</p>
+        <p className="suave">Melhore a apresentação de uma fotografia <strong>sem alterar a peça</strong>. A foto escolhida fica só neste navegador: nada é enviado, salvo ou publicado. “Melhorada” simula luz e enquadramento. O estúdio branco cria uma cópia JPG 1200 × 1200 com preenchimento branco sem remover o fundo original da foto nem redesenhar a peça.</p>
         <div className="linha">
           <input ref={entrada} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { void escolher(e.target.files?.[0]); e.target.value = ""; }} />
           <button type="button" disabled={config.modo === "desligado"} onClick={() => entrada.current?.click()}>Escolher fotografia da peça</button>
@@ -42,6 +45,7 @@ export function Imagens({ loja }: { loja: Loja }) {
       </div>
 
       {foto && comparadorLigado(config) && <Comparador key={foto.sha} foto={foto} />}
+      {fotoArquivo && comparadorLigado(config) && <PreviaBranca key={`copia-branca-${foto?.sha ?? "sem-foto"}`} arquivo={fotoArquivo} />}
       {foto && bannerLigado(config) && <Suspense fallback={<p className="suave" role="status">Abrindo o editor…</p>}><EditorBanner key={foto.sha} foto={foto} loja={loja} /></Suspense>}
       {!foto && config.modo !== "desligado" && <p className="suave">Escolha uma fotografia para comparar o original com a versão melhorada e preparar o banner.</p>}
 

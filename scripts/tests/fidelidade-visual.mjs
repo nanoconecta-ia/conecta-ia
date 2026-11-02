@@ -77,7 +77,12 @@ try{
   ver(await conf.getByRole('radio',{name:/Automático restrito/}).isDisabled(),`${r}: automático restrito indisponível`);
   ver(await conf.getByRole('checkbox',{name:/veículos compatíveis/}).isDisabled(),`${r}: veículos compatíveis indisponível (sem documentação)`);
   await conf.getByRole('radio',{name:/Desligado/}).check();
-  ver(await page.locator('section[aria-labelledby="fid-comp"]').count()===0&&await page.locator('section[aria-labelledby="eb-titulo"]').count()===0,`${r}: desligado esconde comparador e banner`);
+  // React agenda a renderização do editor e do novo preview local: a remoção é assíncrona.
+  await page.locator('section[aria-labelledby="fid-comp"]').waitFor({state:'detached'});
+  await page.locator('section[aria-labelledby="eb-titulo"]').waitFor({state:'detached'});
+  await page.locator('.vf-preparador').waitFor({state:'detached'});
+  ver(await page.locator('section[aria-labelledby="fid-comp"]').count()===0&&await page.locator('section[aria-labelledby="eb-titulo"]').count()===0&&await page.locator('.vf-preparador').count()===0,
+    `${r}: desligado esconde comparador, banner e preparo branco`);
   await page.reload();await page.getByRole('heading',{name:/Nano Visual Fidelity/}).waitFor();
   ver(await page.locator('section[aria-labelledby="fid-config"]').getByRole('radio',{name:/Desligado/}).isChecked(),`${r}: modo lembrado neste aparelho`);
   await page.locator('section[aria-labelledby="fid-config"]').getByRole('button',{name:'Restaurar padrão'}).click();

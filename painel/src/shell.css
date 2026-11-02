@@ -1265,3 +1265,45 @@ html[data-orbe="cristal"] .orbe-faiscas b { box-shadow: 0 0 5px 1px color-mix(in
   .layout--nano-chat .nano-motor-status { min-height:25px; padding-block:2px; }
   .layout--nano-chat .abas .agente { min-height:48px; padding-block:3px; }
 }
+
+
+/* Estúdio branco — acabamento de apresentação SEM modificar originais. */
+.vf-preparador { display:grid; gap:12px; padding:clamp(12px,2.2vw,24px); border:1px solid var(--borda);
+  border-radius:18px; background:linear-gradient(150deg,color-mix(in srgb,var(--cartao) 96%,var(--marca)) 0%,var(--cartao) 70%); box-shadow:var(--sombra); min-width:0; }
+.vf-preparador-topo { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+.vf-preparador-topo strong { font-size:1.1rem; }
+.vf-preparador-info,.vf-preparador-aviso { margin:0; line-height:1.45; }
+.vf-comparacao { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(8px,1.4vw,16px); }
+.vf-foto-bloco { margin:0; padding:10px; display:grid; gap:8px; border-radius:14px; border:1px solid var(--borda);
+  background:var(--cartao); box-shadow:0 7px 22px rgba(0,0,0,.06); min-width:0; }
+.vf-foto-quadro { background:#fff; aspect-ratio:1/1; width:100%; border:1px solid #e6e8eb; border-radius:12px; overflow:hidden;
+  display:grid; place-items:center; padding:7%; box-sizing:border-box; color:#444; }
+.vf-foto-quadro img { display:block; max-width:100%; max-height:100%; width:100%; height:100%; object-fit:contain; }
+.vf-foto-bloco figcaption { font-weight:600; font-size:.85rem; }
+.vf-preparador-rodape { display:flex; justify-content:space-between; flex-wrap:wrap; align-items:center; gap:12px; }
+.vf-preparador-rodape small { flex:1 1 220px; }
+.vf-baixar { display:inline-flex; align-items:center; justify-content:center; padding:12px 16px; background:var(--marca); color:var(--marca-texto);
+  font-weight:650; border-radius:11px; text-decoration:none; min-height:44px; box-sizing:border-box; }
+.vf-baixar:focus-visible { outline:3px solid var(--marca); outline-offset:3px; }
+.nano-foto-fundo { position:fixed; inset:0; border:0; padding:0; border-radius:0; background:rgba(7,19,36,.65); z-index:151; }
+.nano-foto-gaveta { position:fixed; top:0; right:0; bottom:0; width:min(95vw,580px); z-index:152; background:var(--cartao); color:var(--texto);
+  overflow:auto; padding:16px; box-sizing:border-box; box-shadow:-12px 0 40px rgba(0,0,0,.24); }
+.nano-foto-gaveta-topo { display:flex; justify-content:space-between; gap:10px; align-items:center; padding-bottom:12px; margin-bottom:12px; border-bottom:1px solid var(--borda); }
+.nano-foto-gaveta .vf-comparacao { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.nano-foto-gaveta .vf-preparador { padding:12px; }
+@media(max-width:450px) { .vf-comparacao,.nano-foto-gaveta .vf-comparacao { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; } .vf-foto-bloco { padding:6px; } .vf-foto-bloco figcaption {font-size:.75rem} }
+@media(max-width:330px){ .vf-comparacao,.nano-foto-gaveta .vf-comparacao { grid-template-columns:1fr; } }
+
+/* Design mais elaborado, sem repetir navegação nem reduzir área útil do chat. */
+.catalogo-workspace .catalogo-produto { border:1px solid var(--borda); border-radius:16px; overflow:hidden; box-shadow:0 7px 23px rgba(8,28,51,.08);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--cartao) 94%,var(--marca)),var(--cartao) 48%); }
+.catalogo-workspace .catalogo-produto:hover { box-shadow:0 10px 30px rgba(8,28,51,.13); border-color:color-mix(in srgb,var(--marca) 35%,var(--borda)); }
+.catalogo-workspace .catalogo-produto-topo { border-radius:12px; }
+.catalogo-workspace .catalogo-ficha { box-shadow:0 22px 65px rgba(8,28,51,.24); }
+.abas.chat-tela .bolha.ia { border:1px solid var(--borda); border-radius:16px 16px 16px 5px;
+  box-shadow:0 5px 18px rgba(8,28,51,.08); }
+.abas.chat-tela .bolha.eu { border-radius:16px 16px 5px 16px; box-shadow:0 5px 18px rgba(8,28,51,.1); }
+.layout--nano-chat .abas .agente { background:linear-gradient(95deg,var(--grafite),var(--grafite-2)); color:#fff; }
+.layout--nano-chat .abas .agente > button.sec, .layout--nano-chat .abas .agente .sec { color:#fff; border-color:#ffffff50; }
+.layout--nano-chat .abas .agente .estado { color:#f1f4fa; }
+@media(prefers-reduced-motion:reduce){ .catalogo-workspace .catalogo-produto { transition:none; } }

@@ -13,6 +13,8 @@ import { MODELOS_ORBE, aplicarOrbe, gravarOrbe, lerOrbe, type ModeloOrbe } from 
 import { armazemLocal } from "../lib/tema.ts";
 import { apagarVarias, mensagemApagar } from "../lib/apagar-historico.ts";
 import { SeletorCor } from "../componentes/SeletorCor.tsx";
+import { PreviaBranca } from "../componentes/PreviaBranca.tsx";
+import { validarArquivo } from "../lib/fidelidade.ts";
 import { lerSessao, registrarNaSessao, removerDaSessao } from "../lib/conversasDaSessao.ts";
 import { MensagemRetratil } from "../componentes/MensagemRetratil.tsx";
 import { Retratil } from "../componentes/Retratil.tsx";
@@ -102,6 +104,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [ocupado, setOcupado] = useState(false);
   const [esq, setEsq] = useState(false), [dir, setDir] = useState(false);
   const [menuAnexos, setMenuAnexos] = useState(false);
+  const [fotoEstudio, setFotoEstudio] = useState<File | null>(null);
+  const entradaEstudio = useRef<HTMLInputElement>(null);
   const [buscaMenu, setBuscaMenu] = useState("");
   const [ferramentasAbertas, setFerramentasAbertas] = useState(true); // abas laterais retráteis (conversas / modelo e privacidade)
   const caixa = useRef<HTMLDivElement>(null);
@@ -461,6 +465,13 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         {erroAnexo && <p role="alert" className="msg-erro">{erroAnexo}</p>}
         <div className="compositor-grade">
           <input ref={entradaArquivo} type="file" hidden multiple accept={CHAT_ACEITA} onChange={(e) => void escolherArquivos(e.target.files)} />
+          <input ref={entradaEstudio} type="file" hidden accept="image/jpeg,image/png,image/webp" onChange={(e) => {
+            const arquivo = e.target.files?.[0]; e.target.value = "";
+            if (!arquivo) return;
+            const erro = validarArquivo(arquivo);
+            if (erro) { setErroAnexo(erro); return; }
+            setErroAnexo(""); setFotoEstudio(arquivo); setMenuAnexos(false);
+          }} />
           <input ref={entradaCamera} type="file" hidden accept="image/*" capture="environment" onChange={(e) => void escolherArquivos(e.target.files)} />
           <input ref={entradaFotos} type="file" hidden multiple accept="image/*" onChange={(e) => void escolherArquivos(e.target.files)} />
           <div className="compositor-campo"><span id="rotulo-pergunta" className="so-leitor">Pergunte</span><textarea aria-labelledby="rotulo-pergunta" value={texto} rows={1} style={{ display: "block", width: "100%", minWidth: 0, height: "48px", minHeight: "48px", maxHeight: "96px", overflowY: "auto", resize: "none", boxSizing: "border-box" }} enterKeyHint="send" placeholder={config.bling ? "Pergunte ou use /ficha SKU (sem IA)" : "Pergunte ao Nano.IA…"} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void enviar(texto); } }} maxLength={1000} /></div>
@@ -485,9 +496,19 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
           <button type="button" role="menuitem" disabled={ocupado || !provedor || administrando || anexos.length >= CHAT_MAX_ANEXOS} onClick={() => { setMenuAnexos(false); entradaCamera.current?.click(); }}><span className="nano-icone-opcao">📷</span>Câmera</button>
           <button type="button" role="menuitem" disabled={ocupado || !provedor || administrando || anexos.length >= CHAT_MAX_ANEXOS} onClick={() => { setMenuAnexos(false); entradaFotos.current?.click(); }}><span className="nano-icone-opcao">▧</span>Fotos</button>
           <button type="button" role="menuitem" disabled={ocupado || !provedor || administrando || anexos.length >= CHAT_MAX_ANEXOS} onClick={() => { setMenuAnexos(false); entradaArquivo.current?.click(); }}><span className="nano-icone-opcao">📎</span>Arquivos</button>
+          <button type="button" role="menuitem" onClick={() => entradaEstudio.current?.click()}><span className="nano-icone-opcao">▧</span>Estúdio branco · foto 1200px</button>
           <button type="button" role="menuitem" onClick={() => { setMenuAnexos(false); if ((menu ?? []).some(([rota]) => rota === "/integracoes")) aoNavegar?.("/integracoes"); else setDir(true); }}><span className="nano-icone-opcao">✧</span>Integrações de IA</button>
           <button type="button" role="menuitem" onClick={() => { setMenuAnexos(false); setEsq(false); setDir(true); }}><span className="nano-icone-opcao">⚙</span>Modelo e privacidade</button>
         </div>
+      </>}
+      {fotoEstudio && <>
+        <button type="button" className="nano-foto-fundo" aria-label="Fechar estúdio de imagens" onClick={() => setFotoEstudio(null)} />
+        <section className="nano-foto-gaveta" role="dialog" aria-modal="true" aria-label="Estúdio de imagem do Nano.IA">
+          <div className="nano-foto-gaveta-topo"><strong>Imagem do produto · cópia local</strong>
+            <button type="button" className="sec mini" onClick={() => setFotoEstudio(null)} aria-label="Fechar estúdio de imagens">Fechar</button>
+          </div>
+          <PreviaBranca key={fotoEstudio.name + fotoEstudio.lastModified} arquivo={fotoEstudio} />
+        </section>
       </>}
       <aside className="aba aba-dir" id="aba-modelo" aria-label="Modelo e privacidade">
         <div className="aba-topo"><strong>Modelo e privacidade</strong><button type="button" className="sec mini" onClick={() => setDir(false)} aria-label="Recolher modelo e privacidade">Recolher</button></div>
