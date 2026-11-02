@@ -104,7 +104,8 @@ Status: **implementação PARCIAL, sem merge e sem deploy.** Migrações novas *
 6. **`intercambio.ts`, `piques.ts` e `ficha.ts`** são módulos puros testados, mas **ainda não ligados a ferramentas do chat**. Faltam também os dados estruturados de medidas/material por produto e as tabelas técnicas de piques.
 7. **Enriquecimento/taxonomia/tags/descrição** (prioridade 3): este commit **não** acrescenta geração de tags/descrição; segue valendo o que existe (`conecta.enriquecimento.propor`, `espec:*`, `regras_seo`, `regras_taxonomia`).
 8. **Glossário de motores:** `glossario_de_motores()` lê `motores`/`versao_motor`; se essas tabelas estiverem vazias em produção, o resultado é "sem candidato" (falha fechada). Não verifiquei o conteúdo em produção.
-9. **Migrações** `20261102000002_glossario_de_motores.sql` e `20261102000003_galeria_limite_oito.sql`: validadas só em banco descartável; **não aplicadas**.
+9. **Documentos acrescentados pelo GPT no mesmo PR** (`docs/nano-busca-imagens-implementacao.md`, `docs/nano-voz-arquitetura.md`): a galeria implementada segue o contrato de imagens (≤ 8, estados, origem, evidência, licença). **Ainda não feito** do documento de imagens: adaptador SearXNG novo (já existe `ia/searxng.ts`; falta configurar a instância e validar `format=json`), Crawl4AI, deduplicação por **hash perceptual** (hoje deduplica por SHA-256/URL), e a UI com original/tratado lado a lado. A **voz** é só especificação: nada foi implementado.
+10. **Migrações** `20261102000002_glossario_de_motores.sql` e `20261102000003_galeria_limite_oito.sql`: validadas só em banco descartável; **não aplicadas**.
 
 ### Riscos para homologação
 - O deploy do `assistente` precisa ser refeito (artefato mudou); sem ele, nada disto vale em produção.
