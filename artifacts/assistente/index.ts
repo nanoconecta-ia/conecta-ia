@@ -5876,6 +5876,7 @@ async function registrar(c, id, decisao, motivo, entrada, saida, ms) {
             p_tarefa: c.tarefaId ?? null,
             p_user: c.userId,
             p_mcp_chave: c.mcpChaveId ?? null,
+            p_pair_sessao: c.pairSessaoId ?? null,
             p_ferramenta: id,
             p_risco: def?.risco ?? null,
             p_decisao: decisao,

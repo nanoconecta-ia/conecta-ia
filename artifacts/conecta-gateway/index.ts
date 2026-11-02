@@ -65,7 +65,9 @@ const ESCOPOS = [
     "catalogo:propor",
     "campanhas:propor",
     "aprovacoes:ler",
-    "tarefas:ler"
+    "tarefas:ler",
+    "mcp:leitura",
+    "mcp:propor"
 ];
 const ROTULOS = {
     "bling:consultar": "Consultar produto na API Bling (somente leitura, com fallback identificado)",
@@ -77,7 +79,9 @@ const ROTULOS = {
     "catalogo:propor": "Sugerir a publicação do catálogo",
     "campanhas:propor": "Sugerir campanhas e orçamentos",
     "aprovacoes:ler": "Ver quais aprovações estão pendentes",
-    "tarefas:ler": "Ver o andamento das tarefas que ele pediu"
+    "tarefas:ler": "Ver o andamento das tarefas que ele pediu",
+    "mcp:leitura": "Consultar produtos, taxonomia e códigos da sua loja (não altera nada)",
+    "mcp:propor": "Preparar propostas “a confirmar” (nada é aprovado nem publicado sem você)"
 };
 const TIPOS_DISPOSITIVO = [
     "navegador",
@@ -3210,6 +3214,20 @@ async function lerCliente(v, s) {
         return null;
     }
 }
+const metadataRecursoMcp = (recurso, emissorBase)=>({
+        resource: recurso,
+        authorization_servers: [
+            emissorBase + '/oauth'
+        ],
+        scopes_supported: [
+            'mcp:leitura',
+            'mcp:propor'
+        ],
+        bearer_methods_supported: [
+            'header'
+        ],
+        resource_name: 'Conecta IA — agente externo (MCP)'
+    });
 const metadataRecurso = (base)=>({
         resource: base,
         authorization_servers: [
@@ -3325,7 +3343,8 @@ async function tratarOAuth(req, p) {
         const clientId = exato(args, 'client_id'), c = await lerCliente(clientId, s);
         if (!c) return erro('invalid_client', 401);
         const resource = exato(args, 'resource');
-        if (resource && resource !== p.baseURL) return erro('invalid_target');
+        if (resource && resource !== p.baseURL && resource !== p.recursoMcp) return erro('invalid_target');
+        const recurso = resource && resource === p.recursoMcp ? 'conector-mcp' : 'conecta-gateway';
         if (req.headers.has('authorization')) return erro('invalid_client', 401);
         const clienteHash = await sha256Hex(clientId);
         if (path === '/oauth/authorize') {
@@ -3333,11 +3352,12 @@ async function tratarOAuth(req, p) {
             if (!redirect || !c.uris.includes(redirect)) return erro('invalid_request');
             const state = exato(args, 'state'), challenge = exato(args, 'code_challenge');
             if (exato(args, 'response_type') !== 'code' || exato(args, 'code_challenge_method') !== 'S256' || !challenge || !/^[A-Za-z0-9_-]{43}$/.test(challenge) || !state || state.length < 8 || state.length > 512) return erro('invalid_request');
-            const scopes = (exato(args, 'scope') ?? 'bling:consultar').split(' ').filter(Boolean), offline = scopes.includes('offline_access');
+            const scopes = (exato(args, 'scope') ?? (recurso === 'conector-mcp' ? 'mcp:leitura' : 'bling:consultar')).split(' ').filter(Boolean), offline = scopes.includes('offline_access');
             const escopos = [
                 ...new Set(scopes.filter((x)=>x !== 'offline_access'))
             ];
             if (!escopos.length || escopos.some((x)=>!ESCOPOS.includes(x))) return erro('invalid_scope');
+            if (escopos.some((x)=>x.startsWith('mcp:') !== (recurso === 'conector-mcp'))) return erro('invalid_scope');
             const codigo = aleatorioB64u();
             const r = await p.rpc('oauth_pair_iniciar', {
                 p_codigo_hash: await sha256Hex(codigo),
@@ -3347,7 +3367,8 @@ async function tratarOAuth(req, p) {
                 p_state: state,
                 p_nome: c.nome,
                 p_escopos: escopos,
-                p_offline: offline
+                p_offline: offline,
+                p_recurso: recurso
             });
             if (r.error || r.data?.ok !== true) return erro('temporarily_unavailable', 503);
             const destino = new URL(p.appURL);
@@ -3422,7 +3443,7 @@ async function tratarOAuth(req, p) {
     }
 }
 
-return { redirectValido: redirectValido, metadataRecurso: metadataRecurso, desafioOAuth: desafioOAuth, tratarOAuth: tratarOAuth };
+return { redirectValido: redirectValido, metadataRecursoMcp: metadataRecursoMcp, metadataRecurso: metadataRecurso, desafioOAuth: desafioOAuth, tratarOAuth: tratarOAuth };
 })();
 
 // ---------- supabase/functions/_shared/exec_local/rotas_dispositivo.ts ----------
@@ -3568,6 +3589,7 @@ Deno.serve(async (req)=>{
         const config = configuracaoPair(get);
         const oauth = await tratarOAuth(req, {
             baseURL,
+            recursoMcp: Deno.env.get("SUPABASE_URL").replace(/\/$/, "") + "/functions/v1/conector-mcp",
             appURL: config.appUrl ?? "",
             segredo: ()=>segredoEstado(admin, get),
             rpc: (fn, p)=>admin.rpc(fn, p),

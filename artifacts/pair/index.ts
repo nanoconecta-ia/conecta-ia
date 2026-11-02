@@ -108,7 +108,9 @@ const ESCOPOS = [
     "catalogo:propor",
     "campanhas:propor",
     "aprovacoes:ler",
-    "tarefas:ler"
+    "tarefas:ler",
+    "mcp:leitura",
+    "mcp:propor"
 ];
 const ROTULOS = {
     "bling:consultar": "Consultar produto na API Bling (somente leitura, com fallback identificado)",
@@ -120,7 +122,9 @@ const ROTULOS = {
     "catalogo:propor": "Sugerir a publicação do catálogo",
     "campanhas:propor": "Sugerir campanhas e orçamentos",
     "aprovacoes:ler": "Ver quais aprovações estão pendentes",
-    "tarefas:ler": "Ver o andamento das tarefas que ele pediu"
+    "tarefas:ler": "Ver o andamento das tarefas que ele pediu",
+    "mcp:leitura": "Consultar produtos, taxonomia e códigos da sua loja (não altera nada)",
+    "mcp:propor": "Preparar propostas “a confirmar” (nada é aprovado nem publicado sem você)"
 };
 const TIPOS_DISPOSITIVO = [
     "navegador",

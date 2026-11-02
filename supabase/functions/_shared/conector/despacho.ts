@@ -10,6 +10,8 @@ export interface ContextoDespacho extends ContextoFerramenta {
   origem: Exclude<Origem, "executor">;
   escopos?: readonly Permissao[];
   mcpChaveId?: string | null;
+  /** Sessão OAuth que fez a chamada (auditoria por sessão). */
+  pairSessaoId?: string | null;
 }
 export interface ResultadoDespacho { ok: boolean; decisao: Decisao; resultado?: unknown; erro?: string; auditoria_falhou?: boolean }
 
@@ -17,7 +19,7 @@ async function registrar(c: ContextoDespacho, id: string, decisao: Decisao, moti
   const def = buscarDefinicao(id);
   try {
     const { error } = await c.rpc("agente_chamada_registrar", { p_loja: c.lojaId, p_origem: c.origem, p_conversa: c.conversaId ?? null, p_tarefa: c.tarefaId ?? null,
-      p_user: c.userId, p_mcp_chave: c.mcpChaveId ?? null, p_ferramenta: id, p_risco: def?.risco ?? null, p_decisao: decisao, p_motivo: motivo, p_entrada: entrada ?? null, p_saida: saida ?? null, p_duracao: ms });
+      p_user: c.userId, p_mcp_chave: c.mcpChaveId ?? null, p_pair_sessao: c.pairSessaoId ?? null, p_ferramenta: id, p_risco: def?.risco ?? null, p_decisao: decisao, p_motivo: motivo, p_entrada: entrada ?? null, p_saida: saida ?? null, p_duracao: ms });
     return !error;
   } catch { return false; }
 }

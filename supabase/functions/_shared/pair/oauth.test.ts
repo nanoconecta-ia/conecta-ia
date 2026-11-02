@@ -63,3 +63,30 @@ test('limite e falta de configuração negam sem tocar dados',async()=>{
  const a=ambiente();a.p.limite=async()=>false;assert.equal((await a.chamar('/oauth/register',{}))!.status,429);assert.equal(a.calls.length,0);
  a.p.limite=async()=>true;a.p.segredo=async()=>undefined;assert.equal((await a.chamar('/oauth/register',{}))!.status,503);
 });
+
+// ---- recurso (audiência) do conector-mcp ----
+const mcp='https://conecta-sintetico.test/functions/v1/conector-mcp';
+test('recurso conector-mcp: authorize grava p_recurso e só aceita escopos mcp:*; o recurso antigo só aceita os antigos',async()=>{
+ const a=ambiente();a.p.recursoMcp=mcp;const client=await a.registrar();
+ const q=(extra:Record<string,string>)=>'/oauth/authorize?'+new URLSearchParams({client_id:client,redirect_uri:redirect,response_type:'code',state:'state-sintetico',code_challenge:challenge,code_challenge_method:'S256',...extra});
+ const ok=await a.chamar(q({scope:'mcp:leitura mcp:propor offline_access',resource:mcp}));assert.equal(ok!.status,302);
+ assert.equal(a.pedido.p_recurso,'conector-mcp');assert.deepEqual(a.pedido.p_escopos,['mcp:leitura','mcp:propor']);
+ const padrao=await a.chamar(q({resource:mcp}));assert.equal(padrao!.status,302);assert.deepEqual(a.pedido.p_escopos,['mcp:leitura'],'escopo padrão do recurso MCP é só leitura');
+ const antigo=await a.chamar(q({scope:'produtos:ler',resource:base}));assert.equal(antigo!.status,302);assert.equal(a.pedido.p_recurso,'conecta-gateway');
+ const semRecurso=await a.chamar(q({scope:'produtos:ler'}));assert.equal(semRecurso!.status,302);assert.equal(a.pedido.p_recurso,'conecta-gateway');
+ const n=a.calls.length;
+ for(const [extra,erro] of [[{scope:'produtos:ler',resource:mcp},'invalid_scope'],[{scope:'mcp:leitura',resource:base},'invalid_scope'],[{scope:'mcp:leitura'},'invalid_scope'],[{scope:'mcp:leitura produtos:ler',resource:mcp},'invalid_scope'],[{scope:'mcp:leitura',resource:'https://outro.example/x'},'invalid_target']] as const){
+  const r=await a.chamar(q({...extra}));assert.equal(r!.status,400,JSON.stringify(extra));assert.equal((await r!.json()).error,erro,JSON.stringify(extra));
+ }
+ assert.equal(a.calls.length,n,'pedidos recusados não tocam o banco');
+});
+test('recurso conector-mcp: sem recursoMcp configurado, o recurso MCP é recusado (alvo inválido)',async()=>{
+ const a=ambiente(),client=await a.registrar();
+ const r=await a.chamar('/oauth/authorize?'+new URLSearchParams({client_id:client,redirect_uri:redirect,response_type:'code',state:'state-sintetico',code_challenge:challenge,code_challenge_method:'S256',scope:'mcp:leitura',resource:mcp}));
+ assert.equal(r!.status,400);assert.equal((await r!.json()).error,'invalid_target');
+});
+test('discovery do emissor anuncia os escopos mcp:* além dos antigos',async()=>{
+ const a=ambiente(),r=await a.chamar('/oauth/.well-known/oauth-authorization-server'),m=await r!.json();
+ assert.ok(m.scopes_supported.includes('mcp:leitura')&&m.scopes_supported.includes('mcp:propor')&&m.scopes_supported.includes('produtos:ler'));
+ for(const e of m.scopes_supported)assert.doesNotMatch(e,/aprovar|executar|admin/);
+});

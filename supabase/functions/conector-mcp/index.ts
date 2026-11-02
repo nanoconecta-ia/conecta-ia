@@ -10,14 +10,32 @@ import { dadosSupabase } from "../_shared/conector/dados.ts";
 import { BlingLeituraReal } from "../_shared/conector/porta_bling.ts";
 import { armazemSupabase } from "../_shared/bling_armazem.ts";
 import { chaveiroPlataforma } from "../_shared/plataforma.ts";
+import { metadataRecursoMcp } from "../_shared/pair/oauth.ts";
+
+const TRADUCAO_ESCOPO: Record<string, "leitura" | "propor"> = { "mcp:leitura": "leitura", "mcp:propor": "propor" };
 
 Deno.serve(async (req) => {
+  const urlBase = Deno.env.get("SUPABASE_URL")!.replace(/\/$/, "") + "/functions/v1";
+  const urlRecurso = urlBase + "/conector-mcp";
+  // Descoberta OAuth do recurso (RFC 9728): metadado público, sem segredo. Qualquer outro GET continua 405 no gateway.
+  if (req.method === "GET" && new URL(req.url).pathname.endsWith("/.well-known/oauth-protected-resource")) {
+    return new Response(JSON.stringify(metadataRecursoMcp(urlRecurso, urlBase + "/conecta-gateway")), { status: 200, headers: { "content-type": "application/json", "cache-control": "public, max-age=300", "access-control-allow-origin": "*" } });
+  }
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const portas: PortasGateway = {
     async validarChave(hash) {
       const { data } = await admin.rpc("mcp_chave_validar", { p_hash: hash });
       return (data as any[] | null)?.[0] ?? null;
     },
+    async validarOAuth(tokenHash, salHash) {
+      const { data } = await admin.rpc("oauth_validar_para_recurso", { p_token_hash: tokenHash, p_sal_hash: salHash, p_recurso: "conector-mcp" });
+      const s = data as { sessao_id: string; loja_id: string; usuario_id: string; nome: string; escopos: string[] } | null;
+      if (!s) return null;
+      const escopos = [...new Set(s.escopos.flatMap((e) => (TRADUCAO_ESCOPO[e] ? [TRADUCAO_ESCOPO[e]] : [])))];
+      if (!escopos.length) return null;
+      return { chave_id: s.sessao_id, loja_id: s.loja_id, escopos, criada_por: s.usuario_id, nome: s.nome, via: "oauth" as const };
+    },
+    urlRecurso,
     async limite(chaveId) {
       const { data } = await admin.rpc("limite_chamada", { p_chave: `mcp:${chaveId}`, p_max: 120, p_janela_s: 60 });
       return data === true;
