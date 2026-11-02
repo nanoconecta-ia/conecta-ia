@@ -77,11 +77,6 @@ try{
   ver(await conf.getByRole('radio',{name:/Automático restrito/}).isDisabled(),`${r}: automático restrito indisponível`);
   ver(await conf.getByRole('checkbox',{name:/veículos compatíveis/}).isDisabled(),`${r}: veículos compatíveis indisponível (sem documentação)`);
   await conf.getByRole('radio',{name:/Desligado/}).check();
-  console.log("FID_MODE_DEBUG",r,JSON.stringify(await page.evaluate(() => ({
-    radios:[...document.querySelectorAll('section[aria-labelledby="fid-config"] input[type=radio]')].map(e=>({value:e.closest('label')?.innerText?.slice(0,40),checked:e.checked})),
-    persistido:localStorage.getItem('conecta:fidelidade'),
-    originalVisible:!!document.querySelector('section[aria-labelledby="fid-comp"]')
-  }))), "PAGE_ERRORS",erros);
   // React agenda a renderização do editor e do novo preview local: a remoção é assíncrona.
   await page.locator('section[aria-labelledby="fid-comp"]').waitFor({state:'detached'});
   await page.locator('section[aria-labelledby="eb-titulo"]').waitFor({state:'detached'});
