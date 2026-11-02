@@ -45,7 +45,7 @@ export function Imagens({ loja }: { loja: Loja }) {
       </div>
 
       {foto && comparadorLigado(config) && <Comparador key={foto.sha} foto={foto} />}
-      {fotoArquivo && comparadorLigado(config) && <PreviaBranca key={foto?.sha} arquivo={fotoArquivo} />}
+      {fotoArquivo && comparadorLigado(config) && <PreviaBranca key={`copia-branca-${foto?.sha ?? "sem-foto"}`} arquivo={fotoArquivo} />}
       {foto && bannerLigado(config) && <Suspense fallback={<p className="suave" role="status">Abrindo o editor…</p>}><EditorBanner key={foto.sha} foto={foto} loja={loja} /></Suspense>}
       {!foto && config.modo !== "desligado" && <p className="suave">Escolha uma fotografia para comparar o original com a versão melhorada e preparar o banner.</p>}
 
@@ -100,7 +100,7 @@ function Configuracao({ config, alterar }: { config: Config; alterar: (c: Config
         <legend>Modo de operação</legend>
         {MODOS.map((m) => (
           <label key={m.valor} className="fid-opcao">
-            <input type="radio" name="fid-modo" checked={config.modo === m.valor} disabled={!m.disponivel} onChange={(e) => { if (e.currentTarget.checked) alterar({ ...config, modo: m.valor }); }} onClick={() => alterar({ ...config, modo: m.valor })} />
+            <input type="radio" name="fid-modo" checked={config.modo === m.valor} disabled={!m.disponivel} onChange={() => alterar({ ...config, modo: m.valor })} />
             <span><b>{m.rotulo}</b><small className="suave"> {m.descricao}{!m.disponivel && m.motivo ? ` Indisponível: ${m.motivo}` : ""}</small></span>
           </label>
         ))}
