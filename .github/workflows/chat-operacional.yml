@@ -54,6 +54,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false @playwright/test@1.56.1
           npx playwright install chromium --with-deps
+      - run: node scripts/tests/fidelidade-visual.mjs
       - run: node scripts/tests/chat-visual.mjs
       - run: node scripts/tests/assistente-retratil-visual.mjs
       - run: node scripts/tests/nano-avatar-visual.mjs
@@ -65,7 +66,6 @@ jobs:
       - run: node scripts/tests/temas-visual.mjs
       - run: node scripts/tests/versao-visual.mjs
       - run: node scripts/tests/sw-atualiza.mjs
-      - run: node scripts/tests/fidelidade-visual.mjs
       - run: node scripts/tests/painel-lateral-mobile-visual.mjs
       - run: node scripts/tests/nano-mobile-immersivo-visual.mjs
       - run: node scripts/tests/fundo-branco-visual.mjs
