@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 60 ferramentas — 42 ativas, 16 planejadas, 2 desligadas.
+Resumo: 61 ferramentas — 43 ativas, 16 planejadas, 2 desligadas.
 
 ## Grupo: conecta
 
@@ -21,6 +21,7 @@ Resumo: 60 ferramentas — 42 ativas, 16 planejadas, 2 desligadas.
 | `conecta.publicacao.preparar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `produto_id:string` |
 | `conecta.proposta.criar` | ativa | propor | MEDIUM | não | sim | sim | sim | chave | `titulo*:string` `resumo:string` `lote:boolean` `itens*:array` |
 | `conecta.enriquecimento.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `campo*:string` `valor*:string` `fonte*:string` `confianca:number` |
+| `nano.atividade.registrar` | ativa | propor | LOW | não | não | sim | não | chave | `resumo*:string` `sku:string` |
 | `conecta.imagem.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `url*:string` `origem:string` `pagina:string` |
 | `conecta.imagem.buscar_web` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `consulta*:string` `sku:string` |
 | `conecta.web.pesquisar_tecnico` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `consulta*:string` |
@@ -58,6 +59,9 @@ Resumo: 60 ferramentas — 42 ativas, 16 planejadas, 2 desligadas.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
 - **`conecta.enriquecimento.propor`** — Propõe um valor de enriquecimento para um campo do produto (entra como a_confirmar, com fonte).
+  - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
+  - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
+- **`nano.atividade.registrar`** — Registra no histórico do Nano um RESUMO curto (até 600 caracteres, só texto) do que o agente externo está fazendo, marcado como vindo do agente externo. Não é a conversa; não aceita custo, fornecedor, dado fiscal, pessoal nem credencial.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
 - **`conecta.imagem.propor`** — Propõe uma imagem candidata para o produto (pendente de aprovação; direitos ainda não confirmados).
