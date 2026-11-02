@@ -17,7 +17,7 @@ try {
   await mkdir(root+"evidencias-chat", {recursive:true});
   for(const [width,height] of [[300,640],[390,844],[1280,800]]) {
     const context = await browser.newContext({viewport:{width,height}});
-    const page = await context.newPage(), errors=[], writes=[], consultas=[];
+    const page = await context.newPage(), errors=[], writes=[], consultas=[], corrigirChamadas=[];
     const modelo=(i)=>({id:`bbbbbbbb-0000-0000-0000-${String(i+10).padStart(12,"0")}`,sku:`P-${String(i).padStart(4,"0")}`,nome:`Peça de teste ${String(i).padStart(4,"0")}`,preco:100,estoque:1,publicado:false,marca:"TESTE",gtin:null,peso_kg:1,descricao_curta:"Peça simulada",descricao_complementar:null,categoria_bling_id:null,situacao:"A",taxonomia_no_id:null});
     const todos=[
       ...Array.from({length:503},(_,i)=>modelo(i)),
@@ -50,7 +50,7 @@ try {
       if(u.pathname.endsWith("/rest/v1/produto_imagens"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([{produto_id:"bbbbbbbb-0000-0000-0000-000000000003"}])});
       if(u.pathname.endsWith("/rest/v1/taxonomia_nos"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([{id:"n1",pai_id:null,nome:"Arrefecimento",slug:"arrefecimento",ordem:1},{id:"n2",pai_id:"n1",nome:"Bombas d'água",slug:"bombas-agua",ordem:1}])});
       if(u.pathname.endsWith("/rest/v1/bling_categorias")||u.pathname.endsWith("/rest/v1/produto_automacao"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:"[]"});
-      if(u.pathname.endsWith("/functions/v1/assistente")){const a=JSON.parse(req.postData()||"{}").acao;return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify(a==="provedores"?{verificado:true,provedores:[]}:a==="chat_config"?{persistente:false,bling:false,leitura_administrativa:false,retencao_dias:180}:{conversas:[],registros:[]})});}
+      if(u.pathname.endsWith("/functions/v1/assistente")){const a=JSON.parse(req.postData()||"{}").acao;if(a==="chat_corrigir_produto"){corrigirChamadas.push(JSON.parse(req.postData()));return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify({ia:false,modo:"correcao_sem_llm",proposta:{id:"p1",titulo:"Atualizar marca, gtin de 854008 no Bling",versao:1,hash:"h",risco:"MEDIUM"},resposta:"Proposta criada: Atualizar marca, gtin de 854008 no Bling. Revise o antes/depois e aprove na fila; nada foi gravado no Bling."})})}return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify(a==="provedores"?{verificado:true,provedores:[]}:a==="chat_config"?{persistente:false,bling:false,leitura_administrativa:false,retencao_dias:180}:{conversas:[],registros:[]})});}
       return route.fulfill({status:200,contentType:"application/json",headers:h,body:u.pathname.includes("/rest/v1/")?"[]":"{}"});
     });
     await page.goto(base+"/#/catalogo");
@@ -93,6 +93,18 @@ try {
       if(width>=960){const f=await ficha.boundingBox(),b=await page.getByRole("searchbox",{name:"Buscar produto por SKU, nome, marca ou GTIN"}).boundingBox();assert.ok(b.x+b.width<=f.x+1,`ficha ao lado do catálogo, sem cobrir a busca (${Math.round(b.x+b.width)} vs ${Math.round(f.x)})`);}
       await ficha.getByLabel("Propor outra posição").selectOption({label:"Bombas d'água"});
       await ficha.getByLabel(/O que você sabe sobre ele/).fill("acho que o fabricante é teste");
+      { // correção de cadastro SEM IA: valida no cliente, cria só a PROPOSTA (nenhuma gravação no ERP)
+        const marca=ficha.getByLabel(/Marca \(fabricante real\)/),fonte=ficha.getByLabel(/Fonte \(URL/),criar=ficha.getByRole("button",{name:"Criar proposta de correção"});
+        await marca.fill("IMPORTADO");await fonte.fill("https://fabricante.exemplo.com.br/catalogo/854008");await criar.click();
+        await ficha.getByText(/não identifica o fabricante/).waitFor();assert.equal(corrigirChamadas.length,0,"marca genérica nem chega ao servidor");
+        await marca.fill("SABÓ");await ficha.getByLabel(/GTIN\/EAN/).fill("7891252828923");await fonte.fill("");await criar.click();
+        await ficha.getByText(/Informe a fonte/).waitFor();assert.equal(corrigirChamadas.length,0,"sem fonte nada é enviado");
+        await fonte.fill("https://fabricante.exemplo.com.br/catalogo/854008");await criar.click();
+        await ficha.getByText(/nada foi gravado no Bling/).waitFor();
+        assert.equal(corrigirChamadas.length,1);const corpo=corrigirChamadas[0];
+        assert.equal(corpo.acao,"chat_corrigir_produto");assert.equal(corpo.sku,"854008");assert.deepEqual(corpo.campos,{marca:"SABÓ",gtin:"7891252828923"});
+        assert.equal(JSON.stringify(corpo).includes("custo"),false);
+      }
       await page.screenshot({path:root+`evidencias-chat/ficha-lateral-${width}.png`});
       const antesEnvios=writes.length;
       await ficha.getByRole("button",{name:"Pedir correção ao Nano.IA"}).click();

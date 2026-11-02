@@ -15,7 +15,7 @@ async function ambiente({consentido=true,flag=true,bling=true,tool='bling_consul
   if(t==='lojas')return {data:{id:L,nome:'Loja de teste',chat_retencao_dias:180}};
   if(t==='recursos_efetivos')return {data:[{codigo:'chat_persistente',ativo:flag},{codigo:'chat_consulta_bling',ativo:bling}].filter(v=>!filtros.codigo||v.codigo===filtros.codigo)};
   if(t==='mensagens')return {data:[...msgs].reverse()};
-  if(t==='produtos'){const linha={bling_id:'1234',sku:'SKU-1',nome:'Espelho SIMULADO',preco:12,estoque:2,situacao:'A',sincronizado_em:'2026-10-18T00:00:00Z'};return single?{data:linha}:{data:filtros.loja_id===L&&!semEspelho?[linha]:[],error:null}}
+  if(t==='produtos'){const linha={id:'prod-1',bling_id:'1234',sku:'SKU-1',nome:'Espelho SIMULADO',preco:12,estoque:2,situacao:'A',sincronizado_em:'2026-10-18T00:00:00Z'};return single?{data:linha}:{data:filtros.loja_id===L&&!semEspelho?[linha]:[],error:null}}
   return {data:single?null:[]};
  }return q}
  const client={auth:{getUser:async()=>({data:{user:{id:U}}})},from,async rpc(fn,p){rpcs.push({fn,p});
@@ -121,5 +121,25 @@ test('artefato: /ficha exige flag Bling, valida entrada e nao usa LLM quando rej
  ]) {
   const a=await ambiente(opts);const r=await a.perguntar(extra);
   assert.ok(r.status>=400);assert.equal(a.rede.length,0);
+ }
+});
+
+// ---- Correção de cadastro SEM LLM: nao usa chave de provedor, nao grava no Bling; cria a proposta que so a pessoa aprova.
+test('artefato: /corrigir cria a proposta sem LLM, sem chave de provedor e sem escrever no Bling',async()=>{
+ const a=await ambiente({provedorErro:true});
+ const r=await a.perguntar({acao:'chat_corrigir_produto',sku:'SKU-1',campos:{marca:'SABÓ'},fonte:'https://exemplo.com.br/catalogo/sku-1',provedor:undefined});
+ assert.equal(a.rpcs.some(x=>x.fn==='ia_chave_ativa'),false,'nenhuma chave LLM consultada');
+ assert.ok(a.rede.filter(c=>c.url.includes('bling')).every(c=>c.op.method==='GET'),'o Bling so foi lido');
+ assert.equal(r.status,200);assert.equal(r.body.ia,false);assert.equal(r.body.modo,'correcao_sem_llm');assert.equal(r.body.proposta.risco,'MEDIUM');
+ assert.ok(a.rpcs.some(x=>x.fn==='agente_proposta_criar'));assert.ok(a.rpcs.some(x=>x.fn==='agente_proposta_enviar'));
+ const item=a.rpcs.find(x=>x.fn==='agente_proposta_item_adicionar');assert.equal(item.p.p_operacao,'bling.produtos.alterar');eq(item.p.p_depois,{marca:'SABÓ'});
+});
+test('artefato: /corrigir recusa sem fonte, sem campos, com anexos/provedor e com a consulta Bling desligada',async()=>{
+ const base={acao:'chat_corrigir_produto',sku:'SKU-1',campos:{marca:'SABÓ'},fonte:'https://exemplo.com.br/x',provedor:undefined};
+ for(const [opts,extra] of [
+  [{},{fonte:''}],[{},{fonte:'x'}],[{},{campos:{}}],[{},{campos:null}],[{},{sku:'../x'}],[{},{provedor:'gemini'}],[{},{anexos:[{}]}],[{bling:false},{}],
+ ]){
+  const a=await ambiente(opts);const r=await a.perguntar({...base,...extra});
+  assert.ok(r.status>=400,JSON.stringify(extra));assert.equal(a.rede.length,0);assert.ok(!a.rpcs.some(x=>x.fn==='agente_proposta_criar'));
  }
 });
