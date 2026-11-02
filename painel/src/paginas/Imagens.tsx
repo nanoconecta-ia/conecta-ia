@@ -100,7 +100,7 @@ function Configuracao({ config, alterar }: { config: Config; alterar: (c: Config
         <legend>Modo de operação</legend>
         {MODOS.map((m) => (
           <label key={m.valor} className="fid-opcao">
-            <input type="radio" name="fid-modo" checked={config.modo === m.valor} disabled={!m.disponivel} onChange={() => alterar({ ...config, modo: m.valor })} />
+            <input type="radio" name="fid-modo" checked={config.modo === m.valor} disabled={!m.disponivel} onChange={(e) => { if (e.currentTarget.checked) alterar({ ...config, modo: m.valor }); }} onClick={() => alterar({ ...config, modo: m.valor })} />
             <span><b>{m.rotulo}</b><small className="suave"> {m.descricao}{!m.disponivel && m.motivo ? ` Indisponível: ${m.motivo}` : ""}</small></span>
           </label>
         ))}
