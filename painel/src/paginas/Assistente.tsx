@@ -28,6 +28,8 @@ import { useFonte } from "../lib/useFonte.ts";
 import { PropostaCompacta } from "../componentes/conector/PropostaCompacta.tsx";
 import { escolherInicial, erroAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 import { identificarModeloEfetivo } from "../lib/modeloEfetivo.ts";
+import { RoboNano } from "../componentes/RoboNano.tsx";
+import "./nano-chat-design.css";
 
 type Evidencia = { origem: string; simulado: boolean; consultado_em: string; sincronizado_em?: string; motivo?: string; dados: { sku?: string; nome?: string; preco?: number | null; estoque?: number | null } };
 type Msg = { de: "eu" | "ia"; texto: string; anexos?: string[]; evidencias?: Evidencia[]; simulado?: boolean; propostas?: PropostaTurno[]; parcial?: boolean; modeloUsado?: string; modeloContingencia?: boolean };
@@ -364,7 +366,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
 
   return (
     <div className="abas-caixa" ref={caixa}>
-    <div className="cartao chat-tela abas" style={{ minHeight: 0, minWidth: 0, width: "100%", boxSizing: "border-box", overflow: "hidden" }} data-esq={esq ? "aberto" : "fechado"} data-dir={dir ? "aberto" : "fechado"}>
+    <div className="cartao chat-tela abas nano-chat-v2" style={{ minHeight: 0, minWidth: 0, width: "100%", boxSizing: "border-box", overflow: "hidden" }} data-esq={esq ? "aberto" : "fechado"} data-dir={dir ? "aberto" : "fechado"}>
       {(esq || dir) && <button type="button" className="abas-fundo" aria-label="Fechar painel lateral" onClick={() => { setEsq(false); setDir(false); }} />}
       <aside className="aba aba-esq nano-navegacao" id="aba-conversas" aria-label="Menu do Nano.IA">
         <div className="aba-topo nano-menu-topo">
@@ -422,13 +424,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       <section className="abas-centro" aria-label="Conversa com o Nano.ia">
       <div className="agente">
         <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Abrir menu do Nano.IA" onClick={() => { setEsq((v) => !v); setMenuAnexos(false); if (estreito()) setDir(false); }}><Icone nome="menu" tamanho={20} /></button>
-        <div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite"><span className="nano-agente-estado">{estado === "pensando" && !acaoLocal && <PontosPensando />}{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span><span className="nano-motor-compacto" title={textoMotor} aria-label={textoMotor}>{nomeMotorCompacto}</span></span></div>
-        <nav className="nano-mini-agentes" aria-label="Acesso rápido aos módulos">
-          {(["/catalogo", "/bling", "/integracoes"] as const).filter(rota => (menu ?? []).some(([r]) => r === rota)).map(rota =>
-            <button type="button" key={rota} className="sec nano-mini-acao" title={rota === "/catalogo" ? "Catálogo" : rota === "/bling" ? "Bling" : "Integrações de IA"}
-              aria-label={rota === "/catalogo" ? "Abrir catálogo" : rota === "/bling" ? "Abrir Bling" : "Abrir integrações de IA"}
-              onClick={() => aoNavegar?.(rota)}><Icone nome={rota === "/catalogo" ? "catalogo" : rota === "/bling" ? "erp" : "agentes"} tamanho={16} /></button>)}
-        </nav>
+        <RoboNano tamanho={37} estado={normalizarEstado(estado)} decorativo /><div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite"><span className="nano-agente-estado">{estado === "pensando" && !acaoLocal && <PontosPensando />}{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span><span className="nano-motor-compacto" title={textoMotor} aria-label={textoMotor}>{nomeMotorCompacto}</span></span></div>
         {<button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span aria-hidden="true"><Icone nome="mais" tamanho={20} /></span></button>}
         <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}><Icone nome="ajustes" tamanho={20} /></button>
       </div>
