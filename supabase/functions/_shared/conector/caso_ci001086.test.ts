@@ -121,3 +121,35 @@ test("CI001086: se a leitura completa falha, NÃO cria proposta (sem o antes nã
   assert.match(r.erro, /503/);
   assert.equal(itens.length, 0);
 });
+
+// Marca nunca inventada (ordem do dono, 02/11/2026): o agente só propõe marca com evidência.
+test("CI001086: a proposta de marca registra a evidência 'declarada no cadastro' (não verificada) nas validações", async () => {
+  const { ctx, itens } = contextoDeProposta(portaComListagemResumida());
+  const r = await HANDLERS["bling.produtos.preparar_atualizacao"]({ sku: "CI001086", campos: { marca: "TRIM GO" }, fontes: [{ documento: "Cadastro do próprio Bling" }] }, ctx) as any;
+  assert.equal(r.proposta_id, "p1", JSON.stringify(r));
+  assert.ok((itens[0].p_validacoes as string[]).some((v) => /declarada_no_cadastro/.test(v) && /não verificada/.test(v)));
+});
+test("CI001086: marca fora do cadastro e sem URL (o modelo chutando) NÃO vira proposta", async () => {
+  const { ctx, itens } = contextoDeProposta(portaComListagemResumida());
+  const r = await HANDLERS["bling.produtos.preparar_atualizacao"]({ sku: "CI001086", campos: { marca: "Bosch Premium Line" }, fontes: [{ documento: "Catálogo do fabricante" }] }, ctx) as any;
+  assert.equal(r.erro, "Marca recusada"); assert.match(String(r.detalhes), /Sem evidência/); assert.equal(itens.length, 0);
+});
+test("CI001086: IMPORTADO/NACIONAL como marca é recusado mesmo com URL; marca nova com URL do fabricante passa", async () => {
+  for (const marca of ["IMPORTADO", "NACIONAL"]) {
+    const { ctx, itens } = contextoDeProposta(portaComListagemResumida());
+    const r = await HANDLERS["bling.produtos.preparar_atualizacao"]({ sku: "CI001086", campos: { marca }, fontes: [{ url: "https://fabricante.exemplo.com.br/x" }] }, ctx) as any;
+    assert.equal(r.erro, "Marca recusada", marca); assert.equal(itens.length, 0);
+  }
+  const { ctx, itens } = contextoDeProposta(portaComListagemResumida());
+  const r = await HANDLERS["bling.produtos.preparar_atualizacao"]({ sku: "CI001086", campos: { marca: "Sabó" }, fontes: [{ url: "https://www.sabo.com.br/catalogo/x" }] }, ctx) as any;
+  assert.equal(r.proposta_id, "p1", JSON.stringify(r)); assert.deepEqual(itens[0].p_depois, { marca: "Sabó" });
+});
+test("pedido de uma PESSOA (sem IA) pode citar documento descrito; o do modelo não", async () => {
+  const doc = [{ documento: "Etiqueta da embalagem fotografada hoje" }];
+  const pessoa = contextoDeProposta(portaComListagemResumida()); pessoa.ctx.agente = { nome: "Nano.ia (sem IA)", provedor: "nenhum" };
+  const a = await HANDLERS["bling.produtos.preparar_atualizacao"]({ sku: "CI001086", campos: { marca: "Sabó" }, fontes: doc }, pessoa.ctx) as any;
+  assert.equal(a.proposta_id, "p1", JSON.stringify(a));
+  const modelo = contextoDeProposta(portaComListagemResumida());
+  const b = await HANDLERS["bling.produtos.preparar_atualizacao"]({ sku: "CI001086", campos: { marca: "Sabó" }, fontes: doc }, modelo.ctx) as any;
+  assert.equal(b.erro, "Marca recusada");
+});

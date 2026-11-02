@@ -1,5 +1,6 @@
 // Handlers das ferramentas ATIVAS do registro. Cada um recebe a entrada já validada pelo esquema e o contexto da loja.
 // Nenhum handler escreve no Bling: as ferramentas "preparar_*" só montam PROPOSTA; quem escreve é o executor, depois da aprovação.
+import { validarMarca } from "../cadastro/regras_marca.ts";
 import { MAPA_CAMPOS, montarCorpoProduto } from "./bling_campos.ts";
 import { interpretarConsulta, type Vocabulario } from "../consulta/interpretar.ts";
 import type { PortaDados } from "./dados.ts";
@@ -259,9 +260,17 @@ export const HANDLERS: Record<string, Handler> = {
       const v = valorEm(atual, mp.caminho);
       return [k, v === undefined || v === "" || v === 0 ? null : (mp.tipo === "id_numerico" ? String(v) : v)];
     }));
+    // Marca: nunca inventada. Exige evidência (URL externa, marca escrita no próprio cadastro/nota, ou documento descrito por uma PESSOA).
+    const extras: string[] = [];
+    if (campos.includes("marca")) {
+      const vm = validarMarca(e.campos.marca, e.fontes, { textosDoCadastro: [r.produto.nome, (atual as any).nome, (atual as any).descricaoCurta, (atual as any).descricaoComplementar], porPessoa: c.agente?.provedor === "nenhum" });
+      if (!vm.ok) return { erro: "Marca recusada", detalhes: [vm.erro] };
+      e.campos.marca = vm.marca;
+      extras.push(`marca: evidência ${vm.evidencia}${vm.verificada ? "" : " (não verificada)"}${vm.aviso ? ` — ${vm.aviso}` : ""}`);
+    }
     const local = await c.dados.produtoPorSku(e.sku);
     return criarPropostaVersionada(c, { titulo: `Atualizar ${campos.join(", ")} de ${e.sku} no Bling`, itens: [{
       produto_id: local?.id, sku: e.sku, operacao: "bling.produtos.alterar", alvo: String(r.produto.id), campos, antes, depois: e.campos, fontes: e.fontes,
-      validacoes: [`produto lido no Bling em ${new Date().toISOString()}`, "corpo montado e validado contra a lista de campos permitidos"] }] });
+      validacoes: [`produto lido no Bling em ${new Date().toISOString()}`, "corpo montado e validado contra a lista de campos permitidos", ...extras] }] });
   },
 };
