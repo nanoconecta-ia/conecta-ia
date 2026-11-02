@@ -23,3 +23,10 @@
 .nano-chat-v2 .nano-pasta { border-radius:13px; }
 @media(max-width:420px) { .nano-chat-v2 .agente { padding:5px 7px; gap:5px; } .nano-chat-v2 .agente .nano-robo { --nano-robo-d:29px !important; } .nano-chat-v2 .agente h1 { font-size:.94rem; } .nano-chat-v2 .agente .estado { font-size:.7rem; } }
 @media(prefers-reduced-motion:reduce) { .nano-chat-v2 * { animation-duration:.01ms !important; transition-duration:.01ms !important; } }
+
+/* A regra do layout mobile foi carregada depois: garante contraste WCAG em todos os temas. */
+.layout--nano-chat .abas.nano-chat-v2 .agente { background:linear-gradient(110deg,#101722,#24212a 75%,#43222b); color:#fff; }
+.layout--nano-chat .abas.nano-chat-v2 .agente h1,
+.layout--nano-chat .abas.nano-chat-v2 .agente .estado,
+.layout--nano-chat .abas.nano-chat-v2 .agente .nano-agente-estado,
+.layout--nano-chat .abas.nano-chat-v2 .agente .nano-motor-compacto { color:#fff; }
