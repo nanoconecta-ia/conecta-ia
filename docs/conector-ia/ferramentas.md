@@ -103,7 +103,7 @@ Resumo: 60 ferramentas — 42 ativas, 16 planejadas, 2 desligadas.
 | `bling.categorias.consultar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `busca:string` |
 | `bling.estoque.consultar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
 | `bling.precos.consultar` | planejada | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
-| `bling.produtos.preparar_cadastro` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `rascunho*:object` `fontes*:array` |
+| `bling.produtos.preparar_cadastro` | ativa | propor | MEDIUM | não | sim | sim | sim | chave | `rascunho*:object` `fontes*:array` |
 | `bling.produtos.preparar_reativacao` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `bling_id*:string` `fontes*:array` |
 | `bling.produtos.preparar_atualizacao` | ativa | propor | MEDIUM | não | sim | sim | sim | chave | `sku*:string` `campos*:object` `fontes*:array` |
 | `bling.categorias.preparar_alteracao_lote` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `skus*:array` `escolhas:object` |
@@ -129,7 +129,7 @@ Resumo: 60 ferramentas — 42 ativas, 16 planejadas, 2 desligadas.
 - **`bling.precos.consultar`** — Preço atual de um produto no Bling (sem preço de compra/custo).
   - *Verificação:* Resposta do Bling.
   - *Recuperação:* Repetir a leitura; é segura.
-- **`bling.produtos.preparar_cadastro`** — Prepara (sem gravar) o cadastro de um produto novo no Bling: confere duplicidade por SKU/GTIN e monta a proposta.
+- **`bling.produtos.preparar_cadastro`** — Prepara (sem gravar) o cadastro de um produto NOVO no Bling: confere duplicidade por SKU/GTIN no espelho e no Bling agora e monta a proposta para o lojista aprovar. Campos do rascunho: nome (obrigatório), codigo (opcional: sem ele o sistema propõe um SKU CI + 6 dígitos), marca (só com fonte: URL externa; nunca IMPORTADO/NACIONAL), gtin (dígito verificador válido), descricao_curta, descricao_complementar, peso_kg, largura_cm, altura_cm, profundidade_cm, categoria_bling_id, preco_venda. Fiscal, custo, fornecedor e estoque são recusados. Piloto: um cadastro novo por vez (aprove ou rejeite o anterior).
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
 - **`bling.produtos.preparar_reativacao`** — Prepara (sem gravar) a REATIVAÇÃO de um produto excluído ou inativo no Bling: lê o produto pelo id agora, confere que não existe outro ATIVO com o mesmo código ou GTIN e cria a proposta (só a situação vai para ativo).

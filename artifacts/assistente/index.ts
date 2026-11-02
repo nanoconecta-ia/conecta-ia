@@ -2241,7 +2241,7 @@ const FERRAMENTAS_CONECTOR = [
     ]), livre, "Resposta do Bling.", {
         estado: "planejada"
     }),
-    proposta("bling.produtos.preparar_cadastro", "bling", "Prepara (sem gravar) o cadastro de um produto novo no Bling: confere duplicidade por SKU/GTIN e monta a proposta.", obj({
+    proposta("bling.produtos.preparar_cadastro", "bling", "Prepara (sem gravar) o cadastro de um produto NOVO no Bling: confere duplicidade por SKU/GTIN no espelho e no Bling agora e monta a proposta para o lojista aprovar. Campos do rascunho: nome (obrigatório), codigo (opcional: sem ele o sistema propõe um SKU CI + 6 dígitos), marca (só com fonte: URL externa; nunca IMPORTADO/NACIONAL), gtin (dígito verificador válido), descricao_curta, descricao_complementar, peso_kg, largura_cm, altura_cm, profundidade_cm, categoria_bling_id, preco_venda. Fiscal, custo, fornecedor e estoque são recusados. Piloto: um cadastro novo por vez (aprove ou rejeite o anterior).", obj({
         rascunho: livre,
         fontes: {
             ...lista(fonte, 10),
@@ -2255,7 +2255,7 @@ const FERRAMENTAS_CONECTOR = [
         simulacao: true,
         exposicao: {
             chat: true,
-            mcp: false
+            mcp: true
         }
     }),
     proposta("bling.produtos.preparar_reativacao", "bling", "Prepara (sem gravar) a REATIVAÇÃO de um produto excluído ou inativo no Bling: lê o produto pelo id agora, confere que não existe outro ATIVO com o mesmo código ou GTIN e cria a proposta (só a situação vai para ativo).", obj({
