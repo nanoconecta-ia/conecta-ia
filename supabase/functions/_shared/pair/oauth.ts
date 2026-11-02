@@ -34,7 +34,7 @@ async function lerCliente(v:unknown,s:string):Promise<Cliente|null>{
   }catch{return null}
 }
 export const metadataRecursoMcp=(recurso:string,emissorBase:string)=>({resource:recurso,authorization_servers:[emissorBase+'/oauth'],scopes_supported:['mcp:leitura','mcp:propor'],bearer_methods_supported:['header'],resource_name:'Conecta IA — agente externo (MCP)'});
-export const metadataRecurso=(base:string)=>({resource:base,authorization_servers:[base+'/oauth'],scopes_supported:[...ESCOPOS,'offline_access'],bearer_methods_supported:['header'],resource_name:'Conecta IA — loja autorizada'});
+export const metadataRecurso=(base:string)=>({resource:base,authorization_servers:[base+'/oauth'],scopes_supported:[...ESCOPOS.filter(x=>!x.startsWith('mcp:')),'offline_access'],bearer_methods_supported:['header'],resource_name:'Conecta IA — loja autorizada'});
 export const desafioOAuth=(base:string)=>`Bearer resource_metadata="${base}/.well-known/oauth-protected-resource"`;
 export async function tratarOAuth(req:Request,p:OAuthPortas):Promise<Response|null>{
   const u=new URL(req.url),basePath=new URL(p.baseURL).pathname.replace(/\/$/,'');
@@ -81,8 +81,9 @@ export async function tratarOAuth(req:Request,p:OAuthPortas):Promise<Response|nu
       const state=exato(args,'state'),challenge=exato(args,'code_challenge');
       if(exato(args,'response_type')!=='code'||exato(args,'code_challenge_method')!=='S256'||!challenge||!/^[A-Za-z0-9_-]{43}$/.test(challenge)||!state||state.length<8||state.length>512)return erro('invalid_request');
       const scopes=(exato(args,'scope')??(recurso==='conector-mcp'?'mcp:leitura':'bling:consultar')).split(' ').filter(Boolean),offline=scopes.includes('offline_access');
-      const escopos=[...new Set(scopes.filter(x=>x!=='offline_access'))];if(!escopos.length||escopos.some(x=>!(ESCOPOS as readonly string[]).includes(x)))return erro('invalid_scope');
-      if(escopos.some(x=>x.startsWith('mcp:')!==(recurso==='conector-mcp')))return erro('invalid_scope');
+      const pedidos=[...new Set(scopes.filter(x=>x!=='offline_access'))];if(!pedidos.length||pedidos.some(x=>!(ESCOPOS as readonly string[]).includes(x)))return erro('invalid_scope');
+      // Clientes costumam pedir TODOS os escopos anunciados: concede só os do recurso pedido (menos, nunca mais). Sem nenhum do recurso, recusa.
+      const escopos=pedidos.filter(x=>x.startsWith('mcp:')===(recurso==='conector-mcp'));if(!escopos.length)return erro('invalid_scope');
       const codigo=aleatorioB64u();const r=await p.rpc('oauth_pair_iniciar',{p_codigo_hash:await sha256Hex(codigo),p_cliente_hash:clienteHash,p_redirect:redirect,p_challenge:challenge,p_state:state,p_nome:c.nome,p_escopos:escopos,p_offline:offline,p_recurso:recurso});
       if(r.error||r.data?.ok!==true)return erro('temporarily_unavailable',503);
       const destino=new URL(p.appURL);destino.hash='/autorizar-agente?c='+encodeURIComponent(codigo);

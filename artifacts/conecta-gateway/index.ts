@@ -3234,7 +3234,7 @@ const metadataRecurso = (base)=>({
             base + '/oauth'
         ],
         scopes_supported: [
-            ...ESCOPOS,
+            ...ESCOPOS.filter((x)=>!x.startsWith('mcp:')),
             'offline_access'
         ],
         bearer_methods_supported: [
@@ -3353,11 +3353,12 @@ async function tratarOAuth(req, p) {
             const state = exato(args, 'state'), challenge = exato(args, 'code_challenge');
             if (exato(args, 'response_type') !== 'code' || exato(args, 'code_challenge_method') !== 'S256' || !challenge || !/^[A-Za-z0-9_-]{43}$/.test(challenge) || !state || state.length < 8 || state.length > 512) return erro('invalid_request');
             const scopes = (exato(args, 'scope') ?? (recurso === 'conector-mcp' ? 'mcp:leitura' : 'bling:consultar')).split(' ').filter(Boolean), offline = scopes.includes('offline_access');
-            const escopos = [
+            const pedidos = [
                 ...new Set(scopes.filter((x)=>x !== 'offline_access'))
             ];
-            if (!escopos.length || escopos.some((x)=>!ESCOPOS.includes(x))) return erro('invalid_scope');
-            if (escopos.some((x)=>x.startsWith('mcp:') !== (recurso === 'conector-mcp'))) return erro('invalid_scope');
+            if (!pedidos.length || pedidos.some((x)=>!ESCOPOS.includes(x))) return erro('invalid_scope');
+            const escopos = pedidos.filter((x)=>x.startsWith('mcp:') === (recurso === 'conector-mcp'));
+            if (!escopos.length) return erro('invalid_scope');
             const codigo = aleatorioB64u();
             const r = await p.rpc('oauth_pair_iniciar', {
                 p_codigo_hash: await sha256Hex(codigo),

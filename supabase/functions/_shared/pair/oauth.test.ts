@@ -74,8 +74,10 @@ test('recurso conector-mcp: authorize grava p_recurso e só aceita escopos mcp:*
  const padrao=await a.chamar(q({resource:mcp}));assert.equal(padrao!.status,302);assert.deepEqual(a.pedido.p_escopos,['mcp:leitura'],'escopo padrão do recurso MCP é só leitura');
  const antigo=await a.chamar(q({scope:'produtos:ler',resource:base}));assert.equal(antigo!.status,302);assert.equal(a.pedido.p_recurso,'conecta-gateway');
  const semRecurso=await a.chamar(q({scope:'produtos:ler'}));assert.equal(semRecurso!.status,302);assert.equal(a.pedido.p_recurso,'conecta-gateway');
+ const todos=await a.chamar(q({scope:'produtos:ler bling:consultar mcp:leitura mcp:propor offline_access',resource:mcp}));assert.equal(todos!.status,302);assert.deepEqual(a.pedido.p_escopos,['mcp:leitura','mcp:propor'],'pedido de todos os escopos: concede só os do recurso MCP');
+ const todosAntigo=await a.chamar(q({scope:'produtos:ler mcp:leitura',resource:base}));assert.equal(todosAntigo!.status,302);assert.deepEqual(a.pedido.p_escopos,['produtos:ler'],'recurso antigo nunca recebe escopo mcp:*');
  const n=a.calls.length;
- for(const [extra,erro] of [[{scope:'produtos:ler',resource:mcp},'invalid_scope'],[{scope:'mcp:leitura',resource:base},'invalid_scope'],[{scope:'mcp:leitura'},'invalid_scope'],[{scope:'mcp:leitura produtos:ler',resource:mcp},'invalid_scope'],[{scope:'mcp:leitura',resource:'https://outro.example/x'},'invalid_target']] as const){
+ for(const [extra,erro] of [[{scope:'produtos:ler',resource:mcp},'invalid_scope'],[{scope:'mcp:leitura',resource:base},'invalid_scope'],[{scope:'mcp:leitura'},'invalid_scope'],[{scope:'desconhecido:x',resource:mcp},'invalid_scope'],[{scope:'mcp:leitura',resource:'https://outro.example/x'},'invalid_target']] as const){
   const r=await a.chamar(q({...extra}));assert.equal(r!.status,400,JSON.stringify(extra));assert.equal((await r!.json()).error,erro,JSON.stringify(extra));
  }
  assert.equal(a.calls.length,n,'pedidos recusados não tocam o banco');
@@ -84,6 +86,10 @@ test('recurso conector-mcp: sem recursoMcp configurado, o recurso MCP é recusad
  const a=ambiente(),client=await a.registrar();
  const r=await a.chamar('/oauth/authorize?'+new URLSearchParams({client_id:client,redirect_uri:redirect,response_type:'code',state:'state-sintetico',code_challenge:challenge,code_challenge_method:'S256',scope:'mcp:leitura',resource:mcp}));
  assert.equal(r!.status,400);assert.equal((await r!.json()).error,'invalid_target');
+});
+test('metadado do recurso antigo NÃO anuncia mcp:* (cliente real pede o que é anunciado)',async()=>{
+ const a=ambiente(),r=await a.chamar('/.well-known/oauth-protected-resource'),m=await r!.json();
+ assert.ok(m.scopes_supported.includes('produtos:ler'));assert.ok(!m.scopes_supported.some((x:string)=>x.startsWith('mcp:')));
 });
 test('discovery do emissor anuncia os escopos mcp:* além dos antigos',async()=>{
  const a=ambiente(),r=await a.chamar('/oauth/.well-known/oauth-authorization-server'),m=await r!.json();
