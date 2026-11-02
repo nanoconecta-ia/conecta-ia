@@ -41,6 +41,21 @@ try{
   ver(await page.getByRole('alert').filter({hasText:'JPG'}).count()===1,`${r}: PDF recusado com aviso`);
   await page.locator('input[type=file]').setInputFiles({name:'peca-sintetica.png',mimeType:'image/png',buffer});
   const comp=page.getByRole('region',{name:/Original × melhorada/}).or(page.locator('section[aria-labelledby="fid-comp"]'));await comp.waitFor();
+  // nova copia (nao destrutiva) deve conter pixels brancos ao redor da foto com sua geometria preservada
+  const copia=page.locator('.nano-foto-card');
+  await copia.getByRole('img',{name:/Cópia PNG 1200/}).waitFor();
+  const pixel=await copia.evaluate(async el=>{
+    const img=el.querySelector('.nano-foto-midia-branca img');
+    const blob=await (await fetch(img.src)).blob();const bmp=await createImageBitmap(blob);
+    const c=document.createElement('canvas');c.width=c.height=1200;const ctx=c.getContext('2d');ctx.drawImage(bmp,0,0);const at=(x,y)=>Array.from(ctx.getImageData(x,y,1,1).data);
+    const result={w:bmp.width,h:bmp.height,canto:at(0,0),centro:at(600,600)};bmp.close();return result;
+  });
+  ver(pixel.w===1200&&pixel.h===1200,`${r}: PNG quadrado de 1200 pixels`);
+  ver(pixel.canto.every(v=>v===255),`${r}: cantos brancos opacos ${pixel.canto}`);
+  ver(pixel.centro[0]!==255,`${r}: imagem original visivel no centro ${pixel.centro}`);
+  const clique=page.waitForEvent('download');
+  await copia.getByRole('button',{name:/Baixar cópia PNG/}).click();
+  const download=await clique;ver(/fundo-branco-1200\.png$/.test(download.suggestedFilename()),`${r}: nome do arquivo derivado`);
   const sha=await comp.locator('.fid-sha').innerText();
   ver(/SHA-256 [0-9a-f]{64}/.test(sha),`${r}: SHA-256 do original exibido (${sha.slice(0,60)})`);
   // mesmo recorte nos dois lados, original sem filtro, melhorada com filtro de luz
