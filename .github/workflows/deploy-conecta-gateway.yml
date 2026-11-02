@@ -1,0 +1,102 @@
+name: Deploy pontual do servidor OAuth/Pair conecta-gateway (Supabase conecta-ia)
+
+# Publica a função `conecta-gateway` (servidor de pareamento e OAuth 2.1 do Conecta.IA: emissor de tokens para os agentes externos) a partir do main. NUNCA roda sozinho: só por disparo manual, com a escolha de confirmação.
+# Diferente do `assistente`, esta função é PÚBLICA (verify_jwt desligado): a autenticação é o token Pair/OAuth (hash no banco, escopos, recurso, expiração, revogação).
+# Só consulta e PROPÕE; nunca aprova nem executa. Precisa do segredo SUPABASE_ACCESS_TOKEN (com escrita em Edge Functions) no GitHub.
+on:
+  workflow_dispatch:
+    inputs:
+      confirmar:
+        description: 'Escolha publicar-conecta-gateway para publicar. NUNCA cole token ou senha em formulários deste workflow.'
+        required: true
+        type: choice
+        default: nao-publicar
+        options:
+          - nao-publicar
+          - publicar-conecta-gateway
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-conecta-gateway
+  cancel-in-progress: false
+
+env:
+  # Projeto conecta-ia. O ref do NanoShell IA (ptilvkzuhjnqnfydjcly) NUNCA pode ser usado aqui.
+  PROJECT_REF: dsfzhsrudriqkumtlqwj
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Mesmo ambiente protegido do `assistente`: só o revisor obrigatório (o dono) libera.
+    environment: producao-assistente
+    steps:
+      - name: Travas de segurança
+        env:
+          CONFIRMAR: ${{ inputs.confirmar }}
+          REF_NAME: ${{ github.ref_name }}
+          TOKEN_OK: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+        run: |
+          test "$CONFIRMAR" = "publicar-conecta-gateway" || { echo "Escolha de confirmação incorreta"; exit 1; }
+          test "$REF_NAME" = "main" || { echo "Só a partir do main"; exit 1; }
+          test "$PROJECT_REF" = "dsfzhsrudriqkumtlqwj" || exit 1
+          test "$PROJECT_REF" != "ptilvkzuhjnqnfydjcly" || exit 1
+          test "$TOKEN_OK" = "true" || { echo "Segredo SUPABASE_ACCESS_TOKEN ausente"; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Testes das funções (o protocolo MCP e as travas do gateway precisam passar antes de publicar)
+        run: node --experimental-strip-types --test supabase/functions/_shared/*.test.ts supabase/functions/_shared/*/*.test.ts
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+      - name: Guardar o código ATUAL em produção (para voltar atrás)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          mkdir -p backup-antes && cd backup-antes
+          supabase functions download conecta-gateway --project-ref "$PROJECT_REF" --use-api
+      - uses: actions/upload-artifact@v4
+        with:
+          name: conecta-gateway-antes-do-deploy
+          path: backup-antes
+          retention-days: 30
+      - name: Registrar a versão ANTES (a função pode ainda não existir)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions list --project-ref "$PROJECT_REF" -o json > antes.json
+          VERSAO_ANTES=$(jq -r '[.[] | select(.slug=="conecta-gateway") | .version] | first // 0' antes.json)
+          echo "VERSAO_ANTES=$VERSAO_ANTES" >> "$GITHUB_ENV"
+          echo "antes versao=$VERSAO_ANTES commit=$GITHUB_SHA"
+      - name: "Publicar a função conecta-gateway (sem JWT do Supabase: a autenticação é o token Pair/OAuth validado no servidor; empacotamento no servidor)"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy conecta-gateway --project-ref "$PROJECT_REF" --use-api --no-verify-jwt
+      - name: Registrar a versão DEPOIS (deve estar ACTIVE e com versão maior)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions list --project-ref "$PROJECT_REF" -o json > depois.json
+          jq -e '.[] | select(.slug=="conecta-gateway" and .status=="ACTIVE")' depois.json > /dev/null || { echo "Função não está ACTIVE"; exit 1; }
+          VERSAO_DEPOIS=$(jq -r '.[] | select(.slug=="conecta-gateway") | .version' depois.json)
+          echo "depois versao=$VERSAO_DEPOIS commit=$GITHUB_SHA"
+          test "$VERSAO_DEPOIS" -gt "$VERSAO_ANTES" || { echo "A versão não avançou"; exit 1; }
+      - name: "Prova pública (sem credencial): descoberta OAuth responde, recurso exige token e o código novo está no ar"
+        run: |
+          base="https://${PROJECT_REF}.supabase.co/functions/v1/conecta-gateway"
+          recurso=$(curl -s -o /dev/null -w '%{http_code}' "$base/.well-known/oauth-protected-resource")
+          curl -s "$base/oauth/.well-known/oauth-authorization-server" -o emissor.json -w '%{http_code}' > emissor.cod
+          sem=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$base" -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
+          echo "recurso HTTP $recurso | emissor HTTP $(cat emissor.cod) | sem token HTTP $sem"
+          test "$recurso" = "200" && test "$(cat emissor.cod)" = "200" && test "$sem" = "401"
+          jq -e '.scopes_supported | index("mcp:leitura") and index("mcp:propor")' emissor.json > /dev/null || { echo "Código novo não está no ar (faltam os escopos mcp:*)"; exit 1; }
+      - name: Como voltar atrás
+        run: |
+          echo "Rollback: o código anterior ficou guardado no artefato 'conecta-gateway-antes-do-deploy' (30 dias). Para voltar: publicar esse código (supabase functions deploy conecta-gateway --use-api --no-verify-jwt a partir dele) com a ordem do dono."
+          echo "A migração do recurso (20261103000002) é aditiva e compatível com o código anterior; não precisa ser desfeita."
