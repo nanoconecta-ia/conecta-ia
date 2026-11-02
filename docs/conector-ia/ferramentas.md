@@ -64,7 +64,7 @@ Resumo: 61 ferramentas — 43 ativas, 16 planejadas, 2 desligadas.
 - **`nano.atividade.registrar`** — Registra no histórico do Nano um RESUMO curto (até 600 caracteres, só texto) do que o agente externo está fazendo, marcado como vindo do agente externo. Não é a conversa; não aceita custo, fornecedor, dado fiscal, pessoal nem credencial.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
-- **`conecta.imagem.propor`** — Propõe uma imagem candidata para o produto (pendente de aprovação; direitos ainda não confirmados).
+- **`conecta.imagem.propor`** — Propõe a imagem ORIGINAL de um produto, sem editar: o servidor confere o endereço (https, nunca rede interna), baixa o arquivo, confirma que é JPEG/PNG/WebP, mede largura/altura e calcula o SHA-256. Entra pendente de aprovação; direitos de uso e marca d'água continuam a conferir por uma pessoa.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
 - **`conecta.imagem.buscar_web`** — Busca imagens candidatas na web (não salva nada). Informe o sku para receber a galeria de até 8 candidatas com estado, origem, licença e prova do código; sem aprovação automática.

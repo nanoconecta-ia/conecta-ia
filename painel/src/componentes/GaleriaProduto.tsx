@@ -55,6 +55,7 @@ export function GaleriaProduto({ loja, produtoId, sku, aoFechar }: { loja: Loja;
                 <div><dt>Origem</dt><dd className="mono">{i.origem}</dd></div>
                 <div><dt>Resolução</dt><dd className="mono">{i.resolucao}</dd></div>
                 <div><dt>Licença</dt><dd>{i.licenca}</dd></div>
+                <div><dt>Exibição</dt><dd>Original, sem corte nem filtro</dd></div>
               </dl>
               {i.avisos.length > 0 && <ul className="galeria-avisos">{i.avisos.map((a) => <li key={a}>{a}</li>)}</ul>}
               {i.estado === "pendente" && (

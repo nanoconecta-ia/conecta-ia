@@ -107,3 +107,25 @@ test("falha na gravação vira mensagem, não exceção", async () => {
   const r: any = await proporEnriquecimento(admin("p1", true), "L1", { sku: "80692", campo: "marca_peca", valor: "x", fonte: "f" });
   assert.ok(r.erro);
 });
+
+test("proporImagem: recusa endereço interno antes de qualquer gravação", async () => {
+  const a = admin("p1");
+  for (const url of ["https://169.254.169.254/latest", "https://127.0.0.1/a.jpg", "https://intranet/a.jpg"]) assert.ok((await proporImagem(a, "L1", { sku: "80692", url }) as any).erro, url);
+  assert.equal(a.chamadas.length, 0);
+});
+test("proporImagem com verificação: devolve SHA-256 e dimensões do original, atualiza a linha e nunca marca editada", async () => {
+  const atualizacoes: Record<string, unknown>[] = [];
+  const a: any = admin("p1");
+  const cadeia: any = { eq: () => cadeia, then: (r: (v: unknown) => void) => r({ error: null }) };
+  const base = a.from; a.from = (t: string) => (t === "produto_imagens" ? { update: (v: Record<string, unknown>) => { atualizacoes.push(v); return cadeia; } } : base());
+  const imagem = { sha256: "a".repeat(64), bytes: 1234, mime: "image/png" as const, largura_px: 1200, altura_px: 900, url_final: "https://x.com/a.png", avisos: [] };
+  const r: any = await proporImagem(a, "L1", { sku: "80692", url: "https://x.com/a.png" }, async () => ({ ok: true, imagem }));
+  assert.equal(r.ok, true); assert.equal(r.original.sha256, "a".repeat(64)); assert.equal(r.original.editada, false);
+  assert.deepEqual(atualizacoes[0], { largura_px: 1200, altura_px: 900 });
+  assert.equal(a.chamadas[0].fn, "imagem_propor");
+});
+test("proporImagem com verificação reprovada: devolve o erro e NÃO grava a proposta", async () => {
+  const a = admin("p1");
+  const r: any = await proporImagem(a, "L1", { sku: "80692", url: "https://x.com/a.png" }, async () => ({ ok: false, erro: "O arquivo não é uma imagem JPEG, PNG ou WebP válida." }));
+  assert.match(r.erro, /não é uma imagem/); assert.equal(a.chamadas.length, 0);
+});

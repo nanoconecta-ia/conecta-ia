@@ -21,6 +21,7 @@ export function problemaNoValor(campo: string, valor: unknown): string | null {
 }
 export const TIPOS_CODIGO = ["oem", "fabricante", "ean", "similar", "substituto", "antigo"] as const; // "sku" é do Bling, o agente não propõe
 
+import { urlImagemSegura, type ImagemInspecionada, type ResultadoImagem } from "../busca_segura/imagem_original.ts";
 import { validarAplicacao, type BaseAplicacao, type Fonte, type PropostaAplicacao, type TipoAno, type TipoFonte } from "../aplicacoes/regras_aplicacao.ts";
 import { validarTextoSeo } from "../aplicacoes/regras_seo.ts";
 
@@ -112,14 +113,30 @@ export async function proporAplicacao(admin: AdminRpc, lojaId: string, e: Record
   return { ok: true, status: "a_confirmar", nivel: r.nivel, avisos: r.avisos };
 }
 
-export async function proporImagem(admin: AdminRpc, lojaId: string, e: Record<string, unknown>): Promise<unknown> {
+/** Verificação opcional da imagem (download no servidor, tipo real, dimensões, SHA-256). Sem ela, só a checagem estática do endereço (sem rede). */
+export type VerificarImagem = (url: string) => Promise<ResultadoImagem>;
+
+export async function proporImagem(admin: AdminRpc, lojaId: string, e: Record<string, unknown>, verificar?: VerificarImagem): Promise<unknown> {
   const sku = txt(e.sku, 80), url = txt(e.url, 600), origem = txt(e.origem, 200), pagina = txt(e.pagina, 600);
   if (!sku || !url) return { erro: "Informe o SKU e o endereço da imagem." };
   if (!/^https:\/\//i.test(url)) return { erro: "A imagem precisa ser um endereço https." };
+  const segura = urlImagemSegura(url);
+  if (!segura.ok) return { erro: segura.erro };
   const produtoId = await idDoSku(admin, lojaId, sku);
   if (!produtoId) return { erro: "Produto não encontrado nesta loja." };
+  let conferida: ImagemInspecionada | null = null;
+  if (verificar) {
+    const v = await verificar(url);
+    if (!v.ok) return { erro: v.erro };
+    conferida = v.imagem;
+  }
   // cruzamento = o próprio SKU buscado (sinal disponível numa busca por texto; a Fila avisa que os direitos ainda não foram confirmados)
   const { error } = await admin.rpc("imagem_propor", { p_loja: lojaId, p_produto: produtoId, p_url: url, p_origem: origem || "busca_web", p_sku: sku, p_pagina: pagina || null });
   if (error) return { erro: "Não foi possível propor a imagem." };
-  return { ok: true, status: "a_confirmar", aviso: "A imagem entrou pendente de aprovação na Fila; direitos de uso ainda não confirmados." };
+  if (conferida) {
+    // dimensões conferidas no arquivo original; best-effort (a proposta já existe e segue pendente de aprovação)
+    try { await admin.from("produto_imagens").update({ largura_px: conferida.largura_px, altura_px: conferida.altura_px }).eq("loja_id", lojaId).eq("produto_id", produtoId).eq("url", url).eq("aprovada", false); } catch { /* sem dimensões na linha; o resultado abaixo as informa */ }
+  }
+  return { ok: true, status: "a_confirmar", aviso: "A imagem entrou pendente de aprovação na Fila; direitos de uso ainda não confirmados.",
+    ...(conferida ? { original: { sha256: conferida.sha256, bytes: conferida.bytes, mime: conferida.mime, largura_px: conferida.largura_px, altura_px: conferida.altura_px, editada: false }, avisos: conferida.avisos } : { original: "nao_verificada" }) };
 }
