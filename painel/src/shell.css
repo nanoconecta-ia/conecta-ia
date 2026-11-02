@@ -1360,3 +1360,14 @@ img, video { height: auto; }
 @media (prefers-reduced-motion: reduce) {
   .layout, .menu, .menu a, .indicador, .prop-item { transition-duration: .01ms; }
 }
+
+/* Chat Nano no celular: um avatar no topo global e area de conversa livre.
+   Estado e configuracao continuam acessiveis no menu de ajustes. */
+@media (max-width: 767px) {
+  .layout--nano-chat .abas .agente > .robo-nano,
+  .layout--nano-chat .abas .agente > .nano-robo { display: none; }
+  .layout--nano-chat .abas .agente .agente-titulo h1 { display: none; }
+  .layout--nano-chat .nano-motor-status { display: none; }
+  .layout--nano-chat .abas .agente { min-height: 46px; padding-block: 4px; }
+  .layout--nano-chat .abas .agente .agente-titulo .estado { font-size: .75rem; }
+}
