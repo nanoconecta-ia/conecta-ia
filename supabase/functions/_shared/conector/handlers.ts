@@ -1,5 +1,6 @@
 // Handlers das ferramentas ATIVAS do registro. Cada um recebe a entrada já validada pelo esquema e o contexto da loja.
 // Nenhum handler escreve no Bling: as ferramentas "preparar_*" só montam PROPOSTA; quem escreve é o executor, depois da aprovação.
+import { registrarResumo } from "./atividade.ts";
 import { conflitoDeMarca, validarMarca } from "../cadastro/regras_marca.ts";
 import { MAPA_CAMPOS, montarCorpoCriacao, montarCorpoProduto } from "./bling_campos.ts";
 import { validarRascunho } from "../cadastro/regras_cadastro.ts";
@@ -155,6 +156,7 @@ async function skuProposto(c: ContextoFerramenta): Promise<{ sku: string } | { e
 }
 
 export const HANDLERS: Record<string, Handler> = {
+  "nano.atividade.registrar": (e, c) => registrarResumo(c.admin as any, c.lojaId, (c as { mcpChaveId?: string | null }).mcpChaveId ?? null, e),
   "conecta.catalogo.resumo": (_e, c) => c.dados.resumo(),
   "conecta.catalogo.listar": (e, c) => c.dados.listarProdutos({ apenasNaoPublicados: e.apenas_nao_publicados === true, busca: e.busca, limite: e.limite }),
   "conecta.catalogo.ver": (e, c) => c.dados.verProduto(e.sku),
