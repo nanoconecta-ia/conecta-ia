@@ -1,4 +1,4 @@
-// Chat retrátil, blocos retráteis e esfera em ação, no componente REAL. Rede 100% SINTÉTICA; nada sai para produção.
+// Chat retrátil, blocos retráteis e avatar RoboNano em ação, no componente REAL. Rede 100% SINTÉTICA; nada sai para produção.
 import { createRequire } from 'node:module';
 import { writeFile, rm, mkdir } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
@@ -40,8 +40,8 @@ try{
   await campo.fill('Consulte o kit 833333');await enviar.click();
   const faixa=page.locator('.faixa-acao');await faixa.waitFor();
   assert.match(await faixa.innerText(),/Consultando/);
-  // esfera única: fica no cabeçalho do app; o chat publica o estado real no store por loja e o cabeçalho (Cab) lê dele
-  await page.waitForFunction(()=>document.querySelector('#cab-nano')?.dataset.estado==='interpretando');assert.equal(await page.locator('.orbe').count(),1,'uma só esfera: a do cabeçalho');
+  // avatar no cabeçalho e no chat: ambos recebem o estado real; nenhuma esfera orbital deve existir
+  await page.waitForFunction(()=>document.querySelector('#cab-nano')?.dataset.estado==='interpretando');assert.equal(await page.locator('.orbe').count(),0,'nenhuma esfera orbital');assert.ok(await page.locator('#cab-nano .nano-robo').count()>=1,'avatar RoboNano no cabeçalho');assert.ok(await page.locator('.agente .nano-robo').count()>=1,'avatar RoboNano no chat');
   await page.getByText('Resposta 1 da Nano.ia.').waitFor();await faixa.waitFor({state:'detached'});
   await page.waitForFunction(()=>document.querySelector('#cab-nano')?.dataset.estado==='ocioso');
   // 2) mais três perguntas: chat moderno, nada recolhe sozinho e cada mensagem tem Copiar

@@ -1317,3 +1317,20 @@ html[data-orbe="cristal"] .orbe-faiscas b { box-shadow: 0 0 5px 1px color-mix(in
 .nano-visual-upload{border-top:3px solid #b42e40}
 @media(max-width:900px){.nano-visual-layout{grid-template-columns:minmax(0,1fr)}.nano-visual-painel{position:static}.nano-visual-hero{padding:18px;gap:10px}.nano-visual-mascote{transform:scale(.75);transform-origin:center;flex-basis:110px}}
 @media(max-width:490px){.nano-visual-hero{padding:16px}.nano-visual-hero p{font-size:.8rem}.nano-visual-mascote{transform:scale(.57);flex-basis:72px;margin-right:-15px}.nano-visual-tags span{font-size:.65rem}.nano-visual-hero h1{font-size:1.5rem}}
+
+/* Chat Nano.IA: tipografia compacta e leitura confortável, sem ocupar a largura toda. */
+.layout--nano-chat .abas.chat-tela .chat .bolha { font-size: .9rem; line-height: 1.48; max-width: min(84%, 680px); overflow-wrap: anywhere; }
+.layout--nano-chat .abas.chat-tela .chat .bolha.ia { width: fit-content; max-width: min(88%, 680px); padding: 9px 12px; }
+.layout--nano-chat .abas.chat-tela .chat .bolha.eu { max-width: min(80%, 620px); padding: 9px 12px; }
+.layout--nano-chat .abas.chat-tela .chat .bolha .md { font-size: inherit; line-height: inherit; }
+.layout--nano-chat .abas.chat-tela .chat .bolha .md p { margin: .3em 0; }
+.layout--nano-chat .abas.chat-tela .chat .bolha .md h1,
+.layout--nano-chat .abas.chat-tela .chat .bolha .md h2,
+.layout--nano-chat .abas.chat-tela .chat .bolha .md h3 { font-size: 1em; line-height: 1.35; margin: .6em 0 .25em; }
+.layout--nano-chat .abas.chat-tela .chat .bolha .md table { font-size: .82rem; display: block; max-width: 100%; overflow-x: auto; }
+@media (max-width: 560px) {
+ .layout--nano-chat .abas.chat-tela .chat .bolha { font-size: .875rem; line-height: 1.43; }
+ .layout--nano-chat .abas.chat-tela .chat .bolha.ia { max-width: 92%; }
+ .layout--nano-chat .abas.chat-tela .chat .bolha.eu { max-width: 86%; }
+ .layout--nano-chat .abas-centro > .chat { padding: 9px 10px; }
+}
