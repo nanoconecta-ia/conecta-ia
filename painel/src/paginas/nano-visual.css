@@ -1,0 +1,32 @@
+/* Camada de design somente em Imagens e SEO: preserva a rotina existente de cópia branca. */
+.nano-visual { display:grid; gap:18px; min-width:0; }
+.nano-visual-cabecalho { color:#fff; background:radial-gradient(ellipse at 88% 13%,rgba(238,91,75,.27),transparent 52%),linear-gradient(110deg,#0c111c,#191722 62%,#421b23); border:1px solid #743940; border-radius:22px; padding:clamp(20px,3vw,32px); display:flex; align-items:center; justify-content:space-between; gap:18px; box-shadow:0 14px 36px rgba(8,10,18,.19); min-width:0; }
+.nano-visual-intro { min-width:0; flex:1; }
+.nano-visual-selo { display:inline-block; font-size:.68rem; font-weight:800; letter-spacing:.13em; color:#ffc5ba; }
+.nano-visual-cabecalho h1 { font-size:clamp(1.5rem,2.6vw,2.3rem); line-height:1.18; letter-spacing:-.035em; margin:11px 0 8px; }
+.nano-visual-cabecalho h1 .selo { vertical-align:middle; color:#ffdfd2; background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.35); font-size:.66rem; letter-spacing:0; }
+.nano-visual-cabecalho p { color:#e6dfe6; font-size:.89rem; max-width:680px; line-height:1.6; margin:6px 0 14px; }
+.nano-visual-beneficios { display:flex; flex-wrap:wrap; gap:7px; }
+.nano-visual-beneficios span { color:#ffece5; background:rgba(255,255,255,.075); border:1px solid rgba(255,255,255,.2); border-radius:999px; padding:6px 10px; font-size:.69rem; font-weight:750; }
+.nano-visual-agente { display:flex; flex:none; align-items:center; gap:12px; background:rgba(8,8,18,.4); border:1px solid rgba(246,155,143,.34); border-radius:17px; padding:13px; }
+.nano-visual-agente > div { display:grid; gap:3px; }
+.nano-visual-agente b { font-size:1.1rem; color:#fff; }
+.nano-visual-agente small { color:#ffbdb4; }
+.nano-visual-agente span { color:#d8d6e1; font-size:.73rem; }
+.nano-visual-arquivo { display:grid; gap:7px; }
+.nano-visual-arquivo h2 { font-size:1.12rem; margin:0; }
+.nano-visual-arquivo .linha { flex-wrap:wrap; }
+.nano-visual-arquivo button { font-weight:750; border-radius:12px; }
+.nano-visual .vf-preparador { border:1px solid color-mix(in srgb,var(--borda) 75%,#ac5359); border-radius:21px; padding:clamp(16px,2.5vw,26px); box-shadow:0 12px 29px rgba(16,19,26,.1); background:var(--cartao); min-width:0; }
+.nano-visual .vf-preparador-topo { gap:12px; flex-wrap:wrap; }
+.nano-visual .vf-preparador-topo strong { font-size:clamp(1.05rem,2.1vw,1.3rem); }
+.nano-visual .vf-comparacao { gap:14px; }
+.nano-visual .vf-foto-bloco { border:1px solid var(--borda); background:var(--realce); padding:10px; border-radius:16px; }
+.nano-visual .vf-foto-bloco:nth-child(2) { border-color:#4b966b; background:color-mix(in srgb,#32a36e 8%,var(--cartao)); }
+.nano-visual .vf-foto-quadro { border-radius:12px; overflow:hidden; }
+.nano-visual .vf-preparador-rodape { gap:12px; flex-wrap:wrap; }
+.nano-visual .vf-baixar { border-radius:12px; font-weight:800; }
+.nano-visual .fid-quadro { border-radius:12px; }
+@media(max-width:720px) { .nano-visual-agente { padding:8px; flex-direction:column; text-align:center; } .nano-visual-agente .nano-robo { --nano-robo-d:58px !important; } .nano-visual-agente span { display:none; } }
+@media(max-width:460px) { .nano-visual-cabecalho { flex-direction:column; align-items:stretch; } .nano-visual-agente { flex-direction:row; text-align:left; } .nano-visual-agente span { display:block; } }
+@media(prefers-reduced-motion:reduce) { .nano-visual * { animation:none!important; transition:none!important; } }
