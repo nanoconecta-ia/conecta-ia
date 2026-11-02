@@ -47,10 +47,10 @@ export default async function PaginaProduto({ params }: Props) {
   return (
     <article className="mx-auto grid max-w-5xl gap-6 p-4 sm:p-6 md:grid-cols-2">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <div className="aspect-square overflow-hidden rounded-xl bg-borda/50">
+      <div className="aspect-square overflow-hidden rounded-xl bg-white p-4 ring-1 ring-slate-200">
         {principal ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={principal.url} alt={produto.nome ?? ""} className="size-full object-cover" />
+          <img src={principal.url} alt={produto.nome ?? ""} className="size-full object-contain" />
         ) : (
           <div className="grid size-full place-items-center text-sm text-suave">Sem imagem</div>
         )}
