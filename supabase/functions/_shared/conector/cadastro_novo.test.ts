@@ -10,6 +10,16 @@ import { buscarDefinicao } from "./registro.ts";
 
 const URL_F = [{ url: "https://www.sabo.com.br/catalogo/x" }];
 const rascunho = { codigo: "CI001087", nome: "Bomba de óleo HR 2.5 16V", marca: "Sabó", gtin: "7891000100103", preco_venda: 899.9 };
+/** Banco simulado: propostas abertas, itens de cadastro novo em aberto e SKUs CI do espelho. A cadeia do Supabase é "thenable". */
+export function adminFake(o: { propostas?: string[]; itens?: number; skus?: string[]; erro?: "propostas" | "itens" | "produtos" } = {}) {
+  const resultado = (t: string) => {
+    if (o.erro === "propostas" && t === "agente_propostas" || o.erro === "itens" && t === "agente_proposta_itens" || o.erro === "produtos" && t === "produtos") return { data: null, error: { message: "falha" } };
+    if (t === "agente_propostas") return { data: (o.propostas ?? []).map((id) => ({ id })), error: null };
+    if (t === "agente_proposta_itens") return { data: Array.from({ length: o.itens ?? 0 }, (_, i) => ({ id: String(i) })), error: null };
+    return { data: (o.skus ?? []).map((sku) => ({ sku })), error: null };
+  };
+  return { from: (t: string) => { const q: any = { select: () => q, eq: () => q, in: () => q, like: () => q, then: (r: (v: unknown) => unknown) => r(resultado(t)) }; return q; } };
+}
 function contexto(bling: BlingMock, extra: Record<string, unknown> = {}) {
   const itens: Record<string, unknown>[] = [];
   const rpc: Rpc = async (fn, args) => {
@@ -17,7 +27,7 @@ function contexto(bling: BlingMock, extra: Record<string, unknown> = {}) {
     const dados: Record<string, unknown> = { agente_tarefa_criar: "t1", agente_proposta_criar: "p1", agente_proposta_enviar: { versao: 1, hash: "h", risco: "MEDIUM" } };
     return { data: dados[fn] ?? null, error: null };
   };
-  return { ctx: { lojaId: "L", userId: "u1", bling, rpc, dados: { produtoPorSku: async () => null }, agente: { nome: "Nano.ia" }, ...extra } as any, itens };
+  return { ctx: { lojaId: "L", userId: "u1", bling, rpc, dados: { produtoPorSku: async () => null }, admin: adminFake(), agente: { nome: "Nano.ia" }, ...extra } as any, itens };
 }
 
 test("a ferramenta é ativa só no chat, MEDIUM, e a criação de produto não tem nenhum campo liberado", () => {
@@ -78,4 +88,49 @@ test("ensaio com liberação SÓ no teste: cria no Bling simulado e confirma len
   assert.equal(v.estado, "confirmada", JSON.stringify(v));
   assert.equal(b.recebidos.length, 1);
   assert.equal([...b.produtos.values()][0].codigo, "CI001087");
+});
+
+// ── Piloto "um por vez" e SKU automático (CI + 6 dígitos): ordem do dono, 02/11/2026
+const semCodigo = { nome: "Bomba de óleo HR 2.5 16V", marca: "Sabó" };
+test("piloto: já existe um cadastro novo aguardando decisão -> não propõe outro, e diz como liberar", async () => {
+  const b = new BlingMock(); const { ctx, itens } = contexto(b, { admin: adminFake({ propostas: ["p9"], itens: 1 }) });
+  const r = await HANDLERS["bling.produtos.preparar_cadastro"]({ rascunho, fontes: URL_F }, ctx) as any;
+  assert.match(r.aviso, /Piloto: já há 1 cadastro\(s\) novo\(s\) aguardando decisão/); assert.match(r.aviso, /subir é decisão do dono/); assert.equal(itens.length, 0);
+});
+test("piloto: proposta aberta que NÃO é de cadastro novo (ex.: troca de marca) não bloqueia", async () => {
+  const { ctx } = contexto(new BlingMock(), { admin: adminFake({ propostas: ["p9"], itens: 0 }) });
+  const r = await HANDLERS["bling.produtos.preparar_cadastro"]({ rascunho, fontes: URL_F }, ctx) as any;
+  assert.equal(r.proposta_id, "p1", JSON.stringify(r));
+});
+test("piloto: se não consegue conferir o banco, falha FECHADO (nada é proposto)", async () => {
+  for (const erro of ["propostas", "itens"] as const) {
+    const { ctx, itens } = contexto(new BlingMock(), { admin: adminFake({ propostas: ["p9"], itens: 0, erro }) });
+    const r = await HANDLERS["bling.produtos.preparar_cadastro"]({ rascunho, fontes: URL_F }, ctx) as any;
+    assert.match(r.erro, /por segurança nada foi proposto/, erro); assert.equal(itens.length, 0);
+  }
+});
+test("SKU automático: sem código no rascunho, propõe CI + 6 dígitos depois do maior do espelho e avisa que a aprovação é do lojista", async () => {
+  const { ctx, itens } = contexto(new BlingMock(), { admin: adminFake({ skus: ["CI000016", "CI001086", "CI000500"] }) });
+  const r = await HANDLERS["bling.produtos.preparar_cadastro"]({ rascunho: semCodigo, fontes: URL_F }, ctx) as any;
+  assert.equal(r.proposta_id, "p1", JSON.stringify(r));
+  assert.equal((itens[0].p_depois as Record<string, unknown>).codigo, "CI001087");
+  assert.ok((itens[0].p_validacoes as string[]).some((v) => /SKU CI001087 proposto automaticamente.*a aprovação é sua/.test(v)));
+});
+test("SKU automático: se o Bling já tem o candidato (mesmo fora do espelho), pula para o próximo; nunca reutiliza", async () => {
+  const b = new BlingMock().semear("9", { codigo: "CI001087", nome: "Já existe no Bling", situacao: "E" });
+  const { ctx, itens } = contexto(b, { admin: adminFake({ skus: ["CI001086"] }) });
+  const r = await HANDLERS["bling.produtos.preparar_cadastro"]({ rascunho: semCodigo, fontes: URL_F }, ctx) as any;
+  assert.equal(r.proposta_id, "p1", JSON.stringify(r)); assert.equal((itens[0].p_depois as Record<string, unknown>).codigo, "CI001088");
+});
+test("SKU automático: Bling indisponível ou banco com erro -> nenhum SKU é inventado", async () => {
+  const b = new BlingMock(); const falha = { ...b, simulado: true, ler: async () => ({ status: 503 }) } as any;
+  const a = contexto(falha); const r1 = await HANDLERS["bling.produtos.preparar_cadastro"]({ rascunho: semCodigo, fontes: URL_F }, a.ctx) as any;
+  assert.ok(r1.erro || r1.aviso, JSON.stringify(r1)); assert.equal(a.itens.length, 0);
+  const c2 = contexto(new BlingMock(), { admin: adminFake({ erro: "produtos" }) });
+  assert.match((await HANDLERS["bling.produtos.preparar_cadastro"]({ rascunho: semCodigo, fontes: URL_F }, c2.ctx) as any).erro, /nenhum SKU foi proposto/); assert.equal(c2.itens.length, 0);
+});
+test("com código informado pela pessoa, o SKU automático não entra (e nenhum aviso de SKU automático)", async () => {
+  const { ctx, itens } = contexto(new BlingMock());
+  await HANDLERS["bling.produtos.preparar_cadastro"]({ rascunho, fontes: URL_F }, ctx);
+  assert.ok(!(itens[0].p_validacoes as string[]).some((v) => /proposto automaticamente/.test(v)));
 });

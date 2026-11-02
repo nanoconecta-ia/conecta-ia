@@ -6,6 +6,7 @@
 import { BuscaErro, MSG_SEM_PROVEDOR, type Candidata, type ProvedorBusca, type ResultadoTecnico } from "../ia/busca.ts";
 import { classeDaFonte, hashTrecho, provaCompatibilidade, validarEvidencia, type ClasseFonte, type EvidenciaBusca, type NivelEvidencia } from "./evidencia.ts";
 import { montarGaleria, type CandidataEntrada, type Galeria } from "./galeria.ts";
+import { decidirDominio, separarReferencias, type DominioCadastrado } from "./dominios.ts";
 import { ORCAMENTO_PADRAO, planejarConsultas, reformular, type Consulta, type DadosProduto, type Orcamento } from "./plano_pesquisa.ts";
 
 export interface OpcoesInvestigacao {
@@ -18,11 +19,13 @@ export interface OpcoesInvestigacao {
   sinonimos?: Record<string, string[]>;
   /** Domínios de fabricante/montadora JÁ verificados por uma pessoa (ver fabricantes.ts). Sem isso nenhuma fonte vira "oficial". */
   dominios?: Readonly<Record<string, ClasseFonte>>;
+  /** Registro de domínios de fabricante verificados por uma pessoa (política de origem pública: ver dominios.ts). */
+  registroDominios?: readonly DominioCadastrado[];
   timeoutMs?: number;
   cache?: Map<string, unknown>;
 }
 export interface ConsultaFeita { etapa: string; texto: string; alvo: "web" | "imagens"; resultados: number; do_cache: boolean; erro?: string }
-export interface FonteConsultada { url: string; host: string; classe: ClasseFonte; nivel: NivelEvidencia; codigo: string; coletada_em: string; com_contexto_de_aplicacao: boolean }
+export interface FonteConsultada { url: string; host: string; classe: ClasseFonte; nivel: NivelEvidencia; codigo: string; coletada_em: string; com_contexto_de_aplicacao: boolean; papel: "origem_do_fabricante" | "referencia_tecnica"; publico: boolean }
 export type StatusCompatibilidade = "confirmada" | "nao_confirmada" | "nao_testada";
 export interface RelatorioPesquisa {
   sku: string;
@@ -32,6 +35,8 @@ export interface RelatorioPesquisa {
   consultas: ConsultaFeita[];
   fontes: FonteConsultada[];
   galeria: Galeria;
+  /** No máximo UMA origem pública (fabricante da marca do produto); o resto é referência técnica INTERNA, sem link público (sem propaganda para a concorrência). */
+  referencias: { publicas: { host: string; url: string; texto: string }[]; internas: { host: string; url: string; motivo: string }[] };
   limites: { consultas_usadas: number; orcamento: Orcamento; omitidas: number; interrompida_por: string | null };
   /** Esta investigação nunca grava nada. */
   sem_escrita: true;
@@ -71,7 +76,7 @@ export async function investigar(o: OpcoesInvestigacao): Promise<RelatorioPesqui
   const rel: RelatorioPesquisa = {
     sku: o.produto.sku, compatibilidade: { status: "nao_testada", mensagem: "APLICAÇÃO NÃO CONFIRMADA: a pesquisa não foi executada." },
     confirmado: [], inferido: [], nao_encontrado: [], nao_testado: [], pendencias: [], consultas: [], fontes: [],
-    galeria: { itens: [], omitidas: 0, duplicadas: 0, aprovacoes_automaticas: 0 }, limites: { consultas_usadas: 0, orcamento: orc, omitidas: plano.omitidas, interrompida_por: null }, sem_escrita: true,
+    galeria: { itens: [], omitidas: 0, duplicadas: 0, aprovacoes_automaticas: 0 }, referencias: { publicas: [], internas: [] }, limites: { consultas_usadas: 0, orcamento: orc, omitidas: plano.omitidas, interrompida_por: null }, sem_escrita: true,
   };
   const NAO_TESTADO = ["diferenças físicas entre a peça e as referências (fixação, polia, conexões, dimensões)", "se o código está visível dentro da fotografia", "licença e autorização de uso de cada imagem", "marca d'água, resolução real e hash de cada imagem (nenhuma imagem é baixada aqui)", "termos de uso e robots das páginas"];
   const p = o.produto;
@@ -117,8 +122,10 @@ export async function investigar(o: OpcoesInvestigacao): Promise<RelatorioPesqui
   for (const e of evs) {
     const v = validarEvidencia(e, alvoEv, o.hoje);
     if (v.nivel === "rejeitada") continue;
-    rel.fontes.push({ url: e.url, host: host(e.url), classe: e.classe, nivel: v.nivel, codigo: e.codigo_exato, coletada_em: e.coletada_em, com_contexto_de_aplicacao: !!e.contexto_aplicacao?.trim() });
+    const dec = decidirDominio(e.url, p.marca ?? "", o.registroDominios ?? [], true);
+    rel.fontes.push({ url: e.url, host: host(e.url), classe: e.classe, nivel: v.nivel, codigo: e.codigo_exato, coletada_em: e.coletada_em, com_contexto_de_aplicacao: !!e.contexto_aplicacao?.trim(), papel: dec.papel, publico: dec.publico });
   }
+  rel.referencias = separarReferencias(rel.fontes.map((f) => ({ url: f.url, codigoConfirmado: true })), p.marca ?? "", o.registroDominios ?? []);
   rel.galeria = montarGaleria(imagens, alvoEv, o.hoje);
   const porCodigo = new Map<string, string[]>();
   for (const f of rel.fontes) porCodigo.set(f.codigo, [...(porCodigo.get(f.codigo) ?? []), f.host]);

@@ -8,6 +8,7 @@ import { resolverEntidades, type GlossarioMotor } from "../busca_segura/entidade
 import { classeDaFonte, hashTrecho, type EvidenciaBusca } from "../busca_segura/evidencia.ts";
 import { montarGaleria, type CandidataEntrada } from "../busca_segura/galeria.ts";
 import { investigar } from "../busca_segura/investigacao.ts";
+import { proximoSku } from "../busca_segura/regras_sku.ts";
 import type { PortaDados } from "./dados.ts";
 import type { PortaBling } from "./porta_bling.ts";
 import type { Rpc } from "./executor.ts";
@@ -123,6 +124,34 @@ async function codigosConhecidosDoProduto(c: ContextoFerramenta, sku: string): P
     }
   }
   return { lista: [...lista], oem: [...oem], fabricante: [...fabricante] };
+}
+
+/** Piloto Mobis (ordem do dono, 02/11/2026): UM cadastro novo por vez, para conferir a taxonomia depois de cada um. Subir o teto (até 10) é decisão do dono, loja a loja. */
+export const PILOTO_CADASTRO_MAX_ABERTOS = 1;
+const ESTADOS_ABERTOS = ["rascunho", "pendente", "aprovada", "executando"];
+async function cadastrosNovosEmAberto(c: ContextoFerramenta): Promise<number | { erro: string }> {
+  const { data: props, error } = await c.admin.from("agente_propostas").select("id").eq("loja_id", c.lojaId).in("estado", ESTADOS_ABERTOS);
+  if (error) return { erro: "Não consegui conferir se já há cadastro novo aguardando decisão; por segurança nada foi proposto." };
+  const ids = ((props ?? []) as { id: string }[]).map((x) => x.id);
+  if (!ids.length) return 0;
+  const { data: itens, error: e2 } = await c.admin.from("agente_proposta_itens").select("id").eq("loja_id", c.lojaId).eq("operacao", "bling.produtos.criar").in("proposta_id", ids);
+  if (e2) return { erro: "Não consegui conferir se já há cadastro novo aguardando decisão; por segurança nada foi proposto." };
+  return ((itens ?? []) as unknown[]).length;
+}
+/** SKU automático (CI + 6 dígitos): depois do maior conhecido no espelho, conferindo o Bling na hora. Só PROPÕE; falha fechada se o Bling não responde. */
+async function skuProposto(c: ContextoFerramenta): Promise<{ sku: string } | { erro: string }> {
+  if (!c.bling) return { erro: "Sem leitura do Bling: não proponho SKU sem conferir se o código já existe." };
+  const { data, error } = await c.admin.from("produtos").select("sku").eq("loja_id", c.lojaId).like("sku", "CI%");
+  if (error) return { erro: "Não consegui ler os SKUs conhecidos; nenhum SKU foi proposto." };
+  const conhecidos = ((data ?? []) as { sku: string | null }[]).map((x) => x.sku ?? "").filter(Boolean), ocupados: string[] = [];
+  for (let t = 0; t < 5; t++) {
+    const sku = proximoSku(conhecidos, ocupados);
+    const r = await c.bling.ler("bling.produtos.consultar", { sku });
+    if (r.status !== 200) return { erro: `O Bling respondeu ${r.status} ao conferir o SKU ${sku}; nenhum SKU foi proposto.` };
+    if (!((r.corpo as any)?.data ?? []).length) return { sku };
+    ocupados.push(sku);
+  }
+  return { erro: "Cinco SKUs seguidos já existem no Bling; nenhum foi proposto. Revisar a sequência com o dono." };
 }
 
 export const HANDLERS: Record<string, Handler> = {
@@ -301,7 +330,16 @@ export const HANDLERS: Record<string, Handler> = {
   },
   // Produto NOVO: valida o rascunho (regras_cadastro), confere duplicidade no espelho e no Bling AGORA e cria a proposta. Não grava nada no Bling.
   "bling.produtos.preparar_cadastro": async (e, c) => {
-    const v = validarRascunho(e.rascunho, e.fontes, { lojaId: c.lojaId, porPessoa: c.agente?.provedor === "nenhum" });
+    // Piloto: um cadastro novo por vez (taxonomia conferida depois de cada um).
+    const abertos = await cadastrosNovosEmAberto(c);
+    if (typeof abertos !== "number") return abertos;
+    if (abertos >= PILOTO_CADASTRO_MAX_ABERTOS) return { aviso: `Piloto: já há ${abertos} cadastro(s) novo(s) aguardando decisão. Aprove ou rejeite antes de propor outro (limite do piloto: ${PILOTO_CADASTRO_MAX_ABERTOS} por vez; subir é decisão do dono). Nada foi proposto.` };
+    let rascunho = e.rascunho, skuAutomatico = false;
+    if (rascunho && typeof rascunho === "object" && !Array.isArray(rascunho) && !String((rascunho as Record<string, unknown>).codigo ?? "").trim()) {
+      const s = await skuProposto(c); if ("erro" in s) return s;
+      rascunho = { ...(rascunho as Record<string, unknown>), codigo: s.sku }; skuAutomatico = true;
+    }
+    const v = validarRascunho(rascunho, e.fontes, { lojaId: c.lojaId, porPessoa: c.agente?.provedor === "nenhum" });
     if (!v.ok) return { erro: "Rascunho recusado", detalhes: v.erros };
     const p = v.proposta;
     if (!c.bling) return { erro: "Sem acesso de leitura ao Bling; não confiro duplicidade, então nada foi proposto." };
@@ -318,7 +356,7 @@ export const HANDLERS: Record<string, Handler> = {
     return criarPropostaVersionada(c, { titulo: `Cadastrar no Bling o produto novo ${p.codigo} (${String(p.depois.nome).slice(0, 80)})`,
       resumo: `Produto novo. Pendências para publicar: ${p.pendencias.join("; ")}.`, itens: [{
         sku: p.codigo, operacao: "bling.produtos.criar", campos: Object.keys(p.depois), depois: p.depois, antes: null, fontes: e.fontes,
-        validacoes: [`nenhum produto com o código ${p.codigo}${p.depois.gtin ? ` ou o GTIN ${p.depois.gtin}` : ""} no espelho nem no Bling em ${new Date().toISOString()}`, ...p.validacoes, ...p.pendencias.map((x) => `pendente: ${x}`)] }] });
+        validacoes: [`nenhum produto com o código ${p.codigo}${p.depois.gtin ? ` ou o GTIN ${p.depois.gtin}` : ""} no espelho nem no Bling em ${new Date().toISOString()}`, ...(skuAutomatico ? [`SKU ${p.codigo} proposto automaticamente (CI + 6 dígitos, depois do maior conhecido): a aprovação é sua`] : []), ...p.validacoes, ...p.pendencias.map((x) => `pendente: ${x}`)] }] });
   },
   // Lê o Bling AGORA, calcula antes/depois dos campos pedidos e cria a proposta. Não grava nada no Bling.
   "bling.produtos.preparar_atualizacao": async (e, c) => {
