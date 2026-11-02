@@ -1,0 +1,44 @@
+/* Design visual v1: escopado a /imagens. Nao altera outras paginas nem o tema do ERP. */
+.nano-robo { width:var(--nano-robo-d, 44px); height:var(--nano-robo-d, 44px); display:inline-grid; flex:none; place-items:center; border-radius:50%; background:radial-gradient(circle at 48% 50%,#3b1422 0,#15151f 56%,#100b16 74%); border:1px solid rgba(255,150,135,.45); box-shadow:0 0 0 3px rgba(231,72,63,.08),0 5px 16px rgba(13,14,20,.24); overflow:hidden; }
+.nano-robo svg { width:96%; height:96%; display:block; }
+.nano-robo[data-estado="interpretando"],.nano-robo[data-estado="pensando"] { box-shadow:0 0 0 3px rgba(235,107,83,.13),0 0 24px rgba(235,95,86,.35); }
+.nano-visual { --nv-red:#e84e4d; --nv-ink:#111521; display:grid; gap:18px; min-width:0; }
+.nano-visual-cabecalho { color:#fff; background:radial-gradient(ellipse at 80% 0%,rgba(238,83,76,.26),transparent 49%),linear-gradient(115deg,#0c111c,#18151e 65%,#3c141b); border:1px solid #743940; border-radius:22px; padding:clamp(20px,3vw,32px); display:flex; align-items:center; justify-content:space-between; gap:16px; box-shadow:0 14px 35px rgba(8,10,18,.19); min-width:0; }
+.nano-visual-intro { min-width:0; flex:1; }
+.nano-visual-selo { display:inline-block; font-size:.68rem; font-weight:800; letter-spacing:.15em; color:#ffa8a0; }
+.nano-visual-cabecalho h1 { font-size:clamp(1.55rem,2.6vw,2.35rem); line-height:1.14; letter-spacing:-.035em; margin:10px 0; }
+.nano-visual-cabecalho h1 .selo { vertical-align:middle; font-size:.66rem; letter-spacing:0; color:#ffd9cb; background:rgba(255,255,255,.07); border-color:#9d575a; }
+.nano-visual-cabecalho p { color:#e6dde2; max-width:690px; line-height:1.6; margin:6px 0 14px; font-size:.88rem; }
+.nano-visual-beneficios { display:flex; flex-wrap:wrap; gap:7px; }
+.nano-visual-beneficios span { border-radius:999px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.17); padding:5px 10px; color:#fbe6df; font-size:.7rem; font-weight:700; }
+.nano-visual-agente { display:flex; align-items:center; gap:15px; padding:12px 16px; border:1px solid rgba(255,143,139,.35); border-radius:18px; background:rgba(8,8,17,.35); min-width:0; }
+.nano-visual-agente>div { display:grid; gap:4px; min-width:0; }
+.nano-visual-agente b { font-size:1.1rem; }
+.nano-visual-agente small { color:#f6b2a7; }
+.nano-visual-agente span { color:#cfd3dc; font-size:.73rem; }
+.nano-visual-arquivo { display:grid; gap:8px; }
+.nano-visual-arquivo h2 { margin:0; font-size:1.15rem; }
+.nano-visual-arquivo .linha { flex-wrap:wrap; }
+.nano-visual-arquivo button { border-radius:13px; font-weight:750; }
+.nano-foto-card { border:1px solid color-mix(in srgb,var(--borda) 70%,#b74848); border-radius:22px; padding:clamp(15px,2.5vw,26px); background:var(--cartao); box-shadow:0 8px 24px rgba(8,10,18,.11); min-width:0; display:grid; gap:18px; }
+.nano-foto-card-cab { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.nano-foto-sobretitulo { color:#bb5b52; font-weight:800; font-size:.64rem; letter-spacing:.13em; }
+.nano-foto-card h2 { font-size:clamp(1.18rem,2vw,1.55rem); margin:5px 0; }
+.nano-foto-card-cab p { margin:0; color:var(--suave); font-size:.82rem; line-height:1.5; }
+.nano-foto-chip { border-radius:999px; border:1px solid var(--borda); background:var(--realce); color:var(--suave); padding:5px 9px; font-size:.7rem; font-weight:750; white-space:nowrap; }
+.nano-foto-quadros { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; min-width:0; }
+.nano-foto-lado { min-width:0; display:grid; align-content:start; gap:7px; margin:0; padding:9px; border-radius:17px; border:1px solid var(--borda); background:var(--realce); }
+.nano-foto-lado-pronto { border-color:#4b956c; background:color-mix(in srgb,#35a76d 7%,var(--cartao)); }
+.nano-foto-midia { aspect-ratio:1; width:100%; display:grid; place-items:center; border-radius:11px; overflow:hidden; background:repeating-conic-gradient(#e5e5e5 0% 25%,#f3f3f3 0% 50%) 50%/25px 25px; }
+.nano-foto-midia img { display:block; width:100%; height:100%; object-fit:contain; }
+.nano-foto-midia-branca { background:#fff; }
+.nano-foto-midia p { font-size:.8rem; color:#46505b; text-align:center; padding:15px; }
+.nano-foto-lado figcaption { font-size:.75rem; font-weight:750; text-align:center; }
+.nano-foto-acoes { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+.nano-foto-acoes button { border-radius:12px; min-height:44px; font-weight:800; }
+.nano-foto-sinal { color:#2a8557; font-size:.78rem; font-weight:750; }
+.nano-foto-ressalva { margin:0; font-size:.79rem; line-height:1.55; padding:10px 13px; border-left:3px solid #ce7955; background:var(--realce); color:var(--suave); border-radius:8px; }
+.nano-visual .fid-quadro { border-radius:12px; }
+@media(max-width:720px) { .nano-visual-cabecalho { align-items:flex-start; } .nano-visual-agente { padding:7px; flex-direction:column; text-align:center; gap:6px; } .nano-visual-agente .nano-robo { --nano-robo-d:54px !important; } .nano-visual-agente span { display:none; } }
+@media(max-width:460px) { .nano-visual-cabecalho { flex-direction:column; } .nano-visual-agente { width:100%; box-sizing:border-box; flex-direction:row; text-align:left; } .nano-visual-agente span { display:block; } .nano-foto-quadros { grid-template-columns:1fr; } .nano-foto-chip { white-space:normal; } }
+@media(prefers-reduced-motion:reduce) { .nano-visual *, .nano-robo * { animation:none !important; transition:none !important; } }
