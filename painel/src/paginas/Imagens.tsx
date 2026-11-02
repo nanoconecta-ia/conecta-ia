@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { Loja } from "../lib/dados.ts";
 import { Icone } from "../componentes/Icone.tsx";
+import "./nano-visual-premium.css";
 import { PreviaBranca } from "../componentes/PreviaBranca.tsx";
 import {
   CHECAGENS, CONFIG_PADRAO, FILTRO_MELHORADA, MODOS, RECURSOS, bannerLigado, comparadorLigado, gravarConfig, lerConfig,
