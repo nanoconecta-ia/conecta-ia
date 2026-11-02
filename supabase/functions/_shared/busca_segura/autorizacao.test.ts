@@ -7,7 +7,7 @@ import { decidir } from "../conector/policy.ts";
 import { CAMPOS_ESCRITA_LIBERADOS } from "../conector/bling_campos.ts";
 import { FERRAMENTAS_ESCRITA_REAL } from "../conector/porta_bling.ts";
 
-const TOCADAS = ["engenharia.consulta.interpretar", "conecta.imagem.buscar_web", "conecta.imagem.propor", "bling.produtos.preparar_atualizacao", "bling.produtos.preparar_cadastro"];
+const TOCADAS = ["engenharia.consulta.interpretar", "conecta.imagem.buscar_web", "conecta.imagem.propor", "bling.produtos.preparar_atualizacao", "bling.produtos.preparar_cadastro", "engenharia.pesquisa.investigar"];
 
 test("as ferramentas que este PR toca são leitura ou proposta, nunca escrevem fora e nunca vão ao MCP externo", () => {
   for (const id of TOCADAS) {
@@ -15,7 +15,7 @@ test("as ferramentas que este PR toca são leitura ou proposta, nunca escrevem f
     assert.ok(d.permissao === "leitura" || d.permissao === "propor", `${id}: ${d.permissao}`);
     assert.equal(d.escreveExterno, false, id);
     // buscar_web (busca com credencial da loja) e o cadastro de produto novo nunca vão ao MCP externo; as demais já eram expostas como leitura/proposta antes deste PR.
-    if (id === "conecta.imagem.buscar_web" || id === "bling.produtos.preparar_cadastro") assert.equal(d.exposicao.mcp, false, id);
+    if (id === "conecta.imagem.buscar_web" || id === "bling.produtos.preparar_cadastro" || id === "engenharia.pesquisa.investigar") assert.equal(d.exposicao.mcp, false, id);
   }
 });
 test("nenhuma ferramenta visível ao chat ou ao MCP escreve fora ou executa", () => {

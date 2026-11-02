@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 59 ferramentas — 41 ativas, 16 planejadas, 2 desligadas.
+Resumo: 60 ferramentas — 42 ativas, 16 planejadas, 2 desligadas.
 
 ## Grupo: conecta
 
@@ -167,6 +167,7 @@ Resumo: 59 ferramentas — 41 ativas, 16 planejadas, 2 desligadas.
 | `engenharia.oem.buscar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `codigo*:string` `incluir_a_confirmar:boolean` |
 | `conecta.codigo.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `tipo*:string` `valor*:string` `fonte*:string` `confianca:number` |
 | `conecta.aplicacao.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `marca_veiculo*:string` `modelo*:string` `motorizacao*:string` `ano_inicial:integer` `ano_final:integer` `em_producao:boolean` `tipo_ano*:string` `regime:string` `base*:string` `fonte_tipo*:string` `fonte_url:string` `fonte_documento:string` `fonte_data*:string` `codigo_conferido:string` `confianca:number` |
+| `engenharia.pesquisa.investigar` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `sku*:string` `motor:string` `veiculo:string` `ano:integer` |
 | `engenharia.taxonomia.buscar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `texto*:string` |
 | `engenharia.duplicidade.detectar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku:string` `gtin:string` `nome:string` |
 | `engenharia.compartilhamento.sugerir` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `codigo*:string` `incluir_a_confirmar:boolean` |
@@ -193,6 +194,9 @@ Resumo: 59 ferramentas — 41 ativas, 16 planejadas, 2 desligadas.
 - **`conecta.aplicacao.propor`** — Propõe a aplicação de UMA versão de veículo (marca, modelo, motor, anos com tipo_ano) com base e fonte (tipo, URL ou documento, data). Só o motor ou só o modelo é recusado; só uma pessoa aprova.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
+- **`engenharia.pesquisa.investigar`** — Investigação técnica de um produto do catálogo: monta consultas progressivas (código, OEM, GTIN, descrição + motor + veículo, catálogos alternativos, imagens) com orçamento, cache e timeout, e devolve um relatório que separa CONFIRMADO, INFERIDO, NÃO ENCONTRADO e NÃO TESTADO, com a galeria (≤ 8) pendente. Sem evidência forte responde APLICAÇÃO NÃO CONFIRMADA. Só leitura; sem provedor de busca devolve 'nao_testada'.
+  - *Verificação:* Cada afirmação cita a página em que o código aparece escrito; aplicação só com fonte forte de domínio verificado.
+  - *Recuperação:* Repetir a leitura; é segura.
 - **`engenharia.taxonomia.buscar`** — Busca nós da taxonomia de autopeças por texto.
   - *Verificação:* Leitura de taxonomia_nos.
   - *Recuperação:* Repetir a leitura; é segura.

@@ -2,13 +2,17 @@
 // O QUE PROVA: uma evidência só vale com URL https, trecho que CONTÉM o código exato, código que é do produto, data válida e hash do trecho; marketplace nunca prova
 // compatibilidade sozinho (só descoberta); resposta 429/5xx, vazia, HTML quando se esperava JSON ou grande demais NÃO vira dado: vira "indisponível", sem inventar.
 // O QUE NÃO PROVA: que a página diz a verdade (a pessoa aprova na Fila) nem que a peça serve no veículo (isso exige aplicação, em regras_aplicacao).
-export type ClasseFonte = "fabricante_oficial" | "distribuidor_b2b" | "documentacao_tecnica" | "marketplace" | "outra";
-/** Menor número = mais confiável. Marketplace é só descoberta. */
-export const PRIORIDADE: Readonly<Record<ClasseFonte, number>> = { fabricante_oficial: 1, distribuidor_b2b: 2, documentacao_tecnica: 3, marketplace: 4, outra: 5 };
+/** Hierarquia de evidência (especificação 02/11/2026): 1 catálogo técnico oficial do fabricante; 2 documentação/catálogo de peças genuínas da montadora; 3 documentação técnica de
+ *  distribuidor autorizado; 4 referência cruzada com procedência identificada; 5 anúncio/marketplace (só pista). `outra` = não classificada (também só pista). */
+export type ClasseFonte = "fabricante_oficial" | "montadora_oficial" | "distribuidor_b2b" | "referencia_cruzada" | "marketplace" | "outra";
+/** Menor número = mais confiável. Referência cruzada, marketplace e não classificada nunca provam sozinhas. */
+export const PRIORIDADE: Readonly<Record<ClasseFonte, number>> = { fabricante_oficial: 1, montadora_oficial: 2, distribuidor_b2b: 3, referencia_cruzada: 4, marketplace: 5, outra: 6 };
 
 export interface EvidenciaBusca {
   url: string; titulo: string; editor?: string | null; coletada_em: string; trecho: string; codigo_exato: string;
-  contexto_aplicacao?: string | null; sha256: string; confianca: number; classe: ClasseFonte;
+  contexto_aplicacao?: string | null; sha256: string; classe: ClasseFonte;
+  /** Opcional e NUNCA usado para decidir: porcentagem não substitui evidência técnica. */
+  confianca?: number | null;
   licenca_imagem?: "desconhecida" | "propria" | "fornecedor" | "fabricante" | "publica_web" | "licenciada" | null;
 }
 export interface AlvoEvidencia { codigos: string[] }
@@ -44,10 +48,11 @@ export function validarEvidencia(ev: EvidenciaBusca, alvo: AlvoEvidencia, hoje: 
     const re = new RegExp(`(^|[^A-Za-z0-9])${partes.join("[\\s_.-]*")}($|[^A-Za-z0-9])`, "i");
     if (!partes.length || !re.test(ev.trecho ?? "")) b.push("o trecho não contém o código exato (não há prova de que a página trata deste código)");
   }
-  if (!(ev.confianca >= 0 && ev.confianca <= 1)) b.push("confiança fora de 0 a 1");
+  if (ev.confianca != null && !(ev.confianca >= 0 && ev.confianca <= 1)) b.push("confiança fora de 0 a 1");
   if (b.length) return { ok: false, nivel: "rejeitada", bloqueios: b, avisos: a };
-  if (ev.classe === "marketplace" || ev.classe === "outra") {
-    a.push(ev.classe === "marketplace" ? "marketplace: serve para descobrir, não prova compatibilidade nem dá direito de uso da imagem" : "fonte não classificada: só descoberta");
+  if (ev.classe === "marketplace" || ev.classe === "outra" || ev.classe === "referencia_cruzada") {
+    a.push(ev.classe === "marketplace" ? "marketplace: serve para descobrir, não prova compatibilidade nem dá direito de uso da imagem"
+      : ev.classe === "referencia_cruzada" ? "referência cruzada: indício com procedência, não prova de equivalência nem de aplicação" : "fonte não classificada: só descoberta");
     return { ok: true, nivel: "descoberta", bloqueios: b, avisos: a };
   }
   if (!ev.contexto_aplicacao?.trim()) a.push("sem contexto de aplicação: prova o código, não o veículo");
@@ -60,7 +65,7 @@ export function provaCompatibilidade(evs: EvidenciaBusca[], alvo: AlvoEvidencia,
   if (fortes.length === 0) return { prova: false, motivo: evs.some((e) => e.classe === "marketplace") ? "só há marketplace ou fonte sem contexto de aplicação: pista, não prova" : "sem evidência forte com contexto de aplicação" };
   return { prova: true, motivo: `${fortes.length} evidência(s) forte(s) com contexto de aplicação` };
 }
-export const melhorFonte = (evs: EvidenciaBusca[]) => [...evs].sort((x, y) => PRIORIDADE[x.classe] - PRIORIDADE[y.classe] || y.confianca - x.confianca)[0] ?? null;
+export const melhorFonte = (evs: EvidenciaBusca[]) => [...evs].sort((x, y) => PRIORIDADE[x.classe] - PRIORIDADE[y.classe] || x.url.localeCompare(y.url))[0] ?? null;
 
 export async function hashTrecho(trecho: string): Promise<string> {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(trecho));

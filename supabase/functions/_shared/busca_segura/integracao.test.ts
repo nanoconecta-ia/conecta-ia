@@ -62,3 +62,34 @@ test("aceite 8: provedor com 429 vira erro tipado, sem candidatas inventadas", a
   const r = await HANDLERS["conecta.imagem.buscar_web"]({ consulta: "x", sku: "JC-1234" }, c) as any;
   assert.equal(r.motivo, "limite"); assert.ok(!r.galeria && !r.candidatas);
 });
+
+// ── Investigação técnica pela ferramenta do chat (handler real, provedor simulado)
+const googleTecnico = (itens: { title: string; link: string; snippet: string }[], status = 200) => (async () => new Response(JSON.stringify(status === 200 ? { items: itens } : { error: { message: "quota" } }), { status })) as unknown as typeof fetch;
+function ctxPesquisa(extra: Record<string, unknown> = {}) {
+  const admin = { from: () => ({ select: () => ({ eq: () => ({ eq: async () => ({ data: [{ tipo: "oem", valor: "25100-42000", status: "aprovado" }, { tipo: "similar", valor: "SIM-999", status: "aprovado" }] }) }) }) }) };
+  return { lojaId: "L", userId: "u", admin,
+    dados: { verProduto: async (sku: string) => (sku === "CI000016" ? { nome: "Bomba d'água TRIM GO HR 2.5 8V", marca: "TRIM GO", gtin: "", preco: 176.77, precoCusto: 110.48, fornecedor: "SECRETO" } : { erro: "Produto não encontrado nesta loja." }), produtoPorSku: async () => ({ id: "p1" }) },
+    ...extra } as any;
+}
+test("engenharia.pesquisa.investigar sem provedor: 'nao_testada', sem inventar e sem escrever", async () => {
+  const r = await HANDLERS["engenharia.pesquisa.investigar"]({ sku: "CI000016", motor: "4D56", veiculo: "Hyundai HR" }, ctxPesquisa()) as any;
+  assert.equal(r.compatibilidade.status, "nao_testada"); assert.match(r.compatibilidade.mensagem, /APLICAÇÃO NÃO CONFIRMADA/);
+  assert.equal(r.sem_escrita, true); assert.equal(r.consultas.length, 0);
+});
+test("engenharia.pesquisa.investigar com provedor: consultas progressivas, código escrito confirmado, aplicação NÃO confirmada, e nada sensível vai à busca", async () => {
+  const consultas: string[] = [];
+  const f = (async (url: string) => { consultas.push(decodeURIComponent(new URL(url).searchParams.get("q") ?? "")); return new Response(JSON.stringify({ items: [{ title: "Bomba d'água CI000016 HR", link: "https://loja.exemplo.com.br/p/ci000016", snippet: "Código CI000016 para Hyundai HR 4D56" }] }), { status: 200 }); }) as unknown as typeof fetch;
+  const r = await HANDLERS["engenharia.pesquisa.investigar"]({ sku: "CI000016", motor: "4D56", veiculo: "Hyundai HR" }, ctxPesquisa({ buscaImagem: { chave: "k", cx: "c" }, fetch: f })) as any;
+  assert.ok(r.consultas.length >= 3 && r.consultas.length <= 6, String(r.consultas.length));
+  assert.ok(r.confirmado.some((c: string) => /CI000016 aparece escrito/.test(c)));
+  assert.equal(r.compatibilidade.status, "nao_confirmada");
+  const tudo = consultas.join("|") + JSON.stringify(r);
+  for (const proibido of ["110.48", "SECRETO", "SIM-999"]) assert.ok(!tudo.includes(proibido), proibido);
+  assert.ok(consultas.some((q) => q.includes('"25100-42000"')), "OEM aprovado entra na consulta");
+});
+test("engenharia.pesquisa.investigar: 429 do provedor interrompe e devolve o parcial; SKU inexistente é erro", async () => {
+  const r = await HANDLERS["engenharia.pesquisa.investigar"]({ sku: "CI000016" }, ctxPesquisa({ buscaImagem: { chave: "k", cx: "c" }, fetch: googleTecnico([], 429) })) as any;
+  assert.equal(r.limites.interrompida_por, "limite"); assert.ok(r.pendencias.some((p: string) => /interrompida/.test(p)));
+  assert.match((await HANDLERS["engenharia.pesquisa.investigar"]({ sku: "NAO-EXISTE" }, ctxPesquisa()) as any).erro, /não encontrado/);
+  assert.match((await HANDLERS["engenharia.pesquisa.investigar"]({}, ctxPesquisa()) as any).erro, /Informe o SKU/);
+});

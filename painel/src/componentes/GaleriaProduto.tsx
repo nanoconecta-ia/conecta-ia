@@ -4,7 +4,7 @@ import type { Loja } from "../lib/dados.ts";
 import { galeriaDaFicha, LIMITE_GALERIA, pedidoDeImagens, type LinhaImagem } from "../lib/galeriaProduto.ts";
 import { pedirAoNanoNaConversa } from "../lib/contextoPagina.ts";
 
-const CAMPOS = "id, url, tipo, origem, url_original, licenca_tipo, cruzamento_tipo, cruzamento_valor, confianca, largura_px, altura_px, aprovada, principal, direitos_confirmados_em, removida_em, ordem";
+const CAMPOS = "id, url, tipo, origem, url_original, licenca_tipo, cruzamento_tipo, cruzamento_valor, largura_px, altura_px, aprovada, principal, direitos_confirmados_em, removida_em, ordem";
 const negado = (e: unknown) => (e as { context?: { status?: number } } | null)?.context?.status === 403;
 
 /** Galeria de até 8 imagens do produto, na ficha do Catálogo. Mostra origem, prova do código, resolução, licença e estado de CADA imagem.
@@ -55,7 +55,6 @@ export function GaleriaProduto({ loja, produtoId, sku, aoFechar }: { loja: Loja;
                 <div><dt>Origem</dt><dd className="mono">{i.origem}</dd></div>
                 <div><dt>Resolução</dt><dd className="mono">{i.resolucao}</dd></div>
                 <div><dt>Licença</dt><dd>{i.licenca}</dd></div>
-                <div><dt>Confiança</dt><dd className="mono">{i.confianca}</dd></div>
               </dl>
               {i.avisos.length > 0 && <ul className="galeria-avisos">{i.avisos.map((a) => <li key={a}>{a}</li>)}</ul>}
               {i.estado === "pendente" && (

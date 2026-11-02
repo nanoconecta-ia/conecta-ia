@@ -7,6 +7,7 @@ import type { Vocabulario } from "../consulta/interpretar.ts";
 import { resolverEntidades, type GlossarioMotor } from "../busca_segura/entidades.ts";
 import { classeDaFonte, hashTrecho, type EvidenciaBusca } from "../busca_segura/evidencia.ts";
 import { montarGaleria, type CandidataEntrada } from "../busca_segura/galeria.ts";
+import { investigar } from "../busca_segura/investigacao.ts";
 import type { PortaDados } from "./dados.ts";
 import type { PortaBling } from "./porta_bling.ts";
 import type { Rpc } from "./executor.ts";
@@ -109,17 +110,19 @@ export async function criarPropostaVersionada(c: ContextoFerramenta, o: { titulo
 }
 
 /** Códigos que PROVAM identidade do produto (SKU, GTIN e códigos aprovados oem/fabricante/ean/antigo). similar/substituto nunca entram. */
-async function codigosConhecidosDoProduto(c: ContextoFerramenta, sku: string): Promise<{ lista: string[] } | { erro: string }> {
+async function codigosConhecidosDoProduto(c: ContextoFerramenta, sku: string): Promise<{ lista: string[]; oem: string[]; fabricante: string[] } | { erro: string }> {
   const p = await c.dados.verProduto(sku) as Record<string, unknown>;
   if ("erro" in p) return { erro: String(p.erro) };
-  const lista = new Set<string>([sku]);
+  const lista = new Set<string>([sku]), oem = new Set<string>(), fabricante = new Set<string>();
   if (typeof p.gtin === "string" && p.gtin.trim()) lista.add(p.gtin.trim());
   const loc = await c.dados.produtoPorSku(sku);
   if (loc) {
     const { data } = await c.admin.from("produto_codigos").select("tipo, valor, status").eq("produto_id", loc.id).eq("status", "aprovado");
-    for (const r of (data ?? []) as { tipo: string; valor: string }[]) if (["oem", "fabricante", "ean", "antigo", "sku"].includes(r.tipo) && r.valor?.trim()) lista.add(r.valor.trim());
+    for (const r of (data ?? []) as { tipo: string; valor: string }[]) if (["oem", "fabricante", "ean", "antigo", "sku"].includes(r.tipo) && r.valor?.trim()) {
+      lista.add(r.valor.trim()); if (r.tipo === "oem") oem.add(r.valor.trim()); if (r.tipo === "fabricante") fabricante.add(r.valor.trim());
+    }
   }
-  return { lista: [...lista] };
+  return { lista: [...lista], oem: [...oem], fabricante: [...fabricante] };
 }
 
 export const HANDLERS: Record<string, Handler> = {
@@ -180,6 +183,22 @@ export const HANDLERS: Record<string, Handler> = {
       return { sku, galeria, aviso: "Galeria de candidatas (máx. 8): nenhuma está aprovada nem publicável. Marca d'água, resolução e licença ainda precisam ser conferidas por uma pessoa; marketplace dá pista, não direito de uso. Nada foi salvo." };
     }
     catch (err) { return erroDeBusca(err, "Falha na busca de imagens."); }
+  },
+  // Investigação técnica (especificação 02/11/2026): plano de consultas progressivas com orçamento, evidência estruturada e relatório confirmado/inferido/não encontrado/não testado.
+  // Só LEITURA: não grava no Bling, no banco nem no fiscal. Sem provedor de busca devolve "nao_testada" (não inventa).
+  "engenharia.pesquisa.investigar": async (e, c) => {
+    const sku = typeof e.sku === "string" ? e.sku.trim() : "";
+    if (!sku) return { erro: "Informe o SKU do produto." };
+    const p = await c.dados.verProduto(sku) as Record<string, unknown>;
+    if ("erro" in p) return p;
+    const cod = await codigosConhecidosDoProduto(c, sku);
+    if ("erro" in cod) return cod;
+    const texto = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+    return investigar({
+      produto: { sku, oem: cod.oem, codigo_fabricante: cod.fabricante[0] ?? null, gtin: texto(p.gtin, 20) || null, marca: texto(p.marca, 60) || null, descricao: texto(p.nome, 160),
+        motor: texto(e.motor, 30) || null, veiculo: texto(e.veiculo, 40) || null, ano: Number.isInteger(e.ano) ? e.ano : null },
+      codigos: cod.lista, hoje: new Date().toISOString().slice(0, 10), provedor: escolherProvedorBusca(c),
+    });
   },
   "conecta.web.pesquisar_tecnico": async (e, c) => {
     const provedor = escolherProvedorBusca(c);
