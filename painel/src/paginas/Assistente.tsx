@@ -268,14 +268,18 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   }
   async function enviar(t: string, repetir = false) {
     if (!repetir && menu && t.trim() && !ocupado && !acaoLocal && !administrando && !retentativa) { const cmd = interpretar(t, menu); if (cmd.tipo !== "nenhum") { await comandoLocal(t, cmd); return; } }
-    if (!repetir && /^\/ficha\s+/i.test(t.trim())) {
+    if (!repetir && /^\/(?:ficha|revisar)\s+/i.test(t.trim())) {
      if (ocupado || administrando || !!retentativa || anexos.length) { setErroHistorico("A ficha sem IA exige uma consulta isolada, sem anexos ou outra ação em andamento."); return; }
-     const codigo = t.trim().replace(/^\/ficha\s+/i, "");
-     if (!/^[A-Za-z0-9_.\/-]{1,60}$/.test(codigo) || codigo.startsWith(".")) { setErroHistorico("Use /ficha seguido de um SKU/código, por exemplo /ficha CI000016."); return; }
+      const revisao = /^\/revisar\s+/i.test(t.trim());
+     const codigo = t.trim().replace(/^\/(?:ficha|revisar)\s+/i, "");
+     if (!/^[A-Za-z0-9_.\/-]{1,60}$/.test(codigo) || codigo.startsWith(".")) { setErroHistorico("Use /ficha ou /revisar seguido de SKU, por exemplo /revisar CI000016."); return; }
      const origem = loja.id; setMsgs(m => [...m, { de: "eu", texto: t }]); setTexto(""); setOcupado(true); setErroHistorico("");
      try {
        const d = await chamada("chat_ficha_produto", { codigo });
-       if (lojaAtual.current === origem) setMsgs(m => [...m, { de: "ia", texto: String(d.resposta ?? "Consulta sem resultado."), evidencias: d.evidencias, simulado: d.simulado }]);
+        if (lojaAtual.current === origem) {
+          const checklist = revisao && !d.erro ? "\n\nREVISÃO DE CADASTRO — SEM IA\n• Conferir chassi, motor, ano e fonte técnica da aplicação.\n• Conferir fabricante, marca, OEM, GTIN e códigos cruzados, sem presumir equivalência.\n• Conferir dimensões, peso, imagens, categoria e descrição.\n• Conferir fiscal, preço e estoque somente no ERP autenticado.\n• Deixar campos sem evidência pendentes.\nRascunho de conferência: nenhuma alteração gravada no Bling." : "";
+          setMsgs(m => [...m, { de: "ia", texto: String(d.resposta ?? "Consulta sem resultado.") + checklist, evidencias: d.evidencias, simulado: d.simulado }]);
+        }
      } catch (e) { if (lojaAtual.current === origem) setErroHistorico(msgErro(e)); }
      finally { if (lojaAtual.current === origem) setOcupado(false); }
      return;
@@ -469,7 +473,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
           }} />
           <input ref={entradaCamera} type="file" hidden accept="image/*" capture="environment" onChange={(e) => void escolherArquivos(e.target.files)} />
           <input ref={entradaFotos} type="file" hidden multiple accept="image/*" onChange={(e) => void escolherArquivos(e.target.files)} />
-          <div className="compositor-campo"><span id="rotulo-pergunta" className="so-leitor">Pergunte</span><textarea aria-labelledby="rotulo-pergunta" value={texto} rows={1} style={{ display: "block", width: "100%", minWidth: 0, height: "48px", minHeight: "48px", maxHeight: "96px", overflowY: "auto", resize: "none", boxSizing: "border-box" }} enterKeyHint="send" placeholder={config.bling ? "Pergunte ou use /ficha SKU (sem IA)" : "Pergunte ao Nano.IA…"} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void enviar(texto); } }} maxLength={1000} /></div>
+          <div className="compositor-campo"><span id="rotulo-pergunta" className="so-leitor">Pergunte</span><textarea aria-labelledby="rotulo-pergunta" value={texto} rows={1} style={{ display: "block", width: "100%", minWidth: 0, height: "48px", minHeight: "48px", maxHeight: "96px", overflowY: "auto", resize: "none", boxSizing: "border-box" }} enterKeyHint="send" placeholder={config.bling ? "Pergunte ou use /revisar SKU (sem IA)" : "Pergunte ao Nano.IA…"} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void enviar(texto); } }} maxLength={1000} /></div>
           <div className="compositor-acoes">
           <button type="button" className="sec mic nano-mais" aria-expanded={menuAnexos} aria-label="Adicionar foto, câmera ou arquivo" title="Adicionar ao Nano.IA"
             onClick={() => { setMenuAnexos(v => !v); setEsq(false); setDir(false); }}><Icone nome="mais" tamanho={20} /></button>
