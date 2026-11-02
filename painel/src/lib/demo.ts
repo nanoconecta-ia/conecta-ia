@@ -119,6 +119,7 @@ export const fonteDemo: FonteDados = {
       pendentes: id === "pr1" ? [{ proposta_id: "pp1", titulo: "Enriquecer Jogo de Juntas (80692)", estado: "pendente", operacao: "conecta.enriquecimento.definir" }] : [] };
   },
   async statusSync() { return { status: "conectada", ultimo_sync_ok_em: iso(-8), ultimo_erro: null }; },
+  async atividadesExternas() { return []; }, // demonstração: nenhuma atividade inventada
   async chamadas(): Promise<ChamadaFerramenta[]> { return [
     { id: 3, quando: iso(-20), origem: "chat", ferramenta: "ver_produto", risco: "LOW", decisao: "permitida", motivo: null },
     { id: 2, quando: iso(-21), origem: "chat", ferramenta: "bling.produtos.alterar", risco: "MEDIUM", decisao: "requer_aprovacao", motivo: "escrita exige aprovação" },

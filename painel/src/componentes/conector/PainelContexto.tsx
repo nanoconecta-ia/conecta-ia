@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Dialogo } from "../Dialogo.tsx";
 import type { ChamadaFerramenta, ContextoProduto, FonteDados, ProdutoResumo, StatusSync } from "../../lib/conectorDados.ts";
 import { dataBr } from "./ui.tsx";
+import { IconePeca } from "../IconePeca.tsx";
+import { iconeDaAtividade, origemRotulo, rotuloAtividade, textoDoResumo, type AtividadeExterna } from "../../lib/atividadeExterna.ts";
 
 const brl = (v: number | null) => (v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
 const ROTULO_TRAVA: Record<string, string> = { bloqueado: "Bloqueado: só sugestões", liberado_propostas: "Liberado para propostas", pendente_aprovacao: "Pendente de aprovação", aprovado_execucao: "Aprovado para execução", em_execucao: "Em execução", sincronizado: "Sincronizado", erro_divergencia: "Erro ou divergência" };
@@ -15,12 +17,13 @@ export function PainelContexto({ fonte, lojaId, produtoId, aoEscolher, versaoDad
   const [ctx, setCtx] = useState<ContextoProduto | null>(null);
   const [sync, setSync] = useState<StatusSync | null>(null);
   const [chamadas, setChamadas] = useState<ChamadaFerramenta[]>([]);
+  const [atividades, setAtividades] = useState<AtividadeExterna[]>([]);
   const [confirmar, setConfirmar] = useState<null | "travar" | "destravar">(null);
   const [motivo, setMotivo] = useState("");
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState("");
 
-  useEffect(() => { void fonte.statusSync(lojaId).then(setSync).catch(() => setSync(null)); void fonte.chamadas(lojaId, 8).then(setChamadas).catch(() => setChamadas([])); }, [lojaId, versaoDados]);
+  useEffect(() => { void fonte.statusSync(lojaId).then(setSync).catch(() => setSync(null)); void fonte.chamadas(lojaId, 8).then(setChamadas).catch(() => setChamadas([])); void fonte.atividadesExternas(lojaId, 6).then(setAtividades).catch(() => setAtividades([])); }, [lojaId, versaoDados]);
   useEffect(() => { const t = setTimeout(() => { void fonte.buscarProdutos(lojaId, busca).then(setAchados).catch(() => setAchados([])); }, 250); return () => clearTimeout(t); }, [busca, lojaId]);
   useEffect(() => { if (!produtoId) { setCtx(null); return; } void fonte.contexto(lojaId, produtoId).then(setCtx).catch(() => setCtx(null)); }, [produtoId, lojaId, versaoDados]);
 
@@ -96,6 +99,15 @@ export function PainelContexto({ fonte, lojaId, produtoId, aoEscolher, versaoDad
         {!sync ? <p className="suave" style={{ margin: 0 }}>Sem conexão cadastrada.</p> : (
           <p style={{ margin: 0 }}><span className={`selo ${sync.status === "conectada" ? "ok" : "atencao"}`}>{sync.status}</span> <span className="suave">última ok: {dataBr(sync.ultimo_sync_ok_em)}</span>
             {sync.ultimo_erro && <><br /><span className="msg-erro">{sync.ultimo_erro}</span></>}</p>)}
+      </section>
+      <section>
+        <h3>Atividade do agente externo</h3>
+        <p className="suave" style={{ margin: "0 0 6px" }}>Resumos e propostas registrados por um agente conectado. Não é a conversa dele; nada aqui é aprovado nem gravado no Bling.</p>
+        {atividades.length === 0 ? <p className="suave" style={{ margin: 0 }}>Nenhuma atividade de agente externo registrada.</p> : (
+          <ul className="fontes">{atividades.map((a) => <li key={a.id} className="linha" style={{ alignItems: "flex-start", gap: 8 }}>
+            <IconePeca nome={iconeDaAtividade(a)} tamanho={28} titulo={a.categoria?.nome} />
+            <span><span className="selo atencao">{origemRotulo}</span> <strong>{rotuloAtividade(a.tipo)}</strong>{a.produto?.sku && <> <code>{a.produto.sku}</code></>}
+              {a.resumo && <><br /><span>{textoDoResumo(a.resumo)}</span></>}<br /><span className="suave">{dataBr(a.criado_em)}{a.ferramenta ? ` · ${a.ferramenta}` : ""}</span></span></li>)}</ul>)}
       </section>
       <section>
         <h3>Auditoria (últimas chamadas)</h3>
