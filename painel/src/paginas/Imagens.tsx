@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { Loja } from "../lib/dados.ts";
 import { PreviaBranca } from "../componentes/PreviaBranca.tsx";
+import { RoboNano } from "../componentes/RoboNano.tsx";
+import "./nano-visual.css";
 import {
   CHECAGENS, CONFIG_PADRAO, FILTRO_MELHORADA, MODOS, RECURSOS, bannerLigado, comparadorLigado, gravarConfig, lerConfig,
   limitarZoom, podeAprovar, pontoDoClique, sha256Hex, validarArquivo, type Config, type Recurso,
@@ -32,9 +34,18 @@ export function Imagens({ loja }: { loja: Loja }) {
   }
 
   return (
-    <>
-      <div className="cartao">
-        <h1>Nano Visual Fidelity <span className="selo atencao">demonstração local</span></h1>
+    <div className="nano-visual">
+      <header className="nano-visual-cabecalho">
+        <div className="nano-visual-intro">
+          <span className="nano-visual-selo">CONECTA.IA · IMAGENS E SEO</span>
+          <h1>Nano Visual Fidelity <span className="selo atencao">demonstração local</span></h1>
+          <p>Design gráfico para autopeças, mantendo o arquivo original intacto. A prévia e a cópia branca já utilizam o processador aprovado no PR #224.</p>
+          <div className="nano-visual-beneficios"><span>✓ Original preservado</span><span>✓ Cópia 1200 × 1200</span><span>✓ Sem envio automático</span></div>
+        </div>
+        <div className="nano-visual-agente"><RoboNano tamanho={94} decorativo /><div><b>Nano.IA</b><small>Assistente visual</small><span>Modo local · sem API</span></div></div>
+      </header>
+      <div className="cartao nano-visual-arquivo">
+        <h2>Fotografia de origem</h2>
         <p className="suave">Melhore a apresentação de uma fotografia <strong>sem alterar a peça</strong>. A foto escolhida fica só neste navegador: nada é enviado, salvo ou publicado. “Melhorada” simula luz e enquadramento. O estúdio branco cria uma cópia JPG 1200 × 1200 com preenchimento branco sem remover o fundo original da foto nem redesenhar a peça.</p>
         <div className="linha">
           <input ref={entrada} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { void escolher(e.target.files?.[0]); e.target.value = ""; }} />
@@ -50,7 +61,7 @@ export function Imagens({ loja }: { loja: Loja }) {
       {!foto && config.modo !== "desligado" && <p className="suave">Escolha uma fotografia para comparar o original com a versão melhorada e preparar o banner.</p>}
 
       <Configuracao config={config} alterar={alterar} />
-    </>
+    </div>
   );
 }
 
