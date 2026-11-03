@@ -29,7 +29,12 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [pausados, setPausados] = useState<Set<string>>(new Set());
-  const [compartilhar, setCompartilhar] = useState(false); // opt-in: só envia a seleção ao servidor se o lojista ligar
+  // Sistema de enriquecimento indexado: o Nano precisa saber o que o lojista seleciona, então o compartilhamento NASCE LIGADO e lembra a escolha (por loja).
+  // O interruptor continua visível: o lojista pode desligar, e a escolha dele é respeitada nas próximas sessões.
+  const chaveCompartilhar = `nano:contexto:compartilhar:${loja.id}`;
+  const [compartilhar, setCompartilharEstado] = useState(() => { try { return localStorage.getItem(chaveCompartilhar) !== "0"; } catch { return true; } });
+  const setCompartilhar = (v: boolean) => { setCompartilharEstado(v); try { localStorage.setItem(chaveCompartilhar, v ? "1" : "0"); } catch { /* sem armazenamento: vale só nesta sessão */ } };
+  const jaPublicou = useRef(false); // não publica "seleção vazia" só por abrir a tela: isso apagaria o produto aberto pela extensão no Bling
   const [avisoContexto, setAvisoContexto] = useState("");
   const [statusContexto, setStatusContexto] = useState(""); // confirmação REAL do servidor (versão gravada), nunca presumida
   const estadoContexto = useRef({ versao: 0 });
@@ -44,6 +49,8 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const sequenciaConsulta = useRef(0);
   useEffect(() => {
     if (!compartilhar) return;
+    if (!jaPublicou.current && selecionados.size === 0) return;
+    jaPublicou.current = true;
     const t = window.setTimeout(() => {
       void publicarSelecao((a) => supabase.rpc("contexto_registrar", a) as unknown as Promise<{ data: unknown; error: unknown }>, loja.id, [...selecionados], estadoContexto.current)
         .then((r) => { setAvisoContexto(r.ok ? "" : `Não foi possível compartilhar a seleção com o Nano agora (${r.erro ?? "erro"}).`); setStatusContexto(r.ok ? (selecionados.size ? `Compartilhado com o Nano: ${selecionados.size} produto(s), versão ${estadoContexto.current.versao}.` : `Compartilhamento ligado; nenhuma seleção (versão ${estadoContexto.current.versao}).`) : ""); });
@@ -238,7 +245,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
       <div className="catalogo-resultados" role="status">{itens === null ? "Consultando o espelho…" : `${visiveis.length} filtrado(s) entre ${itens.length} carregado(s)${totalBanco !== null ? ` · ${totalBanco.toLocaleString("pt-BR")} encontrado(s) na busca do servidor` : ""}`}{pesquisaPendente ? " · atualizando pesquisa…" : ""}</div>
       {erroConsulta && <div className="msg-erro" role="alert">{erroConsulta} <button type="button" className="sec" onClick={() => void carregar(0)}>Tentar novamente</button></div>}
       {msg && <p className={msg.ok ? "msg-ok" : "msg-erro"} role="status">{msg.texto}</p>}
-      <label className="linha marcar-linha"><input type="checkbox" checked={compartilhar} onChange={(e) => { setCompartilhar(e.target.checked); setAvisoContexto(""); setStatusContexto(""); }} /><span>Compartilhar a seleção com o Nano (30 min). Assim ele sabe qual produto você abriu, sem digitar o SKU. Só id do produto; nada é gravado no Bling.</span></label>
+      <label className="linha marcar-linha"><input type="checkbox" checked={compartilhar} onChange={(e) => { setCompartilhar(e.target.checked); setAvisoContexto(""); setStatusContexto(""); }} /><span>Compartilhando a seleção com o Nano (ligado por padrão; some em 30 min). Assim ele sabe qual produto você selecionou, sem digitar o SKU. Só id do produto; nada é gravado no Bling.</span></label>
       {avisoContexto && <p className="msg-erro" role="alert">{avisoContexto}</p>}
       {compartilhar && !avisoContexto && statusContexto && <p className="msg-ok" role="status">{statusContexto}</p>}
       {selecionados.size > 0 && (

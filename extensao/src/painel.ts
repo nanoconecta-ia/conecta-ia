@@ -36,6 +36,11 @@ let ultima: { leitura: Leitura; r: Reconhecimento } | null = null;
 let pareando = false;
 let ctx: EstadoContexto = { sku: null, mensagem: "" };
 let ctxLigado = false;
+// Preferência do lojista (sistema de enriquecimento indexado: nasce LIGADA e lembra a escolha). Só tem efeito com a loja conectada.
+const CHAVE_CTX = "nano_ctx_compartilhar";
+const lerPreferenciaCtx = (): boolean => { try { return localStorage.getItem(CHAVE_CTX) !== "0"; } catch { return true; } };
+const gravarPreferenciaCtx = (v: boolean): void => { try { localStorage.setItem(CHAVE_CTX, v ? "1" : "0"); } catch { /* vale só nesta sessão */ } };
+let ctxPreferido = lerPreferenciaCtx();
 let ctxUltimoSku: string | null = null;
 let ctxTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -66,14 +71,14 @@ async function conectar(): Promise<void> {
     pareando = false;
     if (s.estado === "resgatado") { conexao = { token: tokenCompleto(d.metade, d.sal), loja_id: s.loja_id, expira_em: s.sessao_expira_em }; await amb.guardar(conexao); }
     else $("erro").textContent = s.estado === "recusado" ? "Pareamento recusado no painel." : "O pedido expirou. Tente conectar de novo.";
-    mostrarConexao(); if (conexao && ultima) void compararEspelho(); return;
+    mostrarConexao(); if (conexao && ctxPreferido) ligarContexto(true); if (conexao && ultima) void compararEspelho(); return;
   }
   pareando = false; $("erro").textContent = "O pedido expirou. Tente conectar de novo."; mostrarConexao();
 }
 
 async function desconectar(): Promise<void> {
   if (conexao) await encerrarPareamento(conexao.token);
-  ligarContexto(false); ($("compartilhar-contexto") as HTMLInputElement).checked = false;
+  ligarContexto(false); // para de ler e limpa o contexto; a PREFERÊNCIA do lojista (ligado) continua
   conexao = null; await amb.guardar(null); $("espelho").innerHTML = ""; mostrarConexao(); if (ultima) mostrar(ultima.leitura);
 }
 
@@ -177,7 +182,7 @@ function formProposta(li: HTMLElement, canonico: string, inicial: { valor?: stri
 }
 
 // ---------------------------------------------------------------------------------------------- Contexto Vivo (produto aberto no ERP → Nano)
-function mostrarContexto(): void { $("ctx-status").textContent = ctxLigado ? (ctx.mensagem || "Compartilhamento ligado: aguardando um cadastro de produto na tela.") : ""; }
+function mostrarContexto(): void { $("ctx-status").textContent = ctxLigado ? (ctx.mensagem || "Compartilhamento ligado: aguardando um cadastro de produto na tela.") : ctxPreferido ? "Compartilhamento ligado: começa assim que você conectar à loja." : ""; }
 async function atualizarContexto(l: Leitura | { erro: string }): Promise<void> {
   if (!ctxLigado || !conexao) return;
   const atual = "erro" in l ? null : (() => { const r = reconhecer(l.campos, MAPA_PRODUTO_BLING); return r.estado === "reconhecida" ? skuUsavel(skuDaTela(r)) : null; })();
@@ -190,7 +195,7 @@ function ligarContexto(ligar: boolean): void {
   ctxLigado = ligar; ctx = { sku: null, mensagem: "" };
   if (ctxTimer) { clearInterval(ctxTimer); ctxTimer = null; }
   if (ligar) {
-    const ciclo = () => void amb.lerAbaSilenciosa().then(atualizarContexto).catch(() => { /* sem aba legível agora */ });
+    const ciclo = () => void Promise.resolve().then(() => amb.lerAbaSilenciosa()).then(atualizarContexto).catch(() => { /* sem aba legível agora (ou ambiente sem leitura silenciosa) */ });
     ciclo(); ctxTimer = setInterval(ciclo, 4000);
   } else if (conexao && ctxUltimoSku) { const sku = ctxUltimoSku; ctxUltimoSku = null; void comSessao((t) => chamarFerramenta(t, "conecta.set_active_product", { sku, acao: "fechado" })).catch(() => undefined); }
   mostrarContexto();
@@ -230,7 +235,10 @@ export async function iniciar(a: Ambiente): Promise<void> {
   if (conexao && Date.parse(conexao.expira_em) < Date.now()) { conexao = null; await amb.guardar(null); }
   mostrarConexao();
   $("ler").addEventListener("click", () => { $("erro").textContent = ""; void amb.lerAba().then((l) => { if ("erro" in l) $("erro").textContent = l.erro; else { mostrar(l); void atualizarContexto(l); } }).catch(() => { $("erro").textContent = "Não consegui ler esta página."; }); });
-  $("compartilhar-contexto").addEventListener("change", (e) => { const caixa = e.target as HTMLInputElement; if (caixa.checked && !conexao) { caixa.checked = false; $("erro").textContent = "Conecte à loja primeiro para compartilhar o produto aberto."; return; } ligarContexto(caixa.checked); });
+  const caixaCtx = $("compartilhar-contexto") as HTMLInputElement;
+  ctxPreferido = lerPreferenciaCtx(); caixaCtx.checked = ctxPreferido;
+  caixaCtx.addEventListener("change", () => { ctxPreferido = caixaCtx.checked; gravarPreferenciaCtx(ctxPreferido); if (conexao) ligarContexto(ctxPreferido); else mostrarContexto(); });
+  if (conexao && ctxPreferido) ligarContexto(true); else mostrarContexto();
   $("registrar").addEventListener("click", () => { if (ultima) amb.baixar(`nano-guardiao-tela-${Date.now()}.json`, JSON.stringify(estruturaParaRegistro(ultima.leitura, ultima.r), null, 2)); });
 }
 
