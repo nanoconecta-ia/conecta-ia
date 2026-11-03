@@ -9,11 +9,11 @@ Estado em 2026-11-03 (verificado em produção, somente leitura): `contexto_sess
 4. Uma chave MCP de leitura criada no painel e guardada só no cliente do agente (nunca no chat).
 
 ## Teste real (leva ~5 minutos; nada é gravado no Bling)
-5. No painel, em Catálogo, ligar "Compartilhar a seleção com o Nano" e selecionar **2 produtos** (ex.: OC1224 e 80692).
+5. No painel, em Catálogo, conferir que "Compartilhando a seleção com o Nano" está marcado (**nasce ligado** e lembra a sua escolha por loja) e selecionar **2 produtos** (ex.: OC1224 e 80692). Na extensão do Bling também nasce ligado e começa sozinho ao conectar à loja.
 6. No chat do Nano (e depois no agente externo por MCP), perguntar: "quais produtos estão selecionados?" sem citar SKU.
    - **Passa** se responde os 2 SKUs corretos, com nome e marca, sem custo/fornecedor/fiscal.
 7. Abrir 1 produto (selecionar só ele): perguntar "qual é o produto ativo?" → deve trocar para o único selecionado.
-8. Desligar o compartilhamento (ou esperar 30 min): perguntar de novo → deve responder **contexto indisponível**, sem inventar SKU.
+8. Desligar o compartilhamento (a escolha fica lembrada) ou esperar 30 min: perguntar de novo → deve responder **contexto indisponível**, sem inventar SKU.
 9. Isolamento: com outro usuário (outra loja), repetir a pergunta → nunca enxerga a seleção da primeira loja.
 
 ## Já provado em teste automatizado (Postgres local com todas as migrações)

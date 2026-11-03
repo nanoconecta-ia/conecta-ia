@@ -1,4 +1,4 @@
-// Nano Guardião — Contexto Vivo (produto aberto no ERP → Nano): painel REAL com rede 100% SIMULADA. Prova: só com o interruptor ligado, sem permissão não manda nada,
+// Nano Guardião — Contexto Vivo (produto aberto no ERP → Nano): painel REAL com rede 100% SIMULADA. Prova: nasce LIGADO e lembra a escolha do lojista (sistema de enriquecimento indexado), sem loja conectada não manda nada,
 // manda SÓ o SKU da tela (nunca loja/usuário), mostra o sucesso REAL do servidor, não repete o mesmo SKU, fecha quando a tela deixa de ser produto e orienta reconectar sem o escopo.
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
@@ -35,14 +35,18 @@ try {
   await p.goto(`${base}/painel.html`);
   let atual = leitura; let lidasSilenciosas = 0;
   await p.exposeFunction('__lerSilenciosa', () => { lidasSilenciosas++; return atual; });
-  await p.evaluate((l) => { let mem = { token: 'T'.repeat(43) + '.' + 'S'.repeat(43), loja_id: 'loja-1', expira_em: new Date(Date.now() + 3600e3).toISOString() };
-    window.__nanoIniciar({ lerAba: async () => l, lerAbaSilenciosa: () => window.__lerSilenciosa(), abrirAba: () => {}, guardar: async (v) => { mem = v; }, carregar: async () => mem, esperar: () => new Promise((r) => setTimeout(r, 20)), baixar: () => {} }); }, leitura);
+  const iniciar = (conectado) => p.evaluate(([l, conectado]) => { let mem = conectado ? { token: 'T'.repeat(43) + '.' + 'S'.repeat(43), loja_id: 'loja-1', expira_em: new Date(Date.now() + 3600e3).toISOString() } : null;
+    window.__nanoIniciar({ lerAba: async () => l, lerAbaSilenciosa: () => window.__lerSilenciosa(), abrirAba: () => {}, guardar: async (v) => { mem = v; }, carregar: async () => mem, esperar: () => new Promise((r) => setTimeout(r, 20)), baixar: () => {} }); }, [leitura, conectado]);
+  // 0) SEM loja conectada: nasce ligado, mas não lê nem envia nada e avisa que começa ao conectar
+  await iniciar(false);
+  assert.equal(await p.isChecked('#compartilhar-contexto'), true, 'o compartilhamento NASCE LIGADO');
+  await p.locator('#ctx-status').getByText(/começa assim que você conectar/).waitFor();
+  await p.waitForTimeout(300); assert.equal(chamadas.length, 0); assert.equal(lidasSilenciosas, 0, 'sem loja conectada: nem lê a aba');
+  await p.reload();
+  // 1) com a loja conectada, já começa sozinho (ligado por padrão): envia o SKU da tela, só ele
+  await iniciar(true);
   await p.locator('#loja').getByText('Conectado à loja').waitFor();
-  // 1) desligado por padrão: nada é enviado
-  assert.equal(await p.isChecked('#compartilhar-contexto'), false, 'o compartilhamento nasce DESLIGADO');
-  await p.waitForTimeout(300); assert.equal(chamadas.length, 0); assert.equal(lidasSilenciosas, 0, 'desligado: nem lê a aba em segundo plano');
-  // 2) liga: envia o SKU da tela, só ele
-  await p.check('#compartilhar-contexto');
+  assert.equal(await p.isChecked('#compartilhar-contexto'), true);
   await p.locator('#ctx-status').getByText(/Compartilhado com o Nano: produto .* \(versão 3\)/).waitFor();
   assert.equal(chamadas.length, 1); assert.equal(chamadas[0].args.acao, 'aberto'); assert.match(chamadas[0].args.sku, /^[A-Za-z0-9_.\/-]{1,60}$/);
   assert.deepEqual(Object.keys(chamadas[0].args).sort(), ['acao', 'sku'], 'vai só o SKU e a ação: nunca loja, usuário ou dados do produto');
@@ -53,9 +57,13 @@ try {
   atual = { origem: leitura.origem, caminho: '/outra', titulo: 'Pedidos', campos: [] };
   await p.locator('#ctx-status').getByText('Nenhum produto aberto na tela; contexto limpo.').waitFor({ timeout: 8000 });
   assert.equal(chamadas.at(-1).args.acao, 'fechado');
-  // 5) desligar interrompe a leitura em segundo plano
+  // 5) desligar interrompe a leitura em segundo plano E a escolha do lojista é lembrada ao reabrir o painel
   await p.uncheck('#compartilhar-contexto'); const n = lidasSilenciosas; await p.waitForTimeout(4600); assert.equal(lidasSilenciosas, n, 'desligado: para de ler');
   assert.equal(await p.innerText('#ctx-status'), '');
+  await p.reload(); await iniciar(true);
+  await p.locator('#loja').getByText('Conectado à loja').waitFor();
+  assert.equal(await p.isChecked('#compartilhar-contexto'), false, 'a escolha de desligar é lembrada na próxima sessão');
+  const antes = chamadas.length; await p.waitForTimeout(600); assert.equal(chamadas.length, antes, 'desligado pelo lojista: nada é enviado');
   // 6) sessão antiga sem o escopo: mensagem de reconexão, nunca confirmação falsa
   modo = 'sem-escopo'; atual = leitura; await p.check('#compartilhar-contexto');
   await p.locator('#ctx-status').getByText(/Reconecte à loja para liberar/).waitFor();
