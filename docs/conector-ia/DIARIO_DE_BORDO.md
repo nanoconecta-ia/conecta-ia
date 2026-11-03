@@ -24,3 +24,22 @@
 **Decisões pendentes do dono:**
 - Autorizar o estudo e o desenho da criação de pedido de venda no Bling.
 - A venda direta no site (checkout) entra no próximo marco, ou a Mobis segue em modo WhatsApp por enquanto?
+
+## 2026-11-03 — Documentação do Bling lida: reserva de estoque, balcão e JWT
+
+Fontes: ajuda.bling.com.br (artigo "Como dar baixa no estoque no momento que o pedido for feito — Reserva de estoque"), developer.bling.com.br/aplicativos e /webhooks.
+
+**O que o Bling garante (documentado):**
+- **Reserva de estoque** é uma configuração da conta (Todas as configurações > Suprimentos > Estoque): "Considerar situações de vendas para obter o saldo atual". O saldo atual passa a ser **saldo real menos o reservado** pelas vendas nas situações escolhidas. Uma venda "Em aberto" pode reservar a unidade antes de qualquer lançamento de estoque.
+- Quando o estoque da venda é lançado, a unidade sai da reserva e vira saída. Se o estoque for lançado pela nota fiscal e o pedido continuar numa situação que reserva, **o saldo continua reservado** (contagem dupla): é preciso mudar a situação do pedido.
+- **Balcão (PDV):** o webhook de estoque do Bling dispara em lançamentos físicos: vendas, NF-e e tela de estoque. Então a baixa do balcão chega ao espelho pelo webhook de `stock`, desde que o lançamento automático de estoque esteja ligado na conta da Mobis (a conferir no Bling; não consigo ver a configuração).
+- **JWT:** a autenticação com token opaco foi descontinuada; o Bling exige JWT. É o formato que o Conecta.IA já usa (`enable-jwt: 1`). Era disso que tratava a dúvida sobre "WJP".
+- **Aplicativo público** precisa de homologação; enquanto não for homologado, só 10 usuários podem autorizá-lo. Relevante só quando virar serviço para outros clientes.
+
+**Consequências para o desenho (proposta, nada implementado):**
+1. Para a venda do site "segurar" a peça em todos os canais, o pedido precisa existir no Bling numa situação que reserve estoque. Isso depende de **a reserva estar ligada na conta da Mobis** (configuração sua no Bling).
+2. **O Bling não oferece reserva atômica** (verificar e reservar numa operação só). Fica uma janela curta entre conferir o saldo e criar o pedido, e outra até cada marketplace receber o saldo novo (como o Bling avisa os marketplaces, não li).
+3. Mitigação: conferir o saldo no Bling imediatamente antes; criar o pedido "Em aberto"; reler o saldo depois. Se ficou negativo, sinalizar o pedido, avisar o cliente e levar ao WhatsApp. Honestamente: reduz muito a chance de venda dupla, mas não a elimina.
+4. O aplicativo da Mobis precisa do escopo de pedidos de venda, e a escrita precisa de autorização específica, Policy Engine e auditoria.
+
+**Para conferir na conta da Mobis (dono):** reserva de estoque ligada? Lançamento automático de estoque ligado? Quais situações de pedido reservam? O PDV da Mobis lança estoque na venda?
