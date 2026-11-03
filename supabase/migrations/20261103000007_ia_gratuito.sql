@@ -50,13 +50,19 @@ $$;
 revoke all on function public.ia_definir_modo_free(uuid, text), public.ia_free_automatico(uuid) from public, anon, authenticated;
 grant execute on function public.ia_definir_modo_free(uuid, text), public.ia_free_automatico(uuid) to service_role;
 
--- Remover a chave também desliga o modo automático (sem chave não há automático).
+-- Remover a chave também desliga o modo automático (sem chave não há automático). Parte da versão MAIS RECENTE (20261018000006):
+-- mantém a promoção do próximo provedor ativo a principal quando o principal é removido.
 create or replace function public.ia_desativar_chave(p_loja uuid, p_provedor text)
-returns void language sql security definer set search_path = '' as $$
+returns void language plpgsql security definer set search_path = '' as $$
+begin
   update private.chaves_ia_segredos s set chave_cifrada = ''
   from public.loja_chaves_ia k where k.id = s.chave_id and k.loja_id = p_loja and k.provedor = p_provedor;
-  update public.loja_chaves_ia set ativa = false, final_chave = null, failover = false where loja_id = p_loja and provedor = p_provedor;
-$$;
+  update public.loja_chaves_ia set ativa = false, final_chave = null, principal = false, failover = false where loja_id = p_loja and provedor = p_provedor;
+  if not exists (select 1 from public.loja_chaves_ia where loja_id = p_loja and principal) then
+    update public.loja_chaves_ia set principal = true
+    where id = (select id from public.loja_chaves_ia where loja_id = p_loja and ativa and provedor <> 'openrouter_free' order by criado_em limit 1);
+  end if;
+end $$;
 
 -- O chat (conversa persistente) aceita o provedor gratuito e contabiliza o consumo dele (a troca automática grava quem de fato respondeu).
 -- Mesmos corpos de 20261018212217_chat_operacional.sql; só a lista de provedores muda. Os privilégios (service_role) são preservados pelo "or replace".

@@ -47,6 +47,15 @@ select public.afirma(not public.ia_free_automatico(:A), 'remover a chave encerra
 select public.afirma(not (select failover from public.loja_chaves_ia where loja_id = :A and provedor = 'openrouter_free'), 'e zera o failover');
 select public.afirma(not public.ia_definir_modo_free(:A, 'automatico'), 'sem chave não dá para ligar o automático');
 
+-- remover o principal promove o próximo provedor PAGO, nunca o gratuito
+insert into public.lojas (id, nome, slug) values ('cccccccc-0000-0000-0000-00000000000c', 'Loja C', 'loja-c');
+select public.ia_salvar_chave('cccccccc-0000-0000-0000-00000000000c', 'gemini', 'c1', 'g1g1', 'gemini-2.5-flash', null, null);
+select public.ia_salvar_chave('cccccccc-0000-0000-0000-00000000000c', 'openrouter_free', 'c2', 'f1f1', 'openrouter/free', null, null);
+select public.ia_salvar_chave('cccccccc-0000-0000-0000-00000000000c', 'claude', 'c3', 'c1c1', 'claude-sonnet-5-5', null, null);
+select public.ia_desativar_chave('cccccccc-0000-0000-0000-00000000000c', 'gemini');
+select public.afirma((select principal from public.loja_chaves_ia where loja_id = 'cccccccc-0000-0000-0000-00000000000c' and provedor = 'claude'), 'sem o principal, o próximo pago vira principal');
+select public.afirma(not (select principal from public.loja_chaves_ia where loja_id = 'cccccccc-0000-0000-0000-00000000000c' and provedor = 'openrouter_free'), 'o gratuito nunca é promovido a principal');
+
 -- permissões: navegador não chama
 select public.afirma(not has_function_privilege('anon', 'public.ia_definir_modo_free(uuid,text)', 'execute') and not has_function_privilege('authenticated', 'public.ia_definir_modo_free(uuid,text)', 'execute'), 'navegador não define o modo');
 select public.afirma(not has_function_privilege('authenticated', 'public.ia_free_automatico(uuid)', 'execute'), 'navegador não consulta o automático');

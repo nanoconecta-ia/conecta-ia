@@ -73,11 +73,16 @@ begin
 end $$;
 
 create or replace function public.ia_desativar_chave(p_loja uuid, p_provedor text)
-returns void language sql security definer set search_path = '' as $$
+returns void language plpgsql security definer set search_path = '' as $$
+begin
   update private.chaves_ia_segredos s set chave_cifrada = ''
   from public.loja_chaves_ia k where k.id = s.chave_id and k.loja_id = p_loja and k.provedor = p_provedor;
-  update public.loja_chaves_ia set ativa = false, final_chave = null where loja_id = p_loja and provedor = p_provedor;
-$$;
+  update public.loja_chaves_ia set ativa = false, final_chave = null, principal = false where loja_id = p_loja and provedor = p_provedor;
+  if not exists (select 1 from public.loja_chaves_ia where loja_id = p_loja and principal) then
+    update public.loja_chaves_ia set principal = true
+    where id = (select id from public.loja_chaves_ia where loja_id = p_loja and ativa order by criado_em limit 1);
+  end if;
+end $$;
 
 drop function if exists public.ia_definir_modo_free(uuid, text);
 drop function if exists public.ia_free_automatico(uuid);
