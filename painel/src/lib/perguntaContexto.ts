@@ -1,6 +1,7 @@
 // Detecta a pergunta ESTRUTURADA sobre o contexto vivo ("quais produtos estão selecionados", "qual é o produto ativo/aberto") para responder direto do banco,
 // sem provedor de IA. Conservador de propósito: só frases claras; qualquer outra vai para o fluxo normal. Não inventa nem extrai SKU.
-const limpa = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[?!.,;:]+/g, " ").replace(/\s+/g, " ").trim();
+// Pontuação e aspas de qualquer tipo não mudam o sentido da pergunta: quem digita entre aspas ou cola com ponto final continua sendo atendido.
+const limpa = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[?!.,;:"'`´“”‘’«»()\[\]{}*_]+/g, " ").replace(/\s+/g, " ").trim();
 const PADROES: RegExp[] = [
   /^(?:quais?|quantos?)(?: sao)?(?: os| as)? produtos?(?: que)?(?: estao| estou| foram| esta)? (?:selecionad[oa]s?|marcad[oa]s?|abert[oa]s?)(?: agora| no momento| no catalogo)?$/,
   /^(?:qual|que)(?: e| eh)?(?: o)? produto(?: que)?(?: esta| estou)? (?:ativo|aberto|selecionado|em foco)(?: agora| no momento)?$/,
