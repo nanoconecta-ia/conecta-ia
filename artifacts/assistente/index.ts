@@ -6168,6 +6168,7 @@ const ALIASES_PAIR = {
     "conecta.propose_banner": null,
     "conecta.get_pending_approvals": null,
     "conecta.get_task_status": null,
+    "conecta.set_active_product": null,
     "conecta.get_validated_fields": null
 };
 const definicaoDoAssistente = (nome)=>{
