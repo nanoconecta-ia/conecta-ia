@@ -13,6 +13,7 @@ import "./catalogo-workspace.css";
 import { IconePeca } from "../componentes/IconePeca.tsx";
 import { iconeDaCategoria } from "../lib/icones.ts";
 import { pedirAoNanoNaConversa } from "../lib/contextoPagina.ts";
+import { publicarSelecao } from "../lib/contextoVivo.ts";
 import { montarPedidoCorrecao as montarPedidoCorrecaoCadastro } from "../lib/correcaoCadastro.ts";
 import { montarPedidoCorrecao, pendenciasDaFicha } from "../lib/pedidoCorrecao.ts";
 import { camposFaltando, contagens, filtrar, ROTULO_FILTRO, semCategoria, situacaoTexto, type Filtro, type LinhaPlanilha } from "../lib/planilha.ts";
@@ -28,6 +29,9 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [pausados, setPausados] = useState<Set<string>>(new Set());
+  const [compartilhar, setCompartilhar] = useState(false); // opt-in: só envia a seleção ao servidor se o lojista ligar
+  const [avisoContexto, setAvisoContexto] = useState("");
+  const estadoContexto = useRef({ versao: 0 });
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [busca, setBusca] = useState("");
   const [buscaAplicada, setBuscaAplicada] = useState("");
@@ -37,6 +41,14 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const [carregando, setCarregando] = useState(false);
   const [erroConsulta, setErroConsulta] = useState("");
   const sequenciaConsulta = useRef(0);
+  useEffect(() => {
+    if (!compartilhar) return;
+    const t = window.setTimeout(() => {
+      void publicarSelecao((a) => supabase.rpc("contexto_registrar", a) as unknown as Promise<{ data: unknown; error: unknown }>, loja.id, [...selecionados], estadoContexto.current)
+        .then((r) => setAvisoContexto(r.ok ? "" : "Não foi possível compartilhar a seleção com o Nano agora."));
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [compartilhar, selecionados, loja.id]);
   const [vista, setVista] = useState<"tabela" | "cartoes">(() =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? "cartoes" : "tabela");
   const [fichaId, setFichaId] = useState<string | null>(null);
@@ -225,6 +237,8 @@ export function Catalogo({ loja }: { loja: Loja }) {
       <div className="catalogo-resultados" role="status">{itens === null ? "Consultando o espelho…" : `${visiveis.length} filtrado(s) entre ${itens.length} carregado(s)${totalBanco !== null ? ` · ${totalBanco.toLocaleString("pt-BR")} encontrado(s) na busca do servidor` : ""}`}{pesquisaPendente ? " · atualizando pesquisa…" : ""}</div>
       {erroConsulta && <div className="msg-erro" role="alert">{erroConsulta} <button type="button" className="sec" onClick={() => void carregar(0)}>Tentar novamente</button></div>}
       {msg && <p className={msg.ok ? "msg-ok" : "msg-erro"} role="status">{msg.texto}</p>}
+      <label className="linha marcar-linha"><input type="checkbox" checked={compartilhar} onChange={(e) => { setCompartilhar(e.target.checked); setAvisoContexto(""); }} /><span>Compartilhar a seleção com o Nano (30 min). Assim ele sabe qual produto você abriu, sem digitar o SKU. Só id do produto; nada é gravado no Bling.</span></label>
+      {avisoContexto && <p className="msg-erro" role="alert">{avisoContexto}</p>}
       {selecionados.size > 0 && (
         <div className="linha" role="group" aria-label="Ações para os produtos selecionados">
           <strong>{textoLote(selecionados.size)} selecionado(s)</strong>

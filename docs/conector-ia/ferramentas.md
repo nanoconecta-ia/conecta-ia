@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 61 ferramentas — 43 ativas, 16 planejadas, 2 desligadas.
+Resumo: 62 ferramentas — 44 ativas, 16 planejadas, 2 desligadas.
 
 ## Grupo: conecta
 
@@ -23,6 +23,7 @@ Resumo: 61 ferramentas — 43 ativas, 16 planejadas, 2 desligadas.
 | `conecta.enriquecimento.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `campo*:string` `valor*:string` `fonte*:string` `confianca:number` |
 | `nano.atividade.registrar` | ativa | propor | LOW | não | não | sim | não | chave | `resumo*:string` `sku:string` |
 | `conecta.imagem.propor` | ativa | propor | LOW | não | sim | sim | não | chave | `sku*:string` `url*:string` `origem:string` `pagina:string` |
+| `conecta.contexto.produto_ativo` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | — |
 | `conecta.imagem.buscar_web` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `consulta*:string` `sku:string` |
 | `conecta.web.pesquisar_tecnico` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | `consulta*:string` |
 | `conecta.plugins.listar` | ativa | leitura | LOW | não | sim | não | não | nao_se_aplica | — |
@@ -67,6 +68,9 @@ Resumo: 61 ferramentas — 43 ativas, 16 planejadas, 2 desligadas.
 - **`conecta.imagem.propor`** — Propõe a imagem ORIGINAL de um produto, sem editar: o servidor confere o endereço (https, nunca rede interna), baixa o arquivo, confirma que é JPEG/PNG/WebP, mede largura/altura e calcula o SHA-256. Entra pendente de aprovação; direitos de uso e marca d'água continuam a conferir por uma pessoa.
   - *Verificação:* A proposta nasce em rascunho e só vale depois do envio e da aprovação humana da versão exata.
   - *Recuperação:* Descartar o rascunho ou criar nova versão; nada externo foi alterado.
+- **`conecta.contexto.produto_ativo`** — Produto que o lojista está com ABERTO ou SELECIONADO agora no painel do Conecta.IA (contexto de 30 min, escolhido por ele). Devolve só id, SKU, nome e marca, nunca custo, fornecedor ou dado fiscal. Use quando ele disser 'este produto' ou 'os selecionados' sem informar o SKU. Sem contexto válido responde contexto_indisponivel: nunca adivinhe o SKU.
+  - *Verificação:* Mostra versão e origem do contexto; só da loja da chave. Não altera nada.
+  - *Recuperação:* Repetir a leitura; é segura.
 - **`conecta.imagem.buscar_web`** — Busca imagens candidatas na web (não salva nada). Informe o sku para receber a galeria de até 8 candidatas com estado, origem, licença e prova do código; sem aprovação automática.
   - *Verificação:* Resultado é dado a conferir. Com sku devolve a GALERIA (máx. 8) com estado, origem e prova do código.
   - *Recuperação:* Repetir a leitura; é segura.
