@@ -48,6 +48,16 @@ Processador (cron de 1 min, ou disparo logo após gravar): pega pendentes → bu
 - `stock.*` → atualiza só o saldo (busca atual via API).
 - Eventos de pedido, nota e fornecedor: **ignorados** nesta fase (ficam fora de escopo; custo e fornecedor continuam proibidos no sistema do lojista).
 
+## Limites da API do Bling (lidos em 2026-11-03, developer.bling.com.br/limites) e o que mudam no desenho
+- **3 requisições por segundo e 120.000 por dia, por conta Bling, somadas em todos os módulos.** O processador do webhook, a varredura de 15 min, o chat (`bling_consultar_produto`) e as propostas **dividem o mesmo orçamento**.
+  - O processador usa no máximo **1 requisição por segundo** e para quando recebe `429`, com espera crescente. Nunca dispara em rajada.
+  - Evento repetido para o mesmo produto num intervalo curto vira **uma busca só** (agrupa por `bling_id`).
+- **Bloqueio por IP:** 300 erros em 10 s (10 min), 600 requisições em 10 s (10 min), 20 chamadas a `/oauth/token` em 60 s (60 min). Como as Edge Functions saem por IPs compartilhados, um loop de erros bloquearia **todas as lojas**.
+  - O processador tem um **disjuntor**: após uma sequência de erros, pausa por minutos e registra em `sync_erros`.
+  - A renovação de token (`bling-renovar`, a cada 30 min) já fica muito abaixo de 20 por minuto; o webhook nunca renova token por conta própria.
+- **Filtros por período maiores que 1 ano devolvem `400`.** A varredura incremental por `dataAlteracaoInicial` deve ficar sempre dentro de 1 ano (a varredura completa continua sem filtro de período).
+- **Orçamento diário:** o painel mostra o consumo estimado do dia; ao passar de um limiar, o processador reduz o ritmo e a varredura espera.
+
 ## Segurança
 - Corpo nunca é aceito sem HMAC válido; comparação em tempo constante; segredo só em memória.
 - Sem token, secret, custo ou fornecedor em log nem em resposta.
