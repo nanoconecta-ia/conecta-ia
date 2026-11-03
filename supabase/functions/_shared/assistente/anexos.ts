@@ -32,7 +32,7 @@ function assinaturaCombina(mime: string, b: Uint8Array): boolean {
     default: return false;
   }
 }
-const hex = async (b: Uint8Array) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", b))).map((x) => x.toString(16).padStart(2, "0")).join("");
+const hex = async (b: Uint8Array) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", b as Uint8Array<ArrayBuffer>))).map((x) => x.toString(16).padStart(2, "0")).join("");
 
 export async function validarAnexos(entrada: unknown, provedor: Provedor): Promise<ResultadoAnexos> {
   if (entrada === undefined || entrada === null) return { ok: true, anexos: [] };

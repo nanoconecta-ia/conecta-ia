@@ -163,7 +163,8 @@ async function skuProposto(c: ContextoFerramenta): Promise<{ sku: string } | { e
 }
 
 export const HANDLERS: Record<string, Handler> = {
-  "conecta.contexto.produto_ativo": (_e, c) => lerContextoDaLoja(c.admin as any, c.lojaId),
+  // Chat: só a sessão da PRÓPRIA pessoa. Agente externo (MCP): contexto mais recente da loja (decisão C2); userId da chave não vale como identidade aqui.
+  "conecta.contexto.produto_ativo": (_e, c) => lerContextoDaLoja(c.admin as any, c.lojaId, new Date(), (c as { origem?: string }).origem === "chat" && c.userId ? `u:${c.userId}` : undefined),
   "nano.atividade.registrar": (e, c) => registrarResumo(c.admin as any, c.lojaId, (c as { mcpChaveId?: string | null }).mcpChaveId ?? null, e),
   "conecta.catalogo.resumo": (_e, c) => c.dados.resumo(),
   "conecta.catalogo.listar": (e, c) => c.dados.listarProdutos({ apenasNaoPublicados: e.apenas_nao_publicados === true, busca: e.busca, limite: e.limite }),
