@@ -16,7 +16,7 @@
 #>
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true)][ValidateSet('oauth', 'contexto', 'contexto-registrar', 'contexto-extensao', 'imagens', 'verificar', 'reverter-oauth', 'reverter-contexto', 'reverter-contexto-registrar', 'reverter-contexto-extensao', 'reverter-imagens')][string]$Etapa,
+  [Parameter(Mandatory = $true)][ValidateSet('oauth', 'contexto', 'contexto-registrar', 'contexto-extensao', 'ia-gratuito', 'imagens', 'verificar', 'reverter-oauth', 'reverter-contexto', 'reverter-contexto-registrar', 'reverter-contexto-extensao', 'reverter-ia-gratuito', 'reverter-imagens')][string]$Etapa,
   [string]$Repositorio = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 )
 $ErrorActionPreference = 'Stop'
@@ -27,6 +27,8 @@ $Mapa = @{
   'contexto'          = 'docs\conector-ia\CONTEXTO_SESSOES_APLICAR_NO_EDITOR.sql'
   'contexto-extensao' = 'docs\conector-ia\CONTEXTO_EXTENSAO_APLICAR_NO_EDITOR.sql'
   'reverter-contexto-extensao' = 'docs\conector-ia\CONTEXTO_EXTENSAO_REVERSAO.sql'
+  'ia-gratuito'       = 'docs\conector-ia\IA_GRATUITO_APLICAR_NO_EDITOR.sql'
+  'reverter-ia-gratuito' = 'docs\conector-ia\IA_GRATUITO_REVERSAO.sql'
   'contexto-registrar' = 'docs\conector-ia\CONTEXTO_REGISTRAR_APLICAR_NO_EDITOR.sql'
   'reverter-contexto-registrar' = 'docs\conector-ia\CONTEXTO_REGISTRAR_REVERSAO.sql'
   'imagens'           = 'docs\conector-ia\PRODUTO_IMAGENS_ARQUIVO_APLICAR_NO_EDITOR.sql'

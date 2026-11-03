@@ -55,9 +55,11 @@ Deno.serve(async (req) => {
 
   // Só metadados da loja visível ao JWT. Nenhum cofre, decriptação, teste de chave ou chamada ao provedor.
   if (c.acao === "provedores") {
-    const { data, error } = await usuario.from("loja_chaves_ia")
-      .select("provedor, ativa, principal, modelo, base_url, limite_mensal_tokens, tokens_mes, mes_ref").eq("loja_id", loja.id);
-    return json({ provedores: listarProvedores(data ?? [], !!error), verificado: !error });
+    const colunas = "provedor, ativa, principal, modelo, base_url, limite_mensal_tokens, tokens_mes, mes_ref";
+    let r = await usuario.from("loja_chaves_ia").select(`${colunas}, failover`).eq("loja_id", loja.id);
+    // Antes da migração do provedor gratuito a coluna `failover` não existe: lista sem ela em vez de derrubar a lista inteira.
+    if (r.error) r = await usuario.from("loja_chaves_ia").select(colunas).eq("loja_id", loja.id);
+    return json({ provedores: listarProvedores(r.data ?? [], !!r.error), verificado: !r.error });
   }
 
   // Aprovar/rejeitar muda dado que vai ao site: só quem ADMINISTRA a loja (lojista), nunca o editor. Conversar e consultar seguem abertos.

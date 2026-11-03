@@ -7349,7 +7349,8 @@ const { urlPublicaSegura: urlPublicaSegura } = __m9;
 const PROVEDORES_CHAT = [
     "compativel_openai",
     "gemini",
-    "claude"
+    "claude",
+    "openrouter_free"
 ];
 function validarProvedor(valor) {
     if (valor === undefined) return undefined;
@@ -7357,11 +7358,12 @@ function validarProvedor(valor) {
     return valor;
 }
 function modeloDaChave(k) {
-    return k.modelo || (k.provedor === "gemini" ? "gemini-2.5-flash" : k.provedor === "claude" ? "claude-sonnet-5-5" : "");
+    return k.modelo || (k.provedor === "gemini" ? "gemini-2.5-flash" : k.provedor === "claude" ? "claude-sonnet-5-5" : k.provedor === "openrouter_free" ? "openrouter/free" : "");
 }
 function nomeProvedor(id, base) {
     if (id === "gemini") return "Gemini";
     if (id === "claude") return "Claude";
+    if (id === "openrouter_free") return "Gratuito (OpenRouter)";
     if (!base) return "GPT";
     try {
         const u = new URL(base);
@@ -7395,7 +7397,10 @@ function listarProvedores(chaves, falha = false, agora = new Date()) {
             estado,
             motivo,
             modelo: k ? modeloDaChave(k) : null,
-            principal: k?.principal === true
+            principal: k?.principal === true,
+            ...id === "openrouter_free" ? {
+                modo: k?.ativa ? k.failover ? "automatico" : "manual" : "desligado"
+            } : {}
         };
     });
 }
@@ -7610,127 +7615,6 @@ const REGRAS_ANEXO = [
 ].join("\n");
 
 return { MAX_ANEXOS: MAX_ANEXOS, MAX_BYTES_ARQUIVO: MAX_BYTES_ARQUIVO, MAX_BYTES_TOTAL: MAX_BYTES_TOTAL, MAX_TEXTO_BYTES: MAX_TEXTO_BYTES, TIPOS_ACEITOS: TIPOS_ACEITOS, aceitaPdf: aceitaPdf, validarAnexos: validarAnexos, blocoDeTexto: blocoDeTexto, conteudoComAnexos: conteudoComAnexos, resumoParaRegistro: resumoParaRegistro, REGRAS_ANEXO: REGRAS_ANEXO };
-})();
-
-// ---------- supabase/functions/_shared/assistente/fallback_free.ts ----------
-const __m52 = (() => {
-const { conversar: conversar, IaErro: IaErro } = __m5;
-const FALLBACK_FREE_HOST = "openrouter.ai";
-const FALLBACK_FREE_URL = "https://openrouter.ai/api/v1";
-const FALLBACK_FREE_MODELO = "openrouter/free";
-const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
-const CONSULTA = /^(?:o que (?:e|significa)|explique(?: o conceito de| o funcionamento de)?|como funciona(?:m)?(?: um| uma| o| a)?)\s+(.+?)\s*\??$/i;
-const ASSUNTOS = [
-    "motor diesel",
-    "turbocompressor",
-    "turbo",
-    "intercooler",
-    "bomba d agua",
-    "sistema de arrefecimento",
-    "radiador",
-    "termostato",
-    "valvula termostatica",
-    "correia dentada",
-    "correia de distribuicao",
-    "correia do alternador",
-    "tensor de correia",
-    "tensores",
-    "pistao",
-    "aneis de pistao",
-    "biela",
-    "virabrequim",
-    "bronzin[a]",
-    "bronzinas",
-    "cabecote",
-    "valvulas",
-    "junta de cabecote",
-    "embreagem",
-    "volante do motor",
-    "filtro de oleo",
-    "filtro de combustivel",
-    "bomba de oleo",
-    "bomba de combustivel",
-    "injetor diesel",
-    "sincronismo do motor",
-    "arrefecimento do motor",
-    "sistema de lubrificacao"
-];
-const SEM_ACENTO = (t)=>t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’\x27]/g, " ").toLowerCase().trim();
-const ASSUNTOS_PERMITIDOS = new Set(ASSUNTOS.map(SEM_ACENTO));
-function perguntaPublica(texto) {
-    if (typeof texto !== "string" || texto.length < 12 || texto.length > 125 || /[\n\r\t]/.test(texto)) return false;
-    const t = SEM_ACENTO(texto).replace(/[.!]+$/, "");
-    if (/[0-9@/:\\={}\[\]<>#$]/.test(t)) return false;
-    const m = t.match(CONSULTA);
-    if (!m) return false;
-    const assunto = m[1].replace(/[?.,!]+$/, "").trim().replace(/\s+/g, " ");
-    return ASSUNTOS_PERMITIDOS.has(assunto);
-}
-const LOJA_PILOTO_MOBIS = "cd9d7570-f095-44f2-be28-b9b9cba6578e";
-function configFallbackFree(get, lojaId) {
-    if (!UUID.test(lojaId)) return null;
-    const flag = get("NANO_FREE_FALLBACK_ATIVO");
-    if (flag === "0") return null;
-    const lojasRegistradas = get("NANO_FREE_FALLBACK_LOJAS");
-    const lojas = (lojasRegistradas ?? "").split(",").map((s)=>s.trim().toLowerCase());
-    const modoPadrao = flag === "1" && lojas.includes(lojaId.toLowerCase());
-    const modoPiloto = flag === undefined && !lojasRegistradas && lojaId.toLowerCase() === LOJA_PILOTO_MOBIS;
-    if (!modoPadrao && !modoPiloto) return null;
-    const chave = get("NANO_FREE_FALLBACK_OPENROUTER_KEY") || get("freellm") || get("FREELLM");
-    if (!chave || !/^sk-or-v1-[A-Za-z0-9_-]{15,}$/.test(chave) || chave.length > 600) return null;
-    return {
-        chave,
-        modelo: FALLBACK_FREE_MODELO,
-        baseUrl: FALLBACK_FREE_URL
-    };
-}
-function podeTentarFallback(p) {
-    if (p.provedor !== "gemini" || p.consentimento !== true || p.anexos !== 0 || p.tentativasFerramenta !== 0 || p.textoTransmitido) return false;
-    if (!(p.erro instanceof IaErro) || ![
-        429,
-        502,
-        504
-    ].includes(p.erro.status)) return false;
-    return perguntaPublica(p.texto) && configFallbackFree(p.get, p.lojaId) !== null;
-}
-async function tentarFallbackFree(p) {
-    if (!podeTentarFallback(p)) return null;
-    const config = configFallbackFree(p.get, p.lojaId);
-    try {
-        const r = await conversar({
-            provedor: "compativel_openai",
-            baseUrl: config.baseUrl,
-            chave: config.chave,
-            modelo: config.modelo,
-            sistema: "Voce e um glossario publico de mecanica diesel. Responda em portugues do Brasil em ate 90 palavras. Nao afirme consultar ERP, Bling, historico, loja ou pecas especificas. Nao faca indicacoes de SKU, preco, fornecedor, estoque, garantias ou compatibilidades. Se nao souber, diga que nao sabe.",
-            mensagens: [
-                {
-                    role: "user",
-                    content: p.texto
-                }
-            ],
-            ferramentas: [],
-            executar: async ()=>{
-                throw new Error("Fallback sem ferramentas.");
-            },
-            maxPassos: 1,
-            maxTokens: 200,
-            fetch: p.fetch
-        });
-        if (!r.completa || !r.texto.trim() || r.ferramentasUsadas.length) return null;
-        return {
-            texto: r.texto.trim().slice(0, 1000),
-            tokens: r.tokens,
-            modelo: r.modelo,
-            origem: "openrouter-free",
-            completo: true
-        };
-    } catch  {
-        return null;
-    }
-}
-
-return { FALLBACK_FREE_HOST: FALLBACK_FREE_HOST, FALLBACK_FREE_URL: FALLBACK_FREE_URL, FALLBACK_FREE_MODELO: FALLBACK_FREE_MODELO, perguntaPublica: perguntaPublica, configFallbackFree: configFallbackFree, podeTentarFallback: podeTentarFallback, tentarFallbackFree: tentarFallbackFree };
 })();
 
 // ---------- supabase/functions/_shared/bling_ferramentas.ts ----------
@@ -8271,8 +8155,157 @@ async function consultarProduto(entrada, c) {
 return { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, LIMITE_MODELO: LIMITE_MODELO, paraModelo: paraModelo, consultarProduto: consultarProduto };
 })();
 
-// ---------- supabase/functions/_shared/assistente/ficha_sem_llm.ts ----------
+// ---------- supabase/functions/_shared/assistente/fallback_free.ts ----------
 const __m56 = (() => {
+const { conversar: conversar, IaErro: IaErro } = __m5;
+const FALLBACK_FREE_HOST = "openrouter.ai";
+const FALLBACK_FREE_URL = "https://openrouter.ai/api/v1";
+const FALLBACK_FREE_MODELO = "openrouter/free";
+const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+const CONSULTA = /^(?:o que (?:e|significa)|explique(?: o conceito de| o funcionamento de)?|como funciona(?:m)?(?: um| uma| o| a)?)\s+(.+?)\s*\??$/i;
+const ASSUNTOS = [
+    "motor diesel",
+    "turbocompressor",
+    "turbo",
+    "intercooler",
+    "bomba d agua",
+    "sistema de arrefecimento",
+    "radiador",
+    "termostato",
+    "valvula termostatica",
+    "correia dentada",
+    "correia de distribuicao",
+    "correia do alternador",
+    "tensor de correia",
+    "tensores",
+    "pistao",
+    "aneis de pistao",
+    "biela",
+    "virabrequim",
+    "bronzin[a]",
+    "bronzinas",
+    "cabecote",
+    "valvulas",
+    "junta de cabecote",
+    "embreagem",
+    "volante do motor",
+    "filtro de oleo",
+    "filtro de combustivel",
+    "bomba de oleo",
+    "bomba de combustivel",
+    "injetor diesel",
+    "sincronismo do motor",
+    "arrefecimento do motor",
+    "sistema de lubrificacao"
+];
+const SEM_ACENTO = (t)=>t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’\x27]/g, " ").toLowerCase().trim();
+const ASSUNTOS_PERMITIDOS = new Set(ASSUNTOS.map(SEM_ACENTO));
+function perguntaPublica(texto) {
+    if (typeof texto !== "string" || texto.length < 12 || texto.length > 125 || /[\n\r\t]/.test(texto)) return false;
+    const t = SEM_ACENTO(texto).replace(/[.!]+$/, "");
+    if (/[0-9@/:\\={}\[\]<>#$]/.test(t)) return false;
+    const m = t.match(CONSULTA);
+    if (!m) return false;
+    const assunto = m[1].replace(/[?.,!]+$/, "").trim().replace(/\s+/g, " ");
+    return ASSUNTOS_PERMITIDOS.has(assunto);
+}
+const LOJA_PILOTO_MOBIS = "cd9d7570-f095-44f2-be28-b9b9cba6578e";
+function configFallbackFree(get, lojaId) {
+    if (!UUID.test(lojaId)) return null;
+    const flag = get("NANO_FREE_FALLBACK_ATIVO");
+    if (flag === "0") return null;
+    const lojasRegistradas = get("NANO_FREE_FALLBACK_LOJAS");
+    const lojas = (lojasRegistradas ?? "").split(",").map((s)=>s.trim().toLowerCase());
+    const modoPadrao = flag === "1" && lojas.includes(lojaId.toLowerCase());
+    const modoPiloto = flag === undefined && !lojasRegistradas && lojaId.toLowerCase() === LOJA_PILOTO_MOBIS;
+    if (!modoPadrao && !modoPiloto) return null;
+    const chave = get("NANO_FREE_FALLBACK_OPENROUTER_KEY") || get("freellm") || get("FREELLM");
+    if (!chave || !/^sk-or-v1-[A-Za-z0-9_-]{15,}$/.test(chave) || chave.length > 600) return null;
+    return {
+        chave,
+        modelo: FALLBACK_FREE_MODELO,
+        baseUrl: FALLBACK_FREE_URL
+    };
+}
+function podeTentarFallback(p) {
+    if (p.provedor !== "gemini" || p.consentimento !== true || p.anexos !== 0 || p.tentativasFerramenta !== 0 || p.textoTransmitido) return false;
+    if (!(p.erro instanceof IaErro) || ![
+        429,
+        502,
+        504
+    ].includes(p.erro.status)) return false;
+    return perguntaPublica(p.texto) && configFallbackFree(p.get, p.lojaId) !== null;
+}
+async function tentarFallbackFree(p) {
+    if (!podeTentarFallback(p)) return null;
+    const config = configFallbackFree(p.get, p.lojaId);
+    try {
+        const r = await conversar({
+            provedor: "compativel_openai",
+            baseUrl: config.baseUrl,
+            chave: config.chave,
+            modelo: config.modelo,
+            sistema: "Voce e um glossario publico de mecanica diesel. Responda em portugues do Brasil em ate 90 palavras. Nao afirme consultar ERP, Bling, historico, loja ou pecas especificas. Nao faca indicacoes de SKU, preco, fornecedor, estoque, garantias ou compatibilidades. Se nao souber, diga que nao sabe.",
+            mensagens: [
+                {
+                    role: "user",
+                    content: p.texto
+                }
+            ],
+            ferramentas: [],
+            executar: async ()=>{
+                throw new Error("Fallback sem ferramentas.");
+            },
+            maxPassos: 1,
+            maxTokens: 200,
+            fetch: p.fetch
+        });
+        if (!r.completa || !r.texto.trim() || r.ferramentasUsadas.length) return null;
+        return {
+            texto: r.texto.trim().slice(0, 1000),
+            tokens: r.tokens,
+            modelo: r.modelo,
+            origem: "openrouter-free",
+            completo: true
+        };
+    } catch  {
+        return null;
+    }
+}
+
+return { FALLBACK_FREE_HOST: FALLBACK_FREE_HOST, FALLBACK_FREE_URL: FALLBACK_FREE_URL, FALLBACK_FREE_MODELO: FALLBACK_FREE_MODELO, perguntaPublica: perguntaPublica, configFallbackFree: configFallbackFree, podeTentarFallback: podeTentarFallback, tentarFallbackFree: tentarFallbackFree };
+})();
+
+// ---------- supabase/functions/_shared/assistente/free_automatico.ts ----------
+const __m52 = (() => {
+const { IaErro: IaErro } = __m5;
+const { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO } = __m53;
+const { FALLBACK_FREE_URL: FALLBACK_FREE_URL, FALLBACK_FREE_MODELO: FALLBACK_FREE_MODELO } = __m56;
+const PROVEDOR_FREE = "openrouter_free";
+const URL_FREE = FALLBACK_FREE_URL;
+const MODELO_FREE_PADRAO = FALLBACK_FREE_MODELO;
+const FERRAMENTAS_FREE = [
+    CONSULTAR_PRODUTO.name
+];
+const STATUS_TROCA = [
+    429,
+    502,
+    504
+];
+function podeTrocarParaFree(e) {
+    return e.automatico && e.provedor !== PROVEDOR_FREE && e.iniciouChamadaProvedor && e.anexos === 0 && !e.textoTransmitido && e.propostasCriadas === 0 && e.erro instanceof IaErro && STATUS_TROCA.includes(e.erro.status);
+}
+const SISTEMA_FREE = "\nMODO GRATUITO: você só CONSULTA (bling_consultar_produto). Não existe proposta, gravação nem pesquisa externa neste modo; se o lojista pedir uma alteração, diga que precisa do provedor principal. Nunca peça nem repita custo, fornecedor, dado fiscal ou credencial.";
+function avisoTroca(de, status) {
+    const motivo = status === 429 ? "sobrecarregado ou no limite" : status === 504 ? "sem resposta a tempo" : "com falha";
+    return `⚠ O provedor ${de} estava ${motivo}; respondi com o modelo gratuito (modo automático). Só consultas de leitura neste modo.`;
+}
+
+return { PROVEDOR_FREE: PROVEDOR_FREE, URL_FREE: URL_FREE, MODELO_FREE_PADRAO: MODELO_FREE_PADRAO, FERRAMENTAS_FREE: FERRAMENTAS_FREE, STATUS_TROCA: STATUS_TROCA, podeTrocarParaFree: podeTrocarParaFree, SISTEMA_FREE: SISTEMA_FREE, avisoTroca: avisoTroca };
+})();
+
+// ---------- supabase/functions/_shared/assistente/ficha_sem_llm.ts ----------
+const __m57 = (() => {
 const campo = (valor, limite = 120)=>typeof valor === "string" && valor.trim() ? valor.replace(/[\x00-\x1F]/g, " ").slice(0, limite) : "não informado";
 const numero = (n)=>Number.isInteger(n) && Number(n) >= 0 ? Number(n) : 0;
 function gerarFichaSemLLM(v) {
@@ -8325,9 +8358,10 @@ const { chaveiroPlataforma: chaveiroPlataforma } = __m4;
 const { decifrar: decifrar } = __m2;
 const { conversar: conversar, IaErro: IaErro } = __m5;
 const { modeloDaChave: modeloDaChave, validarProvedor: validarProvedor } = __m48;
-const { configFallbackFree: configFallbackFree, tentarFallbackFree: tentarFallbackFree } = __m52;
+const { avisoTroca: avisoTroca, FERRAMENTAS_FREE: FERRAMENTAS_FREE, PROVEDOR_FREE: PROVEDOR_FREE, podeTrocarParaFree: podeTrocarParaFree, SISTEMA_FREE: SISTEMA_FREE, URL_FREE: URL_FREE } = __m52;
+const { configFallbackFree: configFallbackFree, tentarFallbackFree: tentarFallbackFree } = __m56;
 const { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, consultarProduto: consultarProduto } = __m53;
-const { gerarFichaSemLLM: gerarFichaSemLLM } = __m56;
+const { gerarFichaSemLLM: gerarFichaSemLLM } = __m57;
 const { executarFerramenta: executarFerramenta, FERRAMENTAS: FERRAMENTAS, SISTEMA: SISTEMA } = __m10;
 const { configSearxngOuNulo: configSearxngOuNulo } = __m18;
 const { dadosSupabase: dadosSupabase } = __m43;
@@ -8643,6 +8677,9 @@ async function atenderChat(c, ctx) {
     }, 400);
     let anexos = [];
     if (c.anexos != null) {
+        if (provedor === PROVEDOR_FREE) return resultado({
+            erro: "O modelo gratuito não recebe anexos. Escolha outro provedor para enviar arquivos."
+        }, 400);
         const va = await validarAnexos(c.anexos, provedor);
         if (!va.ok) return resultado({
             erro: va.erro
@@ -8692,19 +8729,13 @@ async function atenderChat(c, ctx) {
         evidencias,
         desfecho: "falhou"
     };
-    try {
-        const { data: limitado, error: le } = await admin.rpc("limite_chamada", {
-            p_chave: `chat-ia:${loja.id}:${userId}`,
-            p_max: 20,
-            p_janela_s: 60
-        });
-        if (le || limitado !== true) throw new IaErro(429, "Limite temporário de perguntas.");
+    const rodar = async (prov)=>{
         const { data: rows, error } = await admin.rpc("ia_chave_ativa", {
             p_loja: loja.id,
-            p_provedor: provedor
+            p_provedor: prov
         });
         const k = rows?.[0];
-        if (error || !k || k.provedor !== provedor || !modeloDaChave(k)) throw new IaErro(503, "Provedor não configurado ou indisponível.");
+        if (error || !k || k.provedor !== prov || !modeloDaChave(k)) throw new IaErro(503, "Provedor não configurado ou indisponível.");
         if (k.limite != null && k.tokens_mes >= k.limite) throw new IaErro(429, "Limite mensal do provedor atingido.");
         const chaveiro = await chaveiroPlataforma(admin, ctx.get);
         if (!chaveiro) throw new IaErro(503, "Provedor indisponível no servidor.");
@@ -8733,26 +8764,30 @@ async function atenderChat(c, ctx) {
             meta.anexos = resumoParaRegistro(anexos);
         }
         modelo = modeloDaChave(k);
-        meta.host_provedor = provedor === "compativel_openai" ? new URL(k.base_url).hostname : provedor === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
+        meta.host_provedor = prov === PROVEDOR_FREE ? "openrouter.ai" : prov === "compativel_openai" ? new URL(k.base_url).hostname : prov === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
+        if (prov === PROVEDOR_FREE) meta.provedor_efetivo = "openrouter-free";
+        const tipoLlm = prov === PROVEDOR_FREE ? "compativel_openai" : prov;
         const propostas = [];
         const { config: searxng, erro: erroSearxng } = configSearxngOuNulo(ctx.get, loja.id);
         if (erroSearxng) console.warn("SearXNG desligado nesta loja:", erroSearxng);
         iniciouChamadaProvedor = true;
         const r = await conversar({
-            provedor,
-            baseUrl: k.base_url ?? undefined,
+            provedor: tipoLlm,
+            baseUrl: prov === PROVEDOR_FREE ? URL_FREE : k.base_url ?? undefined,
             chave: await decifrar(k.cifrada, chaveiro),
             modelo,
             mensagens,
-            sistema: `${SISTEMA}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto e bling_propor_ajuste_produto: nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
+            sistema: `${SISTEMA}${prov === PROVEDOR_FREE ? SISTEMA_FREE : ""}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto e bling_propor_ajuste_produto: nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
             maxPassos: 5,
             maxTokens: 1536,
             aoTexto: ctx.aoTexto ? (delta)=>{
                 if (delta) transmitiuTextoPrincipal = true;
                 ctx.aoTexto?.(delta);
             } : undefined,
-            adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(provedor) : undefined,
-            ferramentas: ativo("chat_consulta_bling") ? [
+            adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(tipoLlm) : undefined,
+            ferramentas: prov === PROVEDOR_FREE ? ativo("chat_consulta_bling") ? [
+                CONSULTAR_PRODUTO
+            ] : [] : ativo("chat_consulta_bling") ? [
                 CONSULTAR_PRODUTO,
                 ...FERRAMENTAS.filter((f)=>FERRAMENTAS_PROPOSTA_BLING.includes(f.name) || FERRAMENTAS_PESQUISA.includes(f.name))
             ] : [],
@@ -8765,7 +8800,7 @@ async function atenderChat(c, ctx) {
             executar: async (nome, entrada)=>{
                 const t0 = Date.now();
                 try {
-                    if (!ativo("chat_consulta_bling") || nome !== CONSULTAR_PRODUTO.name && !FERRAMENTAS_PROPOSTA_BLING.includes(nome) && !FERRAMENTAS_PESQUISA.includes(nome)) throw new Error("Ferramenta não permitida.");
+                    if (!ativo("chat_consulta_bling") || prov === PROVEDOR_FREE && !FERRAMENTAS_FREE.includes(nome) || nome !== CONSULTAR_PRODUTO.name && !FERRAMENTAS_PROPOSTA_BLING.includes(nome) && !FERRAMENTAS_PESQUISA.includes(nome)) throw new Error("Ferramenta não permitida.");
                     if (nome !== CONSULTAR_PRODUTO.name) {
                         const bling = new BlingLeituraReal(armazemSupabase(admin), loja.id, {
                             chaveCifra: chaveiro,
@@ -8782,7 +8817,7 @@ async function atenderChat(c, ctx) {
                             conversaId: null,
                             agente: {
                                 nome: "Nano.ia",
-                                provedor,
+                                provedor: prov,
                                 modelo
                             }
                         };
@@ -8883,48 +8918,105 @@ async function atenderChat(c, ctx) {
             meta.desfecho = r.parada === "bloqueado" ? "bloqueado" : r.parada === "limite_tamanho" ? "truncado" : "incompleto";
             resposta += r.parada === "bloqueado" ? "\n\n⚠ Resposta bloqueada pelo provedor: não foi concluída." : "\n\n⚠ Resposta INCOMPLETA (o limite de tamanho foi atingido ou os passos acabaram). Não trate isto como cadastro nem tarefa concluída: peça de novo em partes menores.";
         }
+    };
+    try {
+        const { data: limitado, error: le } = await admin.rpc("limite_chamada", {
+            p_chave: `chat-ia:${loja.id}:${userId}`,
+            p_max: 20,
+            p_janela_s: 60
+        });
+        if (le || limitado !== true) throw new IaErro(429, "Limite temporário de perguntas.");
+        await rodar(provedor);
     } catch (e) {
-        const livre = iniciouChamadaProvedor ? await tentarFallbackFree({
-            texto: c.texto,
+        let erroFinal = e;
+        let respondidoPeloGratuito = false;
+        let automatico = false;
+        if (provedor !== PROVEDOR_FREE) {
+            try {
+                const { data } = await admin.rpc("ia_free_automatico", {
+                    p_loja: loja.id
+                });
+                automatico = data === true;
+            } catch  {
+                automatico = false;
+            }
+        }
+        if (podeTrocarParaFree({
             provedor,
-            consentimento: c.consentimento_fallback_free === true,
-            anexos: anexos.length,
-            tentativasFerramenta: tentativas.length,
-            textoTransmitido: transmitiuTextoPrincipal,
             erro: e,
-            lojaId: loja.id,
-            get: ctx.get,
-            fetch: ctx.fetch
-        }) : null;
-        if (livre) {
-            status = 200;
-            resposta = `Modo gratuito de contingência (glossário público, sem consulta ao Bling):\n\n${livre.texto}`;
-            tokens += livre.tokens;
-            modelo = livre.modelo ?? "openrouter/free";
-            Object.assign(meta, {
-                desfecho: "contingencia_publica",
-                provedor_efetivo: livre.origem,
-                host_provedor: "openrouter.ai",
-                ferramentas: [],
-                ferramentas_solicitadas: [],
-                tentativas,
-                completa: true,
-                origem: "glossario_publico"
-            });
-            ctx.aoTexto?.(resposta);
-        } else {
-            status = e instanceof IaErro && [
-                400,
-                401,
-                409,
-                429,
-                502,
-                503,
-                504
-            ].includes(e.status) ? e.status : 502;
-            resposta = e instanceof IaErro ? e.message : "Não consegui concluir esta pergunta.";
-            meta.codigo = "turno_falhou";
-            meta.tentativas = tentativas;
+            iniciouChamadaProvedor,
+            automatico,
+            anexos: anexos.length,
+            textoTransmitido: transmitiuTextoPrincipal,
+            propostasCriadas: meta.propostas?.length ?? 0
+        })) {
+            const statusOriginal = e.status;
+            try {
+                tokens = 0;
+                respostaId = undefined;
+                chamadas.length = 0;
+                evidencias.length = 0;
+                tentativas.length = 0;
+                await rodar(PROVEDOR_FREE);
+                resposta = `${avisoTroca(provedor, statusOriginal)}\n\n${resposta}`;
+                Object.assign(meta, {
+                    provedor: PROVEDOR_FREE,
+                    desfecho: meta.desfecho === "ok" ? "contingencia_automatica" : meta.desfecho,
+                    provedor_efetivo: "openrouter-free",
+                    host_provedor: "openrouter.ai",
+                    troca_de: provedor,
+                    troca_motivo: statusOriginal,
+                    modo_free: "automatico"
+                });
+                ctx.aoTexto?.(resposta);
+                respondidoPeloGratuito = true;
+            } catch (e2) {
+                erroFinal = e2;
+            }
+        }
+        if (!respondidoPeloGratuito) {
+            const livre = iniciouChamadaProvedor ? await tentarFallbackFree({
+                texto: c.texto,
+                provedor,
+                consentimento: c.consentimento_fallback_free === true,
+                anexos: anexos.length,
+                tentativasFerramenta: tentativas.length,
+                textoTransmitido: transmitiuTextoPrincipal,
+                erro: erroFinal,
+                lojaId: loja.id,
+                get: ctx.get,
+                fetch: ctx.fetch
+            }) : null;
+            if (livre) {
+                status = 200;
+                resposta = `Modo gratuito de contingência (glossário público, sem consulta ao Bling):\n\n${livre.texto}`;
+                tokens += livre.tokens;
+                modelo = livre.modelo ?? "openrouter/free";
+                Object.assign(meta, {
+                    desfecho: "contingencia_publica",
+                    provedor_efetivo: livre.origem,
+                    host_provedor: "openrouter.ai",
+                    ferramentas: [],
+                    ferramentas_solicitadas: [],
+                    tentativas,
+                    completa: true,
+                    origem: "glossario_publico"
+                });
+                ctx.aoTexto?.(resposta);
+            } else {
+                status = erroFinal instanceof IaErro && [
+                    400,
+                    401,
+                    409,
+                    429,
+                    502,
+                    503,
+                    504
+                ].includes(erroFinal.status) ? erroFinal.status : 502;
+                resposta = erroFinal instanceof IaErro ? erroFinal.message : "Não consegui concluir esta pergunta.";
+                meta.codigo = "turno_falhou";
+                meta.tentativas = tentativas;
+            }
         }
     }
     Object.assign(meta, {
@@ -8957,7 +9049,7 @@ return { FERRAMENTAS_PROPOSTA_BLING: FERRAMENTAS_PROPOSTA_BLING, FERRAMENTAS_PES
 })();
 
 // ---------- supabase/functions/_shared/ia/adaptadores_stream.ts ----------
-const __m57 = (() => {
+const __m58 = (() => {
 const { IaErro: IaErro, temAnexo: temAnexo } = __m8;
 const { urlPublicaSegura: urlPublicaSegura } = __m9;
 const { paradaClaude: paradaClaude, paradaGemini: paradaGemini, paradaOpenAI: paradaOpenAI } = __m7;
@@ -9485,7 +9577,7 @@ return { lerEventosSse: lerEventosSse, chamarClaudeStream: chamarClaudeStream, c
 })();
 
 // ---------- supabase/functions/_shared/assistente/streaming.ts ----------
-const __m58 = (() => {
+const __m59 = (() => {
 const quadro = (evento, dados)=>`event: ${evento}\ndata: ${JSON.stringify(dados)}\n\n`;
 function turnoComStreaming(turno, cors) {
     const enc = new TextEncoder();
@@ -9555,8 +9647,8 @@ const { listarProvedores: listarProvedores, modeloDaChave: modeloDaChave, valida
 const { MSG_SO_LOJISTA: MSG_SO_LOJISTA, podeDecidir: podeDecidir } = __m49;
 const { conteudoComAnexos: conteudoComAnexos, REGRAS_ANEXO: REGRAS_ANEXO, validarAnexos: validarAnexos } = __m50;
 const { atenderChat: atenderChat } = __m51;
-const { ADAPTADORES_STREAM: ADAPTADORES_STREAM } = __m57;
-const { turnoComStreaming: turnoComStreaming } = __m58;
+const { ADAPTADORES_STREAM: ADAPTADORES_STREAM } = __m58;
+const { turnoComStreaming: turnoComStreaming } = __m59;
 const CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
@@ -9631,10 +9723,12 @@ Deno.serve(async (req)=>{
         }
     }
     if (c.acao === "provedores") {
-        const { data, error } = await usuario.from("loja_chaves_ia").select("provedor, ativa, principal, modelo, base_url, limite_mensal_tokens, tokens_mes, mes_ref").eq("loja_id", loja.id);
+        const colunas = "provedor, ativa, principal, modelo, base_url, limite_mensal_tokens, tokens_mes, mes_ref";
+        let r = await usuario.from("loja_chaves_ia").select(`${colunas}, failover`).eq("loja_id", loja.id);
+        if (r.error) r = await usuario.from("loja_chaves_ia").select(colunas).eq("loja_id", loja.id);
         return json({
-            provedores: listarProvedores(data ?? [], !!error),
-            verificado: !error
+            provedores: listarProvedores(r.data ?? [], !!r.error),
+            verificado: !r.error
         });
     }
     if ((c.acao === "decidir" || c.acao === "decidir_imagem") && !await podeDecidir(usuario, loja.id)) return json({

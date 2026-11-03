@@ -1,12 +1,14 @@
 // Metadados públicos; nunca recebe nem devolve o segredo cifrado.
 import { urlPublicaSegura } from "../ia/plugin.ts";
 
-export const PROVEDORES_CHAT = ["compativel_openai", "gemini", "claude"] as const;
+export const PROVEDORES_CHAT = ["compativel_openai", "gemini", "claude", "openrouter_free"] as const;
 export type ProvedorChat = typeof PROVEDORES_CHAT[number];
 export type EstadoProvedor = "disponivel" | "nao_configurado" | "indisponivel";
 export interface ChavePublica {
   provedor: string; ativa: boolean; principal: boolean; modelo: string | null; base_url: string | null;
   limite_mensal_tokens: number | null; tokens_mes: number; mes_ref: string;
+  /** Só o provedor gratuito: assume sozinho quando o provedor escolhido falha. */
+  failover?: boolean;
 }
 
 export function validarProvedor(valor: unknown): ProvedorChat | undefined {
@@ -16,12 +18,13 @@ export function validarProvedor(valor: unknown): ProvedorChat | undefined {
 }
 
 export function modeloDaChave(k: { provedor: string; modelo: string | null }): string {
-  return k.modelo || (k.provedor === "gemini" ? "gemini-2.5-flash" : k.provedor === "claude" ? "claude-sonnet-5-5" : "");
+  return k.modelo || (k.provedor === "gemini" ? "gemini-2.5-flash" : k.provedor === "claude" ? "claude-sonnet-5-5" : k.provedor === "openrouter_free" ? "openrouter/free" : "");
 }
 
 export function nomeProvedor(id: string, base?: string | null): string {
   if (id === "gemini") return "Gemini";
   if (id === "claude") return "Claude";
+  if (id === "openrouter_free") return "Gratuito (OpenRouter)";
   if (!base) return "GPT";
   try {
     const u = new URL(base);
@@ -44,6 +47,7 @@ export function listarProvedores(chaves: ChavePublica[], falha = false, agora = 
         estado = "indisponivel"; motivo = "Limite mensal atingido.";
       }
     }
-    return { id, nome: nomeProvedor(id, k?.base_url), estado, motivo, modelo: k ? modeloDaChave(k) : null, principal: k?.principal === true };
+    return { id, nome: nomeProvedor(id, k?.base_url), estado, motivo, modelo: k ? modeloDaChave(k) : null, principal: k?.principal === true,
+      ...(id === "openrouter_free" ? { modo: (k?.ativa ? (k.failover ? "automatico" : "manual") : "desligado") as "desligado" | "manual" | "automatico" } : {}) };
   });
 }

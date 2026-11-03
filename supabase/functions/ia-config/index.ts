@@ -15,9 +15,10 @@ const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { sta
 const CAPACIDADES = ["consultar_bling", "enriquecer", "imagem", "taxonomia", "consultar_catalogo", "buscar_web"];
 const TIPOS = ["mcp", "api", "llm", "plugin_pull"];
 const RISCOS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-const PROVEDORES = ["claude", "gemini", "compativel_openai"];
+const PROVEDORES = ["claude", "gemini", "compativel_openai", "openrouter_free"];
+const URL_OPENROUTER = "https://openrouter.ai/api/v1";
 // Modelos padrão conferem com a documentação pública na data do código; o lojista pode trocar. Compatível com OpenAI não tem padrão.
-const MODELO_PADRAO: Record<string, string> = { claude: "claude-sonnet-5-5", gemini: "gemini-2.5-flash" };
+const MODELO_PADRAO: Record<string, string> = { claude: "claude-sonnet-5-5", gemini: "gemini-2.5-flash", openrouter_free: "openrouter/free" };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -51,6 +52,7 @@ Deno.serve(async (req) => {
       const base = texto(c.base_url, 300);
       const limite = c.limite_mensal_tokens == null || c.limite_mensal_tokens === "" ? null : Number(c.limite_mensal_tokens);
       if (!PROVEDORES.includes(provedor)) return json({ erro: "Provedor não habilitado." }, 400);
+      if (provedor === "openrouter_free" && !/^sk-or-v1-[A-Za-z0-9_-]{15,}$/.test(chave)) return json({ erro: "Esta chave não é do OpenRouter (começa com sk-or-v1-). Nunca enviamos outra credencial para o OpenRouter." }, 400);
       if (chave.length < (provedor === "claude" ? 20 : 8) || /\s/.test(chave)) return json({ erro: "Confira a chave copiada (sem espaços)." }, 400);
       if (!/^[A-Za-z0-9][A-Za-z0-9._:/-]{2,79}$/.test(modelo)) return json({ erro: provedor === "compativel_openai" ? "Informe o nome do modelo (ex.: o Llama do seu provedor)." : "Nome de modelo inválido." }, 400);
       if (provedor === "compativel_openai" && !urlPublicaSegura(base)) return json({ erro: "Informe o endereço da API em https público, sem porta, usuário nem parâmetros (?...)." }, 400);
@@ -67,7 +69,7 @@ Deno.serve(async (req) => {
       const k = (data as { provedor: string; cifrada: string; modelo: string | null; base_url: string | null }[] | null)?.[0];
       if (!k) return json({ erro: "Nenhuma chave ativa para este provedor. Salve a chave primeiro." }, 409);
       try {
-        const r = await conversar({ provedor: provedor as "claude" | "gemini" | "compativel_openai", baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: k.modelo ?? MODELO_PADRAO[provedor] ?? "", sistema: "Responda apenas: ok", mensagens: [{ role: "user", content: "ping" }], ferramentas: [], executar: async () => null, maxTokens: 16 });
+        const r = await conversar({ provedor: (provedor === "openrouter_free" ? "compativel_openai" : provedor) as "claude" | "gemini" | "compativel_openai", baseUrl: provedor === "openrouter_free" ? URL_OPENROUTER : k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: k.modelo ?? MODELO_PADRAO[provedor] ?? "", sistema: "Responda apenas: ok", mensagens: [{ role: "user", content: "ping" }], ferramentas: [], executar: async () => null, maxTokens: 16 });
         await sb.rpc("ia_registrar_uso", { p_loja: lojaId, p_provedor: provedor, p_tokens: r.tokens });
         return json({ ok: true });
       } catch (e) {
@@ -80,6 +82,15 @@ Deno.serve(async (req) => {
       await sb.rpc("ia_desativar_chave", { p_loja: lojaId, p_provedor: provedor });
       await auditar("ia.chave_removida", { provedor });
       return json({ ok: true });
+    }
+    case "definir_modo_free": {
+      // Modo do provedor gratuito (OpenRouter), sem tocar na chave: desligado | manual (aparece na lista de modelos) | automatico (assume quando o provedor escolhido falha, só leitura).
+      const modo = texto(c.modo, 12);
+      if (!["desligado", "manual", "automatico"].includes(modo)) return json({ erro: "Modo inválido." }, 400);
+      const { data: ok } = await sb.rpc("ia_definir_modo_free", { p_loja: lojaId, p_modo: modo });
+      if (ok !== true) return json({ erro: "Salve a chave do OpenRouter antes de escolher o modo." }, 409);
+      await auditar("ia.modo_free_definido", { modo });
+      return json({ ok: true, modo });
     }
     case "definir_principal": {
       const provedor = texto(c.provedor, 30);
