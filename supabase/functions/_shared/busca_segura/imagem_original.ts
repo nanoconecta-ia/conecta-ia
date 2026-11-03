@@ -9,7 +9,7 @@ export const IMAGEM_MAX_REDIRECTS = 3;
 export const IMAGEM_RESOLUCAO_BAIXA_PX = 600;
 
 export type MimeImagem = "image/jpeg" | "image/png" | "image/webp";
-export interface ImagemInspecionada { sha256: string; bytes: number; mime: MimeImagem; largura_px: number; altura_px: number; url_final: string; avisos: string[] }
+export interface ImagemInspecionada { sha256: string; bytes: number; mime: MimeImagem; largura_px: number; altura_px: number; url_final: string; avisos: string[]; /** só quando `devolverBytes`: o arquivo ORIGINAL, sem alteração, para guardar no Storage */ conteudo?: Uint8Array }
 export type ResultadoImagem = { ok: true; imagem: ImagemInspecionada } | { ok: false; erro: string };
 
 const SUFIXOS_INTERNOS = [".localhost", ".local", ".internal", ".lan", ".home.arpa", ".intranet", ".corp", ".private"];
@@ -81,6 +81,8 @@ export interface OpcoesBaixar {
   /** Resolve o nome para IPs (A/AAAA) para barrar nome que aponta para rede interna. Sem resolvedor, só a checagem estática vale. */
   resolver?: (host: string) => Promise<string[]>;
   maxBytes?: number; tempoMs?: number;
+  /** true = devolve também os bytes originais (para persistir). Padrão false: só metadados. */
+  devolverBytes?: boolean;
 }
 
 async function lerLimitado(r: Response, max: number): Promise<Uint8Array | null> {
@@ -133,7 +135,7 @@ export async function baixarImagemOriginal(entrada: string, op: OpcoesBaixar = {
       if (!info) return { ok: false, erro: "O arquivo não é uma imagem JPEG, PNG ou WebP válida." };
       const avisos: string[] = [];
       if (Math.min(info.largura_px, info.altura_px) < IMAGEM_RESOLUCAO_BAIXA_PX) avisos.push(`Resolução baixa (${info.largura_px}x${info.altura_px}); o ideal é pelo menos ${IMAGEM_RESOLUCAO_BAIXA_PX}px no menor lado.`);
-      return { ok: true, imagem: { sha256: await sha256Hex(bytes), bytes: bytes.length, mime: info.mime, largura_px: info.largura_px, altura_px: info.altura_px, url_final: v.url, avisos } };
+      return { ok: true, imagem: { sha256: await sha256Hex(bytes), bytes: bytes.length, mime: info.mime, largura_px: info.largura_px, altura_px: info.altura_px, url_final: v.url, avisos, ...(op.devolverBytes ? { conteudo: bytes } : {}) } };
     } finally { clearTimeout(timer); }
   }
   return { ok: false, erro: "Redirecionamentos demais; recusada." };

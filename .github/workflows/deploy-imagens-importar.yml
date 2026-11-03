@@ -1,0 +1,82 @@
+name: Deploy pontual do importador de imagens (Supabase conecta-ia)
+
+# Publica a função `imagens-importar` (piloto OC1224 e 80692) a partir do main. NUNCA roda sozinho: só por disparo manual, com a escolha de confirmação,
+# no ambiente protegido (o dono clica em "Review deployments"). Pré-requisito: migração 20261103000004 aplicada (bucket e colunas). Bling só por GET.
+on:
+  workflow_dispatch:
+    inputs:
+      confirmar:
+        description: 'Escolha publicar-imagens-importar para publicar. NUNCA cole token ou senha neste formulário.'
+        required: true
+        type: choice
+        default: nao-publicar
+        options:
+          - nao-publicar
+          - publicar-imagens-importar
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-imagens-importar
+  cancel-in-progress: false
+
+env:
+  PROJECT_REF: dsfzhsrudriqkumtlqwj   # conecta-ia. O ref do NanoShell IA (ptilvkzuhjnqnfydjcly) NUNCA pode ser usado aqui.
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: producao-assistente
+    steps:
+      - name: Travas de segurança
+        env:
+          CONFIRMAR: ${{ inputs.confirmar }}
+          REF_NAME: ${{ github.ref_name }}
+          TOKEN_OK: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+        run: |
+          test "$CONFIRMAR" = "publicar-imagens-importar" || { echo "Escolha de confirmação incorreta"; exit 1; }
+          test "$REF_NAME" = "main" || { echo "Só a partir do main"; exit 1; }
+          test "$PROJECT_REF" = "dsfzhsrudriqkumtlqwj" || exit 1
+          test "$PROJECT_REF" != "ptilvkzuhjnqnfydjcly" || exit 1
+          test "$TOKEN_OK" = "true" || { echo "Segredo SUPABASE_ACCESS_TOKEN ausente"; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      - name: Testes das funções (precisam passar antes de publicar)
+        run: node --experimental-strip-types --test supabase/functions/_shared/*.test.ts supabase/functions/_shared/*/*.test.ts
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+      - name: Conferir que a migração das imagens já está aplicada (leitura pública não basta; confirma pela API do projeto)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions list --project-ref "$PROJECT_REF" -o json > antes.json
+          VERSAO_ANTES=$(jq -r '[.[] | select(.slug=="imagens-importar") | .version] | first // 0' antes.json)
+          echo "VERSAO_ANTES=$VERSAO_ANTES" >> "$GITHUB_ENV"
+          echo "antes versao=$VERSAO_ANTES commit=$GITHUB_SHA"
+      - name: Publicar imagens-importar (com JWT do Supabase)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy imagens-importar --project-ref "$PROJECT_REF" --use-api
+      - name: Versão DEPOIS (ACTIVE e maior)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions list --project-ref "$PROJECT_REF" -o json > depois.json
+          jq -e '.[] | select(.slug=="imagens-importar" and .status=="ACTIVE")' depois.json > /dev/null || { echo "Função não está ACTIVE"; exit 1; }
+          V=$(jq -r '.[] | select(.slug=="imagens-importar") | .version' depois.json)
+          test "$V" -gt "$VERSAO_ANTES" || { echo "A versão não avançou"; exit 1; }
+      - name: Prova de que o endpoint recusa quem não está logado (nenhuma importação é feita aqui)
+        run: |
+          url="https://${PROJECT_REF}.supabase.co/functions/v1/imagens-importar"
+          sem=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url" -H 'content-type: application/json' -d '{}')
+          echo "sem login HTTP $sem"; test "$sem" = "401"
+      - name: Como voltar atrás
+        run: |
+          echo "Rollback: função nova. Tirar do ar: supabase functions delete imagens-importar --project-ref $PROJECT_REF (o dono autoriza). Dados: ver PRODUTO_IMAGENS_ARQUIVO_REVERSAO.sql (imagens importadas só saem com ação consciente)."

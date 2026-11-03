@@ -1058,7 +1058,10 @@ async function baixarImagemOriginal(entrada, op = {}) {
                     largura_px: info.largura_px,
                     altura_px: info.altura_px,
                     url_final: v.url,
-                    avisos
+                    avisos,
+                    ...op.devolverBytes ? {
+                        conteudo: bytes
+                    } : {}
                 }
             };
         } finally{
