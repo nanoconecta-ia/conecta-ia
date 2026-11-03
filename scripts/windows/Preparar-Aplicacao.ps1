@@ -16,7 +16,7 @@
 #>
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true)][ValidateSet('oauth', 'contexto', 'imagens', 'verificar', 'reverter-oauth', 'reverter-contexto', 'reverter-imagens')][string]$Etapa,
+  [Parameter(Mandatory = $true)][ValidateSet('oauth', 'contexto', 'contexto-registrar', 'imagens', 'verificar', 'reverter-oauth', 'reverter-contexto', 'reverter-contexto-registrar', 'reverter-imagens')][string]$Etapa,
   [string]$Repositorio = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 )
 $ErrorActionPreference = 'Stop'
@@ -25,6 +25,8 @@ $RefProibido = 'ptilvkzuhjnqnfydjcly'
 $Mapa = @{
   'oauth'             = 'docs\conector-ia\OAUTH_RECURSO_APLICAR_NO_EDITOR.sql'
   'contexto'          = 'docs\conector-ia\CONTEXTO_SESSOES_APLICAR_NO_EDITOR.sql'
+  'contexto-registrar' = 'docs\conector-ia\CONTEXTO_REGISTRAR_APLICAR_NO_EDITOR.sql'
+  'reverter-contexto-registrar' = 'docs\conector-ia\CONTEXTO_REGISTRAR_REVERSAO.sql'
   'imagens'           = 'docs\conector-ia\PRODUTO_IMAGENS_ARQUIVO_APLICAR_NO_EDITOR.sql'
   'verificar'         = 'docs\conector-ia\VERIFICAR_ESTADO_SOMENTE_LEITURA.sql'
   'reverter-oauth'    = 'docs\conector-ia\OAUTH_RECURSO_REVERSAO.sql'
