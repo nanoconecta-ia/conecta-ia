@@ -6153,6 +6153,7 @@ const ALIASES_ASSISTENTE = {
     bling_propor_categoria: "bling.categorias.preparar_criacao",
     bling_propor_reativar_produto: "bling.produtos.preparar_reativacao",
     bling_propor_ajuste_produto: "bling.produtos.preparar_atualizacao",
+    bling_propor_cadastro_produto: "bling.produtos.preparar_cadastro",
     bling_propor_trocar_categoria: "bling.categorias.preparar_alteracao_lote"
 };
 const ALIASES_PAIR = {
@@ -6202,8 +6203,8 @@ const SISTEMA = [
     "Você pode PROPOR dados novos (enriquecimento, código, aplicação veicular, imagem) com as ferramentas propor_*; toda proposta",
     "exige uma fonte real (URL ou documento) e entra como 'a_confirmar' na fila — nunca marque nada como aprovado sozinho.",
     "Para imagem: use buscar_imagem_web para achar candidatas e só então propor_imagem com a que fizer mais sentido; nunca invente uma URL de imagem.",
-    "No Bling você só PREPARA PROPOSTAS: criar categoria (bling_propor_categoria), trocar a categoria de produtos já aprovada (bling_propor_trocar_categoria), REATIVAR produto excluído (bling_propor_reativar_produto, depois de bling_consultar_produto mostrar que não há outro ativo) e atualizar nome, marca, GTIN, descrições, peso e medidas de produto ativo (bling_propor_ajuste_produto, sempre com fonte). Antes de propor cadastro, procure o código no Bling INCLUSIVE excluídos: se já existir, proponha reativar em vez de duplicar. Quem grava é o executor, depois que o lojista aprova a versão exata na Central de Inteligência, e só com a escrita real ligada. Depois de propor, diga o que ficou pendente e onde aprovar; nunca diga que já gravou.",
-    "Ainda NÃO existe ferramenta para criar produto novo no Bling (do zero), alterar preço, custo, estoque, fornecedor ou dados fiscais, ; a pesquisa técnica textual usa Google Custom Search somente se configurada. Se o lojista pedir isso, diga com clareza que ainda não é possível e o que pode ser feito hoje; não enrole nem finja.",
+    "No Bling você só PREPARA PROPOSTAS: criar categoria (bling_propor_categoria), trocar a categoria de produtos já aprovada (bling_propor_trocar_categoria), REATIVAR produto excluído (bling_propor_reativar_produto, depois de bling_consultar_produto mostrar que não há outro ativo) atualizar nome, marca, GTIN, descrições, peso e medidas de produto ativo (bling_propor_ajuste_produto, sempre com fonte) e CADASTRAR produto novo (bling_propor_cadastro_produto, sempre com fonte; um cadastro novo por vez no piloto). Antes de propor cadastro, procure o código e o GTIN no Bling INCLUSIVE excluídos: se já existir, proponha reativar ou ajustar em vez de duplicar. Quem grava é o executor, depois que o lojista aprova a versão exata na Central de Inteligência, e só com a escrita real ligada. Depois de propor, diga o que ficou pendente e onde aprovar; nunca diga que já gravou.",
+    "Ainda NÃO existe ferramenta para alterar preço de produto existente, custo, estoque, fornecedor ou dados fiscais (no cadastro novo o dado fiscal fica \"a confirmar\" para o contador); a pesquisa técnica textual usa Google Custom Search somente se configurada. Se o lojista pedir isso, diga com clareza que ainda não é possível e o que pode ser feito hoje; não enrole nem finja.",
     "FLUXO PARA SKU: quando o lojista informar um código de peça e pedir ajuste ou enriquecimento, consulte primeiro ver_produto e bling_consultar_produto quando disponíveis. Confira produtos ativos e excluídos para não duplicar. Depois identifique campos faltantes e prepare um resumo único do cadastro atual, possíveis melhorias, fontes e pendências. Não pergunte repetidamente quais campos quer alterar quando a intenção de enriquecer já estiver clara.",
     "PESQUISA E EVIDÊNCIA: consulte apenas ferramentas realmente disponíveis. A busca de imagens não comprova fabricante, OEM, aplicação ou dimensões. Use buscar_dados_tecnicos_web quando configurada; os snippets são pistas, não provas finais de OEM, GTIN ou compatibilidade. Caso falte pesquisa geral, apresente o que foi possível apurar e quais dados exigem fonte externa, sem inventar códigos, GTIN ou peso.",
     "FOTOS REAIS: procure até quatro imagens candidatas do produto e, quando possível, da embalagem, vinculando URL da imagem e página de origem. Priorize fabricante e catálogo verificável; distribuidor pode ser fonte, mas não é necessariamente fabricante. Nunca apresente imagem gerada por IA, similar visual ou foto sem procedência como fotografia confirmada do SKU. Sem evidência de correspondência técnica, mantenha como candidata pendente de revisão.",
@@ -6610,6 +6611,27 @@ const FERRAMENTAS_DO_ASSISTENTE = [
         }
     },
     {
+        name: "bling_propor_cadastro_produto",
+        description: "Prepara a PROPOSTA de CADASTRAR um produto NOVO no Bling (ainda não existe nenhum cadastro com esse código). Antes, confira com bling_consultar_produto que o código/GTIN não existe nem entre excluídos (se existir, proponha reativar ou ajustar). Campos do rascunho: nome (obrigatório, 5 a 120 caracteres), codigo (opcional: sem ele o sistema propõe um SKU CI + 6 dígitos), marca (só com fonte URL externa; nunca IMPORTADO/NACIONAL), gtin (dígito verificador válido), descricao_curta, descricao_complementar, peso_kg, largura_cm, altura_cm, profundidade_cm, categoria_bling_id (de categoria que já existe), preco_venda. Nunca custo, fornecedor, estoque nem dado fiscal. Não grava: o lojista precisa aprovar a versão exata na Central de Inteligência. Piloto: um cadastro novo por vez.",
+        input_schema: {
+            type: "object",
+            properties: {
+                rascunho: {
+                    type: "object",
+                    description: "campo -> valor, ex.: { \"nome\": \"Bomba de óleo HR 2.5 16V\", \"marca\": \"Sabó\", \"gtin\": \"7891000100103\", \"preco_venda\": 899.9 }"
+                },
+                fonte: {
+                    type: "string",
+                    description: "URL ou documento de onde vieram os dados (obrigatório; para a marca precisa ser uma URL externa que a cite)"
+                }
+            },
+            required: [
+                "rascunho",
+                "fonte"
+            ]
+        }
+    },
+    {
         name: "bling_propor_trocar_categoria",
         description: "Prepara a PROPOSTA de trocar a categoria de produtos no Bling, só para SKUs cuja sugestão de categoria JÁ foi aprovada pelo lojista. Não grava: o lojista precisa aprovar.",
         input_schema: {
@@ -6778,6 +6800,7 @@ async function executarFerramenta(nome, entrada, c) {
         case "bling_propor_trocar_categoria":
         case "bling_propor_reativar_produto":
         case "bling_propor_ajuste_produto":
+        case "bling_propor_cadastro_produto":
             {
                 if (!c.conector) return {
                     erro: "O motor de propostas do Bling não está disponível neste ambiente."
@@ -6807,6 +6830,22 @@ async function executarFerramenta(nome, entrada, c) {
                 }, c.conector) : {
                     ok: false,
                     erro: "Informe a fonte (URL ou documento) dos valores; sem fonte não proponho.",
+                    decisao: "negada"
+                } : nome === "bling_propor_cadastro_produto" ? fonteDada ? await despachar("bling.produtos.preparar_cadastro", {
+                    rascunho: e.rascunho,
+                    fontes: [
+                        ...fontes,
+                        /^https?:\/\//i.test(fonteDada) ? {
+                            url: fonteDada,
+                            consultado_em: new Date().toISOString()
+                        } : {
+                            documento: fonteDada,
+                            consultado_em: new Date().toISOString()
+                        }
+                    ]
+                }, c.conector) : {
+                    ok: false,
+                    erro: "Informe a fonte (URL ou documento) dos dados do produto novo; sem fonte não proponho.",
                     decisao: "negada"
                 } : nome === "bling_categorias" ? await despachar("bling.categorias.consultar", {
                     busca: txt(e.busca)
@@ -8341,7 +8380,8 @@ const FERRAMENTAS_PROPOSTA_BLING = [
     "bling_propor_categoria",
     "bling_propor_trocar_categoria",
     "bling_propor_reativar_produto",
-    "bling_propor_ajuste_produto"
+    "bling_propor_ajuste_produto",
+    "bling_propor_cadastro_produto"
 ];
 const FERRAMENTAS_PESQUISA = [
     "buscar_imagem_web",
@@ -8744,7 +8784,7 @@ async function atenderChat(c, ctx) {
             chave: await decifrar(k.cifrada, chaveiro),
             modelo,
             mensagens,
-            sistema: `${SISTEMA}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto e bling_propor_ajuste_produto: nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
+            sistema: `${SISTEMA}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto, bling_propor_ajuste_produto e bling_propor_cadastro_produto (produto novo): nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
             maxPassos: 5,
             maxTokens: 1536,
             aoTexto: ctx.aoTexto ? (delta)=>{
