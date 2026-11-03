@@ -1,6 +1,7 @@
 // Handlers das ferramentas ATIVAS do registro. Cada um recebe a entrada já validada pelo esquema e o contexto da loja.
 // Nenhum handler escreve no Bling: as ferramentas "preparar_*" só montam PROPOSTA; quem escreve é o executor, depois da aprovação.
 import { registrarResumo } from "./atividade.ts";
+import { lerContextoDaLoja } from "../contexto/ler.ts";
 import { baixarImagemOriginal } from "../busca_segura/imagem_original.ts";
 /** Resolvedor DNS do runtime (Deno). Fora dele (testes), fica indefinido e vale só a checagem estática do endereço. */
 const denoDns = (globalThis as { Deno?: { resolveDns?: (h: string, t: string) => Promise<string[]> } }).Deno?.resolveDns;
@@ -162,6 +163,7 @@ async function skuProposto(c: ContextoFerramenta): Promise<{ sku: string } | { e
 }
 
 export const HANDLERS: Record<string, Handler> = {
+  "conecta.contexto.produto_ativo": (_e, c) => lerContextoDaLoja(c.admin as any, c.lojaId),
   "nano.atividade.registrar": (e, c) => registrarResumo(c.admin as any, c.lojaId, (c as { mcpChaveId?: string | null }).mcpChaveId ?? null, e),
   "conecta.catalogo.resumo": (_e, c) => c.dados.resumo(),
   "conecta.catalogo.listar": (e, c) => c.dados.listarProdutos({ apenasNaoPublicados: e.apenas_nao_publicados === true, busca: e.busca, limite: e.limite }),
