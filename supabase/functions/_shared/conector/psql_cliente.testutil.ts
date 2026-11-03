@@ -60,6 +60,7 @@ export function criarPsql(banco: string) {
     private op(c: string, o: string, v: unknown) { this.ondes.push(`${ident(c)} ${o} ${lit(v)}`); return this; }
     eq(c: string, v: unknown) { return this.op(c, "=", v); } neq(c: string, v: unknown) { return this.op(c, "<>", v); }
     ilike(c: string, v: string) { return this.op(c, "ilike", v); }
+    gt(c: string, v: unknown) { return this.op(c, ">", v); }
     is(c: string, v: null) { this.ondes.push(`${ident(c)} is null`); return this; }
     in(c: string, v: unknown[]) { this.ondes.push(`${ident(c)}::text = any(array[${v.map((x) => aspas(String(x))).join(",")}]::text[])`); return this; }
     textSearch(c: string, q: string, o?: { config?: string }) { this.ondes.push(`${ident(c)} @@ websearch_to_tsquery(${aspas(o?.config ?? "portuguese")}, ${aspas(q)})`); return this; }
