@@ -10,6 +10,8 @@ import { gerarFichaSemLLM } from "./ficha_sem_llm.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../ia/ferramentas.ts";
 import { configSearxngOuNulo } from "../ia/searxng.ts";
 import { dadosSupabase } from "../conector/dados.ts";
+import { despachar } from "../conector/despacho.ts";
+import { textoDoContexto, type RespostaContexto } from "../contexto/ler.ts";
 import { BlingLeituraReal } from "../conector/porta_bling.ts";
 import { armazemSupabase } from "../bling_armazem.ts";
 import { conteudoComAnexos, REGRAS_ANEXO, resumoParaRegistro, validarAnexos, type AnexoValido } from "./anexos.ts";
@@ -68,6 +70,17 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   if (c.antes) q = q.or(`criada_em.lt.${c.antes},and(criada_em.eq.${c.antes},id.lt.${c.antes_id})`);
   const { data, error } = await q;
   return error ? resultado({ erro: "Não foi possível ler as mensagens." }, 503) : resultado({ mensagens: (data ?? []).reverse() });
+ }
+ if (c.acao === "chat_contexto_vivo") {
+  // Pergunta estruturada "quais produtos estão selecionados / qual é o produto ativo": resposta DIRETA do banco, sem provedor de IA (funciona com o Gemini no limite).
+  // Passa pelo despachante único (Policy Engine + auditoria); lê só a sessão desta pessoa nesta loja. Não persiste mensagem, não grava nada.
+  if (c.anexos != null || c.conversa_id != null || c.provedor != null) return resultado({ erro: "Consulta de contexto não aceita anexos." }, 400);
+  const conector = { origem: "chat" as const, lojaId: loja.id, userId, dados: dadosSupabase(admin, loja.id), rpc: (fn: string, args: Record<string, unknown>) => admin.rpc(fn, args), admin, conversaId: null, agente: { nome: "Nano.ia (sem IA)", provedor: "nenhum", modelo: "deterministico" } };
+  const r = await despachar("conecta.contexto.produto_ativo", {}, conector as any);
+  const ctxVivo = r.resultado as RespostaContexto | undefined;
+  // "contexto_indisponivel" é um resultado normal (nada compartilhado ou expirado), não uma falha: o despachante o marca como erro, mas a resposta correta é o texto de orientação.
+  if (!ctxVivo || (!r.ok && ctxVivo.disponivel !== false)) return resultado({ erro: "Não foi possível ler o contexto agora." }, 503);
+  return resultado({ resposta: textoDoContexto(ctxVivo), ia: false, contexto: ctxVivo.disponivel ? { versao: ctxVivo.versao, ativo: ctxVivo.produto_ativo?.sku ?? null, selecionados: ctxVivo.selecionados.map((p) => p.sku) } : { disponivel: false }, auditoria_falhou: r.auditoria_falhou === true ? true : undefined });
  }
  if (c.acao === "chat_ficha_produto") {
   // Consulta autenticada e auditada que independe de qualquer chave/provedor LLM.

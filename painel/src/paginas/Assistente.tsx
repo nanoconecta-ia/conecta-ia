@@ -9,6 +9,7 @@ import { Icone } from "../componentes/Icone.tsx";
 import { gravarConsentimento, lerConsentimento } from "../lib/consentimentoEnvio.ts";
 import { consumirPedidoPendente } from "../lib/contextoPagina.ts";
 import { DICA_SEM_IA, falhaDoProvedor, PREFIXO_FICHA, skuEmFoco } from "../lib/recuperacaoSemIa.ts";
+import { perguntaDeContexto } from "../lib/perguntaContexto.ts";
 import { PontosPensando } from "../componentes/PontosPensando.tsx";
 import { MODELOS_ORBE, aplicarOrbe, gravarOrbe, lerOrbe, type ModeloOrbe } from "../lib/orbe.ts";
 import { armazemLocal } from "../lib/tema.ts";
@@ -282,6 +283,16 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
           const checklist = revisao && !d.erro ? "\n\nREVISÃO DE CADASTRO — SEM IA\n• Conferir chassi, motor, ano e fonte técnica da aplicação.\n• Conferir fabricante, marca, OEM, GTIN e códigos cruzados, sem presumir equivalência.\n• Conferir dimensões, peso, imagens, categoria e descrição.\n• Conferir fiscal, preço e estoque somente no ERP autenticado.\n• Deixar campos sem evidência pendentes.\nRascunho de conferência: nenhuma alteração gravada no Bling." : "";
           setMsgs(m => [...m, { de: "ia", texto: String(d.resposta ?? "Consulta sem resultado.") + checklist, evidencias: d.evidencias, simulado: d.simulado }]);
         }
+     } catch (e) { if (lojaAtual.current === origem) setErroHistorico(msgErro(e)); }
+     finally { if (lojaAtual.current === origem) setOcupado(false); }
+     return;
+   }
+   // Pergunta estruturada sobre o contexto vivo (seleção/produto ativo): resposta direta do banco, sem provedor de IA; funciona com o Gemini no limite.
+   if (!repetir && perguntaDeContexto(t) && !ocupado && !administrando && !retentativa && !anexos.length) {
+     const origem = loja.id; setMsgs(m => [...m, { de: "eu", texto: t }]); setTexto(""); setOcupado(true); setErroHistorico("");
+     try {
+       const d = await chamada("chat_contexto_vivo", {});
+       if (lojaAtual.current === origem) setMsgs(m => [...m, { de: "ia", texto: String(d.resposta ?? "Contexto indisponível.") }]);
      } catch (e) { if (lojaAtual.current === origem) setErroHistorico(msgErro(e)); }
      finally { if (lojaAtual.current === origem) setOcupado(false); }
      return;

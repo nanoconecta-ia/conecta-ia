@@ -2052,8 +2052,10 @@ return { SELECAO_MAX: SELECAO_MAX, TTL_MS: TTL_MS, ACOES_CLIENTE: ACOES_CLIENTE,
 // ---------- supabase/functions/_shared/contexto/ler.ts ----------
 const __m22 = (() => {
 const { SELECAO_MAX: SELECAO_MAX } = __m23;
-async function lerContextoDaLoja(admin, lojaId, agora = new Date()) {
-    const { data, error } = await admin.from("contexto_sessoes").select("origem, produto_ativo_id, produtos_selecionados, versao, atualizado_em").eq("loja_id", lojaId).gt("expira_em", agora.toISOString()).order("atualizado_em", {
+async function lerContextoDaLoja(admin, lojaId, agora = new Date(), principal) {
+    let q = admin.from("contexto_sessoes").select("origem, produto_ativo_id, produtos_selecionados, versao, atualizado_em").eq("loja_id", lojaId);
+    if (principal) q = q.eq("principal", principal);
+    const { data, error } = await q.gt("expira_em", agora.toISOString()).order("atualizado_em", {
         ascending: false
     }).limit(1);
     const linha = Array.isArray(data) ? data[0] : null;
@@ -2091,8 +2093,17 @@ async function lerContextoDaLoja(admin, lojaId, agora = new Date()) {
         aviso: "Contexto efêmero (30 min) escolhido pelo lojista no painel. Use o SKU devolvido nas ferramentas de leitura; não altera nada."
     };
 }
+function textoDoContexto(r) {
+    if (!r.disponivel) return "Não há produto aberto nem selecionado compartilhado com o Nano agora (ou o contexto expirou, após 30 minutos). No Catálogo, ligue \"Compartilhar a seleção com o Nano\" e selecione o produto. Não vou adivinhar o SKU.";
+    const linha = (p)=>`• ${p.sku ?? "sem SKU"} — ${p.nome ?? "sem nome"}${p.marca ? ` (${p.marca})` : ""}`;
+    const partes = [];
+    if (r.produto_ativo) partes.push(`Produto ativo:\n${linha(r.produto_ativo)}`);
+    if (r.selecionados.length) partes.push(`Selecionados (${r.selecionados.length}):\n${r.selecionados.map(linha).join("\n")}`);
+    if (!partes.length) partes.push("O compartilhamento está ligado, mas nenhum produto está selecionado agora.");
+    return `${partes.join("\n\n")}\n\nResposta direta do banco, sem IA (versão ${r.versao}, origem ${r.origem}).`;
+}
 
-return { lerContextoDaLoja: lerContextoDaLoja };
+return { lerContextoDaLoja: lerContextoDaLoja, textoDoContexto: textoDoContexto };
 })();
 
 // ---------- supabase/functions/_shared/cadastro/regras_marca.ts ----------
@@ -5213,7 +5224,7 @@ async function skuProposto(c) {
     };
 }
 const HANDLERS = {
-    "conecta.contexto.produto_ativo": (_e, c)=>lerContextoDaLoja(c.admin, c.lojaId),
+    "conecta.contexto.produto_ativo": (_e, c)=>lerContextoDaLoja(c.admin, c.lojaId, new Date(), c.origem === "chat" && c.userId ? `u:${c.userId}` : undefined),
     "nano.atividade.registrar": (e, c)=>registrarResumo(c.admin, c.lojaId, c.mcpChaveId ?? null, e),
     "conecta.catalogo.resumo": (_e, c)=>c.dados.resumo(),
     "conecta.catalogo.listar": (e, c)=>c.dados.listarProdutos({
@@ -8319,6 +8330,8 @@ const { gerarFichaSemLLM: gerarFichaSemLLM } = __m56;
 const { executarFerramenta: executarFerramenta, FERRAMENTAS: FERRAMENTAS, SISTEMA: SISTEMA } = __m10;
 const { configSearxngOuNulo: configSearxngOuNulo } = __m18;
 const { dadosSupabase: dadosSupabase } = __m43;
+const { despachar: despachar } = __m19;
+const { textoDoContexto: textoDoContexto } = __m22;
 const { BlingLeituraReal: BlingLeituraReal } = __m44;
 const { armazemSupabase: armazemSupabase } = __m47;
 const { conteudoComAnexos: conteudoComAnexos, REGRAS_ANEXO: REGRAS_ANEXO, resumoParaRegistro: resumoParaRegistro, validarAnexos: validarAnexos } = __m50;
@@ -8440,6 +8453,42 @@ async function atenderChat(c, ctx) {
             erro: "Não foi possível ler as mensagens."
         }, 503) : resultado({
             mensagens: (data ?? []).reverse()
+        });
+    }
+    if (c.acao === "chat_contexto_vivo") {
+        if (c.anexos != null || c.conversa_id != null || c.provedor != null) return resultado({
+            erro: "Consulta de contexto não aceita anexos."
+        }, 400);
+        const conector = {
+            origem: "chat",
+            lojaId: loja.id,
+            userId,
+            dados: dadosSupabase(admin, loja.id),
+            rpc: (fn, args)=>admin.rpc(fn, args),
+            admin,
+            conversaId: null,
+            agente: {
+                nome: "Nano.ia (sem IA)",
+                provedor: "nenhum",
+                modelo: "deterministico"
+            }
+        };
+        const r = await despachar("conecta.contexto.produto_ativo", {}, conector);
+        const ctxVivo = r.resultado;
+        if (!ctxVivo || !r.ok && ctxVivo.disponivel !== false) return resultado({
+            erro: "Não foi possível ler o contexto agora."
+        }, 503);
+        return resultado({
+            resposta: textoDoContexto(ctxVivo),
+            ia: false,
+            contexto: ctxVivo.disponivel ? {
+                versao: ctxVivo.versao,
+                ativo: ctxVivo.produto_ativo?.sku ?? null,
+                selecionados: ctxVivo.selecionados.map((p)=>p.sku)
+            } : {
+                disponivel: false
+            },
+            auditoria_falhou: r.auditoria_falhou === true ? true : undefined
         });
     }
     if (c.acao === "chat_ficha_produto") {
