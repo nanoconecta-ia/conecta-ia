@@ -66,6 +66,7 @@ const ESCOPOS = [
     "campanhas:propor",
     "aprovacoes:ler",
     "tarefas:ler",
+    "contexto:registrar",
     "mcp:leitura",
     "mcp:propor"
 ];
@@ -80,6 +81,7 @@ const ROTULOS = {
     "campanhas:propor": "Sugerir campanhas e orçamentos",
     "aprovacoes:ler": "Ver quais aprovações estão pendentes",
     "tarefas:ler": "Ver o andamento das tarefas que ele pediu",
+    "contexto:registrar": "Informar ao Nano qual produto está aberto na tela (some em 30 min; não altera produto nem o ERP)",
     "mcp:leitura": "Consultar produtos, taxonomia e códigos da sua loja (não altera nada)",
     "mcp:propor": "Preparar propostas “a confirmar” (nada é aprovado nem publicado sem você)"
 };
@@ -1202,6 +1204,48 @@ const FERRAMENTAS = [
         executar: async (s, a, d)=>await d.obterProduto(s.loja_id, a.sku) ?? {
                 erro: "Produto não encontrado nesta loja."
             }
+    },
+    {
+        nome: "conecta.set_active_product",
+        escopo: "contexto:registrar",
+        somenteLeitura: false,
+        descricao: "Informa qual produto está ABERTO na tela do ERP (pelo SKU lido da tela), para o Nano saber de qual produto o lojista fala sem digitar o SKU. Contexto efêmero de 30 minutos; não altera produto nem o ERP.",
+        esquema: {
+            obrig: [
+                "sku"
+            ],
+            props: {
+                sku: {
+                    tipo: "string",
+                    max: 80
+                },
+                acao: {
+                    tipo: "string",
+                    max: 10,
+                    formato: "enum",
+                    valores: [
+                        "aberto",
+                        "fechado"
+                    ]
+                }
+            }
+        },
+        inputSchema: js({
+            sku: {
+                type: "string",
+                maxLength: 80
+            },
+            acao: {
+                type: "string",
+                enum: [
+                    "aberto",
+                    "fechado"
+                ]
+            }
+        }, [
+            "sku"
+        ]),
+        executar: (s, a, d)=>d.registrarContexto(s.loja_id, s.usuario_id, a.sku, a.acao === "fechado" ? "fechado" : "aberto")
     },
     {
         nome: "conecta.propose_enrichment",
@@ -2920,6 +2964,25 @@ function dadosSupabase(admin, agora = ()=>new Date(), bling) {
                 itens_aprovados: count ?? 0,
                 faltando_para_publicar: pend?.faltando ?? falta,
                 automacao_pausada: pend?.automacao_pausada ?? false
+            };
+        },
+        async registrarContexto (loja, usuario, sku, acao) {
+            const { data, error } = await admin.rpc("contexto_registrar_extensao", {
+                p_loja: loja,
+                p_user: usuario,
+                p_sku: sku,
+                p_acao: acao
+            });
+            if (error || !data) return {
+                erro: "Não foi possível registrar o contexto agora."
+            };
+            const r = data;
+            return r.ok ? {
+                ok: true,
+                versao: r.versao,
+                aviso: "Contexto compartilhado com o Nano por 30 minutos. Nada foi alterado no produto nem no ERP."
+            } : {
+                erro: r.erro === "produto_nao_encontrado" ? "Produto não encontrado nesta loja." : "Contexto não registrado."
             };
         },
         async skuParaId (loja, sku) {

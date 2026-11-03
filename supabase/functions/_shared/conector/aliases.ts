@@ -48,6 +48,7 @@ export const ALIASES_PAIR: Readonly<Record<string, string | null>> = {
   "conecta.propose_banner": null,
   "conecta.get_pending_approvals": null,
   "conecta.get_task_status": null,
+  "conecta.set_active_product": null, // ponte ERP: grava só o contexto efêmero (qual produto está aberto); sem contrato no registro porque não é leitura nem proposta
   // Nano Guardião, fase 3 (leitura dos valores já aprovados por SKU): contrato no registro na C2.
   "conecta.get_validated_fields": null,
 };

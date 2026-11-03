@@ -49,6 +49,13 @@ export function dadosSupabase(admin: AdminRpc, agora: () => Date = () => new Dat
       const { count } = await admin.from("produto_enriquecimento").select("id", { count: "exact", head: true }).eq("loja_id", loja).eq("produto_id", id).eq("status", "aprovado");
       return { ...resto, itens_aprovados: count ?? 0, faltando_para_publicar: pend?.faltando ?? falta, automacao_pausada: pend?.automacao_pausada ?? false };
     },
+    async registrarContexto(loja, usuario, sku, acao) {
+      // A função do banco resolve o SKU DENTRO da loja da sessão e grava como a pessoa que aprovou o pareamento. Falha fechada, sem vazar erro interno.
+      const { data, error } = await admin.rpc("contexto_registrar_extensao", { p_loja: loja, p_user: usuario, p_sku: sku, p_acao: acao });
+      if (error || !data) return { erro: "Não foi possível registrar o contexto agora." };
+      const r = data as { ok?: boolean; erro?: string; versao?: number };
+      return r.ok ? { ok: true, versao: r.versao, aviso: "Contexto compartilhado com o Nano por 30 minutos. Nada foi alterado no produto nem no ERP." } : { erro: r.erro === "produto_nao_encontrado" ? "Produto não encontrado nesta loja." : "Contexto não registrado." };
+    },
     async skuParaId(loja, sku) {
       const { data } = await admin.from("produtos").select("id").eq("loja_id", loja).eq("sku", sku).maybeSingle();
       return data?.id ?? null;
