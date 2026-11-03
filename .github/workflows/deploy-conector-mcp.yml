@@ -83,8 +83,9 @@ jobs:
           ruim=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url" -H 'content-type: application/json' -H 'authorization: Bearer chave-invalida' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
           get=$(curl -s -o /dev/null -w '%{http_code}' -X GET "$url")
           nav=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url" -H 'origin: https://exemplo.com' -H 'content-type: application/json' -d '{}')
-          echo "sem chave HTTP $sem | chave inválida HTTP $ruim | GET HTTP $get | com Origin de navegador HTTP $nav"
-          test "$sem" = "401" && test "$ruim" = "401" && test "$get" = "405" && test "$nav" = "403"
+          meta=$(curl -s -o /dev/null -w '%{http_code}' "$url/.well-known/oauth-protected-resource")
+          echo "sem chave HTTP $sem | chave inválida HTTP $ruim | GET HTTP $get | com Origin de navegador HTTP $nav | descoberta OAuth HTTP $meta"
+          test "$sem" = "401" && test "$ruim" = "401" && test "$get" = "405" && test "$nav" = "403" && test "$meta" = "200"
       - name: Como voltar atrás
         run: |
           echo "Rollback: função nova, sem dado a desfazer. Para tirar do ar: supabase functions delete conector-mcp --project-ref $PROJECT_REF (o dono autoriza)."
