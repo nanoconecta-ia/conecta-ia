@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/conecta-gateway/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "4b7902cde443e4086442edb62c25bc3c920b1aa6857a913d96234369e3187dcd",
+  "artefato_sha256": "563400a45f651a15ac6997730fe56e126436f384dcdf3ab7d71fbaa4639e31f4",
   "fontes": [
     {
       "path": "supabase/functions/_shared/ia/reducao.ts",
@@ -10,7 +10,7 @@
     },
     {
       "path": "supabase/functions/_shared/pair/escopos.ts",
-      "sha256": "69f86227f668748c81fc1eb288b12187459a14766bdff4e43566212f90585b7e"
+      "sha256": "48031158e5fdd3bc7f5a768998a4d8543ae7dbd223752ff68531c6f4d5aff8d2"
     },
     {
       "path": "supabase/functions/_shared/estado.ts",
@@ -38,7 +38,7 @@
     },
     {
       "path": "supabase/functions/_shared/pair/gateway.ts",
-      "sha256": "644459a32696c73aafde0327a078cf32a7ad3299499aa075d0e7ba0e9c1bd428"
+      "sha256": "796c9e56270fae48e67f2f775a95e560e6825c31bbdfbf6d7b23171ddddf0e39"
     },
     {
       "path": "supabase/functions/_shared/bling_ferramentas.ts",
@@ -70,7 +70,7 @@
     },
     {
       "path": "supabase/functions/_shared/pair/gateway_dados.ts",
-      "sha256": "badd24504e7084787e3def7db1dfa6537c39d961790100d9b62ed4625542d8a2"
+      "sha256": "2004eee57370c4846b54c0bfbc3776df866dda382a2b97c11d3f455f17d204ba"
     },
     {
       "path": "supabase/functions/_shared/plataforma.ts",

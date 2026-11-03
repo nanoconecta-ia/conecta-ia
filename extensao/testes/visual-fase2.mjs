@@ -76,7 +76,7 @@ try {
     await esp.getByRole('button', { name: 'Enviar proposta' }).click();
     await esp.getByText(/Proposta enviada/).waitFor();
     const iniciar = chamadas.find((x) => x.corpo.acao === 'iniciar');
-    assert.equal(iniciar.corpo.tipo, 'navegador'); assert.deepEqual(iniciar.corpo.escopos, ['produtos:ler', 'enriquecimento:propor']);
+    assert.equal(iniciar.corpo.tipo, 'navegador'); assert.deepEqual(iniciar.corpo.escopos, ['produtos:ler', 'enriquecimento:propor', 'contexto:registrar']);
     const gw = chamadas.filter((x) => x.caminho.endsWith('/conecta-gateway'));
     assert.ok(gw.every((x) => /^Bearer [A-Za-z0-9_-]{43}\.S{43}$/.test(x.auth)), `${r}: token <metade>.<sal> em toda chamada`);
     assert.ok(gw.every((x) => !('loja_id' in (x.corpo.params?.arguments ?? {}))), `${r}: nunca manda loja_id (a sessão decide)`);

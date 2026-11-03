@@ -3,6 +3,8 @@
 export const ESCOPOS = [
   "produtos:ler", "bling:consultar", "enriquecimento:propor", "banners:propor", "categorias:propor", "paginas:propor",
   "catalogo:propor", "campanhas:propor", "aprovacoes:ler", "tarefas:ler",
+  // Contexto Vivo: a extensão informa QUAL produto está aberto na tela do ERP (contexto efêmero de 30 min). Não altera produto nem ERP.
+  "contexto:registrar",
   // Recurso conector-mcp (só valem para ele; os de cima só para o conecta-gateway). Nenhum aprova, executa ou administra.
   "mcp:leitura", "mcp:propor",
 ] as const;
@@ -19,6 +21,7 @@ export const ROTULOS: Record<Escopo, string> = {
   "campanhas:propor": "Sugerir campanhas e orçamentos",
   "aprovacoes:ler": "Ver quais aprovações estão pendentes",
   "tarefas:ler": "Ver o andamento das tarefas que ele pediu",
+  "contexto:registrar": "Informar ao Nano qual produto está aberto na tela (some em 30 min; não altera produto nem o ERP)",
   "mcp:leitura": "Consultar produtos, taxonomia e códigos da sua loja (não altera nada)",
   "mcp:propor": "Preparar propostas “a confirmar” (nada é aprovado nem publicado sem você)",
 };

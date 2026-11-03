@@ -7,7 +7,7 @@ export const URL_GATEWAY = `${SUPABASE_URL}/functions/v1/conecta-gateway`;
 // Mesma lista de supabase/functions/_shared/pair/escopos.ts e de private.pair_escopos_validos() (pair.test.ts confere).
 export const ESCOPOS = [
   "produtos:ler", "bling:consultar", "enriquecimento:propor", "banners:propor", "categorias:propor", "paginas:propor",
-  "catalogo:propor", "campanhas:propor", "aprovacoes:ler", "tarefas:ler",
+  "catalogo:propor", "campanhas:propor", "aprovacoes:ler", "tarefas:ler", "contexto:registrar",
   "mcp:leitura", "mcp:propor",
 ] as const;
 export const ROTULOS_ESCOPO: Record<string, string> = {
@@ -21,6 +21,7 @@ export const ROTULOS_ESCOPO: Record<string, string> = {
   "campanhas:propor": "Sugerir campanhas e orçamentos",
   "aprovacoes:ler": "Ver quais aprovações estão pendentes",
   "tarefas:ler": "Ver o andamento das tarefas que ele pediu",
+  "contexto:registrar": "Informar ao Nano qual produto está aberto na tela (some em 30 min; não altera produto nem o ERP)",
   "mcp:leitura": "Consultar produtos, taxonomia e códigos da sua loja (não altera nada)",
   "mcp:propor": "Preparar propostas “a confirmar” (nada é aprovado nem publicado sem você)",
 };

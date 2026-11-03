@@ -9,12 +9,15 @@ import { sugerir } from "./sugestoes.ts";
 import { estruturaParaRegistro, type Leitura } from "./registro.ts";
 import { chamarFerramenta, consultarPareamento, encerrarPareamento, iniciarPareamento, SessaoExpirada, tokenCompleto, type Desafio } from "./pareamento.ts";
 import { compararComEspelho, montarProposta, PROPONIVEIS, type ProdutoEspelho } from "./espelho.ts";
+import { publicarContexto, skuUsavel, type EstadoContexto } from "./contexto.ts";
 import { conferido, planejarPreenchimento, type ItemPreenchimento, type ValorAprovado } from "./preenchimento.ts";
 import type { AlvoCampo, ResultadoPreencher } from "./leitor-dom.ts";
 
 /** Tudo que depende do navegador fica aqui, para o teste visual rodar o painel real sem Chrome. */
 export interface Ambiente {
   lerAba(): Promise<Leitura | { erro: string }>;
+  /** Leitura periódica para o Contexto Vivo: NUNCA pede permissão nem abre diálogo; sem permissão prévia do site, devolve erro. */
+  lerAbaSilenciosa(): Promise<Leitura | { erro: string }>;
   abrirAba(url: string): void;
   guardar(v: Conexao | null): Promise<void>;
   carregar(): Promise<Conexao | null>;
@@ -31,6 +34,10 @@ let amb: Ambiente;
 let conexao: Conexao | null = null;
 let ultima: { leitura: Leitura; r: Reconhecimento } | null = null;
 let pareando = false;
+let ctx: EstadoContexto = { sku: null, mensagem: "" };
+let ctxLigado = false;
+let ctxUltimoSku: string | null = null;
+let ctxTimer: ReturnType<typeof setInterval> | null = null;
 
 // ---------------------------------------------------------------------------------------------- conexão com a loja
 function mostrarConexao(): void {
@@ -47,7 +54,7 @@ async function conectar(): Promise<void> {
   try { d = await iniciarPareamento("Nano.IA Guardião (navegador)"); }
   catch (e) { pareando = false; mostrarConexao(); $("erro").textContent = (e as Error).message; return; }
   el.innerHTML = `<p class="estado"><span class="ponto atencao"></span>Aguardando sua aprovação</p>
-    <p class="aviso">Abra a aprovação no painel do Conecta.IA e confira o código <b class="codigo">${esc(d.verificacao)}</b>. Permissões pedidas: ler produtos e <b>propor</b> (nunca aprovar nem gravar no ERP).</p>
+    <p class="aviso">Abra a aprovação no painel do Conecta.IA e confira o código <b class="codigo">${esc(d.verificacao)}</b>. Permissões pedidas: ler produtos, <b>propor</b> e informar qual produto está aberto (nunca aprovar nem gravar no ERP).</p>
     <button id="abrir-aprovacao" type="button">Abrir aprovação</button>`;
   $("abrir-aprovacao").addEventListener("click", () => amb.abrirAba(d.url));
   const limite = Date.parse(d.expira_em) || Date.now() + 120_000;
@@ -66,6 +73,7 @@ async function conectar(): Promise<void> {
 
 async function desconectar(): Promise<void> {
   if (conexao) await encerrarPareamento(conexao.token);
+  ligarContexto(false); ($("compartilhar-contexto") as HTMLInputElement).checked = false;
   conexao = null; await amb.guardar(null); $("espelho").innerHTML = ""; mostrarConexao(); if (ultima) mostrar(ultima.leitura);
 }
 
@@ -168,6 +176,26 @@ function formProposta(li: HTMLElement, canonico: string, inicial: { valor?: stri
   });
 }
 
+// ---------------------------------------------------------------------------------------------- Contexto Vivo (produto aberto no ERP → Nano)
+function mostrarContexto(): void { $("ctx-status").textContent = ctxLigado ? (ctx.mensagem || "Compartilhamento ligado: aguardando um cadastro de produto na tela.") : ""; }
+async function atualizarContexto(l: Leitura | { erro: string }): Promise<void> {
+  if (!ctxLigado || !conexao) return;
+  const atual = "erro" in l ? null : (() => { const r = reconhecer(l.campos, MAPA_PRODUTO_BLING); return r.estado === "reconhecida" ? skuUsavel(skuDaTela(r)) : null; })();
+  if ("erro" in l && l.erro && !/permiss/i.test(l.erro)) return; // falha de leitura passageira não fecha o contexto
+  ctx = await publicarContexto(ctx, atual, (nome, args) => comSessao((t) => chamarFerramenta(t, nome, args)));
+  ctxUltimoSku = ctx.sku;
+  mostrarContexto();
+}
+function ligarContexto(ligar: boolean): void {
+  ctxLigado = ligar; ctx = { sku: null, mensagem: "" };
+  if (ctxTimer) { clearInterval(ctxTimer); ctxTimer = null; }
+  if (ligar) {
+    const ciclo = () => void amb.lerAbaSilenciosa().then(atualizarContexto).catch(() => { /* sem aba legível agora */ });
+    ciclo(); ctxTimer = setInterval(ciclo, 4000);
+  } else if (conexao && ctxUltimoSku) { const sku = ctxUltimoSku; ctxUltimoSku = null; void comSessao((t) => chamarFerramenta(t, "conecta.set_active_product", { sku, acao: "fechado" })).catch(() => undefined); }
+  mostrarContexto();
+}
+
 /** Monta o painel a partir de uma leitura. */
 export function mostrar(leitura: Leitura): void {
   const r = reconhecer(leitura.campos, MAPA_PRODUTO_BLING);
@@ -201,7 +229,8 @@ export async function iniciar(a: Ambiente): Promise<void> {
   conexao = await amb.carregar();
   if (conexao && Date.parse(conexao.expira_em) < Date.now()) { conexao = null; await amb.guardar(null); }
   mostrarConexao();
-  $("ler").addEventListener("click", () => { $("erro").textContent = ""; void amb.lerAba().then((l) => { if ("erro" in l) $("erro").textContent = l.erro; else mostrar(l); }).catch(() => { $("erro").textContent = "Não consegui ler esta página."; }); });
+  $("ler").addEventListener("click", () => { $("erro").textContent = ""; void amb.lerAba().then((l) => { if ("erro" in l) $("erro").textContent = l.erro; else { mostrar(l); void atualizarContexto(l); } }).catch(() => { $("erro").textContent = "Não consegui ler esta página."; }); });
+  $("compartilhar-contexto").addEventListener("change", (e) => { const caixa = e.target as HTMLInputElement; if (caixa.checked && !conexao) { caixa.checked = false; $("erro").textContent = "Conecte à loja primeiro para compartilhar o produto aberto."; return; } ligarContexto(caixa.checked); });
   $("registrar").addEventListener("click", () => { if (ultima) amb.baixar(`nano-guardiao-tela-${Date.now()}.json`, JSON.stringify(estruturaParaRegistro(ultima.leitura, ultima.r), null, 2)); });
 }
 
@@ -215,6 +244,15 @@ const ambienteChrome: Ambiente = {
     await chrome.scripting.executeScript({ target: { tabId: aba.id }, files: ["conteudo.js"] });
     const [res] = await chrome.scripting.executeScript({ target: { tabId: aba.id }, func: () => window.__nanoGuardiaoLer?.() ?? null });
     return (res?.result as Leitura | null) ?? { erro: "Não consegui ler esta página." };
+  },
+  async lerAbaSilenciosa() {
+    const [aba] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!aba?.id || !aba.url || !/^https:\/\//.test(aba.url)) return { erro: "" };
+    const origem = new URL(aba.url).origin;
+    if (!(await chrome.permissions.contains({ origins: [`${origem}/*`] }))) return { erro: "Sem permissão prévia para este site (use Ler esta tela uma vez)." };
+    await chrome.scripting.executeScript({ target: { tabId: aba.id }, files: ["conteudo.js"] });
+    const [res] = await chrome.scripting.executeScript({ target: { tabId: aba.id }, func: () => window.__nanoGuardiaoLer?.() ?? null });
+    return (res?.result as Leitura | null) ?? { erro: "" };
   },
   abrirAba: (url) => { void chrome.tabs.create({ url }); },
   // Sessão do navegador: o token some ao fechar o navegador (nunca vai para disco nem para sincronização).

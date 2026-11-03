@@ -7,6 +7,7 @@ import { criarPsql } from "./psql_cliente.testutil.ts";
 import { atenderChat } from "../assistente/chat.ts";
 import { perguntaPublica } from "../assistente/fallback_free.ts";
 import { textoDoContexto } from "../contexto/ler.ts";
+import { dadosSupabase as dadosDoGateway } from "../pair/gateway_dados.ts";
 
 const BANCO = process.env.CONECTOR_TEST_DB;
 const skip = BANCO ? false : "defina CONECTOR_TEST_DB (veja supabase/tests/rodar_aceitacao.sh)";
@@ -58,6 +59,24 @@ test("auditoria: cada leitura passa pelo despachante e é registrada sem dado si
   assert.ok(Number(n) >= 3, `esperava ao menos 3 registros, havia ${n}`);
   const sigiloso = db.sql(`select count(*) from public.agente_chamadas_ferramenta where loja_id = '${LA}' and ferramenta = 'conecta.contexto.produto_ativo' and (saida::text ~* '(custo|fornecedor|ncm|cest|cfop|cpf|cnpj|token|senha)')`);
   assert.equal(sigiloso, "0");
+});
+test("PONTE BLING: a extensão informa o SKU aberto na tela do ERP e o chat do Nano responde sem digitar SKU, sem Gemini", { skip }, async () => {
+  const dados = dadosDoGateway(db as never);
+  // como o gateway faz: loja e pessoa vêm da SESSÃO de pareamento (aprovada por UA); o SKU vem da tela
+  const r = await dados.registrarContexto(LA, UA, "CHAT-OC1224", "aberto") as { ok?: boolean; versao?: number };
+  assert.equal(r.ok, true);
+  assert.equal(db.sql(`select origem from public.contexto_sessoes where loja_id = '${LA}' and principal = 'u:${UA}'`), "bling-ui");
+  const t = String(((await perguntarAoChat(LA, UA)).corpo as any).resposta);
+  assert.match(t, /Produto ativo:\n• CHAT-OC1224 — Filtro de óleo \(Marca X\)/); assert.match(t, /origem bling-ui/);
+  assert.match(String(((await perguntarAoChat(LA, UB)).corpo as any).resposta), /Não há produto/, "outra pessoa não vê");
+  assert.match(String(((await perguntarAoChat(LB, UB)).corpo as any).resposta), /Não há produto/, "outra loja não vê");
+  // SKU de outra loja / inexistente nunca grava
+  assert.deepEqual(await dados.registrarContexto(LB, UB, "CHAT-OC1224", "aberto"), { erro: "Produto não encontrado nesta loja." });
+  // trocar de produto na tela do Bling e fechar o anterior não apaga o atual
+  await dados.registrarContexto(LA, UA, "CHAT-80692", "aberto"); await dados.registrarContexto(LA, UA, "CHAT-OC1224", "fechado");
+  assert.match(String(((await perguntarAoChat(LA, UA)).corpo as any).resposta), /Produto ativo:\n• CHAT-80692/);
+  await dados.registrarContexto(LA, UA, "CHAT-80692", "fechado");
+  assert.match(String(((await perguntarAoChat(LA, UA)).corpo as any).resposta), /nenhum produto está selecionado|Não há produto/);
 });
 test("contexto expirado: indisponível", { skip }, async () => {
   db.sql(`update public.contexto_sessoes set expira_em = now() - interval '1 minute' where loja_id = '${LA}'`);

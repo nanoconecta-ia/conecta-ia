@@ -51,6 +51,8 @@ export interface Dados {
   statusTarefa(loja: string, id: string): Promise<unknown | null>;
   /** Nano Guardião (fase 3): valores JÁ APROVADOS na Fila para o SKU (lista fechada de campos; nunca fiscal, custo ou preço). */
   camposAprovados(loja: string, sku: string): Promise<unknown | null>;
+  /** Contexto Vivo (ponte ERP): o SKU vem da tela aberta no ERP; o servidor resolve o produto NA LOJA da sessão e grava como a pessoa que aprovou a sessão. Nunca altera produto nem ERP. */
+  registrarContexto(loja: string, usuario: string, sku: string, acao: "aberto" | "fechado"): Promise<unknown>;
 }
 export interface Portas {
   validar(tokenHash: string, salHash: string): Promise<Sessao | null>;
@@ -150,6 +152,13 @@ export const FERRAMENTAS: readonly Ferramenta[] = [
     esquema: { obrig: ["sku"], props: { sku: { tipo: "string", max: 80 } } },
     inputSchema: js({ sku: { type: "string", maxLength: 80 } }, ["sku"]),
     executar: async (s, a, d) => (await d.obterProduto(s.loja_id, a.sku as string)) ?? { erro: "Produto não encontrado nesta loja." },
+  },
+  {
+    nome: "conecta.set_active_product", escopo: "contexto:registrar", somenteLeitura: false,
+    descricao: "Informa qual produto está ABERTO na tela do ERP (pelo SKU lido da tela), para o Nano saber de qual produto o lojista fala sem digitar o SKU. Contexto efêmero de 30 minutos; não altera produto nem o ERP.",
+    esquema: { obrig: ["sku"], props: { sku: { tipo: "string", max: 80 }, acao: { tipo: "string", max: 10, formato: "enum", valores: ["aberto", "fechado"] } } },
+    inputSchema: js({ sku: { type: "string", maxLength: 80 }, acao: { type: "string", enum: ["aberto", "fechado"] } }, ["sku"]),
+    executar: (s, a, d) => d.registrarContexto(s.loja_id, s.usuario_id, a.sku as string, a.acao === "fechado" ? "fechado" : "aberto"),
   },
   {
     nome: "conecta.propose_enrichment", escopo: "enriquecimento:propor", somenteLeitura: false,

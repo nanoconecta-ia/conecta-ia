@@ -5,7 +5,7 @@
 //   Não existe escopo de aprovar, executar ou escrever no ERP.
 import { SUPABASE_CHAVE_PUBLICAVEL, SUPABASE_URL } from "../../painel/src/config.ts";
 
-export const ESCOPOS_GUARDIAO = ["produtos:ler", "enriquecimento:propor"] as const;
+export const ESCOPOS_GUARDIAO = ["produtos:ler", "enriquecimento:propor", "contexto:registrar"] as const;
 export const URL_PAIR = `${SUPABASE_URL}/functions/v1/pair`;
 export const URL_GATEWAY = `${SUPABASE_URL}/functions/v1/conecta-gateway`;
 

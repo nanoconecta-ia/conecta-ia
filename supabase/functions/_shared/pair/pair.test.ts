@@ -46,7 +46,7 @@ test("QR: recusa APP_URL insegura ou com credenciais/query e código fora do for
 
 // ------------------------------------------------------------------------------------------------ escopos
 test("escopos: mesma lista da migração (private.pair_escopos_validos) e nenhum aprova/executa/administra", () => {
-  const sql = readFileSync(new URL("../../../migrations/20261103000002_oauth_recurso_mcp.sql", import.meta.url), "utf8");
+  const sql = readFileSync(new URL("../../../migrations/20261103000006_contexto_extensao.sql", import.meta.url), "utf8");
   const bloco = /pair_escopos_validos\(\) returns text\[\][\s\S]*?array\[([\s\S]*?)\];/.exec(sql)![1];
   const daMigracao = [...bloco.matchAll(/'([^']+)'/g)].map((m) => m[1]);
   assert.deepEqual([...ESCOPOS].sort(), daMigracao.sort());
@@ -154,6 +154,7 @@ function ambiente(s: Sessao | null, opcoes: { limite?: (c: string) => boolean; d
     proporAprovacao: async (p) => { propostas.push(p); return { id: "ap-1", versao: 1, hash_proposta: "h".repeat(64), estado: "pendente" }; },
     aprovacoesPendentes: async (loja, l) => { chamadasDados.push({ metodo: "aprovacoesPendentes", loja, args: l }); return []; },
     statusTarefa: async (loja, id) => { chamadasDados.push({ metodo: "statusTarefa", loja, args: id }); return null; },
+    registrarContexto: async (loja, usuario, sku, acao) => { chamadasDados.push({ metodo: "registrarContexto", loja, args: { usuario, sku, acao } }); return { ok: true, versao: 1 }; },
     camposAprovados: async (loja, sku) => { chamadasDados.push({ metodo: "camposAprovados", loja, args: sku }); return sku === "P1" ? { sku, campos: [{ id: "e1", campo: "marca_peca", valor: "Cobreq", fonte: "https://fab.exemplo", aprovado_em: "2026-10-30T00:00:00Z" }] } : null; },
     ...opcoes.dados,
   };
@@ -215,7 +216,7 @@ test("gateway: tools/list mostra só o que o escopo da sessão permite", async (
   const nomes = async (escopos: string[]) => ((await chamar(ambiente(sessao(escopos)), rpc("tools/list"))).corpo as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name).sort();
   assert.deepEqual(await nomes(["produtos:ler"]), ["conecta.get_part_by_code", "conecta.get_product", "conecta.get_validated_fields", "conecta.list_products"]);
   assert.deepEqual(await nomes([]), []);
-  assert.equal((await nomes([...ESCOPOS])).length, 13);
+  assert.equal((await nomes([...ESCOPOS])).length, 14); // 13 anteriores + conecta.set_active_product (contexto:registrar)
 });
 test("gateway: ferramenta sem o escopo é NEGADA, auditada e não toca os dados", async () => {
   const a = ambiente(sessao(["produtos:ler"]));
@@ -328,13 +329,14 @@ test("gateway: cada chamada revalida a sessão no banco (revogação vale na pr�
 });
 test("gateway: o catálogo NÃO tem ferramenta que aprove, execute, publique, altere preço/estoque ou grave no Bling", () => {
   for (const f of FERRAMENTAS) {
-    assert.match(f.nome, /^conecta\.(list_|get_|propose_|bling_consultar_produto$)/, f.nome);
+    // única exceção explícita: set_active_product grava SÓ o contexto efêmero (qual produto está aberto); não altera produto, preço, estoque nem o ERP
+    assert.match(f.nome, /^conecta\.(list_|get_|propose_|bling_consultar_produto$|set_active_product$)/, f.nome);
     // regra do sistema: o agente nunca apaga nota fiscal nem o cadastro espelhado do Bling; não existe ferramenta nem escopo para isso
     assert.doesNotMatch(f.nome + " " + f.escopo, /delete|remove|destroy|excluir|apagar|nfe|nota|invoice|emit|cancel/i, f.nome);
     assert.equal(f.inputSchema.type, "object");
     assert.doesNotMatch(f.nome + f.descricao.split(".")[0], /approve|execute|publish|delete|price|stock/i, f.nome);
     assert.ok(ESCOPOS.includes(f.escopo), f.nome);
-    assert.equal(f.somenteLeitura, !f.nome.includes("propose_"), `${f.nome}: leitura x proposta`);
+    assert.equal(f.somenteLeitura, !f.nome.includes("propose_") && f.nome !== "conecta.set_active_product", `${f.nome}: leitura x proposta`);
     assert.equal(JSON.stringify(f.inputSchema).includes("loja_id"), false, `${f.nome} não aceita loja`);
     assert.equal((f.inputSchema as { additionalProperties: boolean }).additionalProperties, false);
   }
@@ -486,4 +488,27 @@ test("loja virtual: propose_enrichment aceita tags/SEO/espec:<campo> e recusa ca
   assert.match(JSON.stringify(ok.corpo), /a_confirmar/);
   const ruim = await chamar(a, rpc("tools/call", { name: "conecta.propose_enrichment", arguments: { sku: "P1", campo: "preco_venda", valor: "1", fonte: "https://fab.exemplo" } }));
   assert.match(JSON.stringify(ruim.corpo), /espec:<campo>/);
+});
+
+test("gateway: conecta.set_active_product — só com o escopo contexto:registrar; loja e pessoa vêm da SESSÃO, nunca dos argumentos", async () => {
+  const a = ambiente(sessao(["contexto:registrar"]));
+  const lista = JSON.stringify((await chamar(a, rpc("tools/list"))).corpo);
+  assert.match(lista, /conecta\.set_active_product/);
+  const ok = await chamar(a, tool("conecta.set_active_product", { sku: "OC1224" }));
+  assert.equal(resultado(ok).isError, undefined);
+  assert.deepEqual(a.chamadasDados.at(-1), { metodo: "registrarContexto", loja: LOJA_A, args: { usuario: "u-1", sku: "OC1224", acao: "aberto" } });
+  await chamar(a, tool("conecta.set_active_product", { sku: "OC1224", acao: "fechado" }));
+  assert.equal((a.chamadasDados.at(-1)!.args as { acao: string }).acao, "fechado");
+  // o agente NÃO consegue escolher loja/usuário
+  const forjado = await chamar(a, tool("conecta.set_active_product", { sku: "X", loja_id: LOJA_B, usuario_id: "u-2" }));
+  assert.equal(resultado(forjado).isError, true); assert.match(resultado(forjado).content[0].text, /argumento desconhecido/);
+  assert.equal(resultado(await chamar(a, tool("conecta.set_active_product", { sku: "X", acao: "apagar" }))).isError, true);
+  assert.ok(a.auditoria.some((e) => e.ferramenta === "conecta.set_active_product" && e.resultado === "ok"), "toda chamada é auditada");
+});
+test("gateway: sem o escopo contexto:registrar a ferramenta some da lista e a chamada é negada (sessões antigas da extensão)", async () => {
+  const a = ambiente(sessao(["produtos:ler", "enriquecimento:propor"]));
+  assert.doesNotMatch(JSON.stringify((await chamar(a, rpc("tools/list"))).corpo), /set_active_product/);
+  const r = await chamar(a, tool("conecta.set_active_product", { sku: "OC1224" }));
+  assert.equal(resultado(r).isError, true); assert.match(resultado(r).content[0].text, /parear de novo/);
+  assert.equal(a.chamadasDados.some((c) => c.metodo === "registrarContexto"), false);
 });
