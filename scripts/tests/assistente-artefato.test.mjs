@@ -116,9 +116,9 @@ test('segurança: loja alheia é 404 e não chega ao serviço/provedor', async (
   assert.equal(a.rpcs.length, 0); assert.equal(a.chamadas(), 0);
 });
 
-test('metadados não expõem segredo; erro fecha os três estados', async () => {
+test('metadados não expõem segredo; erro fecha todos os estados', async () => {
   const a = await ambiente(); const r = await a.chamar({ acao: 'provedores' });
-  assert.equal(r.body.provedores.length, 3); assert.ok(!JSON.stringify(r.body).includes(segredo));
+  assert.equal(r.body.provedores.length, 4); assert.ok(!JSON.stringify(r.body).includes(segredo));
   assert.ok(!a.rpcs.some((r) => r.fn === 'ia_chave_ativa'));
   const b = await ambiente({ falhaConfig: true });
   assert.ok((await b.chamar({ acao: 'provedores' })).body.provedores.every((p) => p.estado === 'indisponivel'));
