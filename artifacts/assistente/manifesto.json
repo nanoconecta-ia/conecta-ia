@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "8f9d9d75dff9e0d5889244fa5c73966f673f05a5cd5dca66c1cedbeb7eb6f401",
+  "artefato_sha256": "6381a80cd441d77cedb2b928d41ba334c628fdbc82ed1b7a25020e7ac4e6a955",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -194,7 +194,7 @@
     },
     {
       "path": "supabase/functions/_shared/assistente/provedores.ts",
-      "sha256": "8e164c69e33b12e7dfe0a80aebf56ef68a691c6076db5e31caa10a6af77c473f"
+      "sha256": "07eec71e86a210581ee7cb0c53209bb43c29749d34bce9304d33b02f10eaff7b"
     },
     {
       "path": "supabase/functions/_shared/assistente/permissao.ts",
@@ -203,10 +203,6 @@
     {
       "path": "supabase/functions/_shared/assistente/anexos.ts",
       "sha256": "83e2d34b117b156a65b6f559508a66fe676dcd58415ab522f8696856eeb863b0"
-    },
-    {
-      "path": "supabase/functions/_shared/assistente/fallback_free.ts",
-      "sha256": "428076a18cf7edffd19eaf2626c2064ae2c666161c02f5208ea1e9db35b34cb0"
     },
     {
       "path": "supabase/functions/_shared/bling_ferramentas.ts",
@@ -221,12 +217,20 @@
       "sha256": "db227a3ee0f6895a0ef8e54db80178e082d956023652bb7528b77b8a04f070b6"
     },
     {
+      "path": "supabase/functions/_shared/assistente/fallback_free.ts",
+      "sha256": "428076a18cf7edffd19eaf2626c2064ae2c666161c02f5208ea1e9db35b34cb0"
+    },
+    {
+      "path": "supabase/functions/_shared/assistente/free_automatico.ts",
+      "sha256": "6a484f64f4dba66f33d57458e6529f9eefc8a01e727db36817b2a4898b3d8e75"
+    },
+    {
       "path": "supabase/functions/_shared/assistente/ficha_sem_llm.ts",
       "sha256": "c090a8484c9caeaa718ee343e9990da3d3548c0d60898ed3b68166075232ff2d"
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "b40473ce572d855293ad88931108eeeaa6b51c2387a92091faefd82b225992a4"
+      "sha256": "a9b0300dafd5cdd8e42805855d9955dc2d387d24ede2aff384a5dfbe939c0c6e"
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores_stream.ts",
@@ -238,7 +242,7 @@
     },
     {
       "path": "supabase/functions/assistente/index.ts",
-      "sha256": "737ca571fcfa2a179d206d20519f3c136dc4d990e31534074ed6d2e4a8f46667"
+      "sha256": "4f944f94c7eacc54327fec1da4df4c631c4d1a995f9fd528bcaab94c6ab2a1e2"
     }
   ]
 }

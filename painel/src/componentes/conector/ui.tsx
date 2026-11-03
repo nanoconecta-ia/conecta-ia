@@ -12,5 +12,5 @@ export const SeloItem = ({ estado }: { estado: EstadoItem }) => <span className=
 
 export const hashCurto = (h: string | null) => (h ? h.slice(0, 8) : "—");
 export const dataBr = (iso: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—");
-export const nomeModelo = (provedor: string | null) => (provedor === "claude" ? "Claude" : provedor === "gemini" ? "Gemini" : provedor === "compativel_openai" || provedor === "openai" ? "GPT / compatível OpenAI" : provedor ?? "—");
+export const nomeModelo = (provedor: string | null) => (provedor === "claude" ? "Claude" : provedor === "gemini" ? "Gemini" : provedor === "openrouter_free" ? "Gratuito (OpenRouter)" : provedor === "compativel_openai" || provedor === "openai" ? "GPT / compatível OpenAI" : provedor ?? "—");
 export const alvoOperacao = (op: string) => (op.startsWith("bling.") ? "Bling (simulado nesta fase)" : "Conecta.IA");

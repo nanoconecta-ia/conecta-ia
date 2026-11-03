@@ -2,7 +2,7 @@
 import { SUPABASE_CHAVE_PUBLICAVEL, SUPABASE_URL } from "../config.ts";
 import { jsonDe, lerSSE, type EventoSSE } from "./sse.ts";
 
-export type Provedor = "claude" | "gemini" | "compativel_openai";
+export type Provedor = "claude" | "gemini" | "compativel_openai" | "openrouter_free";
 export type DecisaoFerramenta = "permitida" | "negada" | "requer_aprovacao" | "simulada";
 export type Risco = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 

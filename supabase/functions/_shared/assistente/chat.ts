@@ -3,7 +3,8 @@ import { chaveiroPlataforma } from "../plataforma.ts";
 import { decifrar } from "../cripto.ts";
 import { conversar, IaErro, type Mensagem } from "../ia/claude.ts";
 import type { AdaptadorStream } from "../ia/adaptadores_stream.ts";
-import { modeloDaChave, validarProvedor } from "./provedores.ts";
+import { modeloDaChave, validarProvedor, type ProvedorChat } from "./provedores.ts";
+import { avisoTroca, FERRAMENTAS_FREE, PROVEDOR_FREE, podeTrocarParaFree, SISTEMA_FREE, URL_FREE } from "./free_automatico.ts";
 import { configFallbackFree, tentarFallbackFree } from "./fallback_free.ts";
 import { CONSULTAR_PRODUTO, consultarProduto } from "./bling_consultar.ts";
 import { gerarFichaSemLLM } from "./ficha_sem_llm.ts";
@@ -133,6 +134,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  // Anexos validados no servidor antes de abrir o turno; o conteúdo nunca é gravado (só nome/tipo/bytes/sha256).
  let anexos: AnexoValido[] = [];
  if (c.anexos != null) {
+  if (provedor === PROVEDOR_FREE) return resultado({ erro: "O modelo gratuito não recebe anexos. Escolha outro provedor para enviar arquivos." }, 400);
   const va = await validarAnexos(c.anexos, provedor);
   if (!va.ok) return resultado({ erro: va.erro }, 400);
   anexos = va.anexos;
@@ -149,12 +151,10 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  const simulado = ctx.get("CHAT_AMBIENTE") === "sintetico";
  let resposta = "Não consegui concluir esta pergunta."; let status = 200;
  const meta: Record<string, unknown> = { ia: true, provedor, simulado, ambiente: simulado ? "sintetico" : ctx.get("CHAT_AMBIENTE") === "real" ? "real" : "nao_validado", chamadas, evidencias, desfecho: "falhou" };
- try {
-  const { data: limitado, error: le } = await admin.rpc("limite_chamada", { p_chave: `chat-ia:${loja.id}:${userId}`, p_max: 20, p_janela_s: 60 });
-  if (le || limitado !== true) throw new IaErro(429, "Limite temporário de perguntas.");
-  const { data: rows, error } = await admin.rpc("ia_chave_ativa", { p_loja: loja.id, p_provedor: provedor });
+ const rodar = async (prov: ProvedorChat) => {
+  const { data: rows, error } = await admin.rpc("ia_chave_ativa", { p_loja: loja.id, p_provedor: prov });
   const k = rows?.[0];
-  if (error || !k || k.provedor !== provedor || !modeloDaChave(k)) throw new IaErro(503, "Provedor não configurado ou indisponível.");
+  if (error || !k || k.provedor !== prov || !modeloDaChave(k)) throw new IaErro(503, "Provedor não configurado ou indisponível.");
   if (k.limite != null && k.tokens_mes >= k.limite) throw new IaErro(429, "Limite mensal do provedor atingido.");
   const chaveiro = await chaveiroPlataforma(admin, ctx.get);
   if (!chaveiro) throw new IaErro(503, "Provedor indisponível no servidor.");
@@ -172,22 +172,24 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   if (mensagens.at(-1)?.content !== c.texto) throw new IaErro(503, "Histórico inconsistente; nenhuma chamada realizada.");
   if (anexos.length) { mensagens[mensagens.length - 1] = { role: "user", content: conteudoComAnexos(c.texto, anexos) }; meta.anexos = resumoParaRegistro(anexos); }
   modelo = modeloDaChave(k);
-  meta.host_provedor = provedor === "compativel_openai" ? new URL(k.base_url).hostname : provedor === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
+  meta.host_provedor = prov === PROVEDOR_FREE ? "openrouter.ai" : prov === "compativel_openai" ? new URL(k.base_url).hostname : prov === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
+  if (prov === PROVEDOR_FREE) meta.provedor_efetivo = "openrouter-free";
+  const tipoLlm = (prov === PROVEDOR_FREE ? "compativel_openai" : prov) as "claude" | "gemini" | "compativel_openai";
   const propostas: Record<string, unknown>[] = [];
   const { config: searxng, erro: erroSearxng } = configSearxngOuNulo(ctx.get, loja.id); if (erroSearxng) console.warn("SearXNG desligado nesta loja:", erroSearxng); // Ambiente privado + allowlist por loja; nunca vem do usuario.
   iniciouChamadaProvedor = true;
-  const r = await conversar({ provedor, baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo, mensagens,
-   sistema: `${SISTEMA}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto, bling_propor_ajuste_produto e bling_propor_cadastro_produto (produto novo): nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
-   maxPassos: 5, maxTokens: 1536, aoTexto: ctx.aoTexto ? (delta: string) => { if (delta) transmitiuTextoPrincipal = true; ctx.aoTexto?.(delta); } : undefined, adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(provedor) : undefined, ferramentas: ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name) || (FERRAMENTAS_PESQUISA as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,
+  const r = await conversar({ provedor: tipoLlm, baseUrl: prov === PROVEDOR_FREE ? URL_FREE : k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo, mensagens,
+   sistema: `${SISTEMA}${prov === PROVEDOR_FREE ? SISTEMA_FREE : ""}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto, bling_propor_ajuste_produto e bling_propor_cadastro_produto (produto novo): nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
+   maxPassos: 5, maxTokens: 1536, aoTexto: ctx.aoTexto ? (delta: string) => { if (delta) transmitiuTextoPrincipal = true; ctx.aoTexto?.(delta); } : undefined, adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(tipoLlm) : undefined, ferramentas: prov === PROVEDOR_FREE ? (ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO] : []) : ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name) || (FERRAMENTAS_PESQUISA as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,
    onPasso: p => { tokens += p.tokens; respostaId = p.respostaId; modelo = p.modelo ?? modelo; },
    executar: async (nome, entrada) => {
     const t0 = Date.now();
     try {
-     if (!ativo("chat_consulta_bling") || (nome !== CONSULTAR_PRODUTO.name && !(FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(nome) && !(FERRAMENTAS_PESQUISA as readonly string[]).includes(nome))) throw new Error("Ferramenta não permitida.");
+     if (!ativo("chat_consulta_bling") || (prov === PROVEDOR_FREE && !FERRAMENTAS_FREE.includes(nome)) || (nome !== CONSULTAR_PRODUTO.name && !(FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(nome) && !(FERRAMENTAS_PESQUISA as readonly string[]).includes(nome))) throw new Error("Ferramenta não permitida.");
      if (nome !== CONSULTAR_PRODUTO.name) {
       // O chat persistente grava em `conversas`; as propostas do motor ligam a `agente_conversas`. Sem vínculo (conversaId null): a proposta nasce igual, só não aponta para esta conversa.
       const bling = new BlingLeituraReal(armazemSupabase(admin), loja.id, { chaveCifra: chaveiro, fetch: ctx.fetch });
-      const conector = { origem: "chat" as const, lojaId: loja.id, userId, dados: dadosSupabase(admin, loja.id), rpc: (fn: string, args: Record<string, unknown>) => admin.rpc(fn, args), admin, bling, conversaId: null, agente: { nome: "Nano.ia", provedor, modelo } };
+      const conector = { origem: "chat" as const, lojaId: loja.id, userId, dados: dadosSupabase(admin, loja.id), rpc: (fn: string, args: Record<string, unknown>) => admin.rpc(fn, args), admin, bling, conversaId: null, agente: { nome: "Nano.ia", provedor: prov, modelo } };
       let buscaImagem: { chave: string; cx: string } | null = null;
       if ((FERRAMENTAS_PESQUISA as readonly string[]).includes(nome) && !searxng) {
        const { data: biRows, error: biError } = await admin.rpc("busca_imagem_ler", { p_loja: loja.id });
@@ -220,14 +222,36 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
    meta.desfecho = r.parada === "bloqueado" ? "bloqueado" : r.parada === "limite_tamanho" ? "truncado" : "incompleto";
    resposta += r.parada === "bloqueado" ? "\n\n⚠ Resposta bloqueada pelo provedor: não foi concluída." : "\n\n⚠ Resposta INCOMPLETA (o limite de tamanho foi atingido ou os passos acabaram). Não trate isto como cadastro nem tarefa concluída: peça de novo em partes menores.";
   }
+ };
+ try {
+  const { data: limitado, error: le } = await admin.rpc("limite_chamada", { p_chave: `chat-ia:${loja.id}:${userId}`, p_max: 20, p_janela_s: 60 });
+  if (le || limitado !== true) throw new IaErro(429, "Limite temporário de perguntas.");
+  await rodar(provedor);
  } catch (e) {
+  let erroFinal: unknown = e; let respondidoPeloGratuito = false;
+  // Modo AUTOMÁTICO do gratuito: o provedor escolhido (ex.: Gemini) falhou por sobrecarga/limite/tempo e NADA foi mostrado, proposto ou gravado:
+  // refaz o turno com o gratuito, SÓ LEITURA e dados saneados, e diz claramente quem respondeu.
+  let automatico = false;
+  if (provedor !== PROVEDOR_FREE) { try { const { data } = await admin.rpc("ia_free_automatico", { p_loja: loja.id }); automatico = data === true; } catch { automatico = false; } }
+  if (podeTrocarParaFree({ provedor, erro: e, iniciouChamadaProvedor, automatico, anexos: anexos.length, textoTransmitido: transmitiuTextoPrincipal, propostasCriadas: (meta.propostas as unknown[] | undefined)?.length ?? 0 })) {
+   const statusOriginal = (e as IaErro).status;
+   try {
+    tokens = 0; respostaId = undefined; chamadas.length = 0; evidencias.length = 0; tentativas.length = 0;
+    await rodar(PROVEDOR_FREE);
+    resposta = `${avisoTroca(provedor, statusOriginal)}\n\n${resposta}`;
+    Object.assign(meta, { provedor: PROVEDOR_FREE, desfecho: meta.desfecho === "ok" ? "contingencia_automatica" : meta.desfecho, provedor_efetivo: "openrouter-free", host_provedor: "openrouter.ai", troca_de: provedor, troca_motivo: statusOriginal, modo_free: "automatico" });
+    ctx.aoTexto?.(resposta);
+    respondidoPeloGratuito = true;
+   } catch (e2) { erroFinal = e2; }
+  }
+  if (!respondidoPeloGratuito) {
   // Contingência segura: SÓ depois de tentativa real Gemini, sem streaming parcial,
   // sem ferramentas/anexos e com consentimento explícito. Texto atual isolado,
   // sem histórico da loja ou sistema/comandos/identidade do cliente.
   const livre = iniciouChamadaProvedor ? await tentarFallbackFree({
     texto: c.texto, provedor, consentimento: c.consentimento_fallback_free === true,
     anexos: anexos.length, tentativasFerramenta: tentativas.length,
-    textoTransmitido: transmitiuTextoPrincipal, erro: e, lojaId: loja.id, get: ctx.get, fetch: ctx.fetch,
+    textoTransmitido: transmitiuTextoPrincipal, erro: erroFinal, lojaId: loja.id, get: ctx.get, fetch: ctx.fetch,
   }) : null;
   if (livre) {
     status = 200; resposta = `Modo gratuito de contingência (glossário público, sem consulta ao Bling):\n\n${livre.texto}`;
@@ -236,9 +260,10 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
       ferramentas: [], ferramentas_solicitadas: [], tentativas, completa: true, origem: "glossario_publico" });
     ctx.aoTexto?.(resposta);
   } else {
-    status = e instanceof IaErro && [400,401,409,429,502,503,504].includes(e.status) ? e.status : 502;
-    resposta = e instanceof IaErro ? e.message : "Não consegui concluir esta pergunta.";
+    status = erroFinal instanceof IaErro && [400,401,409,429,502,503,504].includes(erroFinal.status) ? erroFinal.status : 502;
+    resposta = erroFinal instanceof IaErro ? erroFinal.message : "Não consegui concluir esta pergunta.";
     meta.codigo = "turno_falhou"; meta.tentativas = tentativas;
+  }
   }
  }
  Object.assign(meta, { tokens, modelo, resposta_id: respostaId, http_status: status });

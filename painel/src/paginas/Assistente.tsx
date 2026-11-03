@@ -369,6 +369,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     if (entradaArquivo.current) entradaArquivo.current.value = "";
     if (entradaCamera.current) entradaCamera.current.value = "";
     if (entradaFotos.current) entradaFotos.current.value = "";
+    if (provedor === "openrouter_free") { setErroAnexo("O modelo gratuito não recebe anexos. Escolha outro modelo para enviar arquivos."); return; }
     setErroAnexo(""); const pdfOk = provedor !== "compativel_openai"; let atual = [...anexos];
     for (const f of arquivos) {
       const erro = validarSelecao(f, atual, pdfOk); if (erro) { setErroAnexo(erro); break; }
@@ -589,7 +590,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
               <span>Autorizar contingência automática gratuita para perguntas públicas de glossário nesta sessão.</span>
             </label>
           )}
-          <small className="suave">O roteador Nano usa OpenRouter gratuito apenas quando o Gemini falha com HTTP 429, 502 ou 504. Não é outra opção do seletor. Não envia histórico, anexos, SKU, custos ou dados da loja; não atende nem altera o Bling. Para cadastros e consultas comerciais, a continuidade automática com outro LLM ainda não está disponível.</small>
+          <small className="suave">O roteador Nano usa OpenRouter gratuito apenas quando o Gemini falha com HTTP 429, 502 ou 504. O modelo gratuito completo (leitura de dados já saneados) é outro recurso: liga-se em Integrações de IA e aparece na lista de modelos. Não envia histórico, anexos, SKU, custos ou dados da loja; não atende nem altera o Bling. Para cadastros e consultas comerciais, a continuidade automática com outro LLM ainda não está disponível.</small>
         </fieldset>
         <fieldset className="grupo-orbe"><legend>Esfera do Nano.IA</legend>
           <div className="grupo-orbe-opcoes" role="radiogroup" aria-label="Modelo da esfera">

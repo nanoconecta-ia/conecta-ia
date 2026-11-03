@@ -1,18 +1,20 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
+import { AVISO_FREE, CONFIRMACAO_FREE, exigeConfirmacao, MODOS_FREE, modoDaChave, type ModoFree } from "../lib/modoFree.ts";
 
 async function mensagem(error: unknown, padrao: string) {
   try { const j = await (error as { context?: Response }).context?.json(); if (j?.erro) return String(j.erro); } catch { /* mantém o padrão */ }
   return padrao;
 }
 
-type Chave = { provedor: string; ativa: boolean; principal: boolean; final_chave: string | null; modelo: string | null; base_url: string | null; limite_mensal_tokens: number | null; tokens_mes: number; ultimo_uso_em: string | null };
+type Chave = { provedor: string; ativa: boolean; principal: boolean; final_chave: string | null; modelo: string | null; base_url: string | null; limite_mensal_tokens: number | null; tokens_mes: number; ultimo_uso_em: string | null; failover?: boolean };
 
 const PROVEDORES = [
   { id: "claude", nome: "Claude", aviso: "Pago por uso; crie a chave no console do provedor.", modelo: "claude-sonnet-5-5", precisaEndereco: false },
   { id: "gemini", nome: "Gemini (Google AI Studio)", aviso: "Há plano gratuito, mas no gratuito o Google pode usar o conteúdo enviado para melhorar os produtos dele. O agente não envia custo nem fornecedor, só dados de catálogo.", modelo: "gemini-2.5-flash", precisaEndereco: false },
   { id: "compativel_openai", nome: "Llama ou outro modelo compatível com OpenAI", aviso: "Use um provedor que hospede o Llama e exponha uma API compatível com OpenAI (por exemplo Groq, Together ou OpenRouter). Um Llama rodando só no seu computador não é alcançável pelo servidor.", modelo: "", precisaEndereco: true },
+  { id: "openrouter_free", nome: "Gratuito (OpenRouter)", aviso: AVISO_FREE, modelo: "openrouter/free", precisaEndereco: false },
 ] as const;
 type Plugin = { id: string; nome: string; tipo: string; url: string | null; capacidades: string[]; risco: string; ativo: boolean; ultimo_teste_ok: boolean | null; ultimo_teste_em: string | null };
 
@@ -40,8 +42,12 @@ export function Integracoes({ loja }: { loja: Loja }) {
   const [f, setF] = useState({ nome: "", tipo: "api", url: "", credencial: "", risco: "LOW", caps: [] as string[] });
 
   const carregar = () => {
-    supabase.from("loja_chaves_ia").select("provedor, ativa, principal, final_chave, modelo, base_url, limite_mensal_tokens, tokens_mes, ultimo_uso_em").eq("loja_id", loja.id)
-      .then(({ data }) => setChaves(Object.fromEntries(((data ?? []) as Chave[]).filter((c) => c.ativa).map((c) => [c.provedor, c]))));
+    const colunas = "provedor, ativa, principal, final_chave, modelo, base_url, limite_mensal_tokens, tokens_mes, ultimo_uso_em";
+    // `failover` só existe depois da migração do provedor gratuito: sem ela, lista como antes.
+    supabase.from("loja_chaves_ia").select(`${colunas}, failover`).eq("loja_id", loja.id)
+      .then(async (r) => (r.error ? await supabase.from("loja_chaves_ia").select(colunas).eq("loja_id", loja.id) : r))
+      // o gratuito DESLIGADO continua aparecendo (a chave cifrada é mantida); os demais só quando ativos
+      .then(({ data }) => setChaves(Object.fromEntries(((data ?? []) as Chave[]).filter((c) => c.ativa || (c.provedor === "openrouter_free" && c.final_chave)).map((c) => [c.provedor, c]))));
     supabase.from("loja_plugins").select("id, nome, tipo, url, capacidades, risco, ativo, ultimo_teste_ok, ultimo_teste_em").eq("loja_id", loja.id).order("criado_em")
       .then(({ data }) => setPlugins((data ?? []) as Plugin[]));
     supabase.from("loja_busca_imagem").select("ativa").eq("loja_id", loja.id).maybeSingle()
@@ -60,6 +66,10 @@ export function Integracoes({ loja }: { loja: Loja }) {
     return r;
   }
 
+  async function mudarModoFree(para: ModoFree) {
+    if (exigeConfirmacao(modoDaChave(chaves.openrouter_free), para) && !confirm(CONFIRMACAO_FREE)) return;
+    await chamar({ acao: "definir_modo_free", modo: para }, para === "desligado" ? "Modelo gratuito desligado (a chave continua guardada)." : para === "manual" ? "Modelo gratuito ligado: escolha-o na lista de modelos do chat." : "Modo automático ligado: se o Gemini falhar, o Nano troca para o gratuito.");
+  }
   const campo = (id: string) => campos[id] ?? { chave: "", modelo: "", limite: "", base: "" };
   const mudar = (id: string, p: Partial<{ chave: string; modelo: string; limite: string; base: string }>) => setCampos((c) => ({ ...c, [id]: { ...campo(id), ...p } }));
   async function salvarChave(e: FormEvent, id: string) {
@@ -93,15 +103,23 @@ export function Integracoes({ loja }: { loja: Loja }) {
         const pct = k?.limite_mensal_tokens ? Math.min(100, Math.round((k.tokens_mes / k.limite_mensal_tokens) * 100)) : null;
         return (
           <div key={pv.id} className="cartao" style={{ margin: "8px 0" }}>
-            <p><strong>{pv.nome}</strong> {k ? <span className="selo ok">Ativa</span> : <span className="selo atencao">Sem chave</span>} {k?.principal && <span className="selo">principal</span>}</p>
+            <p><strong>{pv.nome}</strong> {k ? (k.ativa ? <span className="selo ok">{pv.id === "openrouter_free" && k.failover ? "Automático" : "Ativa"}</span> : <span className="selo atencao">Desligado</span>) : <span className="selo atencao">Sem chave</span>} {k?.principal && <span className="selo">principal</span>}</p>
             <p className="suave">{pv.aviso}</p>
             {k && !aberto && (
               <>
                 <p className="suave">Chave terminada em <code>{k.final_chave}</code> · modelo <code>{k.modelo}</code>{k.base_url ? <> · <code>{k.base_url}</code></> : null}</p>
                 <p className="suave">Uso no mês: {k.tokens_mes.toLocaleString("pt-BR")} tokens{k.limite_mensal_tokens ? ` de ${k.limite_mensal_tokens.toLocaleString("pt-BR")} (${pct}%)` : " (sem limite definido)"}.</p>
+                {pv.id === "openrouter_free" && (
+                  <fieldset disabled={ocupado} aria-label="Modo do modelo gratuito">
+                    <legend>Modo</legend>
+                    {MODOS_FREE.map((m) => (
+                      <label key={m.id} className="linha marcar-linha"><input type="radio" name="modo-free" checked={modoDaChave(k) === m.id} onChange={() => void mudarModoFree(m.id)} /><span><strong>{m.titulo}</strong> — {m.descricao}</span></label>
+                    ))}
+                  </fieldset>
+                )}
                 <div className="linha">
                   <button className="sec" disabled={ocupado} onClick={() => void chamar({ acao: "testar_chave", provedor: pv.id }, "A chave respondeu normalmente.")}>Testar chave</button>
-                  {!k.principal && <button className="sec" disabled={ocupado} onClick={() => void chamar({ acao: "definir_principal", provedor: pv.id }, "Provedor principal atualizado.")}>Usar como principal</button>}
+                  {!k.principal && pv.id !== "openrouter_free" && <button className="sec" disabled={ocupado} onClick={() => void chamar({ acao: "definir_principal", provedor: pv.id }, "Provedor principal atualizado.")}>Usar como principal</button>}
                   <button className="sec" onClick={() => setAbertos((x) => ({ ...x, [pv.id]: true }))}>Trocar chave ou limite</button>
                   <button className="sec" disabled={ocupado} onClick={() => { if (confirm(`Remover a chave de ${pv.nome}?`)) void chamar({ acao: "remover_chave", provedor: pv.id }, "Chave removida."); }}>Remover</button>
                 </div>
