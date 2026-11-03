@@ -73,5 +73,6 @@ test("catálogo do chat: tem as ferramentas bling_*, nenhuma de escrita direta, 
   for (const n of ["bling_categorias", "bling_propor_categoria", "bling_propor_trocar_categoria"]) assert.ok(nomes.includes(n), n);
   assert.ok(!nomes.some((n) => /criar|gravar|escrever|executar/.test(n) && n.startsWith("bling_")), "nenhuma ferramenta do chat executa no Bling");
   assert.match(SISTEMA, /nunca diga que já gravou/);
-  assert.match(SISTEMA, /NÃO existe ferramenta para criar produto novo/);
+  assert.match(SISTEMA, /bling_propor_cadastro_produto/);
+  assert.doesNotMatch(SISTEMA, /NÃO existe ferramenta para criar produto novo/);
 });
