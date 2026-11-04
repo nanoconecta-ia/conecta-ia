@@ -24,7 +24,9 @@ export function podeTrocarParaFree(e: EntradaTroca): boolean {
     && e.erro instanceof IaErro && STATUS_TROCA.includes(e.erro.status);
 }
 
-export const SISTEMA_FREE = "\nMODO GRATUITO: você só CONSULTA (bling_consultar_produto). Não existe proposta, gravação nem pesquisa externa neste modo; se o lojista pedir uma alteração, diga que precisa do provedor principal. Nunca peça nem repita custo, fornecedor, dado fiscal ou credencial.";
+// Sem "\n" no começo do literal: o empacotador do Supabase (deploy --use-api) tratou "\n…" como caminho de arquivo (ENAMETOOLONG).
+// Quem usa acrescenta a quebra de linha.
+export const SISTEMA_FREE = "MODO GRATUITO: você só CONSULTA (bling_consultar_produto). Não existe proposta, gravação nem pesquisa externa neste modo; se o lojista pedir uma alteração, diga que precisa do provedor principal. Nunca peça nem repita custo, fornecedor, dado fiscal ou credencial.";
 
 export function avisoTroca(de: string, status: number): string {
   const motivo = status === 429 ? "sobrecarregado ou no limite" : status === 504 ? "sem resposta a tempo" : "com falha";
