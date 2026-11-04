@@ -51,6 +51,12 @@ export async function escreverEConfirmarNoBling(bling: PortaBling, op: string, i
 
   // Porta que não escreve (leitura só, ou BLING_ESCRITA_REAL desligado): recusa ANTES de marcar "enviada", para não gastar a tentativa nem a aprovação.
   if (bling.escritaLigada === false) return { estado: "falhou", motivo: "escrita_real_desligada: a escrita no Bling não está ligada neste ambiente" };
+  // Criação de produto: reconfere duplicidade AGORA, antes de enviar (alguém pode ter cadastrado o mesmo SKU/GTIN no Bling depois da aprovação).
+  // Falha fechada: sem conseguir conferir, nada é enviado e a tentativa não é gasta. Só enxerga produtos ATIVOS (limite da consulta usada).
+  if (criarProduto) {
+    const dup = await duplicidadeAntesDeCriar(bling, corpo);
+    if (dup) return { estado: "falhou", motivo: dup };
+  }
   await aoEnviar?.();
   let r;
   try { r = await bling.chamar(op, { id: item.alvo ?? undefined, corpo }, item.idempotency_key); }
@@ -82,6 +88,20 @@ export async function escreverEConfirmarNoBling(bling: PortaBling, op: string, i
   } catch {
     return { estado: "desconhecida", motivo: "gravou, mas a leitura de confirmação não respondeu" };
   }
+}
+
+/** Leitura de duplicidade logo antes de criar produto. Devolve o motivo da recusa ou null se pode enviar. */
+async function duplicidadeAntesDeCriar(bling: PortaBling, corpo: Record<string, unknown>): Promise<string | null> {
+  const consultas: [string, Record<string, string>][] = [["código", { sku: String(corpo.codigo ?? "") }]];
+  if (typeof corpo.gtin === "string" && corpo.gtin) consultas.push(["GTIN", { gtin: corpo.gtin }]);
+  for (const [por, args] of consultas) {
+    let r;
+    try { r = await bling.ler("bling.produtos.consultar_ativos", args); } catch { return `não consegui conferir duplicidade por ${por} antes de gravar; nada foi enviado`; }
+    if (r.status !== 200) return `não consegui conferir duplicidade por ${por} antes de gravar (${r.status}); nada foi enviado`;
+    const achados = ((r.corpo as { data?: { id?: unknown }[] } | undefined)?.data ?? []);
+    if (achados.length) return `duplicidade: já existe produto ativo com o mesmo ${por} no Bling (id ${String(achados[0]?.id ?? "?")}); nada foi enviado`;
+  }
+  return null;
 }
 
 export async function executarProposta(o: OpcoesExecucao): Promise<RelatorioExecucao> {

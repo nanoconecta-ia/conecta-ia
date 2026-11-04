@@ -40,7 +40,7 @@ test("propõe produto novo pelo chat: proposta criada, NADA gravado no Bling, op
   const b = new BlingMock(); const { ctx, itens } = contexto(b);
   const r = await executarFerramenta(nome, { rascunho: { nome: "Bomba de óleo HR 2.5 16V", marca: "Sabó", gtin: "7891000100103", preco_venda: 899.9 }, fonte: "https://www.sabo.com.br/catalogo/bomba-oleo" }, ctx) as Record<string, any>;
   assert.equal(r.proposta_id, "p1", JSON.stringify(r)); assert.equal(b.recebidos.length, 0, "propor não escreve no Bling");
-  assert.equal(itens[0].p_operacao, "bling.produtos.criar"); assert.equal(itens[0].p_antes, null);
+  assert.equal(itens[0].p_operacao, "bling.produtos.criar"); assert.deepEqual(itens[0].p_antes, {});
   assert.equal(CAMPOS_ESCRITA_LIBERADOS["bling.produtos.criar"], undefined, "a criação real segue desligada: só o dono liga");
   assert.match(String((itens[0].p_depois as Record<string, unknown>).codigo), /^CI\d{6}$/, "sem código, o sistema propõe SKU CI + 6 dígitos");
 });

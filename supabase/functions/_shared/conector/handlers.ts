@@ -366,7 +366,7 @@ export const HANDLERS: Record<string, Handler> = {
     if (conflitos.length) return { aviso: "Já existe produto com o mesmo código ou GTIN; criar duplicaria o cadastro. Nada foi proposto. Use a atualização do produto existente ou vincule como origem do mesmo mestre.", conflitos };
     return criarPropostaVersionada(c, { titulo: `Cadastrar no Bling o produto novo ${p.codigo} (${String(p.depois.nome).slice(0, 80)})`,
       resumo: `Produto novo. Pendências para publicar: ${p.pendencias.join("; ")}.`, itens: [{
-        sku: p.codigo, operacao: "bling.produtos.criar", campos: Object.keys(p.depois), depois: p.depois, antes: null, fontes: e.fontes,
+        sku: p.codigo, operacao: "bling.produtos.criar", campos: Object.keys(p.depois), depois: p.depois, antes: {}, fontes: e.fontes,
         validacoes: [`nenhum produto com o código ${p.codigo}${p.depois.gtin ? ` ou o GTIN ${p.depois.gtin}` : ""} no espelho nem no Bling em ${new Date().toISOString()}`, ...(skuAutomatico ? [`SKU ${p.codigo} proposto automaticamente (CI + 6 dígitos, depois do maior conhecido): a aprovação é sua`] : []), ...p.validacoes, ...p.pendencias.map((x) => `pendente: ${x}`)] }] });
   },
   // Lê o Bling AGORA, calcula antes/depois dos campos pedidos e cria a proposta. Não grava nada no Bling.
