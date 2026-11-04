@@ -8803,6 +8803,13 @@ const AUXILIAR_HOSTS = [
     "api.groq.com",
     "api.cerebras.ai"
 ];
+function cotaAuxiliarPermitida(k, agora = new Date()) {
+    const limite = Number(k.limite_mensal_tokens);
+    if (k.limite_mensal_tokens == null || !Number.isSafeInteger(limite) || limite < 1000 || limite > 50000) return false;
+    const mesmoMes = typeof k.mes_ref === "string" && k.mes_ref.slice(0, 7) === agora.toISOString().slice(0, 7);
+    const usado = mesmoMes ? Number(k.tokens_mes ?? 0) : 0;
+    return Number.isSafeInteger(usado) && usado >= 0 && usado < limite;
+}
 function urlAuxiliarPermitida(url) {
     if (typeof url !== "string") return false;
     try {
@@ -8817,7 +8824,7 @@ function podeTrocarParaAuxiliar(c, k) {
         429,
         502,
         504
-    ].includes(c.erro.status) && perguntaPublica(c.texto) && k?.provedor === AUXILIAR_PROVEDOR && k.ativa === true && k.failover === true && typeof k.modelo === "string" && k.modelo.length > 0 && k.modelo.length <= 120 && urlAuxiliarPermitida(k.base_url);
+    ].includes(c.erro.status) && perguntaPublica(c.texto) && k?.provedor === AUXILIAR_PROVEDOR && k.ativa === true && cotaAuxiliarPermitida(k) && typeof k.modelo === "string" && k.modelo.length > 0 && k.modelo.length <= 120 && urlAuxiliarPermitida(k.base_url);
 }
 async function executarAuxiliarPublico(p) {
     if (!perguntaPublica(p.texto) || !urlAuxiliarPermitida(p.baseUrl) || !p.modelo || p.modelo.length > 120 || !p.chave) return null;
@@ -8854,7 +8861,7 @@ async function executarAuxiliarPublico(p) {
     }
 }
 
-return { AUXILIAR_PROVEDOR: AUXILIAR_PROVEDOR, AUXILIAR_HOSTS: AUXILIAR_HOSTS, urlAuxiliarPermitida: urlAuxiliarPermitida, podeTrocarParaAuxiliar: podeTrocarParaAuxiliar, executarAuxiliarPublico: executarAuxiliarPublico };
+return { AUXILIAR_PROVEDOR: AUXILIAR_PROVEDOR, AUXILIAR_HOSTS: AUXILIAR_HOSTS, cotaAuxiliarPermitida: cotaAuxiliarPermitida, urlAuxiliarPermitida: urlAuxiliarPermitida, podeTrocarParaAuxiliar: podeTrocarParaAuxiliar, executarAuxiliarPublico: executarAuxiliarPublico };
 })();
 
 // ---------- supabase/functions/_shared/assistente/chat.ts ----------
@@ -8867,7 +8874,7 @@ const { modeloDaChave: modeloDaChave, validarProvedor: validarProvedor } = __m51
 const { FERRAMENTAS_CATALOGO: FERRAMENTAS_CATALOGO, REGRA_CATALOGO: REGRA_CATALOGO } = __m55;
 const { avisoTroca: avisoTroca, FERRAMENTAS_FREE: FERRAMENTAS_FREE, PROVEDOR_FREE: PROVEDOR_FREE, podeTrocarParaFree: podeTrocarParaFree, SISTEMA_FREE: SISTEMA_FREE, URL_FREE: URL_FREE } = __m56;
 const { configFallbackFree: configFallbackFree, tentarFallbackFree: tentarFallbackFree } = __m61;
-const { AUXILIAR_PROVEDOR: AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar: podeTrocarParaAuxiliar, executarAuxiliarPublico: executarAuxiliarPublico, urlAuxiliarPermitida: urlAuxiliarPermitida } = __m62;
+const { AUXILIAR_PROVEDOR: AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar: podeTrocarParaAuxiliar, executarAuxiliarPublico: executarAuxiliarPublico, urlAuxiliarPermitida: urlAuxiliarPermitida, cotaAuxiliarPermitida: cotaAuxiliarPermitida } = __m62;
 const { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, consultarProduto: consultarProduto } = __m57;
 const { gerarFichaSemLLM: gerarFichaSemLLM } = __m58;
 const { executarFerramenta: executarFerramenta, FERRAMENTAS: FERRAMENTAS, SISTEMA: SISTEMA } = __m10;
@@ -8908,8 +8915,8 @@ async function atenderChat(c, ctx) {
     const ativo = (codigo)=>flags.some((r)=>r.codigo === codigo && r.ativo === true);
     if (c.acao === "chat_config") {
         const { data: config, error } = await usuario.from("lojas").select("chat_retencao_dias").eq("id", loja.id).single();
-        const { data: aux, error: erroAux } = await admin.from("loja_chaves_ia").select("provedor,ativa,failover,base_url,modelo").eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
-        const auxiliarConfigurado = !erroAux && aux?.ativa === true && aux?.failover === true && typeof aux.modelo === "string" && aux.modelo.length > 0 && aux.modelo.length <= 120 && urlAuxiliarPermitida(aux.base_url);
+        const { data: aux, error: erroAux } = await admin.from("loja_chaves_ia").select("provedor,ativa,base_url,modelo,limite_mensal_tokens,tokens_mes,mes_ref").eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
+        const auxiliarConfigurado = !erroAux && aux?.ativa === true && aux?.provedor === AUXILIAR_PROVEDOR && typeof aux.modelo === "string" && aux.modelo.length > 0 && aux.modelo.length <= 120 && urlAuxiliarPermitida(aux.base_url) && cotaAuxiliarPermitida(aux);
         return error ? resultado({
             erro: "Preparação do histórico ainda não instalada."
         }, 503) : resultado({
@@ -9529,7 +9536,7 @@ async function atenderChat(c, ctx) {
         }
         if (!respondidoPeloGratuito && provedor === PROVEDOR_FREE) {
             try {
-                const { data: aux, error: auxErro } = await admin.from("loja_chaves_ia").select("provedor,ativa,failover,base_url,modelo").eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
+                const { data: aux, error: auxErro } = await admin.from("loja_chaves_ia").select("provedor,ativa,base_url,modelo,limite_mensal_tokens,tokens_mes,mes_ref").eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
                 const elegivel = !auxErro && podeTrocarParaAuxiliar({
                     origem: provedor,
                     erro: e,
@@ -9547,7 +9554,10 @@ async function atenderChat(c, ctx) {
                         p_provedor: AUXILIAR_PROVEDOR
                     });
                     const k = chaves?.[0];
-                    if (!chaveErro && k?.provedor === AUXILIAR_PROVEDOR && k.base_url === aux.base_url && k.modelo === aux.modelo) {
+                    if (!chaveErro && k?.provedor === AUXILIAR_PROVEDOR && k.base_url === aux.base_url && k.modelo === aux.modelo && Number(k.limite) === Number(aux.limite_mensal_tokens) && cotaAuxiliarPermitida({
+                        ...aux,
+                        tokens_mes: Number(k.tokens_mes)
+                    })) {
                         const chaveiro = await chaveiroPlataforma(admin, ctx.get);
                         if (chaveiro) {
                             inicioProv = Date.now();
