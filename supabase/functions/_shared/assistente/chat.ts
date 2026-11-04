@@ -8,6 +8,7 @@ import { modeloDaChave, validarProvedor, type ProvedorChat } from "./provedores.
 import { FERRAMENTAS_CATALOGO, REGRA_CATALOGO } from "./catalogo_leitura.ts";
 import { avisoTroca, FERRAMENTAS_FREE, PROVEDOR_FREE, podeTrocarParaFree, SISTEMA_FREE, URL_FREE } from "./free_automatico.ts";
 import { configFallbackFree, tentarFallbackFree } from "./fallback_free.ts";
+import { AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar, executarAuxiliarPublico, urlAuxiliarPermitida, cotaAuxiliarPermitida } from "./auxiliar_independente.ts";
 import { CONSULTAR_PRODUTO, consultarProduto } from "./bling_consultar.ts";
 import { gerarFichaSemLLM } from "./ficha_sem_llm.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../ia/ferramentas.ts";
@@ -40,7 +41,21 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  const ativo = (codigo: string) => flags.some((r: any) => r.codigo === codigo && r.ativo === true);
  if (c.acao === "chat_config") {
   const { data: config, error } = await usuario.from("lojas").select("chat_retencao_dias").eq("id", loja.id).single();
-  return error ? resultado({ erro: "Preparação do histórico ainda não instalada." }, 503) : resultado({ streaming: true, persistente: ativo("chat_persistente"), bling: ativo("chat_consulta_bling"), leitura_administrativa: ativo("chat_leitura_administrativa"), retencao_dias: config.chat_retencao_dias, fallback_free_disponivel: configFallbackFree(ctx.get, loja.id) !== null, versao: "chat_operacional_v1" });
+  // Somente metadados; NAO consultar chave cifrada nem afirmar disponibilidade de rede.
+  // O segundo provedor depende de ativacao voluntaria, failover e endpoint aprovado.
+  const { data: aux, error: erroAux } = await admin.from("loja_chaves_ia")
+    .select("provedor,ativa,base_url,modelo,limite_mensal_tokens,tokens_mes,mes_ref")
+    .eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
+  const auxiliarConfigurado = !erroAux && aux?.ativa === true && aux?.provedor === AUXILIAR_PROVEDOR
+    && typeof aux.modelo === "string" && aux.modelo.length > 0 && aux.modelo.length <= 120
+    && urlAuxiliarPermitida(aux.base_url) && cotaAuxiliarPermitida(aux);
+  return error ? resultado({ erro: "Preparação do histórico ainda não instalada." }, 503) : resultado({
+    streaming: true, persistente: ativo("chat_persistente"), bling: ativo("chat_consulta_bling"),
+    leitura_administrativa: ativo("chat_leitura_administrativa"), retencao_dias: config.chat_retencao_dias,
+    fallback_free_disponivel: configFallbackFree(ctx.get, loja.id) !== null,
+    fallback_auxiliar_disponivel: auxiliarConfigurado,
+    versao: "chat_operacional_v1",
+  });
  }
  // Excluir e configurar continuam disponíveis quando o recurso é desligado.
  if (c.acao === "chat_excluir" && uuid(c.conversa_id)) {
@@ -253,6 +268,54 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
     ctx.aoTexto?.(resposta);
     respondidoPeloGratuito = true;
    } catch (e2) { fimProv(PROVEDOR_FREE, e2); erroFinal = e2; }
+  }
+  // Segundo provedor realmente independente: somente glossario PUBLICO e opt-in,
+  // com candidato ativo/failover aprovado na loja. Nao recebe historico/ERP/ferramentas.
+  // Nunca ha segunda tentativa no mesmo provedor nem pagamento automatico.
+  if (!respondidoPeloGratuito && provedor === PROVEDOR_FREE) {
+   try {
+    const { data: aux, error: auxErro } = await admin.from("loja_chaves_ia")
+      .select("provedor,ativa,base_url,modelo,limite_mensal_tokens,tokens_mes,mes_ref")
+      .eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
+    const elegivel = !auxErro && podeTrocarParaAuxiliar({
+      origem: provedor, erro: e, iniciouChamadaProvedor,
+      consentimento: c.consentimento_fallback_free === true,
+      texto: c.texto, anexos: anexos.length,
+      textoTransmitido: transmitiuTextoPrincipal,
+      tentativasFerramenta: tentativas.length,
+      propostasCriadas: (meta.propostas as unknown[] | undefined)?.length ?? 0,
+    }, aux);
+    if (elegivel) {
+     const { data: chaves, error: chaveErro } = await admin.rpc("ia_chave_ativa", { p_loja: loja.id, p_provedor: AUXILIAR_PROVEDOR });
+     const k = chaves?.[0];
+     if (!chaveErro && k?.provedor === AUXILIAR_PROVEDOR && k.base_url === aux.base_url && k.modelo === aux.modelo
+       && Number(k.limite) === Number(aux.limite_mensal_tokens)
+       && cotaAuxiliarPermitida({ ...aux, tokens_mes: Number(k.tokens_mes) })) {
+      const chaveiro = await chaveiroPlataforma(admin, ctx.get);
+      if (chaveiro) {
+       inicioProv = Date.now();
+       const resp = await executarAuxiliarPublico({
+        texto: c.texto, baseUrl: k.base_url, modelo: k.modelo,
+        chave: await decifrar(k.cifrada, chaveiro), fetch: ctx.fetch,
+       });
+       if (resp) {
+        fimProv(AUXILIAR_PROVEDOR);
+        status = 200; resposta = "Modo FreeLLM auxiliar (glossario publico; sem consulta ao Bling):\\n\\n" + resp.texto;
+        tokens += resp.tokens; modelo = resp.modelo;
+        Object.assign(meta, { desfecho: "contingencia_publica", provedor: AUXILIAR_PROVEDOR,
+          provedor_efetivo: AUXILIAR_PROVEDOR, host_provedor: new URL(k.base_url).hostname,
+          troca_de: PROVEDOR_FREE, troca_motivo: (e as IaErro).status,
+          ferramentas: [], ferramentas_solicitadas: [], tentativas: [], completa: true, origem: "glossario_publico" });
+        ctx.aoTexto?.(resposta);
+        respondidoPeloGratuito = true;
+       } else fimProv(AUXILIAR_PROVEDOR, new IaErro(502, "auxiliar indisponivel"));
+      }
+     }
+    }
+   } catch {
+    // Nenhum segredo ou mensagem gravado; erro original continua sendo devolvido.
+    if (inicioProv) fimProv(AUXILIAR_PROVEDOR, new IaErro(502, "auxiliar indisponivel"));
+   }
   }
   if (!respondidoPeloGratuito) {
   // Contingência segura: SÓ depois de tentativa real Gemini, sem streaming parcial,

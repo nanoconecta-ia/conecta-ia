@@ -8794,6 +8794,76 @@ function avisoTroca(de, status) {
 return { PROVEDOR_FREE: PROVEDOR_FREE, URL_FREE: URL_FREE, MODELO_FREE_PADRAO: MODELO_FREE_PADRAO, FERRAMENTAS_FREE: FERRAMENTAS_FREE, STATUS_TROCA: STATUS_TROCA, podeTrocarParaFree: podeTrocarParaFree, SISTEMA_FREE: SISTEMA_FREE, avisoTroca: avisoTroca };
 })();
 
+// ---------- supabase/functions/_shared/assistente/auxiliar_independente.ts ----------
+const __m62 = (() => {
+const { conversar: conversar, IaErro: IaErro } = __m5;
+const { perguntaPublica: perguntaPublica } = __m61;
+const AUXILIAR_PROVEDOR = "compativel_openai";
+const AUXILIAR_HOSTS = [
+    "api.groq.com",
+    "api.cerebras.ai"
+];
+function cotaAuxiliarPermitida(k, agora = new Date()) {
+    const limite = Number(k.limite_mensal_tokens);
+    if (k.limite_mensal_tokens == null || !Number.isSafeInteger(limite) || limite < 1000 || limite > 50000) return false;
+    const mesmoMes = typeof k.mes_ref === "string" && k.mes_ref.slice(0, 7) === agora.toISOString().slice(0, 7);
+    const usado = mesmoMes ? Number(k.tokens_mes ?? 0) : 0;
+    return Number.isSafeInteger(usado) && usado >= 0 && usado < limite;
+}
+function urlAuxiliarPermitida(url) {
+    if (typeof url !== "string") return false;
+    try {
+        const u = new URL(url);
+        return u.protocol === "https:" && !u.username && !u.password && !u.search && !u.hash && !u.port && AUXILIAR_HOSTS.includes(u.hostname) && (u.hostname === "api.groq.com" && /^\/openai\/v1\/?$/.test(u.pathname) || u.hostname === "api.cerebras.ai" && /^\/v1\/?$/.test(u.pathname));
+    } catch  {
+        return false;
+    }
+}
+function podeTrocarParaAuxiliar(c, k) {
+    return c.origem === "openrouter_free" && c.iniciouChamadaProvedor && c.consentimento && c.anexos === 0 && !c.textoTransmitido && c.tentativasFerramenta === 0 && c.propostasCriadas === 0 && c.erro instanceof IaErro && [
+        429,
+        502,
+        504
+    ].includes(c.erro.status) && perguntaPublica(c.texto) && k?.provedor === AUXILIAR_PROVEDOR && k.ativa === true && cotaAuxiliarPermitida(k) && typeof k.modelo === "string" && k.modelo.length > 0 && k.modelo.length <= 120 && urlAuxiliarPermitida(k.base_url);
+}
+async function executarAuxiliarPublico(p) {
+    if (!perguntaPublica(p.texto) || !urlAuxiliarPermitida(p.baseUrl) || !p.modelo || p.modelo.length > 120 || !p.chave) return null;
+    try {
+        const r = await conversar({
+            provedor: AUXILIAR_PROVEDOR,
+            baseUrl: p.baseUrl,
+            chave: p.chave,
+            modelo: p.modelo,
+            mensagens: [
+                {
+                    role: "user",
+                    content: p.texto
+                }
+            ],
+            sistema: "Glossario publico de mecanica diesel. Responda em portugues do Brasil, ate 90 palavras. Sem historico, ERP, clientes, marcas de lojas, precos, SKU, estoque ou afirmacoes de compatibilidade. Nao invente fontes.",
+            ferramentas: [],
+            executar: async ()=>{
+                throw new Error("Ferramentas proibidas.");
+            },
+            maxPassos: 1,
+            maxTokens: 200,
+            fetch: p.fetch
+        });
+        if (!r.completa || !r.texto.trim() || r.ferramentasUsadas.length > 0) return null;
+        return {
+            texto: r.texto.trim().slice(0, 1000),
+            modelo: r.modelo ?? p.modelo,
+            tokens: r.tokens,
+            provedor: AUXILIAR_PROVEDOR
+        };
+    } catch  {
+        return null;
+    }
+}
+
+return { AUXILIAR_PROVEDOR: AUXILIAR_PROVEDOR, AUXILIAR_HOSTS: AUXILIAR_HOSTS, cotaAuxiliarPermitida: cotaAuxiliarPermitida, urlAuxiliarPermitida: urlAuxiliarPermitida, podeTrocarParaAuxiliar: podeTrocarParaAuxiliar, executarAuxiliarPublico: executarAuxiliarPublico };
+})();
+
 // ---------- supabase/functions/_shared/assistente/chat.ts ----------
 const __m54 = (() => {
 const { categoriaDoStatus: categoriaDoStatus, linhaLog: linhaLog, novoRequestId: novoRequestId } = __m46;
@@ -8804,6 +8874,7 @@ const { modeloDaChave: modeloDaChave, validarProvedor: validarProvedor } = __m51
 const { FERRAMENTAS_CATALOGO: FERRAMENTAS_CATALOGO, REGRA_CATALOGO: REGRA_CATALOGO } = __m55;
 const { avisoTroca: avisoTroca, FERRAMENTAS_FREE: FERRAMENTAS_FREE, PROVEDOR_FREE: PROVEDOR_FREE, podeTrocarParaFree: podeTrocarParaFree, SISTEMA_FREE: SISTEMA_FREE, URL_FREE: URL_FREE } = __m56;
 const { configFallbackFree: configFallbackFree, tentarFallbackFree: tentarFallbackFree } = __m61;
+const { AUXILIAR_PROVEDOR: AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar: podeTrocarParaAuxiliar, executarAuxiliarPublico: executarAuxiliarPublico, urlAuxiliarPermitida: urlAuxiliarPermitida, cotaAuxiliarPermitida: cotaAuxiliarPermitida } = __m62;
 const { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, consultarProduto: consultarProduto } = __m57;
 const { gerarFichaSemLLM: gerarFichaSemLLM } = __m58;
 const { executarFerramenta: executarFerramenta, FERRAMENTAS: FERRAMENTAS, SISTEMA: SISTEMA } = __m10;
@@ -8844,6 +8915,8 @@ async function atenderChat(c, ctx) {
     const ativo = (codigo)=>flags.some((r)=>r.codigo === codigo && r.ativo === true);
     if (c.acao === "chat_config") {
         const { data: config, error } = await usuario.from("lojas").select("chat_retencao_dias").eq("id", loja.id).single();
+        const { data: aux, error: erroAux } = await admin.from("loja_chaves_ia").select("provedor,ativa,base_url,modelo,limite_mensal_tokens,tokens_mes,mes_ref").eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
+        const auxiliarConfigurado = !erroAux && aux?.ativa === true && aux?.provedor === AUXILIAR_PROVEDOR && typeof aux.modelo === "string" && aux.modelo.length > 0 && aux.modelo.length <= 120 && urlAuxiliarPermitida(aux.base_url) && cotaAuxiliarPermitida(aux);
         return error ? resultado({
             erro: "Preparação do histórico ainda não instalada."
         }, 503) : resultado({
@@ -8853,6 +8926,7 @@ async function atenderChat(c, ctx) {
             leitura_administrativa: ativo("chat_leitura_administrativa"),
             retencao_dias: config.chat_retencao_dias,
             fallback_free_disponivel: configFallbackFree(ctx.get, loja.id) !== null,
+            fallback_auxiliar_disponivel: auxiliarConfigurado,
             versao: "chat_operacional_v1"
         });
     }
@@ -9460,6 +9534,69 @@ async function atenderChat(c, ctx) {
                 erroFinal = e2;
             }
         }
+        if (!respondidoPeloGratuito && provedor === PROVEDOR_FREE) {
+            try {
+                const { data: aux, error: auxErro } = await admin.from("loja_chaves_ia").select("provedor,ativa,base_url,modelo,limite_mensal_tokens,tokens_mes,mes_ref").eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
+                const elegivel = !auxErro && podeTrocarParaAuxiliar({
+                    origem: provedor,
+                    erro: e,
+                    iniciouChamadaProvedor,
+                    consentimento: c.consentimento_fallback_free === true,
+                    texto: c.texto,
+                    anexos: anexos.length,
+                    textoTransmitido: transmitiuTextoPrincipal,
+                    tentativasFerramenta: tentativas.length,
+                    propostasCriadas: meta.propostas?.length ?? 0
+                }, aux);
+                if (elegivel) {
+                    const { data: chaves, error: chaveErro } = await admin.rpc("ia_chave_ativa", {
+                        p_loja: loja.id,
+                        p_provedor: AUXILIAR_PROVEDOR
+                    });
+                    const k = chaves?.[0];
+                    if (!chaveErro && k?.provedor === AUXILIAR_PROVEDOR && k.base_url === aux.base_url && k.modelo === aux.modelo && Number(k.limite) === Number(aux.limite_mensal_tokens) && cotaAuxiliarPermitida({
+                        ...aux,
+                        tokens_mes: Number(k.tokens_mes)
+                    })) {
+                        const chaveiro = await chaveiroPlataforma(admin, ctx.get);
+                        if (chaveiro) {
+                            inicioProv = Date.now();
+                            const resp = await executarAuxiliarPublico({
+                                texto: c.texto,
+                                baseUrl: k.base_url,
+                                modelo: k.modelo,
+                                chave: await decifrar(k.cifrada, chaveiro),
+                                fetch: ctx.fetch
+                            });
+                            if (resp) {
+                                fimProv(AUXILIAR_PROVEDOR);
+                                status = 200;
+                                resposta = "Modo FreeLLM auxiliar (glossario publico; sem consulta ao Bling):\\n\\n" + resp.texto;
+                                tokens += resp.tokens;
+                                modelo = resp.modelo;
+                                Object.assign(meta, {
+                                    desfecho: "contingencia_publica",
+                                    provedor: AUXILIAR_PROVEDOR,
+                                    provedor_efetivo: AUXILIAR_PROVEDOR,
+                                    host_provedor: new URL(k.base_url).hostname,
+                                    troca_de: PROVEDOR_FREE,
+                                    troca_motivo: e.status,
+                                    ferramentas: [],
+                                    ferramentas_solicitadas: [],
+                                    tentativas: [],
+                                    completa: true,
+                                    origem: "glossario_publico"
+                                });
+                                ctx.aoTexto?.(resposta);
+                                respondidoPeloGratuito = true;
+                            } else fimProv(AUXILIAR_PROVEDOR, new IaErro(502, "auxiliar indisponivel"));
+                        }
+                    }
+                }
+            } catch  {
+                if (inicioProv) fimProv(AUXILIAR_PROVEDOR, new IaErro(502, "auxiliar indisponivel"));
+            }
+        }
         if (!respondidoPeloGratuito) {
             const livre = iniciouChamadaProvedor ? await tentarFallbackFree({
                 texto: c.texto,
@@ -9554,7 +9691,7 @@ return { FERRAMENTAS_PROPOSTA_BLING: FERRAMENTAS_PROPOSTA_BLING, FERRAMENTAS_PES
 })();
 
 // ---------- supabase/functions/_shared/ia/adaptadores_stream.ts ----------
-const __m62 = (() => {
+const __m63 = (() => {
 const { IaErro: IaErro, temAnexo: temAnexo } = __m8;
 const { urlPublicaSegura: urlPublicaSegura } = __m9;
 const { paradaClaude: paradaClaude, paradaGemini: paradaGemini, paradaOpenAI: paradaOpenAI } = __m7;
@@ -10082,7 +10219,7 @@ return { lerEventosSse: lerEventosSse, chamarClaudeStream: chamarClaudeStream, c
 })();
 
 // ---------- supabase/functions/_shared/assistente/streaming.ts ----------
-const __m63 = (() => {
+const __m64 = (() => {
 const quadro = (evento, dados)=>`event: ${evento}\ndata: ${JSON.stringify(dados)}\n\n`;
 function turnoComStreaming(turno, cors) {
     const enc = new TextEncoder();
@@ -10152,8 +10289,8 @@ const { listarProvedores: listarProvedores, modeloDaChave: modeloDaChave, valida
 const { MSG_SO_LOJISTA: MSG_SO_LOJISTA, podeDecidir: podeDecidir } = __m52;
 const { conteudoComAnexos: conteudoComAnexos, REGRAS_ANEXO: REGRAS_ANEXO, validarAnexos: validarAnexos } = __m53;
 const { atenderChat: atenderChat } = __m54;
-const { ADAPTADORES_STREAM: ADAPTADORES_STREAM } = __m62;
-const { turnoComStreaming: turnoComStreaming } = __m63;
+const { ADAPTADORES_STREAM: ADAPTADORES_STREAM } = __m63;
+const { turnoComStreaming: turnoComStreaming } = __m64;
 const CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
