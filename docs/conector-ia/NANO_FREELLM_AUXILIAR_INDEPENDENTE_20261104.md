@@ -52,3 +52,9 @@ política de dados apropriada.
 
 **Proibido sem autorização específica:** merge, deploy, migração, mudança de credencial,
 escrita Bling, exposição de endpoint local ou envio de dados comerciais para API gratuita.
+
+## Revisão para merge (04/11/2026)
+- A autorização para prosseguir com merge/deploy foi dada pelo dono; **a autorização não substitui os checks de CI, validação da build ou controles do ambiente de produção**.
+- Na área de trabalho isolada `conecta-ia-pr291-lf`, `npm test` do painel executou **385 testes com 385 aprovações**. O `npm run build` foi iniciado, mas sua conclusão não foi confirmada no notebook.
+- O pacote autocontido do assistente passou no verificador local; os cinco testes do módulo auxiliar passaram. A confirmação do CI para o SHA atual continua obrigatória.
+- O provedor auxiliar não está configurado nem homologado ao vivo na Mobis. Merge de código não é ativação operacional.
