@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { IaErro } from "../ia/claude.ts";
-import { podeTrocarParaAuxiliar, urlAuxiliarPermitida, executarAuxiliarPublico } from "./auxiliar_independente.ts";
+import { podeTrocarParaAuxiliar, urlAuxiliarPermitida, executarAuxiliarPublico, cotaAuxiliarPermitida } from "./auxiliar_independente.ts";
 
-const k = { provedor: "compativel_openai", ativa: true, failover: true, base_url: "https://api.groq.com/openai/v1", modelo: "modelo-free-configurado" };
+const k = { provedor: "compativel_openai", ativa: true, base_url: "https://api.groq.com/openai/v1", modelo: "modelo-free-configurado", limite_mensal_tokens: 5000, tokens_mes: 0, mes_ref: "2026-11-01" };
 const c = { origem: "openrouter_free", erro: new IaErro(429, "limite"), iniciouChamadaProvedor: true,
   consentimento: true, texto: "O que é turbocompressor?", anexos: 0,
   textoTransmitido: false, tentativasFerramenta: 0, propostasCriadas: 0 };
@@ -20,8 +20,19 @@ test("roteador independente: so falha do OpenRouter e consulta publica explicita
   assert.equal(podeTrocarParaAuxiliar({ ...c, tentativasFerramenta: 1 }, k), false);
   assert.equal(podeTrocarParaAuxiliar({ ...c, propostasCriadas: 1 }, k), false);
   assert.equal(podeTrocarParaAuxiliar({ ...c, texto: "Qual é o custo da peça CI000016?" }, k), false);
-  assert.equal(podeTrocarParaAuxiliar(c, { ...k, failover: false }), false);
+  assert.equal(podeTrocarParaAuxiliar(c, { ...k, limite_mensal_tokens: null }), false);
   assert.equal(podeTrocarParaAuxiliar(c, { ...k, ativa: false }), false);
+});
+
+test("cota conservadora: 1 mil a 50 mil tokens por mes e bloqueio ao esgotar", () => {
+  const hoje = new Date("2026-11-04T12:00:00Z");
+  const base = { limite_mensal_tokens: 5000, tokens_mes: 50, mes_ref: "2026-11-01" };
+  assert.equal(cotaAuxiliarPermitida(base, hoje), true);
+  assert.equal(cotaAuxiliarPermitida({ ...base, tokens_mes: 5000 }, hoje), false);
+  assert.equal(cotaAuxiliarPermitida({ ...base, limite_mensal_tokens: 0 }, hoje), false);
+  assert.equal(cotaAuxiliarPermitida({ ...base, limite_mensal_tokens: 50001 }, hoje), false);
+  assert.equal(cotaAuxiliarPermitida({ ...base, limite_mensal_tokens: null }, hoje), false);
+  assert.equal(cotaAuxiliarPermitida({ ...base, mes_ref: "2026-10-01", tokens_mes: 9000 }, hoje), true);
 });
 
 test("provedor independente: URL HTTPS exata e nao OpenRouter nem destino interno", () => {
