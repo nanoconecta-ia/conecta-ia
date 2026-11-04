@@ -41,3 +41,26 @@ test("executor nunca faz rede com texto privado ou URL nao autorizada", async ()
   assert.equal(await executarAuxiliarPublico({ ...p, texto: c.texto, baseUrl: "https://openrouter.ai/api/v1" }), null);
   assert.equal(chamou, false);
 });
+
+test("executor entrega glossario sem contexto ERP com uma chamada simulada", async () => {
+  let chamadas = 0;
+  const fakeFetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    chamadas += 1;
+    assert.equal(String(url), "https://api.groq.com/openai/v1/chat/completions");
+    const body = JSON.parse(String(init?.body));
+    assert.equal(body.model, k.modelo);
+    assert.equal(body.messages.length, 2);
+    assert.equal(body.messages[1].content, c.texto);
+    assert.equal(body.tools, undefined);
+    assert.doesNotMatch(JSON.stringify(body), /CI000016|fornecedor|custo|pedido|nome da loja/i);
+    return new Response(JSON.stringify({
+      id: "resposta-sintetica", model: k.modelo, usage: { total_tokens: 17 },
+      choices: [{ finish_reason: "stop", message: { content: "O turbocompressor usa energia dos gases de escapamento para comprimir o ar admitido." } }],
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  }) as typeof fetch;
+  const r = await executarAuxiliarPublico({ texto: c.texto, baseUrl: k.base_url, modelo: k.modelo, chave: "chave-sintetica", fetch: fakeFetch });
+  assert.equal(chamadas, 1);
+  assert.equal(r?.tokens, 17);
+  assert.match(r?.texto ?? "", /turbocompressor/);
+  assert.equal(r?.provedor, "compativel_openai");
+});
