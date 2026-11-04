@@ -2,263 +2,267 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "8274f51b9c8632ac5e758e7245c6e3a93a14a19fb371f9c330c5d7dd718ad510",
+  "artefato_sha256": "d0d1d417cabf1edc5ac0172a5d837a23eab7a398f4c884d5b54e7ef8f1b58288",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
-      "sha256": "d9f5d3cfad1495c776d4262e4769e86e96558662374e91f8739ed63ad1dee792"
+      "sha256": "e97d4d025fed0fc18bd3f5d0d22544ebff5971e8dc99ecb4c95f05698c42e7d6"
     },
     {
       "path": "supabase/functions/_shared/estado.ts",
-      "sha256": "ca773dccf24fee19ad71c8efc9f4751f46c08a12d502456bf96c3e3183b23419"
+      "sha256": "8f4aa032ad3bd518c81590aad995a3a71fe9569f45bd9fae858eac15148291be"
     },
     {
       "path": "supabase/functions/_shared/cripto.ts",
-      "sha256": "0ce08b5db4d10007547d4c040fef8a6580be6879ef72fd3a800236824beb294c"
+      "sha256": "10903ba82788bbe7322c79bc5571046330251aba58ad59f8c5a1e2805a9f07c4"
     },
     {
       "path": "supabase/functions/_shared/plataforma.ts",
-      "sha256": "5b49bd8a52937b9560bf4161a58bcda5ee80d7f598f98236ef4a32effcd93619"
+      "sha256": "b698f61b45d63a0bf7da2060cecf5210594b044d0fc4f04821e195bf1f067aa0"
     },
     {
       "path": "supabase/functions/_shared/ia/reducao.ts",
-      "sha256": "a19f56f001113dd6276afaff82d0a2e71347c2be31eafeda00ff00a589618f76"
+      "sha256": "6bca2f2246c5584470ffb51f5175b8a1e9e79e7c382e48869e32c1ab60f566be"
     },
     {
       "path": "supabase/functions/_shared/ia/tipos.ts",
-      "sha256": "19a543153f283ae12a8f79d68e87e0e0dc2f0c588234194ea34865888ac83031"
+      "sha256": "0eeb207bea5a9781b0c0f42c320e3ea331fb26a1e52854f80a208b6b697d697c"
     },
     {
       "path": "supabase/functions/_shared/ia/plugin.ts",
-      "sha256": "a6d7180dc22a97b83b674d61ce5e89ac1afa7883a1bcc5c89e2b7be499ccbc61"
+      "sha256": "5ae529f39b4c26b2b12f0ca9c6ca6cc8992dd2ade8ae595e549716ab44afaa03"
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores.ts",
-      "sha256": "145911eda693e93c28b92d428d77bba19777ba2dfd10204a70443b44c52cafb4"
+      "sha256": "b851a1999b22dd04ef1e05342a2774906c02204d2e993ed5f9a563675b6d467c"
     },
     {
       "path": "supabase/functions/_shared/ia/claude.ts",
-      "sha256": "139f2e35bb4447393f9bceef849017881a82a835a019ee2a259f4f04c501971d"
+      "sha256": "5063d29a30cb6a996100d6fe1ba6d90b97593a5c8ab0527ce3846f43f879bc18"
     },
     {
       "path": "supabase/functions/_shared/busca_segura/imagem_original.ts",
-      "sha256": "ff646cb448dc51275f2e7bf219c4db21967274a0fdf45d88edfacb3c19e2c336"
+      "sha256": "73e34327fa684cd66f161a3fb39fadcc0e9be86c7672fe74525cd331ea97a77a"
     },
     {
       "path": "supabase/functions/_shared/aplicacoes/regras_aplicacao.ts",
-      "sha256": "546b7a85a1f330b57af81c9fb72e501edf37e80798f8036cf4144887a58b705b"
+      "sha256": "a5861dfa65c1ee7cdf91432ea8ffbf9987f30c0368e6e51f9e046a711137e6f0"
     },
     {
       "path": "supabase/functions/_shared/aplicacoes/regras_seo.ts",
-      "sha256": "02cc9f57827cddc6880f222f586d2650eab83101fdede776e941dd4e635eb36d"
+      "sha256": "fcedfffad84b067afc41fb97a035443ea2701ac5f2305cc6265f334cbd5b4085"
     },
     {
       "path": "supabase/functions/_shared/ia/escrita.ts",
-      "sha256": "30a56850a47353eb6ce9032b4205eac6d9f1a5bd84402eea5c8d2a65b3bba440"
+      "sha256": "479d1f42c02eb4f4e1679d90d7e3f6504f3718c70c6684cf6b73fc959e2574da"
     },
     {
       "path": "supabase/functions/_shared/ia/busca.ts",
-      "sha256": "1c53dfd294f27b03ecddc1e81d9ca95536f4f5dd00f7a50580793c40644d932d"
+      "sha256": "d01be698e82334482a7784e38cbbe340ec3a025a9507267e41d8471edc696619"
     },
     {
       "path": "supabase/functions/_shared/ia/google.ts",
-      "sha256": "0103a61d838d4fb825c623b336186e9b79245e798a9405d971e3ce98d73fb105"
+      "sha256": "2bcbf6c3c2d8b856409a0ab0b715b46f63440d44c14d571d3ffc130a510911fd"
     },
     {
       "path": "supabase/functions/_shared/ia/searxng.ts",
-      "sha256": "6d4b6cec9237222568abc6a9c8558f2c9a71adf61565b02003d222057b664d74"
+      "sha256": "48589d8acef5012dc36d08056a41ee4a9cc5cf91fc032fd7ed0551ddbad2f47f"
     },
     {
       "path": "supabase/functions/_shared/ia/provedor_busca.ts",
-      "sha256": "9bc39105922eb85c9b07d018290dc69236341359ef467c73ca250309ab8c79dc"
+      "sha256": "8819ee1986cfe60e56b2a7f41cbfb6ee97849519df4be2a06f09c8ad95ea75c7"
     },
     {
       "path": "supabase/functions/_shared/conector/atividade.ts",
-      "sha256": "b4db708730f635d40c9ef9173abc9ba9eaea6d01af18cb97bfb4cebbd75c9f99"
+      "sha256": "984901487983b921afb5c2dbc103e15b598c7261947b06646fe70c24e53e4549"
     },
     {
       "path": "supabase/functions/_shared/contexto/contexto.ts",
-      "sha256": "11af008d5147ef8ab521b61a0fb3069986475bbd567610930ae811d1df2fe5c1"
+      "sha256": "08b8ae5d6ef1aca1b3f60971a6e70390f8115c6883587d97e187d4e87066ff61"
     },
     {
       "path": "supabase/functions/_shared/contexto/ler.ts",
-      "sha256": "735152ee3e7dee93f8cb1c60d8a02a681ad6bdb7af2bad4f8642ea5ded5cec1d"
+      "sha256": "82c4afdbb7836f51874c12053b0dcb8285d0770db39297b0ff18a94b8efc919d"
     },
     {
       "path": "supabase/functions/_shared/cadastro/regras_marca.ts",
-      "sha256": "7a03f8af54ccae751a4a78a737de63c9659b1fe9a46b43da0d940364f2d7e18b"
+      "sha256": "60db93e72b80892aeb5c8afc2e2b9d16a930b8536da5c351077379272c9a10e4"
     },
     {
       "path": "supabase/functions/_shared/conector/registro.ts",
-      "sha256": "087a1291cdf49f16fee96583ce5addf1749a3e50fb5c0e2ab7b8f871e7f8df58"
+      "sha256": "16324147b254823f6a989c7484af143d57133a64d9961e995d235f24395fc9eb"
     },
     {
       "path": "supabase/functions/_shared/conector/bling_campos.ts",
-      "sha256": "c199600a584bf7d1f699b8256d227763628d700f4591ff3ec5bcccbef473df6a"
+      "sha256": "bc07268735b987005f2f35fe6471e1188887a490ff51c6d7300aa92bc757222b"
     },
     {
       "path": "supabase/functions/_shared/cadastro/regras_cadastro.ts",
-      "sha256": "119e4cff7f415d9f51c527020fbdc616b861d3143533555b2272a156a7394f4e"
+      "sha256": "07b3a840f215d03828fc96b9cbb042ef36245d28f3061b08cebc6a06633e5e50"
     },
     {
       "path": "supabase/functions/_shared/preco/regras_preco.ts",
-      "sha256": "13ea9408b4d776e984710453d5f1961799db393e2df9a542fc271c2f3ef479cf"
+      "sha256": "348a38078e2100fd987f745688665b4ff15fc6a3c77b0761b44fedfaa0ff2131"
     },
     {
       "path": "supabase/functions/_shared/consulta/interpretar.ts",
-      "sha256": "f93b6f12190b0e7de82798e478b06c6cad74d5d0ef5e43afd5a940907cafce4e"
+      "sha256": "b60bc3465fa9960cf8fe744ab0394cf6dafc024d3fc8f5ad11993580676d20d1"
     },
     {
       "path": "supabase/functions/_shared/busca_segura/entidades.ts",
-      "sha256": "fe0878574c2f1712d39fcc4018e852057ae110a0f78cc3b60fd15f363813892b"
+      "sha256": "e63a677122c3e3acc492a7b223d014aea71d1f90f312ca04088de05b3660c912"
     },
     {
       "path": "supabase/functions/_shared/busca_segura/evidencia.ts",
-      "sha256": "ec71dbb196613eeae42a36b4f0ea10bba692650ad6cd7219500f69336d53f1d7"
+      "sha256": "e9d48cea4a03a0366d428b371b4c5a31ed04c8dbb164571db1cc2f5ee028c396"
     },
     {
       "path": "supabase/functions/_shared/imagens/regras.ts",
-      "sha256": "942ebc8dc79fe5f8f0411dbc8260d5841cf7674043764ed2ee2a6b12ba6d4a3b"
+      "sha256": "1bda4c750795e707089297dfeb652856a1f071a00cd0b61da7bfec997147a87c"
     },
     {
       "path": "supabase/functions/_shared/busca_segura/galeria.ts",
-      "sha256": "799fd2387d3912117b60299223f84d6f84836b3cdf29173c28b1f4aea1484984"
+      "sha256": "e11eb2617ef614fde0828d4a48018188564cb860122a5eb65594ff696442702d"
     },
     {
       "path": "supabase/functions/_shared/busca_segura/dominios.ts",
-      "sha256": "1de21809818926262bce61b610a861ca5a7ce2c19ca81f25a54d6379d5475a9b"
+      "sha256": "905863f5c75e20ce893aaa4a7abb674bc8ba43326fc83316ae908a047a43416d"
     },
     {
       "path": "supabase/functions/_shared/busca_segura/fabricantes.ts",
-      "sha256": "722fc30403a9a9d7b33092c84e178cb6ddd8cb6bd56e4d2a0ffcbb4e6676eedd"
+      "sha256": "6a82d33325549920ecf491fc5ddc23f2e861c5559522fe2e7c90ef3d09f02f3e"
     },
     {
       "path": "supabase/functions/_shared/busca_segura/plano_pesquisa.ts",
-      "sha256": "05a4df240a937b9dafd0d103a8f3c4b1c7212e7a9a90f18e4aa7a4ec5015c174"
+      "sha256": "8550ad2c98a43f4f9d9bc8ba57f8696b7c7a9269b530173c52324696a17875f7"
     },
     {
       "path": "supabase/functions/_shared/busca_segura/investigacao.ts",
-      "sha256": "510b40315f7a7a9eacbbb8dc9f5ae1ef1a9048da7e7e85d62e4694fdccbc588e"
+      "sha256": "91a6079281178f4eafaff650cb88ae246c0a5cdf746272c5c339c9b091e62483"
     },
     {
       "path": "supabase/functions/_shared/busca_segura/regras_sku.ts",
-      "sha256": "882d91777f78d43749c0cda708243debf248ef0a8ad1f465140a44b4333cbb39"
+      "sha256": "9c882584063062f6d2b55e8373c683e4c2f6890faa621ec3c026264bff84b6d5"
     },
     {
       "path": "supabase/functions/_shared/conector/categoria_bling.ts",
-      "sha256": "412f8d475e4e387aa4a7a39170f0e51cdf57dcbfe3af86cade82dee555f8d366"
+      "sha256": "8402f395543b435a1ead365a65866a9e15665f7952a13fdde6c1e02fc0cad2fb"
     },
     {
       "path": "supabase/functions/_shared/conector/handlers.ts",
-      "sha256": "80d0f7698bd8d2278cd09c418b41aad4f43dff280af0cf564f1c70bf8b5bd9d1"
+      "sha256": "0db04810fe19221bc6efa65e2742d18309a227137bd4d8a0d0f47cff2b69e115"
     },
     {
       "path": "supabase/functions/_shared/conector/tipos.ts",
-      "sha256": "5aaeb8f6145409711a2eb5f0930e3a73cdde45573b5e0aa1103b257d290a4de1"
+      "sha256": "f07f99793176fc8f231c92e040e48a7998a2fc6757ebf78f736d1be468e9b7d9"
     },
     {
       "path": "supabase/functions/_shared/conector/policy.ts",
-      "sha256": "575a98626e14ffa3f7f409b166f7b8e462cc256acde6349da84234dc077a5314"
+      "sha256": "cc397661d54bc6469fbadeb3191565fa10f432e1b76650f77ebfe161857e08a4"
     },
     {
       "path": "supabase/functions/_shared/conector/schema.ts",
-      "sha256": "dd564643363db906a7c39d61ff6bbc77add338378c7b383823acb534b14faae6"
+      "sha256": "5944eb487e9ddee9575beddb7e8105f304f57c2e08a35bcae2f1a34e8e91e419"
     },
     {
       "path": "supabase/functions/_shared/conector/despacho.ts",
-      "sha256": "edf706e74ed00367f600dc355dc361bbd1e1a4d9260c578e68ab53f80b785795"
+      "sha256": "6f7bde18cbd0985c9d467fbc5cd972c3921283eb7fea15f77d0fd732c244ceb8"
     },
     {
       "path": "supabase/functions/_shared/conector/aliases.ts",
-      "sha256": "55b774c06a191947e440b571615d3c6a294441b616ab73918af8bb2a37cb3488"
+      "sha256": "d7c19da6132967decf2903481a3d0a399a42eb7560cb788170fb3477c0435e4a"
     },
     {
       "path": "supabase/functions/_shared/ia/ferramentas.ts",
-      "sha256": "96759f453465ec7d5dc9abf52a7e2b40a97b4cc9e57f10a9ef04b399464086f2"
+      "sha256": "87bf29ff77db713da742e81036fe7e24be161fcb4c1db0fde49f0bf4edbe5507"
     },
     {
       "path": "supabase/functions/_shared/diagnostico/correlacao.ts",
-      "sha256": "0ce3d51c1b2eb67bf01cfba6e8b9a60e1ad58500b913eafb7ad52c1abc57803a"
+      "sha256": "9f56d525b5e9e434342c7c222bd6a4720fca056312cebf5434f6ac6d63b3fa76"
     },
     {
       "path": "supabase/functions/_shared/diagnostico/estado.ts",
-      "sha256": "30436b17c4f54e92e58ed23e30eee779861b5e1e8f0e980b6d362bb316a30b5c"
+      "sha256": "5c016f752159c8c50c9edaa6e7e03ed68baedeb346848c80220ed3bc3d47ecfd"
     },
     {
       "path": "supabase/functions/_shared/conector/dados.ts",
-      "sha256": "b5b8023710be095278345de626bc81dbf428cfcc54fb425bf435eab4acd005a8"
+      "sha256": "a80b11f906d01ae2757b9213eb67d531cf11e45fff924a626784f02a6630bc66"
     },
     {
       "path": "supabase/functions/_shared/bling_token.ts",
-      "sha256": "cc0741c715b6cf29b4f55cf1d5a842d982b254f2c36499486d66993ca70dcae2"
+      "sha256": "9f42941e6c2dfecb8bb8e419411b33eb5d949271cc573438af61ef4b286d7c98"
     },
     {
       "path": "supabase/functions/_shared/bling_api.ts",
-      "sha256": "b4111a685e011d2d051d8f9d40d6a5e8a6fde2da8232c0871360f2e09ddbd8fb"
+      "sha256": "035e09f803dbe1a479b5f1aae67fe9ac150e7b754b54a31bc9744a8c51792c79"
     },
     {
       "path": "supabase/functions/_shared/conector/porta_bling.ts",
-      "sha256": "ce31b78ff97fcb603c2b332c83412bf3d2aaba376be5c347c358f69c0dd1240d"
+      "sha256": "d60466fb9b09a568aa28d2a72477051565c6b80b4c849ee832be228221dce886"
     },
     {
       "path": "supabase/functions/_shared/bling_armazem.ts",
-      "sha256": "af765b491093e16d2bbc41d8f9ac803b68a24d9312df71b1feb1f262a4f796fa"
+      "sha256": "935f6805ec694a0a53255c06a808918fab729e8e35dd1683402a8d0d05a166d3"
     },
     {
       "path": "supabase/functions/_shared/assistente/provedores.ts",
-      "sha256": "07eec71e86a210581ee7cb0c53209bb43c29749d34bce9304d33b02f10eaff7b"
+      "sha256": "83aa0ca38e9dc7a4ccd732eea552585e3575d7aa0c6bbd3dc659fe8eb84d4c24"
     },
     {
       "path": "supabase/functions/_shared/assistente/permissao.ts",
-      "sha256": "36e54345454c0509d6d58512a81b34e25eb9de3df622370b9e439907ea1ce093"
+      "sha256": "c1250a910f5a5d7215b565efa0b7906ec4290c190839b0bc71f9adb4dd3c9947"
     },
     {
       "path": "supabase/functions/_shared/assistente/anexos.ts",
-      "sha256": "83e2d34b117b156a65b6f559508a66fe676dcd58415ab522f8696856eeb863b0"
+      "sha256": "58cfbdc5647ac99d2bc3ec84b532a6a7c56fa1e1d1df2074c35bdd738d816f82"
     },
     {
       "path": "supabase/functions/_shared/assistente/catalogo_leitura.ts",
-      "sha256": "c71d484a9c390dd82fda02854f03579dc7e781b495d02a490e760bea0ea690b6"
+      "sha256": "d65b3774c684aaf30f0019361fb8f2c7294a7c78cb732922235fa77fb0c9accc"
     },
     {
       "path": "supabase/functions/_shared/assistente/ficha_sem_llm.ts",
-      "sha256": "9fd0998cfd1546b8cf264ca444f9c62cf146bf840bb99d12cb288fd90cd8de9f"
+      "sha256": "9a17da842b7da00ec891e9d3faf2819d3d795903ad76abf345b4cdcc891b16ba"
     },
     {
       "path": "supabase/functions/_shared/bling_ferramentas.ts",
-      "sha256": "79e74f53fa101491d6ff864b81c80aa9cf7d08f70cd42c0a6b2fbd68cf765855"
+      "sha256": "5cfa89b1dddda3de813822fa7f20349867055b5c8dabc16bf9dcaf6707dbfbca"
     },
     {
       "path": "supabase/functions/_shared/assistente/busca_produto.ts",
-      "sha256": "d90c56940898662850e2eae5af6195fd65b8a3ee1d7a288258d5130314b6cda2"
+      "sha256": "bdc2364d08b6c8278a472cb6700dca03ce4eac2ec3fac127ea39dc7f3eaebc03"
     },
     {
       "path": "supabase/functions/_shared/assistente/bling_consultar.ts",
-      "sha256": "d6936cb3af61246e267c66f0493335e95550956d4b87a13fb56c7945b441af92"
+      "sha256": "c896fa032ae2b4dddac04da36a22ab89fd342fc87c6ccbd2aeb6ecd00a7d5dbc"
     },
     {
       "path": "supabase/functions/_shared/assistente/fallback_free.ts",
-      "sha256": "e2c4a348bd0030110c12d36ed4080503ba0c8f786f4a85b94fc300c6ea7ef02c"
+      "sha256": "2a2e4737edbec0c5a258e12aac0581228e8b77644f7fc68292685c399fc8ce97"
     },
     {
       "path": "supabase/functions/_shared/assistente/free_automatico.ts",
-      "sha256": "689725e00006ece5638a5ad9c520ee14aa339a9f14ce0e2c836a4c720d820153"
+      "sha256": "f2a3eab2886cec8ebc189cd7cd9c64bf52524770a99808081f0cb3a029cd1b4d"
+    },
+    {
+      "path": "supabase/functions/_shared/assistente/auxiliar_independente.ts",
+      "sha256": "3edbdbc9383c3b724228b0a23ffd2562c8c43bc1c01024f753e776f336a983dc"
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "18609a546db396689784230fde286829300f710271dbdf99c78f90609cea8843"
+      "sha256": "716e5ec207fcc6ccddb4d5eec870e8fcf0d2acbfd09869d06eaebfcf9ffcd504"
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores_stream.ts",
-      "sha256": "86b508c8bb295aa6b634fba4f426e38424dbc796b906d1dae56824762dd697ca"
+      "sha256": "b1164bb86dfde5b175ddf77a8075fc93bc71063c6e8d3891bd61e8d7162d7c61"
     },
     {
       "path": "supabase/functions/_shared/assistente/streaming.ts",
-      "sha256": "3af4c95c3cb8e1c679eaa9f883b6f72276aebcf0948098a20098159964f9612b"
+      "sha256": "bc5b434546e07e82c5ca39579ee0aa9e77c95cd8781b50c5c53868fd1a3cf042"
     },
     {
       "path": "supabase/functions/assistente/index.ts",
-      "sha256": "4f944f94c7eacc54327fec1da4df4c631c4d1a995f9fd528bcaab94c6ab2a1e2"
+      "sha256": "56176de2ca6de5fc43b893e2ff331d7dac42b33e0918ef30802fb979d1c9b672"
     }
   ]
 }
