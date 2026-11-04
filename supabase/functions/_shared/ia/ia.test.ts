@@ -181,3 +181,27 @@ test("persona: o agente se chama Nano.ia (nunca Genesis), fala natural e especí
   assert.match(SISTEMA, /Nano\.ia/); assert.doesNotMatch(SISTEMA, /g[eê]nesis|g[eê]nese/i);
   assert.match(SISTEMA, /ESPEC[ÍI]FICO/); assert.match(SISTEMA, /natural/i); assert.match(SISTEMA, /Nunca cite o nome do provedor/);
 });
+
+test("reservas preventivas ocorrem antes de cada chamada; ferramenta não dispara terceira chamada se bloqueada", async () => {
+  let chamadas = 0;
+  const etapas: number[] = [];
+  const f = (async (_: string, init: RequestInit) => {
+    chamadas++;
+    const pedido = JSON.parse(String(init.body));
+    if (chamadas === 1) return resp({ id: "a", model: "m", usage: { total_tokens: 150 },
+      choices: [{ finish_reason: "tool_calls", message: { content: null, tool_calls: [
+        { id: "x", type: "function", function: { name: "ver_produto", arguments: "{}" } },
+      ] } }] });
+    return resp({id:"b",model:"m",usage:{total_tokens:100},
+      choices:[{finish_reason:"stop",message:{content:"Produto consultado."}}]});
+  }) as unknown as typeof fetch;
+  const conf = { provedor: "compativel_openai" as const, baseUrl: "https://api.groq.com/openai/v1",
+    chave:"segredo-sintetico",modelo:"m",sistema:"tarefa",mensagens:[{role:"user" as const,content:"ficha"}],
+    ferramentas:[{ name:"ver_produto",description:"leitura",input_schema:{type:"object",properties:{}} }],
+    executar:async()=>({sku:"CI000016"}),fetch:f,
+    antesDoPasso:async(passo:number)=>{etapas.push(passo);if(passo===2)throw new IaErro(429,"Limite preventivo do Nano");}
+  };
+  await assert.rejects(conversar(conf),(e:unknown)=>e instanceof IaErro&&e.status===429);
+  assert.equal(chamadas,1,"o segundo passo não deve fazer chamada externa quando a reserva falhou");
+  assert.deepEqual(etapas,[1,2]);
+});

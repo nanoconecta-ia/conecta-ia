@@ -713,6 +713,7 @@ async function conversar(o) {
     const falhas = [];
     for(let passo = 1; passo <= maxPassos; passo++){
         if (o.sinal?.aborted) throw new IaErro(499, "cancelado");
+        await o.antesDoPasso?.(passo, tokens);
         const chamada = {
             chave: o.chave,
             modelo: o.modelo,
@@ -8794,8 +8795,89 @@ function avisoTroca(de, status) {
 return { PROVEDOR_FREE: PROVEDOR_FREE, URL_FREE: URL_FREE, MODELO_FREE_PADRAO: MODELO_FREE_PADRAO, FERRAMENTAS_FREE: FERRAMENTAS_FREE, STATUS_TROCA: STATUS_TROCA, podeTrocarParaFree: podeTrocarParaFree, SISTEMA_FREE: SISTEMA_FREE, avisoTroca: avisoTroca };
 })();
 
-// ---------- supabase/functions/_shared/assistente/auxiliar_independente.ts ----------
+// ---------- supabase/functions/_shared/assistente/roteamento_free.ts ----------
 const __m62 = (() => {
+const { IaErro: IaErro } = __m5;
+const { perguntaPublica: perguntaPublica } = __m61;
+function saudacaoSemIA(texto) {
+    if (typeof texto !== "string" || texto.length > 45 || /[\r\n\t0-9@:/\\]/.test(texto)) return null;
+    const t = texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/[!.?]+$/, "");
+    if (!/^(oi|ola|bom dia|boa tarde|boa noite|alo|e ai)$/.test(t)) return null;
+    return "Olá! Sou o Nano.IA. Para conferir um produto sem gastar tokens, digite /ficha seguido do SKU (por exemplo, /ficha CI000016). Para revisar: /revisar SKU. As consultas ao Bling exigem confirmação das evidências.";
+}
+function consultaPublicaEconomica(texto, anexos = 0) {
+    return anexos === 0 && perguntaPublica(texto);
+}
+const PROMPT_PUBLICO_ECONOMICO = "Glossário público de mecânica diesel. Responda em português do Brasil em até 90 palavras, apenas conceito geral, sem consultar ERP, sem recomendar SKU, preço, fornecedor, cliente, dado fiscal ou afirmar aplicação veicular. Se não souber, diga que não sabe.";
+function planoLimites(provedor, baseUrl, economico) {
+    if (provedor === "openrouter_free") return {
+        plano: "openrouter",
+        reduzido: economico,
+        chamadas: [
+            {
+                tipo: "rpm",
+                janelaS: 60,
+                max: 16
+            }
+        ],
+        estimativa: economico ? 650 : 5000
+    };
+    if (provedor === "compativel_openai" && /^https:\/\/api\.groq\.com\/openai\/v1\/?$/.test(baseUrl ?? "")) return {
+        plano: "groq",
+        reduzido: economico,
+        chamadas: [
+            {
+                tipo: "rpm",
+                janelaS: 60,
+                max: 2
+            }
+        ],
+        estimativa: economico ? 650 : 5000
+    };
+    return {
+        plano: "outro",
+        reduzido: false,
+        chamadas: [],
+        estimativa: 0
+    };
+}
+async function reservarPassoLivre(admin, lojaId, perfil, usados, teto, usadosNesteTurno) {
+    if (perfil.plano === "outro") return;
+    if (teto != null && Number.isFinite(teto) && usados + usadosNesteTurno + perfil.estimativa > teto) throw new IaErro(429, "Saldo preventivo do teto mensal interno insuficiente. Use a ficha sem IA ou aguarde a renovação.");
+    for (const p of perfil.chamadas){
+        const { data, error } = await admin.rpc("limite_chamada", {
+            p_chave: `nano:free:${perfil.plano}:${p.tipo}:${lojaId}`,
+            p_max: p.max,
+            p_janela_s: p.janelaS
+        });
+        if (error || data !== true) throw new IaErro(429, p.tipo === "rpd" ? "Limite preventivo diário das chamadas gratuitas. Use os recursos sem IA." : "Limite preventivo de chamadas por minuto. Aguarde a próxima janela.");
+    }
+}
+async function restanteDiarioOpenRouter(chave, f = fetch) {
+    if (!/^sk-or-v1-[A-Za-z0-9_-]{15,}$/.test(chave)) return null;
+    try {
+        const r = await f("https://openrouter.ai/api/v1/key", {
+            method: "GET",
+            redirect: "manual",
+            headers: {
+                Authorization: `Bearer ${chave}`
+            },
+            signal: AbortSignal.timeout(3500)
+        });
+        if (!r.ok) return null;
+        const j = await r.json().catch(()=>null);
+        const n = j?.data?.free_model_daily_requests?.remaining;
+        return Number.isSafeInteger(n) && n >= 0 ? n : null;
+    } catch  {
+        return null;
+    }
+}
+
+return { saudacaoSemIA: saudacaoSemIA, consultaPublicaEconomica: consultaPublicaEconomica, PROMPT_PUBLICO_ECONOMICO: PROMPT_PUBLICO_ECONOMICO, planoLimites: planoLimites, reservarPassoLivre: reservarPassoLivre, restanteDiarioOpenRouter: restanteDiarioOpenRouter };
+})();
+
+// ---------- supabase/functions/_shared/assistente/auxiliar_independente.ts ----------
+const __m63 = (() => {
 const { conversar: conversar, IaErro: IaErro } = __m5;
 const { perguntaPublica: perguntaPublica } = __m61;
 const AUXILIAR_PROVEDOR = "compativel_openai";
@@ -8874,7 +8956,8 @@ const { modeloDaChave: modeloDaChave, validarProvedor: validarProvedor } = __m51
 const { FERRAMENTAS_CATALOGO: FERRAMENTAS_CATALOGO, REGRA_CATALOGO: REGRA_CATALOGO } = __m55;
 const { avisoTroca: avisoTroca, FERRAMENTAS_FREE: FERRAMENTAS_FREE, PROVEDOR_FREE: PROVEDOR_FREE, podeTrocarParaFree: podeTrocarParaFree, SISTEMA_FREE: SISTEMA_FREE, URL_FREE: URL_FREE } = __m56;
 const { configFallbackFree: configFallbackFree, tentarFallbackFree: tentarFallbackFree } = __m61;
-const { AUXILIAR_PROVEDOR: AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar: podeTrocarParaAuxiliar, executarAuxiliarPublico: executarAuxiliarPublico, urlAuxiliarPermitida: urlAuxiliarPermitida, cotaAuxiliarPermitida: cotaAuxiliarPermitida } = __m62;
+const { consultaPublicaEconomica: consultaPublicaEconomica, planoLimites: planoLimites, PROMPT_PUBLICO_ECONOMICO: PROMPT_PUBLICO_ECONOMICO, reservarPassoLivre: reservarPassoLivre, restanteDiarioOpenRouter: restanteDiarioOpenRouter, saudacaoSemIA: saudacaoSemIA } = __m62;
+const { AUXILIAR_PROVEDOR: AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar: podeTrocarParaAuxiliar, executarAuxiliarPublico: executarAuxiliarPublico, urlAuxiliarPermitida: urlAuxiliarPermitida, cotaAuxiliarPermitida: cotaAuxiliarPermitida } = __m63;
 const { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, consultarProduto: consultarProduto } = __m57;
 const { gerarFichaSemLLM: gerarFichaSemLLM } = __m58;
 const { executarFerramenta: executarFerramenta, FERRAMENTAS: FERRAMENTAS, SISTEMA: SISTEMA } = __m10;
@@ -9319,6 +9402,9 @@ async function atenderChat(c, ctx) {
             meta.anexos = resumoParaRegistro(anexos);
         }
         modelo = modeloDaChave(k);
+        const economico = consultaPublicaEconomica(c.texto, anexos.length);
+        const perfil = planoLimites(prov, k.base_url, economico);
+        if (economico) meta.modo_economico = "glossario_publico_sem_historico";
         meta.host_provedor = prov === PROVEDOR_FREE ? "openrouter.ai" : prov === "compativel_openai" ? new URL(k.base_url).hostname : prov === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
         if (prov === PROVEDOR_FREE) meta.provedor_efetivo = "openrouter-free";
         const tipoLlm = prov === PROVEDOR_FREE ? "compativel_openai" : prov;
@@ -9327,21 +9413,27 @@ async function atenderChat(c, ctx) {
         if (erroSearxng) console.warn("SearXNG desligado nesta loja:", erroSearxng);
         iniciouChamadaProvedor = true;
         inicioProv = Date.now();
+        const chaveProvedor = await decifrar(k.cifrada, chaveiro);
         const r = await conversar({
             provedor: tipoLlm,
             baseUrl: prov === PROVEDOR_FREE ? URL_FREE : k.base_url ?? undefined,
-            chave: await decifrar(k.cifrada, chaveiro),
+            chave: chaveProvedor,
             modelo,
-            mensagens,
-            sistema: `${SISTEMA}${prov === PROVEDOR_FREE ? `\n${SISTEMA_FREE}` : ""}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura), as de leitura do catálogo espelhado (resumo_loja, listar_produtos, ver_produto) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto, bling_propor_ajuste_produto, bling_propor_alterar_preco (preço de venda) e bling_propor_cadastro_produto (produto novo): nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\n${REGRA_CATALOGO}\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
-            maxPassos: 5,
-            maxTokens: 1536,
+            mensagens: economico ? [
+                {
+                    role: "user",
+                    content: c.texto
+                }
+            ] : mensagens,
+            sistema: economico ? PROMPT_PUBLICO_ECONOMICO : `${SISTEMA}${prov === PROVEDOR_FREE ? `\n${SISTEMA_FREE}` : ""}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura), as de leitura do catálogo espelhado (resumo_loja, listar_produtos, ver_produto) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto, bling_propor_ajuste_produto, bling_propor_alterar_preco (preço de venda) e bling_propor_cadastro_produto (produto novo): nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\n${REGRA_CATALOGO}\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
+            maxPassos: economico ? 1 : 5,
+            maxTokens: economico ? 480 : 1536,
             aoTexto: ctx.aoTexto ? (delta)=>{
                 if (delta) transmitiuTextoPrincipal = true;
                 ctx.aoTexto?.(delta);
             } : undefined,
             adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(tipoLlm) : undefined,
-            ferramentas: prov === PROVEDOR_FREE ? ativo("chat_consulta_bling") ? [
+            ferramentas: economico ? [] : prov === PROVEDOR_FREE ? ativo("chat_consulta_bling") ? [
                 CONSULTAR_PRODUTO,
                 ...FERRAMENTAS.filter((f)=>FERRAMENTAS_CATALOGO.includes(f.name))
             ] : [] : ativo("chat_consulta_bling") ? [
@@ -9349,6 +9441,18 @@ async function atenderChat(c, ctx) {
                 ...FERRAMENTAS.filter((f)=>FERRAMENTAS_PROPOSTA_BLING.includes(f.name) || FERRAMENTAS_PESQUISA.includes(f.name) || FERRAMENTAS_CATALOGO.includes(f.name))
             ] : [],
             fetch: ctx.fetch,
+            antesDoPasso: async ()=>{
+                try {
+                    if (perfil.plano === "openrouter") {
+                        const saldo = await restanteDiarioOpenRouter(chaveProvedor, ctx.fetch);
+                        if (saldo === 0) throw new IaErro(429, "Cota diária gratuita do OpenRouter atingida. Use o Nano sem IA ou aguarde a renovação.");
+                    }
+                    await reservarPassoLivre(admin, loja.id, perfil, Number(k.tokens_mes ?? 0), k.limite == null ? null : Number(k.limite), tokens);
+                } catch (e) {
+                    if (e instanceof IaErro && e.status === 429) meta.limite_preventivo = true;
+                    throw e;
+                }
+            },
             onPasso: (p)=>{
                 tokens += p.tokens;
                 respostaId = p.respostaId;
@@ -9484,7 +9588,16 @@ async function atenderChat(c, ctx) {
             p_janela_s: 60
         });
         if (le || limitado !== true) throw new IaErro(429, "Limite temporário de perguntas.");
-        await rodar(provedor);
+        const saudacao = anexos.length === 0 ? saudacaoSemIA(c.texto) : null;
+        if (saudacao) {
+            resposta = saudacao;
+            meta.ia = false;
+            meta.desfecho = "sem_ia";
+            meta.completa = true;
+            meta.ferramentas = [];
+            meta.ferramentas_solicitadas = [];
+            ctx.aoTexto?.(resposta);
+        } else await rodar(provedor);
     } catch (e) {
         fimProv(provedor, e);
         let erroFinal = e;
@@ -9653,7 +9766,7 @@ async function atenderChat(c, ctx) {
         latencia_provedor: latProv,
         categoria_erro: categoria,
         ...status >= 400 ? {
-            origem_erro: "provedor"
+            origem_erro: meta.limite_preventivo ? "limite_preventivo_local" : "provedor"
         } : {}
     });
     console.log(linhaLog({
@@ -9691,7 +9804,7 @@ return { FERRAMENTAS_PROPOSTA_BLING: FERRAMENTAS_PROPOSTA_BLING, FERRAMENTAS_PES
 })();
 
 // ---------- supabase/functions/_shared/ia/adaptadores_stream.ts ----------
-const __m63 = (() => {
+const __m64 = (() => {
 const { IaErro: IaErro, temAnexo: temAnexo } = __m8;
 const { urlPublicaSegura: urlPublicaSegura } = __m9;
 const { paradaClaude: paradaClaude, paradaGemini: paradaGemini, paradaOpenAI: paradaOpenAI } = __m7;
@@ -10219,7 +10332,7 @@ return { lerEventosSse: lerEventosSse, chamarClaudeStream: chamarClaudeStream, c
 })();
 
 // ---------- supabase/functions/_shared/assistente/streaming.ts ----------
-const __m64 = (() => {
+const __m65 = (() => {
 const quadro = (evento, dados)=>`event: ${evento}\ndata: ${JSON.stringify(dados)}\n\n`;
 function turnoComStreaming(turno, cors) {
     const enc = new TextEncoder();
@@ -10289,8 +10402,8 @@ const { listarProvedores: listarProvedores, modeloDaChave: modeloDaChave, valida
 const { MSG_SO_LOJISTA: MSG_SO_LOJISTA, podeDecidir: podeDecidir } = __m52;
 const { conteudoComAnexos: conteudoComAnexos, REGRAS_ANEXO: REGRAS_ANEXO, validarAnexos: validarAnexos } = __m53;
 const { atenderChat: atenderChat } = __m54;
-const { ADAPTADORES_STREAM: ADAPTADORES_STREAM } = __m63;
-const { turnoComStreaming: turnoComStreaming } = __m64;
+const { ADAPTADORES_STREAM: ADAPTADORES_STREAM } = __m64;
+const { turnoComStreaming: turnoComStreaming } = __m65;
 const CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",

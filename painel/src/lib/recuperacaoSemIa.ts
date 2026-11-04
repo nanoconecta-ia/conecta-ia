@@ -30,7 +30,7 @@ export function erroDoChat(corpo: Record<string, unknown>): Error {
 }
 export function deveRecuperarSemIa(erro: unknown): boolean {
   const e = erro as { categoria_erro?: unknown; origem_erro?: unknown };
-  if (e?.origem_erro && e.origem_erro !== "provedor") return false;
+  if (e?.origem_erro && e.origem_erro !== "provedor" && e.origem_erro !== "limite_preventivo_local") return false;
   if (typeof e?.categoria_erro === "string") return ["limite", "indisponivel", "tempo_esgotado", "configuracao", "nao_configurado"].includes(e.categoria_erro);
   // Compatibilidade com servidores anteriores ao diagnóstico estruturado.
   return falhaDoProvedor(erro instanceof Error ? erro.message : String(erro));
