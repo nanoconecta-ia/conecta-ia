@@ -16,6 +16,7 @@ import { pedirAoNanoNaConversa } from "../lib/contextoPagina.ts";
 import { publicarSelecao } from "../lib/contextoVivo.ts";
 import { montarPedidoCorrecao as montarPedidoCorrecaoCadastro } from "../lib/correcaoCadastro.ts";
 import { montarPedidoCorrecao, pendenciasDaFicha } from "../lib/pedidoCorrecao.ts";
+import { chaveDaSelecao, previaValida, resumoDaPrevia, LIMITE_PILOTO_ENRIQUECIMENTO, type PreviaLote } from "../lib/enriquecimentoLote.ts";
 import { camposFaltando, contagens, filtrar, ROTULO_FILTRO, semCategoria, situacaoTexto, type Filtro, type LinhaPlanilha } from "../lib/planilha.ts";
 
 type Produto = LinhaPlanilha & { preco: number | null; estoque: number | null; publicado: boolean };
@@ -29,6 +30,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [pausados, setPausados] = useState<Set<string>>(new Set());
+  const [previaLote, setPreviaLote] = useState<{ chave: string; dados: PreviaLote } | null>(null);
   // Sistema de enriquecimento indexado: o Nano precisa saber o que o lojista seleciona, então o compartilhamento NASCE LIGADO e lembra a escolha (por loja).
   // O interruptor continua visível: o lojista pode desligar, e a escolha dele é respeitada nas próximas sessões.
   const chaveCompartilhar = `nano:contexto:compartilhar:${loja.id}`;
@@ -167,6 +169,39 @@ export function Catalogo({ loja }: { loja: Loja }) {
     if (error) setMsg({ ok: false, texto: erroAutomacao(error.code, ids.length) });
     else { setMsg({ ok: true, texto: mensagemAutomacao(pausar, ids.length) }); setSelecionados(new Set()); void carregar(); }
   }
+  // A seleção é verificada também no servidor; apenas o lojista autenticado pode enfileirar.
+  async function prepararEnriquecimentoLote() {
+    const ids = [...selecionados];
+    if (ids.length === 0 || ids.length > LIMITE_PILOTO_ENRIQUECIMENTO) {
+      setMsg({ ok: false, texto: `Piloto: selecione entre 1 e ${LIMITE_PILOTO_ENRIQUECIMENTO} produtos.` }); return;
+    }
+    setOcupado("lote"); setMsg(null); setPreviaLote(null);
+    try {
+      const { data, error } = await supabase.rpc("enriquecimento_lote_preparar", { p_produtos: ids });
+      if (error || !previaValida(data)) {
+        setMsg({ ok: false, texto: "Não foi possível preparar o lote. Nenhuma tarefa foi criada; confira as permissões e a migração do servidor." }); return;
+      }
+      setPreviaLote({ chave: chaveDaSelecao(ids), dados: data });
+    } catch {
+      setMsg({ ok: false, texto: "Consulta do lote indisponível. Nada foi alterado." });
+    } finally { setOcupado(null); }
+  }
+
+  async function enfileirarEnriquecimentoLote() {
+    const ids = [...selecionados];
+    if (!previaLote || previaLote.chave !== chaveDaSelecao(ids) || previaLote.dados.aptos === 0) return;
+    setOcupado("lote"); setMsg(null);
+    try {
+      const { data, error } = await supabase.rpc("enriquecimento_lote_enfileirar", { p_produtos: ids });
+      if (error || !previaValida(data)) {
+        setMsg({ ok: false, texto: "Não foi possível registrar o lote. Nenhum cadastro do Bling foi alterado." }); return;
+      }
+      setMsg({ ok: true, texto: `${data.enfileirados ?? 0} tarefa(s) adicionada(s) à fila. ${resumoDaPrevia(data)}. A IA ainda não foi executada; o processamento exige trabalhador homologado.` });
+      setPreviaLote(null); setSelecionados(new Set());
+    } catch {
+      setMsg({ ok: false, texto: "Falha de rede ao registrar o lote. Confira a fila antes de tentar novamente; nenhum dado do Bling foi alterado." });
+    } finally { setOcupado(null); }
+  }
   const idsListados = new Set(categorias.keys());
   const mapa = useMemo(() => {
     if (!itens || totalBanco === null || itens.length < totalBanco || buscaAplicada !== "") return null;
@@ -253,7 +288,22 @@ export function Catalogo({ loja }: { loja: Loja }) {
           <strong>{textoLote(selecionados.size)} selecionado(s)</strong>
           <button className="sec" disabled={ocupado === "lote"} onClick={() => void automacao(true)}>Parar cadastro automático</button>
           <button className="sec" disabled={ocupado === "lote"} onClick={() => void automacao(false)}>Retomar cadastro automático</button>
+          <button className="sec" disabled={ocupado === "lote"} onClick={() => void prepararEnriquecimentoLote()}>Preparar lote do Nano (até 10)</button>
         </div>
+      )}
+      {previaLote && previaLote.chave === chaveDaSelecao([...selecionados]) && (
+        <section className="cartao" aria-label="Conferência do enriquecimento em lote">
+          <strong>Conferência do lote — nenhuma alteração realizada</strong>
+          <p>{resumoDaPrevia(previaLote.dados)}. Produtos pausados permanecem pausados.</p>
+          <ul>{previaLote.dados.itens.map(i => <li key={i.produto_id}>
+            <span className="mono">{i.sku ?? "sem SKU"}</span> — {i.nome ?? "Produto"} — {i.estado === "apto" ? "apto" :
+              i.estado === "automacao_pausada" ? "automação pausada" :
+              i.estado === "produto_inativo" ? "inativo" : "já na fila"}
+          </li>)}</ul>
+          <button className="prim" disabled={ocupado === "lote" || previaLote.dados.aptos === 0}
+            onClick={() => void enfileirarEnriquecimentoLote()}>Confirmar envio de {previaLote.dados.aptos} à fila</button>
+          <p className="suave">Enfileirar não executa IA, não aprova propostas e não grava no Bling.</p>
+        </section>
       )}
       {itens === null ? <p className="suave">Carregando…</p> : itens.length === 0 ? <p className="suave">Nenhum produto encontrado nesta pesquisa. Confira a busca ou a conexão com o Bling.</p> : visiveis.length === 0 ? <p className="suave">Nenhum produto corresponde à busca e ao filtro selecionados.</p> : vista === "tabela" ? (
         <div className="rolagem catalogo-rolagem">
