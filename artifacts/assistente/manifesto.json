@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "69298e30b458990984279a5acc1b762191b78b4cb09d8434ea82be2d0c5f5571",
+  "artefato_sha256": "ef93989fb5727cd7a0818e20897601604ad8e6e239cac78a5ebbeb5e659f344c",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -90,7 +90,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/registro.ts",
-      "sha256": "d2de4a14024a5fbf0534be013cd42929178b937da1cac797b0fcc9c528a34ec2"
+      "sha256": "9ec68c16c311e875be616136de5e052ec5739d626d33d5e54df8fa2d6b0691a9"
     },
     {
       "path": "supabase/functions/_shared/conector/bling_campos.ts",
@@ -99,6 +99,10 @@
     {
       "path": "supabase/functions/_shared/cadastro/regras_cadastro.ts",
       "sha256": "119e4cff7f415d9f51c527020fbdc616b861d3143533555b2272a156a7394f4e"
+    },
+    {
+      "path": "supabase/functions/_shared/preco/regras_preco.ts",
+      "sha256": "13ea9408b4d776e984710453d5f1961799db393e2df9a542fc271c2f3ef479cf"
     },
     {
       "path": "supabase/functions/_shared/consulta/interpretar.ts",
@@ -146,7 +150,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/handlers.ts",
-      "sha256": "d494e04314b815343e7b1aebb2a0a09a223686cee5220f419e742dc6279db938"
+      "sha256": "3ea0c72bef7c38953b22e84bbbd3b3104b5b57fd9636aeb70cb5f56445e1af29"
     },
     {
       "path": "supabase/functions/_shared/conector/tipos.ts",
@@ -166,11 +170,11 @@
     },
     {
       "path": "supabase/functions/_shared/conector/aliases.ts",
-      "sha256": "d43e0a68729f09c1ee674002d4ca6130fa7377eafcd05110318ce70da1758f29"
+      "sha256": "6f62d025fc568e104878fbb6f2695aa4398b1d6ce900019bfac0a20555874378"
     },
     {
       "path": "supabase/functions/_shared/ia/ferramentas.ts",
-      "sha256": "6804da3058e215101edbc4a8d86c61ff04417769eca1429816343acfebb98bc2"
+      "sha256": "7ef05b0e480e282e0bf67619f0e70eca3d0b4741fc5028f970ccbd36a0ee615f"
     },
     {
       "path": "supabase/functions/_shared/conector/dados.ts",
@@ -206,7 +210,7 @@
     },
     {
       "path": "supabase/functions/_shared/bling_ferramentas.ts",
-      "sha256": "654e203abdcd1d92acf9627764a2d9935a1557d8e0c01491a232dd468f4658b9"
+      "sha256": "79e74f53fa101491d6ff864b81c80aa9cf7d08f70cd42c0a6b2fbd68cf765855"
     },
     {
       "path": "supabase/functions/_shared/assistente/busca_produto.ts",
@@ -230,7 +234,7 @@
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "5e478f2425d53dde56b42299561dfba70c3bd7f4465e68e111db68d5c930752f"
+      "sha256": "e5d217fa4e97a3b1abe5ed83b8e8e0f0e38260fa4e8643a4e38932679c61181c"
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores_stream.ts",

@@ -28,6 +28,7 @@ export const ALIASES_ASSISTENTE: Readonly<Record<string, string>> = {
   bling_propor_reativar_produto: "bling.produtos.preparar_reativacao",
   bling_propor_ajuste_produto: "bling.produtos.preparar_atualizacao",
   bling_propor_cadastro_produto: "bling.produtos.preparar_cadastro",
+  bling_propor_alterar_preco: "bling.produtos.preparar_alteracao_preco",
   bling_propor_trocar_categoria: "bling.categorias.preparar_alteracao_lote",
 };
 

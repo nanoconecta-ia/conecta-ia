@@ -11,6 +11,7 @@ const resolverDns: ((host: string) => Promise<string[]>) | undefined = denoDns
 import { conflitoDeMarca, validarMarca } from "../cadastro/regras_marca.ts";
 import { MAPA_CAMPOS, montarCorpoCriacao, montarCorpoProduto } from "./bling_campos.ts";
 import { validarRascunho } from "../cadastro/regras_cadastro.ts";
+import { validarPropostaPreco } from "../preco/regras_preco.ts";
 import type { Vocabulario } from "../consulta/interpretar.ts";
 import { resolverEntidades, type GlossarioMotor } from "../busca_segura/entidades.ts";
 import { classeDaFonte, hashTrecho, type EvidenciaBusca } from "../busca_segura/evidencia.ts";
@@ -368,6 +369,34 @@ export const HANDLERS: Record<string, Handler> = {
       resumo: `Produto novo. Pendências para publicar: ${p.pendencias.join("; ")}.`, itens: [{
         sku: p.codigo, operacao: "bling.produtos.criar", campos: Object.keys(p.depois), depois: p.depois, antes: {}, fontes: e.fontes,
         validacoes: [`nenhum produto com o código ${p.codigo}${p.depois.gtin ? ` ou o GTIN ${p.depois.gtin}` : ""} no espelho nem no Bling em ${new Date().toISOString()}`, ...(skuAutomatico ? [`SKU ${p.codigo} proposto automaticamente (CI + 6 dígitos, depois do maior conhecido): a aprovação é sua`] : []), ...p.validacoes, ...p.pendencias.map((x) => `pendente: ${x}`)] }] });
+  },
+  // Preço de VENDA de produto ativo: o "atual" vem do ESPELHO, é conferido no Bling AGORA (se divergir, nada é proposto) e a proposta nasce pendente de
+  // aprovação humana. Nunca custo, compra, margem, fornecedor nem fiscal (regras_preco.ts). Não grava nada no Bling; a execução real não é suportada.
+  "bling.produtos.preparar_alteracao_preco": async (e, c) => {
+    const sku = String(e.sku ?? "").trim();
+    const esp = await c.dados.verProduto(sku) as Record<string, unknown>;
+    if ("erro" in esp) return { erro: "Produto não encontrado no espelho desta loja. Só produto ATIVO e sincronizado tem preço proposto." };
+    if (esp.situacao !== "A") return { erro: "O produto não está ativo no espelho; o preço só é proposto para produto ativo." };
+    const local = await c.dados.produtoPorSku(sku);
+    if (!local?.bling_id) return { erro: "O produto não tem o id do Bling no espelho; sincronize com o Bling antes de propor o preço." };
+    const precoAtual = esp.preco == null || esp.preco === "" ? null : Number(esp.preco);
+    const v = validarPropostaPreco({ sku, preco_novo: e.preco_novo, motivo: e.motivo }, { lojaId: c.lojaId, precoAtual });
+    if (!v.ok) return { erro: v.erro };
+    const p = v.proposta;
+    if (!c.bling) return { erro: "Leitura do Bling indisponível: sem ela não confiro o preço atual, então nada foi proposto." };
+    const lido = await c.bling.ler("bling.produtos.confirmar", { id: String(local.bling_id) });
+    if (lido.status !== 200) return { erro: `O Bling respondeu ${lido.status} ao ler o produto; sem conferir o preço atual nada foi proposto.` };
+    const vivo = Number((lido.corpo as any)?.data?.preco);
+    if (!Number.isFinite(vivo) || vivo <= 0) return { erro: "O Bling não devolveu o preço atual do produto; nada foi proposto." };
+    if (Math.round(vivo * 100) !== Math.round(p.preco_atual * 100)) return { aviso: `O preço no Bling (R$ ${vivo.toFixed(2)}) é diferente do que o espelho mostra (R$ ${p.preco_atual.toFixed(2)}): o espelho está desatualizado. Sincronize e peça de novo. Nada foi proposto.`, preco_no_bling: vivo, preco_no_espelho: p.preco_atual };
+    const brl = (n: number) => n.toFixed(2).replace(".", ",");
+    const agora = new Date().toISOString();
+    return criarPropostaVersionada(c, { titulo: `Alterar o preço de venda de ${sku}: R$ ${brl(p.preco_atual)} → R$ ${brl(p.preco_novo)} (${p.percentual > 0 ? "+" : ""}${p.percentual}%)`,
+      resumo: `Só o preço de venda. Diferença R$ ${brl(p.diferenca)}. Motivo: ${p.motivo}`, itens: [{
+        produto_id: local.id, sku, operacao: "bling.produtos.alterar_preco", alvo: String(local.bling_id), campos: ["preco_venda"],
+        antes: { preco_venda: p.preco_atual }, depois: { preco_venda: p.preco_novo },
+        fontes: [{ documento: `Pedido de alteração de preço de venda feito pelo lojista (motivo informado: ${p.motivo})`, consultado_em: agora }],
+        validacoes: [`preço atual R$ ${brl(p.preco_atual)} lido do espelho e conferido no Bling em ${agora}`, `diferença calculada pelo servidor: R$ ${brl(p.diferenca)} (${p.percentual}%)`, ...p.alertas, `chave de idempotência ${p.idempotency_key}`] }] });
   },
   // Lê o Bling AGORA, calcula antes/depois dos campos pedidos e cria a proposta. Não grava nada no Bling.
   "bling.produtos.preparar_atualizacao": async (e, c) => {

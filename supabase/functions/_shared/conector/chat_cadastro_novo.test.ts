@@ -34,7 +34,9 @@ test("o Nano deixa de dizer que não cria produto novo e continua sem prometer p
   const texto = SISTEMA;
   assert.match(texto, /CADASTRAR produto novo \(bling_propor_cadastro_produto/);
   assert.doesNotMatch(texto, /Ainda NÃO existe ferramenta para criar produto novo/);
-  assert.match(texto, /Ainda NÃO existe ferramenta para alterar preço de produto existente, custo, estoque, fornecedor ou dados fiscais/);
+  assert.match(texto, /ALTERAR O PREÇO DE VENDA de produto ativo \(bling_propor_alterar_preco/);
+  assert.match(texto, /Ainda NÃO existe ferramenta para alterar custo, estoque, fornecedor ou dados fiscais/);
+  assert.match(texto, /NÃO são compartilhados com o agente, por política/);
 });
 test("propõe produto novo pelo chat: proposta criada, NADA gravado no Bling, operação de criação sem campo liberado", async () => {
   const b = new BlingMock(); const { ctx, itens } = contexto(b);
