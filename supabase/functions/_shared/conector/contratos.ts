@@ -41,6 +41,7 @@ const P = (nome: string, descricao: string, grava: string[], obrigatorios: strin
 export const CONTRATOS: readonly Contrato[] = [
   // ---- Agente administrativo (JWT do lojista; leitura pela RLS do usuário) — IMPLEMENTADAS ----
   L("resumo_loja", "Totais da loja.", ["produtos (loja)", "produto_enriquecimento (a_confirmar)"]),
+  L("diagnostico_ia", "Estado da IA da loja (provedores sem segredo, últimos turnos com request_id, categoria de erro e latência).", ["loja_chaves_ia (sem chave)", "mensagens.metadados"]),
   L("listar_produtos", "Lista produtos da loja (nome, SKU, preço, estoque, publicado).", ["produtos (loja)"]),
   L("ver_produto", "Detalhe de um produto e o que falta para publicar.", ["produtos (loja)", "produto_enriquecimento (aprovado)"], { obrigatorios: ["sku"] }),
   L("itens_pendentes", "Enriquecimentos aguardando aprovação.", ["produto_enriquecimento (a_confirmar)"]),

@@ -43,6 +43,8 @@ export const FERRAMENTAS_CONECTOR: readonly DefinicaoFerramenta[] = [
   // ------------------------------------------------------------------ Conecta.IA (leitura e propostas)
   leitura("conecta.catalogo.resumo", "conecta", "Totais da loja: produtos espelhados, publicados e itens aguardando aprovação.", obj({}), obj({ produtos: { type: "integer" }, publicados: { type: "integer" }, aguardando_aprovacao: { type: "integer" }, ativos: { type: "integer" }, inativos: { type: "integer" }, excluidos: { type: "integer" }, ausentes: { type: "integer" }, ultima_sincronizacao: { type: "string" } }),
     "Contagem direta no espelho.", { estado: "ativa" }),
+  leitura("nano.diagnostico.ia", "conecta", "Diagnóstico seguro da IA desta loja: provedores ativos e modo do gratuito, limite mensal, últimos turnos com request_id, status, categoria do erro (limite, indisponível, tempo esgotado, configuração) e latência. Sem chave nem texto de conversa.",
+    obj({}), livre, "Leitura de loja_chaves_ia (sem segredo) e dos metadados dos turnos da própria loja.", { estado: "ativa" }),
   leitura("conecta.catalogo.listar", "conecta", "Lista produtos da loja (nome, SKU, preço, estoque, publicado).", obj({ apenas_nao_publicados: { type: "boolean" }, busca: txt("trecho do nome ou SKU", 80), limite: { type: "integer", minimum: 1, maximum: 20 } }), lista(livre, 20),
     "Leitura do espelho.", { estado: "ativa" }),
   leitura("conecta.catalogo.ver", "conecta", "Detalhes de um produto pelo SKU e o que falta para publicar.", obj({ sku }, ["sku"]), livre, "Leitura do espelho.", { estado: "ativa" }),

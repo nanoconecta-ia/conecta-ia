@@ -1,5 +1,6 @@
 // Só esta ferramenta do registry é exposta neste fluxo. Busca por código (SKU interno, referência do fabricante ou GTIN) com JWT e loja explícita.
 // A busca (busca_produto.ts) olha o espelho E a API do Bling, inclusive excluídos, e devolve candidatos com proveniência; nunca autoriza criar cadastro.
+import { evidenciaSkuExato } from "./ficha_sem_llm.ts";
 import { buscarFerramenta, podeExecutar } from "../bling_ferramentas.ts";
 import { blingFetch } from "../bling_api.ts";
 import { armazemSupabase } from "../bling_armazem.ts";
@@ -13,7 +14,7 @@ export const CONSULTAR_PRODUTO: Ferramenta = {
 };
 export type ContextoConsulta = {
  usuario: any; admin: any; lojaId: string; userId: string; cfg: Config; simulado: boolean;
- chamadas: Record<string, unknown>[]; evidencias: Record<string, unknown>[];
+ skuExato?: string; chamadas: Record<string, unknown>[]; evidencias: Record<string, unknown>[];
 } & ({ conversaId: string; pair?: never; ficha?: never } | { conversaId?: never; pair: { sessaoId: string; dispositivoId: string; ambiente: "real" | "sintetico" | "nao_validado" }; ficha?: never } | { conversaId?: never; pair?: never; ficha: true });
 const numero = (v: unknown): number | null => (typeof v === "number" || typeof v === "string" && v.trim() !== "") && Number.isFinite(Number(v)) ? Number(v) : null;
 const texto = (v: unknown) => typeof v === "string" ? v.slice(0, 200) : null;
@@ -75,7 +76,8 @@ export async function consultarProduto(entrada: unknown, c: ContextoConsulta): P
    return [...vistos.values()];
   },
  };
- const r: ResultadoBusca = await buscarProduto({ termo: bruto, incluirExcluidos: e.incluir_excluidos as boolean | undefined }, portas);
+ let r: ResultadoBusca = await buscarProduto({ termo: bruto, incluirExcluidos: e.incluir_excluidos as boolean | undefined }, portas);
+ if (c.skuExato) r = evidenciaSkuExato(r, c.skuExato);
  const api = r.fontes.filter(x => x.origem === "api_bling");
  const origem = api.some(x => x.consultada) ? "api_bling" : "espelho";
  const motivo = api.find(x => x.motivo)?.motivo ?? null;

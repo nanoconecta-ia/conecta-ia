@@ -6,13 +6,14 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 63 ferramentas — 45 ativas, 15 planejadas, 3 desligadas.
+Resumo: 64 ferramentas — 46 ativas, 15 planejadas, 3 desligadas.
 
 ## Grupo: conecta
 
 | Id | Estado | Permissão | Risco | Aprovação | Chat | MCP | Simulação | Idempotência | Entrada |
 |---|---|---|---|---|---|---|---|---|---|
 | `conecta.catalogo.resumo` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | — |
+| `nano.diagnostico.ia` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | — |
 | `conecta.catalogo.listar` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `apenas_nao_publicados:boolean` `busca:string` `limite:integer` |
 | `conecta.catalogo.ver` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `sku*:string` |
 | `conecta.enriquecimento.pendentes` | ativa | leitura | LOW | não | sim | sim | não | nao_se_aplica | `limite:integer` |
@@ -37,6 +38,9 @@ Resumo: 63 ferramentas — 45 ativas, 15 planejadas, 3 desligadas.
 
 - **`conecta.catalogo.resumo`** — Totais da loja: produtos espelhados, publicados e itens aguardando aprovação.
   - *Verificação:* Contagem direta no espelho.
+  - *Recuperação:* Repetir a leitura; é segura.
+- **`nano.diagnostico.ia`** — Diagnóstico seguro da IA desta loja: provedores ativos e modo do gratuito, limite mensal, últimos turnos com request_id, status, categoria do erro (limite, indisponível, tempo esgotado, configuração) e latência. Sem chave nem texto de conversa.
+  - *Verificação:* Leitura de loja_chaves_ia (sem segredo) e dos metadados dos turnos da própria loja.
   - *Recuperação:* Repetir a leitura; é segura.
 - **`conecta.catalogo.listar`** — Lista produtos da loja (nome, SKU, preço, estoque, publicado).
   - *Verificação:* Leitura do espelho.

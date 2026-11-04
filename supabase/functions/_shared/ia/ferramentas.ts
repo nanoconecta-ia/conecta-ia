@@ -35,6 +35,7 @@ export const SISTEMA = [
 
 /** Contratos de entrada que o LLM do assistente já conhece. O que cada uma É (risco, permissão, estado) vem do Tool Registry via aliases.ts. */
 export const FERRAMENTAS_DO_ASSISTENTE: readonly Ferramenta[] = [
+  { name: "diagnostico_ia", description: "Diagnóstico da IA DESTA loja, só leitura: provedores ativos e modo do gratuito, limite mensal de tokens, e os últimos turnos com request_id, status HTTP, categoria do erro (limite, indisponível, tempo esgotado, configuração) e latência. Use para responder qual IA respondeu e por que falhou; cite o request_id.", input_schema: { type: "object", properties: {} } },
   { name: "resumo_loja", description: "Totais da loja no ESPELHO do Bling: produtos (todos), ativos, inativos, excluídos, publicados, itens aguardando aprovação e a data da última sincronização. NÃO é o total ao vivo do Bling: diga isso.", input_schema: { type: "object", properties: {} } },
   { name: "listar_produtos", description: "Lista produtos da loja (nome, SKU, preço, estoque, publicado). Pode filtrar só os não publicados.", input_schema: { type: "object", properties: { apenas_nao_publicados: { type: "boolean" }, busca: { type: "string", description: "trecho do nome ou SKU" }, limite: { type: "integer", minimum: 1, maximum: 20 } } } },
   { name: "ver_produto", description: "Detalhes de um produto pelo SKU, e o que falta para publicar.", input_schema: { type: "object", properties: { sku: { type: "string" } }, required: ["sku"] } },
@@ -82,6 +83,11 @@ export async function executarFerramenta(nome: string, entrada: unknown, c: Cont
   const e = (entrada ?? {}) as Record<string, unknown>;
   const contar = (t: string, f?: (b: any) => any) => { const b = c.usuario.from(t).select("id", { count: "exact", head: true }).eq("loja_id", c.lojaId); return f ? f(b) : b; };
   switch (nome) {
+    case "diagnostico_ia": {
+      if (!c.conector) return { erro: "O diagnóstico não está disponível neste ambiente." };
+      const r = await despachar("nano.diagnostico.ia", {}, c.conector);
+      return r.ok ? r.resultado : { erro: r.erro, decisao: r.decisao };
+    }
     case "resumo_loja": {
       const [p, pub, pend] = await Promise.all([contar("produtos"), contar("produtos", (b) => b.eq("publicado", true)), contar("produto_enriquecimento", (b) => b.eq("status", "a_confirmar"))]);
       return { produtos: p.count ?? 0, publicados: pub.count ?? 0, aguardando_aprovacao: pend.count ?? 0 };

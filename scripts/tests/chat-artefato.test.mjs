@@ -3,11 +3,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createContext, SourceTextModule, SyntheticModule } from 'node:vm';
+import { skuEmFoco, deveRecuperarSemIa, erroDoChat, mensagemFalhaFicha } from '../../painel/src/lib/recuperacaoSemIa.ts';
 import { cifrar } from '../../supabase/functions/_shared/cripto.ts';
 const codigo=await readFile(new URL('../../artifacts/assistente/index.ts',import.meta.url),'utf8');
 const L='aaaaaaaa-0000-0000-0000-000000000001',U='22222222-2222-2222-2222-222222222222',C='cccccccc-0000-0000-0000-000000000001';
 const chave=btoa('z'.repeat(32)), cifrada=await cifrar('chave-apenas-sintetica',chave);
-async function ambiente({consentido=true,flag=true,bling=true,tool='bling_consultar_produto',status=200,fimErro=false,auditErro=false,pendente=false,provedorErro=false,truncar=false,blingStatus=200,semEspelho=false,args='{"sku":"SKU-1"}'}={}) {
+async function ambiente({produtoSku='SKU-1',consentido=true,flag=true,bling=true,tool='bling_consultar_produto',status=200,fimErro=false,auditErro=false,pendente=false,provedorErro=false,truncar=false,blingStatus=200,semEspelho=false,args='{"sku":"SKU-1"}'}={}) {
  let handler,vez=0,final=null,token='dddddddd-0000-0000-0000-000000000001';
  const rede=[],rpcs=[],audits=[],msgs=[];
  function from(t){const filtros={};const q={select(){return q},eq(k,v){filtros[k]=v;return q},ilike(k,v){filtros[k]=v;return q},order(){return q},limit(){return q},or(){return q},async single(){return result(true)},async maybeSingle(){return result(true)},async insert(v){audits.push(v);return {error:auditErro?{}:null}},then(ok,no){return Promise.resolve(result(false)).then(ok,no)}};
@@ -15,7 +16,7 @@ async function ambiente({consentido=true,flag=true,bling=true,tool='bling_consul
   if(t==='lojas')return {data:{id:L,nome:'Loja de teste',chat_retencao_dias:180}};
   if(t==='recursos_efetivos')return {data:[{codigo:'chat_persistente',ativo:flag},{codigo:'chat_consulta_bling',ativo:bling}].filter(v=>!filtros.codigo||v.codigo===filtros.codigo)};
   if(t==='mensagens')return {data:[...msgs].reverse()};
-  if(t==='produtos'){const linha={id:'prod-1',bling_id:'1234',sku:'SKU-1',nome:'Espelho SIMULADO',preco:12,estoque:2,situacao:'A',sincronizado_em:'2026-10-18T00:00:00Z'};return single?{data:linha}:{data:filtros.loja_id===L&&!semEspelho?[linha]:[],error:null}}
+  if(t==='produtos'){const linha={id:'prod-1',bling_id:'1234',sku:produtoSku,nome:'Espelho SIMULADO',preco:12,estoque:2,situacao:'A',sincronizado_em:'2026-10-18T00:00:00Z'};return single?{data:linha}:{data:filtros.loja_id===L&&!semEspelho?[linha]:[],error:null}}
   return {data:single?null:[]};
  }return q}
  const client={auth:{getUser:async()=>({data:{user:{id:U}}})},from,async rpc(fn,p){rpcs.push({fn,p});
@@ -27,7 +28,7 @@ async function ambiente({consentido=true,flag=true,bling=true,tool='bling_consul
   if(fn==='agente_tarefa_criar')return {data:'tarefa-1'};if(fn==='agente_proposta_criar')return {data:'proposta-1'};if(fn==='agente_proposta_item_adicionar')return {data:null};if(fn==='agente_proposta_enviar')return {data:{versao:1,hash:'hash-1',risco:'MEDIUM'}};if(fn==='agente_chamada_registrar')return {data:null};
   throw Error('RPC inesperada '+fn);
  }};
- const fake=async(url,op)=>{rede.push({url,op});assert.equal(op.redirect,'manual');if(url.includes('api.bling.com.br')){assert.equal(op.method,'GET');if(blingStatus!==200)return new Response('{}',{status:blingStatus});if(url.includes('/categorias/produtos'))return Response.json({data:[{id:500,descricao:'Motor'}]});return Response.json({data:[{id:1234,codigo:'SKU-1',nome:'Produto SIMULADO',preco:34.5,situacao:'A',estoque:{saldoVirtualTotal:7}}]})}
+ const fake=async(url,op)=>{rede.push({url,op});assert.equal(op.redirect,'manual');if(url.includes('api.bling.com.br')){assert.equal(op.method,'GET');if(blingStatus!==200)return new Response('{}',{status:blingStatus});if(url.includes('/categorias/produtos'))return Response.json({data:[{id:500,descricao:'Motor'}]});return Response.json({data:[{id:1234,codigo:produtoSku,nome:'Produto SIMULADO',preco:34.5,situacao:'A',estoque:{saldoVirtualTotal:7}}]})}
   assert.equal(url,'https://api.openai.com/v1/chat/completions');const b=JSON.parse(op.body);assert.ok(!('max_tokens'in b));assert.equal(b.max_completion_tokens,1536);
   if(status!==200)return new Response('ERRO-SECRETO',{status});
   vez++;return Response.json({id:'chatcmpl-sintetico-'+vez,model:'gpt-sintetico',choices:[{...(truncar&&vez===2?{finish_reason:'length'}:{finish_reason:'stop'}),message:vez===1?{tool_calls:[{id:'t1',function:{name:tool,arguments:args}}]}:{content:'Resposta SIMULADA com dados da ferramenta'}}],usage:{total_tokens:5}});
@@ -78,7 +79,7 @@ test('artefato: resposta cortada por tamanho é marcada truncada/incompleta e nu
 test('artefato: o chat persistente oferece propostas e buscas de leitura (nenhuma ferramenta de escrita) quando a consulta está ligada',async()=>{
  const a=await ambiente();await a.perguntar();
  const nomes=JSON.parse(a.rede[0].op.body).tools.map(t=>t.function.name);
- eq(nomes.sort(),['bling_categorias','bling_consultar_produto','bling_propor_ajuste_produto','bling_propor_alterar_preco','bling_propor_cadastro_produto','bling_propor_categoria','bling_propor_reativar_produto','bling_propor_trocar_categoria','buscar_dados_tecnicos_web','buscar_imagem_web','listar_produtos','resumo_loja','ver_produto']);
+ eq(nomes.sort(),['bling_categorias','bling_consultar_produto','bling_propor_ajuste_produto','bling_propor_alterar_preco','bling_propor_cadastro_produto','bling_propor_categoria','bling_propor_reativar_produto','bling_propor_trocar_categoria','buscar_dados_tecnicos_web','buscar_imagem_web','diagnostico_ia','listar_produtos','resumo_loja','ver_produto']);
 });
 test('artefato: propor categoria lê o Bling, cria a proposta (sem vínculo de conversa) e NÃO escreve no Bling',async()=>{
  const a=await ambiente({tool:'bling_propor_categoria',args:'{"nome":"Freios"}'});const r=await a.perguntar();const m=a.final.p_meta;
@@ -142,4 +143,39 @@ test('artefato: /corrigir recusa sem fonte, sem campos, com anexos/provedor e co
   const a=await ambiente(opts);const r=await a.perguntar({...base,...extra});
   assert.ok(r.status>=400,JSON.stringify(extra));assert.equal(a.rede.length,0);assert.ok(!a.rpcs.some(x=>x.fn==='agente_proposta_criar'));
  }
+});
+
+
+test('aceite: 429 → SKU explícito completo → ficha exata, sem trocar por K2500', async()=>{
+ const a=await ambiente({status:429,produtoSku:'ENG-1645-05'});
+ const pergunta='Enriqueça o SKU ENG-1645-05: Turbina Mando HR/K2500 8V 4D56/D4BH. HR 2016.';
+ const falha=await a.perguntar({texto:pergunta});
+ assert.equal(falha.status,429);
+ assert.equal(deveRecuperarSemIa(erroDoChat(falha.body)),true);
+ const sku=skuEmFoco(pergunta,[]);assert.equal(sku,'ENG-1645-05');
+ const r=await a.perguntar({acao:'chat_ficha_produto',codigo:sku,provedor:undefined});
+ assert.equal(r.status,200);
+ assert.match(r.body.resposta,/ENG-1645-05/);
+ assert.ok(r.body.evidencias.every(e=>e.candidatos.every(c=>c.sku===sku)));
+ assert.equal(r.body.candidatos,1);
+ assert.ok(a.rede.filter(c=>c.url.includes('bling')).every(c=>c.op.method==='GET'));
+});
+test('aceite: SKU inexistente não retorna lista aproximada; erro da ferramenta é distinto',async()=>{
+ const a=await ambiente();
+ const r=await a.perguntar({acao:'chat_ficha_produto',codigo:'INEXISTENTE-123',provedor:undefined});
+ assert.equal(r.status,404);assert.equal(r.body.categoria_erro,'sku_nao_encontrado');
+ assert.equal(r.body.evidencias,undefined);assert.equal(r.body.resposta,undefined);
+ assert.match(mensagemFalhaFicha(erroDoChat(r.body)),/SKU não encontrado/);
+ const b=await ambiente({auditErro:true});
+ const f=await b.perguntar({acao:'chat_ficha_produto',codigo:'SKU-1',provedor:undefined});
+ assert.equal(f.status,503);assert.equal(f.body.categoria_erro,'ferramenta');
+ assert.match(mensagemFalhaFicha(erroDoChat(f.body)),/Erro de ferramenta/);
+ assert.equal(deveRecuperarSemIa(erroDoChat(f.body)),false);
+});
+
+test('aceite: consulta incompleta sem identidade confirmada é erro de ferramenta, não ausência',async()=>{
+ const a=await ambiente({blingStatus:503,semEspelho:true});
+ const r=await a.perguntar({acao:'chat_ficha_produto',codigo:'SKU-1',provedor:undefined});
+ assert.equal(r.status,503);assert.equal(r.body.categoria_erro,'ferramenta');
+ assert.equal(r.body.evidencias,undefined);
 });
