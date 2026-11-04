@@ -45,6 +45,7 @@ export const FERRAMENTAS: readonly Ferramenta[] = [
 
   escrita("bling.produtos.criar", "POST", "/produtos", "MEDIUM"),
   escrita("bling.produtos.alterar", "PATCH", "/produtos/{id}", "MEDIUM"),
+  escrita("bling.produtos.alterar_preco", "PATCH", "/produtos/{id}", "MEDIUM"), // só preço de venda, só como item de proposta aprovada; desligada como todas as escritas
   escrita("bling.categorias.criar", "POST", "/categorias/produtos", "MEDIUM"),
   escrita("bling.contatos.criar", "POST", "/contatos", "MEDIUM"),
   escrita("bling.contatos.alterar", "PUT", "/contatos/{id}", "MEDIUM"),

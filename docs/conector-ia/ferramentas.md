@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 62 ferramentas — 44 ativas, 16 planejadas, 2 desligadas.
+Resumo: 63 ferramentas — 45 ativas, 15 planejadas, 3 desligadas.
 
 ## Grupo: conecta
 
@@ -115,9 +115,10 @@ Resumo: 62 ferramentas — 44 ativas, 16 planejadas, 2 desligadas.
 | `bling.produtos.preparar_reativacao` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `bling_id*:string` `fontes*:array` |
 | `bling.produtos.preparar_atualizacao` | ativa | propor | MEDIUM | não | sim | sim | sim | chave | `sku*:string` `campos*:object` `fontes*:array` |
 | `bling.categorias.preparar_alteracao_lote` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `skus*:array` `escolhas:object` |
-| `bling.produtos.preparar_alteracao_preco` | planejada | propor | MEDIUM | não | não | não | sim | chave | `sku*:string` `preco_novo*:number` `motivo*:string` |
+| `bling.produtos.preparar_alteracao_preco` | ativa | propor | MEDIUM | não | sim | sim | sim | chave | `sku*:string` `preco_novo*:number` `motivo*:string` |
 | `bling.categorias.preparar_criacao` | ativa | propor | MEDIUM | não | sim | não | sim | chave | `nome*:string` `pai_id:string` `fontes*:array` |
 | `bling.produtos.criar` | desligada | executar | MEDIUM | sim | não | não | sim | chave | `corpo*:object` |
+| `bling.produtos.alterar_preco` | desligada | executar | MEDIUM | sim | não | não | sim | chave | `id*:string` `corpo*:object` |
 | `bling.produtos.alterar` | ativa | executar | MEDIUM | sim | não | não | sim | chave | `id*:string` `corpo*:object` |
 | `bling.categorias.criar` | ativa | executar | MEDIUM | sim | não | não | sim | chave | `corpo*:object` |
 | `bling.produtos.confirmar` | desligada | executar | LOW | sim | não | não | sim | chave | `id*:string` |
@@ -158,6 +159,9 @@ Resumo: 62 ferramentas — 44 ativas, 16 planejadas, 2 desligadas.
 - **`bling.produtos.criar`** — Cria produto no Bling (POST /produtos).
   - *Verificação:* Ler o produto no Bling e comparar com o enviado.
   - *Recuperação:* Timeout => desconhecido; reconciliar por SKU/GTIN antes de repetir.
+- **`bling.produtos.alterar_preco`** — Troca o PREÇO DE VENDA de um produto no Bling (PATCH /produtos/{id}). Só como item de proposta aprovada; a execução real não é suportada nesta versão.
+  - *Verificação:* Ler o produto no Bling e comparar o preço.
+  - *Recuperação:* Timeout => desconhecido; ler o preço antes de repetir.
 - **`bling.produtos.alterar`** — Altera campos permitidos de um produto no Bling (PATCH /produtos/{id}).
   - *Verificação:* Ler o produto e comparar campo a campo.
   - *Recuperação:* Timeout => desconhecido; ler o produto e comparar antes de repetir.

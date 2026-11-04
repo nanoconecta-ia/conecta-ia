@@ -2097,6 +2097,7 @@ const FERRAMENTAS = [
     leitura("bling.empresa.dados", "/empresas/me/dados-basicos"),
     escrita("bling.produtos.criar", "POST", "/produtos", "MEDIUM"),
     escrita("bling.produtos.alterar", "PATCH", "/produtos/{id}", "MEDIUM"),
+    escrita("bling.produtos.alterar_preco", "PATCH", "/produtos/{id}", "MEDIUM"),
     escrita("bling.categorias.criar", "POST", "/categorias/produtos", "MEDIUM"),
     escrita("bling.contatos.criar", "POST", "/contatos", "MEDIUM"),
     escrita("bling.contatos.alterar", "PUT", "/contatos/{id}", "MEDIUM"),
