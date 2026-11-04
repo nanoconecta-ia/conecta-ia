@@ -1,0 +1,21 @@
+name: Torre GPT (verificação de sanitização)
+
+# Roda só em PR que mexe na pasta torre-gpt/. Sem segredos, sem deploy.
+on:
+  pull_request:
+    paths: ["torre-gpt/**", ".github/workflows/torre-gpt.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  sanitizacao:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - run: node --test torre-gpt/ferramentas/verificar-sanitizacao.test.mjs
+      - run: node torre-gpt/ferramentas/verificar-sanitizacao.mjs
