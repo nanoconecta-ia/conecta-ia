@@ -8,7 +8,7 @@ import { modeloDaChave, validarProvedor, type ProvedorChat } from "./provedores.
 import { FERRAMENTAS_CATALOGO, REGRA_CATALOGO } from "./catalogo_leitura.ts";
 import { avisoTroca, FERRAMENTAS_FREE, PROVEDOR_FREE, podeTrocarParaFree, SISTEMA_FREE, URL_FREE } from "./free_automatico.ts";
 import { configFallbackFree, tentarFallbackFree } from "./fallback_free.ts";
-import { AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar, executarAuxiliarPublico, urlAuxiliarPermitida } from "./auxiliar_independente.ts";
+import { AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar, executarAuxiliarPublico, urlAuxiliarPermitida, cotaAuxiliarPermitida } from "./auxiliar_independente.ts";
 import { CONSULTAR_PRODUTO, consultarProduto } from "./bling_consultar.ts";
 import { gerarFichaSemLLM } from "./ficha_sem_llm.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../ia/ferramentas.ts";
@@ -44,11 +44,11 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   // Somente metadados; NAO consultar chave cifrada nem afirmar disponibilidade de rede.
   // O segundo provedor depende de ativacao voluntaria, failover e endpoint aprovado.
   const { data: aux, error: erroAux } = await admin.from("loja_chaves_ia")
-    .select("provedor,ativa,failover,base_url,modelo")
+    .select("provedor,ativa,base_url,modelo,limite_mensal_tokens,tokens_mes,mes_ref")
     .eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
-  const auxiliarConfigurado = !erroAux && aux?.ativa === true && aux?.failover === true
+  const auxiliarConfigurado = !erroAux && aux?.ativa === true && aux?.provedor === AUXILIAR_PROVEDOR
     && typeof aux.modelo === "string" && aux.modelo.length > 0 && aux.modelo.length <= 120
-    && urlAuxiliarPermitida(aux.base_url);
+    && urlAuxiliarPermitida(aux.base_url) && cotaAuxiliarPermitida(aux);
   return error ? resultado({ erro: "Preparação do histórico ainda não instalada." }, 503) : resultado({
     streaming: true, persistente: ativo("chat_persistente"), bling: ativo("chat_consulta_bling"),
     leitura_administrativa: ativo("chat_leitura_administrativa"), retencao_dias: config.chat_retencao_dias,
@@ -275,7 +275,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   if (!respondidoPeloGratuito && provedor === PROVEDOR_FREE) {
    try {
     const { data: aux, error: auxErro } = await admin.from("loja_chaves_ia")
-      .select("provedor,ativa,failover,base_url,modelo")
+      .select("provedor,ativa,base_url,modelo,limite_mensal_tokens,tokens_mes,mes_ref")
       .eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
     const elegivel = !auxErro && podeTrocarParaAuxiliar({
       origem: provedor, erro: e, iniciouChamadaProvedor,
@@ -288,7 +288,9 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
     if (elegivel) {
      const { data: chaves, error: chaveErro } = await admin.rpc("ia_chave_ativa", { p_loja: loja.id, p_provedor: AUXILIAR_PROVEDOR });
      const k = chaves?.[0];
-     if (!chaveErro && k?.provedor === AUXILIAR_PROVEDOR && k.base_url === aux.base_url && k.modelo === aux.modelo) {
+     if (!chaveErro && k?.provedor === AUXILIAR_PROVEDOR && k.base_url === aux.base_url && k.modelo === aux.modelo
+       && Number(k.limite) === Number(aux.limite_mensal_tokens)
+       && cotaAuxiliarPermitida({ ...aux, tokens_mes: Number(k.tokens_mes) })) {
       const chaveiro = await chaveiroPlataforma(admin, ctx.get);
       if (chaveiro) {
        inicioProv = Date.now();
