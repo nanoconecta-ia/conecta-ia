@@ -52,7 +52,7 @@ const msgErro = (e: unknown): string => (e instanceof Error ? e.message : String
 export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[]; aoNavegar?: (rota: string) => void }) {
   const [msgs, setMsgs] = useState<Msg[]>([{ de: "ia", texto: "Olá! Posso resumir a loja, mostrar o que aguarda aprovação e o que falta para publicar. Para conversar com IA e usar plugins, configure um provedor em Integrações de IA." }]);
   const fonte = useFonte(); // B2b: cartões de proposta leem a proposta do banco (RLS), nunca do texto do modelo
-  const [config, setConfig] = useState<{ persistente: boolean; bling: boolean; leitura_administrativa: boolean; retencao_dias: number; streaming?: boolean; fallback_free_disponivel?: boolean }>({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 });
+  const [config, setConfig] = useState<{ persistente: boolean; bling: boolean; leitura_administrativa: boolean; retencao_dias: number; streaming?: boolean; fallback_free_disponivel?: boolean; fallback_auxiliar_disponivel?: boolean }>({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 });
   const [conversas, setConversas] = useState<Conversa[]>([]);
   const [conversaId, setConversaId] = useState<string | null>(null);
   const [idsSessao, setIdsSessao] = useState<string[]>(() => lerSessao(typeof sessionStorage === "undefined" ? null : sessionStorage, loja.id));
@@ -313,7 +313,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     setMotorPendente(prov ? `${selecao?.nome ?? prov}${selecao?.modelo ? ` · ${selecao.modelo}` : ""}` : null);
     if (persistente && prov) setRetentativa({ texto: t, chave, provedor: prov, conversa: conv });
     try {
-      const campos = { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio, consentimento_fallback_free: autorizaFallbackFree && prov === "gemini" && config.fallback_free_disponivel === true } : { historico }), ...(prov ? { provedor: prov } : { sem_ia: true }), ...(anexosEnvio.length ? { anexos: anexosEnvio.map(({ nome, tipo, dados }) => ({ nome, tipo, dados })) } : {}) };
+      const campos = { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio, consentimento_fallback_free: autorizaFallbackFree && ((prov === "gemini" && config.fallback_free_disponivel === true) || (prov === "openrouter_free" && config.fallback_auxiliar_disponivel === true)) } : { historico }), ...(prov ? { provedor: prov } : { sem_ia: true }), ...(anexosEnvio.length ? { anexos: anexosEnvio.map(({ nome, tipo, dados }) => ({ nome, tipo, dados })) } : {}) };
       // B2b (#166): com o servidor anunciando streaming, o texto aparece enquanto o provedor escreve; o que vale é o resultado final registrado.
       const data = persistente && config.streaming ? await perguntarStreaming(campos, lojaDoEnvio) : await chamada(persistente ? "chat_perguntar" : "perguntar", campos);
       if (lojaAtual.current !== lojaDoEnvio) return;
@@ -565,32 +565,37 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       <aside className="aba aba-dir" id="aba-modelo" aria-label="Modelo e privacidade">
         <div className="aba-topo"><strong>Modelo e privacidade</strong><button type="button" className="sec mini" onClick={() => setDir(false)} aria-label="Recolher modelo e privacidade">Recolher</button></div>
         <div className="aba-corpo">
-        <label>Modelo de IA<select value={provedor} disabled={ocupado || carregando || !!erroConfig || !!retentativa || administrando} onChange={(e) => { setProvedor(e.target.value as ProvedorChat | ""); setAceitaEnvio(false); }}>
+        <label>Modelo de IA<select value={provedor} disabled={ocupado || carregando || !!erroConfig || !!retentativa || administrando} onChange={(e) => { setProvedor(e.target.value as ProvedorChat | ""); setAceitaEnvio(false); setAutorizaFallbackFree(false); }}>
           <option value="">Resumo local (sem IA externa)</option>
           {provedores.map((p) => <option key={p.id} value={p.id} disabled={p.estado !== "disponivel"}>{p.nome}{p.modelo ? ` · ${p.modelo}` : ""} — {ESTADO_PROVEDOR[p.estado]}</option>)}
         </select></label>
         <fieldset className="grupo-orbe" aria-label="Nano Auto: IA auxiliar de contingência">
           <legend>Nano Auto · IA auxiliar</legend>
           <p className="suave" role="status">{carregandoChat
-            ? "Verificando a contingência no servidor…"
-            : erroHistorico && !config.persistente
-              ? "Não foi possível verificar a contingência. Nenhuma troca automática será feita."
-              : !config.persistente
-                ? "Indisponível: chat persistente não está ativo."
-                : config.fallback_free_disponivel !== true
-                  ? "Não habilitado nesta loja: verifique a configuração no servidor."
-                  : provedor !== "gemini"
-                    ? "Auxiliar configurado, mas só acompanha o Gemini."
+            ? "Verificando a configuração de contingência no servidor…"
+            : !config.persistente
+              ? "Indisponível: o chat persistente não está ativo."
+              : provedor === "gemini"
+                ? config.fallback_free_disponivel !== true
+                  ? "Contingência Gemini → OpenRouter não configurada nesta loja."
+                  : autorizaFallbackFree
+                    ? "Contingência pública autorizada nesta sessão; disponibilidade ainda não testada."
+                    : "Contingência Gemini → OpenRouter configurada; precisa de autorização."
+                : provedor === "openrouter_free"
+                  ? config.fallback_auxiliar_disponivel !== true
+                    ? "Segundo provedor independente ainda não configurado ou não aprovado nesta loja."
                     : autorizaFallbackFree
-                      ? "Autorizado nesta sessão para perguntas públicas elegíveis."
-                      : "Auxiliar disponível; precisa de autorização para usar."}</p>
-          {config.persistente && config.fallback_free_disponivel === true && provedor === "gemini" && (
+                      ? "Contingência pública autorizada nesta sessão; disponibilidade ainda não testada."
+                      : "Contingência OpenRouter → segundo provedor configurada; precisa de autorização."
+                  : "Selecione Gemini ou OpenRouter para avaliar a contingência pública."}</p>
+          {config.persistente && ((provedor === "gemini" && config.fallback_free_disponivel === true)
+            || (provedor === "openrouter_free" && config.fallback_auxiliar_disponivel === true)) && (
             <label className="consent-linha" style={{ alignItems: "center", gap: 8 }}>
               <input type="checkbox" checked={autorizaFallbackFree} disabled={ocupado || !aceitaEnvio} onChange={e => setAutorizaFallbackFree(e.target.checked)} style={{ width: "auto" }} />
-              <span>Autorizar contingência automática gratuita para perguntas públicas de glossário nesta sessão.</span>
+              <span>Autorizar envio de perguntas públicas de glossário ao provedor auxiliar, apenas nesta sessão.</span>
             </label>
           )}
-          <small className="suave">O roteador Nano usa OpenRouter gratuito apenas quando o Gemini falha com HTTP 429, 502 ou 504. O modelo gratuito completo (leitura de dados já saneados) é outro recurso: liga-se em Integrações de IA e aparece na lista de modelos. Não envia histórico, anexos, SKU, custos ou dados da loja; não atende nem altera o Bling. Para cadastros e consultas comerciais, a continuidade automática com outro LLM ainda não está disponível.</small>
+          <small className="suave">O Gemini pode trocar para o OpenRouter e o OpenRouter pode tentar um provedor independente aprovado após HTTP 429, 502 ou 504. Essa contingência só atende perguntas públicas de glossário, sem histórico, anexos, SKU, custos, dados da loja nem ferramentas do Bling. A opção configurada não comprova que o provedor esteja respondendo; nenhum cadastro ou tarefa comercial é executado nesse modo.</small>
         </fieldset>
         <fieldset className="grupo-orbe"><legend>Esfera do Nano.IA</legend>
           <div className="grupo-orbe-opcoes" role="radiogroup" aria-label="Modelo da esfera">
