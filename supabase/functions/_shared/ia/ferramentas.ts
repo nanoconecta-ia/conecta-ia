@@ -34,7 +34,7 @@ export const SISTEMA = [
 
 /** Contratos de entrada que o LLM do assistente já conhece. O que cada uma É (risco, permissão, estado) vem do Tool Registry via aliases.ts. */
 export const FERRAMENTAS_DO_ASSISTENTE: readonly Ferramenta[] = [
-  { name: "resumo_loja", description: "Totais da loja: produtos espelhados, publicados e itens aguardando aprovação.", input_schema: { type: "object", properties: {} } },
+  { name: "resumo_loja", description: "Totais da loja no ESPELHO do Bling: produtos (todos), ativos, inativos, excluídos, publicados, itens aguardando aprovação e a data da última sincronização. NÃO é o total ao vivo do Bling: diga isso.", input_schema: { type: "object", properties: {} } },
   { name: "listar_produtos", description: "Lista produtos da loja (nome, SKU, preço, estoque, publicado). Pode filtrar só os não publicados.", input_schema: { type: "object", properties: { apenas_nao_publicados: { type: "boolean" }, busca: { type: "string", description: "trecho do nome ou SKU" }, limite: { type: "integer", minimum: 1, maximum: 20 } } } },
   { name: "ver_produto", description: "Detalhes de um produto pelo SKU, e o que falta para publicar.", input_schema: { type: "object", properties: { sku: { type: "string" } }, required: ["sku"] } },
   { name: "itens_pendentes", description: "Itens de enriquecimento aguardando aprovação (campo, valor proposto, fonte, confiança).", input_schema: { type: "object", properties: { limite: { type: "integer", minimum: 1, maximum: 20 } } } },

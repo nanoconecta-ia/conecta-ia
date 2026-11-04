@@ -4,13 +4,14 @@
 // (as ferramentas de leitura já os omitem). Módulo puro: sem rede, sem banco.
 import { IaErro } from "../ia/claude.ts";
 import { CONSULTAR_PRODUTO } from "./bling_consultar.ts";
+import { FERRAMENTAS_CATALOGO } from "./catalogo_leitura.ts";
 import { FALLBACK_FREE_URL, FALLBACK_FREE_MODELO } from "./fallback_free.ts";
 
 export const PROVEDOR_FREE = "openrouter_free" as const;
 export const URL_FREE = FALLBACK_FREE_URL;
 export const MODELO_FREE_PADRAO = FALLBACK_FREE_MODELO;
-/** Únicas ferramentas do gratuito: leitura do produto (Bling/espelho). */
-export const FERRAMENTAS_FREE: readonly string[] = [CONSULTAR_PRODUTO.name];
+/** Únicas ferramentas do gratuito: leitura do produto (Bling/espelho) e do catálogo espelhado (totais, lista, ficha). Nenhuma propõe, grava ou pesquisa fora. */
+export const FERRAMENTAS_FREE: readonly string[] = [CONSULTAR_PRODUTO.name, ...FERRAMENTAS_CATALOGO];
 /** Erros do provedor escolhido que justificam trocar para o gratuito: sobrecarga/limite, falha do provedor ou tempo esgotado (nunca chave recusada: isso é configuração). */
 export const STATUS_TROCA: readonly number[] = [429, 502, 504];
 
@@ -26,7 +27,7 @@ export function podeTrocarParaFree(e: EntradaTroca): boolean {
 
 // Sem "\n" no começo do literal: o empacotador do Supabase (deploy --use-api) tratou "\n…" como caminho de arquivo (ENAMETOOLONG).
 // Quem usa acrescenta a quebra de linha.
-export const SISTEMA_FREE = "MODO GRATUITO: você só CONSULTA (bling_consultar_produto). Não existe proposta, gravação nem pesquisa externa neste modo; se o lojista pedir uma alteração, diga que precisa do provedor principal. Nunca peça nem repita custo, fornecedor, dado fiscal ou credencial.";
+export const SISTEMA_FREE = "MODO GRATUITO: você só CONSULTA (bling_consultar_produto, resumo_loja, listar_produtos e ver_produto). Não existe proposta, gravação nem pesquisa externa neste modo; se o lojista pedir uma alteração, diga que precisa do provedor principal. Nunca peça nem repita custo, fornecedor, dado fiscal ou credencial.";
 
 export function avisoTroca(de: string, status: number): string {
   const motivo = status === 429 ? "sobrecarregado ou no limite" : status === 504 ? "sem resposta a tempo" : "com falha";
