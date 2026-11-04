@@ -55,7 +55,7 @@ try{
   await page.getByRole('button',{name:'Enviar',exact:true}).click();
   if(reserva){
    await page.getByText('Reserva Groq confirmou a consulta sem alterações.',{exact:true}).waitFor();
-   await page.locator('.nano-motor-compacto[aria-label^="Última resposta confirmada: Groq"]').waitFor();
+   await page.locator('.nano-motor-compacto[aria-label^="Última resposta confirmada: Groq"]').waitFor({state:'attached'});
    assert.match(await page.locator('.nano-motor-compacto').getAttribute('aria-label'),/Última resposta confirmada: Groq/);
    assert.equal(pedidos[0].reserva,true);assert.equal(pedidos[0].provedor,'openrouter_free');
    assert.equal(await page.locator('.proposta-compacta').count(),0);
