@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "10c2f54f63015704432e37385725e5a655afa91dbc27eaa5e7159022f88a14ea",
+  "artefato_sha256": "f534420e986edb1612612dd5cbcb0f868f454396ff09c7fd36ecadf03bcf7215",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -38,7 +38,7 @@
     },
     {
       "path": "supabase/functions/_shared/ia/claude.ts",
-      "sha256": "139f2e35bb4447393f9bceef849017881a82a835a019ee2a259f4f04c501971d"
+      "sha256": "00fe5ea7af0906df3c1ede8c424a3d50cae2aebd42d52bf92b86cc6a76d54fe3"
     },
     {
       "path": "supabase/functions/_shared/busca_segura/imagem_original.ts",
@@ -245,12 +245,16 @@
       "sha256": "689725e00006ece5638a5ad9c520ee14aa339a9f14ce0e2c836a4c720d820153"
     },
     {
+      "path": "supabase/functions/_shared/assistente/roteamento_free.ts",
+      "sha256": "6aae7cfafec3b3db726396725f23cb047a7886262ac12321958e85f23dd4ce7e"
+    },
+    {
       "path": "supabase/functions/_shared/assistente/auxiliar_independente.ts",
       "sha256": "b7f5c01cc15a976b74ced0e56ec2615b6fa927d10df1bc93af838bd391a6ab18"
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "76f1ae4dcf21c3f25f713a5ddf93c319ff56c45cfa88c3499cdab275715d2b2d"
+      "sha256": "2c6302b42c1dcf0798e3690861bc182dfe784e8561d926bdd50b0f6f90d7f859"
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores_stream.ts",

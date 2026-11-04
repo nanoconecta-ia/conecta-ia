@@ -8,6 +8,7 @@ import { modeloDaChave, validarProvedor, type ProvedorChat } from "./provedores.
 import { FERRAMENTAS_CATALOGO, REGRA_CATALOGO } from "./catalogo_leitura.ts";
 import { avisoTroca, FERRAMENTAS_FREE, PROVEDOR_FREE, podeTrocarParaFree, SISTEMA_FREE, URL_FREE } from "./free_automatico.ts";
 import { configFallbackFree, tentarFallbackFree } from "./fallback_free.ts";
+import { consultaPublicaEconomica, planoLimites, PROMPT_PUBLICO_ECONOMICO, reservarPassoLivre, restanteDiarioOpenRouter, saudacaoSemIA } from "./roteamento_free.ts";
 import { AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar, executarAuxiliarPublico, urlAuxiliarPermitida, cotaAuxiliarPermitida } from "./auxiliar_independente.ts";
 import { CONSULTAR_PRODUTO, consultarProduto } from "./bling_consultar.ts";
 import { gerarFichaSemLLM } from "./ficha_sem_llm.ts";
@@ -195,15 +196,29 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   if (mensagens.at(-1)?.content !== c.texto) throw new IaErro(503, "Histórico inconsistente; nenhuma chamada realizada.");
   if (anexos.length) { mensagens[mensagens.length - 1] = { role: "user", content: conteudoComAnexos(c.texto, anexos) }; meta.anexos = resumoParaRegistro(anexos); }
   modelo = modeloDaChave(k);
+  const economico = consultaPublicaEconomica(c.texto, anexos.length);
+  const perfil = planoLimites(prov, k.base_url, economico);
+  if (economico) meta.modo_economico = "glossario_publico_sem_historico";
   meta.host_provedor = prov === PROVEDOR_FREE ? "openrouter.ai" : prov === "compativel_openai" ? new URL(k.base_url).hostname : prov === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
   if (prov === PROVEDOR_FREE) meta.provedor_efetivo = "openrouter-free";
   const tipoLlm = (prov === PROVEDOR_FREE ? "compativel_openai" : prov) as "claude" | "gemini" | "compativel_openai";
   const propostas: Record<string, unknown>[] = [];
   const { config: searxng, erro: erroSearxng } = configSearxngOuNulo(ctx.get, loja.id); if (erroSearxng) console.warn("SearXNG desligado nesta loja:", erroSearxng); // Ambiente privado + allowlist por loja; nunca vem do usuario.
   iniciouChamadaProvedor = true; inicioProv = Date.now();
-  const r = await conversar({ provedor: tipoLlm, baseUrl: prov === PROVEDOR_FREE ? URL_FREE : k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo, mensagens,
-   sistema: `${SISTEMA}${prov === PROVEDOR_FREE ? `\n${SISTEMA_FREE}` : ""}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura), as de leitura do catálogo espelhado (resumo_loja, listar_produtos, ver_produto) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto, bling_propor_ajuste_produto, bling_propor_alterar_preco (preço de venda) e bling_propor_cadastro_produto (produto novo): nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\n${REGRA_CATALOGO}\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
-   maxPassos: 5, maxTokens: 1536, aoTexto: ctx.aoTexto ? (delta: string) => { if (delta) transmitiuTextoPrincipal = true; ctx.aoTexto?.(delta); } : undefined, adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(tipoLlm) : undefined, ferramentas: prov === PROVEDOR_FREE ? (ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_CATALOGO as readonly string[]).includes(f.name))] : []) : ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name) || (FERRAMENTAS_PESQUISA as readonly string[]).includes(f.name) || (FERRAMENTAS_CATALOGO as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,
+  const chaveProvedor = await decifrar(k.cifrada, chaveiro);
+  const r = await conversar({ provedor: tipoLlm, baseUrl: prov === PROVEDOR_FREE ? URL_FREE : k.base_url ?? undefined, chave: chaveProvedor, modelo, mensagens: economico ? [{ role: "user", content: c.texto }] : mensagens,
+   sistema: economico ? PROMPT_PUBLICO_ECONOMICO : `${SISTEMA}${prov === PROVEDOR_FREE ? `\n${SISTEMA_FREE}` : ""}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura), as de leitura do catálogo espelhado (resumo_loja, listar_produtos, ver_produto) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto, bling_propor_ajuste_produto, bling_propor_alterar_preco (preço de venda) e bling_propor_cadastro_produto (produto novo): nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\n${REGRA_CATALOGO}\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
+   maxPassos: economico ? 1 : 5, maxTokens: economico ? 480 : 1536, aoTexto: ctx.aoTexto ? (delta: string) => { if (delta) transmitiuTextoPrincipal = true; ctx.aoTexto?.(delta); } : undefined, adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(tipoLlm) : undefined, ferramentas: economico ? [] : prov === PROVEDOR_FREE ? (ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_CATALOGO as readonly string[]).includes(f.name))] : []) : ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name) || (FERRAMENTAS_PESQUISA as readonly string[]).includes(f.name) || (FERRAMENTAS_CATALOGO as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,
+   antesDoPasso: async () => {
+     try {
+       if (perfil.plano === "openrouter") {
+         const saldo = await restanteDiarioOpenRouter(chaveProvedor, ctx.fetch);
+         if (saldo === 0) throw new IaErro(429, "Cota diária gratuita do OpenRouter atingida. Use o Nano sem IA ou aguarde a renovação.");
+       }
+       await reservarPassoLivre(admin, loja.id, perfil, Number(k.tokens_mes ?? 0),
+         k.limite == null ? null : Number(k.limite), tokens);
+     } catch (e) { if (e instanceof IaErro && e.status === 429) meta.limite_preventivo = true; throw e; }
+   },
    onPasso: p => { tokens += p.tokens; respostaId = p.respostaId; modelo = p.modelo ?? modelo; },
    executar: async (nome, entrada) => {
     const t0 = Date.now();
@@ -250,7 +265,12 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  try {
   const { data: limitado, error: le } = await admin.rpc("limite_chamada", { p_chave: `chat-ia:${loja.id}:${userId}`, p_max: 20, p_janela_s: 60 });
   if (le || limitado !== true) throw new IaErro(429, "Limite temporário de perguntas.");
-  await rodar(provedor);
+  const saudacao = anexos.length === 0 ? saudacaoSemIA(c.texto) : null;
+  if (saudacao) {
+    resposta = saudacao; meta.ia = false; meta.desfecho = "sem_ia";
+    meta.completa = true; meta.ferramentas = []; meta.ferramentas_solicitadas = [];
+    ctx.aoTexto?.(resposta);
+  } else await rodar(provedor);
  } catch (e) {
   fimProv(provedor, e);
   let erroFinal: unknown = e; let respondidoPeloGratuito = false;
@@ -340,7 +360,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   }
  }
  const latenciaMs = Date.now() - inicioTurno; const categoria = categoriaDoStatus(status);
- Object.assign(meta, { tokens, modelo, resposta_id: respostaId, http_status: status, latencia_ms: latenciaMs, latencia_provedor: latProv, categoria_erro: categoria, ...(status >= 400 ? { origem_erro: "provedor" } : {}) });
+ Object.assign(meta, { tokens, modelo, resposta_id: respostaId, http_status: status, latencia_ms: latenciaMs, latencia_provedor: latProv, categoria_erro: categoria, ...(status >= 400 ? { origem_erro: meta.limite_preventivo ? "limite_preventivo_local" : "provedor" } : {}) });
  console.log(linhaLog({ origem: "chat", request_id: requestId, loja_id: loja.id, provedor: String(meta.provedor), status, latencia_ms: latenciaMs, desfecho: String(meta.desfecho), categoria, troca_de: meta.troca_de as string | undefined }));
  const { error: fimErro } = await admin.rpc("chat_responder", { p_loja: loja.id, p_user: userId, p_pergunta: turno.pergunta_id, p_token: turno.turno_token, p_resposta: resposta, p_meta: meta });
  if (fimErro) return resultado({ erro: "Não foi possível confirmar o registro do turno. Recupere a mesma pergunta antes de tentar outra.", codigo: "registro_nao_confirmado", conversa_id: turno.conversa_id }, 503);

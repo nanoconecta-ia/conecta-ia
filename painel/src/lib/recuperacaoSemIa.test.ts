@@ -32,6 +32,7 @@ test("SKU explícito inteiro prevalece sobre aplicação, ano e referências", (
 });
 test("categorias estruturadas comandam a recuperação e distinguem mensagens", () => {
   assert.equal(deveRecuperarSemIa(erroDoChat({categoria_erro:"limite", origem_erro:"provedor", resposta:"Falha 429"})), true);
+  assert.equal(deveRecuperarSemIa(erroDoChat({categoria_erro:"limite", origem_erro:"limite_preventivo_local", resposta:"Pausa preventiva"})), true);
   assert.equal(deveRecuperarSemIa(erroDoChat({categoria_erro:"ferramenta", erro:"Limite temporário"})), false);
   assert.equal(deveRecuperarSemIa(erroDoChat({categoria_erro:"limite", origem_erro:"ferramenta"})), false);
   assert.equal(deveRecuperarSemIa(erroDoChat({categoria_erro:"sku_nao_encontrado"})), false);

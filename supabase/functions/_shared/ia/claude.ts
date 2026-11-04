@@ -11,6 +11,8 @@ export interface Opcoes {
   executar(nome: string, entrada: unknown): Promise<unknown>;
   fetch?: typeof fetch; maxPassos?: number; maxTokens?: number; limiteResultado?: number;
   onPasso?: (p: { tokens: number; respostaId?: string; modelo?: string }) => void;
+  /** Reserva de cota ANTES de cada chamada ao provedor, inclusive passos de ferramenta. */
+  antesDoPasso?: (passo: number, tokensJaConsumidos: number) => Promise<void>;
   provedor?: "claude" | "gemini" | "compativel_openai"; baseUrl?: string;
   /** Texto de resposta do modelo, assim que existir (delta de streaming ou o bloco do passo, quando o adaptador não faz streaming). */
   aoTexto?(delta: string): void;
@@ -35,6 +37,7 @@ export async function conversar(o: Opcoes): Promise<Resposta> {
 
   for (let passo = 1; passo <= maxPassos; passo++) {
     if (o.sinal?.aborted) throw new IaErro(499, "cancelado");
+    await o.antesDoPasso?.(passo, tokens);
     const chamada: Chamada = { chave: o.chave, modelo: o.modelo, sistema: o.sistema, ferramentas: o.ferramentas, maxTokens: o.maxTokens ?? 1024, baseUrl: o.baseUrl, fetch: o.fetch };
     const r = o.adaptadorStream && o.aoTexto ? await o.adaptadorStream(chamada, msgs, o.aoTexto, o.sinal) : await adaptador(chamada, msgs);
     if (!(o.adaptadorStream && o.aoTexto)) for (const b of r.blocos) if (b.type === "text" && b.text) o.aoTexto?.(b.text);
