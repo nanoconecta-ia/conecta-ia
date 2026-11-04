@@ -168,6 +168,7 @@ export const HANDLERS: Record<string, Handler> = {
   "conecta.contexto.produto_ativo": (_e, c) => lerContextoDaLoja(c.admin as any, c.lojaId, new Date(), (c as { origem?: string }).origem === "chat" && c.userId ? `u:${c.userId}` : undefined),
   "nano.atividade.registrar": (e, c) => registrarResumo(c.admin as any, c.lojaId, (c as { mcpChaveId?: string | null }).mcpChaveId ?? null, e),
   "conecta.catalogo.resumo": (_e, c) => c.dados.resumo(),
+  "nano.diagnostico.ia": (_e, c) => c.dados.diagnosticoIa(),
   "conecta.catalogo.listar": (e, c) => c.dados.listarProdutos({ apenasNaoPublicados: e.apenas_nao_publicados === true, busca: e.busca, limite: e.limite }),
   "conecta.catalogo.ver": (e, c) => c.dados.verProduto(e.sku),
   "engenharia.duplicidade.detectar": (e, c) => rpc(c, "detectar_duplicidade", { p_loja: c.lojaId, p_sku: e.sku ?? null, p_gtin: e.gtin ?? null, p_nome: e.nome ?? null }),

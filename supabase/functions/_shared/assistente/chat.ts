@@ -1,3 +1,4 @@
+import { categoriaDoStatus, linhaLog, novoRequestId, type LatenciaProvedor } from "../diagnostico/correlacao.ts";
 // Fluxo persistente isolado do modo legado. Dependências injetadas para testes sem credenciais.
 import { chaveiroPlataforma } from "../plataforma.ts";
 import { decifrar } from "../cripto.ts";
@@ -149,9 +150,12 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  const tentativas: { ferramenta: string; ok: boolean; motivo?: string }[] = []; // toda tentativa de ferramenta, inclusive as que falharam (sem dado do usuário nem segredo)
  let tokens = 0; let respostaId: string | undefined; let modelo: string | undefined;
  let iniciouChamadaProvedor = false; let transmitiuTextoPrincipal = false;
+ const requestId = novoRequestId(); const inicioTurno = Date.now();
+ const latProv: LatenciaProvedor[] = []; let inicioProv = 0;
+ const fimProv = (prov: string, erro?: unknown) => { if (!inicioProv) return; latProv.push({ provedor: prov, ms: Date.now() - inicioProv, status: erro === undefined ? 200 : erro instanceof IaErro ? erro.status : 502 }); inicioProv = 0; };
  const simulado = ctx.get("CHAT_AMBIENTE") === "sintetico";
  let resposta = "Não consegui concluir esta pergunta."; let status = 200;
- const meta: Record<string, unknown> = { ia: true, provedor, simulado, ambiente: simulado ? "sintetico" : ctx.get("CHAT_AMBIENTE") === "real" ? "real" : "nao_validado", chamadas, evidencias, desfecho: "falhou" };
+ const meta: Record<string, unknown> = { ia: true, provedor, simulado, ambiente: simulado ? "sintetico" : ctx.get("CHAT_AMBIENTE") === "real" ? "real" : "nao_validado", chamadas, evidencias, desfecho: "falhou", request_id: requestId };
  const rodar = async (prov: ProvedorChat) => {
   const { data: rows, error } = await admin.rpc("ia_chave_ativa", { p_loja: loja.id, p_provedor: prov });
   const k = rows?.[0];
@@ -178,7 +182,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   const tipoLlm = (prov === PROVEDOR_FREE ? "compativel_openai" : prov) as "claude" | "gemini" | "compativel_openai";
   const propostas: Record<string, unknown>[] = [];
   const { config: searxng, erro: erroSearxng } = configSearxngOuNulo(ctx.get, loja.id); if (erroSearxng) console.warn("SearXNG desligado nesta loja:", erroSearxng); // Ambiente privado + allowlist por loja; nunca vem do usuario.
-  iniciouChamadaProvedor = true;
+  iniciouChamadaProvedor = true; inicioProv = Date.now();
   const r = await conversar({ provedor: tipoLlm, baseUrl: prov === PROVEDOR_FREE ? URL_FREE : k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo, mensagens,
    sistema: `${SISTEMA}${prov === PROVEDOR_FREE ? `\n${SISTEMA_FREE}` : ""}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura), as de leitura do catálogo espelhado (resumo_loja, listar_produtos, ver_produto) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto, bling_propor_ajuste_produto, bling_propor_alterar_preco (preço de venda) e bling_propor_cadastro_produto (produto novo): nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\n${REGRA_CATALOGO}\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
    maxPassos: 5, maxTokens: 1536, aoTexto: ctx.aoTexto ? (delta: string) => { if (delta) transmitiuTextoPrincipal = true; ctx.aoTexto?.(delta); } : undefined, adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(tipoLlm) : undefined, ferramentas: prov === PROVEDOR_FREE ? (ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_CATALOGO as readonly string[]).includes(f.name))] : []) : ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name) || (FERRAMENTAS_PESQUISA as readonly string[]).includes(f.name) || (FERRAMENTAS_CATALOGO as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,
@@ -215,6 +219,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
     }
    },
   });
+  fimProv(prov);
   resposta = r.texto || "O provedor não retornou texto.";
   // `ferramentas` = só as CONCLUÍDAS; as solicitadas e as tentativas ficam à parte. Ferramenta disponível ou solicitada não é chamada concluída.
   Object.assign(meta, { desfecho: "ok", passos: r.passos, ferramentas: r.ferramentasConcluidas, ferramentas_solicitadas: r.ferramentasUsadas, tentativas, completa: r.completa });
@@ -229,6 +234,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   if (le || limitado !== true) throw new IaErro(429, "Limite temporário de perguntas.");
   await rodar(provedor);
  } catch (e) {
+  fimProv(provedor, e);
   let erroFinal: unknown = e; let respondidoPeloGratuito = false;
   // Modo AUTOMÁTICO do gratuito: o provedor escolhido (ex.: Gemini) falhou por sobrecarga/limite/tempo e NADA foi mostrado, proposto ou gravado:
   // refaz o turno com o gratuito, SÓ LEITURA e dados saneados, e diz claramente quem respondeu.
@@ -243,7 +249,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
     Object.assign(meta, { provedor: PROVEDOR_FREE, desfecho: meta.desfecho === "ok" ? "contingencia_automatica" : meta.desfecho, provedor_efetivo: "openrouter-free", host_provedor: "openrouter.ai", troca_de: provedor, troca_motivo: statusOriginal, modo_free: "automatico" });
     ctx.aoTexto?.(resposta);
     respondidoPeloGratuito = true;
-   } catch (e2) { erroFinal = e2; }
+   } catch (e2) { fimProv(PROVEDOR_FREE, e2); erroFinal = e2; }
   }
   if (!respondidoPeloGratuito) {
   // Contingência segura: SÓ depois de tentativa real Gemini, sem streaming parcial,
@@ -267,7 +273,9 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   }
   }
  }
- Object.assign(meta, { tokens, modelo, resposta_id: respostaId, http_status: status });
+ const latenciaMs = Date.now() - inicioTurno; const categoria = categoriaDoStatus(status);
+ Object.assign(meta, { tokens, modelo, resposta_id: respostaId, http_status: status, latencia_ms: latenciaMs, latencia_provedor: latProv, categoria_erro: categoria });
+ console.log(linhaLog({ origem: "chat", request_id: requestId, loja_id: loja.id, provedor: String(meta.provedor), status, latencia_ms: latenciaMs, desfecho: String(meta.desfecho), categoria, troca_de: meta.troca_de as string | undefined }));
  const { error: fimErro } = await admin.rpc("chat_responder", { p_loja: loja.id, p_user: userId, p_pergunta: turno.pergunta_id, p_token: turno.turno_token, p_resposta: resposta, p_meta: meta });
  if (fimErro) return resultado({ erro: "Não foi possível confirmar o registro do turno. Recupere a mesma pergunta antes de tentar outra.", codigo: "registro_nao_confirmado", conversa_id: turno.conversa_id }, 503);
  return resultado({ resposta, conversa_id: turno.conversa_id, ...meta }, status);

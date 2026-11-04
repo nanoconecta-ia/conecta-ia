@@ -1,3 +1,7 @@
+// LEGADO (a aposentar): contingencia GRATIS so para perguntas PUBLICAS (glossario), com consentimento por pergunta e a chave antiga "freellm".
+// Hoje o caminho principal e o provedor `openrouter_free` (free_automatico.ts: modo Desligado/Manual/Automatico, so leitura, com ferramentas saneadas).
+// Em chat.ts este modulo so roda DEPOIS de o automatico nao ter respondido. Remover junto com o consentimento da UI (Assistente.tsx) quando o dono decidir;
+// ver docs/conector-ia/DIAGNOSTICO_IA.md. Nao ha segundo roteador: a decisao de quem responde e unica, em chat.ts.
 // Nano.IA: contingencia de inferencia GRATIS apenas para perguntas PUBLICAS, sem contexto de loja.
 // Nao reutiliza memoria/conversas, anexos, ferramentas, dados de ERP nem prompt comercial.
 // OpenRouter free seleciona modelo gratuito; sem chave/allowlist/consentimento, NAO existe chamada de rede.

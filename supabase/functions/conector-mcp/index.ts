@@ -1,4 +1,4 @@
-// Gateway MCP do Nano.ia (Edge Function). NÃO IMPLANTADA nesta fase. verify_jwt = false: a autenticação é a chave MCP por loja
+// Gateway MCP do Nano.ia (Edge Function). IMPLANTADA (workflow deploy-conector-mcp.yml, com aprovação do ambiente producao-assistente). verify_jwt = false: a autenticação é a chave MCP por loja
 // (hash sha256 no banco, escopos, expiração, revogação). O cliente externo nunca recebe service_role nem token do Bling.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { type PortasGateway } from "../_shared/conector/gateway.ts";
@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
       return { chave_id: s.sessao_id, loja_id: s.loja_id, escopos, criada_por: s.usuario_id, nome: s.nome, via: "oauth" as const };
     },
     urlRecurso,
+    registrar: (linha) => console.log(linha),
     async limite(chaveId) {
       const { data } = await admin.rpc("limite_chamada", { p_chave: `mcp:${chaveId}`, p_max: 120, p_janela_s: 60 });
       return data === true;

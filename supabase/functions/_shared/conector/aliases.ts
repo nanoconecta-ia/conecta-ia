@@ -10,6 +10,7 @@ import type { DefinicaoFerramenta, ResultadoPolicy } from "./tipos.ts";
 /** Nome usado pelo LLM na edge `assistente` (ia/ferramentas.ts) -> id no registro. */
 export const ALIASES_ASSISTENTE: Readonly<Record<string, string>> = {
   resumo_loja: "conecta.catalogo.resumo",
+  diagnostico_ia: "nano.diagnostico.ia",
   listar_produtos: "conecta.catalogo.listar",
   ver_produto: "conecta.catalogo.ver",
   itens_pendentes: "conecta.enriquecimento.pendentes",

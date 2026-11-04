@@ -2,6 +2,7 @@
 // Implementação com cliente estilo supabase-js (service_role no servidor). Os testes rodam esta mesma implementação sobre
 // um cliente que fala SQL com um Postgres local, para provar nomes de colunas e filtros contra o esquema real.
 import type { Entrada, Ponte } from "./categoria_bling.ts";
+import { montarDiagnostico, type LinhaProvedor, type LinhaTurno } from "../diagnostico/estado.ts";
 export interface ClienteDados { from(tabela: string): any }
 
 /** Sugestões de categoria APROVADAS pelo lojista, com o que falta para virar proposta de alteração no Bling. Só leitura. */
@@ -26,6 +27,8 @@ export interface PortaDados {
   prontoPublicacao(o: { sku: string }): Promise<{ pronto: boolean; faltando: string[] } | { erro: string }>;
   buscarConhecimento(texto: string, tipo?: string, limite?: number): Promise<unknown[]>;
   categoriasAprovadas(): Promise<CategoriasAprovadas>;
+  /** Estado da IA da loja (provedores sem segredo) e dos últimos turnos (request_id, status, latência). Só leitura. */
+  diagnosticoIa(): Promise<ReturnType<typeof montarDiagnostico>>;
 }
 
 const lim = (v: unknown, padrao = 10, max = 20) => Math.min(Math.max(Number.isInteger(v) ? (v as number) : padrao, 1), max);
@@ -75,6 +78,12 @@ export function dadosSupabase(c: ClienteDados, lojaId: string): PortaDados {
       const t = seguro(texto);
       if (!t) return [];
       return (await c.from("taxonomia_nos").select("nome, slug, status").ilike("nome", `%${t}%`).limit(15)).data ?? [];
+    },
+    async diagnosticoIa() {
+      // Colunas EXPLÍCITAS: nunca cifrada, final_chave nem base_url.
+      const { data: pv } = await c.from("loja_chaves_ia").select("provedor, ativa, modelo, principal, failover, limite_mensal_tokens, tokens_mes, ultimo_uso_em").eq("loja_id", lojaId);
+      const { data: tn } = await c.from("mensagens").select("criada_em, metadados").eq("loja_id", lojaId).eq("papel", "assistente").order("criada_em", { ascending: false }).limit(20);
+      return montarDiagnostico((pv ?? []) as LinhaProvedor[], (tn ?? []) as LinhaTurno[]);
     },
     async statusBling() {
       return (await c.from("bling_conexoes").select("status, ultimo_sync_ok_em, ultimo_erro").eq("loja_id", lojaId).maybeSingle()).data ?? { status: "pendente" };

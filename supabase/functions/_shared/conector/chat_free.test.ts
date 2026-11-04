@@ -54,7 +54,7 @@ test("Gemini no limite + modo AUTOMÁTICO: o gratuito responde, só leitura, e f
   const doGratuito = chamadas.filter((x) => x.url.startsWith("https://openrouter.ai"));
   assert.equal(doGratuito.length, 1, "uma chamada ao gratuito");
   const ferramentas = ((doGratuito[0].corpo.tools ?? []) as { function: { name: string } }[]).map((t) => t.function.name);
-  assert.deepEqual(ferramentas, ["bling_consultar_produto", "resumo_loja", "listar_produtos", "ver_produto"], "o gratuito só recebe leitura (produto e catálogo espelhado): nenhuma proposta, gravação ou pesquisa");
+  assert.deepEqual(ferramentas, ["bling_consultar_produto", "diagnostico_ia", "resumo_loja", "listar_produtos", "ver_produto"], "o gratuito só recebe leitura (produto e catálogo espelhado): nenhuma proposta, gravação ou pesquisa");
   assert.ok(!ferramentas.some((n) => /propor|criar|gravar|alterar|buscar/.test(n)), "nenhuma ferramenta de escrita, proposta ou pesquisa externa");
   assert.match(JSON.stringify(doGratuito[0].corpo.messages), /MODO GRATUITO/);
   assert.equal(db.sql(`select count(*) from public.mensagens where loja_id = '${L}' and metadados->>'desfecho' = 'contingencia_automatica' and metadados->>'provedor_efetivo' = 'openrouter-free'`) >= "1", true, "registrado no histórico");

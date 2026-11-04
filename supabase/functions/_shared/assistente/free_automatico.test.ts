@@ -20,7 +20,7 @@ test("troca automática: só quando é seguro refazer o turno", () => {
   assert.equal(podeTrocarParaFree({ ...base, propostasCriadas: 1 }), false, "proposta já criada: não refaz o turno");
 });
 test("o gratuito só tem a leitura de produto: nenhuma proposta, gravação ou pesquisa externa", () => {
-  assert.deepEqual([...FERRAMENTAS_FREE], ["bling_consultar_produto", "resumo_loja", "listar_produtos", "ver_produto"]);
+  assert.deepEqual([...FERRAMENTAS_FREE], ["bling_consultar_produto", "resumo_loja", "listar_produtos", "ver_produto", "diagnostico_ia"]);
   for (const t of FERRAMENTAS_FREE) assert.doesNotMatch(t, /propor|criar|gravar|buscar|alterar|reativar/);
   assert.equal(URL_FREE, "https://openrouter.ai/api/v1");
 });

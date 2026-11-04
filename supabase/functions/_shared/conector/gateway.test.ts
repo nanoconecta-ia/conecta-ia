@@ -124,3 +124,21 @@ test("gateway + banco: ciclo da chave (criar, validar, usar, revogar) e ferramen
   const depois = await tratarMcp(req(rpc("ping"), { authorization: `Bearer ${t}` }), p);
   assert.equal(depois.status, 401);
 });
+
+test("gateway: toda resposta leva x-request-id; tools/call devolve _meta e o log não carrega token nem conteúdo", async () => {
+  const linhas: string[] = [];
+  const base = portas(chaveBase);
+  const p: PortasGateway = { ...base, registrar: (l) => linhas.push(l),
+    contexto: () => ({ origem: "gateway_mcp", lojaId: A, userId: U1, dados: { diagnosticoIa: async () => ({ ok: true }) } as any, rpc: async () => ({ data: null, error: null }), admin: {} as any, bling: {} as any } as any) };
+  const r401 = await tratarMcp(req(rpc("ping"), {}), p);
+  assert.match(r401.cabecalhos["x-request-id"], /^req_[a-f0-9]{20}$/);
+  const r = await tratarMcp(req(rpc("tools/call", { name: "nano_diagnostico_ia", arguments: {} })), p);
+  assert.match(r.cabecalhos["x-request-id"], /^req_[a-f0-9]{20}$/);
+  const m = JSON.parse(r.corpo);
+  assert.equal(m.result._meta.request_id, r.cabecalhos["x-request-id"]);
+  assert.equal(typeof m.result._meta.latencia_ms, "number");
+  assert.equal(linhas.length, 2);
+  const o = JSON.parse(linhas[1]);
+  assert.equal(o.request_id, r.cabecalhos["x-request-id"]); assert.equal(o.ferramenta, "nano_diagnostico_ia");
+  assert.ok(!linhas.join("").includes(token));
+});
