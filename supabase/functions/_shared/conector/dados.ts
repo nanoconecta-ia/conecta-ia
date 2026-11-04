@@ -14,7 +14,7 @@ export interface CategoriasAprovadas {
 }
 
 export interface PortaDados {
-  resumo(): Promise<{ produtos: number; publicados: number; aguardando_aprovacao: number }>;
+  resumo(): Promise<{ produtos: number; publicados: number; aguardando_aprovacao: number; ativos: number; inativos: number; excluidos: number; ausentes: number; ultima_sincronizacao: string | null }>;
   listarProdutos(o: { apenasNaoPublicados?: boolean; busca?: string; limite?: number }): Promise<unknown[]>;
   verProduto(sku: string): Promise<Record<string, unknown> | { erro: string }>;
   produtoPorSku(sku: string): Promise<{ id: string; bling_id: string; sku: string; nome: string | null; publicado: boolean } | null>;
@@ -38,8 +38,13 @@ export function dadosSupabase(c: ClienteDados, lojaId: string): PortaDados {
   };
   const dados: PortaDados = {
     async resumo() {
-      const [p, pub, pend] = await Promise.all([contar("produtos"), contar("produtos", (b) => b.eq("publicado", true)), contar("produto_enriquecimento", (b) => b.eq("status", "a_confirmar"))]);
-      return { produtos: p, publicados: pub, aguardando_aprovacao: pend };
+      const [p, pub, pend, ativos, inativos, excluidos, ausentes, ult] = await Promise.all([
+        contar("produtos"), contar("produtos", (b) => b.eq("publicado", true)), contar("produto_enriquecimento", (b) => b.eq("status", "a_confirmar")),
+        contar("produtos", (b) => b.eq("situacao", "A")), contar("produtos", (b) => b.eq("situacao", "I")), contar("produtos", (b) => b.eq("situacao", "E")), contar("produtos", (b) => b.eq("situacao", "ausente")),
+        c.from("produtos").select("sincronizado_em").eq("loja_id", lojaId).order("sincronizado_em", { ascending: false }).limit(1),
+      ]);
+      const ultima = (ult as { data?: { sincronizado_em?: string }[] | null }).data?.[0]?.sincronizado_em ?? null;
+      return { produtos: p, publicados: pub, aguardando_aprovacao: pend, ativos, inativos, excluidos, ausentes, ultima_sincronizacao: ultima };
     },
     async listarProdutos(o) {
       let q = c.from("produtos").select("nome, sku, preco, estoque, publicado, situacao").eq("loja_id", lojaId).limit(lim(o.limite));

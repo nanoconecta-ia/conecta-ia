@@ -41,7 +41,7 @@ const itemProposta = obj({
 
 export const FERRAMENTAS_CONECTOR: readonly DefinicaoFerramenta[] = [
   // ------------------------------------------------------------------ Conecta.IA (leitura e propostas)
-  leitura("conecta.catalogo.resumo", "conecta", "Totais da loja: produtos espelhados, publicados e itens aguardando aprovação.", obj({}), obj({ produtos: { type: "integer" }, publicados: { type: "integer" }, aguardando_aprovacao: { type: "integer" } }),
+  leitura("conecta.catalogo.resumo", "conecta", "Totais da loja: produtos espelhados, publicados e itens aguardando aprovação.", obj({}), obj({ produtos: { type: "integer" }, publicados: { type: "integer" }, aguardando_aprovacao: { type: "integer" }, ativos: { type: "integer" }, inativos: { type: "integer" }, excluidos: { type: "integer" }, ausentes: { type: "integer" }, ultima_sincronizacao: { type: "string" } }),
     "Contagem direta no espelho.", { estado: "ativa" }),
   leitura("conecta.catalogo.listar", "conecta", "Lista produtos da loja (nome, SKU, preço, estoque, publicado).", obj({ apenas_nao_publicados: { type: "boolean" }, busca: txt("trecho do nome ou SKU", 80), limite: { type: "integer", minimum: 1, maximum: 20 } }), lista(livre, 20),
     "Leitura do espelho.", { estado: "ativa" }),
