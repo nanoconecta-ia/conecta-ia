@@ -8,7 +8,7 @@ import { modeloDaChave, validarProvedor, type ProvedorChat } from "./provedores.
 import { FERRAMENTAS_CATALOGO, REGRA_CATALOGO } from "./catalogo_leitura.ts";
 import { avisoTroca, FERRAMENTAS_FREE, PROVEDOR_FREE, podeTrocarParaFree, SISTEMA_FREE, URL_FREE } from "./free_automatico.ts";
 import { configFallbackFree, tentarFallbackFree } from "./fallback_free.ts";
-import { AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar, executarAuxiliarPublico } from "./auxiliar_independente.ts";
+import { AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar, executarAuxiliarPublico, urlAuxiliarPermitida } from "./auxiliar_independente.ts";
 import { CONSULTAR_PRODUTO, consultarProduto } from "./bling_consultar.ts";
 import { gerarFichaSemLLM } from "./ficha_sem_llm.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../ia/ferramentas.ts";
@@ -41,7 +41,21 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  const ativo = (codigo: string) => flags.some((r: any) => r.codigo === codigo && r.ativo === true);
  if (c.acao === "chat_config") {
   const { data: config, error } = await usuario.from("lojas").select("chat_retencao_dias").eq("id", loja.id).single();
-  return error ? resultado({ erro: "Preparação do histórico ainda não instalada." }, 503) : resultado({ streaming: true, persistente: ativo("chat_persistente"), bling: ativo("chat_consulta_bling"), leitura_administrativa: ativo("chat_leitura_administrativa"), retencao_dias: config.chat_retencao_dias, fallback_free_disponivel: configFallbackFree(ctx.get, loja.id) !== null, versao: "chat_operacional_v1" });
+  // Somente metadados; NAO consultar chave cifrada nem afirmar disponibilidade de rede.
+  // O segundo provedor depende de ativacao voluntaria, failover e endpoint aprovado.
+  const { data: aux, error: erroAux } = await admin.from("loja_chaves_ia")
+    .select("provedor,ativa,failover,base_url,modelo")
+    .eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
+  const auxiliarConfigurado = !erroAux && aux?.ativa === true && aux?.failover === true
+    && typeof aux.modelo === "string" && aux.modelo.length > 0 && aux.modelo.length <= 120
+    && urlAuxiliarPermitida(aux.base_url);
+  return error ? resultado({ erro: "Preparação do histórico ainda não instalada." }, 503) : resultado({
+    streaming: true, persistente: ativo("chat_persistente"), bling: ativo("chat_consulta_bling"),
+    leitura_administrativa: ativo("chat_leitura_administrativa"), retencao_dias: config.chat_retencao_dias,
+    fallback_free_disponivel: configFallbackFree(ctx.get, loja.id) !== null,
+    fallback_auxiliar_disponivel: auxiliarConfigurado,
+    versao: "chat_operacional_v1",
+  });
  }
  // Excluir e configurar continuam disponíveis quando o recurso é desligado.
  if (c.acao === "chat_excluir" && uuid(c.conversa_id)) {
