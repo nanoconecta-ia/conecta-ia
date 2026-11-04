@@ -97,11 +97,14 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
    if (!chaveCifra) return resultado({ erro: "Credencial do conector não disponível para consulta." }, 503);
    const simulado = ctx.get("CHAT_AMBIENTE") === "sintetico";
    const prova = await consultarProduto({ codigo: c.codigo, incluir_excluidos: true },
-     { usuario, admin, lojaId: loja.id, userId, cfg: { chaveCifra, fetch: ctx.fetch }, simulado, chamadas, evidencias, ficha: true });
+     { usuario, admin, lojaId: loja.id, userId, cfg: { chaveCifra, fetch: ctx.fetch }, simulado, chamadas, evidencias, ficha: true, skuExato: c.codigo });
    const ficha = gerarFichaSemLLM(prova);
+   if (ficha.candidatos === 0 && !ficha.api_completa) return resultado({ erro: "Erro de ferramenta: consulta incompleta; não foi possível confirmar o SKU.", categoria_erro: "ferramenta", origem_erro: "ferramenta", ia: false }, 503);
+   if (ficha.candidatos === 0) return resultado({ erro: "SKU não encontrado na consulta exata. Isso não comprova ausência no ERP.", categoria_erro: "sku_nao_encontrado", origem_erro: "produto", ia: false }, 404);
+   if (ficha.candidatos !== 1 || ficha.parcial) return resultado({ erro: "Não foi possível confirmar uma identidade única para este SKU.", categoria_erro: "identidade_ambigua", origem_erro: "produto", ia: false }, 409);
    return resultado({ ...ficha, evidencias, chamadas, simulado, ia: false, ferramentas: [CONSULTAR_PRODUTO.name] });
   } catch {
-   return resultado({ erro: "A ficha não foi concluída. Verifique conexão, autorização ou auditoria do Bling; nenhum cadastro foi criado." }, 503);
+   return resultado({ categoria_erro: "ferramenta", origem_erro: "ferramenta", erro: "A ficha não foi concluída. Verifique conexão, autorização ou auditoria do Bling; nenhum cadastro foi criado." }, 503);
   }
  }
  if (c.acao === "chat_corrigir_produto") {
@@ -274,7 +277,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   }
  }
  const latenciaMs = Date.now() - inicioTurno; const categoria = categoriaDoStatus(status);
- Object.assign(meta, { tokens, modelo, resposta_id: respostaId, http_status: status, latencia_ms: latenciaMs, latencia_provedor: latProv, categoria_erro: categoria });
+ Object.assign(meta, { tokens, modelo, resposta_id: respostaId, http_status: status, latencia_ms: latenciaMs, latencia_provedor: latProv, categoria_erro: categoria, ...(status >= 400 ? { origem_erro: "provedor" } : {}) });
  console.log(linhaLog({ origem: "chat", request_id: requestId, loja_id: loja.id, provedor: String(meta.provedor), status, latencia_ms: latenciaMs, desfecho: String(meta.desfecho), categoria, troca_de: meta.troca_de as string | undefined }));
  const { error: fimErro } = await admin.rpc("chat_responder", { p_loja: loja.id, p_user: userId, p_pergunta: turno.pergunta_id, p_token: turno.turno_token, p_resposta: resposta, p_meta: meta });
  if (fimErro) return resultado({ erro: "Não foi possível confirmar o registro do turno. Recupere a mesma pergunta antes de tentar outra.", codigo: "registro_nao_confirmado", conversa_id: turno.conversa_id }, 503);

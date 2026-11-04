@@ -8,7 +8,7 @@ import { publicarNano } from "../lib/nanoEstado.ts";
 import { Icone } from "../componentes/Icone.tsx";
 import { gravarConsentimento, lerConsentimento } from "../lib/consentimentoEnvio.ts";
 import { consumirPedidoPendente } from "../lib/contextoPagina.ts";
-import { DICA_SEM_IA, falhaDoProvedor, PREFIXO_FICHA, skuEmFoco } from "../lib/recuperacaoSemIa.ts";
+import { DICA_SEM_IA, deveRecuperarSemIa, erroDoChat, mensagemFalhaFicha, PREFIXO_FICHA, skuEmFoco } from "../lib/recuperacaoSemIa.ts";
 import { perguntaDeContexto } from "../lib/perguntaContexto.ts";
 import { PontosPensando } from "../componentes/PontosPensando.tsx";
 import { MODELOS_ORBE, aplicarOrbe, gravarOrbe, lerOrbe, type ModeloOrbe } from "../lib/orbe.ts";
@@ -28,7 +28,7 @@ import { gravarConversaAtiva, lerConversaAtiva } from "../lib/conversaAtiva.ts";
 import { perguntarComStreaming, propostasDoTurno, type PropostaTurno } from "../lib/streamAssistente.ts";
 import { useFonte } from "../lib/useFonte.ts";
 import { PropostaCompacta } from "../componentes/conector/PropostaCompacta.tsx";
-import { escolherInicial, erroAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
+import { escolherInicial, falhaAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 import { identificarModeloEfetivo } from "../lib/modeloEfetivo.ts";
 import { RoboNano } from "../componentes/RoboNano.tsx";
 
@@ -187,8 +187,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
 
   async function chamada(acao: string, campos: Record<string, unknown> = {}) {
     const { data, error } = await supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao, ...campos } });
-    if (error) throw new Error(await erroAssistente(error));
-    if (data?.erro) throw new Error(String(data.erro));
+    if (error) throw await falhaAssistente(error);
+    if (data?.erro || Number(data?.http_status) >= 400) throw erroDoChat(data);
     return data;
   }
   async function listarConversas(mais: boolean) {
@@ -326,19 +326,19 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       setRetentativa(null);
       if (persistente) { setConversaId(data.conversa_id); if (!conv && data.conversa_id) setIdsSessao(registrarNaSessao(typeof sessionStorage === "undefined" ? null : sessionStorage, loja.id, String(data.conversa_id))); await listarConversas(false); }
       if (lerAltoRef.current) voz.falar(resposta);
-    } catch (e) { if (lojaAtual.current === lojaDoEnvio) { setMsgs(m => m.filter((x) => !x.parcial)); setUltimoMotorFalhou(true); setErroHistorico(msgErro(e)); await recuperarSemIa(t, msgErro(e), lojaDoEnvio); } }
+    } catch (e) { if (lojaAtual.current === lojaDoEnvio) { setMsgs(m => m.filter((x) => !x.parcial)); setUltimoMotorFalhou(true); setErroHistorico(msgErro(e)); await recuperarSemIa(t, e, lojaDoEnvio); } }
     finally { if (lojaAtual.current === lojaDoEnvio) { setOcupado(false); setMotorPendente(null); } }
   }
-  /** Provedor de IA falhou (cota/sobrecarga): mostra a ficha direta do último SKU citado (ação SEM IA) ou diz o que dá para fazer sem IA. Não troca de LLM nem grava. */
-  async function recuperarSemIa(pergunta: string, erro: string, lojaDoEnvio: string) {
-    if (!falhaDoProvedor(erro)) return;
-    const sku = config.bling ? skuEmFoco(pergunta, msgsRef.current.map((m) => m.texto)) : null;
+  /** Provedor de IA falhou (cota/sobrecarga): mostra a ficha direta do SKU solicitado (ação SEM IA) ou diz o que dá para fazer sem IA. Não troca de LLM nem grava. */
+  async function recuperarSemIa(pergunta: string, erro: unknown, lojaDoEnvio: string) {
+    if (!deveRecuperarSemIa(erro)) return;
+    const sku = config.bling ? skuEmFoco(pergunta, msgsRef.current.filter(m => m.de === "eu").map((m) => m.texto)) : null;
     if (!sku) { setMsgs(m => [...m, { de: "ia", texto: DICA_SEM_IA }]); return; }
     try {
       const d = await chamada("chat_ficha_produto", { codigo: sku });
       if (lojaAtual.current !== lojaDoEnvio) return;
       setMsgs(m => [...m, { de: "ia", texto: d.erro ? DICA_SEM_IA : PREFIXO_FICHA + String(d.resposta ?? ""), evidencias: d.evidencias, simulado: d.simulado }]);
-    } catch { if (lojaAtual.current === lojaDoEnvio) setMsgs(m => [...m, { de: "ia", texto: DICA_SEM_IA }]); }
+    } catch (e) { if (lojaAtual.current === lojaDoEnvio) setMsgs(m => [...m, { de: "ia", texto: mensagemFalhaFicha(e) }]); }
   }
   /** Turno com streaming: a prévia vai numa mensagem `parcial` que some quando chega o resultado (ou o erro). Erro HTTP vira exceção, como em `chamada`. */
   async function perguntarStreaming(campos: Record<string, unknown>, lojaDoEnvio: string) {
@@ -349,7 +349,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       if (lojaAtual.current !== lojaDoEnvio) return;
       setMsgs(m => m.map((x) => x.parcial ? { ...x, texto: x.texto + delta } : x));
     });
-    if (r.status >= 400 || typeof r.corpo.erro === "string") throw new Error(String(r.corpo.erro ?? r.corpo.resposta ?? "Não foi possível concluir."));
+    if (r.status >= 400 || Number(r.corpo.http_status) >= 400 || typeof r.corpo.erro === "string") throw erroDoChat(r.corpo);
     return r.corpo as Record<string, any>;
   }
   async function reconhecerCodigoImagem(arquivo: File): Promise<string | null> {

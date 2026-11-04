@@ -12,6 +12,14 @@ const campo = (valor: unknown, limite = 120) => typeof valor === "string" && val
   ? valor.replace(/[\x00-\x1F]/g, " ").slice(0, limite) : "não informado";
 const numero = (n: unknown) => Number.isInteger(n) && Number(n) >= 0 ? Number(n) : 0;
 
+/** Mantém só identidades exatas; nunca devolve sugestões aproximadas na ficha. */
+export function evidenciaSkuExato<T extends EvidenciaFicha>(e: T, sku: string): T {
+  if (!e || !Array.isArray(e.candidatos)) throw Error("Evidência incompleta.");
+  const candidatos = e.candidatos.filter(c => c.sku === sku);
+  return { ...e, termo: sku, candidatos, total_candidatos: candidatos.length,
+    truncado: e.truncado, lista_parcial: e.truncado === true, candidatos_omitidos: 0 };
+}
+
 export function gerarFichaSemLLM(v: unknown) {
   if (!v || typeof v !== "object" || Array.isArray(v)) throw Error("Evidência da consulta inválida.");
   const e = v as EvidenciaFicha;

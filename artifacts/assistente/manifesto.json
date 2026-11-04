@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "c0c617aa99920058915e32bc623fb92e6aea1af346705b65bed6438d2a109a45",
+  "artefato_sha256": "8274f51b9c8632ac5e758e7245c6e3a93a14a19fb371f9c330c5d7dd718ad510",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -221,6 +221,10 @@
       "sha256": "c71d484a9c390dd82fda02854f03579dc7e781b495d02a490e760bea0ea690b6"
     },
     {
+      "path": "supabase/functions/_shared/assistente/ficha_sem_llm.ts",
+      "sha256": "9fd0998cfd1546b8cf264ca444f9c62cf146bf840bb99d12cb288fd90cd8de9f"
+    },
+    {
       "path": "supabase/functions/_shared/bling_ferramentas.ts",
       "sha256": "79e74f53fa101491d6ff864b81c80aa9cf7d08f70cd42c0a6b2fbd68cf765855"
     },
@@ -230,7 +234,7 @@
     },
     {
       "path": "supabase/functions/_shared/assistente/bling_consultar.ts",
-      "sha256": "db227a3ee0f6895a0ef8e54db80178e082d956023652bb7528b77b8a04f070b6"
+      "sha256": "d6936cb3af61246e267c66f0493335e95550956d4b87a13fb56c7945b441af92"
     },
     {
       "path": "supabase/functions/_shared/assistente/fallback_free.ts",
@@ -241,12 +245,8 @@
       "sha256": "689725e00006ece5638a5ad9c520ee14aa339a9f14ce0e2c836a4c720d820153"
     },
     {
-      "path": "supabase/functions/_shared/assistente/ficha_sem_llm.ts",
-      "sha256": "c090a8484c9caeaa718ee343e9990da3d3548c0d60898ed3b68166075232ff2d"
-    },
-    {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "7afb9e91075654468db5c39eec12d4187491ffbbda0ee33edf043345aa8ce8b4"
+      "sha256": "18609a546db396689784230fde286829300f710271dbdf99c78f90609cea8843"
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores_stream.ts",

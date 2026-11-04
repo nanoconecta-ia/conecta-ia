@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { gerarFichaSemLLM } from "./ficha_sem_llm.ts";
+import { evidenciaSkuExato, gerarFichaSemLLM } from "./ficha_sem_llm.ts";
 const fonte = { origem: "api_bling", consultada: true, completa: true };
 const unico = {
  termo: "CI000016", total_candidatos: 1, truncado: false, candidatos: [
@@ -47,4 +47,25 @@ test("ficha: evidencia incompleta e dados sinteticos nao aceitos como confiaveis
  const r=gerarFichaSemLLM({...unico,simulado:true,conclusao:{api_completa:false}});
  assert.match(r.resposta,/SIMULADO/);
  assert.equal(r.autoriza_criacao,false);
+});
+
+test("ficha estrita filtra candidatos aproximados e preserva SKU inteiro", () => {
+ const candidatos = [
+   { id: "1", sku: "K2500", nome: "Radiador" },
+   { id: "2", sku: "ENG-1645-05", nome: "Turbina" },
+   { id: "3", sku: "ENG-1645", nome: "Outro produto" },
+ ];
+ const e = evidenciaSkuExato({...unico, candidatos, total_candidatos: 3}, "ENG-1645-05");
+ assert.deepEqual(e.candidatos, [candidatos[1]]);
+ const ficha = gerarFichaSemLLM(e);
+ assert.equal(ficha.candidatos, 1);
+ assert.match(ficha.resposta, /ENG-1645-05/);
+ assert.doesNotMatch(ficha.resposta, /Radiador|Outro produto/);
+ assert.equal(evidenciaSkuExato({...unico, candidatos}, "INEXISTENTE-123").total_candidatos, 0);
+ assert.equal(evidenciaSkuExato({...unico, candidatos}, "eng-1645-05").total_candidatos, 0);
+});
+test("ficha estrita não oculta duplicidade do SKU nem truncamento da busca", () => {
+ const c = unico.candidatos[0];
+ assert.equal(gerarFichaSemLLM(evidenciaSkuExato({...unico, candidatos:[c,{...c,id:"outro"}]}, c.sku)).candidatos, 2);
+ assert.equal(gerarFichaSemLLM(evidenciaSkuExato({...unico,truncado:true}, c.sku)).parcial, true);
 });
