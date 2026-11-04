@@ -5,6 +5,8 @@ A loja Mobis tem `openrouter_free` como principal e Gemini desligado. O fallback
 trocava outros provedores PARA OpenRouter; quando o próprio OpenRouter falhava,
 não havia segundo destino. Esta mudança reutiliza o `chat.ts` e os adaptadores
 existentes — não cria chat, agente, gateway, tabelas, migrações nem secrets.
+O banco vigente proíbe `failover=true` no `compativel_openai`; por isso o piloto usa
+**chave ativa + host permitido + cota local conservadora + consentimento por sessão**, sem quebrar a restrição.
 
 ## Escopo entregue nesta branch
 - `auxiliar_independente.ts`: política isolada e executor que só responde
@@ -24,11 +26,13 @@ existentes — não cria chat, agente, gateway, tabelas, migrações nem secrets
   streaming, ferramentas, configurações, URL suspeita e HTTP não elegível.
 
 ## Limites e condições
-A integração fica **desligada na Mobis até haver segundo provedor gratuito independente,
-com chave própria testada, modelo válido, `ativa=true` e `failover=true`**.
-O painel atual não oferece um seletor multiprovedor para configurar esse
-`failover` de forma amigável: falta UI/contrato com aprovação humana, em PR posterior.
-Não modificar diretamente a tabela para burlar a aprovação do dono.
+A integração fica **desligada na Mobis até haver segundo provedor independente,
+com chave própria testada, modelo válido, `ativa=true`, teto local entre 1.000 e 50.000 tokens/mês e autorização por sessão**.
+O painel utiliza a tela existente de Integrações de IA para cadastrar o `compativel_openai`.
+O chat do Nano oferece consentimento por sessão quando o provedor configurado cumpre a política.
+A coluna `failover` permanece reservada ao OpenRouter no banco; **nenhuma migração é necessária**.
+Somente um provedor externo adicional é admitido por vez neste primeiro piloto.
+Não alterar registros do banco diretamente ou presumir que o provedor tem cobrança zero.
 
 A execução de inferência está limitada a perguntas públicas de glossário e
 não substitui IA nas tarefas de cadastro/SEO/taxonomia. Estas permanecem
