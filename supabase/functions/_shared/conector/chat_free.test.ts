@@ -19,7 +19,13 @@ interface Corpo { url: string; corpo: Record<string, unknown> }
 let chamadas: Corpo[] = [];
 let modoGemini: "429" | "ok" | "401" = "429";
 const resp = (status: number, j: unknown) => new Response(JSON.stringify(j), { status, headers: { "content-type": "application/json" } });
-const fetchFalso = (async (url: string, init: { body?: string }) => {
+const fetchFalso = (async (url: string, init: { body?: string; method?: string }) => {
+  // Consulta de cota: GET somente leitura, sem inferência e sem consumir uma chamada gratuita.
+  // O teste conta APENAS inferências em `chamadas` para não confundir medidor com chat.
+  if (String(url) === "https://openrouter.ai/api/v1/key") {
+    assert.equal(init?.method, "GET");
+    return resp(200, { data: { free_model_daily_requests: { limit: 50, used: 5, remaining: 45 } } });
+  }
   const corpo = init?.body ? JSON.parse(init.body) : {};
   chamadas.push({ url: String(url), corpo });
   if (String(url).includes("generativelanguage.googleapis.com")) {
