@@ -1,6 +1,7 @@
 // Adaptadores de provedor: convertem o formato canônico (blocos no estilo Messages API) de/para cada API.
 // Canônico: mensagem {role, content: string | Bloco[]}; tool_use {id,nome,input}; tool_result {tool_use_id,content}.
 // Nunca registram chave nem corpo de erro. Erros viram IaErro com mensagem genérica.
+import { limiteOpenRouter } from "./limite_openrouter.ts";
 import { IaErro, type Bloco, type Ferramenta, type Mensagem } from "./tipos.ts";
 import { urlPublicaSegura } from "./plugin.ts";
 
@@ -28,7 +29,10 @@ async function enviar(f: typeof fetch, url: string, headers: Record<string, stri
   } catch {
     throw new IaErro(504, "O provedor de IA não respondeu a tempo.");
   }
-  if (!r.ok) throw erroHttp(r.status, r.status === 400 ? (await r.text().catch(() => "")).slice(0, 500) : "");
+  if (!r.ok) {
+    const detalhe = [400, 429].includes(r.status) ? (await r.text().catch(() => "")).slice(0, 16000) : "";
+    throw limiteOpenRouter(url, r.status, detalhe, r.headers) ?? erroHttp(r.status, r.status === 400 ? detalhe.slice(0, 500) : "");
+  }
   const j = await r.json().catch(() => null);
   if (!j || typeof j !== "object") throw new IaErro(502, "Resposta inesperada do provedor de IA.");
   return j;

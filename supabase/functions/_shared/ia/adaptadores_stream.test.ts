@@ -246,3 +246,9 @@ test("streaming: corte por tamanho/bloqueio vira Passo.parada nos 3 provedores (
   assert.equal((await rodar("gemini", gemini("SAFETY"))).parada, "bloqueado");
   assert.equal((await rodar("gemini", gemini("STOP"))).parada, undefined);
 });
+
+test("OpenRouter: HTTP e SSE conservam o diagnóstico diário sem expor corpo bruto", async()=>{
+ for(const f of [fetchCom(()=>new Response(JSON.stringify({error:{code:429,message:"free-models-per-day "+CHAVE}}),{status:429})), fetchCom(()=>resposta([ev({error:{code:429,message:"free-models-per-day "+CHAVE}})]))]){
+  await assert.rejects(ADAPTADORES_STREAM.compativel_openai(chamada(f,{baseUrl:"https://openrouter.ai/api/v1"}),msgs,()=>{}),e=>e instanceof IaErro && e.motivo_ia==="cota_diaria" && !e.message.includes(CHAVE));
+ }
+});

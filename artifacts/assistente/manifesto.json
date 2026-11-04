@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "8274f51b9c8632ac5e758e7245c6e3a93a14a19fb371f9c330c5d7dd718ad510",
+  "artefato_sha256": "afe821ea754283f9bc01b3cbffa3cad9173aae91e572e1fe340d449ec5720488",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -26,7 +26,11 @@
     },
     {
       "path": "supabase/functions/_shared/ia/tipos.ts",
-      "sha256": "19a543153f283ae12a8f79d68e87e0e0dc2f0c588234194ea34865888ac83031"
+      "sha256": "7754ec2d665b90b45cd2182087bf7ef4b6e0b65a6f1e8a129bea0cb9e6b2304b"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/limite_openrouter.ts",
+      "sha256": "b4a408832a4d9ee97c133a1e8c42eb3faf4fb462ac1fa0b5bcc86cb462624afb"
     },
     {
       "path": "supabase/functions/_shared/ia/plugin.ts",
@@ -34,7 +38,7 @@
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores.ts",
-      "sha256": "145911eda693e93c28b92d428d77bba19777ba2dfd10204a70443b44c52cafb4"
+      "sha256": "83796178121b735c237df96945a807162ab2e9070729f90faccc781466c10053"
     },
     {
       "path": "supabase/functions/_shared/ia/claude.ts",
@@ -217,6 +221,10 @@
       "sha256": "83e2d34b117b156a65b6f559508a66fe676dcd58415ab522f8696856eeb863b0"
     },
     {
+      "path": "supabase/functions/_shared/assistente/reserva_ia.ts",
+      "sha256": "23104eea72218c6eea03205225f6632c998973fb043bacc61e6c4b6c6e332040"
+    },
+    {
       "path": "supabase/functions/_shared/assistente/catalogo_leitura.ts",
       "sha256": "c71d484a9c390dd82fda02854f03579dc7e781b495d02a490e760bea0ea690b6"
     },
@@ -246,11 +254,11 @@
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "18609a546db396689784230fde286829300f710271dbdf99c78f90609cea8843"
+      "sha256": "e57e60bcc123e5c34c29b0732326316ea26aeae65d8d56a841fac7f13a04b6ed"
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores_stream.ts",
-      "sha256": "86b508c8bb295aa6b634fba4f426e38424dbc796b906d1dae56824762dd697ca"
+      "sha256": "c7974045a7f1d26955a2b38fc0351bec47019718c1ceb3b82dcaa66eedd606e1"
     },
     {
       "path": "supabase/functions/_shared/assistente/streaming.ts",

@@ -16,7 +16,7 @@ let browser;
 try{
  for(let i=0;i<100;i++){try{if((await fetch(`http://127.0.0.1:${porta}/.streaming-demo.html`)).ok)break}catch{}await new Promise(r=>setTimeout(r,100))}
  browser=await chromium.launch({headless:true});
- for(const [largura,altura,semResultado] of [[390,844,false],[1280,800,false],[390,844,true]]){
+ for(const [largura,altura,semResultado,reserva=false] of [[390,844,false],[1280,800,false],[390,844,true],[390,844,false,true],[1280,800,false,true]]){
   const page=await browser.newPage({viewport:{width:largura,height:altura}});const erros=[];page.on('pageerror',e=>erros.push(e.message));const pedidos=[];
   await page.addInitScript(()=>{try{localStorage.setItem('sb-chat-auth-token',JSON.stringify({access_token:'jwt-sintetico',refresh_token:'r',token_type:'bearer',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,user:{id:'u-sintetico',aud:'authenticated',role:'authenticated'}}))}catch{}});
   await page.route('**/*',async route=>{const u=new URL(route.request().url());
@@ -30,11 +30,12 @@ try{
    if(u.pathname.endsWith('/rest/v1/agente_propostas'))return json({id:P,loja_id:L,titulo:'Trocar a categoria do SKU CI000016',estado:'pendente',risco:'MEDIUM',versao:1,hash:'a1b2c3d4e5f60718',expira_em:new Date(Date.now()+86400000).toISOString(),agente:'Nano.ia',modelo:null,criado_em:new Date().toISOString()});
    if(u.pathname.includes('/rest/v1/'))return json([]);
    const c=route.request().postDataJSON()??{};
-   if(c.acao==='provedores')return json({verificado:true,provedores:[{id:'gemini',nome:'Gemini',modelo:'gemini-sintetico',estado:'disponivel',principal:true}]});
-   if(c.acao==='chat_config')return json({streaming:true,persistente:true,bling:true,leitura_administrativa:false,retencao_dias:180});
+   if(c.acao==='provedores')return json({verificado:true,provedores:[{id:reserva?'openrouter_free':'gemini',nome:reserva?'OpenRouter Free':'Gemini',modelo:reserva?'openrouter/free':'gemini-sintetico',estado:'disponivel',principal:true}]});
+   if(c.acao==='chat_config')return json({streaming:true,persistente:true,bling:true,leitura_administrativa:false,retencao_dias:180,...(reserva?{reserva_ia:{nome:"Groq",host:"api.groq.com",disponivel:true,motivo:"Reserva configurada para teste simulado."}}:{})});
    if(c.acao==='chat_listar')return json({conversas:[]});
    if(c.acao==='chat_perguntar'){
-    pedidos.push({stream:c.stream,auth:route.request().headers()['authorization'],accept:route.request().headers()['accept']});
+    pedidos.push({reserva:c.consentimento_reserva_ia,provedor:c.provedor,stream:c.stream,auth:route.request().headers()['authorization'],accept:route.request().headers()['accept']});
+    if(reserva)return route.fulfill({status:200,headers:{...h,'content-type':'text/event-stream; charset=utf-8'},body:sse([['resultado',{status:200,corpo:{resposta:'Reserva Groq confirmou a consulta sem alterações.',conversa_id:C,ia:true,provedor:'compativel_openai',provedor_efetivo:'groq',host_provedor:'api.groq.com',modelo:'modelo-sintetico',completa:true,desfecho:'contingencia_reserva',http_status:200}}]])});
     const ev=[['texto',{delta:'Faltam GTIN '}],['texto',{delta:'e descrição.'}]];
     if(!semResultado)ev.push(['resultado',{status:200,corpo:{resposta:'Faltam GTIN e descrição. Preparei a troca de categoria para você aprovar.',conversa_id:C,simulado:true,evidencias:[],propostas:[{id:P,titulo:'Trocar a categoria do SKU CI000016',risco:'MEDIUM'}]}}]);
     return route.fulfill({status:200,headers:{...h,'content-type':'text/event-stream; charset=utf-8'},body:sse(ev)});
@@ -44,9 +45,21 @@ try{
   await page.goto(`http://127.0.0.1:${porta}/.streaming-demo.html`);
   const r=`${largura}x${altura}${semResultado?' sem resultado':''}`;
   const aviso=page.locator('.aviso-envio');await aviso.waitFor();await aviso.getByRole('button',{name:'Autorizar e continuar'}).click();await aviso.waitFor({state:'detached'});
+  if(reserva){
+   await page.getByRole('button',{name:'Modelo e privacidade',exact:true}).click();
+   const consent=page.getByRole('checkbox',{name:/Autorizar o envio da pergunta atual/});
+   await consent.waitFor();assert.equal(await consent.isChecked(),false);
+   await consent.check();await page.getByRole('button',{name:'Recolher modelo e privacidade',exact:true}).click();
+  }
   await page.getByLabel('Pergunte',{exact:true}).fill('O que falta no SKU CI000016?');
   await page.getByRole('button',{name:'Enviar',exact:true}).click();
-  if(!semResultado){
+  if(reserva){
+   await page.getByText('Reserva Groq confirmou a consulta sem alterações.',{exact:true}).waitFor();
+   await page.locator('.nano-motor-compacto[aria-label^="Última resposta confirmada: Groq"]').waitFor({state:'attached'});
+   assert.match(await page.locator('.nano-motor-compacto').getAttribute('aria-label'),/Última resposta confirmada: Groq/);
+   assert.equal(pedidos[0].reserva,true);assert.equal(pedidos[0].provedor,'openrouter_free');
+   assert.equal(await page.locator('.proposta-compacta').count(),0);
+  } else if(!semResultado){
    await page.getByText('Preparei a troca de categoria para você aprovar.').waitFor();
    const linha=page.locator('.proposta-compacta > summary');await linha.waitFor();
    assert.match(await linha.innerText(),/Trocar a categoria do SKU CI000016[\s\S]*médio/,`${r}: proposta em uma linha com título e risco`);
@@ -66,7 +79,7 @@ try{
   assert.equal(pedidos[0].auth,'Bearer jwt-sintetico',`${r}: token do usuário`);
   assert.match(pedidos[0].accept,/text\/event-stream/,`${r}: Accept SSE`);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),`${r}: sem rolagem horizontal`);
-  await mkdir(root+'evidencias-issue-166',{recursive:true});await page.screenshot({path:root+`evidencias-issue-166/b2b-streaming-${largura}${semResultado?'-sem-resultado':''}.png`});
+  await mkdir(root+'evidencias-issue-166',{recursive:true});await page.screenshot({path:root+`evidencias-issue-166/b2b-streaming-${largura}${semResultado?'-sem-resultado':reserva?'-reserva':''}.png`});
   assert.deepEqual(erros,[]);
   await page.close();
  }

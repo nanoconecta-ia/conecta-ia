@@ -1,3 +1,4 @@
+import { configuracaoReserva, enderecoReserva, podeUsarReserva } from "./reserva_ia.ts";
 import { categoriaDoStatus, linhaLog, novoRequestId, type LatenciaProvedor } from "../diagnostico/correlacao.ts";
 // Fluxo persistente isolado do modo legado. Dependências injetadas para testes sem credenciais.
 import { chaveiroPlataforma } from "../plataforma.ts";
@@ -39,8 +40,9 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  if (c.antes != null && (typeof c.antes !== "string" || !/^\d{4}-\d{2}-\d{2}T[0-9:.+-]+Z?$/.test(c.antes) || !Number.isFinite(Date.parse(c.antes)) || !uuid(c.antes_id))) return resultado({ erro: "Cursor inválido." }, 400);
  const ativo = (codigo: string) => flags.some((r: any) => r.codigo === codigo && r.ativo === true);
  if (c.acao === "chat_config") {
+  const { data: reserva } = await admin.from("loja_chaves_ia").select("provedor, ativa, modelo, base_url").eq("loja_id", loja.id).eq("provedor", "compativel_openai").maybeSingle();
   const { data: config, error } = await usuario.from("lojas").select("chat_retencao_dias").eq("id", loja.id).single();
-  return error ? resultado({ erro: "Preparação do histórico ainda não instalada." }, 503) : resultado({ streaming: true, persistente: ativo("chat_persistente"), bling: ativo("chat_consulta_bling"), leitura_administrativa: ativo("chat_leitura_administrativa"), retencao_dias: config.chat_retencao_dias, fallback_free_disponivel: configFallbackFree(ctx.get, loja.id) !== null, versao: "chat_operacional_v1" });
+  return error ? resultado({ erro: "Preparação do histórico ainda não instalada." }, 503) : resultado({ streaming: true, reserva_ia: configuracaoReserva(reserva), persistente: ativo("chat_persistente"), bling: ativo("chat_consulta_bling"), leitura_administrativa: ativo("chat_leitura_administrativa"), retencao_dias: config.chat_retencao_dias, fallback_free_disponivel: configFallbackFree(ctx.get, loja.id) !== null, versao: "chat_operacional_v1" });
  }
  // Excluir e configurar continuam disponíveis quando o recurso é desligado.
  if (c.acao === "chat_excluir" && uuid(c.conversa_id)) {
@@ -152,6 +154,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  const chamadas: Record<string, unknown>[] = []; const evidencias: Record<string, unknown>[] = [];
  const tentativas: { ferramenta: string; ok: boolean; motivo?: string }[] = []; // toda tentativa de ferramenta, inclusive as que falharam (sem dado do usuário nem segredo)
  let tokens = 0; let respostaId: string | undefined; let modelo: string | undefined;
+ let cotaConhecida = false;
  let iniciouChamadaProvedor = false; let transmitiuTextoPrincipal = false;
  const requestId = novoRequestId(); const inicioTurno = Date.now();
  const latProv: LatenciaProvedor[] = []; let inicioProv = 0;
@@ -159,11 +162,28 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  const simulado = ctx.get("CHAT_AMBIENTE") === "sintetico";
  let resposta = "Não consegui concluir esta pergunta."; let status = 200;
  const meta: Record<string, unknown> = { ia: true, provedor, simulado, ambiente: simulado ? "sintetico" : ctx.get("CHAT_AMBIENTE") === "real" ? "real" : "nao_validado", chamadas, evidencias, desfecho: "falhou", request_id: requestId };
- const rodar = async (prov: ProvedorChat) => {
+ const registrarLimite = (erro: unknown) => {
+  if (erro instanceof IaErro && erro.motivo_ia) Object.assign(meta, { motivo_ia: erro.motivo_ia, tentar_novamente_em: erro.tentar_novamente_em, renovacao_estimada: erro.renovacao_estimada, provedor_bloqueado: "openrouter_free" });
+ };
+ const rodar = async (prov: ProvedorChat, reserva = false) => {
+  const somenteLeitura = prov === PROVEDOR_FREE || reserva;
   const { data: rows, error } = await admin.rpc("ia_chave_ativa", { p_loja: loja.id, p_provedor: prov });
   const k = rows?.[0];
   if (error || !k || k.provedor !== prov || !modeloDaChave(k)) throw new IaErro(503, "Provedor não configurado ou indisponível.");
   if (k.limite != null && k.tokens_mes >= k.limite) throw new IaErro(429, "Limite mensal do provedor atingido.");
+  if (reserva && !enderecoReserva(k.base_url)) throw new IaErro(503, "Reserva Groq não configurada. As operações sem IA continuam disponíveis.");
+  if (prov === PROVEDOR_FREE) {
+   const { data: anterior, error: ce } = await admin.from("mensagens").select("metadados").eq("loja_id", loja.id).eq("papel", "assistente")
+    .eq("metadados->>provedor_bloqueado", "openrouter_free").eq("metadados->>motivo_ia", "cota_diaria")
+    .gte("criada_em", new Date(new Date().setUTCHours(0, 0, 0, 0)).toISOString()).order("criada_em", { ascending: false }).limit(1).maybeSingle();
+   const ate = anterior?.metadados?.tentar_novamente_em;
+   const quando = typeof ate === "string" ? Date.parse(ate) : NaN;
+   if (!ce && quando > Date.now() && quando < Date.now() + 172800000) {
+    cotaConhecida = true; meta.bloqueio_reutilizado = true;
+    const limite = new IaErro(429, "A cota diária gratuita do OpenRouter continua esgotada. Nenhuma nova chamada foi feita; as operações sem IA continuam disponíveis.");
+    Object.assign(limite, { motivo_ia: "cota_diaria", tentar_novamente_em: ate, renovacao_estimada: anterior.metadados.renovacao_estimada === true }); throw limite;
+   }
+  }
   const chaveiro = await chaveiroPlataforma(admin, ctx.get);
   if (!chaveiro) throw new IaErro(503, "Provedor indisponível no servidor.");
   // JWT/RLS + dono explícito. Histórico do navegador é ignorado integralmente.
@@ -178,6 +198,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   }
   // A pergunta recém-gravada deve ser a última; UUID não define ordem temporal em empates.
   if (mensagens.at(-1)?.content !== c.texto) throw new IaErro(503, "Histórico inconsistente; nenhuma chamada realizada.");
+  if (reserva) mensagens.splice(0, mensagens.length, { role: "user", content: c.texto });
   if (anexos.length) { mensagens[mensagens.length - 1] = { role: "user", content: conteudoComAnexos(c.texto, anexos) }; meta.anexos = resumoParaRegistro(anexos); }
   modelo = modeloDaChave(k);
   meta.host_provedor = prov === PROVEDOR_FREE ? "openrouter.ai" : prov === "compativel_openai" ? new URL(k.base_url).hostname : prov === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
@@ -187,13 +208,13 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   const { config: searxng, erro: erroSearxng } = configSearxngOuNulo(ctx.get, loja.id); if (erroSearxng) console.warn("SearXNG desligado nesta loja:", erroSearxng); // Ambiente privado + allowlist por loja; nunca vem do usuario.
   iniciouChamadaProvedor = true; inicioProv = Date.now();
   const r = await conversar({ provedor: tipoLlm, baseUrl: prov === PROVEDOR_FREE ? URL_FREE : k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo, mensagens,
-   sistema: `${SISTEMA}${prov === PROVEDOR_FREE ? `\n${SISTEMA_FREE}` : ""}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura), as de leitura do catálogo espelhado (resumo_loja, listar_produtos, ver_produto) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto, bling_propor_ajuste_produto, bling_propor_alterar_preco (preço de venda) e bling_propor_cadastro_produto (produto novo): nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\n${REGRA_CATALOGO}\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
-   maxPassos: 5, maxTokens: 1536, aoTexto: ctx.aoTexto ? (delta: string) => { if (delta) transmitiuTextoPrincipal = true; ctx.aoTexto?.(delta); } : undefined, adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(tipoLlm) : undefined, ferramentas: prov === PROVEDOR_FREE ? (ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_CATALOGO as readonly string[]).includes(f.name))] : []) : ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name) || (FERRAMENTAS_PESQUISA as readonly string[]).includes(f.name) || (FERRAMENTAS_CATALOGO as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,
+   sistema: `${SISTEMA}${somenteLeitura ? `\n${SISTEMA_FREE}` : ""}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura), as de leitura do catálogo espelhado (resumo_loja, listar_produtos, ver_produto) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto, bling_propor_ajuste_produto, bling_propor_alterar_preco (preço de venda) e bling_propor_cadastro_produto (produto novo): nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\n${REGRA_CATALOGO}\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
+   maxPassos: 5, maxTokens: 1536, aoTexto: ctx.aoTexto ? (delta: string) => { if (delta) transmitiuTextoPrincipal = true; ctx.aoTexto?.(delta); } : undefined, adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(tipoLlm) : undefined, ferramentas: somenteLeitura ? (ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_CATALOGO as readonly string[]).includes(f.name))] : []) : ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name) || (FERRAMENTAS_PESQUISA as readonly string[]).includes(f.name) || (FERRAMENTAS_CATALOGO as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,
    onPasso: p => { tokens += p.tokens; respostaId = p.respostaId; modelo = p.modelo ?? modelo; },
    executar: async (nome, entrada) => {
     const t0 = Date.now();
     try {
-     if (!ativo("chat_consulta_bling") || (prov === PROVEDOR_FREE && !FERRAMENTAS_FREE.includes(nome)) || (nome !== CONSULTAR_PRODUTO.name && !(FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(nome) && !(FERRAMENTAS_PESQUISA as readonly string[]).includes(nome) && !(FERRAMENTAS_CATALOGO as readonly string[]).includes(nome))) throw new Error("Ferramenta não permitida.");
+     if (!ativo("chat_consulta_bling") || (somenteLeitura && !FERRAMENTAS_FREE.includes(nome)) || (nome !== CONSULTAR_PRODUTO.name && !(FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(nome) && !(FERRAMENTAS_PESQUISA as readonly string[]).includes(nome) && !(FERRAMENTAS_CATALOGO as readonly string[]).includes(nome))) throw new Error("Ferramenta não permitida.");
      if (nome !== CONSULTAR_PRODUTO.name) {
       // O chat persistente grava em `conversas`; as propostas do motor ligam a `agente_conversas`. Sem vínculo (conversaId null): a proposta nasce igual, só não aponta para esta conversa.
       const bling = new BlingLeituraReal(armazemSupabase(admin), loja.id, { chaveCifra: chaveiro, fetch: ctx.fetch });
@@ -238,6 +259,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   await rodar(provedor);
  } catch (e) {
   fimProv(provedor, e);
+  registrarLimite(e);
   let erroFinal: unknown = e; let respondidoPeloGratuito = false;
   // Modo AUTOMÁTICO do gratuito: o provedor escolhido (ex.: Gemini) falhou por sobrecarga/limite/tempo e NADA foi mostrado, proposto ou gravado:
   // refaz o turno com o gratuito, SÓ LEITURA e dados saneados, e diz claramente quem respondeu.
@@ -253,6 +275,22 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
     ctx.aoTexto?.(resposta);
     respondidoPeloGratuito = true;
    } catch (e2) { fimProv(PROVEDOR_FREE, e2); erroFinal = e2; }
+  }
+  if (!respondidoPeloGratuito && podeUsarReserva({ provedor, erro: e, consentimento: c.consentimento_reserva_ia === true,
+      iniciou: iniciouChamadaProvedor, cotaConhecida, anexos: anexos.length, textoTransmitido: transmitiuTextoPrincipal,
+      tentativas: tentativas.length, propostas: (meta.propostas as unknown[] | undefined)?.length ?? 0 })) {
+   const modeloPrincipal = modelo, respostaPrincipal = respostaId, hostPrincipal = meta.host_provedor, efetivoPrincipal = meta.provedor_efetivo;
+   try {
+    await rodar("compativel_openai", true);
+    resposta = "O OpenRouter está indisponível. A reserva Groq respondeu, somente para consultas e sem receber o histórico anterior.\n\n" + resposta;
+    Object.assign(meta, { provedor: "compativel_openai", provedor_efetivo: "groq", host_provedor: "api.groq.com", troca_de: "openrouter_free", troca_motivo: e instanceof IaErro ? e.status : 502,
+      desfecho: meta.desfecho === "ok" ? "contingencia_reserva" : meta.desfecho });
+    respondidoPeloGratuito = true;
+   } catch (reservaErro) {
+    fimProv("compativel_openai", reservaErro);
+    modelo = modeloPrincipal; respostaId = respostaPrincipal; meta.host_provedor = hostPrincipal; meta.provedor_efetivo = efetivoPrincipal;
+    meta.reserva_indisponivel = true; // conserva o motivo/horário do bloqueio principal; não perde a cota conhecida
+   }
   }
   if (!respondidoPeloGratuito) {
   // Contingência segura: SÓ depois de tentativa real Gemini, sem streaming parcial,
