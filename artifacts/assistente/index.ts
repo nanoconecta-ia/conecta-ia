@@ -5759,7 +5759,7 @@ const HANDLERS = {
                     operacao: "bling.produtos.criar",
                     campos: Object.keys(p.depois),
                     depois: p.depois,
-                    antes: null,
+                    antes: {},
                     fontes: e.fontes,
                     validacoes: [
                         `nenhum produto com o código ${p.codigo}${p.depois.gtin ? ` ou o GTIN ${p.depois.gtin}` : ""} no espelho nem no Bling em ${new Date().toISOString()}`,

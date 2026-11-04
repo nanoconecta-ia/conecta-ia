@@ -41,7 +41,7 @@ test("propõe produto novo, sem gravar no Bling, com pendências e fiscal 'a con
   assert.equal(r.proposta_id, "p1", JSON.stringify(r));
   assert.equal(b.recebidos.length, 0, "propor não escreve");
   assert.equal(itens[0].p_operacao, "bling.produtos.criar");
-  assert.deepEqual(itens[0].p_antes, null);
+  assert.deepEqual(itens[0].p_antes, {}, "produto novo: nada existia antes; o banco exige antes preenchido quando há campos");
   const val = itens[0].p_validacoes as string[];
   assert.ok(val.some((v) => /fiscais/.test(v)) && val.some((v) => /imagens/.test(v)) && val.some((v) => /marca: evidência url_externa/.test(v)));
 });
