@@ -8098,8 +8098,48 @@ function gerarFichaSemLLM(v) {
         resposta: linhas.join("\n")
     };
 }
+function prepararResultadoFicha(ficha) {
+    if (ficha.candidatos === 0 && !ficha.api_completa) return {
+        status: 503,
+        corpo: {
+            erro: "Consulta incompleta; não foi possível confirmar o SKU.",
+            categoria_erro: "ferramenta",
+            origem_erro: "ferramenta",
+            ia: false
+        }
+    };
+    if (ficha.candidatos === 0) return {
+        status: 404,
+        corpo: {
+            erro: "SKU não encontrado na consulta exata. Isso não comprova ausência no ERP.",
+            categoria_erro: "sku_nao_encontrado",
+            origem_erro: "produto",
+            ia: false
+        }
+    };
+    if (ficha.candidatos !== 1 || ficha.parcial) return {
+        status: 200,
+        corpo: {
+            ...ficha,
+            exige_selecao: true,
+            identidade_confirmada: false,
+            resposta: `ATENÇÃO — FICHA NÃO CONFIRMADA: ${ficha.parcial ? "consulta parcial" : "mais de um registro para este SKU"}.
+A lista abaixo é apenas informativa. Diferencie produto ativo, inativo e excluído pelo ID do Bling. Não selecione, restaure, recadastre ou venda automaticamente qualquer candidato.
 
-return { evidenciaSkuExato: evidenciaSkuExato, gerarFichaSemLLM: gerarFichaSemLLM };
+${ficha.resposta}`
+        }
+    };
+    return {
+        status: 200,
+        corpo: {
+            ...ficha,
+            exige_selecao: false,
+            identidade_confirmada: true
+        }
+    };
+}
+
+return { evidenciaSkuExato: evidenciaSkuExato, gerarFichaSemLLM: gerarFichaSemLLM, prepararResultadoFicha: prepararResultadoFicha };
 })();
 
 // ---------- supabase/functions/_shared/bling_ferramentas.ts ----------
@@ -8876,7 +8916,7 @@ const { avisoTroca: avisoTroca, FERRAMENTAS_FREE: FERRAMENTAS_FREE, PROVEDOR_FRE
 const { configFallbackFree: configFallbackFree, tentarFallbackFree: tentarFallbackFree } = __m61;
 const { AUXILIAR_PROVEDOR: AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar: podeTrocarParaAuxiliar, executarAuxiliarPublico: executarAuxiliarPublico, urlAuxiliarPermitida: urlAuxiliarPermitida, cotaAuxiliarPermitida: cotaAuxiliarPermitida } = __m62;
 const { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, consultarProduto: consultarProduto } = __m57;
-const { gerarFichaSemLLM: gerarFichaSemLLM } = __m58;
+const { gerarFichaSemLLM: gerarFichaSemLLM, prepararResultadoFicha: prepararResultadoFicha } = __m58;
 const { executarFerramenta: executarFerramenta, FERRAMENTAS: FERRAMENTAS, SISTEMA: SISTEMA } = __m10;
 const { configSearxngOuNulo: configSearxngOuNulo } = __m18;
 const { dadosSupabase: dadosSupabase } = __m44;
@@ -9078,35 +9118,19 @@ async function atenderChat(c, ctx) {
                 ficha: true,
                 skuExato: c.codigo
             });
-            const ficha = gerarFichaSemLLM(prova);
-            if (ficha.candidatos === 0 && !ficha.api_completa) return resultado({
-                erro: "Erro de ferramenta: consulta incompleta; não foi possível confirmar o SKU.",
-                categoria_erro: "ferramenta",
-                origem_erro: "ferramenta",
-                ia: false
-            }, 503);
-            if (ficha.candidatos === 0) return resultado({
-                erro: "SKU não encontrado na consulta exata. Isso não comprova ausência no ERP.",
-                categoria_erro: "sku_nao_encontrado",
-                origem_erro: "produto",
-                ia: false
-            }, 404);
-            if (ficha.candidatos !== 1 || ficha.parcial) return resultado({
-                erro: "Não foi possível confirmar uma identidade única para este SKU.",
-                categoria_erro: "identidade_ambigua",
-                origem_erro: "produto",
-                ia: false
-            }, 409);
+            const decisao = prepararResultadoFicha(gerarFichaSemLLM(prova));
             return resultado({
-                ...ficha,
-                evidencias,
-                chamadas,
-                simulado,
-                ia: false,
-                ferramentas: [
-                    CONSULTAR_PRODUTO.name
-                ]
-            });
+                ...decisao.corpo,
+                ...decisao.status === 200 ? {
+                    evidencias,
+                    chamadas,
+                    simulado,
+                    ia: false,
+                    ferramentas: [
+                        CONSULTAR_PRODUTO.name
+                    ]
+                } : {}
+            }, decisao.status);
         } catch  {
             return resultado({
                 categoria_erro: "ferramenta",

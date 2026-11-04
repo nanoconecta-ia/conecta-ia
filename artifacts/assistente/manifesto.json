@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "10c2f54f63015704432e37385725e5a655afa91dbc27eaa5e7159022f88a14ea",
+  "artefato_sha256": "b33ffa555671b5f749b6b92fa7af89222360fdc23ea0a05b41a843e981c0e306",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -222,7 +222,7 @@
     },
     {
       "path": "supabase/functions/_shared/assistente/ficha_sem_llm.ts",
-      "sha256": "9fd0998cfd1546b8cf264ca444f9c62cf146bf840bb99d12cb288fd90cd8de9f"
+      "sha256": "40ba9ae08c5ace00337e8bb03bd3935f83c1b3e815db85102d339d05dd362b0d"
     },
     {
       "path": "supabase/functions/_shared/bling_ferramentas.ts",
@@ -250,7 +250,7 @@
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "76f1ae4dcf21c3f25f713a5ddf93c319ff56c45cfa88c3499cdab275715d2b2d"
+      "sha256": "e096b78af9ae543bf874bf3417d154c7fe6ab97e5faa2d6c998930a556798e52"
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores_stream.ts",

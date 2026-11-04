@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { evidenciaSkuExato, gerarFichaSemLLM } from "./ficha_sem_llm.ts";
+import { evidenciaSkuExato, gerarFichaSemLLM, prepararResultadoFicha } from "./ficha_sem_llm.ts";
 const fonte = { origem: "api_bling", consultada: true, completa: true };
 const unico = {
  termo: "CI000016", total_candidatos: 1, truncado: false, candidatos: [
@@ -68,4 +68,40 @@ test("ficha estrita não oculta duplicidade do SKU nem truncamento da busca", ()
  const c = unico.candidatos[0];
  assert.equal(gerarFichaSemLLM(evidenciaSkuExato({...unico, candidatos:[c,{...c,id:"outro"}]}, c.sku)).candidatos, 2);
  assert.equal(gerarFichaSemLLM(evidenciaSkuExato({...unico,truncado:true}, c.sku)).parcial, true);
+});
+
+test("SKU CI000016 com um ativo e dois excluídos informa os três IDs, sem selecionar nem gravar", () => {
+  const c = unico.candidatos[0];
+  const ficha = gerarFichaSemLLM({
+    ...unico, total_candidatos: 3,
+    candidatos: [
+      { ...c, id: "16721657772", nome: "TRIM GO", situacao: "ativo" },
+      { ...c, id: "10863955432", nome: "INDISA", situacao: "excluido" },
+      { ...c, id: "16622651215", nome: "INDISA", situacao: "excluido" },
+    ],
+  });
+  const r = prepararResultadoFicha(ficha);
+  assert.equal(r.status, 200, "consulta válida não deve gerar erro 409 de ferramenta");
+  assert.equal(r.corpo.exige_selecao, true);
+  assert.equal(r.corpo.identidade_confirmada, false);
+  assert.match(r.corpo.resposta, /16721657772/);
+  assert.match(r.corpo.resposta, /10863955432/);
+  assert.match(r.corpo.resposta, /16622651215/);
+  assert.match(r.corpo.resposta, /não selecione.*automaticamente/i);
+  assert.equal(r.corpo.autoriza_criacao, false);
+});
+
+test("identidade única conclui; consulta parcial ou vazia continua sem confirmação", () => {
+  const certo = prepararResultadoFicha(gerarFichaSemLLM(unico));
+  assert.equal(certo.status, 200);
+  assert.equal(certo.corpo.identidade_confirmada, true);
+  assert.equal(certo.corpo.exige_selecao, false);
+  const parcial = prepararResultadoFicha(gerarFichaSemLLM({ ...unico, truncado: true }));
+  assert.equal(parcial.status, 200);
+  assert.equal(parcial.corpo.identidade_confirmada, false);
+  assert.equal(parcial.corpo.exige_selecao, true);
+  const semApi = prepararResultadoFicha(gerarFichaSemLLM({ ...unico, total_candidatos: 0, candidatos: [], conclusao: { api_completa: false } }));
+  assert.equal(semApi.status, 503);
+  const ausente = prepararResultadoFicha(gerarFichaSemLLM({ ...unico, total_candidatos: 0, candidatos: [] }));
+  assert.equal(ausente.status, 404);
 });

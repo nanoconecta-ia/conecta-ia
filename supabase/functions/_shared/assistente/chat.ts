@@ -10,7 +10,7 @@ import { avisoTroca, FERRAMENTAS_FREE, PROVEDOR_FREE, podeTrocarParaFree, SISTEM
 import { configFallbackFree, tentarFallbackFree } from "./fallback_free.ts";
 import { AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar, executarAuxiliarPublico, urlAuxiliarPermitida, cotaAuxiliarPermitida } from "./auxiliar_independente.ts";
 import { CONSULTAR_PRODUTO, consultarProduto } from "./bling_consultar.ts";
-import { gerarFichaSemLLM } from "./ficha_sem_llm.ts";
+import { gerarFichaSemLLM, prepararResultadoFicha } from "./ficha_sem_llm.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../ia/ferramentas.ts";
 import { configSearxngOuNulo } from "../ia/searxng.ts";
 import { dadosSupabase } from "../conector/dados.ts";
@@ -113,11 +113,10 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
    const simulado = ctx.get("CHAT_AMBIENTE") === "sintetico";
    const prova = await consultarProduto({ codigo: c.codigo, incluir_excluidos: true },
      { usuario, admin, lojaId: loja.id, userId, cfg: { chaveCifra, fetch: ctx.fetch }, simulado, chamadas, evidencias, ficha: true, skuExato: c.codigo });
-   const ficha = gerarFichaSemLLM(prova);
-   if (ficha.candidatos === 0 && !ficha.api_completa) return resultado({ erro: "Erro de ferramenta: consulta incompleta; não foi possível confirmar o SKU.", categoria_erro: "ferramenta", origem_erro: "ferramenta", ia: false }, 503);
-   if (ficha.candidatos === 0) return resultado({ erro: "SKU não encontrado na consulta exata. Isso não comprova ausência no ERP.", categoria_erro: "sku_nao_encontrado", origem_erro: "produto", ia: false }, 404);
-   if (ficha.candidatos !== 1 || ficha.parcial) return resultado({ erro: "Não foi possível confirmar uma identidade única para este SKU.", categoria_erro: "identidade_ambigua", origem_erro: "produto", ia: false }, 409);
-   return resultado({ ...ficha, evidencias, chamadas, simulado, ia: false, ferramentas: [CONSULTAR_PRODUTO.name] });
+   const decisao = prepararResultadoFicha(gerarFichaSemLLM(prova));
+   // Registros exatos repetidos são mostrados ao lojista como lista informativa,
+   // nunca tratados como uma peça única nem como falha da API.
+   return resultado({ ...decisao.corpo, ...(decisao.status === 200 ? { evidencias, chamadas, simulado, ia: false, ferramentas: [CONSULTAR_PRODUTO.name] } : {}) }, decisao.status);
   } catch {
    return resultado({ categoria_erro: "ferramenta", origem_erro: "ferramenta", erro: "A ficha não foi concluída. Verifique conexão, autorização ou auditoria do Bling; nenhum cadastro foi criado." }, 503);
   }
