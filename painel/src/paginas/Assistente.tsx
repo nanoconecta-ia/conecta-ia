@@ -31,6 +31,8 @@ import { PropostaCompacta } from "../componentes/conector/PropostaCompacta.tsx";
 import { escolherInicial, falhaAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 import { identificarModeloEfetivo } from "../lib/modeloEfetivo.ts";
 import { RoboNano } from "../componentes/RoboNano.tsx";
+import { MostradorNano } from "../componentes/MostradorNano.tsx";
+import { diagnosticarFalhaNano } from "../lib/medidorNano.ts";
 
 type Evidencia = { origem: string; simulado: boolean; consultado_em: string; sincronizado_em?: string; motivo?: string; dados: { sku?: string; nome?: string; preco?: number | null; estoque?: number | null } };
 type Msg = { de: "eu" | "ia"; texto: string; anexos?: string[]; evidencias?: Evidencia[]; simulado?: boolean; propostas?: PropostaTurno[]; parcial?: boolean; modeloUsado?: string; modeloContingencia?: boolean };
@@ -123,6 +125,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [autorizaFallbackFree, setAutorizaFallbackFree] = useState(false); // autorização separada por sessão; desligado inicialmente
   const [motorPendente, setMotorPendente] = useState<string | null>(null);
   const [ultimoMotorFalhou, setUltimoMotorFalhou] = useState(false);
+  const [ultimoErroMotor, setUltimoErroMotor] = useState<string | null>(null);
+  const [versaoMostrador, setVersaoMostrador] = useState(0);
   const lojaAtual = useRef(loja.id); lojaAtual.current = loja.id;
   const [anexos, setAnexos] = useState<AnexoChat[]>([]);
   const [erroAnexo, setErroAnexo] = useState("");
@@ -135,7 +139,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const textoMotor = motorPendente
     ? `Aguardando resposta de ${motorPendente} · ainda não confirmado`
     : ultimoMotorFalhou
-      ? "Última consulta falhou · disponibilidade não confirmada"
+      ? `Última consulta falhou · ${ultimoErroMotor ?? "disponibilidade não confirmada"}`
       : ultimoModelo?.modeloUsado
         ? `Última resposta confirmada: ${ultimoModelo.modeloUsado}${ultimoModelo.modeloContingencia ? " (contingência)" : ""}`
         : carregando ? "Verificando configuração de IA…"
@@ -157,7 +161,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   useEffect(() => {
     let ativo = true;
     setConfig({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 }); setConversas([]); setConversaId(null); setRegistros([]); setRetentativa(null); setAdministrando(false); setErroHistorico("");
-    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false); setAutorizaFallbackFree(false); setMotorPendente(null); setUltimoMotorFalhou(false);
+    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false); setAutorizaFallbackFree(false); setMotorPendente(null); setUltimoMotorFalhou(false); setUltimoErroMotor(null);
     setMsgs([{ de: "ia", texto: "Olá! Posso consultar os dados desta loja. Escolha um provedor para conversar com IA." }]);
     supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao: "provedores" } })
       .then(({ data, error }) => {
@@ -236,7 +240,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   }
   useEffect(() => { restaurado.current = false; }, [loja.id]);
   useEffect(() => { if (restaurado.current && !administrando) gravarConversaAtiva(loja.id, conversaId); }, [conversaId, administrando, loja.id]);
-  function nova() { setConversaId(null); setRegistros([]); setMsgs([]); setRetentativa(null); setAdministrando(false); setErroHistorico(""); setUltimoMotorFalhou(false); }
+  function nova() { setConversaId(null); setRegistros([]); setMsgs([]); setRetentativa(null); setAdministrando(false); setErroHistorico(""); setUltimoMotorFalhou(false); setUltimoErroMotor(null); }
   async function excluir() {
     if (!conversaId || !window.confirm("Excluir definitivamente esta conversa? A auditoria será preservada.")) return;
     setOcupado(true);
@@ -309,7 +313,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     const anexosEnvio = repetir ? [] : anexos;
     if (!repetir) setMsgs(m => [...m, { de: "eu", texto: t, ...(anexosEnvio.length ? { anexos: anexosEnvio.map((a) => a.nome) } : {}) }]);
     setAnexos([]); setErroAnexo("");
-    setTexto(""); setOcupado(true); setErroHistorico(""); setUltimoMotorFalhou(false);
+    setTexto(""); setOcupado(true); setErroHistorico(""); setUltimoMotorFalhou(false); setUltimoErroMotor(null);
     setMotorPendente(prov ? `${selecao?.nome ?? prov}${selecao?.modelo ? ` · ${selecao.modelo}` : ""}` : null);
     if (persistente && prov) setRetentativa({ texto: t, chave, provedor: prov, conversa: conv });
     try {
@@ -326,8 +330,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       setRetentativa(null);
       if (persistente) { setConversaId(data.conversa_id); if (!conv && data.conversa_id) setIdsSessao(registrarNaSessao(typeof sessionStorage === "undefined" ? null : sessionStorage, loja.id, String(data.conversa_id))); await listarConversas(false); }
       if (lerAltoRef.current) voz.falar(resposta);
-    } catch (e) { if (lojaAtual.current === lojaDoEnvio) { setMsgs(m => m.filter((x) => !x.parcial)); setUltimoMotorFalhou(true); setErroHistorico(msgErro(e)); await recuperarSemIa(t, e, lojaDoEnvio); } }
-    finally { if (lojaAtual.current === lojaDoEnvio) { setOcupado(false); setMotorPendente(null); } }
+    } catch (e) { if (lojaAtual.current === lojaDoEnvio) { setMsgs(m => m.filter((x) => !x.parcial)); setUltimoMotorFalhou(true); setUltimoErroMotor(diagnosticarFalhaNano(e)); setErroHistorico(msgErro(e)); await recuperarSemIa(t, e, lojaDoEnvio); } }
+    finally { if (lojaAtual.current === lojaDoEnvio) { setOcupado(false); setMotorPendente(null); setVersaoMostrador(v => v + 1); } }
   }
   /** Provedor de IA falhou (cota/sobrecarga): mostra a ficha direta do SKU solicitado (ação SEM IA) ou diz o que dá para fazer sem IA. Não troca de LLM nem grava. */
   async function recuperarSemIa(pergunta: string, erro: unknown, lojaDoEnvio: string) {
@@ -456,11 +460,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         {<button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span aria-hidden="true"><Icone nome="mais" tamanho={20} /></span></button>}
         <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}><Icone nome="ajustes" tamanho={20} /></button>
       </div>
-      <div className="nano-motor-status" data-estado={estadoMotor} role="status" aria-live="polite">
-        <span className="nano-motor-ponto" aria-hidden="true" />
-        <span className="nano-motor-texto">{textoMotor}</span>
-        <button type="button" className="sec mini nano-motor-config" onClick={() => { setDir(true); if (estreito()) setEsq(false); }}>Modelos</button>
-      </div>
+      <MostradorNano lojaId={loja.id} estadoMotor={estadoMotor} textoMotor={textoMotor} provedorSelecionado={provedor} atualizarEm={versaoMostrador}
+        abrirModelos={() => { setDir(true); if (estreito()) setEsq(false); }} />
       {estado !== "parado" && <div className="faixa-acao" role="status" data-estado={estado}><span className="faixa-pulso" aria-hidden="true" />{acaoLocal?.texto ?? { ouvindo: "Ouvindo você…", pensando: "Consultando o modelo e os dados da loja…", falando: "Lendo a resposta em voz alta…" }[estado as string] ?? ""}{estado === "falando" && <button type="button" className="mini sec" onClick={voz.calar}>Parar</button>}</div>}
       {carregando && <p role="status">Verificando provedores…</p>}
       {erroConfig && <p role="alert" className="msg-erro">{erroConfig}</p>}

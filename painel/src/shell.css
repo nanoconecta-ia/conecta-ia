@@ -1374,3 +1374,30 @@ img, video { height: auto; }
 
 /* "desfazer" da autorização: o botão global (degradê) cobria o texto; aqui volta a ser um link discreto. */
 .consent-ok button.link { background: none !important; box-shadow: none !important; border: 0; padding: 0 2px; min-height: 0; width: auto; color: var(--marca-forte); text-decoration: underline; font: inherit; }
+
+/* Mostrador compacto do Nano: consumo por modelo, sem duplicar painéis ou acessar chaves. */
+.nano-mostrador { min-width: 0; border-bottom: 1px solid var(--borda); }
+.nano-mostrador .nano-motor-status { display: flex; border-bottom: 0; }
+.nano-mostrador .nano-motor-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nano-mostrador-faixa { display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-inline: contain; padding: 0 9px 4px; scrollbar-width: thin; min-width: 0; }
+.nano-medidor-item { display: grid; gap: 2px; flex: 1 0 154px; max-width: 235px; min-width: 0; padding: 5px 7px; border: 1px solid var(--borda); border-radius: 7px; background: var(--fundo, transparent); font-size: .69rem; line-height: 1.25; }
+.nano-medidor-item[data-selecionado="sim"] { border-color: var(--marca); }
+.nano-medidor-topo { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.nano-medidor-topo strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nano-medidor-etiqueta { font-size: .61rem; opacity: .72; white-space: nowrap; }
+.nano-medidor-contagem { font-variant-numeric: tabular-nums; font-size: .72rem; }
+.nano-medidor-item small { opacity: .77; font-size: .62rem; }
+.nano-medidor-item[data-cota="bloqueado"] small { color: var(--perigo, #b0503f); opacity: 1; font-weight: 600; }
+.nano-medidor-item[data-cota="atencao"] small { color: var(--marca); opacity: 1; }
+.nano-medidor-item[data-cota="desativado"] { opacity: .55; }
+.nano-medidor-barra { height: 4px; border-radius: 10px; overflow: hidden; background: var(--borda); }
+.nano-medidor-barra > span { display: block; height: 100%; border-radius: inherit; background: var(--ok); }
+.nano-medidor-item[data-cota="atencao"] .nano-medidor-barra > span { background: var(--marca); }
+.nano-medidor-item[data-cota="bloqueado"] .nano-medidor-barra > span { background: var(--perigo, #b0503f); }
+.nano-mostrador-aviso { padding: 4px 0; opacity: .8; font-size: .72rem; }
+.nano-mostrador-rodape { display: block; padding: 0 10px 4px; opacity: .65; font-size: .59rem; }
+@media (max-width: 420px) {
+  .nano-mostrador-faixa { padding-inline: 7px; }
+  .nano-medidor-item { flex-basis: 147px; }
+  .nano-mostrador-rodape { font-size: .57rem; }
+}
