@@ -8867,7 +8867,7 @@ const { modeloDaChave: modeloDaChave, validarProvedor: validarProvedor } = __m51
 const { FERRAMENTAS_CATALOGO: FERRAMENTAS_CATALOGO, REGRA_CATALOGO: REGRA_CATALOGO } = __m55;
 const { avisoTroca: avisoTroca, FERRAMENTAS_FREE: FERRAMENTAS_FREE, PROVEDOR_FREE: PROVEDOR_FREE, podeTrocarParaFree: podeTrocarParaFree, SISTEMA_FREE: SISTEMA_FREE, URL_FREE: URL_FREE } = __m56;
 const { configFallbackFree: configFallbackFree, tentarFallbackFree: tentarFallbackFree } = __m61;
-const { AUXILIAR_PROVEDOR: AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar: podeTrocarParaAuxiliar, executarAuxiliarPublico: executarAuxiliarPublico } = __m62;
+const { AUXILIAR_PROVEDOR: AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar: podeTrocarParaAuxiliar, executarAuxiliarPublico: executarAuxiliarPublico, urlAuxiliarPermitida: urlAuxiliarPermitida } = __m62;
 const { CONSULTAR_PRODUTO: CONSULTAR_PRODUTO, consultarProduto: consultarProduto } = __m57;
 const { gerarFichaSemLLM: gerarFichaSemLLM } = __m58;
 const { executarFerramenta: executarFerramenta, FERRAMENTAS: FERRAMENTAS, SISTEMA: SISTEMA } = __m10;
@@ -8908,6 +8908,8 @@ async function atenderChat(c, ctx) {
     const ativo = (codigo)=>flags.some((r)=>r.codigo === codigo && r.ativo === true);
     if (c.acao === "chat_config") {
         const { data: config, error } = await usuario.from("lojas").select("chat_retencao_dias").eq("id", loja.id).single();
+        const { data: aux, error: erroAux } = await admin.from("loja_chaves_ia").select("provedor,ativa,failover,base_url,modelo").eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
+        const auxiliarConfigurado = !erroAux && aux?.ativa === true && aux?.failover === true && typeof aux.modelo === "string" && aux.modelo.length > 0 && aux.modelo.length <= 120 && urlAuxiliarPermitida(aux.base_url);
         return error ? resultado({
             erro: "Preparação do histórico ainda não instalada."
         }, 503) : resultado({
@@ -8917,6 +8919,7 @@ async function atenderChat(c, ctx) {
             leitura_administrativa: ativo("chat_leitura_administrativa"),
             retencao_dias: config.chat_retencao_dias,
             fallback_free_disponivel: configFallbackFree(ctx.get, loja.id) !== null,
+            fallback_auxiliar_disponivel: auxiliarConfigurado,
             versao: "chat_operacional_v1"
         });
     }
