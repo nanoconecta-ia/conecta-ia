@@ -59,3 +59,26 @@ export function gerarFichaSemLLM(v: unknown) {
   return { modo: "ficha_sem_llm" as const, situacao, candidatos: total, api_completa: apiCompleta,
     parcial, autoriza_criacao: false as const, resposta: linhas.join("\n") };
 }
+
+/** Uma consulta com vários registros exatos é um resultado INFORMATIVO válido, não erro da ferramenta.
+ * Nunca seleciona automaticamente um SKU ativo se houver registros excluídos/inativos com o mesmo código.
+ */
+export function prepararResultadoFicha(ficha: ReturnType<typeof gerarFichaSemLLM>) {
+  if (ficha.candidatos === 0 && !ficha.api_completa) return {
+    status: 503, corpo: { erro: "Consulta incompleta; não foi possível confirmar o SKU.", categoria_erro: "ferramenta", origem_erro: "ferramenta", ia: false },
+  };
+  if (ficha.candidatos === 0) return {
+    status: 404, corpo: { erro: "SKU não encontrado na consulta exata. Isso não comprova ausência no ERP.", categoria_erro: "sku_nao_encontrado", origem_erro: "produto", ia: false },
+  };
+  if (ficha.candidatos !== 1 || ficha.parcial) return {
+    status: 200,
+    corpo: {
+      ...ficha, exige_selecao: true, identidade_confirmada: false,
+      resposta: `ATENÇÃO — FICHA NÃO CONFIRMADA: ${ficha.parcial ? "consulta parcial" : "mais de um registro para este SKU"}.
+A lista abaixo é apenas informativa. Diferencie produto ativo, inativo e excluído pelo ID do Bling. Não selecione, restaure, recadastre ou venda automaticamente qualquer candidato.
+
+${ficha.resposta}`,
+    },
+  };
+  return { status: 200, corpo: { ...ficha, exige_selecao: false, identidade_confirmada: true } };
+}
