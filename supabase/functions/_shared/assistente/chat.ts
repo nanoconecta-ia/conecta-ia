@@ -8,6 +8,7 @@ import { modeloDaChave, validarProvedor, type ProvedorChat } from "./provedores.
 import { FERRAMENTAS_CATALOGO, REGRA_CATALOGO } from "./catalogo_leitura.ts";
 import { avisoTroca, FERRAMENTAS_FREE, PROVEDOR_FREE, podeTrocarParaFree, SISTEMA_FREE, URL_FREE } from "./free_automatico.ts";
 import { configFallbackFree, tentarFallbackFree } from "./fallback_free.ts";
+import { AUXILIAR_PROVEDOR, podeTrocarParaAuxiliar, executarAuxiliarPublico } from "./auxiliar_independente.ts";
 import { CONSULTAR_PRODUTO, consultarProduto } from "./bling_consultar.ts";
 import { gerarFichaSemLLM } from "./ficha_sem_llm.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../ia/ferramentas.ts";
@@ -253,6 +254,52 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
     ctx.aoTexto?.(resposta);
     respondidoPeloGratuito = true;
    } catch (e2) { fimProv(PROVEDOR_FREE, e2); erroFinal = e2; }
+  }
+  // Segundo provedor realmente independente: somente glossario PUBLICO e opt-in,
+  // com candidato ativo/failover aprovado na loja. Nao recebe historico/ERP/ferramentas.
+  // Nunca ha segunda tentativa no mesmo provedor nem pagamento automatico.
+  if (!respondidoPeloGratuito && provedor === PROVEDOR_FREE) {
+   try {
+    const { data: aux, error: auxErro } = await admin.from("loja_chaves_ia")
+      .select("provedor,ativa,failover,base_url,modelo")
+      .eq("loja_id", loja.id).eq("provedor", AUXILIAR_PROVEDOR).maybeSingle();
+    const elegivel = !auxErro && podeTrocarParaAuxiliar({
+      origem: provedor, erro: e, iniciouChamadaProvedor,
+      consentimento: c.consentimento_fallback_free === true,
+      texto: c.texto, anexos: anexos.length,
+      textoTransmitido: transmitiuTextoPrincipal,
+      tentativasFerramenta: tentativas.length,
+      propostasCriadas: (meta.propostas as unknown[] | undefined)?.length ?? 0,
+    }, aux);
+    if (elegivel) {
+     const { data: chaves, error: chaveErro } = await admin.rpc("ia_chave_ativa", { p_loja: loja.id, p_provedor: AUXILIAR_PROVEDOR });
+     const k = chaves?.[0];
+     if (!chaveErro && k?.provedor === AUXILIAR_PROVEDOR && k.base_url === aux.base_url && k.modelo === aux.modelo) {
+      const chaveiro = await chaveiroPlataforma(admin, ctx.get);
+      if (chaveiro) {
+       inicioProv = Date.now();
+       const resp = await executarAuxiliarPublico({
+        texto: c.texto, baseUrl: k.base_url, modelo: k.modelo,
+        chave: await decifrar(k.cifrada, chaveiro), fetch: ctx.fetch,
+       });
+       if (resp) {
+        fimProv(AUXILIAR_PROVEDOR);
+        status = 200; resposta = "Modo FreeLLM auxiliar (glossario publico; sem consulta ao Bling):\\n\\n" + resp.texto;
+        tokens += resp.tokens; modelo = resp.modelo;
+        Object.assign(meta, { desfecho: "contingencia_publica", provedor: AUXILIAR_PROVEDOR,
+          provedor_efetivo: AUXILIAR_PROVEDOR, host_provedor: new URL(k.base_url).hostname,
+          troca_de: PROVEDOR_FREE, troca_motivo: (e as IaErro).status,
+          ferramentas: [], ferramentas_solicitadas: [], tentativas: [], completa: true, origem: "glossario_publico" });
+        ctx.aoTexto?.(resposta);
+        respondidoPeloGratuito = true;
+       } else fimProv(AUXILIAR_PROVEDOR, new IaErro(502, "auxiliar indisponivel"));
+      }
+     }
+    }
+   } catch {
+    // Nenhum segredo ou mensagem gravado; erro original continua sendo devolvido.
+    if (inicioProv) fimProv(AUXILIAR_PROVEDOR, new IaErro(502, "auxiliar indisponivel"));
+   }
   }
   if (!respondidoPeloGratuito) {
   // Contingência segura: SÓ depois de tentativa real Gemini, sem streaming parcial,
