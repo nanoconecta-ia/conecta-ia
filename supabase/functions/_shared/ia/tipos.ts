@@ -11,6 +11,9 @@ export interface Mensagem { role: "user" | "assistant"; content: string | Bloco[
 
 export class IaErro extends Error {
   status: number;
+  motivo_ia?: "cota_diaria" | "limite_minuto";
+  tentar_novamente_em?: string;
+  renovacao_estimada?: boolean;
   constructor(status: number, msg: string) { super(msg); this.status = status; }
 }
 

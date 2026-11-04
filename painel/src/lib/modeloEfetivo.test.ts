@@ -32,3 +32,10 @@ test("troca automática para o gratuito é reconhecida como contingência, com o
 test("escolha manual do gratuito aparece como OpenRouter Free, sem marcar contingência", () => {
   assert.deepEqual(identificarModeloEfetivo({ ia: true, provedor: "openrouter_free", desfecho: "ok", provedor_efetivo: "openrouter-free", modelo: "openrouter/free-modelo", completa: true }), { rotulo: "OpenRouter Free · openrouter/free-modelo", contingencia: false });
 });
+
+test("reserva Groq só é exibida com prova do host e resposta concluída",()=>{
+ const m={provedor:"compativel_openai",provedor_efetivo:"groq",host_provedor:"api.groq.com",modelo:"llama",completa:true,http_status:200,desfecho:"contingencia_reserva"};
+ assert.deepEqual(identificarModeloEfetivo(m),{rotulo:"Groq · llama",contingencia:true});
+ assert.equal(identificarModeloEfetivo({...m,host_provedor:"openrouter.ai"}),null);
+ assert.equal(identificarModeloEfetivo({...m,completa:false}),null);
+});

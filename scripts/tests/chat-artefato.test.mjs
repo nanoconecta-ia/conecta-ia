@@ -8,14 +8,18 @@ import { cifrar } from '../../supabase/functions/_shared/cripto.ts';
 const codigo=await readFile(new URL('../../artifacts/assistente/index.ts',import.meta.url),'utf8');
 const L='aaaaaaaa-0000-0000-0000-000000000001',U='22222222-2222-2222-2222-222222222222',C='cccccccc-0000-0000-0000-000000000001';
 const chave=btoa('z'.repeat(32)), cifrada=await cifrar('chave-apenas-sintetica',chave);
-async function ambiente({produtoSku='SKU-1',consentido=true,flag=true,bling=true,tool='bling_consultar_produto',status=200,fimErro=false,auditErro=false,pendente=false,provedorErro=false,truncar=false,blingStatus=200,semEspelho=false,args='{"sku":"SKU-1"}'}={}) {
+async function ambiente({openrouter=false,reserva=false,reservaStatus=200,diario=false,bloqueio=false,baseReserva='https://api.groq.com/openai/v1',historicoExtra=[],produtoSku='SKU-1',consentido=true,flag=true,bling=true,tool='bling_consultar_produto',status=200,fimErro=false,auditErro=false,pendente=false,provedorErro=false,truncar=false,blingStatus=200,semEspelho=false,args='{"sku":"SKU-1"}'}={}) {
  let handler,vez=0,final=null,token='dddddddd-0000-0000-0000-000000000001';
  const rede=[],rpcs=[],audits=[],msgs=[];
- function from(t){const filtros={};const q={select(){return q},eq(k,v){filtros[k]=v;return q},ilike(k,v){filtros[k]=v;return q},order(){return q},limit(){return q},or(){return q},async single(){return result(true)},async maybeSingle(){return result(true)},async insert(v){audits.push(v);return {error:auditErro?{}:null}},then(ok,no){return Promise.resolve(result(false)).then(ok,no)}};
+ function from(t){const filtros={};const q={select(v){filtros._select=v;return q},gte(){return q},eq(k,v){filtros[k]=v;return q},ilike(k,v){filtros[k]=v;return q},order(){return q},limit(){return q},or(){return q},async single(){return result(true)},async maybeSingle(){return result(true)},async insert(v){audits.push(v);return {error:auditErro?{}:null}},then(ok,no){return Promise.resolve(result(false)).then(ok,no)}};
  function result(single){
   if(t==='lojas')return {data:{id:L,nome:'Loja de teste',chat_retencao_dias:180}};
   if(t==='recursos_efetivos')return {data:[{codigo:'chat_persistente',ativo:flag},{codigo:'chat_consulta_bling',ativo:bling}].filter(v=>!filtros.codigo||v.codigo===filtros.codigo)};
-  if(t==='mensagens')return {data:[...msgs].reverse()};
+  if(t==='loja_chaves_ia')return {data:reserva?{provedor:'compativel_openai',ativa:true,modelo:'reserva-sintetica',base_url:baseReserva}:null};
+  if(t==='mensagens'){
+   if(filtros['metadados->>motivo_ia'])return {data:bloqueio?{metadados:{motivo_ia:'cota_diaria',tentar_novamente_em:new Date(Date.now()+60000).toISOString()}}:null};
+   return {data:[...historicoExtra,...msgs].reverse()};
+  }
   if(t==='produtos'){const linha={id:'prod-1',bling_id:'1234',sku:produtoSku,nome:'Espelho SIMULADO',preco:12,estoque:2,situacao:'A',sincronizado_em:'2026-10-18T00:00:00Z'};return single?{data:linha}:{data:filtros.loja_id===L&&!semEspelho?[linha]:[],error:null}}
   return {data:single?null:[]};
  }return q}
@@ -23,14 +27,17 @@ async function ambiente({produtoSku='SKU-1',consentido=true,flag=true,bling=true
   if(fn==='chat_iniciar'){if(final)return {data:{estado:'concluido',conversa_id:C,resposta:final.p_resposta,metadados:final.p_meta}};if(pendente||msgs.length)return {data:{estado:'em_execucao',conversa_id:C}};msgs.push({id:'pergunta',papel:'usuario',conteudo:p.p_texto});return {data:{estado:'novo',conversa_id:C,pergunta_id:'pergunta',turno_token:token}};}
   if(fn==='chat_responder'){if(fimErro)return {error:{}};final=p;return {data:'resposta'}};
   if(fn==='limite_chamada')return {data:true};
+  if(fn==='ia_chave_ativa' && openrouter)return {data:provedorErro?[]:p.p_provedor==='openrouter_free'?[{provedor:'openrouter_free',cifrada,modelo:'openrouter/free',limite:null,tokens_mes:0}]:reserva?[{provedor:'compativel_openai',cifrada,modelo:'reserva-sintetica',base_url:baseReserva,limite:null,tokens_mes:0}]:[]};
   if(fn==='ia_chave_ativa')return {data:provedorErro?[]:[{provedor:'compativel_openai',cifrada,modelo:'gpt-sintetico',base_url:'https://api.openai.com/v1',limite:null,tokens_mes:0}]};
   if(fn==='bling_ler_credenciais')return {data:[{access_token_cifrado:cifrada,refresh_token_cifrado:cifrada,expira_em:new Date(Date.now()+86400000).toISOString()}]};
   if(fn==='agente_tarefa_criar')return {data:'tarefa-1'};if(fn==='agente_proposta_criar')return {data:'proposta-1'};if(fn==='agente_proposta_item_adicionar')return {data:null};if(fn==='agente_proposta_enviar')return {data:{versao:1,hash:'hash-1',risco:'MEDIUM'}};if(fn==='agente_chamada_registrar')return {data:null};
   throw Error('RPC inesperada '+fn);
  }};
  const fake=async(url,op)=>{rede.push({url,op});assert.equal(op.redirect,'manual');if(url.includes('api.bling.com.br')){assert.equal(op.method,'GET');if(blingStatus!==200)return new Response('{}',{status:blingStatus});if(url.includes('/categorias/produtos'))return Response.json({data:[{id:500,descricao:'Motor'}]});return Response.json({data:[{id:1234,codigo:produtoSku,nome:'Produto SIMULADO',preco:34.5,situacao:'A',estoque:{saldoVirtualTotal:7}}]})}
-  assert.equal(url,'https://api.openai.com/v1/chat/completions');const b=JSON.parse(op.body);assert.ok(!('max_tokens'in b));assert.equal(b.max_completion_tokens,1536);
-  if(status!==200)return new Response('ERRO-SECRETO',{status});
+  if(openrouter && url.includes('openrouter.ai'))return new Response(JSON.stringify({error:{code:status,message:diario?'Rate limit exceeded: free-models-per-day SECRETO':'SECRETO'}}),{status});
+  if(openrouter && url.includes('api.groq.com') && reservaStatus!==200)return new Response('SECRETO',{status:reservaStatus});
+  assert.equal(url,openrouter?'https://api.groq.com/openai/v1/chat/completions':'https://api.openai.com/v1/chat/completions');const b=JSON.parse(op.body);if(openrouter)assert.equal(b.max_tokens,1536);else{assert.ok(!('max_tokens'in b));assert.equal(b.max_completion_tokens,1536);}
+  if(!openrouter && status!==200)return new Response('ERRO-SECRETO',{status});
   vez++;return Response.json({id:'chatcmpl-sintetico-'+vez,model:'gpt-sintetico',choices:[{...(truncar&&vez===2?{finish_reason:'length'}:{finish_reason:'stop'}),message:vez===1?{tool_calls:[{id:'t1',function:{name:tool,arguments:args}}]}:{content:'Resposta SIMULADA com dados da ferramenta'}}],usage:{total_tokens:5}});
  };
  const ctx=createContext({Response,Request,Headers,URL,TextEncoder,TextDecoder,Uint8Array,crypto,btoa,atob,AbortSignal,setTimeout,fetch:fake,Deno:{serve:f=>handler=f,env:{get:k=>k==='CREDENCIAIS_CHAVE_CIFRA'?chave:k==='CHAT_AMBIENTE'?'sintetico':'local'}}});
@@ -178,4 +185,54 @@ test('aceite: consulta incompleta sem identidade confirmada é erro de ferrament
  const r=await a.perguntar({acao:'chat_ficha_produto',codigo:'SKU-1',provedor:undefined});
  assert.equal(r.status,503);assert.equal(r.body.categoria_erro,'ferramenta');
  assert.equal(r.body.evidencias,undefined);
+});
+
+
+test('continuidade: cota diária do OpenRouter → Groq autorizado, só leitura, sem histórico',async()=>{
+ const a=await ambiente({openrouter:true,reserva:true,status:429,diario:true,historicoExtra:[{papel:'usuario',conteudo:'HISTORICO-PRIVADO-ANTERIOR'}]});
+ const r=await a.perguntar({provedor:'openrouter_free',consentimento_reserva_ia:true});
+ assert.equal(r.status,200);assert.equal(r.body.provedor_efetivo,'groq');assert.equal(r.body.desfecho,'contingencia_reserva');
+ assert.equal(r.body.motivo_ia,'cota_diaria');assert.equal(r.body.provedor_bloqueado,'openrouter_free');
+ const groq=a.rede.filter(c=>c.url.includes('api.groq.com'));assert.equal(groq.length,2);
+ const body=JSON.parse(groq[0].op.body);assert.equal(body.messages.filter(m=>m.role==='user').length,1);
+ assert.ok(!JSON.stringify(groq).includes('HISTORICO-PRIVADO-ANTERIOR'));
+ assert.ok(body.tools.every(t=>!/(propor|buscar|alterar|criar)/.test(t.function.name)));
+ assert.ok(!JSON.stringify(r).includes('SECRETO'));
+ assert.ok(!a.rpcs.some(c=>c.p?.p_provedor==='gemini'));
+ assert.ok(!a.rpcs.some(c=>c.fn==='agente_proposta_criar'));
+});
+test('continuidade: sem autorização não envia pergunta à reserva',async()=>{
+ const a=await ambiente({openrouter:true,reserva:true,status:429,diario:true});
+ const r=await a.perguntar({provedor:'openrouter_free'});
+ assert.equal(r.status,429);assert.match(r.body.resposta,/cota diária/);
+ assert.equal(r.body.motivo_ia,'cota_diaria');assert.equal(a.rede.length,1);
+ assert.equal(r.body.renovacao_estimada,true);
+});
+test('continuidade: sem chave ou com endpoint errado não tenta rede na reserva',async()=>{
+ for(const opts of [{reserva:false},{reserva:true,baseReserva:'https://api.openai.com/v1'},{reserva:true,baseReserva:'https://openrouter.ai/api/v1'}]){
+  const a=await ambiente({openrouter:true,status:429,diario:true,...opts});
+  const r=await a.perguntar({provedor:'openrouter_free',consentimento_reserva_ia:true});
+  assert.equal(r.status,429);assert.equal(r.body.reserva_indisponivel,true);assert.equal(a.rede.length,1);
+ }
+});
+test('continuidade: falha dos dois mantém erro e oferece ficha/revisão sem IA',async()=>{
+ const a=await ambiente({openrouter:true,reserva:true,reservaStatus:429,status:429,diario:true});
+ const r=await a.perguntar({provedor:'openrouter_free',consentimento_reserva_ia:true});
+ assert.equal(r.status,429);assert.equal(r.body.motivo_ia,'cota_diaria');assert.equal(r.body.reserva_indisponivel,true);
+ assert.equal(r.body.host_provedor,'openrouter.ai');assert.equal(a.rede.length,2);
+ const ficha=await a.perguntar({acao:'chat_ficha_produto',codigo:'SKU-1',provedor:undefined});
+ assert.equal(ficha.status,200);assert.equal(ficha.body.ia,false);
+});
+test('continuidade: bloqueio diário registrado evita nova chamada ao OpenRouter',async()=>{
+ const a=await ambiente({openrouter:true,reserva:true,bloqueio:true,status:429});
+ const r=await a.perguntar({provedor:'openrouter_free',consentimento_reserva_ia:true});
+ assert.equal(r.status,200);assert.equal(r.body.bloqueio_reutilizado,true);
+ assert.equal(r.body.provedor_efetivo,'groq');assert.equal(a.rede.filter(c=>c.url.includes('openrouter.ai')).length,0);
+});
+test('continuidade: ferramenta de proposta inventada pela reserva continua bloqueada',async()=>{
+ const a=await ambiente({openrouter:true,reserva:true,status:429,tool:'bling_propor_categoria',args:'{"nome":"Freios"}'});
+ const r=await a.perguntar({provedor:'openrouter_free',consentimento_reserva_ia:true});
+ assert.equal(r.status,200);assert.ok(!a.rpcs.some(c=>c.fn==='agente_proposta_criar'));
+ assert.equal(a.rede.filter(c=>c.url.includes('bling')).length,0);
+ assert.equal(r.body.ferramentas.length,0);
 });

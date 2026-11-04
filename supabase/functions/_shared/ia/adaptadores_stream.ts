@@ -1,3 +1,4 @@
+import { limiteOpenRouter } from "./limite_openrouter.ts";
 // Adaptadores de provedor COM STREAMING (SSE): mesmo contrato do adaptador não-streaming (adaptadores.ts), mas entregam cada
 // delta de texto a `aoTexto` assim que chega e devolvem o `Passo` final idêntico (blocos text/tool_use com input já parseado
 // e tokens somados), para o laço `conversar` não mudar. Suportam cancelamento (AbortSignal => IaErro 499) e timeout de
@@ -112,8 +113,8 @@ async function abrirEventos(c: ChamadaStream, url: string, headers: Record<strin
   clearTimeout(t);
   if (!r.ok) {
     soltar();
-    const detalhe = r.status === 400 ? (await r.text().catch(() => "")).slice(0, 500) : "";
-    throw erroHttp(r.status, detalhe);
+    const detalhe = [400, 429].includes(r.status) ? (await r.text().catch(() => "")).slice(0, 16000) : "";
+    throw limiteOpenRouter(url, r.status, detalhe, r.headers) ?? erroHttp(r.status, r.status === 400 ? detalhe.slice(0, 500) : "");
   }
   if (!r.body) { soltar(); throw new IaErro(502, "Resposta inesperada do provedor de IA."); }
   return { eventos: lerEventosSse(r.body, sinal, ms), encerrar: () => { soltar(); ctrl.abort(); } };
@@ -189,7 +190,7 @@ export const chamarOpenAIStream: AdaptadorStream = async (c, msgs, aoTexto, sina
       if (ev.data.trim() === "[DONE]") { terminou = true; break; }
       const j = json(ev.data);
       if (!j || typeof j !== "object") continue;
-      if (j.error) throw erroDeEvento(j.error.type, j.error.code);
+      if (j.error) throw limiteOpenRouter(c.baseUrl!, Number(j.error.code), JSON.stringify({ error: j.error }), new Headers()) ?? erroDeEvento(j.error.type, j.error.code);
       respostaId ??= j.id; modelo ??= j.model;
       if (j.usage?.total_tokens != null) tokens = j.usage.total_tokens;
       const ch = j.choices?.[0];

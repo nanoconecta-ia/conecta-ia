@@ -38,3 +38,9 @@ test("categorias estruturadas comandam a recuperação e distinguem mensagens", 
   assert.match(mensagemFalhaFicha(erroDoChat({categoria_erro:"sku_nao_encontrado"})), /SKU não encontrado/);
   assert.match(mensagemFalhaFicha(new Error("conexão")), /Erro de ferramenta/);
 });
+
+test("mensagem de cota mostra renovação estimada e falha da reserva sem prometer envio inexistente",()=>{
+ const e=erroDoChat({resposta:"Cota diária esgotada.",motivo_ia:"cota_diaria",tentar_novamente_em:"2026-11-05T00:00:00Z",renovacao_estimada:true,reserva_indisponivel:true});
+ assert.match(e.message,/Renovação estimada/);assert.match(e.message,/reserva Groq também não concluiu/);
+ assert.ok(!e.message.includes("Nada foi enviado"));
+});

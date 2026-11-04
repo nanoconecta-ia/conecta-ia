@@ -52,7 +52,7 @@ const msgErro = (e: unknown): string => (e instanceof Error ? e.message : String
 export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[]; aoNavegar?: (rota: string) => void }) {
   const [msgs, setMsgs] = useState<Msg[]>([{ de: "ia", texto: "Olá! Posso resumir a loja, mostrar o que aguarda aprovação e o que falta para publicar. Para conversar com IA e usar plugins, configure um provedor em Integrações de IA." }]);
   const fonte = useFonte(); // B2b: cartões de proposta leem a proposta do banco (RLS), nunca do texto do modelo
-  const [config, setConfig] = useState<{ persistente: boolean; bling: boolean; leitura_administrativa: boolean; retencao_dias: number; streaming?: boolean; fallback_free_disponivel?: boolean }>({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 });
+  const [config, setConfig] = useState<{ persistente: boolean; bling: boolean; leitura_administrativa: boolean; retencao_dias: number; streaming?: boolean; fallback_free_disponivel?: boolean; reserva_ia?: { nome: string; host: string; disponivel: boolean; motivo: string } }>({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 });
   const [conversas, setConversas] = useState<Conversa[]>([]);
   const [conversaId, setConversaId] = useState<string | null>(null);
   const [idsSessao, setIdsSessao] = useState<string[]>(() => lerSessao(typeof sessionStorage === "undefined" ? null : sessionStorage, loja.id));
@@ -120,6 +120,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [carregando, setCarregando] = useState(true);
   const [erroConfig, setErroConfig] = useState("");
   const [aceitaEnvio, setAceitaEnvio] = useState(false);
+  const [autorizaReservaIa, setAutorizaReservaIa] = useState(false);
   const [autorizaFallbackFree, setAutorizaFallbackFree] = useState(false); // autorização separada por sessão; desligado inicialmente
   const [motorPendente, setMotorPendente] = useState<string | null>(null);
   const [ultimoMotorFalhou, setUltimoMotorFalhou] = useState(false);
@@ -149,7 +150,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     : provedor ? (selecao?.nome ?? provedor) + " · selecionado"
     : "Sem LLM";
   const armazemSessao = typeof sessionStorage === "undefined" ? null : sessionStorage;
-  useEffect(() => { setAceitaEnvio(provedor ? lerConsentimento(armazemSessao, loja.id, provedor) : false); setAutorizaFallbackFree(false); }, [provedor, loja.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setAceitaEnvio(provedor ? lerConsentimento(armazemSessao, loja.id, provedor) : false); setAutorizaFallbackFree(false); setAutorizaReservaIa(false); }, [provedor, loja.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const autorizarEnvio = () => { if (!provedor) return; gravarConsentimento(armazemSessao, loja.id, provedor, true); setAceitaEnvio(true); };
   const revogarEnvio = () => { if (provedor) gravarConsentimento(armazemSessao, loja.id, provedor, false); setAceitaEnvio(false); };
   const modoFichaSemIA = /^\/ficha\s+[A-Za-z0-9_.\/-]{1,60}$/i.test(texto.trim());
@@ -157,7 +158,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   useEffect(() => {
     let ativo = true;
     setConfig({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 }); setConversas([]); setConversaId(null); setRegistros([]); setRetentativa(null); setAdministrando(false); setErroHistorico("");
-    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false); setAutorizaFallbackFree(false); setMotorPendente(null); setUltimoMotorFalhou(false);
+    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false); setAutorizaFallbackFree(false); setAutorizaReservaIa(false); setMotorPendente(null); setUltimoMotorFalhou(false);
     setMsgs([{ de: "ia", texto: "Olá! Posso consultar os dados desta loja. Escolha um provedor para conversar com IA." }]);
     supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao: "provedores" } })
       .then(({ data, error }) => {
@@ -313,7 +314,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     setMotorPendente(prov ? `${selecao?.nome ?? prov}${selecao?.modelo ? ` · ${selecao.modelo}` : ""}` : null);
     if (persistente && prov) setRetentativa({ texto: t, chave, provedor: prov, conversa: conv });
     try {
-      const campos = { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio, consentimento_fallback_free: autorizaFallbackFree && prov === "gemini" && config.fallback_free_disponivel === true } : { historico }), ...(prov ? { provedor: prov } : { sem_ia: true }), ...(anexosEnvio.length ? { anexos: anexosEnvio.map(({ nome, tipo, dados }) => ({ nome, tipo, dados })) } : {}) };
+      const campos = { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio, consentimento_reserva_ia: autorizaReservaIa && prov === "openrouter_free", consentimento_fallback_free: autorizaFallbackFree && prov === "gemini" && config.fallback_free_disponivel === true } : { historico }), ...(prov ? { provedor: prov } : { sem_ia: true }), ...(anexosEnvio.length ? { anexos: anexosEnvio.map(({ nome, tipo, dados }) => ({ nome, tipo, dados })) } : {}) };
       // B2b (#166): com o servidor anunciando streaming, o texto aparece enquanto o provedor escreve; o que vale é o resultado final registrado.
       const data = persistente && config.streaming ? await perguntarStreaming(campos, lojaDoEnvio) : await chamada(persistente ? "chat_perguntar" : "perguntar", campos);
       if (lojaAtual.current !== lojaDoEnvio) return;
@@ -569,7 +570,16 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
           <option value="">Resumo local (sem IA externa)</option>
           {provedores.map((p) => <option key={p.id} value={p.id} disabled={p.estado !== "disponivel"}>{p.nome}{p.modelo ? ` · ${p.modelo}` : ""} — {ESTADO_PROVEDOR[p.estado]}</option>)}
         </select></label>
-        <fieldset className="grupo-orbe" aria-label="Nano Auto: IA auxiliar de contingência">
+        {provedor === "openrouter_free" && <fieldset className="grupo-orbe" aria-label="Reserva independente de IA">
+          <legend>Reserva independente · Groq</legend>
+          <p className="suave" role="status">{config.reserva_ia?.motivo ?? "Reserva não configurada. Cadastre uma chave do Groq em Integrações de IA."}</p>
+          {config.persistente && config.reserva_ia?.disponivel && <label className="consent-linha">
+            <input type="checkbox" checked={autorizaReservaIa} disabled={ocupado || !aceitaEnvio} onChange={e => setAutorizaReservaIa(e.target.checked)} />
+            Autorizar o envio da pergunta atual e dos resultados de consultas para api.groq.com se o OpenRouter falhar. Sem histórico anterior, anexos ou propostas de alteração.
+          </label>}
+          <p className="suave">Se ambos falharem, use /ficha SKU, /revisar SKU ou o resumo local. O Gemini não é usado como reserva.</p>
+        </fieldset>}
+        {provedor === "gemini" && <fieldset className="grupo-orbe" aria-label="Nano Auto: IA auxiliar de contingência">
           <legend>Nano Auto · IA auxiliar</legend>
           <p className="suave" role="status">{carregandoChat
             ? "Verificando a contingência no servidor…"
@@ -591,7 +601,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
             </label>
           )}
           <small className="suave">O roteador Nano usa OpenRouter gratuito apenas quando o Gemini falha com HTTP 429, 502 ou 504. O modelo gratuito completo (leitura de dados já saneados) é outro recurso: liga-se em Integrações de IA e aparece na lista de modelos. Não envia histórico, anexos, SKU, custos ou dados da loja; não atende nem altera o Bling. Para cadastros e consultas comerciais, a continuidade automática com outro LLM ainda não está disponível.</small>
-        </fieldset>
+        </fieldset>}
         <fieldset className="grupo-orbe"><legend>Esfera do Nano.IA</legend>
           <div className="grupo-orbe-opcoes" role="radiogroup" aria-label="Modelo da esfera">
             {MODELOS_ORBE.map((m) => <button key={m.valor} type="button" role="radio" aria-checked={modeloOrbe === m.valor} className="sec mini" title={m.descricao} onClick={() => { setModeloOrbe(m.valor); gravarOrbe(armazemLocal(), m.valor); }}>{m.rotulo}</button>)}

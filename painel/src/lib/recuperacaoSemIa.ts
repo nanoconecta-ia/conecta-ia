@@ -24,7 +24,13 @@ export function skuEmFoco(texto: string, anteriores: string[]): string | null {
 }
 
 export function erroDoChat(corpo: Record<string, unknown>): Error {
-  return Object.assign(new Error(String(corpo.erro ?? corpo.resposta ?? "Não foi possível concluir.")), {
+  let mensagem = String(corpo.erro ?? corpo.resposta ?? "Não foi possível concluir.");
+  if (corpo.motivo_ia === "cota_diaria" && typeof corpo.tentar_novamente_em === "string") {
+    const data = new Date(corpo.tentar_novamente_em);
+    if (Number.isFinite(data.getTime())) mensagem += ` Renovação${corpo.renovacao_estimada === true ? " estimada" : " informada"}: ${data.toLocaleString("pt-BR")}.`;
+  }
+  if (corpo.reserva_indisponivel === true) mensagem += " A reserva Groq também não concluiu; use as operações sem IA.";
+  return Object.assign(new Error(mensagem), {
     categoria_erro: corpo.categoria_erro, origem_erro: corpo.origem_erro, request_id: corpo.request_id,
   });
 }
@@ -41,5 +47,5 @@ export function mensagemFalhaFicha(erro: unknown): string {
     : "Erro de ferramenta: não foi possível confirmar a ficha do SKU solicitado. Tente /ficha SKU novamente.";
 }
 
-export const DICA_SEM_IA = "O provedor de IA não respondeu agora. Informe um único SKU explicitamente para consultar sua ficha. Sem IA você ainda pode: /ficha SKU (ficha do cadastro), /revisar SKU (checklist de revisão) ou abrir o produto no Catálogo e usar \"Corrigir o cadastro agora (sem IA)\". Nada foi enviado a outro provedor.";
+export const DICA_SEM_IA = "O provedor de IA não respondeu agora. Informe um único SKU explicitamente para consultar sua ficha. Sem IA você ainda pode: /ficha SKU (ficha do cadastro), /revisar SKU (checklist de revisão) ou abrir o produto no Catálogo e usar \"Corrigir o cadastro agora (sem IA)\". A consulta da ficha não altera cadastros.";
 export const PREFIXO_FICHA = "O provedor de IA não respondeu agora. Esta é a ficha direta do cadastro (sem IA), do SKU solicitado:\n\n";

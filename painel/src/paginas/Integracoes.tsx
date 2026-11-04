@@ -13,7 +13,7 @@ type Chave = { provedor: string; ativa: boolean; principal: boolean; final_chave
 const PROVEDORES = [
   { id: "claude", nome: "Claude", aviso: "Pago por uso; crie a chave no console do provedor.", modelo: "claude-sonnet-5-5", precisaEndereco: false },
   { id: "gemini", nome: "Gemini (Google AI Studio)", aviso: "Há plano gratuito, mas no gratuito o Google pode usar o conteúdo enviado para melhorar os produtos dele. O agente não envia custo nem fornecedor, só dados de catálogo.", modelo: "gemini-2.5-flash", precisaEndereco: false },
-  { id: "compativel_openai", nome: "Llama ou outro modelo compatível com OpenAI", aviso: "Use um provedor que hospede o Llama e exponha uma API compatível com OpenAI (por exemplo Groq, Together ou OpenRouter). Um Llama rodando só no seu computador não é alcançável pelo servidor.", modelo: "", precisaEndereco: true },
+  { id: "compativel_openai", nome: "Llama ou outro modelo compatível com OpenAI", aviso: "Para a reserva independente do OpenRouter, cadastre a chave Groq, um modelo com suporte a ferramentas e o endereço https://api.groq.com/openai/v1. O chat pedirá autorização antes da troca; somente consultas. Outros endereços continuam disponíveis para escolha manual.", modelo: "", precisaEndereco: true },
   { id: "openrouter_free", nome: "Gratuito (OpenRouter)", aviso: AVISO_FREE, modelo: "openrouter/free", precisaEndereco: false },
 ] as const;
 type Plugin = { id: string; nome: string; tipo: string; url: string | null; capacidades: string[]; risco: string; ativo: boolean; ultimo_teste_ok: boolean | null; ultimo_teste_em: string | null };
