@@ -32,3 +32,23 @@ test("troca automática para o gratuito é reconhecida como contingência, com o
 test("escolha manual do gratuito aparece como OpenRouter Free, sem marcar contingência", () => {
   assert.deepEqual(identificarModeloEfetivo({ ia: true, provedor: "openrouter_free", desfecho: "ok", provedor_efetivo: "openrouter-free", modelo: "openrouter/free-modelo", completa: true }), { rotulo: "OpenRouter Free · openrouter/free-modelo", contingencia: false });
 });
+
+test("Groq aparece pelo nome verdadeiro no roteador após resposta concluída", () => {
+  assert.deepEqual(identificarModeloEfetivo({
+    ia: true, provedor: "compativel_openai", host_provedor: "api.groq.com",
+    modelo: "openai/gpt-oss-20b", desfecho: "ok", completa: true, http_status: 200,
+  }), { rotulo: "Groq · openai/gpt-oss-20b", contingencia: false });
+});
+
+test("segundo provedor como contingência pública mostra Groq e não OpenRouter", () => {
+  assert.deepEqual(identificarModeloEfetivo({
+    ia: true, provedor: "compativel_openai", provedor_efetivo: "compativel_openai",
+    host_provedor: "api.groq.com", troca_de: "openrouter_free",
+    modelo: "openai/gpt-oss-20b", desfecho: "contingencia_publica", completa: true, http_status: 200,
+  }), { rotulo: "Groq · openai/gpt-oss-20b", contingencia: true });
+  assert.equal(identificarModeloEfetivo({
+    ia: true, provedor: "compativel_openai", provedor_efetivo: "compativel_openai",
+    host_provedor: "host.desconhecido.example", modelo: "falso",
+    desfecho: "contingencia_publica", completa: true, http_status: 200,
+  }), null);
+});
