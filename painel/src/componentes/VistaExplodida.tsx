@@ -17,7 +17,13 @@ export function VistaExplodida({ vista, ativo, aoEscolher }: { vista: Vista; ati
           <button key={p.n} type="button" className={`vista-ponto ${ativo === p.slug ? "ativo" : ""}`} style={posicaoPct(vista, p)} aria-label={`${p.n}. ${p.rotulo}`} aria-pressed={ativo === p.slug} title={p.rotulo} onClick={() => aoEscolher(p.slug, p.rotulo)} />
         ))}
       </div>
-      <figcaption>{vista.titulo} · toque num número para ver a peça</figcaption>
+      {/* Os rótulos dentro do desenho encolhem no celular (~6 px); esta lista repete os mesmos pontos em texto legível e com alvo de toque grande. */}
+      <ol className="vista-lista" aria-label={`Peças de ${vista.titulo}`}>
+        {vista.pontos.map((p) => (
+          <li key={p.n}><button type="button" className={`vista-item ${ativo === p.slug ? "ativo" : ""}`} aria-pressed={ativo === p.slug} onClick={() => aoEscolher(p.slug, p.rotulo)}><span className="mono">{p.n}</span> {p.rotulo}</button></li>
+        ))}
+      </ol>
+      <figcaption>{vista.titulo} · toque num número ou na lista para ver a peça</figcaption>
     </figure>
   );
 }
