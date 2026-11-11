@@ -37,6 +37,12 @@ export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
     supabase.rpc("bling_app_configurado", { p_loja_id: loja.id }).then(({ data }) => setConfigurado(data === true));
   };
   useEffect(carregar, [loja.id, query]);
+  // Voltar do Bling pelo botão "voltar" restaura a página do cache com o estado antigo (ocupado=true) e deixa os botões travados.
+  useEffect(() => {
+    const aoVoltar = (e: PageTransitionEvent) => { if (e.persisted) { setOcupado(false); carregar(); } };
+    window.addEventListener("pageshow", aoVoltar);
+    return () => window.removeEventListener("pageshow", aoVoltar);
+  }, [loja.id]);
 
   async function salvar(e: FormEvent) {
     e.preventDefault(); setOcupado(true); setErro("");
@@ -72,7 +78,7 @@ export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
         {configurado && <span className="selo ok">App cadastrado</span>}</p>
       {query.get("ok") && <p className="msg-ok">Conexão concluída.</p>}
       {query.get("erro") && <p className="msg-erro">{MOTIVOS[query.get("erro") ?? ""] ?? "Não foi possível conectar. Confira o cadastro do app e tente de novo."}</p>}
-      {erro && <p className="msg-erro">{erro}</p>}
+      {erro && !mostrarForm && <p className="msg-erro">{erro}</p>}
 
       {mostrarForm ? (
         <>
@@ -91,7 +97,8 @@ export function Bling({ loja, query }: { loja: Loja; query: URLSearchParams }) {
             <label>CNPJ da empresa no Bling<input value={cnpj} onChange={(e) => setCnpj(e.target.value)} required inputMode="numeric" autoComplete="off" placeholder="00.000.000/0000-00" /></label>
             <label>Client Secret<input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} required autoComplete="new-password" spellCheck={false} /></label>
             <p className="suave">O CNPJ evita conectar a conta errada. A chave é guardada cifrada no servidor e não aparece mais depois de salva. Só o responsável da loja pode alterar.</p>
-            <div className="linha"><button disabled={ocupado}>Salvar</button>{editando && <button type="button" className="sec" onClick={() => setEditando(false)}>Cancelar</button>}</div>
+            {erro && <p className="msg-erro" role="alert">{erro}</p>}
+            <div className="linha"><button disabled={ocupado}>{ocupado ? "Salvando…" : "Salvar"}</button>{editando && <button type="button" className="sec" onClick={() => setEditando(false)}>Cancelar</button>}</div>
           </form>
         </>
       ) : (
