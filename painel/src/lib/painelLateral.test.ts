@@ -33,7 +33,8 @@ test("separador: arrastar muda a largura pelo lado certo; teclado respeita o lad
 });
 
 test("validar: valor salvo estragado volta ao padrão sem quebrar", () => {
-  assert.deepEqual(validar(null), { modo: "flutuante", lado: "dir", largura: LARGURA_PADRAO });
+  assert.deepEqual(validar(null), { modo: "fixo", lado: "dir", largura: LARGURA_PADRAO }, "sem preferência salva: torre fixa à direita");
+  assert.equal(validar({ modo: "flutuante" }).modo, "flutuante", "quem escolheu flutuar continua flutuando");
   assert.deepEqual(validar({ modo: "fixo", lado: "esq", largura: 9999 }, 1920), { modo: "fixo", lado: "esq", largura: LARGURA_MAX });
-  assert.deepEqual(validar({ modo: "xyz", lado: 3, largura: "a" }), { modo: "flutuante", lado: "dir", largura: LARGURA_PADRAO });
+  assert.deepEqual(validar({ modo: "xyz", lado: 3, largura: "a" }), { modo: "fixo", lado: "dir", largura: LARGURA_PADRAO });
 });
