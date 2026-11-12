@@ -32,6 +32,7 @@ try{
   }else if(u.pathname==='/rest/v1/taxonomia_nos')body=[{id:'no1',pai_id:null,nome:'Classificação DEMO',slug:'demo',ordem:1}];
   else if(u.pathname==='/rest/v1/bling_categoria_taxonomia')body=[];
   else if(u.pathname==='/rest/v1/bling_categorias'){assert.equal(u.searchParams.get('loja_id'),'eq.'+L);body=[];}
+  else if(['/rest/v1/montadoras','/rest/v1/modelos','/rest/v1/motores','/rest/v1/produto_aplicacoes'].includes(u.pathname)){body=[];}
   else throw Error('Endpoint inesperado '+u.pathname);
   return route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(body)});
  });

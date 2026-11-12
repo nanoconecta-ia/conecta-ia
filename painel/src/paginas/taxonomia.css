@@ -1,0 +1,91 @@
+/* Taxonomia por lentes. Só tokens do tema (styles.css); mobile primeiro. */
+.tx-hero { display: grid; gap: 16px; align-items: center; padding: 16px; border: 1px solid var(--borda); border-radius: 16px;
+  background: radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--marca) 16%, transparent), transparent 60%), var(--cartao); box-shadow: var(--sombra); }
+.tx-hero h1 { margin: 0 0 4px; font-family: var(--titulo); font-size: clamp(1.3rem, 4vw, 1.9rem); letter-spacing: -.02em; text-wrap: balance; }
+.tx-hero p { margin: 0 0 12px; max-width: 62ch; }
+.tx-anel { width: 124px; height: 124px; justify-self: center; }
+.tx-anel-fundo { fill: none; stroke: var(--realce); stroke-width: 12; }
+.tx-anel-valor { fill: none; stroke: var(--marca); stroke-width: 12; stroke-linecap: round; }
+.tx-anel-num { font: 700 26px var(--titulo); fill: var(--texto); }
+.tx-anel-rot { font: 500 10px var(--fonte); fill: var(--suave); text-transform: uppercase; letter-spacing: .08em; }
+
+.tx-inds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tx-ind { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--borda); border-left: 4px solid var(--borda-forte); border-radius: 10px; background: var(--fundo); min-width: 0; }
+.tx-ind.tx-ok { border-left-color: var(--ok); } .tx-ind.tx-atencao { border-left-color: var(--atencao); } .tx-ind.tx-erro { border-left-color: var(--erro); }
+.tx-ind-valor { font-size: 1.5rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tx-ind-rot { font-size: .78rem; color: var(--suave); }
+.tx-ind-nota { font-size: .72rem; color: var(--suave); }
+
+.tx-lentes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.janela .tx-lente { position: relative; display: grid; gap: 2px; justify-items: start; text-align: left; min-height: var(--alvo); padding: 10px 14px; border-radius: 12px;
+  background: var(--cartao); color: var(--texto); border: 1px solid var(--borda); }
+.janela .tx-lente:hover:not(:disabled) { background: var(--realce); }
+.janela .tx-lente.ativa { border-color: var(--marca); background: color-mix(in srgb, var(--marca) 14%, var(--cartao)); box-shadow: inset 0 -3px 0 var(--marca); }
+.tx-lente-rot { font-weight: 700; font-family: var(--titulo); }
+.tx-lente-ajuda { font-size: .75rem; color: var(--suave); }
+.tx-selo { padding: 1px 8px; border-radius: 999px; background: var(--atencao); color: var(--fundo); font-size: .75rem; font-weight: 700; }
+.tx-lente .tx-selo { position: absolute; top: 8px; right: 10px; }
+
+.tx-painel { display: grid; gap: 14px; min-width: 0; }
+.tx-aviso { margin: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--ciano) 45%, var(--borda)); background: color-mix(in srgb, var(--ciano) 9%, var(--cartao)); font-size: .88rem; }
+.tx-sub { margin: 6px 0 0; font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; color: var(--suave); }
+.tx-barra { display: block; height: 6px; border-radius: 999px; background: var(--realce); overflow: hidden; min-width: 40px; }
+.tx-barra i { display: block; height: 100%; border-radius: inherit; background: var(--marca); }
+
+.tx-cartoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.janela .tx-cartao { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "ico num" "nome nome" "barra barra" "sub sub"; gap: 6px 10px; align-items: center; text-align: left; padding: 12px; border-radius: 14px;
+  background: var(--cartao); color: var(--texto); border: 1px solid var(--borda); box-shadow: var(--sombra); }
+.janela .tx-cartao:hover:not(:disabled) { border-color: var(--marca); background: var(--cartao); transform: translateY(-1px); }
+.janela .tx-cartao.ativo { border-color: var(--marca); box-shadow: 0 0 0 2px color-mix(in srgb, var(--marca) 35%, transparent); }
+.tx-cartao.vazio { opacity: .62; }
+.tx-cartao .ico-peca { grid-area: ico; color: var(--marca); }
+.tx-cartao-nome { grid-area: nome; font-weight: 600; font-size: .9rem; overflow-wrap: break-word; hyphens: auto; }
+.tx-cartao-num { grid-area: num; justify-self: end; font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tx-cartao .tx-barra { grid-area: barra; }
+.tx-cartao-sub { grid-area: sub; font-size: .72rem; color: var(--suave); }
+
+.tx-veiculos { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.tx-montadora { border: 1px solid var(--borda); border-top: 4px solid var(--v-picape); border-radius: 14px; background: var(--cartao); padding: 12px; min-width: 0; }
+.tx-montadora:nth-child(4n+2) { border-top-color: var(--v-passeio); } .tx-montadora:nth-child(4n+3) { border-top-color: var(--v-suv); } .tx-montadora:nth-child(4n+4) { border-top-color: var(--v-furgao); }
+.tx-montadora.vazio { opacity: .6; }
+.tx-montadora header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.tx-montadora h2 { margin: 0; font-size: 1rem; }
+.tx-montadora .tx-selo { background: var(--realce); color: var(--texto); }
+.tx-montadora ul, .tx-ranking, .tx-fila { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tx-montadora li { display: grid; grid-template-columns: minmax(70px, 1fr) minmax(40px, 1.4fr) 2.5ch; gap: 8px; align-items: center; font-size: .88rem; }
+.tx-montadora li .mono, .tx-ranking .mono { text-align: right; font-variant-numeric: tabular-nums; }
+.tx-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tx-chip { display: inline-flex; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--borda); background: var(--cartao); font-size: .85rem; }
+.tx-chip b { color: var(--marca); } .tx-chip.vazio { opacity: .55; }
+
+.tx-ranking li { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(60px, 2fr) 4ch; gap: 10px; align-items: center; padding: 8px 12px; border: 1px solid var(--borda); border-radius: 10px; background: var(--cartao); }
+.tx-rank-nome { font-weight: 600; overflow-wrap: anywhere; }
+.tx-ranking li.tx-atencao { border-color: var(--atencao); } .tx-ranking li.tx-atencao .tx-barra i { background: var(--atencao); }
+
+.tx-filtros { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tx-filtros input[type="search"] { flex: 1 1 220px; min-width: 0; }
+.tx-seg { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.janela .tx-seg button.ativo { border-color: var(--marca); color: var(--marca); background: color-mix(in srgb, var(--marca) 12%, var(--cartao)); }
+.tx-check { display: inline-flex; gap: 6px; align-items: center; min-height: var(--alvo); font-size: .88rem; }
+.tx-fila li { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--borda); border-left: 4px solid var(--ok); border-radius: 10px; background: var(--cartao); min-width: 0; }
+.tx-fila li.tx-sem-sinal { border-left-color: var(--atencao); }
+.tx-fila li.suave { border-left-color: var(--borda); }
+.tx-fila-id { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tx-sku { font-weight: 700; font-size: .85rem; overflow-wrap: anywhere; }
+.tx-fila-nome { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.tx-fila-meta { display: flex; flex-wrap: wrap; gap: 4px; }
+.tx-tag { padding: 1px 8px; border-radius: 999px; background: var(--realce); color: var(--suave); font-size: .72rem; }
+.tx-tag.tx-modelo { background: color-mix(in srgb, var(--v-picape) 18%, var(--cartao)); color: var(--texto); }
+.tx-tag.tx-motor { background: color-mix(in srgb, var(--ciano) 18%, var(--cartao)); color: var(--texto); font-family: var(--mono); }
+.tx-fila-sug { display: flex; gap: 6px; align-items: baseline; font-size: .88rem; font-weight: 600; overflow-wrap: anywhere; }
+.tx-seta { color: var(--ok); }
+
+@media (min-width: 720px) {
+  .tx-hero { grid-template-columns: auto 1fr; padding: 22px; gap: 24px; }
+  .tx-anel { width: 148px; height: 148px; }
+  .tx-inds { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .tx-lentes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .tx-cartoes { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  .tx-fila li { grid-template-columns: 150px minmax(0, 1.4fr) minmax(0, 1fr); align-items: center; gap: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { .janela .tx-cartao:hover:not(:disabled) { transform: none; } }
