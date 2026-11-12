@@ -41,6 +41,16 @@ try{
   await page.setViewportSize({width,height:960});await page.goto('http://127.0.0.1:4181/.estudio-demo.html');
   await page.getByRole('heading',{name:'Produto de teste — DADOS SIMULADOS'}).waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Sem overflow '+width);
+  // Olho do Nano (E02): só aparece com atividade, vai ao campo, volta à âncora, some; nunca intercepta clique nem sai da tela.
+  const olho=page.locator('.olho-nano'),estadoOlho=()=>olho.evaluate(el=>{const r=el.getBoundingClientRect(),c=getComputedStyle(el);return{classe:el.className,visivel:c.visibility==='visible',clique:c.pointerEvents,x:r.x,y:r.y,d:r.right,b:r.bottom,l:r.width}});
+  let eo=await estadoOlho();assert.equal(eo.visivel,false,'Olho escondido sem atividade '+width);assert.equal(eo.clique,'none');assert.equal(await olho.getAttribute('aria-hidden'),'true');
+  await page.locator('.estudio-agente input').first().click();await page.waitForTimeout(900);eo=await estadoOlho();
+  assert.equal(eo.visivel,true,'Olho aparece com atividade '+width);assert.match(eo.classe,/em-movimento/);assert.ok(eo.x>=0&&eo.y>=0&&eo.d<=width+1&&eo.b<=961,'Olho dentro da tela '+width);
+  assert.equal(await page.evaluate(()=>{const r=document.querySelector('.olho-nano').getBoundingClientRect();return !!document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.closest('.olho-nano')}),false,'Olho não intercepta clique');
+  const lFoco=eo.l;await page.screenshot({path:root+`evidencias-estudio/olho-e02-${width}-SIMULADO.png`});
+  await page.waitForTimeout(1400);eo=await estadoOlho();assert.match(eo.classe,/em-casa/,'Olho volta à origem '+width);assert.ok(eo.l>lFoco,'Escala proporcional: menor no foco, inteiro em casa');
+  assert.deepEqual(await page.locator('.olho-nano img').evaluate(i=>[i.naturalWidth,i.naturalHeight,Math.round(i.getBoundingClientRect().width)===Math.round(i.getBoundingClientRect().height)]),[184,184,true],'Desenho E02 original, sem deformar');
+  if(width===390){await page.waitForTimeout(5200);assert.equal((await estadoOlho()).visivel,false,'Olho se recolhe na inatividade');}
   await page.getByRole('button',{name:'Preparar tarefa',exact:false}).click();
   await page.getByLabel('Tarefa para o agente').waitFor();assert.match(await page.getByLabel('Tarefa para o agente').inputValue(),/SKU 80692/);
   assert.equal(await page.getByRole('button',{name:'Pareamento ainda indisponível'}).isDisabled(),true);
@@ -59,8 +69,9 @@ try{
   await page.getByRole('button',{name:'Imagens',exact:true}).click();await page.getByText('Nenhuma imagem aprovada disponível para este produto.').waitFor();
   await page.getByRole('button',{name:'SEO técnico',exact:true}).click();await page.getByRole('heading',{name:'SEO técnico do produto'}).waitFor();
   await page.emulateMedia({reducedMotion:'reduce'});await page.getByRole('button',{name:'Abrir agente',exact:false}).click();assert.equal(await page.getByRole('complementary',{name:'Torre do agente'}).evaluate(el=>getComputedStyle(el).animationName),'none');await page.keyboard.press('Escape');
+  await page.locator('.estudio-agente input').first().click();await page.waitForTimeout(300);assert.match(await page.locator('.olho-nano').getAttribute('class'),/visivel em-casa|em-casa/,'Movimento reduzido: olho aparece parado na origem');assert.doesNotMatch(await page.locator('.olho-nano').getAttribute('class'),/em-movimento/);await page.emulateMedia({reducedMotion:'no-preference'});
   if(width===390){await page.getByRole('button',{name:'Produto',exact:true}).click();falharProxima=true;await page.getByRole('button',{name:'Abrir',exact:true}).click();await page.getByRole('alert').filter({hasText:'Não foi possível consultar o produto desta loja.'}).waitFor();assert.equal(await page.getByRole('button',{name:'Preparar tarefa',exact:false}).isDisabled(),true);await page.getByRole('button',{name:'Abrir',exact:true}).click();await page.getByRole('heading',{name:'Produto de teste — DADOS SIMULADOS'}).waitFor();console.log('ok: falha de consulta desabilita tarefa e o mesmo SKU pode ser consultado novamente');}
-  console.log(`ok: ${width}px, torre lateral/flutuante, contexto, clipboard, taxonomia/imagens/SEO, browser pendente, Escape e movimento reduzido`);
+  console.log(`ok: ${width}px, torre lateral/flutuante, contexto, clipboard, taxonomia/imagens/SEO, browser pendente, Escape, Olho E02 e movimento reduzido`);
  }
  assert.deepEqual(erros,[]);assert.ok(requests.length>0);assert.ok(requests.every(r=>r.method==='GET'));console.log('ok: somente leituras sintéticas; zero escrita, execução de agente, credencial ou QR falso');
 }finally{await browser?.close();servidor.kill('SIGTERM');await rm(fixture,{force:true})}
