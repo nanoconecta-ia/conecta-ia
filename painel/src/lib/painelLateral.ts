@@ -13,7 +13,8 @@ export const TELA_MIN_PARA_FIXO = 1100;
 export const CONTEUDO_MIN = 560;
 const CHAVE = "conecta:painel";
 
-export const PADRAO: EstadoPainel = { modo: "flutuante", lado: "dir", largura: LARGURA_PADRAO };
+// Padrão: TORRE fixa à direita, dividindo a tela (em tela estreita o App mantém flutuante). Quem escolheu "flutuar" continua flutuando.
+export const PADRAO: EstadoPainel = { modo: "fixo", lado: "dir", largura: LARGURA_PADRAO };
 
 /** Largura válida: dentro dos limites e sem deixar menos de CONTEUDO_MIN para a página. */
 export function ajustarLargura(largura: number, telaW: number): number {
@@ -50,7 +51,7 @@ export function larguraPeloPonteiro(x: number, lado: LadoPainel, telaW: number):
 export function validar(v: unknown, telaW = 1920): EstadoPainel {
   const o = (v && typeof v === "object" ? v : {}) as Partial<EstadoPainel>;
   return {
-    modo: o.modo === "fixo" ? "fixo" : "flutuante",
+    modo: o.modo === "flutuante" ? "flutuante" : "fixo",
     lado: o.lado === "esq" ? "esq" : "dir",
     largura: ajustarLargura(typeof o.largura === "number" ? o.largura : LARGURA_PADRAO, telaW),
   };

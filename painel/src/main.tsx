@@ -6,6 +6,8 @@ import { aplicarTema, armazemLocal, lerPreferencia } from "./lib/tema.ts";
 import { aplicarOrbe, lerOrbe } from "./lib/orbe.ts";
 import { aplicarPerfil, lerPerfil } from "./lib/perfilCor.ts";
 import "@fontsource-variable/inter";
+import "@fontsource-variable/source-serif-4";
+import "@fontsource-variable/jetbrains-mono";
 import "./styles.css";
 
 aplicarTema(lerPreferencia(armazemLocal())); // antes de pintar: sem piscar o tema errado

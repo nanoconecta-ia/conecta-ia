@@ -18,6 +18,8 @@ try{
   page.on('pageerror',e=>erros.push(e.message));
   const sessao={access_token:'sintetico.sintetico.sintetico',refresh_token:'sintetico',token_type:'bearer',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,user:{id:'11111111-1111-1111-1111-111111111111',aud:'authenticated',role:'authenticated',email:'demo@exemplo.invalid',app_metadata:{},user_metadata:{},created_at:'2026-01-01T00:00:00Z'}};
   await page.addInitScript(([k,v])=>localStorage.setItem(k,v),[`sb-${REF}-auth-token`,JSON.stringify(sessao)]);
+  // Este teste cobre o modo FLUTUANTE; o padrão do produto passou a ser a torre fixa (coberta em estudio-visual e painel-lateral).
+  await page.addInitScript(()=>{if(!localStorage.getItem('conecta:painel'))localStorage.setItem('conecta:painel',JSON.stringify({modo:'flutuante',lado:'dir',largura:420}));});
   await page.route('**/*',async route=>{
    const u=new URL(route.request().url());
    if(u.hostname==='127.0.0.1')return route.continue();
