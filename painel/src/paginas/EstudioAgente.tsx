@@ -3,6 +3,7 @@ import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { PAIR_ATIVO } from "../lib/flags.ts";
 import { Taxonomia } from "./Taxonomia.tsx";
+import { OlhoNano } from "../componentes/OlhoNano.tsx";
 import "./estudio-agente.css";
 
 type Area = "produto" | "taxonomia" | "imagens" | "seo";
@@ -40,6 +41,7 @@ export function EstudioAgente({ loja }: { loja: Loja }) {
   const [aviso, setAviso] = useState("");
   const botaoTorre = useRef<HTMLButtonElement>(null);
   const tarefa = useRef<HTMLTextAreaElement>(null);
+  const raiz = useRef<HTMLElement>(null);
   useEffect(() => {
     let ativo = true;
     setProduto(null); setFotos([]); setErro(""); setRascunho(""); setAviso("");
@@ -81,7 +83,8 @@ export function EstudioAgente({ loja }: { loja: Loja }) {
   }
   const atual = AREAS.find(a => a.id === area)!;
   const foto = fotos.find(f => f.tipo === "real");
-  return <section className={`estudio-agente torre-${posicao}${torre ? " torre-aberta" : ""}`} aria-label="Estúdio do agente">
+  return <section ref={raiz} className={`estudio-agente torre-${posicao}${torre ? " torre-aberta" : ""}`} aria-label="Estúdio do agente">
+    <OlhoNano area={raiz} ancora=".ea-cabecalho" />
     <header className="ea-cabecalho"><div><p className="ea-sobretitulo">ESPAÇO DE TRABALHO · {loja.nome}</p><h1>Estúdio do agente <span className="ea-versao">Interface 0.1 · prévia</span></h1><p>Um produto, seus ambientes e as próximas decisões.</p></div><button ref={botaoTorre} className="ea-abrir" aria-expanded={torre} aria-controls="torre-agente" onClick={() => setTorre(!torre)}>{torre ? "Recolher agente →" : "Abrir agente ✦"}</button></header>
     <div className="ea-aviso"><span aria-hidden="true">◉</span><span>Área integrada em prévia. Browser remoto e agente deste chat ainda não pareados. Dados carregados vêm do espelho da loja.</span></div>
     <div className="ea-modos" role="group" aria-label="Modo de navegação"><span>Navegação</span><button aria-pressed={modo === "integrada"} onClick={() => setModo("integrada")}>Área integrada</button><button aria-pressed={modo === "browser"} onClick={() => setModo("browser")}>Browser remoto <small>Conexão pendente</small></button></div>
