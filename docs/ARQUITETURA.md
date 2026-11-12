@@ -92,7 +92,7 @@ Papéis: `super_admin` (plataforma), `lojista` (por loja). Cada um com login pr�
 
 ## 8. Domínio próprio por cliente (proposta)
 
-Cada cliente usa o próprio domínio. O piloto é `www.mobisautoparts.com.br`, hoje hospedado na Locaweb.
+Cada cliente usa o próprio domínio. A loja nova do piloto vai para `www.mobisautopecas.com.br` (domínio registrado na Locaweb; decisão do dono em 2026-11-12). O site anterior, `www.mobisautoparts.com.br`, hospedado na Locaweb, continua no ar até a loja nova ser validada. Em 2026-11-12 nenhum domínio estava cadastrado em `loja_dominios` e nenhum DNS havia sido alterado.
 
 - **Resolução:** o domínio da requisição identifica a loja, **no servidor**. Domínio desconhecido responde 404 sem revelar nada de nenhuma loja.
 - **Cadastro do domínio (conceito, nenhuma tabela criada ainda):** domínio, loja, principal ou alias, status da verificação de DNS, status do SSL, datas.
