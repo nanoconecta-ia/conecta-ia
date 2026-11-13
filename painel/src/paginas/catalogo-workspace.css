@@ -134,3 +134,11 @@
 .catalogo-trilha-bloqueio{font-size:.72rem;color:var(--suave);border:1px dashed var(--borda);padding:9px;border-radius:7px;margin-top:auto}
 .catalogo-trilha-revisar{display:inline-block;margin-top:13px;font-size:.8rem;text-decoration:underline;color:var(--marca)}
 @media(max-width:850px){.catalogo-trilha-etapas{grid-template-columns:1fr}}
+
+
+.catalogo-produto-trilha{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;border-top:1px solid var(--borda);padding-top:10px;margin-top:10px}
+.catalogo-produto-trilha :is(a,button,span){display:flex;align-items:center;justify-content:center;min-height:42px;padding:6px;text-decoration:none;text-align:center;font-size:.68rem;line-height:1.4;border:1px solid var(--borda);border-radius:6px;background:var(--realce);color:var(--texto)}
+.catalogo-produto-trilha button{cursor:pointer}
+.catalogo-produto-trilha span{opacity:.66;cursor:not-allowed}
+.catalogo-produto-trilha :is(a,button):focus-visible{outline:3px solid var(--marca);outline-offset:3px}
+@media(max-width:460px){.catalogo-produto-trilha{grid-template-columns:1fr}.catalogo-produto-trilha :is(a,button,span){min-height:39px}}
