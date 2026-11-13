@@ -49,6 +49,14 @@ try{
   await respostaBusca;
   assert.ok(requests.some(x=>x.q==="D4CB"&&x.slug==="mobis"),"busca conecta à API da loja");
   assert.equal(await page.getByRole("heading",{name:"Indexar e enriquecer"}).count(),0,"não expor painel privado");
+  for(const [nome,id] of [["Catálogo de produtos","m2-catalogo"],["Buscar por veículo","m2-busca"],["Categorias de peças","m2-sistemas"],["Voltar aos produtos ↑","m2-catalogo"]]){
+   const link=page.getByRole("link",{name:nome,exact:true});
+   assert.equal(await link.getAttribute("href"),"#/loja/mobis","abrir em outra aba também mantém a loja");
+   await link.click();
+   assert.equal(new URL(page.url()).hash,"#/loja/mobis","rodapé não pode sair da vitrine");
+   await page.waitForFunction(id=>{const y=document.getElementById(id)?.getBoundingClientRect().top;return y!==undefined&&y>=0&&y<innerHeight;},id);
+   assert.equal(await page.locator('[data-mobis-layout="aprovado-v2"]').count(),1);
+  }
   await context.close();
   console.log("MOBIS NOVO LAYOUT "+width+"px OK: rota pública, filtros, não publicado, responsivo");
  }
