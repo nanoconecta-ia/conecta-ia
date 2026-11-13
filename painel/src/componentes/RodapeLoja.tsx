@@ -27,13 +27,14 @@ const paginas = [
 const instrucoesCompra = "Busque pelo nome, SKU ou veículo, confira a descrição e confirme a compatibilidade antes de comprar. Preços, disponibilidade, frete, prazo, forma de pagamento e valor final precisam ser informados e confirmados pela loja no fluxo de atendimento ou contratação. O contato para tirar dúvidas não representa pedido concluído.";
 
 export function RodapeLoja({
-  nome, slug, whatsapp, politicas, ultima,
+  nome, slug, whatsapp, politicas, ultima, paginaProduto = false,
 }: {
   nome: string;
   slug?: string | null;
   whatsapp?: string | null;
   politicas: PoliticasLojaPublicas | null | undefined;
   ultima?: string | null;
+  paginaProduto?: boolean;
 }) {
   const [painel, setPainel] = useState<Painel | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -75,9 +76,9 @@ export function RodapeLoja({
         </div>
         <nav aria-label="Navegação da loja">
           <h2>Encontre sua peça</h2>
-          <a href="#catalogo">Catálogo de produtos</a>
-          <a href="#busca-veiculo">Buscar por veículo</a>
-          <a href="#passo-categoria">Categorias de peças</a>
+          <a href={paginaProduto && slug ? "#/loja/" + encodeURIComponent(slug) : "#catalogo"}>Catálogo de produtos</a>
+          <a href={paginaProduto && slug ? "#/loja/" + encodeURIComponent(slug) : "#busca-veiculo"}>Buscar por veículo</a>
+          <a href={paginaProduto && slug ? "#/loja/" + encodeURIComponent(slug) : "#passo-categoria"}>Categorias de peças</a>
         </nav>
         <div className="v-rodape-grupo">
           <h2>Ajuda e orientações</h2>
@@ -113,7 +114,7 @@ export function RodapeLoja({
           Os documentos de privacidade, devolução, garantia e entrega serão disponibilizados após aprovação formal pela empresa.
           Um contato por WhatsApp não conclui uma compra.</p>
       </section>
-      <div className="v-rodape-faixa"><span>© {ano} {nome}. Conteúdo comercial da loja.</span><a href="#catalogo">Voltar aos produtos ↑</a></div>
+      <div className="v-rodape-faixa"><span>© {ano} {nome}. Conteúdo comercial da loja.</span><a href={paginaProduto && slug ? "#/loja/" + encodeURIComponent(slug) : "#catalogo"}>Voltar aos produtos ↑</a></div>
       <dialog
         ref={dialog}
         className="v-rodape-dialogo"
