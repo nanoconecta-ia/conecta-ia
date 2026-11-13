@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import type { Loja } from "../lib/dados.ts";
 import { AtivoAprovado } from "./AtivoAprovado.tsx";
 import { Icone } from "./Icone.tsx";
+import { agruparMenu } from "../lib/navegacao.ts";
 import { VERSAO_LOCAL, rotuloVersao } from "../lib/versao.ts";
 import "../workspace-aprovado.css";
 import marcaMobis from "../assets/mobis-identidade-aprovada.jpg";
@@ -26,7 +27,7 @@ export function PainelAprovado({loja,caminho,menu,children,menuMovel,recolhido,a
    <span className="ap-nav-label">ESPELHAMENTO</span>
    <nav>{PRINCIPAIS.filter(([r])=>r==="/estudio"||r==="/"||menu.some(x=>x[0]===r)).map(([r,t,ic])=><a key={r} title={t} aria-label={t} href={`#${r}`} aria-current={caminho===r||(r==="/estudio"&&caminho==="/assistente")?"page":undefined} className={caminho===r||(r==="/estudio"&&caminho==="/assistente")?"ativo":""} onClick={()=>{if(menuMovel)aoMenu();}}><AtivoAprovado nome={ic}/><span>{t}</span></a>)}</nav>
    {loja&&<a className="ap-loja-link" href={`#/loja/${encodeURIComponent(loja.slug)}`} target="_blank" rel="noopener noreferrer"><AtivoAprovado nome="inicio"/><span>Loja virtual ↗</span></a>}
-   <details className="ap-modulos"><summary>Todos os módulos <span>+</span></summary><nav>{menu.filter(x=>!PRINCIPAIS.some(p=>p[0]===x[0])).map(([r,t])=><a key={r} title={t} aria-label={t} href={`#${r}`} onClick={()=>{if(menuMovel)aoMenu();}} aria-current={caminho===r?"page":undefined}><Icone nome="caixas" tamanho={16}/><span>{t}</span></a>)}</nav></details>
+   <details className="ap-modulos"><summary>Todos os módulos <span>+</span></summary>{agruparMenu(menu.filter(x=>!PRINCIPAIS.some(p=>p[0]===x[0]))).map(g=><div className="ap-grupo" role="group" aria-label={g.titulo} key={g.id}><span className="ap-grupo-titulo">{g.titulo}</span><nav>{g.itens.map(([r,t])=><a key={r} title={t} aria-label={t} href={`#${r}`} onClick={()=>{if(menuMovel)aoMenu();}} aria-current={caminho===r?"page":undefined}><Icone nome="caixas" tamanho={16}/><span>{t}</span></a>)}</nav></div>)}</details>
    <div className="ap-sidebar-fim"><div className="ap-protecao"><strong>Origem física preservada</strong><span>Bling · estoque e dados fiscais<br/>Conecta.IA · aplicações e revisão</span></div><button onClick={aoSair} className="ap-perfil"><span className="ap-avatar">{loja?.nome.slice(0,2).toUpperCase()??"IA"}</span><span><strong>{loja?.nome??"Minha conta"}</strong><small>Sair da conta</small></span></button><button className="ap-recolher" onClick={aoRecolher} aria-label={recolhido?"Expandir menu":"Recolher menu"}><Icone nome="recolher" tamanho={16}/></button></div>
   </aside>
   <div className="ap-corpo">

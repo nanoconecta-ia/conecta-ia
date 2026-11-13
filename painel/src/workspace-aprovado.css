@@ -23,3 +23,5 @@
 .conecta-aprovado-root,.entrada-aprovada{--ok:#1a6f4d;--ciano:#287387;--roxo:#6b4fd3;--borda-forte:#8b8172;--verde-texto:#fff;--grafite-2:#2a2723;--fonte:Inter,system-ui,sans-serif;--titulo:Inter,system-ui,sans-serif;--sombra:0 4px 14px #1d1b180d;--campo-bw:1px}
 
 .ap-identidade-clara strong span{color:var(--marca)}
+
+.ap-grupo{margin-top:8px}.ap-grupo-titulo{display:block;font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:#899b9a;margin:12px 12px 4px}
