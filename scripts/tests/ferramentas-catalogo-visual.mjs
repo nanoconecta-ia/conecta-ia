@@ -31,7 +31,7 @@ try{
     const h={"access-control-allow-origin":"*","access-control-allow-headers":"*",
       "access-control-allow-methods":"*","access-control-expose-headers":"content-range"};
     if(request.method()==="OPTIONS")return route.fulfill({status:204,headers:h});
-    if(request.method()!=="GET")writes.push({url:u.pathname,method:request.method()});
+    if(!["GET","HEAD"].includes(request.method()))writes.push({url:u.pathname,method:request.method()});
     if(u.pathname.endsWith("/auth/v1/user"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify(session.user)});
     if(u.pathname.endsWith("/rest/v1/lojas"))return route.fulfill({status:200,contentType:"application/json",headers:h,
       body:JSON.stringify([{id:lojaId,nome:"Mobis TESTE SINTÉTICO",slug:"mobis",ambiente:"teste",modo_venda:"whatsapp",ativa:true}])});
