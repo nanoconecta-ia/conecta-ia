@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { CartaoProduto } from "@/components/CartaoProduto";
 import { Vazio } from "@/components/ui";
 import { BannerOferta } from "@/components/BannerOferta";
+import { ChatLojaWeb } from "@/components/ChatLojaWeb";
 import { bannersDaLoja, catalogoPublico, lojaPorSlug } from "@/lib/vitrine";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -34,6 +35,12 @@ export default async function Vitrine({ params }: Props) {
           ))}
         </ul>
       )}
+      {loja.slug === "mobis" && <footer className="mobis-web-rodape" aria-label="Contato da loja">
+        <div><strong>Mobis Autopeças</strong><p>Mobis Distribuidora de Peças e Acessórios Ltda. · CNPJ 19.903.967/0001-01</p><p>Av. T-9, 3492 — Jardim América, Goiânia/GO · Endereço cadastral</p></div>
+        <nav aria-label="Canais oficiais"><a href="https://mobisautopecas.com.br">Site oficial</a><a href="https://www.google.com/maps/search/?api=1&query=Av.%20T-9%2C%203492%2C%20Jardim%20Am%C3%A9rica%2C%20Goi%C3%A2nia%20GO" target="_blank" rel="noopener noreferrer">Google Maps</a><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fmobisautopecas.com.br" target="_blank" rel="noopener noreferrer">Compartilhar no Facebook</a></nav>
+        <small>Condições de venda, entrega, garantia e privacidade: publicar somente os textos aprovados pela empresa.</small>
+      </footer>}
+      <ChatLojaWeb nome={loja.nome} whatsapp={loja.whatsapp} />
     </div>
   );
 }
