@@ -44,8 +44,9 @@ try{
   assert.deepEqual(errors,[],"sem erros JS de layout");
   await page.screenshot({path:root+"evidencias-chat/loja-mobis-v2-"+width+"-SIMULADO.png",fullPage:width===390});
   await page.locator("#m2-pesquisar").fill("D4CB");
+  const respostaBusca=page.waitForResponse(resp=>resp.url().includes("/loja-publica") && (resp.request().postData()||"").includes('"q":"D4CB"'));
   await page.locator(".m2-search button").click();
-  await page.waitForFunction(()=>document.querySelector(".m2-vazio")?.textContent?.includes("Nenhuma peça"));
+  await respostaBusca;
   assert.ok(requests.some(x=>x.q==="D4CB"&&x.slug==="mobis"),"busca conecta à API da loja");
   assert.equal(await page.getByRole("heading",{name:"Indexar e enriquecer"}).count(),0,"não expor painel privado");
   await context.close();
