@@ -52,3 +52,11 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Na inspeção das capturas, os links do rodapé ainda alteravam o hash para âncoras antigas e podiam tirar o visitante da vitrine. Corrigir os quatro destinos somente quando a vitrine nova fornece suas seções; manter os demais clientes e o desenho.
 - PR #319 integrado em `34effca5e68ae948fa7299a19dd5019d9950e1a6`, após sete workflows aprovados no head `4bcf1e4060de185b8e6b7e7b1a938d0bb6f9469a`. Playwright comprova rolagem para cada seção e permanência na rota em 360/390/412/1280px, além dos testes existentes.
 - Republicação final autorizada para o mesmo escopo; gerar novamente capturas reais e comparar version.json. Domínio oficial continua pendente de hospedagem/DNS; loja em teste e sem vendas.
+
+## Substituição administrativa completa autorizada — PR #320 (13-11-2026)
+- Pedido expresso do proprietário: revisar completamente Conecta.IA e Nano.IA, retirando a apresentação anterior e aplicando o modelo aprovado.
+- PR #320 integrado em c0e56921c6df02ef8084a1d308ad6e89054d21d1; oito workflows aprovados no head 9e8ac49f61676d575e43c84242d5afc113268bcb. 394 testes unitários, TypeScript/build, Playwright 360/390/412/1280, contraste AA, cache/PWA, consentimento, anexos, streaming, catálogo e ferramentas.
+- Publicar somente o frontend estático, preservando flags e permissões. Nova entrada, shell, início, catálogo por aplicação e Estúdio com trabalho/conversa/Torre. Balão e dock antigos não são montados.
+- Capturas administrativas usam sessão/dados SIMULADOS sobre os arquivos efetivamente publicados; não alegar login privado real. Homologação da vitrine usa o catálogo público real.
+- Loja em teste sem vendas. Nenhum backend, migração, registro Bling, estoque, dado fiscal, cobrança ou DNS alterado. www continua NXDOMAIN e o domínio raiz sem A/AAAA; não declarar o domínio oficial homologado.
+- Conferir build, deploy, version.json e capturas antes de declarar atualização concluída no Pages.
