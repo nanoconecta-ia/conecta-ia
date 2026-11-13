@@ -48,6 +48,12 @@ async function abrir(flags, width = 1280, erro = false) {
   await page.locator(".m2-catalogo").getByText(erro ? "Não foi possível carregar o catálogo." : "Catálogo de peças em preparação.", {exact:true}).waitFor();
   return {context,page,consultas,erros};
 }
+async function consultar(page, acao, criterio) {
+  const resposta = page.waitForResponse(r => r.url().endsWith("/functions/v1/loja-publica") && r.request().method() === "POST" && criterio(r.request().postDataJSON()));
+  await acao();
+  await resposta;
+  await page.getByText("0 produto(s) encontrado(s)", {exact:true}).waitFor();
+}
 try {
   for (const width of [360,390,720,1280]) {
     const {context,page,consultas,erros} = await abrir({ambiente:"teste",venda_habilitada:false}, width);
@@ -83,22 +89,18 @@ try {
   {
     const {context,page,consultas} = await abrir({ambiente:"teste",venda_habilitada:false});
     await page.getByLabel("Ano",{exact:true}).fill("2019");
-    await page.getByRole("button",{name:"Aplicar filtros",exact:true}).click();
-    await page.waitForFunction(()=>document.querySelector(".m2-catalogo small")?.textContent?.includes("0 produto"));
-    await page.locator(".m2-veiculo").filter({hasText:"Hyundai HR"}).click();
-    await page.waitForFunction(()=>document.querySelector(".m2-catalogo small")?.textContent?.includes("0 produto"));
+    await consultar(page, () => page.getByRole("button",{name:"Aplicar filtros",exact:true}).click(), q => q.ano === 2019);
+    await consultar(page, () => page.locator(".m2-veiculo").filter({hasText:"Hyundai HR"}).click(), q => q.modelo === "Hyundai HR");
     assert.equal(consultas.at(-1).modelo,"Hyundai HR");
     assert.equal(consultas.at(-1).q,undefined);
     assert.equal(consultas.at(-1).ano,undefined);
     assert.equal(await page.getByLabel("Ano",{exact:true}).inputValue(),"");
-    await page.locator(".m2-sistema-grade button").filter({hasText:/^Motor/}).click();
-    await page.waitForFunction(()=>document.querySelector(".m2-catalogo small")?.textContent?.includes("0 produto"));
+    await consultar(page, () => page.locator(".m2-sistema-grade button").filter({hasText:/^Motor/}).click(), q => q.categoria === "motor");
     assert.equal(consultas.at(-1).categoria,"motor");
     assert.equal(consultas.at(-1).modelo,undefined);
     assert.equal(await page.getByLabel("Modelo",{exact:true}).inputValue(),"");
     await page.getByLabel("Qual peça você procura?",{exact:true}).fill("bomba");
-    await page.getByRole("search",{name:"Busca rápida de peças"}).getByRole("button",{name:"Buscar peças",exact:false}).click();
-    await page.waitForFunction(()=>document.querySelector(".m2-catalogo small")?.textContent?.includes("0 produto"));
+    await consultar(page, () => page.getByRole("search",{name:"Busca rápida de peças"}).getByRole("button",{name:"Buscar peças",exact:false}).click(), q => q.q === "bomba");
     assert.equal(consultas.at(-1).q,"bomba");
     assert.equal(consultas.at(-1).categoria,"motor");
     await page.getByRole("button",{name:"Já tenho o código",exact:false}).click();
@@ -107,6 +109,9 @@ try {
   }
   resultados.push({guardas:"producao, venda ativa, flags ausentes e erro de API: amostra ausente",filtros:"modelo canônico, ano/categoria limpos, busca rápida e foco por código aprovados"});
   console.log(JSON.stringify(resultados,null,2));
+} catch (erro) {
+  resultados.push({erro:String(erro),stack:erro.stack});
+  throw erro;
 } finally {
   await browser.close();
   if (server) await new Promise(resolve => server.close(resolve));
