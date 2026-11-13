@@ -50,6 +50,7 @@ try {
   await page.goto(base+"/#/loja/mobis");
   await page.getByRole("heading",{name:"Encontre a peça correta"}).waitFor({timeout:20000});
   assert.equal(await page.locator(".v-modulos-cliente button").count(),7,"sete módulos de cliente");
+  await page.getByText("Demonstração do banner · Loja teste").waitFor({state:"visible",timeout:12000});
   assert.equal(await page.getByText("Demonstração do banner · Loja teste").isVisible(),true,"banner é prévia");
   assert.equal(await page.getByRole("button",{name:"Pausar rotação"}).count(),1,"controle flash pausável");
   await page.getByRole("button",{name:"Adicionar à lista"}).click();
