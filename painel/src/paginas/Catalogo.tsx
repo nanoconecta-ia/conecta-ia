@@ -321,6 +321,13 @@ export function Catalogo({ loja }: { loja: Loja }) {
                 <label><input type="checkbox" checked={selecionados.has(p.id)} onChange={() => setSelecionados(alternar(selecionados, p.id))} /> Selecionar</label>
                 <button type="button" className="sec" onClick={() => setFichaId(p.id)}>Ver ficha técnica</button>
               </div>
+              <nav className="catalogo-produto-trilha" aria-label={"Vínculos de " + (p.nome ?? p.sku ?? "produto")}>
+                <a href="#/bling">Bling · origem</a>
+                <button type="button" onClick={() => setFichaId(p.id)}>Conecta.IA · aplicações</button>
+                {p.publicado && p.sku
+                  ? <a href={`#/p/${encodeURIComponent(loja.slug)}/${encodeURIComponent(p.sku)}`}>Loja · cliente</a>
+                  : <span title="Requer aprovação e publicação">Loja não liberada</span>}
+              </nav>
             </article>
           ))}
         </div>
