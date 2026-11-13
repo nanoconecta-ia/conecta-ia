@@ -4,6 +4,7 @@ import { brl } from "@/lib/publicacao";
 import { linkWhatsapp, lojaPorSlug, produtoPublico, politicasAprovadasDaLoja, aplicacoesPublicasProduto } from "@/lib/vitrine";
 import { ChatLojaWeb } from "@/components/ChatLojaWeb";
 import { RodapeComercialWeb } from "@/components/RodapeComercialWeb";
+import { ConsultaFiscalWeb } from "@/components/ConsultaFiscalWeb";
 
 type Props = { params: Promise<{ slug: string; id: string }> };
 
@@ -72,6 +73,7 @@ export default async function PaginaProduto({ params }: Props) {
             {a.contraindicacao && <p>Não aplicar quando: {a.contraindicacao}</p>}
           </li>)}</ul> : <p>Nenhuma aplicação liberada para exibição. Confirme a compatibilidade com o vendedor antes de comprar.</p>}
         </section>
+        {produto.sku && <ConsultaFiscalWeb slug={loja.slug} sku={produto.sku} />}
         {wa && (
           <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg bg-ok px-5 py-3 font-medium text-white">
             Conversar com vendedor no WhatsApp
