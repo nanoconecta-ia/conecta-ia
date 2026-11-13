@@ -1,13 +1,11 @@
 import { AutorizarAgente } from "./paginas/AutorizarAgente.tsx";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { BACKUP_ATIVO, BANNERS_ATIVO, CENTRAL_ATIVA, CONECTOR_ATIVO, PAIR_ATIVO, ROTAS_DA_CENTRAL, ROTAS_DO_CONECTOR } from "./lib/flags.ts";
 import { montarMenu, rotaBloqueada, semRotasSemAceite } from "./lib/visibilidade.ts";
-import { Assistente } from "./paginas/Assistente.tsx";
 import { useLojas, useSessao } from "./lib/dados.ts";
 import { ir, useRota } from "./lib/rota.ts";
 import { supabase } from "./supabase.ts";
 import { Entrar, Recuperar, Redefinir } from "./paginas/Acesso.tsx";
-import { EstudioAgente } from "./paginas/EstudioAgente.tsx";
 import { VisaoGeral } from "./paginas/VisaoGeral.tsx";
 import { Banners } from "./paginas/Banners.tsx";
 import { Catalogo } from "./paginas/Catalogo.tsx";
@@ -41,17 +39,9 @@ import { Aprovacoes } from "./paginas/Aprovacoes.tsx";
 import { Dispositivos } from "./paginas/Dispositivos.tsx";
 import { MeuAgente } from "./paginas/MeuAgente.tsx";
 import { Backup } from "./paginas/Backup.tsx";
-import { agruparMenu, areasAoNavegar, grupoDaRota } from "./lib/navegacao.ts";
 import { PaletaComandos } from "./componentes/PaletaComandos.tsx";
-import { BarraStatus } from "./componentes/BarraStatus.tsx";
 import { AvisoVersao } from "./componentes/AvisoVersao.tsx";
 import { Icone } from "./componentes/Icone.tsx";
-import { LogoConecta } from "./componentes/LogoConecta.tsx";
-import { useEstadoNano } from "./lib/nanoEstado.ts";
-import { SeletorTema } from "./componentes/SeletorTema.tsx";
-import { DockAgente } from "./componentes/DockAgente.tsx";
-import { dividePagina, gravar as gravarPainel, ler as lerPainel, reserva, TELA_MIN_PARA_FIXO, type EstadoPainel } from "./lib/painelLateral.ts";
-import { BalaoGenesis } from "./componentes/BalaoGenesis.tsx";
 import "./shell.css";
 import { PainelAprovado } from "./componentes/PainelAprovado.tsx";
 import { InicioAprovado } from "./paginas/InicioAprovado.tsx";
@@ -61,30 +51,18 @@ import { NanoWorkspace } from "./paginas/NanoWorkspace.tsx";
 const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
 const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(window.location.hostname) ? window.location.hostname : null;
 
-const ICONES_ROTAS: Record<string, string> = {
-  "/": "inicio", "/conector": "agentes", "/central": "escudo", "/ferramentas": "ajustes", "/indicadores": "grafico",
-  "/studio": "caixas", "/estudio": "ajustes", "/assistente": "conversa", "/catalogo": "catalogo", "/catalogo-aplicacao": "loja", "/catalogo-espelho": "erp", "/visao-geral": "inicio",
-  "/fila": "fila", "/taxonomia": "arvore", "/aparencia": "paleta", "/publicacao": "loja", "/condicoes": "cartao",
-  "/integracoes": "conexoes", "/gateway": "rede", "/imagens": "imagem", "/videos": "video", "/design": "paleta",
-  "/bling": "erp", "/backup": "arquivo", "/banners": "imagem", "/contador": "grafico",
-  "/aprovacoes": "escudo", "/meu-agente": "agentes", "/dispositivos": "monitor"
-};
-// Um único Nano.IA (#166, B2): atalhos e esfera abrem sempre o chat canônico (edge `assistente`, implantada).
-// /conector continua acessível pelo menu só em ambiente com VITE_CONECTOR_ATIVO, como homologação, até a paridade ser provada.
-const ROTA_NANO = "/assistente";
-
 const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], ["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
   ["/catalogo-aplicacao", "Catálogo por aplicação"],
-  ["/visao-geral", "Visão geral (anterior)"],
+  ["/visao-geral", "Indicadores da operação"],
   ["/catalogo-espelho", "Espelho ERP · auditoria"],
   ["/ferramentas", "Indexar e enriquecer · Bling"],
   ["/conector", "Nano.IA (homologação)"],
   ["/central", "Central de Inteligência"],
   ["/indicadores", "Indicadores"],
   ["/studio", "Studio de produtos"],
-  ["/estudio", "Estúdio do agente"],
+  ["/estudio", "Estúdio do Nano"],
   ["/assistente", "Conversa com Nano.IA"],
   ["/catalogo", "Catálogo"],
   ["/fila", "Fila de aprovação"],
@@ -103,14 +81,12 @@ const ITENS: [string, string][] = [
 const MENU_BASE: [string, string][] = semRotasSemAceite(montarMenu(ITENS, ITENS_PAIR, { pairAtivo: PAIR_ATIVO, conectorAtivo: CONECTOR_ATIVO }, ROTAS_DO_CONECTOR), CENTRAL_ATIVA, ROTAS_DA_CENTRAL);
 const MENU_BACKUP: [string, string][] = BACKUP_ATIVO ? MENU_BASE.flatMap((i) => (i[0] === "/bling" ? [i, ["/backup", "Backup do Bling"] as [string, string]] : [i])) : MENU_BASE;
 const MENU: [string, string][] = BANNERS_ATIVO ? MENU_BACKUP.flatMap((i) => (i[0] === "/aparencia" ? [i, ["/banners", "Banners de oferta"] as [string, string]] : [i])) : MENU_BACKUP;
-const GRUPOS_MENU = agruparMenu(MENU); // MENU é fixo por build (flags), então os grupos também
 
 export function App() {
   const { sessao, recuperando, fimRecuperacao } = useSessao();
   const { caminho, query } = useRota();
   const demoAtivo = import.meta.env.DEV && DEMO;
   const lojas = useLojas(!!sessao && !demoAtivo);
-  const estadoNano = useEstadoNano(lojas?.[0]?.id);
   // O chat em tela cheia usa as alturas REAIS do cabeçalho e da barra de status (mudam com o tema e a janela), não um número fixo.
   useEffect(() => {
     const ajustar = () => {
@@ -132,37 +108,19 @@ export function App() {
   const [paleta, setPaleta] = useState(false);
   const [menuMovel, setMenuMovel] = useState(false);
   useEffect(() => { setMenuMovel(false); }, [caminho]);
-  // Áreas do menu abertas: controladas pelo React para que navegar sempre revele o item ativo,
-  // mesmo que o usuário tenha recolhido a área da rota atual antes (issue #166).
-  const areaAtual = grupoDaRota(GRUPOS_MENU, caminho);
-  const [areasAbertas, setAreasAbertas] = useState<ReadonlySet<string>>(() => areasAoNavegar(new Set(), null, areaAtual));
-  const areaAnterior = useRef(areaAtual);
-  useEffect(() => { const ant = areaAnterior.current; areaAnterior.current = areaAtual; setAreasAbertas((a) => areasAoNavegar(a, ant, areaAtual)); }, [caminho, areaAtual]);
-  const alternarArea = (id: string, aberta: boolean) => setAreasAbertas((a) => {
-    if (a.has(id) === aberta) return a;
-    const n = new Set(a); if (aberta) n.add(id); else n.delete(id); return n;
-  });
   const [recolhido, setRecolhido] = useState(() => { try { return localStorage.getItem("conecta:menu") === "recolhido"; } catch { return false; } });
   const alternarMenu = () => setRecolhido((r) => { try { localStorage.setItem("conecta:menu", r ? "aberto" : "recolhido"); } catch { /* sem storage */ } return !r; });
-  const [agente, setAgente] = useState(false);
-  const [telaW, setTelaW] = useState(() => window.innerWidth);
-  const [painel, setPainelEstado] = useState<EstadoPainel>(() => lerPainel(window.innerWidth));
-  useEffect(() => { const f = () => setTelaW(window.innerWidth); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
-  const mudarPainel = (p: EstadoPainel) => { setPainelEstado(p); gravarPainel(p); };
   useEffect(() => { // Ctrl/⌘+K abre a paleta de comandos; Ctrl/⌘+J abre o agente lateral, em qualquer tela do painel
     const h = (e: KeyboardEvent) => {
       if (e.key === "Escape") { setMenuMovel(false); return; }
       if (!(e.ctrlKey || e.metaKey)) return;
       const k = e.key.toLowerCase();
       if (k === "k") { e.preventDefault(); setPaleta((p) => !p); }
-      else if (k === "j") { e.preventDefault(); setAgente((a) => !a); }
+      else if (k === "j") { e.preventDefault(); ir("/estudio"); }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, []);
-
-  const modoPainel = painel.modo === "fixo" && telaW >= TELA_MIN_PARA_FIXO ? "fixo" : "flutuante"; // só reflete a preferência; quem divide a tela de fato é dividePagina()
-  useEffect(() => { document.documentElement.dataset.painel = modoPainel; }, [modoPainel]);
 
   const lojaSlug = caminho.match(/^\/loja\/([a-z0-9-]{2,63})$/);
   if (lojaSlug) return lojaSlug[1] === "mobis" ? <LojaMobisNova slug="mobis" /> : <Loja slug={lojaSlug[1]} />;
@@ -180,11 +138,7 @@ export function App() {
   if (!demoAtivo && sessao && PAIR_ATIVO && caminho === "/parear") return <ParearAprovador codigo={query.get("c") ?? ""} email={sessao?.user.email ?? null} />;
   const loja = demoAtivo ? demo?.lojaDemo ?? null : lojas?.[0] ?? null;
   const bloqueada = rotaBloqueada(caminho, { conectorAtivo: CONECTOR_ATIVO, centralAtiva: CENTRAL_ATIVA }, ROTAS_DO_CONECTOR, ROTAS_DA_CENTRAL); // backend não publicado ou exige aceite
-  const larga = caminho === "/conector" && !bloqueada;
-  const paginaDeChat = caminho === "/estudio" || caminho === "/assistente" || (caminho === "/conector" && !bloqueada); // já são o próprio chat: sem painel duplicado
-  const dockAberto = agente && !!loja && !demoAtivo && !paginaDeChat;
-  const dividindo = dividePagina(painel, telaW, dockAberto);
-  const res = reserva(painel, telaW, dockAberto);
+  const res = { esq: 0, dir: 0 };
   const filtroInd = caminho.match(/^\/indicadores\/([a-z_:]+)$/);
   return (
     <div className="conecta-aprovado-root">
@@ -193,7 +147,7 @@ export function App() {
       <PainelAprovado loja={loja} caminho={caminho} menu={MENU} menuMovel={menuMovel} recolhido={recolhido}
         aoMenu={() => setMenuMovel(v => !v)} aoRecolher={alternarMenu} aoBusca={() => setPaleta(true)}
         aoSair={() => { if (!demoAtivo) void supabase.auth.signOut(); }}
-        aoAgente={() => { if (caminho === "/estudio" || caminho === "/assistente") setAgente(false); else ir("/estudio"); }} res={res}>
+        aoAgente={() => ir("/estudio")} res={res}>
         {!demoAtivo && lojas === null ? <p className="suave">Carregando…</p> : !loja ? (
           <div className="cartao"><h1>Sem loja vinculada</h1><p className="suave">Seu login ainda não está ligado a uma loja. Peça ao suporte para vincular.</p></div>
         ) : bloqueada ? <VisaoGeral loja={loja} />
@@ -230,8 +184,6 @@ export function App() {
           : <VisaoGeral loja={loja} />}
       </PainelAprovado>
       <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
-      {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} menu={MENU} aoNavegar={ir} painel={painel} aoMudarPainel={mudarPainel} dividindo={dividindo} telaW={telaW} />}
-      {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis lojaId={loja.id} aberto={dockAberto} aoAlternar={() => setAgente(a => !a)} />}
     </div>
   );
 }

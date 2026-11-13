@@ -51,8 +51,10 @@ try{
   if(width<781){await page.getByRole('button',{name:'Abrir navegação',exact:true}).click();await page.getByRole('link',{name:'Estúdio do Nano',exact:true}).click();}
   else await page.getByRole('link',{name:'Estúdio do Nano',exact:true}).click();
   await page.locator('[data-nano-layout="aprovado-v2"]').waitFor();const campo=page.getByRole('textbox',{name:'Pergunte',exact:true});await campo.waitFor();
-  assert.equal(await page.locator('.estudio-agente').count(),0,'Estúdio antigo não é montado');assert.equal(await page.locator('.ap-tower button').count(),6);
+  assert.equal(await page.locator('.estudio-agente,.dock-agente,.balao-genesis').count(),0,'interfaces anteriores não são montadas');assert.equal(await page.locator('.ap-tower button').count(),6);
   assert.equal(await campo.isVisible(),true,'conversa visível '+width);
+  await campo.click();await page.waitForFunction(()=>getComputedStyle(document.querySelector('.olho-nano')).visibility==='visible');
+  assert.equal(await page.locator('.olho-nano').getAttribute('aria-hidden'),'true');assert.equal(await page.locator('.olho-nano').evaluate(el=>getComputedStyle(el).pointerEvents),'none');
   await page.getByRole('button',{name:'Ajustar chat',exact:true}).click();await page.getByRole('slider',{name:'Altura da conversa'}).focus();await page.keyboard.press('End');
   await page.getByRole('button',{name:'Ajustar chat',exact:true}).click();
   await page.getByRole('button',{name:'Abrir Tabelas',exact:true}).click();await page.getByRole('heading',{name:'Produtos do espelho.',exact:true}).waitFor();
@@ -69,4 +71,4 @@ try{
   assert.deepEqual(errors,[],'sem erros JavaScript');resultado.push({width,interface:'aprovado-v2',origem:remoto?'publicada':'local',dados:'SIMULADOS',errors});await context.close();console.log('CONECTA/NANO APROVADO '+width+'px OK');
  }
  const context=await browser.newContext({viewport:{width:390,height:900},serviceWorkers:'block'});await preparar(context,false);const page=await context.newPage();await page.goto(base+'#/');await page.locator('[data-acesso-layout="aprovado-v2"]').waitFor();assert.equal(await page.locator('.entrada-portal').count(),0);await page.screenshot({path:root+'evidencias-conecta-aprovado/entrada-390-SIMULADO.png'});await context.close();
-}finally{await browser?.close();servidor?.kill('SIGTERM');await writeFile(root+'evidencias-conecta-aprovado/resultado.json',JSON.stringify(resultado,null,2));}
+}catch(e){if(browser)for(const [i,c] of browser.contexts().entries())for(const [j,p]of c.pages().entries()){await p.screenshot({path:root+`evidencias-conecta-aprovado/falha-${i}-${j}-SIMULADO.png`,fullPage:true}).catch(()=>{});await writeFile(root+`evidencias-conecta-aprovado/falha-${i}-${j}.txt`,await p.locator('body').innerText().catch(()=>''));}throw e;}finally{await browser?.close();servidor?.kill('SIGTERM');await writeFile(root+'evidencias-conecta-aprovado/resultado.json',JSON.stringify(resultado,null,2));}

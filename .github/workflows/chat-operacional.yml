@@ -64,12 +64,11 @@ jobs:
       - run: node scripts/tests/assistente-autorizacao-visual.mjs
       - run: node scripts/tests/anexo-chat-visual.mjs
       - run: node scripts/tests/assistente-streaming-visual.mjs
-      - run: node scripts/tests/nano-guia-visual.mjs
+      # O modelo aprovado substitui balão, dock e chat imersivo antigos. A suíte nova cobre a composição atual.
+      - run: node scripts/tests/conecta-aprovado-visual.mjs
       - run: node scripts/tests/temas-visual.mjs
       - run: node scripts/tests/versao-visual.mjs
       - run: node scripts/tests/sw-atualiza.mjs
-      - run: node scripts/tests/painel-lateral-mobile-visual.mjs
-      - run: node scripts/tests/nano-mobile-immersivo-visual.mjs
       - run: node scripts/tests/visao-geral-visual.mjs
       - run: node scripts/tests/taxonomia-lentes-visual.mjs
       - run: node scripts/tests/catalogo-workspace-visual.mjs

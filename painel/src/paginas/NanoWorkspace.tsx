@@ -17,6 +17,12 @@ export function NanoWorkspace({loja,menu,aoNavegar}:{loja:Loja;menu:[string,stri
  const [fotos,setFotos]=useState<Imagem[]|null>(null),[erroFotos,setErroFotos]=useState(false);
  const raiz=useRef<HTMLElement>(null),arrasto=useRef<{x:number;largura:number}|null>(null);
  const {dados,recarregar}=useWorkspaceDados(loja.id);
+ function navegar(rota:string){
+  if(['/catalogo','/catalogo-espelho','/catalogo-aplicacao'].includes(rota)){abrir('tabela');return;}
+  if(rota==='/imagens'){abrir('imagens');return;}
+  if(rota==='/indicadores'){abrir('graficos');return;}
+  aoNavegar(rota);
+ }
  const chave='nano:workspace:dimensoes:'+loja.id;
  useEffect(()=>{try{const v=JSON.parse(localStorage.getItem(chave)??'null');if(v){setLargura(Math.max(280,Math.min(520,Number(v.largura)||350)));setAltura(Math.max(480,Math.min(820,Number(v.altura)||640)));}}catch{}},[chave]);
  function dimensionar(w:number,h:number){setLargura(w);setAltura(h);try{localStorage.setItem(chave,JSON.stringify({largura:w,altura:h}));}catch{}}
@@ -30,9 +36,9 @@ export function NanoWorkspace({loja,menu,aoNavegar}:{loja:Loja;menu:[string,stri
  function abrir(a:Aba){setAba(a);setPane('trabalho');}
  function mover(e:PointerEvent<HTMLDivElement>){if(arrasto.current){const w=Math.max(280,Math.min(520,Math.round(arrasto.current.largura+arrasto.current.x-e.clientX)));dimensionar(w,altura);}}
  return <section ref={raiz} className="ap-nano-workspace" data-nano-layout="aprovado-v2">
-  <OlhoNano area={raiz} ancora=".ap-work-header"/>
+  <OlhoNano area={raiz} ancora=".ap-heading"/>
   <header className="ap-heading"><div><span className="ap-eyebrow">CONECTA.IA · NANO.IA · {loja.nome}</span><h1>Estúdio do Nano</h1><p>Conversa ajustável. Ferramentas em uma Torre. Um contexto por tarefa.</p></div><div className="ap-heading-acoes"><button aria-expanded={ajustes} aria-controls="ap-chat-ajustes" onClick={()=>setAjustes(!ajustes)}><Icone nome="ajustes" tamanho={17}/> Ajustar chat</button><a href="#/catalogo-aplicacao">Catálogo ↗</a></div></header>
-  {ajustes&&<div className="ap-chat-ajustes" id="ap-chat-ajustes"><label>Largura da conversa <output>{largura}px</output><input type="range" min={280} max={520} step={10} value={largura} onChange={e=>dimensionar(Number(e.target.value),altura)}/></label><label>Altura da conversa <output>{altura}px</output><input type="range" min={480} max={820} step={10} value={altura} onChange={e=>dimensionar(largura,Number(e.target.value))}/></label><button onClick={()=>dimensionar(320,640)}>Compacto</button><button onClick={()=>dimensionar(390,640)}>Smartphone</button><button onClick={()=>dimensionar(480,740)}>Amplo</button></div>}
+  {ajustes&&<div className="ap-chat-ajustes" id="ap-chat-ajustes"><label>Largura da conversa <output>{largura}px</output><input aria-label="Largura da conversa" type="range" min={280} max={520} step={10} value={largura} onChange={e=>dimensionar(Number(e.target.value),altura)}/></label><label>Altura da conversa <output>{altura}px</output><input aria-label="Altura da conversa" type="range" min={480} max={820} step={10} value={altura} onChange={e=>dimensionar(largura,Number(e.target.value))}/></label><button onClick={()=>dimensionar(320,640)}>Compacto</button><button onClick={()=>dimensionar(390,640)}>Smartphone</button><button onClick={()=>dimensionar(480,740)}>Amplo</button></div>}
   <nav className="ap-mobile-panes" aria-label="Áreas do Estúdio"><button aria-pressed={pane==='chat'} onClick={()=>setPane('chat')}>Conversa</button><button aria-pressed={pane==='trabalho'} onClick={()=>setPane('trabalho')}>Área de trabalho</button></nav>
   <div className={`ap-studio-layout ${amplo?'ap-chat-amplo':''}`} data-pane={pane} style={{'--chat-width':largura+'px','--chat-height':altura+'px'} as CSSProperties}>
    <section className="ap-work-panel"><header className="ap-work-header"><strong><AtivoAprovado nome="web" tamanho={27}/> Área de trabalho</strong><small>RESULTADOS CONFERÍVEIS</small></header><nav className="ap-work-tabs" aria-label="Artefatos do Nano">{ABAS.map(([id,ic,t])=><button key={id} aria-pressed={aba===id} onClick={()=>abrir(id)}><AtivoAprovado nome={ic} tamanho={24}/>{t}</button>)}</nav>
@@ -46,7 +52,7 @@ export function NanoWorkspace({loja,menu,aoNavegar}:{loja:Loja;menu:[string,stri
     </div>
    </section>
    <div className="ap-chat-splitter" role="separator" tabIndex={0} aria-label="Redimensionar largura da conversa" aria-orientation="vertical" aria-valuemin={280} aria-valuemax={520} aria-valuenow={largura} onPointerDown={e=>{arrasto.current={x:e.clientX,largura};e.currentTarget.setPointerCapture(e.pointerId);}} onPointerMove={mover} onPointerUp={e=>{arrasto.current=null;e.currentTarget.releasePointerCapture(e.pointerId);}} onPointerCancel={()=>{arrasto.current=null;}} onKeyDown={e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();dimensionar(Math.max(280,Math.min(520,largura+(e.key==='ArrowLeft'?10:-10))),altura);}}}/>
-   <section className="ap-chat-panel"><div className="ap-chat-caption"><span>CONVERSA · NANO.IA</span><button onClick={()=>setAmplo(!amplo)} aria-label={amplo?'Voltar à área dividida':'Ampliar conversa'}><Icone nome={amplo?'recolher':'monitor'} tamanho={18}/></button></div><Assistente key={loja.id} loja={loja} menu={menu as Item[]} aoNavegar={aoNavegar}/></section>
+   <section className="ap-chat-panel"><div className="ap-chat-caption"><span>CONVERSA · NANO.IA</span><button onClick={()=>setAmplo(!amplo)} aria-label={amplo?'Voltar à área dividida':'Ampliar conversa'}><Icone nome={amplo?'recolher':'monitor'} tamanho={18}/></button></div><Assistente key={loja.id} loja={loja} menu={menu as Item[]} aoNavegar={navegar}/></section>
    <nav className="ap-tower" aria-label="Torre de ferramentas"><span>Torre</span>{ABAS.map(([id,ic,t])=><button key={id} aria-label={`Abrir ${t}`} aria-pressed={aba===id} onClick={()=>abrir(id)}><AtivoAprovado nome={ic} tamanho={30}/><small>{t}</small></button>)}<button className="ap-tower-end" onClick={()=>setAjustes(!ajustes)} aria-label="Ajustar dimensões do chat"><Icone nome="ajustes" tamanho={20}/></button></nav>
   </div>
   <footer className="ap-studio-ledger"><span>Fontes e evidências identificadas · loja autenticada</span><span>Estoque e dados fiscais preservados</span></footer>

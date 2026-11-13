@@ -4,6 +4,7 @@ import { AtivoAprovado } from "./AtivoAprovado.tsx";
 import { Icone } from "./Icone.tsx";
 import { VERSAO_LOCAL, rotuloVersao } from "../lib/versao.ts";
 import "../workspace-aprovado.css";
+import marcaMobis from "../assets/mobis-identidade-aprovada.jpg";
 
 const PRINCIPAIS=[
  ["/","Conecta.IA","inicio"],["/estudio","Estúdio do Nano","nano"],
@@ -21,7 +22,7 @@ export function PainelAprovado({loja,caminho,menu,children,menuMovel,recolhido,a
   {menuMovel&&<button className="ap-menu-fundo" aria-label="Fechar menu de navegação" onClick={aoMenu}/>}
   <aside className="ap-sidebar menu" id="menu-principal" aria-label="Menu principal">
    <a className="ap-identidade" href="#/"><strong>Conecta<span>.IA</span></strong><small>ENRIQUECIMENTO DE CATÁLOGOS</small></a>
-   <div className="ap-loja-marca">{loja?.slug==="mobis"?<img src="./marcas/mobis-canva-oficial.jpg" alt="Mobis Autopeças"/>:<strong>{loja?.nome??"Seu ambiente"}</strong>}<small>{loja?.slug==="mobis"?"LOJA PILOTO":"AMBIENTE INTERNO"}</small></div>
+   <div className="ap-loja-marca">{loja?.slug==="mobis"?<span className="ap-marca-window"><img src={marcaMobis} alt="Mobis Autopeças"/></span>:<strong>{loja?.nome??"Seu ambiente"}</strong>}<small>{loja?.slug==="mobis"?"LOJA PILOTO":"AMBIENTE INTERNO"}</small></div>
    <span className="ap-nav-label">ESPELHAMENTO</span>
    <nav>{PRINCIPAIS.filter(([r])=>r==="/estudio"||r==="/"||menu.some(x=>x[0]===r)).map(([r,t,ic])=><a key={r} href={`#${r}`} aria-current={caminho===r||(r==="/estudio"&&caminho==="/assistente")?"page":undefined} className={caminho===r||(r==="/estudio"&&caminho==="/assistente")?"ativo":""} onClick={()=>{if(menuMovel)aoMenu();}}><AtivoAprovado nome={ic}/><span>{t}</span></a>)}</nav>
    {loja&&<a className="ap-loja-link" href={`#/loja/${encodeURIComponent(loja.slug)}`} target="_blank" rel="noopener noreferrer"><AtivoAprovado nome="inicio"/><span>Loja virtual ↗</span></a>}
