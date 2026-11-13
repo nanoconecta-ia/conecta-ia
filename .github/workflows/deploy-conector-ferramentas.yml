@@ -1,0 +1,87 @@
+name: Deploy controlado - ferramentas de catalogo do Conecta.IA
+on:
+  workflow_dispatch:
+    inputs:
+      confirmar:
+        description: 'Escolha publicar-ferramentas (nao habilita escrita Bling). Nao cole segredos.'
+        required: true
+        type: choice
+        default: nao-publicar
+        options: [nao-publicar, publicar-ferramentas]
+permissions:
+  contents: read
+concurrency:
+  group: deploy-conector-ferramentas
+  cancel-in-progress: false
+env:
+  PROJECT_REF: dsfzhsrudriqkumtlqwj
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: producao-assistente
+    steps:
+      - name: Verificar confirmacao, destino e segredo
+        env:
+          CONFIRMAR: ${{ inputs.confirmar }}
+          BRANCH: ${{ github.ref_name }}
+          TOKEN_OK: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+        run: |
+          test "$CONFIRMAR" = "publicar-ferramentas"
+          test "$BRANCH" = "main"
+          test "$PROJECT_REF" = "dsfzhsrudriqkumtlqwj"
+          test "$PROJECT_REF" != "ptilvkzuhjnqnfydjcly"
+          test "$TOKEN_OK" = true
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+          cache-dependency-path: painel/package-lock.json
+      - run: npm ci
+        working-directory: painel
+      - name: Testes e tipagem antes do deploy
+        run: |
+          node --experimental-strip-types --test scripts/tests/conector-ferramentas.test.mjs
+          cd painel
+          npm test
+          npm run build
+      - name: Empacotar fonte modular em unico arquivo
+        run: |
+          node scripts/empacotar-funcao.mjs conector-ferramentas
+          test -s dist-funcoes/conector-ferramentas/index.ts
+          grep -q 'Deno.serve' dist-funcoes/conector-ferramentas/index.ts
+          cp dist-funcoes/conector-ferramentas/index.ts supabase/functions/conector-ferramentas/index.ts
+          echo "Implantacao somente do endpoint autenticado; o executor Bling e a chave BLING_ESCRITA_REAL nao foram alterados."
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+      - name: Versao anterior
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions list --project-ref "$PROJECT_REF" -o json > antes.json
+          V=$(jq -r '[.[] | select(.slug=="conector-ferramentas") | .version] | first // 0' antes.json)
+          echo "VERSAO_ANTES=$V" >> "$GITHUB_ENV"
+          echo "versao anterior: $V"
+      - name: Publicar endpoint com JWT obrigatorio
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy conector-ferramentas --project-ref "$PROJECT_REF" --use-api
+      - name: Conferir status, versao e rejeicao sem JWT
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions list --project-ref "$PROJECT_REF" -o json > depois.json
+          jq -e '.[] | select(.slug=="conector-ferramentas" and .status=="ACTIVE" and .verify_jwt==true)' depois.json > /dev/null
+          V=$(jq -r '[.[] | select(.slug=="conector-ferramentas") | .version] | first // 0' depois.json)
+          test "$V" -gt "$VERSAO_ANTES"
+          STATUS=$(curl --max-time 15 -s -o /dev/null -w '%{http_code}' -X POST "https://${PROJECT_REF}.supabase.co/functions/v1/conector-ferramentas" -H 'content-type: application/json' -d '{"acao":"consultar_bling","sku":"CI003696"}')
+          echo "versao implantada=$V | sem JWT HTTP $STATUS"
+          test "$STATUS" = "401"
+      - name: Limites do escopo
+        run: |
+          echo "Nao ativa checkout, produtos publicados, NF, transferencia, clientes ou BLING_ESCRITA_REAL."
+          echo "Sem teste autenticado humano ainda: validar via painel apos a publicacao GitHub Pages."
