@@ -11,6 +11,7 @@ import { EstudioAgente } from "./paginas/EstudioAgente.tsx";
 import { VisaoGeral } from "./paginas/VisaoGeral.tsx";
 import { Banners } from "./paginas/Banners.tsx";
 import { Catalogo } from "./paginas/Catalogo.tsx";
+import { FerramentasCatalogo } from "./paginas/FerramentasCatalogo.tsx";
 import { CatalogoAplicacao } from "./paginas/CatalogoAplicacao.tsx";
 import { Bling } from "./paginas/Bling.tsx";
 import { Contador } from "./paginas/Contador.tsx";
@@ -56,7 +57,7 @@ const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
 const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(window.location.hostname) ? window.location.hostname : null;
 
 const ICONES_ROTAS: Record<string, string> = {
-  "/": "inicio", "/conector": "agentes", "/central": "escudo", "/indicadores": "grafico",
+  "/": "inicio", "/conector": "agentes", "/central": "escudo", "/ferramentas": "ajustes", "/indicadores": "grafico",
   "/studio": "caixas", "/estudio": "ajustes", "/assistente": "conversa", "/catalogo": "catalogo", "/catalogo-aplicacao": "loja", "/catalogo-espelho": "erp", "/visao-geral": "inicio",
   "/fila": "fila", "/taxonomia": "arvore", "/aparencia": "paleta", "/publicacao": "loja", "/condicoes": "cartao",
   "/integracoes": "conexoes", "/gateway": "rede", "/imagens": "imagem", "/videos": "video", "/design": "paleta",
@@ -73,6 +74,7 @@ const ITENS: [string, string][] = [
   ["/catalogo-aplicacao", "Catálogo por aplicação"],
   ["/visao-geral", "Visão geral (anterior)"],
   ["/catalogo-espelho", "Espelho ERP · auditoria"],
+  ["/ferramentas", "Indexar e enriquecer · Bling"],
   ["/conector", "Nano.IA (homologação)"],
   ["/central", "Central de Inteligência"],
   ["/indicadores", "Indicadores"],
@@ -229,6 +231,7 @@ export function App() {
           : ((caminho === "/" && loja.slug === "mobis") || caminho === "/catalogo-aplicacao") ? <CatalogoAplicacao loja={loja} />
           : caminho === "/visao-geral" ? <VisaoGeral loja={loja} />
           : caminho === "/catalogo-espelho" ? <Catalogo loja={loja} />
+          : caminho === "/ferramentas" ? <FerramentasCatalogo loja={loja} query={query} />
           : caminho === "/estudio" ? <EstudioAgente key={loja.id} loja={loja} />
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />

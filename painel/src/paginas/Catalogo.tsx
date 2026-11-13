@@ -300,6 +300,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
               <div className="catalogo-produto-acoes">
                 <label><input type="checkbox" checked={selecionados.has(p.id)} onChange={() => setSelecionados(alternar(selecionados, p.id))} /> Selecionar</label>
                 <button type="button" className="sec" onClick={() => setFichaId(p.id)}>Ver ficha técnica</button>
+                {p.sku && <a className="sec" href={"#/ferramentas?sku="+encodeURIComponent(p.sku)}>Indexar · ERP</a>}
               </div>
             </article>
           ))}

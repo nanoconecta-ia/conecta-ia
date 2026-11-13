@@ -37,3 +37,8 @@ jobs:
         working-directory: painel
       - name: Testes (SQL, TypeScript, tipos, empacotamento, painel)
         run: supabase/tests/rodar_tudo.sh ci_tudo
+      - name: Verificar empacotamento da nova funcao sem imports relativos
+        run: |
+          node scripts/empacotar-funcao.mjs conector-ferramentas
+          test -s dist-funcoes/conector-ferramentas/index.ts
+          ! grep -Eq '(from|import)[[:space:]]*["\x27]\.\.?/' dist-funcoes/conector-ferramentas/index.ts
