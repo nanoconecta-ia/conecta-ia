@@ -39,8 +39,12 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const [statusContexto, setStatusContexto] = useState(""); // confirmação REAL do servidor (versão gravada), nunca presumida
   const estadoContexto = useRef({ versao: 0 });
   const [filtro, setFiltro] = useState<Filtro>("todos");
-  const [busca, setBusca] = useState("");
-  const [buscaAplicada, setBuscaAplicada] = useState("");
+  const buscaInicial = () => {
+    const texto = typeof window !== "undefined" ? new URLSearchParams((window.location.hash.split("?")[1] ?? "")).get("q") : null;
+    return (texto ?? "").slice(0, 80);
+  };
+  const [busca, setBusca] = useState(buscaInicial);
+  const [buscaAplicada, setBuscaAplicada] = useState(buscaInicial);
   const [totalBanco, setTotalBanco] = useState<number | null>(null);
   const [proximoOffset, setProximoOffset] = useState(0);
   const [ultimoLote, setUltimoLote] = useState(0);
