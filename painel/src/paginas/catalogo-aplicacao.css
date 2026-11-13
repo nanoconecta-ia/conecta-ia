@@ -145,3 +145,6 @@
   .ca-conclusao-linha{flex-wrap:wrap}.ca-conclusao-linha>a{width:100%;text-align:center}
 }
 @media(prefers-reduced-motion:reduce){.ca-pagina *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+.ca-brand img{display:block;width:138px;height:138px;object-fit:contain;max-width:100%;border-radius:12px}
+@media(max-width:740px){.ca-brand img{width:94px;height:94px}}
