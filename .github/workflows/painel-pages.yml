@@ -53,3 +53,22 @@ jobs:
     steps:
       - id: implantar
         uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - name: Preparar homologação da loja publicada
+        working-directory: painel
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false @playwright/test@1.56.1
+          npx playwright install chromium --with-deps
+      - name: Conferir commit e vitrine publicada sem cache
+        run: node scripts/tests/loja-mobis-publicada.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobis-publicada-desktop-mobile
+          path: evidencias-publicacao/
+          retention-days: 7
+          if-no-files-found: warn
