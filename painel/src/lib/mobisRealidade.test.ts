@@ -37,4 +37,5 @@ test("Demonstra\u00e7\u00e3o de produtos fica isolada do build de produ\u00e7\u0
   const app = ler("App.tsx");
   assert.match(modo, /import\.meta\.env\.DEV/);
   assert.match(app, /const demoAtivo = import\.meta\.env\.DEV && DEMO/);
+  assert.match(app, /if \(caminho === "\/demo\/vitrine" && import\.meta\.env\.DEV && DEMO\)/);
 });
