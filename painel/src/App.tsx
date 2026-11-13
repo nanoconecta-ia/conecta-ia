@@ -63,8 +63,6 @@ const ITENS: [string, string][] = [
   ["/indicadores", "Indicadores"],
   ["/studio", "Studio de produtos"],
   ["/estudio", "Estúdio do Nano"],
-  ["/assistente", "Conversa com Nano.IA"],
-  ["/catalogo", "Catálogo"],
   ["/fila", "Fila de aprovação"],
   ["/taxonomia", "Taxonomia"],
   ["/aparencia", "Aparência da loja"],
