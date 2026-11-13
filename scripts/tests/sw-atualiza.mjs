@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const fonte=readFileSync(new URL('../../painel/public/sw.js',import.meta.url),'utf8');
+const cacheAtual=fonte.match(/const VERSAO = "([^"]+)";/)?.[1];
+assert.ok(cacheAtual,'service worker precisa declarar versão do cache');
 function ambiente({ caches: iniciais = [], janelas = 1, rede = 'ok' } = {}) {
   const ouvintes = {}, guardado = new Map(iniciais.map((k) => [k, new Map()])), navegou = [], chamadasFetch = [];
   const cacheDe = (k) => ({ addAll: async () => { if (!guardado.has(k)) guardado.set(k, new Map()); }, put: async (u, v) => { guardado.get(k).set(u, v); }, match: async (u) => guardado.get(k)?.get(u) });
@@ -31,16 +33,16 @@ function ambiente({ caches: iniciais = [], janelas = 1, rede = 'ok' } = {}) {
   const e = a.evento();a.ouvintes.activate(e);await e.p;
   assert.equal(a.navegou.length, 0, 'primeira instalação não recarrega'); }
 // 3) mesma versão já instalada: não recarrega de novo (sem laço de recarga)
-{ const a = ambiente({ caches: ['conecta-casca-v2'], janelas: 1 });
+{ const a = ambiente({ caches: [cacheAtual], janelas: 1 });
   const e = a.evento();a.ouvintes.activate(e);await e.p;
   assert.equal(a.navegou.length, 0, 'mesma versão não recarrega'); }
 // 4) navegação: vai à rede sem o cache HTTP; cai a rede => última casca
-{ const a = ambiente({ caches: ['conecta-casca-v2'] });
+{ const a = ambiente({ caches: [cacheAtual] });
   let resposta; const e = { request: { method: 'GET', mode: 'navigate', url: 'https://exemplo.test/' }, respondWith: (p) => { resposta = p; } };
   a.ouvintes.fetch(e);await resposta;
   assert.equal(a.chamadasFetch[0].cache, 'no-store', 'navegação ignora o cache HTTP'); }
-{ const a = ambiente({ caches: ['conecta-casca-v2'], rede: 'cai' });
-  a.guardado.get('conecta-casca-v2').set('./', 'CASCA-GUARDADA');
+{ const a = ambiente({ caches: [cacheAtual], rede: 'cai' });
+  a.guardado.get(cacheAtual).set('./', 'CASCA-GUARDADA');
   let resposta; const e = { request: { method: 'GET', mode: 'navigate', url: 'https://exemplo.test/' }, respondWith: (p) => { resposta = p; } };
   a.ouvintes.fetch(e);assert.equal(await resposta, 'CASCA-GUARDADA', 'offline mostra a última casca'); }
 // 5) outros domínios e escritas não são tocados
