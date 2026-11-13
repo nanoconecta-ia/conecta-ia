@@ -31,3 +31,11 @@
 .v-rodape-sociais span{display:inline-grid;place-items:center;width:20px;height:20px;font-size:1.1rem;font-weight:800}
 
 .v-rodape-sociais svg{height:20px;width:20px;flex:none}
+
+
+.v-rodape-politica-link{display:flex;flex-direction:column;gap:2px}
+.v-rodape-politica-link button:disabled{color:#a5b3ae;cursor:not-allowed;text-decoration:none}
+.v-rodape-politica-link small{font-size:.69rem;color:#d5ac85}
+.v-rodape-privacidade-aviso{max-width:1400px;margin:0 auto;padding:18px 0;border-top:1px solid #45544d}
+.v-rodape-privacidade-aviso strong{font-size:.9rem;color:#ffe0ba}
+.v-rodape-privacidade-aviso p{margin:6px 0 0;max-width:850px;color:#c2cfc9;font-size:.77rem;line-height:1.7}
