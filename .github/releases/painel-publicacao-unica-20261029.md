@@ -29,3 +29,12 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Backend `assistente` foi publicado como versão 16 no projeto Supabase `dsfzhsrudriqkumtlqwj`; recurso de contingência depende de secrets server-only e allowlist da loja, não ativar automaticamente chamadas externas sem chave e opt-in.
 - Restrições: sem alteração de registros Bling, sem escrita ERP, sem mexer em tokens, sem cobrança ou publicação comercial automática.
 - Esta alteração do marcador aciona apenas `painel-pages.yml` com as flags já aprovadas, sujeita a build e verificação posterior.
+
+## Republicação corretiva autorizada — Mobis / PR #318 (13-11-2026)
+
+- Autorização expressa do proprietário nesta execução: finalizar e integrar o PR #318, publicar pelo workflow autorizado de GitHub Pages e validar o resultado real.
+- PR #318 integrado em `d7ce2ab2e03640f5eeb7617acec65077f5a757e2`; sete workflows aprovados no head `8a3af19bcc49554d6414572c36b0590aa460681f`.
+- Publicar somente o frontend da main com as flags existentes. A raiz dos dois hosts oficiais passa a selecionar LojaMobisNova; demais clientes e painel preservados.
+- Testes: 394 unitários, TypeScript/build e Playwright na rota pública e nos hosts simulados, em 360/390/412/1280px; filtros em cascata e consulta WhatsApp. O workflow compara version.json ao SHA publicado e registra capturas reais após deploy.
+- Loja permanece em teste, sem vendas/checkout. Sem backend, migração, escrita Bling, transferência de estoque, alteração fiscal ou DNS.
+- Domínio oficial segue pendente: sem A/AAAA no domínio principal e www inexistente na consulta DNS desta execução. Esta republicação não configura DNS nem declara esse domínio homologado.
