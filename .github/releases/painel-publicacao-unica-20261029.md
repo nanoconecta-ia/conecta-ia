@@ -60,3 +60,9 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Capturas administrativas usam sessão/dados SIMULADOS sobre os arquivos efetivamente publicados; não alegar login privado real. Homologação da vitrine usa o catálogo público real.
 - Loja em teste sem vendas. Nenhum backend, migração, registro Bling, estoque, dado fiscal, cobrança ou DNS alterado. www continua NXDOMAIN e o domínio raiz sem A/AAAA; não declarar o domínio oficial homologado.
 - Conferir build, deploy, version.json e capturas antes de declarar atualização concluída no Pages.
+
+## Isolamento visual final da vitrine — PR #321 (13-11-2026)
+- Capturas reais revelaram gradiente/sombra global do shell antigo sobre os botões comerciais e largura administrativa de 440px sobre os formulários. A especificidade global superava o CSS aprovado da vitrine.
+- PR #321 integrado em 87870577bfd315be6094e81f8cfb5d0daf5ad2d4, oito workflows aprovados no head 0dfdbeecc8fc49cdfec25dcb65d27ce899041991. 394 unitários e TypeScript/build aprovados; regressão Playwright verifica cores calculadas, ausência do gradiente antigo, hover e formulários em 360/390/412/1280px.
+- Excluir apenas .mobis-v2 das duas regras globais e restaurar largura própria dos formulários. Nenhum design novo; demais clientes e painel preservados.
+- Republicar frontend pelo fluxo já autorizado e repetir as verificações públicas e administrativas. Comparar version.json ao SHA do release. Sem alteração de servidor, dados, vendas ou DNS; domínio oficial continua pendente.
