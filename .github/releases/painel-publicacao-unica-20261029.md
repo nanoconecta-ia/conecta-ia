@@ -47,3 +47,8 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - O release `9a47bba` está servido e foi inspecionado em navegador real; a coleta no runner não recebeu resposta do catálogo dentro do prazo.
 - Retirar o cabeçalho Cache-Control global do contexto de teste, que também era acrescentado à requisição cross-origin do catálogo. Desativar o cache somente pelo CDP do Chromium, mantendo os cabeçalhos originais da aplicação e service worker bloqueado.
 - Registrar falhas de rede e capturar a página mesmo se uma asserção falhar. Repetir a homologação; nenhuma alteração no frontend ou servidor.
+
+## Complemento de navegação homologado — PR #319 (13-11-2026)
+- Na inspeção das capturas, os links do rodapé ainda alteravam o hash para âncoras antigas e podiam tirar o visitante da vitrine. Corrigir os quatro destinos somente quando a vitrine nova fornece suas seções; manter os demais clientes e o desenho.
+- PR #319 integrado em `34effca5e68ae948fa7299a19dd5019d9950e1a6`, após sete workflows aprovados no head `4bcf1e4060de185b8e6b7e7b1a938d0bb6f9469a`. Playwright comprova rolagem para cada seção e permanência na rota em 360/390/412/1280px, além dos testes existentes.
+- Republicação final autorizada para o mesmo escopo; gerar novamente capturas reais e comparar version.json. Domínio oficial continua pendente de hospedagem/DNS; loja em teste e sem vendas.
