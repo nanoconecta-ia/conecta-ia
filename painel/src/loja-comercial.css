@@ -34,3 +34,8 @@
 .chat-cliente :is(button,a,input):focus-visible{outline:3px solid #ebad58;outline-offset:2px}
 @media(max-width:620px){.v-loja-oferta{padding:18px}.chat-cliente-caixa{height:min(570px,calc(100dvh - 98px))}}
 @media(prefers-reduced-motion:reduce){.v-loja-oferta.flash::after{animation:none;opacity:.7}}
+
+.v-faixa-teste{border:2px solid #b66c26;border-radius:12px;margin:14px 0;padding:16px 20px;background:#fff0d6;color:#38230f;line-height:1.55}
+.v-faixa-teste strong{display:block;font-size:1.05rem;letter-spacing:.025em}
+.v-faixa-teste p{margin:7px 0 0}
+@media(max-width:620px){.v-faixa-teste{padding:14px}}
