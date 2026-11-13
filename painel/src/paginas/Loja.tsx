@@ -14,7 +14,7 @@ type Produto = { nome: string; sku: string; preco: number | null; em_estoque: bo
 type Veiculo = { modelo: string; motor: string | null; de: number | null; ate: number | null };
 type Tema = { variaveis: Record<string, string>; logo_url: string | null; icone_url: string | null };
 type Banner = { sku: string; nome: string; preco: number | null; chamada: string | null; flash: boolean; whatsapp: string | null; url: string | null };
-type Resposta = { loja: { nome: string; slug: string; modo_venda: string; whatsapp?: string | null }; banners?: Banner[]; tema: Tema; politicas?: PoliticasLojaPublicas | null; produtos: Produto[]; total: number; pagina: number; por_pagina: number; veiculos: Veiculo[]; tipos?: { tipo: string; total: number }[]; categorias: { nome: string; slug: string; total: number }[] };
+type Resposta = { loja: { nome: string; slug: string; modo_venda: string; ambiente?: "teste" | "producao"; venda_habilitada?: boolean; aviso_teste?: string | null; whatsapp?: string | null }; banners?: Banner[]; tema: Tema; politicas?: PoliticasLojaPublicas | null; produtos: Produto[]; total: number; pagina: number; por_pagina: number; veiculos: Veiculo[]; tipos?: { tipo: string; total: number }[]; categorias: { nome: string; slug: string; total: number }[] };
 type Filtros = { q: string; modelo: string; motor: string; ano: string; categoria: string; tipo: string; pagina: number };
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -71,6 +71,17 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
     }
   }, [dados]);
 
+  // Noindex no cliente apenas como reforço; a API SEO também bloqueia a fase de testes.
+  useEffect(() => {
+    if (!dados || dados.loja.ambiente !== "teste") return;
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    const anterior = meta?.content ?? null;
+    const criada = !meta;
+    if (!meta) { meta = document.createElement("meta"); meta.name = "robots"; document.head.appendChild(meta); }
+    meta.content = "noindex,nofollow";
+    return () => { if (criada) meta?.remove(); else if (meta && anterior !== null) meta.content = anterior; };
+  }, [dados?.loja.ambiente]);
+
   const modelos = useMemo(() => [...new Set(opcoes.map((v) => v.modelo))].sort(), [opcoes]);
   const motores = useMemo(() => [...new Set(opcoes.filter((v) => !f.modelo || v.modelo === f.modelo).map((v) => v.motor).filter(Boolean) as string[])].sort(), [opcoes, f.modelo]);
   const anos = useMemo(() => {
@@ -103,6 +114,13 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
         </form>
       </header>
 
+      {dados?.loja.ambiente === "teste" && (
+        <section className="v-faixa-teste" role="status" aria-label="Loja em fase de testes">
+          <strong>LOJA TESTE — avaliação com clientes</strong>
+          <p>Você pode conhecer o catálogo, testar os filtros e conversar com a equipe. Esta página não conclui pedidos nem recebe pagamentos.</p>
+          <p>Encontrou algum problema? Conte ao atendimento pelo chat no canto da tela.</p>
+        </section>
+      )}
       <section className="v-hero">
         <span className="v-hero-selo mono">catálogo técnico · aplicação comprovada</span>
         <h1>Encontre a peça correta</h1>
@@ -121,7 +139,7 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
       {(dados?.banners ?? []).map((b, i) => (
         <section className={"v-loja-oferta" + (b.flash ? " flash" : "")} key={b.sku + "-" + i} aria-label={"Oferta: " + b.nome}>
           <div>
-            {b.flash && <span className="v-loja-selo">Oferta em destaque</span>}
+            {b.flash && <span className="v-loja-selo">{dados?.loja.ambiente === "teste" ? "Prévia de oferta · teste" : "Oferta em destaque"}</span>}
             <h2>{b.nome}</h2>
             {b.chamada && <p>{b.chamada}</p>}
             {b.preco != null && <p className="v-loja-preco">{brl(b.preco)}</p>}
