@@ -34,6 +34,12 @@ try{
   assert.equal(dados.loja.ambiente,"teste","loja deve permanecer em teste");
   assert.notEqual(dados.loja.venda_habilitada,true,"vendas não podem estar habilitadas");
   await page.locator(".m2-aviso-teste").waitFor();
+  const cores=await page.locator('.m2-veiculo').first().evaluate(el=>({fundo:getComputedStyle(el).backgroundColor,imagem:getComputedStyle(el).backgroundImage}));
+  assert.deepEqual(cores,{fundo:'rgb(238, 233, 223)',imagem:'none'},'CSS aprovado prevalece sobre o gradiente administrativo');
+  assert.equal(await page.locator('.m2-sistema-grade button').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(248, 245, 238)','sistemas preservam superfície aprovada');
+  assert.equal(await page.locator('.m2-filtros').evaluate(el=>getComputedStyle(el).maxWidth),'none','filtros não herdam largura administrativa de 440px');
+  if(width===1280){await page.locator('.m2-veiculo').first().hover();assert.equal(await page.locator('.m2-veiculo').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(238, 233, 223)','hover global antigo não interfere');}
+
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow "+width);
   assert.deepEqual(errors,[]);
   resultados.push({width,layout:"aprovado-v2",catalogo:r.status(),produtos:dados.total,erros:errors});

@@ -35,6 +35,12 @@ try{
   await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor({state:"visible",timeout:20000});
   await page.getByRole("heading",{name:/Peças para quem trabalha/}).waitFor();
   await page.getByText(/Nenhuma peça disponível nessa busca/).waitFor({timeout:10000});
+  const cores=await page.locator('.m2-veiculo').first().evaluate(el=>({fundo:getComputedStyle(el).backgroundColor,imagem:getComputedStyle(el).backgroundImage}));
+  assert.deepEqual(cores,{fundo:'rgb(238, 233, 223)',imagem:'none'},'CSS aprovado prevalece sobre o gradiente administrativo');
+  assert.equal(await page.locator('.m2-sistema-grade button').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(248, 245, 238)','sistemas preservam superfície aprovada');
+  assert.equal(await page.locator('.m2-filtros').evaluate(el=>getComputedStyle(el).maxWidth),'none','filtros não herdam largura administrativa de 440px');
+  if(width===1280){await page.locator('.m2-veiculo').first().hover();assert.equal(await page.locator('.m2-veiculo').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(238, 233, 223)','hover global antigo não interfere');}
+
   assert.equal(await page.locator(".v-hero").count(),0,"layout antigo não pode ser renderizado");
   assert.equal(await page.locator(".m2-veiculo").count(),4,"4 opções de veículos");
   assert.equal(await page.locator(".m2-sistema-grade button").count(),8,"8 módulos de peças");

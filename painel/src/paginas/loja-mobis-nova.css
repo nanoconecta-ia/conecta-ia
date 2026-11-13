@@ -222,3 +222,6 @@
  .mobis-v2 .m2-lista li{flex-direction:column;align-items:stretch}
 }
 @media(prefers-reduced-motion:reduce){.mobis-v2 *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* Os formulários comerciais não herdam a largura do formulário administrativo. */
+.mobis-v2 :is(.m2-search,.m2-filtros){max-width:none;width:100%}

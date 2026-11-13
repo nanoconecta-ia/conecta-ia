@@ -70,7 +70,7 @@ select { padding:11px 12px; border:var(--campo-bw) solid var(--borda-forte); bor
 input,textarea,select { min-height:var(--alvo); padding:11px 12px; border:var(--campo-bw) solid var(--borda-forte); border-radius:10px; background:var(--realce); color:var(--texto); font:inherit; width:100%; }
 input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible { outline:3px solid var(--marca); outline-offset:2px; }
 button,.botao { min-height:var(--alvo); padding:10px 18px; line-height:1.2; border:0; border-radius:10px; background:var(--marca); color:var(--marca-texto); font:inherit; font-weight:600; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
-button:hover:not(:disabled) { background:var(--marca-forte); }
+button:hover:not(:disabled):not(:where(.mobis-v2 *)) { background:var(--marca-forte); }
 button.sec { background:transparent; border:1px solid var(--borda); color:var(--texto); font-weight:500; } button.sec:hover:not(:disabled) { background:var(--realce); }
 button.verde,.botao.verde { background:var(--verde); color:var(--verde-texto); } button.verde:hover:not(:disabled) { filter:brightness(.95); background:var(--verde); }
 button.perigo { background:transparent; border:1px solid var(--erro); color:var(--erro); } button:disabled { opacity:.5; cursor:not-allowed; }
