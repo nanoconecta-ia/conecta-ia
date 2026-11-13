@@ -25,7 +25,7 @@ export function FichaProduto({ produto, veiculos }: { produto: Produto; veiculos
           {produto.preco != null && <p className="v-preco">{brl(produto.preco)}</p>}
         </div>
       </div>
-      {produto.whatsapp && <a className="ficha-wa" href={produto.whatsapp} target="_blank" rel="noopener noreferrer">Comprar pelo WhatsApp</a>}
+      {produto.whatsapp && <a className="ficha-wa" href={produto.whatsapp} target="_blank" rel="noopener noreferrer">Consultar com vendedor no WhatsApp</a>}
     </article>
   );
 }
