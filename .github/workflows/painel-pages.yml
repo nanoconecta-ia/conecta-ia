@@ -68,7 +68,7 @@ jobs:
       - name: Conferir Conecta e Nano publicados (sessão e dados simulados)
         run: node scripts/tests/conecta-aprovado-visual.mjs
         env:
-          WORKSPACE_BASE_URL: ${{ steps.implantar.outputs.page_url }}
+          WORKSPACE_BASE_URL: ${{ steps.implantar.outputs.page_url }}conecta.html
       - uses: actions/upload-artifact@v4
         if: always()
         with:
