@@ -5,11 +5,12 @@ import { iconeDaCategoria, TIPOS_VEICULO } from "../lib/icones.ts";
 import { vistaDaArea } from "../lib/vistas.ts";
 import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
 import { chipsDeFiltro, removerFiltro, textoResultado } from "../lib/filtrosLoja.ts";
+import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 
 type Produto = { nome: string; sku: string; preco: number | null; em_estoque: boolean | null; marca: string | null; descricao: string | null; imagem: string | null; whatsapp: string | null; atualizado_em: string | null };
 type Veiculo = { modelo: string; motor: string | null; de: number | null; ate: number | null };
 type Tema = { variaveis: Record<string, string>; logo_url: string | null; icone_url: string | null };
-type Resposta = { loja: { nome: string; slug: string; modo_venda: string }; tema: Tema; produtos: Produto[]; total: number; pagina: number; por_pagina: number; veiculos: Veiculo[]; tipos?: { tipo: string; total: number }[]; categorias: { nome: string; slug: string; total: number }[] };
+type Resposta = { loja: { nome: string; slug: string; modo_venda: string }; tema: Tema; politicas?: PoliticasLojaPublicas | null; produtos: Produto[]; total: number; pagina: number; por_pagina: number; veiculos: Veiculo[]; tipos?: { tipo: string; total: number }[]; categorias: { nome: string; slug: string; total: number }[] };
 type Filtros = { q: string; modelo: string; motor: string; ano: string; categoria: string; tipo: string; pagina: number };
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -204,7 +205,7 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
           </div>
         )}
       </section>
-      <footer className="v-rodape"><p>Preços e estoque conforme a última sincronização{ultima ? ` (${new Date(ultima).toLocaleString("pt-BR")})` : ""}. Confirme com a loja antes de comprar.</p><p>Esta vitrine é operada pela loja identificada acima. O Conecta.IA fornece a plataforma; atendimento, entrega, garantia e políticas de venda são definidos pela loja responsável.</p><nav aria-label="Informações sobre a plataforma" className="v-rodape-links"><a href="./institucional.html">Sobre o Conecta.IA</a><a href="./privacidade.html">Privacidade da plataforma</a><a href="./seguranca.html">Segurança</a><a href="./contato.html">Contato do projeto</a></nav></footer>
+      <RodapeLoja nome={dados?.loja.nome ?? "Loja"} politicas={dados?.politicas} ultima={ultima} />
     </div>
   );
 }
