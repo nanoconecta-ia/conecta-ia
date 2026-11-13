@@ -167,13 +167,14 @@ export function CatalogoAplicacao({ loja }: { loja: Loja }) {
           <p>Peças e sistemas automotivos, com aplicações verificadas separadas dos candidatos à conferência.</p>
         </div>
         <div className="ca-topo-acoes">
+          <a className="ca-sec" href="#/studio"><Icone nome="caixas" tamanho={17}/> Indexar e enriquecer</a>
           <a className="ca-sec" href="#/catalogo-espelho"><Icone nome="arquivo" tamanho={17}/> Abrir espelho ERP</a>
           <a className="ca-primario" href="#/fila"><Icone nome="fila" tamanho={17}/> Revisar pendências</a>
         </div>
       </header>
       <div className="ca-aviso" role="note">
         <Icone nome="escudo" tamanho={17}/>
-        <span>Ambiente administrativo · somente dados autorizados pela loja. O Bling continua como fonte oficial. Nenhum resultado textual constitui aplicação homologada.</span>
+        <span>Ambiente {loja.ambiente === "producao" ? "de produção" : "de teste"} · somente dados autorizados. Bling permanece a fonte oficial. Resultados textuais não constituem aplicações homologadas.</span>
         <a href="#/assistente">Conversar com Nano.IA</a>
       </div>
 
