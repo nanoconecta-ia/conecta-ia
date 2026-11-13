@@ -4,26 +4,34 @@ import { CartaoProduto } from "@/components/CartaoProduto";
 import { Vazio } from "@/components/ui";
 import { BannerOferta } from "@/components/BannerOferta";
 import { ChatLojaWeb } from "@/components/ChatLojaWeb";
-import { bannersDaLoja, catalogoPublico, lojaPorSlug } from "@/lib/vitrine";
+import { RodapeComercialWeb } from "@/components/RodapeComercialWeb";
+import { bannersDaLoja, catalogoPublico, lojaPorSlug, politicasAprovadasDaLoja } from "@/lib/vitrine";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const loja = await lojaPorSlug((await params).slug);
-  return loja ? { title: loja.nome, description: `Catálogo de ${loja.nome}` } : {};
+  return loja ? { title: loja.nome, description: `Catálogo de ${loja.nome}`, robots: loja.ambiente === "teste" ? { index:false,follow:false } : undefined } : {};
 }
 
 export default async function Vitrine({ params }: Props) {
   const { slug } = await params;
   const loja = await lojaPorSlug(slug);
   if (!loja) notFound();
-  const [itens, banners] = await Promise.all([catalogoPublico(loja.id), bannersDaLoja(loja.id)]);
+  const [itens, banners, politicas] = await Promise.all([catalogoPublico(loja.id), bannersDaLoja(loja.id), politicasAprovadasDaLoja(loja.id)]);
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
       <header className="mb-5 flex items-center justify-between border-b border-borda pb-3">
         <h1 className="text-xl font-semibold sm:text-2xl">{loja.nome}</h1>
       </header>
-      {banners.map((b) => <BannerOferta key={b.id} loja={loja} banner={b} />)}
+      <nav className="mobis-web-modulos" aria-label="Navegação da loja">
+        <a href="#ofertas">Ofertas</a><a href="#catalogo-web">Produtos</a><a href="#rodape-web">Privacidade e contato</a>
+      </nav>
+      {loja.ambiente === "teste" && <p className="mobis-web-teste" role="status">LOJA TESTE — catálogo demonstrativo, sem concluir pedidos ou receber pagamentos neste site.</p>}
+      <section id="ofertas" aria-label="Banners de produtos publicados">
+        {banners.map((b) => <BannerOferta key={b.id} loja={loja} banner={b} />)}
+      </section>
+      <section id="catalogo-web" aria-label="Catálogo de peças publicadas">
       {itens.length === 0 ? (
         <Vazio titulo="Catálogo em preparação" />
       ) : (
@@ -35,11 +43,8 @@ export default async function Vitrine({ params }: Props) {
           ))}
         </ul>
       )}
-      {loja.slug === "mobis" && <footer className="mobis-web-rodape" aria-label="Contato da loja">
-        <div><strong>Mobis Autopeças</strong><p>Mobis Distribuidora de Peças e Acessórios Ltda. · CNPJ 19.903.967/0001-01</p><p>Av. T-9, 3492 — Jardim América, Goiânia/GO · Endereço cadastral</p></div>
-        <nav aria-label="Canais oficiais"><a href="https://mobisautopecas.com.br">Site oficial</a><a href="https://www.google.com/maps/search/?api=1&query=Av.%20T-9%2C%203492%2C%20Jardim%20Am%C3%A9rica%2C%20Goi%C3%A2nia%20GO" target="_blank" rel="noopener noreferrer">Google Maps</a><a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fmobisautopecas.com.br" target="_blank" rel="noopener noreferrer">Compartilhar no Facebook</a></nav>
-        <small>Condições de venda, entrega, garantia e privacidade: publicar somente os textos aprovados pela empresa.</small>
-      </footer>}
+      </section>
+      <div id="rodape-web"><RodapeComercialWeb loja={loja} politicas={politicas} /></div>
       <ChatLojaWeb nome={loja.nome} whatsapp={loja.whatsapp} />
     </div>
   );
