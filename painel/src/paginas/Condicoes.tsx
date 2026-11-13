@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
+import { SegurancaFiscalLoja } from "../componentes/SegurancaFiscalLoja.tsx";
+import "../fiscal-seguranca.css";
 import { FORMAS, ROTULO_SITUACAO, TIPOS_ENTREGA, faltaParaAprovarForma, faltaParaAprovarRegra, formatarCep, montarRegra, situacao, type FormRegra } from "../lib/condicoes.ts";
 
 type Forma = { id: string; forma: string; rotulo: string | null; parcelas_max: number | null; status: "rascunho" | "aprovada"; visivel_no_site: boolean };
@@ -64,6 +66,8 @@ export function Condicoes({ loja }: { loja: Loja }) {
   }
 
   return (
+    <>
+    <SegurancaFiscalLoja loja={loja} />
     <div className="cartao">
       <h1>Pagamento e entrega</h1>
       <p className="suave">Você decide o que o site e o agente podem dizer ao cliente. Tudo nasce como rascunho e <strong>oculto</strong>: só aparece depois que você aprova e clica em “Mostrar no site”. Você pode ocultar a qualquer momento. O sistema não inventa prazo, frete nem forma de pagamento.</p>
@@ -119,5 +123,6 @@ export function Condicoes({ loja }: { loja: Loja }) {
         <button disabled={ocupado}>Adicionar regra de entrega</button>
       </form>
     </div>
+    </>
   );
 }
