@@ -185,7 +185,7 @@ export function FerramentasCatalogo({loja,query}:{loja:Loja;query:URLSearchParam
       <p className="msg-ok">{mensagem}</p>
       {indexado.length>0&&<p>Campos indexados: {indexado.join(", ")}</p>}
       {propostaId&&<a className="botao" href={"#/central?proposta="+encodeURIComponent(propostaId)}>Abrir proposta para aprovação</a>}
-      {dados&&<details><summary>Dados técnicos / relatório</summary><pre className="fc-resposta">{imprimir(dados)}</pre></details>}
+      {dados !== null &&<details><summary>Dados técnicos / relatório</summary><pre className="fc-resposta">{imprimir(dados)}</pre></details>}
     </section>}
   </section>;
 }
