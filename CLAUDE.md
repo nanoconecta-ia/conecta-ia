@@ -13,7 +13,7 @@ Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no ch
 2. **Fluxo principal: o Conecta.IA se conecta direto ao Bling de cada cliente** (credencial por cliente) e mantém um **espelho somente leitura** do catálogo, como um PDV. Se qualquer dado muda no cadastro do Bling, muda no site: atualização por **webhook em tempo real** (se confirmado na documentação) mais **varredura periódica de segurança**. **Ninguém edita produto no site.**
 3. **Enriquecimento com dois caminhos, para o cliente nunca ficar na mão:**
    - **Agente integrado do site:** roda dentro do Conecta.IA.
-   - **Agente NanoShell:** roda no navegador e trabalha por **fila de tarefas** (ele busca a tarefa e devolve o resultado; o navegador não recebe chamadas de fora).
+   - **(PAUSADO em 13/11/2026 — projeto parado, fora do fluxo; usar só `integrado`; ver docs/ordem-mestra/15)** **Agente NanoShell:** roda no navegador e trabalha por **fila de tarefas** (ele busca a tarefa e devolve o resultado; o navegador não recebe chamadas de fora).
    - Cada loja escolhe o preferido: `integrado`, `nanoshell` ou `automático` (prefere o NanoShell e, se ele não responder a tempo, **cai para o integrado**).
    - Os dois escrevem na **mesma camada de enriquecimento**, separada do dado do Bling. O enriquecimento é acionado automaticamente quando o cadastro é insuficiente, ou sob demanda.
 4. O Conecta.IA é a frente de venda (como um PDV do site). O ERP é a retaguarda.

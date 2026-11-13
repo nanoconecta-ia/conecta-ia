@@ -16,6 +16,8 @@ Bling (fonte única) ──webhook / varredura──▶ Sincronizador ──▶ 
                                                       camada de enriquecimento (mesma para os dois)
 ```
 
+> **Atualização 13/11/2026:** o NanoShell está parado; por ora só o agente integrado (Nano IA) opera. Ver `docs/ordem-mestra/15-nano-cadastro-ofertas-independentes.md`.
+
 Os dois agentes são caminhos equivalentes: se um falhar, o outro assume e o cliente continua. O NanoShell **não** é pré-requisito para o site funcionar.
 
 ## 2. Sincronização com o Bling (fluxo principal)
