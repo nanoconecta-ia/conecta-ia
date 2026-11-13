@@ -126,7 +126,7 @@ export function App() {
   if (lojaSlug) return lojaSlug[1] === "mobis" ? <LojaMobisNova slug="mobis" /> : <Loja slug={lojaSlug[1]} />;
   if (hostCliente && !caminho.startsWith("/p/")) return lojaMobisPorHost(hostCliente) ? <LojaMobisNova slug="mobis" /> : <Loja host={hostCliente} />;
   const pub = caminho.match(/^\/p\/([a-z0-9-]+)\/(.+)$/);
-  if (caminho === "/demo/vitrine") return <VitrineDemo />;
+  if (caminho === "/demo/vitrine" && import.meta.env.DEV && DEMO) return <VitrineDemo />;
   if (pub) return <ProdutoPublico slug={pub[1]} sku={decodeURIComponent(pub[2])} />;
   if (PAIR_ATIVO && caminho === "/parear" && !query.get("c")) return <ParearSolicitante />; // pública: o dispositivo que pede o pareamento ainda não tem login
   if (!demoAtivo && sessao === undefined) return <div className="entrada-aprovada ap-recuperacao"><p role="status">Carregando Conecta.IA…</p></div>;
