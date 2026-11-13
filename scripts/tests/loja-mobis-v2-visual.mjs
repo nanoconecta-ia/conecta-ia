@@ -78,11 +78,11 @@ try{
    await page.getByRole("heading",{name:"Peça sintética para teste"}).waitFor();
    assert.equal(await page.locator('[data-mobis-layout="aprovado-v2"]').count(),1);
    assert.equal(await page.locator(".v-hero").count(),0);
-   await page.getByLabel("Modelo",{exact:true}).selectOption("HR");
-   await page.getByLabel("Motorização",{exact:true}).selectOption("D4CB");
-   assert.equal(await page.getByLabel("Motorização",{exact:true}).locator("option").filter({hasText:"D4BH"}).count(),0,"motores respeitam modelo");
-   await page.getByLabel("Ano",{exact:true}).fill("2019");
-   await page.getByLabel("Sistema / categoria",{exact:true}).selectOption("motor");
+   await page.locator(".m2-filtros-grid select").nth(0).selectOption("HR");
+   await page.locator(".m2-filtros-grid select").nth(1).selectOption("D4CB");
+   assert.equal(await page.locator(".m2-filtros-grid select").nth(1).locator("option").filter({hasText:"D4BH"}).count(),0,"motores respeitam modelo");
+   await page.locator(".m2-filtros-grid input").fill("2019");
+   await page.locator(".m2-filtros-grid select").nth(2).selectOption("motor");
    const resposta=page.waitForResponse(r=>r.url().endsWith("/loja-publica")&&(r.request().postData()||"").includes('"motor":"D4CB"'));
    await page.getByRole("button",{name:"Aplicar filtros",exact:true}).click();await resposta;
    assert.ok(requests.some(x=>x.slug==="mobis"&&x.modelo==="HR"&&x.motor==="D4CB"&&x.ano===2019&&x.categoria==="motor"));
