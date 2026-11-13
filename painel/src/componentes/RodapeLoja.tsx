@@ -60,7 +60,7 @@ export function RodapeLoja({
   const compartilhar = mobis ? "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(MOBIS.site) : null;
 
   return (
-    <footer className="v-rodape-comercial" aria-label="Informações da loja">
+    <footer id="rodape-privacidade" className="v-rodape-comercial" aria-label="Informações e privacidade da loja">
       <div className="v-rodape-grade">
         <div className="v-rodape-apresentacao">
           <strong>{nome}</strong>
@@ -82,10 +82,15 @@ export function RodapeLoja({
         <div className="v-rodape-grupo">
           <h2>Ajuda e orientações</h2>
           <button type="button" onClick={() => setPainel("compra")}>Como comprar</button>
-          {liberadas.map((p) => (
-            <button type="button" key={p.id} onClick={() => setPainel(p.id)}>{p.titulo}</button>
-          ))}
-          {!politicas && <small>Informações institucionais e políticas da loja em validação.</small>}
+          {paginas.map((p) => {
+            const aprovado = liberadas.some((a) => a.id === p.id);
+            return <div key={p.id} className="v-rodape-politica-link">
+              <button type="button" disabled={!aprovado} onClick={() => setPainel(p.id)}
+                aria-label={p.titulo + (aprovado ? "" : " — aguardando aprovação")}>{p.titulo}</button>
+              {!aprovado && <small>Em revisão, indisponível para consulta</small>}
+            </div>;
+          })}
+          {!politicas && <small role="status">As políticas comerciais da loja ainda não foram aprovadas. Nenhum texto em rascunho é divulgado.</small>}
         </div>
         <div className="v-rodape-grupo">
           <h2>Identificação da loja</h2>
@@ -102,6 +107,12 @@ export function RodapeLoja({
           ) : <p>Dados cadastrais sujeitos à validação para publicação.</p>}
         </div>
       </div>
+      <section className="v-rodape-privacidade-aviso" aria-label="Aviso de privacidade">
+        <strong>Privacidade e segurança do atendimento</strong>
+        <p>Não informe senhas, CPF, chassi completo, endereço residencial ou dados de pagamento no chat.
+          Os documentos de privacidade, devolução, garantia e entrega serão disponibilizados após aprovação formal pela empresa.
+          Um contato por WhatsApp não conclui uma compra.</p>
+      </section>
       <div className="v-rodape-faixa"><span>© {ano} {nome}. Conteúdo comercial da loja.</span><a href="#catalogo">Voltar aos produtos ↑</a></div>
       <dialog
         ref={dialog}
