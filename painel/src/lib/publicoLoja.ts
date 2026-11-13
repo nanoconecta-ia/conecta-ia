@@ -1,12 +1,8 @@
-/** Referências públicas da loja piloto; nunca reutilizar contatos em outros tenants. */
+/** Referências não cadastrais da loja piloto. Dados empresariais devem vir apenas de políticas formalmente aprovadas no servidor. */
 export const MOBIS = {
   slug: "mobis",
   site: "https://mobisautopecas.com.br",
   nome: "Mobis Autopeças",
-  razao: "Mobis Distribuidora de Peças e Acessórios Ltda.",
-  cnpj: "19.903.967/0001-01",
-  endereco: "Av. T-9, 3492 — Jardim América, Goiânia - GO, CEP 74255-220",
-  mapas: "https://www.google.com/maps/search/?api=1&query=Av.%20T-9%2C%203492%2C%20Jardim%20Am%C3%A9rica%2C%20Goi%C3%A2nia%20GO",
 } as const;
 
 /** Nunca inserir número fora do cadastro da loja (sem cruzar empresas). */
