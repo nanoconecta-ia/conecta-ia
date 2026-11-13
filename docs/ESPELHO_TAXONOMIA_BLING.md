@@ -1,5 +1,7 @@
 # Espelhamento canônico Conecta.IA → Bling (piloto controlado)
 
+**Arquitetura transversal:** [ADR — Conecta.IA como plano de controle e homologação obrigatória](conector-ia/ADR-2026-11-13-governanca-espelho-homologacao-ferramentas.md). Este documento detalha apenas o contrato de escrita técnica homologada; não substitui os controles de agentes, plugins e reconciliação entre canais.
+
 ## Objetivo
 Transferir **somente campos técnicos homologados** da camada de enriquecimento para o produto **já existente** no Bling, mediante aprovação por campo, sem depender de Desktop Commander nem do gateway MCP próprio.
 
