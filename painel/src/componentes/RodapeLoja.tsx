@@ -110,9 +110,14 @@ export function RodapeLoja({
       </div>
       <section className="v-rodape-privacidade-aviso" aria-label="Aviso de privacidade">
         <strong>Privacidade e segurança do atendimento</strong>
-        <p>Não informe senhas, CPF, chassi completo, endereço residencial ou dados de pagamento no chat.
-          Os documentos de privacidade, devolução, garantia e entrega serão disponibilizados após aprovação formal pela empresa.
-          Um contato por WhatsApp não conclui uma compra.</p>
+        <p>Este catálogo não solicita CPF/CNPJ completos, inscrição estadual nem dados bancários para a consulta inicial.
+          Para contratação futura, os dados cadastrais estritamente necessários deverão seguir por integração protegida ao ERP Bling,
+          sem criar outra ficha de cliente no Conecta.IA. Pagamentos deverão ocorrer em ambiente do prestador autorizado,
+          sem armazenar números de cartão ou senhas na loja. Não informe CPF, chassi completo, endereço ou dados bancários no chat.</p>
+        <p>Vendas entre estados, para pessoa física ou CNPJ, revenda, uso/consumo ou ativo imobilizado,
+          podem depender de validação tributária específica. A indicação preliminar não substitui a análise do contador,
+          a confirmação de preço, o pedido e a emissão fiscal pelo ERP.
+          Políticas detalhadas continuam indisponíveis até aprovação da empresa.</p>
       </section>
       <div className="v-rodape-faixa"><span>© {ano} {nome}. Conteúdo comercial da loja.</span><a href={paginaProduto && slug ? "#/loja/" + encodeURIComponent(slug) : "#catalogo"}>Voltar aos produtos ↑</a></div>
       <dialog
