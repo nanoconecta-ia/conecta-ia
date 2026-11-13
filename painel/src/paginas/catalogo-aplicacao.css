@@ -150,3 +150,58 @@
 @media(max-width:740px){.ca-brand img{width:94px;height:94px}}
 
 .ca-botao-laranja{border:0;cursor:pointer;font-family:inherit}
+
+
+/* Hotfix Mobis Android (2026-11-13): mantém o modelo Canva, sem E02 por cima do título. */
+@media (max-width: 740px) {
+  .layout:has(.ca-pagina) { min-width: 0; }
+  .layout:has(.ca-pagina) > main {
+    width: 100%; max-width: 100%; min-width: 0;
+    padding: 10px 12px 82px; display: block;
+  }
+  .ca-pagina { min-width: 0; max-width: 100%; padding: 2px 0 28px; line-height: 1.42; }
+  .ca-titulo { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-bottom: 12px; }
+  .ca-titulo > div { min-width: 0; }
+  .ca-eyebrow { display: block; font-size: .62rem; letter-spacing: .055em; line-height: 1.5; padding-right: 0; }
+  .ca-titulo h1 { font-size: clamp(1.45rem, 6vw, 1.85rem); line-height: 1.17; margin: 6px 0; overflow-wrap: normal; }
+  .ca-titulo p { font-size: .81rem; line-height: 1.48; }
+  .ca-topo-acoes { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; width: 100%; margin: 0; }
+  .ca-topo-acoes > a { display: flex; min-width: 0; min-height: 44px; padding: 9px 8px; gap: 7px; text-align: center; font-size: .72rem; line-height: 1.25; }
+  .ca-topo-acoes > a:first-child { grid-column: 1 / -1; }
+  .ca-topo-acoes > a svg { width: 17px; height: 17px; flex: none; }
+  .ca-aviso { margin-bottom: 10px; display: grid; grid-template-columns: 20px minmax(0,1fr); align-items:start; gap: 5px 10px; font-size: .74rem; line-height: 1.43; padding: 11px 12px; }
+  .ca-aviso > span { min-width: 0; }
+  .ca-aviso > a { grid-column: 2; justify-self: start; font-size: .75rem; }
+  .ca-metricas { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 10px 0 15px; }
+  .ca-metrica { min-height: 94px; padding: 11px; }
+  .ca-metrica strong { font-size: 1.65rem; line-height: 1.25; }
+  .ca-metrica > span { font-size: .68rem; }
+  .ca-metrica small { font-size: .64rem; line-height: 1.35; }
+  .ca-conteudo { padding: 8px; }
+  .ca-identificacao { gap: 7px; }
+  .ca-hero { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: space-between; padding: 16px; min-height: 0; gap: 12px; }
+  .ca-hero-texto { flex: 1 1 210px; min-width: 0; }
+  .ca-hero h2 { font-size: clamp(1.43rem,5.3vw,1.9rem); line-height: 1.13; }
+  .ca-hero p { font-size: .8rem; line-height: 1.5; }
+  .ca-brand { display: flex; flex: 0 0 78px; min-width: 78px; border-radius: 9px; padding: 5px; align-self: flex-start; }
+  .ca-brand img { width: 68px; height: 68px; object-fit: contain; }
+  .ca-hero-acoes { margin-top: 12px; gap: 8px; }
+  .ca-hero-acoes > :is(a,button) { min-height: 42px; font-size: .74rem; padding: 9px 12px; }
+  .ca-vitrine-metricas { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+  .ca-bloco { padding: 15px 13px; }
+  .ca-formulario { gap: 11px; }
+  .ca-subtitulo { font-size: .78rem; line-height: 1.5; margin-bottom: 12px; }
+  .ca-portao { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .ca-rodape { padding-bottom: 12px; }
+  /* Status detalhado é redundante em tela pequena e escondia o final da página. */
+  body:has(.ca-pagina) .barra-status { display: none; }
+}
+@media (max-width: 480px) {
+  .ca-titulo h1 { font-size: clamp(1.45rem,6.1vw,1.72rem); }
+  .ca-pagina { padding: 0 0 28px; }
+  .ca-formulario { grid-template-columns: 1fr; }
+  .ca-hero { display: flex; }
+  .ca-brand { display: flex; }
+  .ca-grade-candidatos { grid-template-columns: 1fr; }
+  .ca-grade-pecas { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
