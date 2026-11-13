@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { brl } from "@/lib/publicacao";
-import { linkWhatsapp, lojaPorSlug, produtoPublico, politicasAprovadasDaLoja } from "@/lib/vitrine";
+import { linkWhatsapp, lojaPorSlug, produtoPublico, politicasAprovadasDaLoja, aplicacoesPublicasProduto } from "@/lib/vitrine";
 import { ChatLojaWeb } from "@/components/ChatLojaWeb";
 import { RodapeComercialWeb } from "@/components/RodapeComercialWeb";
 
@@ -27,7 +27,7 @@ export default async function PaginaProduto({ params }: Props) {
   const d = await carregar(p);
   if (!d) notFound();
   const { loja, produto, imagens } = d;
-  const politicas = await politicasAprovadasDaLoja(loja.id);
+  const [politicas, aplicacoes] = await Promise.all([politicasAprovadasDaLoja(loja.id), aplicacoesPublicasProduto(loja.id, produto.id)]);
   const principal = imagens.find((i) => i.principal) ?? imagens[0];
   const base = loja.slug === "mobis" ? "https://mobisautopecas.com.br" : process.env.APP_URL ?? "http://localhost:3000";
   const url = `${base}/loja/${loja.slug}/produto/${produto.id}`;
@@ -63,6 +63,15 @@ export default async function PaginaProduto({ params }: Props) {
         <p className="font-mono text-sm text-suave">Ref. {produto.sku ?? "—"}</p>
         <p className="text-3xl font-semibold tabular-nums">{brl(produto.preco)}</p>
         {produto.descricao && <p className="whitespace-pre-line text-sm text-suave">{produto.descricao}</p>}
+        <section className="aplicacoes-cliente" aria-label="Aplicações técnicas homologadas">
+          <h2>Aplicações aprovadas por veículo</h2>
+          {aplicacoes.length > 0 ? <ul>{aplicacoes.map((a,i) => <li key={i}>
+            <strong>{a.modelo}</strong> {a.motorizacao ?? "Motor a confirmar"} ·
+            {a.ano_inicial ?? "Ano inicial não informado"}–{a.ano_final ?? "Ano final não informado"}
+            {a.restricao && <p>Restrição: {a.restricao}</p>}
+            {a.contraindicacao && <p>Não aplicar quando: {a.contraindicacao}</p>}
+          </li>)}</ul> : <p>Nenhuma aplicação liberada para exibição. Confirme a compatibilidade com o vendedor antes de comprar.</p>}
+        </section>
         {wa && (
           <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg bg-ok px-5 py-3 font-medium text-white">
             Conversar com vendedor no WhatsApp
