@@ -34,7 +34,8 @@ jobs:
       - run: node scripts/tests/estudio-visual.mjs
       - run: node scripts/tests/loja-filtros-visual.mjs
       - run: node scripts/tests/loja-limite-visual.mjs
-      - run: node scripts/tests/balao-genesis-visual.mjs
+      # Balão aposentado: a integração cobre sua ausência e a Torre do modelo aprovado.
+      - run: node scripts/tests/conecta-aprovado-visual.mjs
       - run: node scripts/tests/pwa-instalavel.mjs
       - run: node scripts/tests/oauth-consentimento-visual.mjs
         env:
