@@ -3,12 +3,13 @@
 // Só devolve produtos PUBLICADOS e campos públicos (sem custo, fornecedor ou id do ERP).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.ts";
+import { modoCliente } from "../_shared/loja/publicacao.ts";
 import { urlProduto } from "../_shared/seo/url.ts";
 import { cabecalhoIpConfigurado, guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
 import { montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
-const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json" } });
+const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" } });
 const POR_PAGINA = 24;
 
 Deno.serve(async (req) => {
@@ -35,9 +36,13 @@ Deno.serve(async (req) => {
     const { data: d } = await sb.from("dominios_ativos").select("loja_id").eq("dominio", host).maybeSingle();
     lojaId = d?.loja_id ?? null;
   }
-  const q = sb.from("lojas").select("id, nome, slug, modo_venda, whatsapp, ativa");
+  const q = sb.from("lojas").select("id, nome, slug, modo_venda, whatsapp, ativa, ambiente");
   const { data: loja } = await (lojaId ? q.eq("id", lojaId) : host ? q.eq("id", "00000000-0000-0000-0000-000000000000") : q.eq("slug", slug!)).maybeSingle();
   if (!loja || loja.ativa === false) return json({ erro: "Loja não encontrada." }, 404);
+  // Domínio de produção não serve a vitrine durante teste. A prévia é pelo slug.
+  if (host && loja.ambiente !== "producao") return json({ erro: "Loja ainda em preparação." }, 404);
+  const fase = loja.ambiente === "producao" ? "producao" : "teste";
+  const faseCliente = modoCliente(fase, loja.modo_venda);
 
   const pagina = Math.max(1, Math.min(Number.isInteger(c?.pagina) ? c.pagina : 1, 1000));
   const limpar = (v: unknown, n = 60) => (typeof v === "string" ? v.replace(/[%,()*\\]/g, " ").trim().slice(0, n) : "");
@@ -113,5 +118,5 @@ Deno.serve(async (req) => {
   const { data: politicasAprovadas } = await sb.from("loja_politicas")
     .select("razao_social, cnpj, endereco, telefone, email_contato, privacidade_texto, troca_devolucao_texto, entrega_texto, garantia_texto, termos_texto")
     .eq("loja_id", loja.id).eq("status", "aprovada").maybeSingle();
-  return json({ loja: { nome: loja.nome, slug: loja.slug, modo_venda: loja.modo_venda, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, politicas: politicasAprovadas ?? null, produtos, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
+  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, politicas: politicasAprovadas ?? null, produtos, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
 });
