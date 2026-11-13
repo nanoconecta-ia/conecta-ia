@@ -40,3 +40,34 @@ body { font-family: var(--font-sans); min-height: 100dvh; }
 .banner-flash { border-color: var(--color-erro); padding-top: 28px; animation: banner-pulso 1.6s ease-in-out infinite; }
 @keyframes banner-pulso { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 18px 2px color-mix(in oklch, var(--color-erro) 55%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .banner-flash { animation: none; } }
+
+
+/* Loja pública: componentes comerciais isolados do painel Conecta.IA. */
+.mobis-web-rodape{margin-top:36px;padding:24px;border-radius:14px;background:#12212a;color:#e8f2ef;display:grid;gap:14px;line-height:1.65}
+.mobis-web-rodape strong{color:#ffe0be;font-size:1.25rem}.mobis-web-rodape p{margin:8px 0}
+.mobis-web-rodape nav{display:flex;gap:9px;flex-wrap:wrap}.mobis-web-rodape nav a{border:1px solid #628185;border-radius:22px;color:#fff;padding:8px 13px;text-decoration:none;font-weight:700}
+.mobis-web-rodape small{color:#c4d2d1}
+.banner-oferta:nth-of-type(3n + 1){--oferta-fundo:#1d2428;--oferta-acento:#edab76}
+.banner-oferta:nth-of-type(3n + 2){--oferta-fundo:#12394a;--oferta-acento:#83cce4}
+.banner-oferta:nth-of-type(3n){--oferta-fundo:#401e2b;--oferta-acento:#f5b1ae}
+.banner-oferta{background:linear-gradient(115deg,var(--oferta-fundo,#1d2428),#222b31);color:#fff;border-color:var(--oferta-acento,#edab76);border-radius:14px;min-height:130px}
+.banner-oferta .banner-wa{color:#fff;border-color:var(--oferta-acento,#edab76)}
+.banner-oferta .banner-ver{background:var(--oferta-acento,#edab76);color:#12212a}
+.banner-oferta .banner-etiqueta{background:var(--oferta-acento,#edab76);color:#12212a}
+.banner-oferta.banner-flash{animation:banner-pulso 2.6s ease-in-out infinite}
+@media(max-width:600px){.banner-oferta{padding:28px 14px 16px;flex-direction:column;align-items:stretch}.banner-acoes{width:100%}.banner-acoes a{flex:1;justify-content:center}.mobis-web-rodape{padding:20px 14px}}
+@media(prefers-reduced-motion:reduce){.banner-oferta.banner-flash{animation:none}}
+.mobis-chat{position:fixed;right:15px;bottom:15px;z-index:60;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:calc(100vw - 30px)}
+.mobis-chat-abrir{background:#155d48;color:#fff;border:2px solid #fff;border-radius:30px;box-shadow:0 8px 35px #0005;padding:12px 19px;min-height:48px;font-weight:750;cursor:pointer}
+.mobis-chat-janela{height:min(520px,calc(100dvh - 105px));width:min(370px,calc(100vw - 30px));display:flex;flex-direction:column;background:#fffdfa;color:#132c29;border:1px solid #bacdc4;border-radius:14px;box-shadow:0 16px 65px #0007;overflow:hidden}
+.mobis-chat-topo{background:#154c40;color:#fff;padding:12px;display:flex;align-items:center;justify-content:space-between}
+.mobis-chat-topo button{background:transparent;color:#fff;border:1px solid #fff6;border-radius:50%;height:35px;width:35px;font-size:1.2rem;cursor:pointer}
+.mobis-chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.mobis-chat-msgs p{max-width:90%;margin:0;padding:9px 12px;border-radius:12px;background:#eaf1ec;font-size:.85rem;line-height:1.55}
+.mobis-chat-msgs p.cliente{align-self:flex-end;background:#c8eadd}
+.mobis-chat-sugestoes{padding:5px 12px;display:flex;flex-wrap:wrap;gap:5px}
+.mobis-chat-sugestoes button{font-size:.7rem;color:#215141;background:#eff7f2;border:1px solid #b7d2bd;padding:5px 10px;border-radius:16px;cursor:pointer}
+.mobis-chat-form{display:flex;gap:6px;padding:10px 12px}.mobis-chat-form input{min-width:0;flex:1;border:1px solid #aabcb2;padding:8px;border-radius:7px;background:#fff;color:#132c29}.mobis-chat-form button{background:#135c42;color:#fff;padding:8px 12px;border-radius:7px;cursor:pointer}
+.mobis-chat-alerta{padding:5px 12px;margin:0;font-size:.68rem;line-height:1.4;color:#66736d}
+.mobis-chat-wa{display:block;background:#0c6d4c;color:#fff;border-radius:8px;padding:10px;margin:7px 12px 12px;text-decoration:none;font-size:.84rem;text-align:center;font-weight:750}
+.mobis-chat :is(a,button,input):focus-visible{outline:3px solid #f1aa60;outline-offset:2px}
