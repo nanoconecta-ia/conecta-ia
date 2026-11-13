@@ -19,8 +19,12 @@ const browser=await chromium.launch({headless:true});
 const resultados=[];
 try{
  for(const width of [360,390,412,1280]){
-  const context=await browser.newContext({viewport:{width,height:844},serviceWorkers:"block",extraHTTPHeaders:{"Cache-Control":"no-cache"}});
-  const page=await context.newPage(),errors=[];page.on("pageerror",e=>errors.push(e.message));
+  const context=await browser.newContext({viewport:{width,height:844},serviceWorkers:"block"});
+  const page=await context.newPage(),errors=[],rede=[];page.on("pageerror",e=>errors.push(e.message));
+  page.on("requestfailed",r=>rede.push({url:r.url(),erro:r.failure()?.errorText}));
+  const cdp=await context.newCDPSession(page);
+  await cdp.send("Network.enable");await cdp.send("Network.setCacheDisabled",{cacheDisabled:true});
+  try{
   const consulta=page.waitForResponse(r=>r.url().endsWith("/functions/v1/loja-publica"),{timeout:45000});
   await page.goto(base+"?release="+esperado+"#/loja/mobis");
   await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor();
@@ -32,9 +36,10 @@ try{
   await page.locator(".m2-aviso-teste").waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow "+width);
   assert.deepEqual(errors,[]);
-  await page.screenshot({path:dir+"mobis-publicada-"+width+".png",fullPage:true});
   resultados.push({width,layout:"aprovado-v2",catalogo:r.status(),produtos:dados.total,erros:errors});
-  await context.close();console.log("PUBLICADA "+width+"px OK "+esperado);
+  console.log("PUBLICADA "+width+"px OK "+esperado);
+  }catch(e){resultados.push({width,erro:String(e),erros:errors,rede});throw e;}
+  finally{await page.screenshot({path:dir+"mobis-publicada-"+width+".png",fullPage:true}).catch(()=>{});await context.close();}
  }
 }finally{
  await browser.close();await writeFile(dir+"resultado.json",JSON.stringify({versao,resultados},null,2));
