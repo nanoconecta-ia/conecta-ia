@@ -38,3 +38,7 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Testes: 394 unitários, TypeScript/build e Playwright na rota pública e nos hosts simulados, em 360/390/412/1280px; filtros em cascata e consulta WhatsApp. O workflow compara version.json ao SHA publicado e registra capturas reais após deploy.
 - Loja permanece em teste, sem vendas/checkout. Sem backend, migração, escrita Bling, transferência de estoque, alteração fiscal ou DNS.
 - Domínio oficial segue pendente: sem A/AAAA no domínio principal e www inexistente na consulta DNS desta execução. Esta republicação não configura DNS nem declara esse domínio homologado.
+
+### Repetição da homologação após publicação
+- A publicação `a9b8b1d` foi aplicada com sucesso, mas o runner `ubuntu-latest` passou a Ubuntu 26.04 e a instalação do Playwright 1.56.1 falhou antes das capturas.
+- Fixar apenas o job de deploy/homologação em `ubuntu-24.04`, a mesma imagem aprovada na suíte visual do PR. Repetir build, publicação e homologação do frontend sem mudar o aplicativo ou permissões.
