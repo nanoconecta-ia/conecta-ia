@@ -1,7 +1,7 @@
 import { useEffect,useState } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
-import { UFS_BR } from "../../supabase/functions/_shared/loja/triagem_fiscal.ts";
+const UFS_BR = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"] as const;
 
 type Regra={id:string;produto_id:string;uf_destino:string;tipo_destinatario:string;contribuinte_icms:string;
  finalidade:string;decisao:string;status:string;validado_em:string|null};
