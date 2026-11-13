@@ -10,7 +10,7 @@ export function BannerOferta({ loja, banner }: { loja: LojaPublica; banner: Bann
   const preco = brl(banner.preco);
   return (
     <article className={`banner-oferta ${banner.flash ? "banner-flash" : ""}`} aria-label={`Oferta: ${banner.nome}`}>
-      {banner.flash && <span className="banner-etiqueta">Oferta relâmpago</span>}
+      {banner.flash && <span className="banner-etiqueta">{loja.ambiente === "teste" ? "Prévia de banner · Loja teste" : "Oferta em destaque"}</span>}
       <div className="banner-texto">
         <h2>{banner.nome}</h2>
         {banner.chamada && <p>{banner.chamada}</p>}
