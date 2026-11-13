@@ -188,14 +188,14 @@ export function CatalogoAplicacao({ loja }: { loja: Loja }) {
       </section>
 
       <section className="ca-conteudo" aria-label="Vitrine interna e filtros da Mobis">
-        <div className="ca-identificacao"><span>CONECTA.IA / VISÃO DE LOJA</span><span className="ca-selo">Prévia interna · não publicada</span></div>
+        <div className="ca-identificacao"><span>CONECTA.IA / VISÃO DE LOJA</span><span className="ca-selo">{loja.ambiente === "producao" ? "Painel de produção · acesso restrito" : "Prévia interna · não publicada"}</span></div>
         <div className="ca-hero">
           <div className="ca-hero-texto">
             <span>{mobis ? "MOBIS AUTOPEÇAS · CATÁLOGO DIESEL" : loja.nome.toUpperCase() + " · CATÁLOGO"}</span>
             <h2>A peça certa para o seu veículo<span>.</span></h2>
             <p>Explore sistemas automotivos, visualize produtos e confira aplicações com rastreabilidade técnica antes da publicação.</p>
             <div className="ca-hero-acoes">
-              <a href="#ca-filtros" className="ca-botao-laranja">Buscar minha peça</a>
+              <button type="button" className="ca-botao-laranja" onClick={() => document.getElementById("ca-filtros")?.scrollIntoView({ behavior: "smooth", block: "start" })}>Buscar minha peça</button>
               {linkContato && <a href={linkContato} className="ca-botao-contorno" target="_blank" rel="noopener noreferrer">Contato comercial</a>}
             </div>
           </div>
