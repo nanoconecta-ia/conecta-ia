@@ -8,7 +8,7 @@ export type GrupoMenu = { id: string; titulo: string; itens: Item[] };
 // esta mudança é apenas de navegação, sem alterar autenticação ou backend.
 const GRUPOS: { id: string; titulo: string; rotas: string[] }[] = [
   { id: "inicio", titulo: "Início", rotas: ["/", "/catalogo-aplicacao", "/visao-geral", "/indicadores"] },
-  { id: "catalogo", titulo: "Catálogo inteligente", rotas: ["/catalogo", "/catalogo-espelho", "/studio", "/taxonomia", "/imagens", "/videos"] },
+  { id: "catalogo", titulo: "Catálogo inteligente", rotas: ["/catalogo", "/catalogo-espelho", "/ferramentas", "/studio", "/taxonomia", "/imagens", "/videos"] },
   { id: "agentes", titulo: "Nano.IA", rotas: ["/assistente", "/conector", "/estudio"] },
   { id: "fila", titulo: "Operações", rotas: ["/fila", "/aprovacoes", "/central"] },
   { id: "ajustes", titulo: "Configurações", rotas: ["/bling", "/backup", "/contador", "/integracoes", "/gateway", "/meu-agente", "/dispositivos", "/aparencia", "/banners", "/condicoes", "/design"] },
