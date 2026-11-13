@@ -30,6 +30,7 @@ import { Videos } from "./paginas/Videos.tsx";
 import { VitrineDemo } from "./paginas/VitrineDemo.tsx";
 import { Loja } from "./paginas/Loja.tsx";
 import { LojaMobisNova } from "./paginas/LojaMobisNova.tsx";
+import { lojaMobisPorHost } from "./lib/lojaHost.ts";
 import { Aparencia } from "./paginas/Aparencia.tsx";
 import { PublicacaoLoja } from "./paginas/PublicacaoLoja.tsx";
 import { Condicoes } from "./paginas/Condicoes.tsx";
@@ -162,7 +163,7 @@ export function App() {
 
   const lojaSlug = caminho.match(/^\/loja\/([a-z0-9-]{2,63})$/);
   if (lojaSlug) return lojaSlug[1] === "mobis" ? <LojaMobisNova slug="mobis" /> : <Loja slug={lojaSlug[1]} />;
-  if (hostCliente && !caminho.startsWith("/p/")) return <Loja host={hostCliente} />;
+  if (hostCliente && !caminho.startsWith("/p/")) return lojaMobisPorHost(hostCliente) ? <LojaMobisNova slug="mobis" /> : <Loja host={hostCliente} />;
   const pub = caminho.match(/^\/p\/([a-z0-9-]+)\/(.+)$/);
   if (caminho === "/demo/vitrine") return <VitrineDemo />;
   if (pub) return <ProdutoPublico slug={pub[1]} sku={decodeURIComponent(pub[2])} />;
