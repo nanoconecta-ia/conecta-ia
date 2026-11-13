@@ -28,7 +28,7 @@ test("Mobis: consulta publica limpa respostas anteriores e nao inventa catalogo"
   const loja = ler("paginas/LojaMobisNova.tsx");
   assert.match(loja, /setDados\(null\);setEstado\("carregando"\)/);
   assert.match(loja, /setEstado\("erro"\)/);
-  assert.match(loja, /dados\.produtos\.length===0/);
+  assert.match(loja, /dados\?\.produtos\.length===0/);
   assert.match(loja, /LOJA TESTE/);
 });
 
