@@ -53,6 +53,9 @@ import { DockAgente } from "./componentes/DockAgente.tsx";
 import { dividePagina, gravar as gravarPainel, ler as lerPainel, reserva, TELA_MIN_PARA_FIXO, type EstadoPainel } from "./lib/painelLateral.ts";
 import { BalaoGenesis } from "./componentes/BalaoGenesis.tsx";
 import "./shell.css";
+import { PainelAprovado } from "./componentes/PainelAprovado.tsx";
+import { InicioAprovado } from "./paginas/InicioAprovado.tsx";
+import { NanoWorkspace } from "./paginas/NanoWorkspace.tsx";
 
 // Em domínio de cliente (fora do GitHub Pages/localhost) a raiz é a loja daquele domínio, resolvida pelo servidor.
 const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
@@ -168,73 +171,38 @@ export function App() {
   if (caminho === "/demo/vitrine") return <VitrineDemo />;
   if (pub) return <ProdutoPublico slug={pub[1]} sku={decodeURIComponent(pub[2])} />;
   if (PAIR_ATIVO && caminho === "/parear" && !query.get("c")) return <ParearSolicitante />; // pública: o dispositivo que pede o pareamento ainda não tem login
-  if (!demoAtivo && sessao === undefined) return <p className="entrar suave">Carregando…</p>;
-  if (demoAtivo && !demo) return <p className="entrar suave">Carregando…</p>;
-  if (!demoAtivo && (recuperando || caminho === "/redefinir")) return <Redefinir aoConcluir={() => { fimRecuperacao(); void supabase.auth.signOut().then(() => ir("/entrar?aviso=senha")); }} />;
-  if (!demoAtivo && !sessao) return caminho === "/recuperar" ? <Recuperar /> : <Entrar aviso={query.get("aviso")} />;
+  if (!demoAtivo && sessao === undefined) return <div className="entrada-aprovada ap-recuperacao"><p role="status">Carregando Conecta.IA…</p></div>;
+  if (demoAtivo && !demo) return <div className="entrada-aprovada ap-recuperacao"><p role="status">Carregando Conecta.IA…</p></div>;
+  if (!demoAtivo && (recuperando || caminho === "/redefinir")) return <div className="entrada-aprovada ap-recuperacao"><Redefinir aoConcluir={() => { fimRecuperacao(); void supabase.auth.signOut().then(() => ir("/entrar?aviso=senha")); }} /></div>;
+  if (!demoAtivo && !sessao) return caminho === "/recuperar" ? <div className="entrada-aprovada ap-recuperacao"><Recuperar /></div> : <Entrar aviso={query.get("aviso")} />;
 
   if (!demoAtivo && sessao && PAIR_ATIVO && caminho === "/autorizar-agente") return <AutorizarAgente codigo={query.get("c") ?? ""} />;
   if (!demoAtivo && sessao && PAIR_ATIVO && caminho === "/parear") return <ParearAprovador codigo={query.get("c") ?? ""} email={sessao?.user.email ?? null} />;
   const loja = demoAtivo ? demo?.lojaDemo ?? null : lojas?.[0] ?? null;
   const bloqueada = rotaBloqueada(caminho, { conectorAtivo: CONECTOR_ATIVO, centralAtiva: CENTRAL_ATIVA }, ROTAS_DO_CONECTOR, ROTAS_DA_CENTRAL); // backend não publicado ou exige aceite
   const larga = caminho === "/conector" && !bloqueada;
-  const paginaDeChat = caminho === "/assistente" || (caminho === "/conector" && !bloqueada); // já são o próprio chat: sem painel duplicado
+  const paginaDeChat = caminho === "/estudio" || caminho === "/assistente" || (caminho === "/conector" && !bloqueada); // já são o próprio chat: sem painel duplicado
   const dockAberto = agente && !!loja && !demoAtivo && !paginaDeChat;
   const dividindo = dividePagina(painel, telaW, dockAberto);
   const res = reserva(painel, telaW, dockAberto);
   const filtroInd = caminho.match(/^\/indicadores\/([a-z_:]+)$/);
   return (
-    <>
+    <div className="conecta-aprovado-root">
       {demo && <div className="faixa-demo" role="status">{demo.FAIXA}</div>}
       <AvisoVersao />
-      <header className={`topo topo-premium ${caminho === "/assistente" ? "topo--nano-chat" : ""}`}>
-        <button type="button" className="sec menu-movel-acionar" onClick={() => setMenuMovel((v) => !v)}
-          aria-label={menuMovel ? "Fechar navegação" : "Abrir navegação"} aria-controls="menu-principal" aria-expanded={menuMovel}>
-          <Icone nome={menuMovel ? "fechar" : "menu"} tamanho={20} />
-        </button>
-        <div className="marca"><LogoConecta tamanho={40} estado={estadoNano} /><div className="marca-identidade"><span className="marca-titulo-acessivel">Conecta.IA</span><img src="./icones/conecta-wordmark-2026.svg" className="marca-wordmark" alt="Conecta.IA" width="220" height="49" /><small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
-        <span className="topo-selo" aria-label="Ambiente administrativo">WORKSPACE <b>ADMIN</b></span>
-        <button className="busca-topo" onClick={() => setPaleta(true)} aria-label="Abrir paleta de comandos"><Icone nome="busca" tamanho={16} /><span>Buscar módulos e ações…</span><kbd>Ctrl K</kbd></button>
-        {!!loja && <a className="topo-atalho-nano" href={`#${ROTA_NANO}`}><Icone nome="agentes" tamanho={17} /><span>Nano.IA</span></a>}
-        {!!loja && !demoAtivo && !paginaDeChat && <button className="sec agente-botao" onClick={() => setAgente((a) => !a)} aria-pressed={agente} aria-label="Agente lateral (Ctrl J)"><Icone nome="agentes" tamanho={16} /><span>Agente</span></button>}
-        <SeletorTema />
-        <button className="sec topo-sair" onClick={() => void supabase.auth.signOut()} disabled={demoAtivo}>Sair</button>
-      </header>
-      <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
-      <div className={`layout layout-premium ${larga ? "layout--larga" : ""} ${paginaDeChat ? "layout--chat" : ""} ${caminho === "/assistente" ? "layout--nano-chat" : ""} ${recolhido ? "layout--recolhido" : ""} ${dockAberto ? "layout--dock" : ""} ${menuMovel ? "layout--menu-movel-aberto" : ""}`} style={{ "--res-esq": `${res.esq}px`, "--res-dir": `${res.dir}px` } as React.CSSProperties}>
-      {menuMovel && <button type="button" className="menu-escurecedor" aria-label="Fechar menu de navegação" onClick={() => setMenuMovel(false)} />}
-      <nav id="menu-principal" className="menu menu-premium" aria-label="Menu principal">
-        <div className="menu-destaque">
-          <span className="menu-destaque-legenda">ASSISTENTE OPERACIONAL</span>
-          <a href={`#${ROTA_NANO}`} className="menu-nano-iniciar" onClick={() => setMenuMovel(false)}><Icone nome="agentes" tamanho={20} /><span>Conversar com Nano.IA</span></a>
-          <small>Consulta e propostas com aprovação humana</small>
-        </div>
-        {GRUPOS_MENU.map((g) => (
-          <details key={g.id} className="menu-grupo" open={areasAbertas.has(g.id)} onToggle={(e) => alternarArea(g.id, e.currentTarget.open)}>
-            <summary className="menu-titulo" title={g.titulo}>
-              <Icone nome={g.id} tamanho={16} /><b>{g.titulo}</b>
-            </summary>
-            <div className="menu-grupo-itens">
-              {g.itens.map(([c, t]) => (
-                <a key={c} href={`#${c}`} title={t} className={caminho === c ? "ativo" : ""} aria-current={caminho === c ? "page" : undefined} onClick={() => setMenuMovel(false)}>
-                  <Icone nome={ICONES_ROTAS[c] ?? g.id} tamanho={18} /><span>{t}</span>
-                </a>
-              ))}
-            </div>
-          </details>
-        ))}
-        <button className="sec menu-sair" disabled={demoAtivo} onClick={() => void supabase.auth.signOut()}><Icone nome="fechar" tamanho={18} /><span>Sair da conta</span></button>
-        <button className="sec menu-recolher" onClick={alternarMenu} aria-pressed={recolhido} aria-label={recolhido ? "Expandir menu" : "Recolher menu"}><Icone nome="recolher" tamanho={16} /></button>
-      </nav>
-      <main>
+      <PainelAprovado loja={loja} caminho={caminho} menu={MENU} menuMovel={menuMovel} recolhido={recolhido}
+        aoMenu={() => setMenuMovel(v => !v)} aoRecolher={alternarMenu} aoBusca={() => setPaleta(true)}
+        aoSair={() => { if (!demoAtivo) void supabase.auth.signOut(); }}
+        aoAgente={() => { if (caminho === "/estudio" || caminho === "/assistente") setAgente(false); else ir("/estudio"); }} res={res}>
         {!demoAtivo && lojas === null ? <p className="suave">Carregando…</p> : !loja ? (
           <div className="cartao"><h1>Sem loja vinculada</h1><p className="suave">Seu login ainda não está ligado a uma loja. Peça ao suporte para vincular.</p></div>
         ) : bloqueada ? <VisaoGeral loja={loja} />
-          : ((caminho === "/" && loja.slug === "mobis") || caminho === "/catalogo-aplicacao") ? <CatalogoAplicacao loja={loja} />
+          : caminho === "/" ? <InicioAprovado loja={loja} />
+          : caminho === "/catalogo-aplicacao" ? <CatalogoAplicacao loja={loja} />
           : caminho === "/visao-geral" ? <VisaoGeral loja={loja} />
           : caminho === "/catalogo-espelho" ? <Catalogo loja={loja} />
           : caminho === "/ferramentas" ? <FerramentasCatalogo loja={loja} query={query} />
-          : caminho === "/estudio" ? <EstudioAgente key={loja.id} loja={loja} />
+          : caminho === "/estudio" ? <NanoWorkspace key={loja.id} loja={loja} menu={MENU} aoNavegar={ir} />
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />
           : PAIR_ATIVO && caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao?.user.email ?? null} />
@@ -247,7 +215,7 @@ export function App() {
           : caminho === "/indicadores" ? <Indicadores loja={loja} />
           : caminho === "/studio" ? <Studio loja={loja} query={query} />
           : caminho === "/gateway" ? <GatewayMCP loja={loja} />
-          : caminho === "/assistente" ? <Assistente key={loja.id} loja={loja} menu={MENU} aoNavegar={ir} />
+          : caminho === "/assistente" ? <NanoWorkspace key={loja.id} loja={loja} menu={MENU} aoNavegar={ir} />
           : caminho === "/aparencia" ? <Aparencia loja={loja} />
           : caminho === "/publicacao" ? <PublicacaoLoja loja={loja} />
           : BANNERS_ATIVO && caminho === "/banners" ? <Banners loja={loja} />
@@ -260,11 +228,10 @@ export function App() {
           : caminho === "/bling" ? <Bling loja={loja} query={query} />
           : caminho === "/contador" ? <Contador loja={loja} />
           : <VisaoGeral loja={loja} />}
-      </main>
-      </div>
+      </PainelAprovado>
+      <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
       {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} menu={MENU} aoNavegar={ir} painel={painel} aoMudarPainel={mudarPainel} dividindo={dividindo} telaW={telaW} />}
-      {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis lojaId={loja.id} aberto={dockAberto} aoAlternar={() => setAgente((a) => !a)} />}
-      <BarraStatus loja={loja ? loja.nome : null} tela={MENU.find((i) => i[0] === caminho)?.[1] ?? "Visão geral"} demo={demoAtivo} />
-    </>
+      {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis lojaId={loja.id} aberto={dockAberto} aoAlternar={() => setAgente(a => !a)} />}
+    </div>
   );
 }

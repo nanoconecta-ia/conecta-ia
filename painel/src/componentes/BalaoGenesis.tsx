@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Orbe } from "./Esfera.tsx";
+import { AvatarNanoAprovado } from "./AvatarNanoAprovado.tsx";
 import { useEstadoNano } from "../lib/nanoEstado.ts";
 import { ROTULO_ESTADO } from "../lib/estadoAgente.ts";
 import { coordenadas, encaixar, gravar, ler, pontoDeGuia, type PosicaoSalva } from "../lib/posicaoBalao.ts";
@@ -67,7 +67,7 @@ export function BalaoGenesis({ lojaId, aberto, aoAlternar }: { lojaId: string; a
       style={{ left: c.x, top: c.y }} data-lado={efetiva.lado}
       onClick={aoClicar} onPointerDown={aoPressionar} onPointerMove={aoMover} onPointerUp={aoSoltar} onPointerCancel={aoSoltar} onKeyDown={aoTeclar}
       aria-expanded={aberto} aria-controls="dock-agente" aria-label={`${aberto ? "Fechar o Nano.ia" : "Abrir o Nano.ia"} — ${estado === "falando" ? "Falando" : ROTULO_ESTADO[estado]}`} aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown Alt+ArrowLeft Alt+ArrowRight">
-      <Orbe estado={estado} tamanho={56} decorativo />
+      <AvatarNanoAprovado estado={estado} tamanho={56} decorativo />
       <span className="balao-texto"><b>Nano.ia</b><small>{guia ? `Aqui: ${guia}` : aberto ? "Conversando" : "Toque para falar"}</small></span>
     </button>
   );

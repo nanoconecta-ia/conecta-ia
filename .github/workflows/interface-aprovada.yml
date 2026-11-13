@@ -1,0 +1,34 @@
+name: Conecta e Nano - interface aprovada completa
+on:
+  pull_request:
+    paths: ['painel/**', 'scripts/tests/conecta-aprovado-visual.mjs', '.github/workflows/interface-aprovada.yml']
+permissions:
+  contents: read
+jobs:
+  interface:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24.19.0'}
+      - run: npm ci
+        working-directory: painel
+      - run: npm test
+        working-directory: painel
+      - run: npm run build
+        working-directory: painel
+      - name: Browser efêmero
+        working-directory: painel
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.56.1
+          npx playwright install chromium --with-deps
+      - run: node scripts/tests/conecta-aprovado-visual.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conecta-nano-modelo-aprovado-SIMULADO
+          path: evidencias-conecta-aprovado/
+          retention-days: 7
+          if-no-files-found: error

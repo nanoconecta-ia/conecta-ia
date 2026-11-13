@@ -61,9 +61,9 @@ try{
   for(const r of rotas){
    await page.goto(base+'/'+r);await page.waitForTimeout(700);
    assert.equal(await page.evaluate(()=>document.documentElement.dataset.tema),tema);
-   if(r==='#/design'){await page.getByRole('button',{name:/^Aparência:/}).click();await page.waitForTimeout(150)} // com a lista de aparência aberta
+   assert.equal(await page.locator('[data-conecta-layout="aprovado-v2"]').count(),1,'interface aprovada permanece ativa');
    const a=await page.evaluate(AUDITORIA);
-   if(r==='#/design')await page.keyboard.press('Escape');
+
    if(a.falhas.length)problemas.push(`${tema}/${nome}/${r}: ${a.falhas.length} texto(s) abaixo do mínimo: ${a.falhas.slice(0,3).join('; ')}`);
    if(r==='#/integracoes'){const bs=await page.evaluate(BORDA_CAMPO);if(!bs.length)problemas.push(`${tema}/${nome}: nenhum campo encontrado para medir a borda`);else if(Math.min(...bs)<3)problemas.push(`${tema}/${nome}: borda de campo ${Math.min(...bs)}:1 (< 3:1)`);}
    if(!(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)))problemas.push(`${tema}/${nome}/${r}: rolagem horizontal`);
@@ -72,27 +72,16 @@ try{
   await ctx.close();
  }
  assert.deepEqual(problemas,[],'contraste/tema:\n'+problemas.join('\n'));
- // seletor de aparência: visível no celular, por teclado, escolha lembrada
+ // Navegação do modelo aprovado, acessível por teclado nas duas larguras.
  for(const [w,h,nome] of [[1440,900,'PC'],[390,844,'Android']]){
-  const {ctx,page,erros}=await novoContexto(w,h,null);
-  await page.goto(base+'/#/design');
-  const gat=page.getByRole('button',{name:/^Aparência:/});await gat.waitFor();
-  const gb=await gat.boundingBox();assert.ok(gb.width>=44&&gb.height>=44&&gb.x>=0&&gb.x+gb.width<=w,`${nome}: botão de aparência visível e tocável`);
-  await gat.focus();await page.keyboard.press('Enter');
-  const grupo=page.getByRole('radiogroup',{name:'Aparência'});await grupo.waitFor();
-  assert.equal(await grupo.getByRole('radio').count(),5,`${nome}: 5 opções`);
-  const pb=await grupo.boundingBox();assert.ok(pb.x>=0&&pb.x+pb.width<=w+0.5&&pb.y+pb.height<=h,`${nome}: lista dentro da tela ${JSON.stringify(pb)}`);
-  assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('role')),'radio','foco vai para a opção atual');
-  await page.keyboard.press('End');assert.match(await page.evaluate(()=>document.activeElement.textContent),/Alto contraste/);
-  await page.keyboard.press('Enter');
-  assert.equal(await page.evaluate(()=>document.documentElement.dataset.tema),'contraste');
-  assert.equal(await page.evaluate(()=>localStorage.getItem('conecta:tema')),'contraste');
-  assert.equal(await grupo.count(),0,'fecha ao escolher');assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'true','foco volta ao botão');
-  await page.reload();await page.waitForTimeout(400);assert.equal(await page.evaluate(()=>document.documentElement.dataset.tema),'contraste','escolha lembrada');
-  await page.getByRole('button',{name:/^Aparência:/}).click();await page.keyboard.press('Escape');assert.equal(await page.getByRole('radiogroup').count(),0,'Esc fecha');
-  await page.getByRole('button',{name:/^Aparência:/}).click();await page.getByRole('radio',{name:/Automático/}).click();
-  assert.equal(await page.evaluate(()=>document.documentElement.hasAttribute('data-tema')),false,'automático não escreve atributo');
+  const {ctx,page,erros}=await novoContexto(w,h,null);await page.goto(base+'/#/');
+  await page.locator('[data-conecta-layout="aprovado-v2"]').waitFor();
+  if(w<781){const gat=page.getByRole('button',{name:'Abrir navegação',exact:true});await gat.focus();await page.keyboard.press('Enter');}
+  const link=page.getByRole('link',{name:'Estúdio do Nano',exact:true});await link.focus();await page.keyboard.press('Enter');
+  await page.locator('[data-nano-layout="aprovado-v2"]').waitFor();
+  assert.equal(await page.locator('.topo-premium,.layout-premium,.menu-premium').count(),0,'modelo anterior não é montado');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'navegação sem overflow '+nome);
   assert.deepEqual(erros,[]);await ctx.close();
  }
- console.log('temas-visual ok (4 temas x PC e Android x 3 telas: texto >= WCAG AA, borda de campo >= 3:1; seletor por teclado, visível no celular e lembrado)');
+ console.log('interface aprovada: contraste >= WCAG AA, bordas >= 3:1, preferências armazenadas não restauram o modelo antigo, navegação por teclado em PC e Android');
 }finally{await browser?.close();servidor.kill()}
