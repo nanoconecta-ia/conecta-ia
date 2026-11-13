@@ -258,7 +258,7 @@ export function App() {
       </main>
       </div>
       {loja && !demoAtivo && !paginaDeChat && <DockAgente loja={loja} aberto={dockAberto} aoFechar={() => setAgente(false)} menu={MENU} aoNavegar={ir} painel={painel} aoMudarPainel={mudarPainel} dividindo={dividindo} telaW={telaW} />}
-      {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis lojaId={loja.id} aberto={dockAberto} aoAlternar={() => setAgente((a) => !a)} />}
+      {loja && !demoAtivo && !paginaDeChat && <BalaoGenesis lojaId={loja.id} aberto={dockAberto} aoAlternar={() => setAgente((a) => !a)} compacto={caminho === "/catalogo-aplicacao" || (caminho === "/" && loja.slug === "mobis")} />}
       <BarraStatus loja={loja ? loja.nome : null} tela={MENU.find((i) => i[0] === caminho)?.[1] ?? "Visão geral"} demo={demoAtivo} />
     </>
   );
