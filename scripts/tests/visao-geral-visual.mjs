@@ -43,7 +43,7 @@ try {
       if (u.pathname.endsWith("/functions/v1/assistente")) { const a=JSON.parse(req.postData()||"{}").acao; return route.fulfill({status:200,headers,contentType:"application/json",body:JSON.stringify(a==="provedores"?{verificado:true,provedores:[]}:a==="chat_config"?{persistente:false,bling:false,leitura_administrativa:false,retencao_dias:180}:{conversas:[],registros:[]})}); }
       return route.fulfill({status:200,headers,contentType:"application/json",body:u.pathname.includes("/rest/v1/")?"[]":"{}"});
     });
-    await page.goto(base + "/#/");
+    await page.goto(base + "/#/visao-geral");
     await page.getByRole("heading", { name:/Sua loja, sob controle/ }).waitFor();
     await page.getByText("Verificação pendente").waitFor();
     await page.locator(".visao-kpi-conexao .visao-status[data-tipo=ok]").waitFor();

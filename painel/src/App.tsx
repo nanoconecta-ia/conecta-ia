@@ -91,7 +91,7 @@ export function App() {
   useEffect(() => {
     const ajustar = () => {
       const raiz = document.documentElement.style;
-      const cab = document.querySelector<HTMLElement>(".topo")?.offsetHeight, barra = document.querySelector<HTMLElement>(".barra-status")?.offsetHeight;
+      const cab = document.querySelector<HTMLElement>(".ap-topbar")?.offsetHeight, barra = document.querySelector<HTMLElement>(".barra-status")?.offsetHeight;
       if (cab) raiz.setProperty("--cab-altura", `${cab}px`);
       if (barra) raiz.setProperty("--barra-altura", `${barra}px`);
     };
