@@ -28,7 +28,7 @@ import { Videos } from "./paginas/Videos.tsx";
 import { VitrineDemo } from "./paginas/VitrineDemo.tsx";
 import { Loja } from "./paginas/Loja.tsx";
 import { LojaMobisNova } from "./paginas/LojaMobisNova.tsx";
-import { lojaMobisPorHost } from "./lib/lojaHost.ts";
+import { entradaAdministrativa, lojaMobisPorHost } from "./lib/lojaHost.ts";
 import { Aparencia } from "./paginas/Aparencia.tsx";
 import { PublicacaoLoja } from "./paginas/PublicacaoLoja.tsx";
 import { Condicoes } from "./paginas/Condicoes.tsx";
@@ -49,7 +49,7 @@ import { NanoWorkspace } from "./paginas/NanoWorkspace.tsx";
 
 // Em domínio de cliente (fora do GitHub Pages/localhost) a raiz é a loja daquele domínio, resolvida pelo servidor.
 const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
-const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(window.location.hostname) ? window.location.hostname : null;
+const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(window.location.hostname) && !entradaAdministrativa(window.location.pathname) ? window.location.hostname : null;
 
 const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], ["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [

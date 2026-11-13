@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath } from "node:url";
 
 // Identifica a versão publicada: commit do GitHub Actions (ou "local") e hora do build. O painel mostra isso na tela e compara com version.json.
 const COMMIT = (process.env.GITHUB_SHA ?? "local").slice(0, 7);
@@ -13,5 +14,6 @@ const emitirVersao = (): Plugin => ({
 export default defineConfig({
   base: "./",
   plugins: [react(), emitirVersao()],
+  build: { rollupOptions: { input: { loja: fileURLToPath(new URL("./index.html", import.meta.url)), conecta: fileURLToPath(new URL("./conecta.html", import.meta.url)) } } },
   define: { __COMMIT__: JSON.stringify(COMMIT), __CONSTRUIDO__: JSON.stringify(CONSTRUIDO) },
 });

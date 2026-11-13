@@ -107,6 +107,26 @@ try {
     assert.equal(await page.locator("#m2-pesquisar").evaluate(el=>el===document.activeElement),true);
     await context.close();
   }
+  {
+    const {context,page} = await abrir({ambiente:"teste",venda_habilitada:false});
+    // Host público SIMULADO, servido apenas pelo build local: não chama a loja real.
+    await context.route("https://www.mobisautopecas.com.br/**", async route => {
+      const u = new URL(route.request().url());
+      const response = await route.fetch({url:new URL(u.pathname + u.search,base).href});
+      return route.fulfill({response});
+    });
+    for (const hash of ["#/", "#/estudio", "#/catalogo-espelho"]) {
+      await page.goto("https://www.mobisautopecas.com.br/conecta.html" + hash);
+      await page.locator('[data-acesso-layout="aprovado-v2"]').waitFor();
+      assert.equal(await page.locator('[data-conecta-layout="aprovado-v2"], [data-nano-layout="aprovado-v2"]').count(),0,"admin sem sessão não monta dados");
+      assert.equal(await page.locator('[data-mobis-layout="aprovado-v2"]').count(),0,"entrada privada não redireciona para loja");
+    }
+    await page.goto("https://www.mobisautopecas.com.br/#/estudio");
+    await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor();
+    assert.equal(await page.locator('[data-acesso-layout="aprovado-v2"]').count(),0,"raiz pública continua loja mesmo com hash administrativo");
+    await context.close();
+    resultados.push({separacao:"raiz pública = loja; conecta.html exige sessão em início, Nano e catálogo"});
+  }
   resultados.push({guardas:"producao, venda ativa, flags ausentes e erro de API: amostra ausente",filtros:"modelo canônico, ano/categoria limpos, busca rápida e foco por código aprovados"});
   console.log(JSON.stringify(resultados,null,2));
 } catch (erro) {
