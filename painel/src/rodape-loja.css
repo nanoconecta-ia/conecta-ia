@@ -23,3 +23,9 @@
 .v-rodape-dialogo-acoes button{background:#214c44;color:#fff;border:0;border-radius:8px;min-height:44px;padding:0 25px;cursor:pointer}
 @media(max-width:950px){.v-rodape-grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.v-rodape-grade{grid-template-columns:1fr 1fr;gap:26px 18px}.v-rodape-apresentacao,.v-rodape-grupo:last-child{grid-column:1/-1}.v-rodape-faixa{display:block}.v-rodape-faixa a{display:block;margin-top:8px}.v-rodape-dialogo-topo{padding:18px}.v-rodape-politica{padding:14px 18px}.v-rodape-dialogo-acoes{padding:12px 18px}}
+
+.v-rodape-site{color:#ffcf9f;font-weight:800;text-decoration:none}
+.v-rodape-sociais{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.v-rodape-sociais a{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:6px 11px;border:1px solid #69857b;border-radius:24px;color:#e1f5e7;text-decoration:none;font-size:.76rem}
+.v-rodape-sociais a:hover{background:#283a37}
+.v-rodape-sociais span{display:inline-grid;place-items:center;width:20px;height:20px;font-size:1.1rem;font-weight:800}
