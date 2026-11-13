@@ -59,8 +59,8 @@ try {
   assert.ok(link && !link.includes("bling_id"),"ID do Bling não aparece");
   assert.equal(await page.getByRole("button",{name:"Adicionar à lista"}).count(),0,"não duplicar mesmo SKU");
   assert.equal(await page.getByRole("button",{name:/Privacidade — aguardando aprovação/}).isDisabled(),true,"rascunho bloqueado");
-  assert.equal(await page.getByText("As políticas comerciais da loja ainda não foram aprovadas.").count(),0,
-    "a mensagem real vem acompanhada de orientação, sem texto jurídico não aprovado");
+  assert.equal(await page.getByText(/As políticas comerciais da loja ainda não foram aprovadas/).count(),1,
+    "o rodapé explica que o texto ainda não está homologado");
   assert.equal(await page.locator(".v-rodape-politica-link button").count(),5,"cinco políticas visíveis");
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow horizontal");
   assert.deepEqual(erros,[],"sem erro JavaScript");
