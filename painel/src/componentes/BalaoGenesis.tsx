@@ -9,7 +9,7 @@ const ARRASTO_MIN = 6;
 
 /** Balão flutuante do Nano.ia: acompanha o lojista em qualquer tela. Arrasta e gruda na borda, lembra onde ficou, e quando o agente abre uma tela
  *  ele sobe até o título dela ("guia") e depois volta. Abre/fecha o agente; sem chamada ao servidor por si só. */
-export function BalaoGenesis({ lojaId, aberto, aoAlternar }: { lojaId: string; aberto: boolean; aoAlternar: () => void }) {
+export function BalaoGenesis({ lojaId, aberto, aoAlternar, compacto = false }: { lojaId: string; aberto: boolean; aoAlternar: () => void; compacto?: boolean }) {
   const estado = useEstadoNano(lojaId); // o mesmo estado do chat e do cabeçalho: só eventos reais (a navegação guiada não conta como execução)
   const ref = useRef<HTMLButtonElement>(null);
   const [pos, setPos] = useState<PosicaoSalva>(ler);
@@ -33,8 +33,13 @@ export function BalaoGenesis({ lojaId, aberto, aoAlternar }: { lojaId: string; a
     window.addEventListener("hashchange", f); return () => window.removeEventListener("hashchange", f);
   }, []);
 
-  const efetiva = guia ? pontoDeGuia(tela, TAMANHO) : pos;
-  const c = arrastando ?? coordenadas(efetiva, tela, TAMANHO);
+  // Na visão Mobis em celular, a posição salva no desktop não deve cobrir títulos e filtros.
+  // O Nano continua clicável, com o desenho e os estados originais, mas fica no canto inferior.
+  const noCanto = compacto && tela.w <= 740;
+  const efetiva = guia && !noCanto ? pontoDeGuia(tela, TAMANHO) : pos;
+  const c = noCanto
+    ? { x: Math.max(12, tela.w - 72), y: Math.max(68, tela.h - 96) }
+    : arrastando ?? coordenadas(efetiva, tela, TAMANHO);
 
   const aoPressionar = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0) return;
@@ -63,9 +68,9 @@ export function BalaoGenesis({ lojaId, aberto, aoAlternar }: { lojaId: string; a
   };
 
   return (
-    <button ref={ref} type="button" className={`sec balao-genesis ${pulo ? "balao-pulo" : ""} ${guia ? "balao-guia" : ""} ${arrastando ? "balao-arrastando" : ""}`}
+    <button ref={ref} type="button" className={`sec balao-genesis ${noCanto ? "balao-catalogo-compacto" : ""} ${pulo && !noCanto ? "balao-pulo" : ""} ${guia && !noCanto ? "balao-guia" : ""} ${arrastando && !noCanto ? "balao-arrastando" : ""}`}
       style={{ left: c.x, top: c.y }} data-lado={efetiva.lado}
-      onClick={aoClicar} onPointerDown={aoPressionar} onPointerMove={aoMover} onPointerUp={aoSoltar} onPointerCancel={aoSoltar} onKeyDown={aoTeclar}
+      onClick={aoClicar} onPointerDown={noCanto ? undefined : aoPressionar} onPointerMove={noCanto ? undefined : aoMover} onPointerUp={noCanto ? undefined : aoSoltar} onPointerCancel={noCanto ? undefined : aoSoltar} onKeyDown={noCanto ? undefined : aoTeclar}
       aria-expanded={aberto} aria-controls="dock-agente" aria-label={`${aberto ? "Fechar o Nano.ia" : "Abrir o Nano.ia"} — ${estado === "falando" ? "Falando" : ROTULO_ESTADO[estado]}`} aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown Alt+ArrowLeft Alt+ArrowRight">
       <Orbe estado={estado} tamanho={56} decorativo />
       <span className="balao-texto"><b>Nano.ia</b><small>{guia ? `Aqui: ${guia}` : aberto ? "Conversando" : "Toque para falar"}</small></span>
