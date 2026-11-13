@@ -18,7 +18,10 @@ import { montarPedidoCorrecao as montarPedidoCorrecaoCadastro } from "../lib/cor
 import { montarPedidoCorrecao, pendenciasDaFicha } from "../lib/pedidoCorrecao.ts";
 import { camposFaltando, contagens, filtrar, ROTULO_FILTRO, semCategoria, situacaoTexto, type Filtro, type LinhaPlanilha } from "../lib/planilha.ts";
 
-type Produto = LinhaPlanilha & { preco: number | null; estoque: number | null; publicado: boolean };
+type Produto = LinhaPlanilha & {
+  preco: number | null; estoque: number | null; publicado: boolean;
+  bling_id: string | null; pai_bling_id: string | null; familia_id: string | null;
+};
 type No = { id: string; pai_id: string | null; nome: string; slug?: string | null };
 const FILTROS: Filtro[] = ["todos", "sem_categoria", "incompletos", "inativos", "sem_no"];
 const brl = (v: number | null) => (v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
@@ -64,6 +67,23 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const [vista, setVista] = useState<"tabela" | "cartoes">(() =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches ? "cartoes" : "tabela");
   const [fichaId, setFichaId] = useState<string | null>(null);
+  const [aplicacoesFicha, setAplicacoesFicha] = useState<{ total: number; aprovadas: number } | null>(null);
+  useEffect(() => {
+    if (!fichaId) { setAplicacoesFicha(null); return; }
+    let ativo = true; setAplicacoesFicha(null);
+    const contar = async () => {
+      const [a, b] = await Promise.all([
+        supabase.from("produto_aplicacoes").select("id", { head:true,count:"exact" })
+          .eq("loja_id",loja.id).eq("produto_id",fichaId),
+        supabase.from("produto_aplicacoes").select("id", { head:true,count:"exact" })
+          .eq("loja_id",loja.id).eq("produto_id",fichaId).eq("status","aprovado"),
+      ]);
+      if (ativo) setAplicacoesFicha(!a.error && !b.error
+        ? { total:a.count ?? 0, aprovadas:b.count ?? 0 } : null);
+    };
+    void contar();
+    return () => { ativo = false; };
+  }, [fichaId,loja.id]);
   const [obsFicha, setObsFicha] = useState("");
   const [noSugerido, setNoSugerido] = useState("");
   const [form, setForm] = useState({ marca: "", gtin: "", pesoKg: "", descricaoCurta: "", fonte: "" });
@@ -89,7 +109,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
     }
     const codigoFiltro = expressaoBuscaCatalogo(buscaAplicada);
     let produtosQuery = supabase.from("produtos")
-      .select("id, sku, nome, preco, estoque, publicado, marca, gtin, peso_kg, descricao_curta, descricao_complementar, categoria_bling_id, situacao, taxonomia_no_id", { count: "exact" })
+      .select("id, sku, nome, preco, estoque, publicado, marca, gtin, peso_kg, descricao_curta, descricao_complementar, categoria_bling_id, situacao, taxonomia_no_id, bling_id, pai_bling_id, familia_id", { count: "exact" })
       .eq("loja_id", loja.id)
       .order("nome", { ascending: true, nullsFirst: false })
       .order("id", { ascending: true })
@@ -319,6 +339,33 @@ export function Catalogo({ loja }: { loja: Loja }) {
             <div className="catalogo-ficha-topo"><span>FICHA ADMINISTRATIVA · ESPELHO BLING</span><button type="button" className="sec" onClick={() => setFichaId(null)} aria-label="Fechar ficha técnica"><Icone nome="fechar" tamanho={20}/></button></div>
             <h2 id="catalogo-ficha-titulo">{ficha.nome ?? "Produto sem nome"}</h2>
             <p className="catalogo-ficha-sku">SKU: <strong>{ficha.sku ?? "não cadastrado"}</strong> · {situacaoTexto(ficha.situacao)}</p>
+            <section className="catalogo-trilha" aria-label="Três camadas vinculadas deste produto">
+              <h3>Vínculos do produto: Bling → Conecta.IA → Loja</h3>
+              <p>Um único cadastro físico. As aplicações por veículo são filhas técnicas verificadas;
+                os anúncios públicos não criam cópias de estoque.</p>
+              <div className="catalogo-trilha-etapas">
+                <div><strong>01 · Bling — produto pai físico/fiscal</strong>
+                  <small>Referência ERP: {ficha.bling_id ?? "não identificada"}</small>
+                  <small>Registro pai no Bling: {ficha.pai_bling_id ?? "sem vínculo pai legado"}</small>
+                  <a className="sec" href="#/bling">Abrir vínculo ERP</a>
+                </div>
+                <div><strong>02 · Conecta.IA — aplicações e filhos técnicos</strong>
+                  <small>Família: {ficha.familia_id ? "vinculada" : "não definida"}</small>
+                  <small>Categoria: {nomeNo(ficha.taxonomia_no_id)}</small>
+                  <small>Aplicações aprovadas: {aplicacoesFicha ? aplicacoesFicha.aprovadas : "a consultar"}</small>
+                  <small>Outras aplicações em revisão: {aplicacoesFicha ? aplicacoesFicha.total - aplicacoesFicha.aprovadas : "a consultar"}</small>
+                  <a className="sec" href="#/taxonomia">Revisar taxonomia e aplicações</a>
+                </div>
+                <div><strong>03 · Loja — oferta vinculada ao mesmo SKU</strong>
+                  <small>Status: {ficha.publicado ? "publicado" : "não publicado"}</small>
+                  <small>Disponibilidade e preço são confirmados pelo atendimento, sem baixa de estoque por esta tela.</small>
+                  {ficha.publicado && ficha.sku
+                    ? <a className="sec" href={`#/p/${encodeURIComponent(loja.slug)}/${encodeURIComponent(ficha.sku)}`}>Visualizar ficha do cliente</a>
+                    : <span className="catalogo-trilha-bloqueio">Ficha pública indisponível até aprovação e publicação.</span>}
+                </div>
+              </div>
+              <a className="catalogo-trilha-revisar" href="#/fila">Abrir fila de revisão antes de publicar</a>
+            </section>
             <dl className="catalogo-ficha-campos">
               <div><dt>Marca</dt><dd>{ficha.marca ?? "Pendente"}</dd></div>
               <div><dt>GTIN/EAN</dt><dd>{ficha.gtin ?? "Pendente"}</dd></div>
