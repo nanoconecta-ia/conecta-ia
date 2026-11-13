@@ -1,7 +1,7 @@
 name: Conecta e Nano - interface aprovada completa
 on:
   pull_request:
-    paths: ['painel/**', 'scripts/tests/conecta-aprovado-visual.mjs', '.github/workflows/interface-aprovada.yml']
+    paths: ['painel/**', 'scripts/tests/conecta-aprovado-visual.mjs', 'scripts/tests/mobis-vitrine-teste.mjs', '.github/workflows/interface-aprovada.yml']
 permissions:
   contents: read
 jobs:
@@ -25,6 +25,8 @@ jobs:
           npm install --no-save --package-lock=false @playwright/test@1.56.1
           npx playwright install chromium --with-deps
       - run: node scripts/tests/conecta-aprovado-visual.mjs
+      - name: Vitrine Mobis e produto demonstrativo (dados simulados)
+        run: node scripts/tests/mobis-vitrine-teste.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -32,3 +34,10 @@ jobs:
           path: evidencias-conecta-aprovado/
           retention-days: 7
           if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobis-produto-teste-SIMULADO
+          path: evidencias-vitrine-teste/
+          retention-days: 7
+          if-no-files-found: warn
