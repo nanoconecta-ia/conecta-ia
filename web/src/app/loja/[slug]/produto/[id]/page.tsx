@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { brl } from "@/lib/publicacao";
 import { linkWhatsapp, lojaPorSlug, produtoPublico } from "@/lib/vitrine";
+import { ChatLojaWeb } from "@/components/ChatLojaWeb";
 
 type Props = { params: Promise<{ slug: string; id: string }> };
 
@@ -26,7 +27,7 @@ export default async function PaginaProduto({ params }: Props) {
   if (!d) notFound();
   const { loja, produto, imagens } = d;
   const principal = imagens.find((i) => i.principal) ?? imagens[0];
-  const base = process.env.APP_URL ?? "http://localhost:3000";
+  const base = loja.slug === "mobis" ? "https://mobisautopecas.com.br" : process.env.APP_URL ?? "http://localhost:3000";
   const url = `${base}/loja/${loja.slug}/produto/${produto.id}`;
   const wa = linkWhatsapp(loja, produto, url);
   // Dados estruturados com os mesmos valores exibidos na página (sem inventar campos ausentes).
@@ -61,11 +62,12 @@ export default async function PaginaProduto({ params }: Props) {
         <p className="text-3xl font-semibold tabular-nums">{brl(produto.preco)}</p>
         {produto.descricao && <p className="whitespace-pre-line text-sm text-suave">{produto.descricao}</p>}
         {wa && (
-          <a href={wa} rel="noopener" className="inline-block rounded-lg bg-ok px-5 py-3 font-medium text-white">
-            Pedir pelo WhatsApp
+          <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg bg-ok px-5 py-3 font-medium text-white">
+            Conversar com vendedor no WhatsApp
           </a>
         )}
       </div>
+      <ChatLojaWeb nome={loja.nome} whatsapp={loja.whatsapp} produto={{ nome: produto.nome ?? "Peça automotiva", sku: produto.sku ?? "" }} />
     </article>
   );
 }
