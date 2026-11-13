@@ -28,6 +28,7 @@ import { Videos } from "./paginas/Videos.tsx";
 import { VitrineDemo } from "./paginas/VitrineDemo.tsx";
 import { Loja } from "./paginas/Loja.tsx";
 import { Aparencia } from "./paginas/Aparencia.tsx";
+import { PublicacaoLoja } from "./paginas/PublicacaoLoja.tsx";
 import { Condicoes } from "./paginas/Condicoes.tsx";
 import { DEMO } from "./lib/modo.ts";
 import type { Loja as LojaTipo } from "./lib/dados.ts";
@@ -56,7 +57,7 @@ const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(wind
 const ICONES_ROTAS: Record<string, string> = {
   "/": "inicio", "/conector": "agentes", "/central": "escudo", "/indicadores": "grafico",
   "/studio": "caixas", "/estudio": "ajustes", "/assistente": "conversa", "/catalogo": "catalogo",
-  "/fila": "fila", "/taxonomia": "arvore", "/aparencia": "paleta", "/condicoes": "cartao",
+  "/fila": "fila", "/taxonomia": "arvore", "/aparencia": "paleta", "/publicacao": "loja", "/condicoes": "cartao",
   "/integracoes": "conexoes", "/gateway": "rede", "/imagens": "imagem", "/videos": "video", "/design": "paleta",
   "/bling": "erp", "/backup": "arquivo", "/banners": "imagem", "/contador": "grafico",
   "/aprovacoes": "escudo", "/meu-agente": "agentes", "/dispositivos": "monitor"
@@ -78,6 +79,7 @@ const ITENS: [string, string][] = [
   ["/fila", "Fila de aprovação"],
   ["/taxonomia", "Taxonomia"],
   ["/aparencia", "Aparência da loja"],
+  ["/publicacao", "Publicação da loja"],
   ["/condicoes", "Pagamento e entrega"],
   ["/integracoes", "Integrações de IA"],
   ["/gateway", "Gateway MCP/API"],
@@ -235,6 +237,7 @@ export function App() {
           : caminho === "/gateway" ? <GatewayMCP loja={loja} />
           : caminho === "/assistente" ? <Assistente key={loja.id} loja={loja} menu={MENU} aoNavegar={ir} />
           : caminho === "/aparencia" ? <Aparencia loja={loja} />
+          : caminho === "/publicacao" ? <PublicacaoLoja loja={loja} />
           : BANNERS_ATIVO && caminho === "/banners" ? <Banners loja={loja} />
           : caminho === "/condicoes" ? <Condicoes loja={loja} />
           : caminho === "/integracoes" ? <Integracoes loja={loja} />
