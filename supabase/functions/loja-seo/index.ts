@@ -41,9 +41,10 @@ Deno.serve(async (req) => {
       lojaId = data?.loja_id ?? null;
       if (!lojaId) return generico();
     }
-    const q = sb.from("lojas").select("id, nome, slug, whatsapp, ativa");
+    const q = sb.from("lojas").select("id, nome, slug, whatsapp, ativa, ambiente");
     const { data: l } = await (lojaId ? q.eq("id", lojaId) : q.eq("slug", slug)).maybeSingle();
-    if (!l || l.ativa === false) return generico();
+    // SEO, feed e sitemap somente com loja oficialmente liberada. Durante teste, nenhuma indexação.
+    if (!l || l.ativa === false || l.ambiente !== "producao") return generico();
 
     const { data: doms } = await sb.from("dominios_ativos").select("dominio, principal").eq("loja_id", l.id).order("principal", { ascending: false }).limit(1);
     const { data: pol } = await sb.from("loja_politicas").select("razao_social, cnpj, endereco, telefone, email_contato, garantia_legal_dias, arrependimento_dias, garantia_texto, troca_devolucao_texto, entrega_texto, privacidade_texto, termos_texto").eq("loja_id", l.id).eq("status", "aprovada").maybeSingle();
