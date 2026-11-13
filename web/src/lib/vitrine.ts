@@ -5,11 +5,23 @@ import type { Imagem, Produto } from "@/lib/tipos";
 const COLUNAS =
   "id, loja_id, bling_id, sku, nome, preco, estoque, situacao, categoria, marca, gtin, descricao, publicado, sincronizado_em";
 
-export type LojaPublica = { id: string; nome: string; slug: string; whatsapp: string | null; modo_venda: string };
+export type LojaPublica = { id: string; nome: string; slug: string; whatsapp: string | null; modo_venda: string; ambiente: "teste" | "producao" };
+export type PoliticasPublicas = {
+  razao_social: string | null; cnpj: string | null; endereco: string | null;
+  telefone: string | null; email_contato: string | null;
+  privacidade_texto: string | null; troca_devolucao_texto: string | null; entrega_texto: string | null;
+  garantia_texto: string | null; termos_texto: string | null;
+};
+export async function politicasAprovadasDaLoja(lojaId: string): Promise<PoliticasPublicas | null> {
+  const { data, error } = await supabaseServico().from("loja_politicas")
+    .select("razao_social,cnpj,endereco,telefone,email_contato,privacidade_texto,troca_devolucao_texto,entrega_texto,garantia_texto,termos_texto")
+    .eq("loja_id",lojaId).eq("status","aprovada").maybeSingle();
+  return error ? null : data as PoliticasPublicas | null;
+}
 
 export async function lojaPorSlug(slug: string): Promise<LojaPublica | null> {
   const { data } = await supabaseServico()
-    .from("lojas").select("id, nome, slug, whatsapp, modo_venda").eq("slug", slug).eq("ativa", true).maybeSingle();
+    .from("lojas").select("id, nome, slug, whatsapp, modo_venda, ambiente").eq("slug", slug).eq("ativa", true).maybeSingle();
   return (data as LojaPublica | null) ?? null;
 }
 
@@ -40,6 +52,20 @@ export async function produtoPublico(lojaId: string, id: string) {
   if (!data) return null;
   const imgs = await imagensPublicas(lojaId, [id]);
   return { produto: data as Produto, imagens: imgs.get(id) ?? [] };
+}
+
+export type AplicacaoPublica = {
+  modelo: string; motorizacao: string | null; ano_inicial: number | null; ano_final: number | null;
+  restricao: string | null; contraindicacao: string | null;
+};
+/** Filhos técnicos de uma peça aprovada, sem criar produto físico novo.
+ * A função só é chamada após produtoPublico confirmar produto publicado.
+ */
+export async function aplicacoesPublicasProduto(lojaId: string, produtoId: string): Promise<AplicacaoPublica[]> {
+  const { data, error } = await supabaseServico().from("produto_aplicacoes")
+    .select("modelo,motorizacao,ano_inicial,ano_final,restricao,contraindicacao")
+    .eq("loja_id",lojaId).eq("produto_id",produtoId).eq("status","aprovado").limit(40);
+  return error ? [] : (data ?? []) as AplicacaoPublica[];
 }
 
 /** Link de WhatsApp com nome, referência (SKU), código interno e URL, sem simular checkout. */

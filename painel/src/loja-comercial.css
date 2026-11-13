@@ -39,3 +39,44 @@
 .v-faixa-teste strong{display:block;font-size:1.05rem;letter-spacing:.025em}
 .v-faixa-teste p{margin:7px 0 0}
 @media(max-width:620px){.v-faixa-teste{padding:14px}}
+
+
+/* Módulos da loja pública; nenhuma ferramenta administrativa é exibida ao consumidor. */
+.v-modulos-cliente{display:flex;align-items:center;gap:8px;overflow-x:auto;scrollbar-width:thin;margin:10px 0 14px;padding:7px 4px 12px}
+.v-modulos-cliente button{white-space:nowrap;min-height:42px;padding:8px 14px;border-radius:999px;border:1px solid #8b9995;background:#faf7ef;color:#1d2b28;font-weight:760;font-size:.81rem;cursor:pointer}
+.v-modulos-cliente button:hover{border-color:var(--loja-cor)}
+.v-modulos-cliente button:focus-visible,.v-oferta-controles button:focus-visible,.v-lista-consulta button:focus-visible,.v-lista-consulta a:focus-visible{outline:3px solid #fbb568;outline-offset:3px}
+.v-ofertas-flash{margin:14px 0 20px}
+.v-ofertas-flash .v-loja-oferta[data-tom="0"]{--oferta-primario:#c15b2c;--oferta-fundo:#151e23}
+.v-ofertas-flash .v-loja-oferta[data-tom="1"]{--oferta-primario:#206a8a;--oferta-fundo:#112b3a}
+.v-ofertas-flash .v-loja-oferta[data-tom="2"]{--oferta-primario:#a13f40;--oferta-fundo:#26171c}
+.v-ofertas-flash .v-loja-oferta{background:linear-gradient(118deg,var(--oferta-fundo),var(--oferta-primario));min-height:195px;isolation:isolate}
+.v-oferta-conteudo{max-width:730px}
+.v-oferta-nota{font-size:.77rem;line-height:1.55;opacity:.9}
+.v-oferta-controles{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px;padding:8px}
+.v-oferta-controles button{border:1px solid #b8c1ba;background:#fafaf7;color:#22332d;min-height:40px;min-width:43px;padding:7px 12px;border-radius:8px;cursor:pointer}
+.v-oferta-controles span{font-size:.78rem;color:#53645e}
+.v-lista-consulta{margin:22px 0;padding:20px;border:1px solid #cabba8;border-radius:12px;background:#f8f3e9;color:#202b27}
+.v-lista-cabecalho{display:flex;align-items:start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.v-lista-cabecalho h2{font-size:1.3rem;margin:0}
+.v-lista-cabecalho p{max-width:720px;margin:4px 0 14px;font-size:.84rem}
+.v-lista-cabecalho>span{border-radius:20px;border:1px solid #b9a98e;padding:6px 10px;font-weight:780;font-size:.77rem}
+.v-lista-consulta ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.v-lista-consulta li{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fffdf8;border:1px solid #e3d9ca;border-radius:7px;padding:10px}
+.v-lista-consulta li span{min-width:0}
+.v-lista-consulta li strong,.v-lista-consulta li small{display:block;overflow-wrap:anywhere}
+.v-lista-consulta li small{font-size:.73rem;color:#50625b;margin-top:3px}
+.v-lista-consulta li button,.v-lista-acoes button{background:#fff;color:#2c433b;border:1px solid #becfc4;border-radius:7px;padding:9px 12px;cursor:pointer;min-height:42px}
+.v-lista-acoes{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+.v-lista-acoes a{background:#17583e;color:#fff;text-decoration:none;padding:10px 15px;border-radius:8px;font-weight:760;display:inline-flex;align-items:center;min-height:44px}
+.v-lista-limite{padding:9px 12px;background:#fff4df;border-left:4px solid #b96821;color:#623a18}
+.v-produto .v-add-lista{background:#fff;border:1px solid #c48a5b;color:#613a24;cursor:pointer;min-height:42px}
+.v-produto .v-add-lista:disabled{opacity:.6;cursor:default}
+@media(max-width:620px){.v-ofertas-flash .v-loja-oferta{padding:18px;min-height:225px}.v-ofertas-flash .v-loja-oferta h2{font-size:1.3rem}.v-lista-consulta{padding:13px}.v-lista-consulta li{align-items:flex-start}.v-lista-acoes a{width:100%;justify-content:center}.v-modulos-cliente button{min-height:44px}}
+@media(prefers-reduced-motion:reduce){.v-ofertas-flash .v-loja-oferta.flash::after{animation:none;opacity:.6}}
+
+
+.v-produto-detalhe{max-width:1100px;margin:12px auto 32px;padding:12px;box-sizing:border-box}
+.v-produto-nav{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;margin:8px 0 16px}
+.v-produto-nav a,.v-produto-nav button{display:inline-flex;align-items:center;justify-content:center;border:1px solid #9bb0a4;border-radius:7px;background:#fff;color:#1c4535;min-height:44px;padding:9px 14px;cursor:pointer;text-decoration:none;font-weight:730}
+@media(max-width:520px){.v-produto-nav{display:grid;grid-template-columns:1fr 1fr}.v-produto-nav a,.v-produto-nav button{font-size:.76rem;padding:8px}}

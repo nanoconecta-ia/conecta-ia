@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { brl } from "@/lib/publicacao";
-import { linkWhatsapp, lojaPorSlug, produtoPublico } from "@/lib/vitrine";
+import { linkWhatsapp, lojaPorSlug, produtoPublico, politicasAprovadasDaLoja, aplicacoesPublicasProduto } from "@/lib/vitrine";
 import { ChatLojaWeb } from "@/components/ChatLojaWeb";
+import { RodapeComercialWeb } from "@/components/RodapeComercialWeb";
 
 type Props = { params: Promise<{ slug: string; id: string }> };
 
@@ -18,7 +19,7 @@ async function carregar({ slug, id }: { slug: string; id: string }) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const d = await carregar(await params);
-  return d ? { title: d.produto.nome ?? "Produto", description: d.produto.descricao?.slice(0, 155) } : {};
+  return d ? { title: d.produto.nome ?? "Produto", description: d.produto.descricao?.slice(0, 155), robots: d.loja.ambiente === "teste" ? { index:false,follow:false } : undefined } : {};
 }
 
 export default async function PaginaProduto({ params }: Props) {
@@ -26,6 +27,7 @@ export default async function PaginaProduto({ params }: Props) {
   const d = await carregar(p);
   if (!d) notFound();
   const { loja, produto, imagens } = d;
+  const [politicas, aplicacoes] = await Promise.all([politicasAprovadasDaLoja(loja.id), aplicacoesPublicasProduto(loja.id, produto.id)]);
   const principal = imagens.find((i) => i.principal) ?? imagens[0];
   const base = loja.slug === "mobis" ? "https://mobisautopecas.com.br" : process.env.APP_URL ?? "http://localhost:3000";
   const url = `${base}/loja/${loja.slug}/produto/${produto.id}`;
@@ -40,7 +42,7 @@ export default async function PaginaProduto({ params }: Props) {
     brand: produto.marca ? { "@type": "Brand", name: produto.marca } : undefined,
     image: principal?.url,
     description: produto.descricao ?? undefined,
-    offers: produto.preco
+    offers: loja.ambiente === "producao" && produto.preco
       ? { "@type": "Offer", price: produto.preco, priceCurrency: "BRL", url,
           availability: (produto.estoque ?? 0) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock" }
       : undefined,
@@ -61,11 +63,25 @@ export default async function PaginaProduto({ params }: Props) {
         <p className="font-mono text-sm text-suave">Ref. {produto.sku ?? "—"}</p>
         <p className="text-3xl font-semibold tabular-nums">{brl(produto.preco)}</p>
         {produto.descricao && <p className="whitespace-pre-line text-sm text-suave">{produto.descricao}</p>}
+        <section className="aplicacoes-cliente" aria-label="Aplicações técnicas homologadas">
+          <h2>Aplicações aprovadas por veículo</h2>
+          {aplicacoes.length > 0 ? <ul>{aplicacoes.map((a,i) => <li key={i}>
+            <strong>{a.modelo}</strong> {a.motorizacao ?? "Motor a confirmar"} ·
+            {a.ano_inicial ?? "Ano inicial não informado"}–{a.ano_final ?? "Ano final não informado"}
+            {a.restricao && <p>Restrição: {a.restricao}</p>}
+            {a.contraindicacao && <p>Não aplicar quando: {a.contraindicacao}</p>}
+          </li>)}</ul> : <p>Nenhuma aplicação liberada para exibição. Confirme a compatibilidade com o vendedor antes de comprar.</p>}
+        </section>
         {wa && (
           <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-block rounded-lg bg-ok px-5 py-3 font-medium text-white">
             Conversar com vendedor no WhatsApp
           </a>
         )}
+      </div>
+      <div className="md:col-span-2">
+        <p className="text-sm text-suave">Aplicações por veículo só são informadas após validação técnica individual. O SKU representa o cadastro físico, não cria um estoque adicional.</p>
+        {loja.ambiente === "teste" && <p className="mobis-web-teste" role="status">LOJA TESTE — consulte sem concluir pedidos.</p>}
+        <RodapeComercialWeb loja={loja} politicas={politicas} />
       </div>
       <ChatLojaWeb nome={loja.nome} whatsapp={loja.whatsapp} produto={{ nome: produto.nome ?? "Peça automotiva", sku: produto.sku ?? "" }} />
     </article>

@@ -72,6 +72,13 @@ jobs:
       - run: node scripts/tests/visao-geral-visual.mjs
       - run: node scripts/tests/taxonomia-lentes-visual.mjs
       - run: node scripts/tests/catalogo-workspace-visual.mjs
+      - run: node scripts/tests/mobis-loja-cliente-mobile-visual.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: loja-mobis-cliente-SIMULADO
+          path: evidencias-chat/loja-mobis-cliente-*-SIMULADO.png
+          retention-days: 7
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: visao-geral-SIMULADO

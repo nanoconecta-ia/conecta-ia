@@ -7,6 +7,8 @@ import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
 import { chipsDeFiltro, removerFiltro, textoResultado } from "../lib/filtrosLoja.ts";
 import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import { ChatClienteLoja } from "../componentes/ChatClienteLoja.tsx";
+import { BannersFlashLoja } from "../componentes/BannersFlashLoja.tsx";
+import { ListaConsultaLoja, type ItemConsulta } from "../componentes/ListaConsultaLoja.tsx";
 import { MOBIS } from "../lib/publicoLoja.ts";
 import "../loja-comercial.css";
 
@@ -24,7 +26,27 @@ const VAZIO: Filtros = { q: "", modelo: "", motor: "", ano: "", categoria: "", t
 export function Loja({ slug, host }: { slug?: string; host?: string }) {
   const [f, setF] = useState<Filtros>(VAZIO);
   const [busca, setBusca] = useState("");
-  const [paletaLoja, setPaletaLoja] = useState<"cobre" | "azul" | "vermelho">("cobre");
+  // Lista transitória de consulta (sem checkout), restrita à aba e à loja.
+  const [lista, setLista] = useState<ItemConsulta[]>([]);
+  const [listaCheia, setListaCheia] = useState(false);
+  useEffect(() => {
+    try {
+      const l = sessionStorage.getItem("mobis:consulta:" + (slug ?? host ?? ""));
+      const a: unknown = l ? JSON.parse(l) : [];
+      if (Array.isArray(a)) setLista(a.filter((i) => i && typeof i.sku === "string" && typeof i.nome === "string")
+        .slice(0,10).map((i) => ({ sku:i.sku.slice(0,80), nome:i.nome.slice(0,150) })));
+    } catch { setLista([]); }
+  }, [slug,host]);
+  useEffect(() => {
+    try { sessionStorage.setItem("mobis:consulta:" + (slug ?? host ?? ""), JSON.stringify(lista)); }
+    catch { /* armazenamento opcional */ }
+  }, [lista,slug,host]);
+  const adicionar = (p: Produto) => setLista((itens) => {
+    if (itens.some((i) => i.sku === p.sku)) return itens;
+    if (itens.length >= 10) { setListaCheia(true); return itens; }
+    setListaCheia(false);
+    return [...itens, { sku:p.sku, nome:p.nome }].slice(0,10);
+  });
   const [dados, setDados] = useState<Resposta | null>(null);
   const [estado, setEstado] = useState<"carregando" | "ok" | "naoachada" | "erro" | "limite">("carregando");
   const [tentativa, setTentativa] = useState(0); // "Tentar de novo" refaz a consulta sem recarregar a página
@@ -101,7 +123,7 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
   const paginas = dados ? Math.max(1, Math.ceil(dados.total / dados.por_pagina)) : 1;
 
   return (
-    <div className="vitrine" style={estilo} data-paleta-loja={paletaLoja}>
+    <div className="vitrine" style={estilo} data-paleta-loja="cobre">
       <header className="v-topo">
         {dados?.tema?.logo_url?.startsWith("https://")
           ? <img className="v-logo" src={dados.tema.logo_url} alt={dados.loja.nome} />
@@ -114,6 +136,15 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
         </form>
       </header>
 
+      <nav className="v-modulos-cliente" aria-label="Navegação da loja">
+        <button type="button" onClick={() => window.scrollTo({top:0,behavior:"smooth"})}>Início</button>
+        <button type="button" onClick={() => irPara("ofertas")}>Ofertas</button>
+        <button type="button" onClick={() => irPara("busca-veiculo")}>Veículos</button>
+        <button type="button" onClick={() => irPara("passo-categoria")}>Categorias</button>
+        <button type="button" onClick={() => irPara("catalogo")}>Produtos</button>
+        <button type="button" onClick={() => irPara("minha-lista")}>Minha lista ({lista.length})</button>
+        <button type="button" onClick={() => irPara("rodape-privacidade")}>Privacidade</button>
+      </nav>
       {dados?.loja.ambiente === "teste" && (
         <section className="v-faixa-teste" role="status" aria-label="Loja em fase de testes">
           <strong>LOJA TESTE — avaliação com clientes</strong>
@@ -128,28 +159,7 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
         <a className="botao verde" href="#catalogo" onClick={(e) => { e.preventDefault(); document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" }); }}>Explorar catálogo</a>
       </section>
 
-      <section className="v-paletas" aria-label="Cores da loja">
-        <span>Visual:</span>
-        {(["cobre", "azul", "vermelho"] as const).map((p) => (
-          <button key={p} type="button" aria-pressed={paletaLoja === p} onClick={() => setPaletaLoja(p)}>
-            {p === "cobre" ? "Grafite e cobre" : p === "azul" ? "Azul petróleo" : "Grafite e vermelho"}
-          </button>
-        ))}
-      </section>
-      {(dados?.banners ?? []).map((b, i) => (
-        <section className={"v-loja-oferta" + (b.flash ? " flash" : "")} key={b.sku + "-" + i} aria-label={"Oferta: " + b.nome}>
-          <div>
-            {b.flash && <span className="v-loja-selo">{dados?.loja.ambiente === "teste" ? "Prévia de oferta · teste" : "Oferta em destaque"}</span>}
-            <h2>{b.nome}</h2>
-            {b.chamada && <p>{b.chamada}</p>}
-            {b.preco != null && <p className="v-loja-preco">{brl(b.preco)}</p>}
-          </div>
-          <div className="v-loja-acoes">
-            <a href={"#/p/" + encodeURIComponent(dados!.loja.slug) + "/" + encodeURIComponent(b.sku)}>Ver produto</a>
-            {b.whatsapp && <a href={b.whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp</a>}
-          </div>
-        </section>
-      ))}
+      <BannersFlashLoja ofertas={dados?.banners ?? []} slug={dados?.loja.slug ?? (slug ?? "")} teste={dados?.loja.ambiente !== "producao"} />
       <nav className="v-guia" aria-label="Como encontrar sua peça">
         <p className="v-guia-titulo">Como encontrar sua peça em 3 passos</p>
         <ol>
@@ -237,7 +247,10 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
               <p className="v-preco">{p.preco != null ? brl(p.preco) : "Consulte o preço"}</p>
               <p className={p.em_estoque ? "msg-ok" : "suave"}>{p.em_estoque == null ? "Estoque a confirmar" : p.em_estoque ? "Em estoque" : "Sem estoque no último dado"}</p>
               <div className="linha">
-                <a className="botao" href={`#/p/${dados.loja.slug}/${encodeURIComponent(p.sku)}`}>Tirar dúvidas</a>
+                <a className="botao" href={`#/p/${dados.loja.slug}/${encodeURIComponent(p.sku)}`}>Ver ficha e aplicações</a>
+                <button type="button" className="botao v-add-lista" disabled={lista.some((i) => i.sku === p.sku)} onClick={() => adicionar(p)}>
+                  {lista.some((i) => i.sku === p.sku) ? "Na lista" : "Adicionar à lista"}
+                </button>
                 {p.whatsapp && <a className="botao verde" href={p.whatsapp} target="_blank" rel="noopener noreferrer">Falar no WhatsApp</a>}
               </div>
             </article>
@@ -251,6 +264,8 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
           </div>
         )}
       </section>
+      {listaCheia && <p className="v-lista-limite" role="status">A lista permite até 10 peças. Remova uma para incluir outra.</p>}
+      <ListaConsultaLoja itens={lista} numero={dados?.loja.whatsapp} remover={(sku) => { setLista((xs) => xs.filter((i) => i.sku !== sku)); setListaCheia(false); }} limpar={() => { setLista([]); setListaCheia(false); }} />
       <RodapeLoja nome={dados?.loja.nome ?? "Loja"} slug={dados?.loja.slug} whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas} ultima={ultima} />
       {dados && <ChatClienteLoja nome={dados.loja.nome} whatsapp={dados.loja.whatsapp} />}
     </div>

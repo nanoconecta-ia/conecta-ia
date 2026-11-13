@@ -3,6 +3,7 @@ import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { useVoz } from "../lib/voz.ts";
 import { MOBIS } from "../lib/publicoLoja.ts";
 import { FichaProduto } from "../componentes/FichaProduto.tsx";
+import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import type { FichaProduto as Produto, FichaVeiculo } from "../lib/ficha.ts";
 
 /** Página pública do produto (#/p/<loja>/<sku>) com o assistente para o cliente (texto ou voz). Só lê dado aprovado e publicado. */
@@ -14,12 +15,19 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
   const lerRef = useRef(lerAlto); lerRef.current = lerAlto;
   const [ficha, setFicha] = useState<{ produto: Produto; veiculos: FichaVeiculo[] } | null>(null);
   const [whatsapp, setWhatsapp] = useState<string | null>(null);
+  const [cabecalho, setCabecalho] = useState<{ nome:string; whatsapp:string | null; politicas: PoliticasLojaPublicas | null; fase:string } | null>(null);
   useEffect(() => {
     let vivo = true;
     fetch(`${SUPABASE_URL}/functions/v1/loja-publica`, {
       method: "POST", headers: { "Content-Type": "application/json", apikey: SUPABASE_CHAVE_PUBLICAVEL }, body: JSON.stringify({ slug, sku, q: sku }),
     }).then((r) => r.json()).then((j) => {
       const produto = (j?.produtos ?? []).find((p: Produto) => p.sku === sku);
+      if (vivo && j?.loja?.slug === slug) setCabecalho({
+        nome: j.loja.nome ?? slug,
+        whatsapp: typeof j.loja.whatsapp === "string" ? j.loja.whatsapp : null,
+        politicas: j.politicas ?? null,
+        fase: j.loja.ambiente ?? "teste",
+      });
       if (!vivo) return;
       if (produto && j?.ficha) setFicha({ produto, veiculos: j.ficha.veiculos ?? [] });
       setWhatsapp(typeof produto?.whatsapp === "string" && /^https:\/\/wa\.me\/55\d{10,11}\?text=/.test(produto.whatsapp) ? produto.whatsapp : null);
@@ -46,8 +54,14 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
   const enviar = (e: FormEvent) => { e.preventDefault(); void perguntar(texto); };
 
   return (
-    <main>
-      {ficha && <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} />}
+    <>
+    <main className="v-produto-detalhe">
+      <nav aria-label="Voltar à loja e privacidade" className="v-produto-nav">
+        <a href={"#/loja/" + encodeURIComponent(slug)}>Voltar ao catálogo</a>
+        <button type="button" onClick={() => document.getElementById("rodape-privacidade")?.scrollIntoView({behavior:"smooth"})}>Privacidade e políticas</button>
+      </nav>
+      {ficha ? <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} /> :
+        <p className="suave">Ficha comercial não disponível. Produtos e aplicações só aparecem depois de aprovados e publicados.</p>}
       <div className="cartao">
         <div className="agente"><div><h1 style={{ margin: 0 }}>Atendimento da loja — tire suas dúvidas sobre esta peça</h1>
           <p className="suave" style={{ margin: 0 }}>Código <span className="mono">{sku}</span>. O assistente só informa dados confirmados pela loja.</p></div></div>
@@ -67,5 +81,8 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
         {slug === MOBIS.slug && <p className="suave"><a href={MOBIS.site}>mobisautopecas.com.br — site oficial</a></p>}
       </div>
     </main>
+    <RodapeLoja nome={cabecalho?.nome ?? (slug === MOBIS.slug ? MOBIS.nome : slug)} slug={slug}
+      whatsapp={cabecalho?.whatsapp} politicas={cabecalho?.politicas ?? null} paginaProduto />
+    </>
   );
 }

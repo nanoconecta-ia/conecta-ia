@@ -71,3 +71,24 @@ body { font-family: var(--font-sans); min-height: 100dvh; }
 .mobis-chat-alerta{padding:5px 12px;margin:0;font-size:.68rem;line-height:1.4;color:#66736d}
 .mobis-chat-wa{display:block;background:#0c6d4c;color:#fff;border-radius:8px;padding:10px;margin:7px 12px 12px;text-decoration:none;font-size:.84rem;text-align:center;font-weight:750}
 .mobis-chat :is(a,button,input):focus-visible{outline:3px solid #f1aa60;outline-offset:2px}
+
+
+/* Paridade visual: web Next e vitrine SPA usam documentos comerciais aprovados. */
+.mobis-web-modulos{display:flex;gap:9px;overflow-x:auto;padding:5px 0 15px;scrollbar-width:thin}
+.mobis-web-modulos a{min-height:42px;display:inline-flex;align-items:center;white-space:nowrap;text-decoration:none;padding:8px 13px;border-radius:20px;border:1px solid #a1b5a9;font-size:.82rem;font-weight:700}
+.mobis-web-teste{padding:13px;border:1px solid #c88036;background:#fff2dc;color:#603911;border-radius:9px;margin:9px 0 16px;font-weight:700;font-size:.84rem}
+.mobis-web-politicas{padding:14px;border-top:1px solid #6b8780;display:grid;gap:9px}
+.mobis-web-politicas h2{color:#fff0d5;font-size:1rem;font-weight:800}
+.mobis-web-politicas p{line-height:1.6;font-size:.79rem}
+.mobis-web-politicas details{border:1px solid #6b8780;border-radius:8px;padding:10px;margin-top:8px}
+.mobis-web-politicas summary{cursor:pointer;font-size:.82rem;font-weight:750}
+.mobis-web-politicas details p{max-height:350px;overflow:auto;white-space:pre-wrap}
+.mobis-web-rodape :is(a,summary):focus-visible,.mobis-web-modulos a:focus-visible{outline:3px solid #ffc077;outline-offset:3px}
+
+
+.aplicacoes-cliente{border:1px solid #b9cabb;border-radius:12px;padding:15px;background:#eff7f0;color:#193b2b}
+.aplicacoes-cliente h2{font-size:1rem;font-weight:800;margin:0 0 8px}
+.aplicacoes-cliente ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.aplicacoes-cliente li{padding:10px;background:#fff;border:1px solid #d6e5d6;border-radius:7px;font-size:.8rem;line-height:1.55}
+.aplicacoes-cliente li p{font-size:.75rem;margin:4px 0 0;color:#6a3e20}
+.aplicacoes-cliente>p{font-size:.81rem;line-height:1.6}
