@@ -1378,3 +1378,11 @@ img, video { height: auto; }
 /* Ícones 3D (imagem): bloco arredondado com o fundo claro da própria arte, igual nos temas claro e escuro. */
 img.ico-3d { display: block; flex: none; object-fit: cover; border-radius: 22%; background: #f1ebdf; }
 img.ico-3d-largo { border-radius: 12px; }
+
+/* Apenas a marca institucional aprovada; não redesenha o Nano nem o painel. */
+.topo .marca .marca-identidade{position:relative;min-width:0;line-height:1}
+.topo .marca .marca-wordmark{display:block;height:38px;width:auto;max-width:min(220px,28vw);object-fit:contain;object-position:left center}
+.topo .marca .marca-titulo-acessivel{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.topo .marca .marca-identidade small{margin-top:1px;line-height:1.2;font-size:.68rem}
+@media(max-width:650px){.topo .marca .marca-wordmark{max-width:150px;height:31px}.topo .marca .marca-identidade small{display:none}}
+@media(max-width:420px){.topo .marca .marca-wordmark{max-width:116px;height:27px}.topo .marca .logo-conecta>span:first-child>svg{height:32px;width:32px}}
