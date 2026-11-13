@@ -205,3 +205,14 @@
   .ca-grade-candidatos { grid-template-columns: 1fr; }
   .ca-grade-pecas { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+
+/* Balão original do Nano: no catálogo móvel usa somente um alvo de 60px.
+   A posição é calculada pelo BalaoGenesis para não cobrir o título. */
+@media (max-width: 740px) {
+  html button.balao-genesis.balao-catalogo-compacto {
+    width: 60px; height: 60px; min-height: 60px; min-width: 60px;
+    padding: 0; box-shadow: 0 6px 20px rgba(0,0,0,.25);
+    touch-action: manipulation; border-radius: 50%;
+  }
+  button.balao-catalogo-compacto .balao-texto { display: none; }
+}
