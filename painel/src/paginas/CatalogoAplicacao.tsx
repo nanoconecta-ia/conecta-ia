@@ -167,7 +167,7 @@ export function CatalogoAplicacao({ loja }: { loja: Loja }) {
           <p>Peças e sistemas automotivos, com aplicações verificadas separadas dos candidatos à conferência.</p>
         </div>
         <div className="ca-topo-acoes">
-          <a className="ca-sec" href="#/studio"><Icone nome="caixas" tamanho={17}/> Indexar e enriquecer</a>
+          <a className="ca-sec" href="#/ferramentas"><Icone nome="caixas" tamanho={17}/> Indexar e enriquecer</a>
           <a className="ca-sec" href="#/catalogo-espelho"><Icone nome="arquivo" tamanho={17}/> Abrir espelho ERP</a>
           <a className="ca-primario" href="#/fila"><Icone nome="fila" tamanho={17}/> Revisar pendências</a>
         </div>
