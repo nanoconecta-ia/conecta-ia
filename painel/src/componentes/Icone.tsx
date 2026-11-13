@@ -1,3 +1,4 @@
+import { ICONE_3D_UI } from "./icones3d.ts";
 // Ícones de traço (24×24, currentColor): um por grupo do menu. Sem biblioteca externa nem cor solta.
 const CAMINHOS: Record<string, string> = {
   inicio: "M3 10.5 12 3l9 7.5V21H3V10.5M9 21v-7h6v7",
@@ -39,6 +40,9 @@ const CAMINHOS: Record<string, string> = {
 };
 
 export function Icone({ nome, tamanho = 20 }: { nome: string; tamanho?: number }) {
+  const img = ICONE_3D_UI[nome];
+  // Ícone 3D aprovado quando existe para o nome; um pouco maior que o traço para continuar legível no menu.
+  if (img) return <img className="ico-3d ico-3d-ui" src={img} width={tamanho + 8} height={tamanho + 8} alt="" aria-hidden="true" draggable={false} />;
   return (
     <svg width={tamanho} height={tamanho} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
       <path d={CAMINHOS[nome] ?? CAMINHOS.outros} />
