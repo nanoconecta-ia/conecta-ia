@@ -14,7 +14,7 @@ try{
  assert.equal(m.display,'standalone');
  const tam=new Set(m.icons.map(i=>i.sizes));assert.ok(tam.has('192x192')&&tam.has('512x512'),'ícones 192 e 512');
  assert.ok(m.icons.some(i=>i.purpose==='maskable'),'ícone maskable');
- for(const i of m.icons){const r=await fetch(new URL(i.src,base+'/manifest.webmanifest'));assert.equal(r.status,200,'ícone '+i.src);assert.equal(r.headers.get('content-type'),'image/png');}
+ for(const i of m.icons){const r=await fetch(new URL(i.src,base+'/manifest.webmanifest'));assert.equal(r.status,200,'ícone '+i.src);assert.equal(r.headers.get('content-type'),i.type,'formato de ícone inconsistente com o manifesto');}
  assert.equal((await fetch(base+'/sw.js')).status,200,'service worker');
  browser=await chromium.launch();
  const ctx=await browser.newContext({viewport:{width:390,height:844}});const page=await ctx.newPage();

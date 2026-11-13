@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="titulo">
+<title id="titulo">Conecta.IA</title>
+<defs><linearGradient id="m" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFFFFF"/><stop offset=".52" stop-color="#C9DEE8"/><stop offset="1" stop-color="#738AA4"/></linearGradient>
+<linearGradient id="l" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFB633"/><stop offset=".5" stop-color="#FF6A00"/><stop offset="1" stop-color="#CB4507"/></linearGradient></defs>
+<rect x="1" y="1" width="62" height="62" rx="14" fill="#0B1F2A"/>
+<path d="M49 12A26 26 0 1 0 49 52" fill="none" stroke="url(#m)" stroke-width="10" stroke-linecap="round"/>
+<path d="M45 17A21 21 0 1 0 45 47" fill="none" stroke="url(#l)" stroke-width="8" stroke-linecap="round"/>
+<path d="M46 49C33 61 14 59 5 53" fill="none" stroke="#00AEEF" stroke-width="3.5" stroke-linecap="round"/>
+<g stroke="#FF9C15" stroke-width="2.5"><path d="M10 24H3"/><path d="M7 32H3"/><path d="M10 40H3"/></g>
+<g fill="#FFA41B"><circle cx="3" cy="24" r="2.5"/><circle cx="3" cy="32" r="2.5"/><circle cx="3" cy="40" r="2.5"/></g>
+</svg>

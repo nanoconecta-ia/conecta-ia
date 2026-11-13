@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 690 154" role="img" aria-labelledby="titulo desc">
+<title id="titulo">Conecta.IA</title><desc id="desc">Logotipo com letras metálicas, IA em laranja e órbita azul elétrica</desc>
+<defs>
+  <linearGradient id="metal" x1="0" y1="0" x2="0.18" y2="1"><stop stop-color="#FFFFFF"/><stop offset=".45" stop-color="#F5FAFF"/><stop offset=".57" stop-color="#A6BCD0"/><stop offset="1" stop-color="#D1E2F1"/></linearGradient>
+  <linearGradient id="orange" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#FFB83E"/><stop offset=".43" stop-color="#FF8000"/><stop offset="1" stop-color="#F45A09"/></linearGradient>
+  <linearGradient id="blue" x1="0" x2="1"><stop stop-color="#1160B2" stop-opacity="0"/><stop offset=".5" stop-color="#00AEEF"/><stop offset="1" stop-color="#58D9FF" stop-opacity=".2"/></linearGradient>
+  <filter id="light" x="-20%" y="-30%" width="140%" height="160%"><feGaussianBlur stdDeviation="3"/></filter>
+</defs>
+<path d="M80 124 C240 153 520 150 675 88" fill="none" stroke="#00AEEF" stroke-opacity=".65" stroke-width="8" filter="url(#light)"/>
+<path d="M80 124 C240 153 520 150 675 88" fill="none" stroke="url(#blue)" stroke-width="4" stroke-linecap="round"/>
+<text x="6" y="108" font-family="Inter,Arial,Helvetica,sans-serif" font-size="103" font-weight="900" font-style="italic" letter-spacing="-5.1" fill="#0B1F2A" opacity=".65" stroke="#071621" stroke-width="2">Conecta</text>
+<text x="6" y="104" font-family="Inter,Arial,Helvetica,sans-serif" font-size="103" font-weight="900" font-style="italic" letter-spacing="-5.1" fill="url(#metal)">Conecta</text>
+<text x="454" y="107" font-family="Inter,Arial,Helvetica,sans-serif" font-size="105" font-weight="900" font-style="italic" letter-spacing="-4" fill="url(#orange)">.IA</text>
+</svg>
