@@ -51,7 +51,7 @@ a.indicador:hover, .indicador:hover { transform: translateY(-2px); box-shadow: 0
 .numero { background: linear-gradient(120deg, var(--texto), color-mix(in srgb, var(--marca) 75%, var(--texto))); -webkit-background-clip: text; background-clip: text; color: transparent; }
 @supports not (background-clip: text) { .numero { color: var(--texto); background: none; } }
 h1 { letter-spacing: -.02em; }
-button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(.conv-titulo):not(.prop-item):not(.v-tile):not(.esp-no):not(.v-tipo):not(.vista-ponto) { background: linear-gradient(180deg, color-mix(in srgb, var(--marca) 92%, #fff), var(--marca)); box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 2px 8px color-mix(in srgb, var(--marca) 30%, transparent); }
+button:not(.sec):not(.perigo):not(.verde):not(.busca-topo):not(.mini-texto):not(.conv-titulo):not(.prop-item):not(.v-tile):not(.esp-no):not(.v-tipo):not(.vista-ponto):not(:where(.mobis-v2 *)) { background: linear-gradient(180deg, color-mix(in srgb, var(--marca) 92%, #fff), var(--marca)); box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 2px 8px color-mix(in srgb, var(--marca) 30%, transparent); }
 
 /* paleta de comandos */
 .paleta { border: 1px solid color-mix(in srgb, var(--marca) 50%, var(--borda)); border-radius: 16px; padding: 0; width: min(92vw, 560px); margin: 12vh auto 0; background: var(--cartao); color: var(--texto); box-shadow: 0 24px 80px rgba(0,0,0,.45), 0 0 0 1px color-mix(in srgb, var(--verde) 20%, transparent); overflow: hidden; }
