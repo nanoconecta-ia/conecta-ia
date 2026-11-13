@@ -17,7 +17,7 @@ test("preparação da escrita não chama bling.produtos.alterar",()=>{
   assert.equal(r.ok,true);
   if(r.ok){assert.equal(r.dados.ferramenta,"bling.produtos.preparar_atualizacao");
     const cam=r.dados.entrada.campos;assert.deepEqual(cam,{descricao_curta:"Descrição técnica revisada"});
-    assert.equal((r.dados.entrada.fontes as any[])[0].url,"https://fabricante.example/catalogo");
+    assert.equal(r.dados.entrada.fontes[0].url,"https://fabricante.example/catalogo");
   }
 });
 test("nenhuma ação de escrita direta é exposta ao painel",()=>{
