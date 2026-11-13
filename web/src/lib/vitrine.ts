@@ -45,7 +45,7 @@ export async function produtoPublico(lojaId: string, id: string) {
 /** Link de WhatsApp com nome, referência (SKU), código interno e URL, sem simular checkout. */
 export function linkWhatsapp(loja: LojaPublica, p: Produto, url: string) {
   if (!loja.whatsapp) return null;
-  const texto = `Olá! Tenho interesse em: ${p.nome ?? ""}\nReferência: ${p.sku ?? "—"}\nCódigo: ${p.bling_id}\n${url}`;
+  const texto = `Olá! Tenho interesse em: ${p.nome ?? ""}\nReferência: ${p.sku ?? "—"}\n${url}`;
   return `https://wa.me/${loja.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`;
 }
 
