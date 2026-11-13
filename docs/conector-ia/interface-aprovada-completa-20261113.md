@@ -20,3 +20,5 @@ O Olho E02 conserva seu arquivo e movimento originais. O avatar operacional usa 
 Os testes novos verificam o App real com rede totalmente interceptada, sessão e dados sintéticos em 360/390/412/1280px. O teste após publicação usa os arquivos efetivamente servidos e também mantém a sessão e os dados simulados: suas capturas demonstram a interface publicada, não uma autenticação contra dados privados reais.
 
 Balão flutuante, dock e apresentação imersiva antigos não são montados pelo App. Ctrl+J leva ao Estúdio. Os testes dessas composições aposentadas foram substituídos na execução do CI pela suíte de integração do novo modelo; testes de histórico, consentimento, anexos, streaming e comandos do Assistente continuam ativos. Comandos de catálogo, imagens e indicadores abrem as ferramentas dentro do Estúdio, preservando a conversa montada.
+
+A chave da preferência de menu foi versionada para não iniciar o modelo aprovado no estado recolhido de uma interface anterior. O service worker recebe uma nova versão de casca usando o mecanismo existente de limpeza de cache e atualização das janelas. Nenhum dado do ERP ou do usuário é armazenado no cache do worker.

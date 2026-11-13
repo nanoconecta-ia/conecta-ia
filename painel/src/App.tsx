@@ -108,8 +108,8 @@ export function App() {
   const [paleta, setPaleta] = useState(false);
   const [menuMovel, setMenuMovel] = useState(false);
   useEffect(() => { setMenuMovel(false); }, [caminho]);
-  const [recolhido, setRecolhido] = useState(() => { try { return localStorage.getItem("conecta:menu") === "recolhido"; } catch { return false; } });
-  const alternarMenu = () => setRecolhido((r) => { try { localStorage.setItem("conecta:menu", r ? "aberto" : "recolhido"); } catch { /* sem storage */ } return !r; });
+  const [recolhido, setRecolhido] = useState(() => { try { return localStorage.getItem("conecta:menu:v2") === "recolhido"; } catch { return false; } });
+  const alternarMenu = () => setRecolhido((r) => { try { localStorage.setItem("conecta:menu:v2", r ? "aberto" : "recolhido"); } catch { /* sem storage */ } return !r; });
   useEffect(() => { // Ctrl/⌘+K abre a paleta de comandos; Ctrl/⌘+J abre o agente lateral, em qualquer tela do painel
     const h = (e: KeyboardEvent) => {
       if (e.key === "Escape") { setMenuMovel(false); return; }
