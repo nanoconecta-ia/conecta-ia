@@ -182,7 +182,7 @@ export function App() {
           aria-label={menuMovel ? "Fechar navegação" : "Abrir navegação"} aria-controls="menu-principal" aria-expanded={menuMovel}>
           <Icone nome={menuMovel ? "fechar" : "menu"} tamanho={20} />
         </button>
-        <div className="marca"><LogoConecta tamanho={40} estado={estadoNano} /><div className="marca-identidade">Conecta<span>.IA</span><small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
+        <div className="marca"><LogoConecta tamanho={40} estado={estadoNano} /><div className="marca-identidade"><span className="marca-titulo-acessivel">Conecta.IA</span><img src="./icones/conecta-wordmark-2026.svg" className="marca-wordmark" alt="Conecta.IA" width="220" height="49" /><small>{loja ? loja.nome : "Painel do lojista"}</small></div></div>
         <span className="topo-selo" aria-label="Ambiente administrativo">WORKSPACE <b>ADMIN</b></span>
         <button className="busca-topo" onClick={() => setPaleta(true)} aria-label="Abrir paleta de comandos"><Icone nome="busca" tamanho={16} /><span>Buscar módulos e ações…</span><kbd>Ctrl K</kbd></button>
         {!!loja && <a className="topo-atalho-nano" href={`#${ROTA_NANO}`}><Icone nome="agentes" tamanho={17} /><span>Nano.IA</span></a>}
