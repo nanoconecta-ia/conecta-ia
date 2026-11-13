@@ -1,0 +1,12 @@
+/* Painel do lojista, não visível na loja pública. */
+.fiscal-seguranca-admin{margin-bottom:20px}
+.fiscal-seguranca-admin>h2{font-size:1.15rem}
+.fiscal-adm-contagens{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+.fiscal-adm-contagens>div{padding:10px;border:1px solid var(--borda);border-radius:9px;background:var(--realce);display:flex;flex-direction:column;gap:5px}
+.fiscal-adm-contagens strong{font-size:1.55rem;color:var(--texto)}
+.fiscal-adm-contagens span{font-size:.74rem;line-height:1.45;color:var(--suave)}
+.fiscal-adm-ufs{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:7px;margin:12px 0}
+.fiscal-adm-ufs>span{display:flex;align-items:center;flex-direction:column;padding:9px 6px;border:1px solid var(--borda);border-radius:7px;background:var(--cartao);min-width:0}
+.fiscal-adm-ufs b{font-size:.89rem;color:var(--texto)}
+.fiscal-adm-ufs small{font-size:.65rem;color:var(--suave);text-align:center;line-height:1.5}
+@media(max-width:540px){.fiscal-adm-contagens{grid-template-columns:1fr 1fr}.fiscal-adm-ufs{grid-template-columns:repeat(4,minmax(0,1fr))}}
