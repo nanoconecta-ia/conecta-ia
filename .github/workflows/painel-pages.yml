@@ -65,10 +65,21 @@ jobs:
           npx playwright install chromium --with-deps
       - name: Conferir commit e vitrine publicada sem cache
         run: node scripts/tests/loja-mobis-publicada.mjs
+      - name: Conferir Conecta e Nano publicados (sessão e dados simulados)
+        run: node scripts/tests/conecta-aprovado-visual.mjs
+        env:
+          WORKSPACE_BASE_URL: ${{ steps.implantar.outputs.page_url }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mobis-publicada-desktop-mobile
           path: evidencias-publicacao/
+          retention-days: 7
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conecta-nano-publicado-SIMULADO
+          path: evidencias-conecta-aprovado/
           retention-days: 7
           if-no-files-found: warn

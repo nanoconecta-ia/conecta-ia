@@ -1,5 +1,6 @@
 import { useEffect, useRef, type RefObject } from "react";
 import olho from "../assets/olho-nano-e02.webp";
+import "./olho-nano.css";
 import { ESCALA_FOCO, SOME_MS, VOLTA_MS, pontoCasa, pontoFoco } from "../lib/olhoNano.ts";
 
 /** Olho do Nano (E02). Desenho original, sem redesenho: anima só posição, escala proporcional e uma oscilação leve.

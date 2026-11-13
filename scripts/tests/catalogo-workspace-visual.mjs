@@ -33,7 +33,7 @@ try {
       assert.ok(u.hostname.endsWith("supabase.co"),"Host não permitido: "+u.hostname);
       const h={"access-control-allow-origin":"*","access-control-allow-headers":"*","access-control-allow-methods":"*","access-control-expose-headers":"content-range"};
       if(req.method()==="OPTIONS")return route.fulfill({status:204,headers:h});
-      if(req.method()!=="GET")writes.push({url:u.pathname,method:req.method()});
+      if(!["GET","HEAD"].includes(req.method()))writes.push({url:u.pathname,method:req.method()});
       if(u.pathname.endsWith("/auth/v1/user"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify(session.user)});
       if(u.pathname.endsWith("/rest/v1/lojas"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([{id:lojaId,nome:"Loja DEMO",slug:"loja-demo",modo_venda:"whatsapp",ambiente:"teste",perfil_ramo:"autopecas"}])});
       if(u.pathname.endsWith("/rest/v1/produtos")) {

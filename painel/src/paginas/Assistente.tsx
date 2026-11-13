@@ -30,7 +30,7 @@ import { useFonte } from "../lib/useFonte.ts";
 import { PropostaCompacta } from "../componentes/conector/PropostaCompacta.tsx";
 import { escolherInicial, falhaAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 import { identificarModeloEfetivo } from "../lib/modeloEfetivo.ts";
-import { RoboNano } from "../componentes/RoboNano.tsx";
+import { AvatarNanoAprovado } from "../componentes/AvatarNanoAprovado.tsx";
 
 type Evidencia = { origem: string; simulado: boolean; consultado_em: string; sincronizado_em?: string; motivo?: string; dados: { sku?: string; nome?: string; preco?: number | null; estoque?: number | null } };
 type Msg = { de: "eu" | "ia"; texto: string; anexos?: string[]; evidencias?: Evidencia[]; simulado?: boolean; propostas?: PropostaTurno[]; parcial?: boolean; modeloUsado?: string; modeloContingencia?: boolean };
@@ -452,7 +452,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       <section className="abas-centro" aria-label="Conversa com o Nano.ia">
       <div className="agente">
         <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Abrir menu do Nano.IA" onClick={() => { setEsq((v) => !v); setMenuAnexos(false); if (estreito()) setDir(false); }}><Icone nome="menu" tamanho={20} /></button>
-        <RoboNano tamanho={33} estado={normalizarEstado(estado)} decorativo /><div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite"><span className="nano-agente-estado">{estado === "pensando" && !acaoLocal && <PontosPensando />}{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span><span className="nano-motor-compacto" title={textoMotor} aria-label={textoMotor}>{nomeMotorCompacto}</span></span></div>
+        <AvatarNanoAprovado tamanho={33} estado={normalizarEstado(estado)} decorativo /><div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite"><span className="nano-agente-estado">{estado === "pensando" && !acaoLocal && <PontosPensando />}{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span><span className="nano-motor-compacto" title={textoMotor} aria-label={textoMotor}>{nomeMotorCompacto}</span></span></div>
         {<button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span aria-hidden="true"><Icone nome="mais" tamanho={20} /></span></button>}
         <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}><Icone nome="ajustes" tamanho={20} /></button>
       </div>

@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
 import "../acesso-publico.css";
+import "../workspace-aprovado.css";
+import { AtivoAprovado } from "../componentes/AtivoAprovado.tsx";
 import { supabase } from "../supabase.ts";
 import { ir } from "../lib/rota.ts";
 
@@ -24,23 +26,20 @@ export function Entrar({ aviso }: { aviso: string | null }) {
     await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin + window.location.pathname } });
   }
   return (
-    <div className="entrada-portal">
-      <section className="entrada-apresentacao" aria-labelledby="entrada-titulo">
-        <div className="entrada-marca"><span className="entrada-simbolo" aria-hidden="true">C</span><span>Conecta<b>.IA</b><small>PAINEL OPERACIONAL</small></span></div>
-        <p className="entrada-sobretitulo">AMBIENTE PROFISSIONAL · ACESSO CONTROLADO</p>
-        <h1 id="entrada-titulo">Sua operação, com <em>clareza</em> em cada decisão.</h1>
-        <p>Catálogo técnico, integrações e assistência Nano.IA em um espaço de trabalho. O acesso é destinado a contas habilitadas, com decisões sensíveis submetidas a revisão humana.</p>
-        <div className="entrada-processos" aria-label="Como funciona">
-          <span><b>01</b> Entre na conta autorizada</span>
-          <span><b>02</b> Consulte módulos e informações permitidas</span>
-          <span><b>03</b> Revise antes de executar ações</span>
-        </div>
-        <a href="./institucional.html" className="entrada-sobre">Conheça a plataforma e seus limites <span aria-hidden="true">↗</span></a>
+    <div className="entrada-aprovada" data-acesso-layout="aprovado-v2">
+      <section className="ap-auth-origem" aria-labelledby="entrada-titulo">
+        <a href="./" className="ap-identidade"><strong>Conecta<span>.IA</span></strong><small>ENRIQUECIMENTO DE CATÁLOGOS</small></a>
+        <AtivoAprovado nome="robo" tamanho={120}/>
+        <span className="ap-eyebrow">ORIGEM · INTELIGÊNCIA · EXPERIÊNCIA</span>
+        <h1 id="entrada-titulo">Três níveis.<br/>Uma origem física.</h1>
+        <p>O ERP preserva a origem. A Conecta.IA organiza o conhecimento. O Nano.IA acompanha cada tarefa com contexto e revisão.</p>
+        <div className="ap-auth-niveis"><span><b>01</b> ERP e cadastro físico</span><span><b>02</b> Conecta.IA + Nano.IA</span><span><b>03</b> Experiência da loja</span></div>
+        <a href="./institucional.html">Conheça a plataforma ↗</a>
       </section>
       <section className="entrada-quadro" aria-label="Autenticação">
         <div className="entrada-quadro-topo"><span className="entrada-ponto" aria-hidden="true" /> ACESSO A USUÁRIOS HABILITADOS</div>
-        <div className="entrar">
-          <h2>Bem-vindo de volta</h2>
+        <div className="entrar entrada-aprovada-form">
+          <h2>Entre no seu ambiente</h2>
           <p className="entrada-ajuda">Use as credenciais da sua conta vinculada ao Conecta.IA.</p>
           {aviso === "senha" && <p className="msg-ok">Senha alterada. Entre com a nova senha.</p>}
           <form onSubmit={enviar}>
@@ -70,7 +69,7 @@ export function Recuperar() {
     setEnviado(true);
   }
   return (
-    <div className="entrar">
+    <div className="entrar entrada-aprovada-form">
       <h1>Recuperar senha</h1>
       {enviado ? <p className="msg-ok">Se esse e-mail estiver cadastrado, você receberá um link para criar uma nova senha.</p> : (
         <form onSubmit={enviar}>
@@ -94,7 +93,7 @@ export function Redefinir({ aoConcluir }: { aoConcluir: () => void }) {
     else aoConcluir();
   }
   return (
-    <div className="entrar">
+    <div className="entrar entrada-aprovada-form">
       <h1>Nova senha</h1>
       <form onSubmit={enviar}>
         <label>Nova senha<input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required autoComplete="new-password" /></label>
