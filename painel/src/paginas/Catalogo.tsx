@@ -146,7 +146,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
     return () => window.clearTimeout(timer);
   }, [busca]);
   useEffect(() => { setObsFicha(""); setNoSugerido(""); setForm({ marca: "", gtin: "", pesoKg: "", descricaoCurta: "", fonte: "" }); setMsgCorrecao(null); }, [fichaId]);
-  useEffect(() => { setFichaId(null); setSelecionados(new Set()); setBusca(""); setBuscaAplicada(""); }, [loja.id]);
+  useEffect(() => { setFichaId(null); setSelecionados(new Set()); setBusca(buscaInicial()); setBuscaAplicada(buscaInicial()); }, [loja.id]);
   useEffect(() => {
     if (!fichaId) return;
     const aoTeclar = (e: KeyboardEvent) => { if (e.key === "Escape") setFichaId(null); };
