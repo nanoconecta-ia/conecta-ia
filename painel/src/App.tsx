@@ -11,6 +11,7 @@ import { EstudioAgente } from "./paginas/EstudioAgente.tsx";
 import { VisaoGeral } from "./paginas/VisaoGeral.tsx";
 import { Banners } from "./paginas/Banners.tsx";
 import { Catalogo } from "./paginas/Catalogo.tsx";
+import { CatalogoAplicacao } from "./paginas/CatalogoAplicacao.tsx";
 import { Bling } from "./paginas/Bling.tsx";
 import { Contador } from "./paginas/Contador.tsx";
 import { Taxonomia } from "./paginas/Taxonomia.tsx";
@@ -55,7 +56,7 @@ const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(wind
 
 const ICONES_ROTAS: Record<string, string> = {
   "/": "inicio", "/conector": "agentes", "/central": "escudo", "/indicadores": "grafico",
-  "/studio": "caixas", "/estudio": "ajustes", "/assistente": "conversa", "/catalogo": "catalogo",
+  "/studio": "caixas", "/estudio": "ajustes", "/assistente": "conversa", "/catalogo": "catalogo", "/catalogo-aplicacao": "loja", "/catalogo-espelho": "erp", "/visao-geral": "inicio",
   "/fila": "fila", "/taxonomia": "arvore", "/aparencia": "paleta", "/condicoes": "cartao",
   "/integracoes": "conexoes", "/gateway": "rede", "/imagens": "imagem", "/videos": "video", "/design": "paleta",
   "/bling": "erp", "/backup": "arquivo", "/banners": "imagem", "/contador": "grafico",
@@ -68,6 +69,9 @@ const ROTA_NANO = "/assistente";
 const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], ["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
+  ["/catalogo-aplicacao", "Catálogo por aplicação"],
+  ["/visao-geral", "Visão geral (anterior)"],
+  ["/catalogo-espelho", "Espelho ERP · auditoria"],
   ["/conector", "Nano.IA (homologação)"],
   ["/central", "Central de Inteligência"],
   ["/indicadores", "Indicadores"],
@@ -220,6 +224,9 @@ export function App() {
         {!demoAtivo && lojas === null ? <p className="suave">Carregando…</p> : !loja ? (
           <div className="cartao"><h1>Sem loja vinculada</h1><p className="suave">Seu login ainda não está ligado a uma loja. Peça ao suporte para vincular.</p></div>
         ) : bloqueada ? <VisaoGeral loja={loja} />
+          : ((caminho === "/" && loja.slug === "mobis") || caminho === "/catalogo-aplicacao") ? <CatalogoAplicacao loja={loja} />
+          : caminho === "/visao-geral" ? <VisaoGeral loja={loja} />
+          : caminho === "/catalogo-espelho" ? <Catalogo loja={loja} />
           : caminho === "/estudio" ? <EstudioAgente key={loja.id} loja={loja} />
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />
