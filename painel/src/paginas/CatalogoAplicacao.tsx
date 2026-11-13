@@ -199,9 +199,8 @@ export function CatalogoAplicacao({ loja }: { loja: Loja }) {
             </div>
           </div>
           <div className="ca-brand">
-            <span className="ca-brand-simbolo" aria-hidden="true">M</span>
-            <strong>{mobis ? "MOBIS" : loja.nome}</strong>
-            <small>{mobis ? "AUTOPEÇAS" : "CATÁLOGO"}</small>
+            {mobis ? <img src="./marcas/mobis-canva-oficial.jpg" alt="Logotipo oficial Mobis Autopeças" width={150} height={150} /> :
+              <><span className="ca-brand-simbolo" aria-hidden="true">M</span><strong>{loja.nome}</strong><small>CATÁLOGO</small></>}
           </div>
         </div>
         <div className="ca-vitrine-metricas">
