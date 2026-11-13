@@ -120,3 +120,17 @@
 .galeria-acoes { display:flex; flex-wrap:wrap; gap:6px; }
 .galeria-acoes button { min-height:40px; flex:1 1 90px; }
 @media (min-width:1024px) { .galeria-grade { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+
+
+/* Três camadas por produto, visíveis apenas na ficha autenticada de governança. */
+.catalogo-trilha{padding:14px;border-radius:12px;border:1px solid var(--borda-forte);background:var(--realce);margin:12px 0}
+.catalogo-trilha h3{font-size:1rem;margin:0 0 5px;font-weight:800;color:var(--texto)}
+.catalogo-trilha>p{font-size:.78rem;line-height:1.55;color:var(--suave);margin:0 0 13px}
+.catalogo-trilha-etapas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.catalogo-trilha-etapas>div{min-width:0;display:flex;flex-direction:column;gap:7px;padding:12px;border:1px solid var(--borda);border-radius:10px;background:var(--cartao)}
+.catalogo-trilha-etapas strong{font-size:.83rem;line-height:1.45}
+.catalogo-trilha-etapas small{font-size:.72rem;line-height:1.5;color:var(--suave);overflow-wrap:anywhere}
+.catalogo-trilha-etapas a{margin-top:auto;min-height:40px;text-align:center;font-size:.78rem}
+.catalogo-trilha-bloqueio{font-size:.72rem;color:var(--suave);border:1px dashed var(--borda);padding:9px;border-radius:7px;margin-top:auto}
+.catalogo-trilha-revisar{display:inline-block;margin-top:13px;font-size:.8rem;text-decoration:underline;color:var(--marca)}
+@media(max-width:850px){.catalogo-trilha-etapas{grid-template-columns:1fr}}
