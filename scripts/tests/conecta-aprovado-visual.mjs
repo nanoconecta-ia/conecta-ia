@@ -58,7 +58,7 @@ try{
   await page.getByRole('button',{name:'Ajustar chat',exact:true}).click();await page.getByRole('slider',{name:'Altura da conversa'}).focus();await page.keyboard.press('End');
   await page.getByRole('button',{name:'Ajustar chat',exact:true}).click();
   await page.getByRole('button',{name:'Abrir Tabelas',exact:true}).click();await page.getByRole('heading',{name:'Produtos do espelho.',exact:true}).waitFor();
-  assert.equal(await page.getByText('Produto sintético para teste',{exact:true}).isVisible(),true);
+  await page.getByText('Produto sintético para teste',{exact:true}).waitFor({state:'visible'});
   await page.getByRole('button',{name:'Abrir Imagens',exact:true}).click();await page.getByText('Nenhuma imagem aprovada disponível.',{exact:true}).waitFor();
   await page.getByRole('button',{name:'Abrir Gráficos',exact:true}).click();
   if(width<781)await page.getByRole('button',{name:'Conversa',exact:true}).click();
