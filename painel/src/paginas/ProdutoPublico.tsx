@@ -3,6 +3,8 @@ import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { useVoz } from "../lib/voz.ts";
 import { MOBIS } from "../lib/publicoLoja.ts";
 import { FichaProduto } from "../componentes/FichaProduto.tsx";
+import { ConsultaFiscalProduto } from "../componentes/ConsultaFiscalProduto.tsx";
+import "../consulta-fiscal.css";
 import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import type { FichaProduto as Produto, FichaVeiculo } from "../lib/ficha.ts";
 
@@ -60,8 +62,10 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
         <a href={"#/loja/" + encodeURIComponent(slug)}>Voltar ao catálogo</a>
         <button type="button" onClick={() => document.getElementById("rodape-privacidade")?.scrollIntoView({behavior:"smooth"})}>Privacidade e políticas</button>
       </nav>
-      {ficha ? <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} /> :
-        <p className="suave">Ficha comercial não disponível. Produtos e aplicações só aparecem depois de aprovados e publicados.</p>}
+      {ficha ? <>
+        <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} />
+        <ConsultaFiscalProduto slug={slug} sku={sku} />
+      </> : <p className="suave">Ficha comercial não disponível. Produtos e aplicações só aparecem depois de aprovados e publicados.</p>}
       <div className="cartao">
         <div className="agente"><div><h1 style={{ margin: 0 }}>Atendimento da loja — tire suas dúvidas sobre esta peça</h1>
           <p className="suave" style={{ margin: 0 }}>Código <span className="mono">{sku}</span>. O assistente só informa dados confirmados pela loja.</p></div></div>
