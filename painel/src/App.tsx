@@ -29,6 +29,7 @@ import { Imagens } from "./paginas/Imagens.tsx";
 import { Videos } from "./paginas/Videos.tsx";
 import { VitrineDemo } from "./paginas/VitrineDemo.tsx";
 import { Loja } from "./paginas/Loja.tsx";
+import { LojaMobisNova } from "./paginas/LojaMobisNova.tsx";
 import { Aparencia } from "./paginas/Aparencia.tsx";
 import { PublicacaoLoja } from "./paginas/PublicacaoLoja.tsx";
 import { Condicoes } from "./paginas/Condicoes.tsx";
@@ -160,7 +161,7 @@ export function App() {
   useEffect(() => { document.documentElement.dataset.painel = modoPainel; }, [modoPainel]);
 
   const lojaSlug = caminho.match(/^\/loja\/([a-z0-9-]{2,63})$/);
-  if (lojaSlug) return <Loja slug={lojaSlug[1]} />;
+  if (lojaSlug) return lojaSlug[1] === "mobis" ? <LojaMobisNova slug="mobis" /> : <Loja slug={lojaSlug[1]} />;
   if (hostCliente && !caminho.startsWith("/p/")) return <Loja host={hostCliente} />;
   const pub = caminho.match(/^\/p\/([a-z0-9-]+)\/(.+)$/);
   if (caminho === "/demo/vitrine") return <VitrineDemo />;
