@@ -6,11 +6,15 @@ import { vistaDaArea } from "../lib/vistas.ts";
 import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
 import { chipsDeFiltro, removerFiltro, textoResultado } from "../lib/filtrosLoja.ts";
 import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
+import { ChatClienteLoja } from "../componentes/ChatClienteLoja.tsx";
+import { MOBIS } from "../lib/publicoLoja.ts";
+import "../loja-comercial.css";
 
 type Produto = { nome: string; sku: string; preco: number | null; em_estoque: boolean | null; marca: string | null; descricao: string | null; imagem: string | null; whatsapp: string | null; atualizado_em: string | null };
 type Veiculo = { modelo: string; motor: string | null; de: number | null; ate: number | null };
 type Tema = { variaveis: Record<string, string>; logo_url: string | null; icone_url: string | null };
-type Resposta = { loja: { nome: string; slug: string; modo_venda: string }; tema: Tema; politicas?: PoliticasLojaPublicas | null; produtos: Produto[]; total: number; pagina: number; por_pagina: number; veiculos: Veiculo[]; tipos?: { tipo: string; total: number }[]; categorias: { nome: string; slug: string; total: number }[] };
+type Banner = { sku: string; nome: string; preco: number | null; chamada: string | null; flash: boolean; whatsapp: string | null; url: string | null };
+type Resposta = { loja: { nome: string; slug: string; modo_venda: string; whatsapp?: string | null }; banners?: Banner[]; tema: Tema; politicas?: PoliticasLojaPublicas | null; produtos: Produto[]; total: number; pagina: number; por_pagina: number; veiculos: Veiculo[]; tipos?: { tipo: string; total: number }[]; categorias: { nome: string; slug: string; total: number }[] };
 type Filtros = { q: string; modelo: string; motor: string; ano: string; categoria: string; tipo: string; pagina: number };
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -20,6 +24,7 @@ const VAZIO: Filtros = { q: "", modelo: "", motor: "", ano: "", categoria: "", t
 export function Loja({ slug, host }: { slug?: string; host?: string }) {
   const [f, setF] = useState<Filtros>(VAZIO);
   const [busca, setBusca] = useState("");
+  const [paletaLoja, setPaletaLoja] = useState<"cobre" | "azul" | "vermelho">("cobre");
   const [dados, setDados] = useState<Resposta | null>(null);
   const [estado, setEstado] = useState<"carregando" | "ok" | "naoachada" | "erro" | "limite">("carregando");
   const [tentativa, setTentativa] = useState(0); // "Tentar de novo" refaz a consulta sem recarregar a página
@@ -85,11 +90,12 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
   const paginas = dados ? Math.max(1, Math.ceil(dados.total / dados.por_pagina)) : 1;
 
   return (
-    <div className="vitrine" style={estilo}>
+    <div className="vitrine" style={estilo} data-paleta-loja={paletaLoja}>
       <header className="v-topo">
         {dados?.tema?.logo_url?.startsWith("https://")
           ? <img className="v-logo" src={dados.tema.logo_url} alt={dados.loja.nome} />
           : <span className="v-nome">{dados?.loja.nome ?? "…"}</span>}
+        {dados?.loja.slug === MOBIS.slug && <a href={MOBIS.site} aria-label="Site oficial Mobis Autopeças" className="v-site-oficial">mobisautopecas.com.br</a>}
         <form onSubmit={buscar} role="search" className="v-busca">
           <label className="sr">Buscar por peça, código, veículo ou fabricante</label>
           <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar peça, código ou veículo" maxLength={60} />
@@ -104,6 +110,28 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
         <a className="botao verde" href="#catalogo" onClick={(e) => { e.preventDefault(); document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth" }); }}>Explorar catálogo</a>
       </section>
 
+      <section className="v-paletas" aria-label="Cores da loja">
+        <span>Visual:</span>
+        {(["cobre", "azul", "vermelho"] as const).map((p) => (
+          <button key={p} type="button" aria-pressed={paletaLoja === p} onClick={() => setPaletaLoja(p)}>
+            {p === "cobre" ? "Grafite e cobre" : p === "azul" ? "Azul petróleo" : "Grafite e vermelho"}
+          </button>
+        ))}
+      </section>
+      {(dados?.banners ?? []).map((b, i) => (
+        <section className={"v-loja-oferta" + (b.flash ? " flash" : "")} key={b.sku + "-" + i} aria-label={"Oferta: " + b.nome}>
+          <div>
+            {b.flash && <span className="v-loja-selo">Oferta em destaque</span>}
+            <h2>{b.nome}</h2>
+            {b.chamada && <p>{b.chamada}</p>}
+            {b.preco != null && <p className="v-loja-preco">{brl(b.preco)}</p>}
+          </div>
+          <div className="v-loja-acoes">
+            <a href={"#/p/" + encodeURIComponent(dados!.loja.slug) + "/" + encodeURIComponent(b.sku)}>Ver produto</a>
+            {b.whatsapp && <a href={b.whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp</a>}
+          </div>
+        </section>
+      ))}
       <nav className="v-guia" aria-label="Como encontrar sua peça">
         <p className="v-guia-titulo">Como encontrar sua peça em 3 passos</p>
         <ol>
@@ -205,7 +233,8 @@ export function Loja({ slug, host }: { slug?: string; host?: string }) {
           </div>
         )}
       </section>
-      <RodapeLoja nome={dados?.loja.nome ?? "Loja"} politicas={dados?.politicas} ultima={ultima} />
+      <RodapeLoja nome={dados?.loja.nome ?? "Loja"} slug={dados?.loja.slug} whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas} ultima={ultima} />
+      {dados && <ChatClienteLoja nome={dados.loja.nome} whatsapp={dados.loja.whatsapp} />}
     </div>
   );
 }

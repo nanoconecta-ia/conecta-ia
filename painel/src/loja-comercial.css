@@ -1,0 +1,36 @@
+/* Camada visual da vitrine pública (não altera a identidade do painel interno). */
+.vitrine[data-paleta-loja="cobre"] { --loja-escuro:#1d2528; --loja-cor:#a94e2c; --loja-claro:#fff0e0; --loja-acento:#e3a772; }
+.vitrine[data-paleta-loja="azul"] { --loja-escuro:#102d42; --loja-cor:#126c8f; --loja-claro:#edf9ff; --loja-acento:#88d4ee; }
+.vitrine[data-paleta-loja="vermelho"] { --loja-escuro:#2c1719; --loja-cor:#a52b35; --loja-claro:#fff1ee; --loja-acento:#f1a2a4; }
+.v-paletas{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0 18px;font-size:.82rem}
+.v-paletas button{border:1px solid var(--borda);border-radius:20px;padding:6px 12px;background:var(--cartao);color:var(--texto);min-height:38px;cursor:pointer}
+.v-paletas button[aria-pressed="true"]{border-color:var(--loja-cor);box-shadow:inset 0 0 0 1px var(--loja-cor);font-weight:700}
+.v-loja-oferta{border-radius:16px;position:relative;overflow:hidden;display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:14px;margin:12px 0;padding:24px;background:linear-gradient(110deg,var(--loja-escuro),var(--loja-cor));color:#fff;border:1px solid var(--loja-acento)}
+.v-loja-oferta h2{color:#fff;font-size:clamp(1.18rem,2.4vw,1.75rem);margin:0 0 8px}
+.v-loja-oferta p{color:#fff;margin:4px 0;max-width:580px}
+.v-loja-oferta .v-loja-selo{display:inline-block;padding:2px 12px;border-radius:18px;background:var(--loja-claro);color:var(--loja-escuro);font-size:.75rem;font-weight:800;margin-bottom:10px}
+.v-loja-oferta .v-loja-preco{font-size:1.4rem;font-weight:900}
+.v-loja-oferta .v-loja-acoes{display:flex;gap:10px;flex-wrap:wrap}
+.v-loja-oferta a{background:#fff;color:var(--loja-escuro);padding:11px 15px;border-radius:8px;font-weight:750;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.v-loja-oferta a:focus-visible{outline:3px solid var(--loja-acento);outline-offset:3px}
+.v-loja-oferta.flash::after{position:absolute;content:"";inset:0;pointer-events:none;border:2px solid var(--loja-acento);border-radius:inherit;animation:lojaFlash 2.6s ease-in-out infinite}
+@keyframes lojaFlash{0%,100%{opacity:.25}50%{opacity:1}}
+.chat-cliente{position:fixed;z-index:80;right:clamp(12px,3vw,30px);bottom:16px;display:flex;flex-direction:column;align-items:end;gap:8px;max-width:calc(100vw - 24px)}
+.chat-cliente-botao{background:#20584c;color:white;border:2px solid white;box-shadow:0 9px 30px #0004;border-radius:999px;padding:11px 18px;min-height:48px;font-weight:800;cursor:pointer}
+.chat-cliente-caixa{display:flex;flex-direction:column;width:min(380px,calc(100vw - 24px));height:min(540px,calc(100dvh - 100px));background:#fffdf9;color:#18252a;box-shadow:0 20px 70px #0006;border:1px solid #d7ddd9;border-radius:16px;overflow:hidden}
+.chat-cliente-cabecalho{background:#193c35;color:#fff;padding:14px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.chat-cliente-cabecalho strong{display:block}.chat-cliente-cabecalho small{display:block;font-size:.74rem;color:#c5dfd8}
+.chat-cliente-cabecalho button{border:1px solid #ffffff50;background:transparent;color:#fff;border-radius:50%;width:34px;height:34px;font-size:1.3rem;cursor:pointer}
+.chat-cliente-mensagens{overflow-y:auto;padding:14px;flex:1;min-height:100px;display:flex;flex-direction:column;gap:9px}
+.chat-cliente-msg{max-width:92%;margin:0;padding:10px 12px;border-radius:12px;white-space:pre-wrap;font-size:.86rem;line-height:1.5}
+.chat-cliente-msg.loja{background:#eef2ef;align-self:start}.chat-cliente-msg.cliente{background:#d3ece1;align-self:end}
+.chat-cliente-atalhos{display:flex;flex-wrap:wrap;gap:5px;padding:4px 12px}
+.chat-cliente-atalhos button{background:#edf6f1;border:1px solid #a6c2b3;color:#164e3e;border-radius:16px;padding:5px 9px;font-size:.72rem;cursor:pointer}
+.chat-cliente-form{padding:8px 12px;display:flex;gap:6px;max-width:none}
+.chat-cliente-form input{min-width:0;flex:1;padding:8px;border-radius:7px;border:1px solid #a2b4ab;background:#fff;color:#172824}
+.chat-cliente-form button{padding:8px 11px;border-radius:7px;border:0;background:#145d4d;color:#fff;cursor:pointer}
+.chat-cliente-privacidade{padding:4px 12px;margin:0;font-size:.67rem;line-height:1.35;color:#52635f}
+.chat-cliente-whatsapp{display:block;margin:6px 12px 12px;padding:9px;text-align:center;background:#13694b;color:white;text-decoration:none;border-radius:8px;font-size:.84rem;font-weight:750}
+.chat-cliente :is(button,a,input):focus-visible{outline:3px solid #ebad58;outline-offset:2px}
+@media(max-width:620px){.v-loja-oferta{padding:18px}.chat-cliente-caixa{height:min(570px,calc(100dvh - 98px))}}
+@media(prefers-reduced-motion:reduce){.v-loja-oferta.flash::after{animation:none;opacity:.7}}

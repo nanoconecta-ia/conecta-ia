@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "../rodape-loja.css";
+import { MOBIS, linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 
 export type PoliticasLojaPublicas = {
   razao_social: string | null;
@@ -26,9 +27,11 @@ const paginas = [
 const instrucoesCompra = "Busque pelo nome, SKU ou veículo, confira a descrição e confirme a compatibilidade antes de comprar. Preços, disponibilidade, frete, prazo, forma de pagamento e valor final precisam ser informados e confirmados pela loja no fluxo de atendimento ou contratação. O contato para tirar dúvidas não representa pedido concluído.";
 
 export function RodapeLoja({
-  nome, politicas, ultima,
+  nome, slug, whatsapp, politicas, ultima,
 }: {
   nome: string;
+  slug?: string | null;
+  whatsapp?: string | null;
   politicas: PoliticasLojaPublicas | null | undefined;
   ultima?: string | null;
 }) {
@@ -48,6 +51,13 @@ export function RodapeLoja({
   const texto = painel === "compra" ? instrucoesCompra : (selecionada && politicas?.[selecionada.campo]) || "";
   const temContato = !!(politicas?.telefone || politicas?.email_contato);
   const ano = new Date().getFullYear();
+  const mobis = slug === MOBIS.slug;
+  const razao = politicas?.razao_social || (mobis ? MOBIS.razao : null);
+  const cnpj = politicas?.cnpj || (mobis ? MOBIS.cnpj : null);
+  const endereco = politicas?.endereco || (mobis ? MOBIS.endereco : null);
+  const telefone = politicas?.telefone || (mobis ? "(62) 99165-4515" : null);
+  const wa = linkWhatsAppPublico(whatsapp, "Olá! Vim pelo site " + nome + " e gostaria de falar com um vendedor.");
+  const compartilhar = mobis ? "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(MOBIS.site) : null;
 
   return (
     <footer className="v-rodape-comercial" aria-label="Informações da loja">
@@ -55,6 +65,12 @@ export function RodapeLoja({
         <div className="v-rodape-apresentacao">
           <strong>{nome}</strong>
           <p>Peças automotivas e busca por veículo. Confirme a aplicação e as condições da oferta antes da compra.</p>
+          {mobis && <a className="v-rodape-site" href={MOBIS.site}>mobisautopecas.com.br</a>}
+          <div className="v-rodape-sociais" aria-label="Redes sociais e localização">
+            {wa && <a href={wa} target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp da loja"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 11.5a9 9 0 0 1-13 8L3 21l1.5-4.7A9 9 0 1 1 21 11.5Z"/><path d="M8 8.5c.4 3 3 5.6 6 6.4l1.5-1.5 2 1c-.5 1.7-2.1 2.6-3.8 2.2-4.2-1-7.3-4.2-8.2-8.2-.3-1.5.6-2.9 2.1-3.4l1.2 2Z"/></svg> WhatsApp</a>}
+            {compartilhar && <a href={compartilhar} target="_blank" rel="noopener noreferrer" aria-label="Compartilhar a loja no Facebook"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M13.4 21v-8.2h2.8l.4-3.4h-3.2V7.3c0-1 .3-1.7 1.7-1.7h1.7v-3a21 21 0 0 0-2.4-.1c-2.5 0-4.2 1.5-4.2 4.4v2.5H7.4v3.4h2.8V21h3.2Z"/></svg> Facebook</a>}
+            {mobis && <a href={MOBIS.mapas} target="_blank" rel="noopener noreferrer" aria-label="Localização cadastrada no Google Maps"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.7"/></svg> Google Maps</a>}
+          </div>
           {ultima && <small>Última sincronização informada: {new Date(ultima).toLocaleString("pt-BR")}. Estoque sujeito à confirmação.</small>}
         </div>
         <nav aria-label="Navegação da loja">
@@ -73,14 +89,15 @@ export function RodapeLoja({
         </div>
         <div className="v-rodape-grupo">
           <h2>Identificação da loja</h2>
-          {politicas ? (
+          {razao || cnpj || endereco ? (
             <>
-              {politicas.razao_social && <p><strong>{politicas.razao_social}</strong></p>}
-              {politicas.cnpj && <p>CNPJ: {politicas.cnpj}</p>}
-              {politicas.endereco && <p className="v-rodape-endereco">{politicas.endereco}</p>}
-              {politicas.telefone && <p>Telefone: {politicas.telefone}</p>}
-              {politicas.email_contato && <a href={"mailto:" + politicas.email_contato}>{politicas.email_contato}</a>}
-              {!temContato && <small>Consulte o contato informado no atendimento da loja.</small>}
+              {razao && <p><strong>{razao}</strong></p>}
+              {cnpj && <p>CNPJ: {cnpj}</p>}
+              {endereco && <p className="v-rodape-endereco">{endereco}</p>}
+              {telefone && <p>Telefone: {telefone}</p>}
+              {politicas?.email_contato && <a href={"mailto:" + politicas.email_contato}>{politicas.email_contato}</a>}
+              {!temContato && !mobis && <small>Consulte o contato informado no atendimento da loja.</small>}
+              {mobis && !politicas && <small>Endereço cadastral público. Confirme as condições de retirada antes de ir à loja.</small>}
             </>
           ) : <p>Dados cadastrais sujeitos à validação para publicação.</p>}
         </div>
