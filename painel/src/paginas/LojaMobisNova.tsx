@@ -56,7 +56,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
   const [slide,setSlide]=useState(0);
   const [pausa,setPausa]=useState(false);
   useEffect(()=>{
-    let ativo=true;setEstado("carregando");
+    let ativo=true;setDados(null);setEstado("carregando");
     fetch(SUPABASE_URL+"/functions/v1/loja-publica",{
       method:"POST",headers:{"content-type":"application/json",apikey:SUPABASE_CHAVE_PUBLICAVEL},
       body:JSON.stringify({slug,q:f.q||undefined,modelo:f.modelo||undefined,motor:f.motor||undefined,
