@@ -29,3 +29,5 @@
 .v-rodape-sociais a{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:6px 11px;border:1px solid #69857b;border-radius:24px;color:#e1f5e7;text-decoration:none;font-size:.76rem}
 .v-rodape-sociais a:hover{background:#283a37}
 .v-rodape-sociais span{display:inline-grid;place-items:center;width:20px;height:20px;font-size:1.1rem;font-weight:800}
+
+.v-rodape-sociais svg{height:20px;width:20px;flex:none}
