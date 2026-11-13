@@ -54,6 +54,20 @@ export async function produtoPublico(lojaId: string, id: string) {
   return { produto: data as Produto, imagens: imgs.get(id) ?? [] };
 }
 
+export type AplicacaoPublica = {
+  modelo: string; motorizacao: string | null; ano_inicial: number | null; ano_final: number | null;
+  restricao: string | null; contraindicacao: string | null;
+};
+/** Filhos técnicos de uma peça aprovada, sem criar produto físico novo.
+ * A função só é chamada após produtoPublico confirmar produto publicado.
+ */
+export async function aplicacoesPublicasProduto(lojaId: string, produtoId: string): Promise<AplicacaoPublica[]> {
+  const { data, error } = await supabaseServico().from("produto_aplicacoes")
+    .select("modelo,motorizacao,ano_inicial,ano_final,restricao,contraindicacao")
+    .eq("loja_id",lojaId).eq("produto_id",produtoId).eq("status","aprovado").limit(40);
+  return error ? [] : (data ?? []) as AplicacaoPublica[];
+}
+
 /** Link de WhatsApp com nome, referência (SKU), código interno e URL, sem simular checkout. */
 export function linkWhatsapp(loja: LojaPublica, p: Produto, url: string) {
   if (!loja.whatsapp) return null;
