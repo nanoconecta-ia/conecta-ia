@@ -234,7 +234,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
         <p>Não informe CPF, chassi completo, senha ou dados bancários no chat. A lista não conclui compras nem altera dados do Bling.</p>
       </section>
     </main>
-    <RodapeLoja nome={dados?.loja.nome??"Mobis Autopeças"} slug="mobis" whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas} ultima={dados?.produtos.map(x=>x.atualizado_em).filter(Boolean).sort().at(-1)}/>
+    <RodapeLoja nome={dados?.loja.nome??"Mobis Autopeças"} slug="mobis" whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas} ultima={dados?.produtos.map(x=>x.atualizado_em).filter(Boolean).sort().at(-1)} secoes={{catalogo:"m2-catalogo",veiculo:"m2-busca",categoria:"m2-sistemas"}}/>
     <ChatClienteLoja nome={dados?.loja.nome??"Mobis Autopeças"} whatsapp={dados?.loja.whatsapp}/>
   </div>;
 }
