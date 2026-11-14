@@ -59,3 +59,6 @@ Authorization: Bearer <token>.<sal>
  "arguments":{"titulo":"Promo de freios","imagem_url":"https://cdn.exemplo.com/freios.png"}}}
 → {"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"{\"id\":\"…\",\"versao\":1,\"hash_proposta\":\"…\",\"estado\":\"pendente\",\"mensagem\":\"Pedido enviado à Central de Aprovações. Nada foi publicado…\"}"}]}}
 ```
+
+## Reconfirmação a cada 8 h (autorizações longas)
+`limite_ate` é a janela corrente (no máx. 8 h); `limite_absoluto_ate` é a duração total aprovada (até 7 dias). Sem reconfirmação a sessão termina ao fim da janela. O lojista (dono da sessão ou administrador da loja, com **login recente**) chama `pair_reconfirmar(p_sessao)` — botão "Reconfirmar +8 h" em Dispositivos — e a janela avança 8 h, sem passar do teto. Sessão já encerrada exige novo pareamento. Cada reconfirmação vai para a auditoria (`pair.sessao_reconfirmada`).
