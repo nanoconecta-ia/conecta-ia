@@ -4,11 +4,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { processarVariantes } from "./pixels.ts";
+import { processarVariantes } from "../../supabase/functions/_shared/imagens/pixels.ts";
 import { codecsJsquash } from "./codecs_jsquash.ts";
-import { VARIANTES } from "./variantes.ts";
+import { VARIANTES } from "../../supabase/functions/_shared/imagens/variantes.ts";
 
-const FOTO = new URL("../../../../painel/public/produtos/ci002916/foto1.jpg", import.meta.url);
+const FOTO = new URL("../../painel/public/produtos/ci002916/foto1.jpg", import.meta.url);
 let raiz: string | null = null;
 try { raiz = createRequire(import.meta.url).resolve("@jsquash/jpeg/package.json").replace(/jpeg[\\/]package\.json$/, ""); } catch { /* sem dependência */ }
 const pronto = raiz !== null && existsSync(FOTO);

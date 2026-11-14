@@ -1,6 +1,7 @@
+// FORA de supabase/functions de propósito: o CI das funções faz tsc em _shared e não tem @jsquash instalado.
 // Adaptador dos codecs reais (@jsquash: mozjpeg, libwebp, resize em WASM). NÃO é importado por nenhuma função publicada ainda.
 // Testado só em Node 22 (carrega o .wasm do disco). No Edge Function (Deno) o carregamento do WASM ainda precisa ser validado.
-import type { Bitmap, Codecs } from "./pixels.ts";
+import type { Bitmap, Codecs } from "../../supabase/functions/_shared/imagens/pixels.ts";
 
 export interface ModulosWasm { jpegDec: WebAssembly.Module; jpegEnc: WebAssembly.Module; pngDec: WebAssembly.Module; webpDec: WebAssembly.Module; webpEnc: WebAssembly.Module; resize: WebAssembly.Module }
 
