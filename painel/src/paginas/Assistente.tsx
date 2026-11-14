@@ -37,7 +37,13 @@ async function invocarAssistenteComRenovacao(lojaId: string, acao: string) {
   const chamar = () => supabase.functions.invoke("assistente", { body: { loja_id: lojaId, acao } });
   const primeira = await chamar().catch((e: unknown) => ({ data: null, error: e as Error }));
   if (!primeira.error) return primeira;
-  await supabase.auth.refreshSession().catch(() => undefined);
+  const renovada = await supabase.auth.refreshSession().catch((e: unknown) => ({ data: { session: null }, error: e as { code?: string } }));
+  const codigo = (renovada.error as { code?: string } | null)?.code ?? "";
+  if (renovada.error && ["refresh_token_not_found", "refresh_token_already_used", "session_not_found", "session_expired"].includes(codigo)) {
+    // A sessão deste navegador não existe mais no servidor: volta para a tela de entrada em vez de deixar o chat quebrado.
+    await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+    return primeira;
+  }
   return chamar().catch((e: unknown) => ({ data: null, error: e as Error }));
 }
 
