@@ -1,0 +1,21 @@
+.dc{max-width:560px;margin:0 auto;padding:8px 10px 24px}
+.dc-faixa{margin:0 0 8px;padding:4px 8px;font-size:11px;background:#fbf1d8;color:#8a5a00;border:1px solid #e2c27a;border-radius:7px}
+.dc-cartao{background:var(--cartao,#fbf9f4);border:1px solid var(--borda-forte,#8b8172);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.dc-cartao h3{margin:6px 0 0;font-size:12px;font-weight:500;color:var(--suave,#5a544a)}
+.dc-topo{display:flex;gap:10px}
+.dc-foto{width:84px;height:84px;flex:none;border:1px dashed var(--borda-forte,#8b8172);border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;color:var(--suave,#5a544a);background:var(--fundo,#f6f3ec)}
+.dc-id{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dc-mini{display:flex;gap:5px;margin-top:4px}.dc-mini span{width:34px;height:34px;border:1px dashed var(--borda,#d9d3c7);border-radius:6px;background:var(--fundo,#f6f3ec)}
+.dc-resumo{margin:0;font-size:11px;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.dc-selo{font-size:10px;padding:1px 6px;border-radius:5px;border:.5px solid var(--borda,#d9d3c7);white-space:nowrap}
+.dc-confirmado{background:#eaf3ea;border-color:#9cc3a2;color:#2f6b3a}.dc-a_confirmar,.dc-divergente{background:#fbf1d8;border-color:#e2c27a;color:#8a5a00}.dc-ausente{background:#fbeaea;border-color:#e0a5a5;color:#a32d2d}.dc-nao_consultado{color:var(--suave,#5a544a)}
+.dc-taxonomia{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.dc-taxonomia li{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:3px 6px;border:.5px solid var(--borda,#d9d3c7);border-radius:8px;background:var(--fundo,#f6f3ec)}
+.dc-taxonomia li:not(:first-child){margin-left:14px}
+.dc-nivel{font-size:10px;color:var(--suave,#5a544a);min-width:70px}
+.dc-lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.dc-lista li{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:3px 6px;border:.5px solid var(--borda,#d9d3c7);border-radius:8px}
+.dc-lista small{flex-basis:100%}
+.dc-aplic li{flex-wrap:nowrap}.dc-aplic li>span:nth-child(2){display:flex;flex-direction:column;flex:1;min-width:0}
+.dc-diff{margin:0;font-size:12px}.dc-diff del{color:#a32d2d}.dc-diff ins{color:#2f6b3a;text-decoration:none;font-weight:500}
+.dc-rodape{display:flex;gap:6px}.dc-rodape button{flex:1}
