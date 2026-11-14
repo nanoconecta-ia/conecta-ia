@@ -185,7 +185,8 @@ function montarUrlPareamento(appUrl, codigo) {
     const local = u.hostname === "localhost" || u.hostname === "127.0.0.1";
     if (u.protocol !== "https:" && !local) throw new Error("APP_URL deve ser https");
     if (u.username || u.password || u.search || u.hash) throw new Error("APP_URL não pode ter credenciais, query nem fragmento");
-    return `${u.origin}${u.pathname.replace(/\/+$/, "")}/#/parear?c=${codigo}`;
+    const caminho = /\.html?$/i.test(u.pathname) ? u.pathname : `${u.pathname.replace(/\/+$/, "")}/`;
+    return `${u.origin}${caminho}#/parear?c=${codigo}`;
 }
 function codigoDaUrl(url) {
     const m = /#\/parear\?c=([A-Za-z0-9_-]{43,128})$/.exec(url.trim());
@@ -3259,7 +3260,7 @@ return { segredoEstado: segredoEstado, chaveiroPlataforma: chaveiroPlataforma };
 // ---------- supabase/functions/_shared/pair/implantacao.ts ----------
 const __m20 = (() => {
 const PROJETO_CONECTA = "https://dsfzhsrudriqkumtlqwj.supabase.co";
-const PAINEL_CONECTA = "https://nanoconecta-ia.github.io/conecta-ia/";
+const PAINEL_CONECTA = "https://www.mobisautopecas.com.br/conecta.html";
 function configuracaoPair(get) {
     const producao = get("SUPABASE_URL")?.replace(/\/$/, "") === PROJETO_CONECTA;
     const definido = get("PAIR_AMBIENTE");
