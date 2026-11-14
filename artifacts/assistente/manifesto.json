@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "f534420e986edb1612612dd5cbcb0f868f454396ff09c7fd36ecadf03bcf7215",
+  "artefato_sha256": "db34ba24af305f84cb7f5fa6b1e545f3facabab19654642f2d6902ee6608faad",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -226,7 +226,7 @@
     },
     {
       "path": "supabase/functions/_shared/bling_ferramentas.ts",
-      "sha256": "79e74f53fa101491d6ff864b81c80aa9cf7d08f70cd42c0a6b2fbd68cf765855"
+      "sha256": "8dec3ee47614bb87e505e5a27a6103c4d818eca630822ee9976643f766cc4ad5"
     },
     {
       "path": "supabase/functions/_shared/assistente/busca_produto.ts",

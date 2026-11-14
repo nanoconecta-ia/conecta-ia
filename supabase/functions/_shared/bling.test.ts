@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { cifrar, decifrar } from "./cripto.ts";
 import { obterAccessToken, renovarLoja, type Armazem, type CredCifrada } from "./bling_token.ts";
 import { blingFetch } from "./bling_api.ts";
-import { FERRAMENTAS, podeExecutar } from "./bling_ferramentas.ts";
+import { FERRAMENTAS, montarAlterarSituacao, podeExecutar } from "./bling_ferramentas.ts";
 
 const chave = randomBytes(32).toString("base64");
 const cfgBase = { chaveCifra: chave, espera: async () => {} };
@@ -193,4 +193,15 @@ test("CNPJ: valida dígitos verificadores e compara só os dígitos", () => {
   assert.equal(cnpjValido("11111111111111"), false);
   assert.equal(cnpjConfere("19.903.967/0001-01", "19903967000101"), true);
   assert.equal(cnpjConfere("19.903.967/0001-01", "12.345.678/0001-95"), false);
+});
+
+test("alterar situação do produto: só A/I, id válido, ferramenta desligada e com aprovação; nada de excluir", () => {
+  assert.deepEqual(montarAlterarSituacao(16598493822, "A"), { caminho: "/produtos/16598493822/situacoes", corpo: { situacao: "A" } });
+  for (const ruim of ["E", "", "a", "X"]) assert.throws(() => montarAlterarSituacao(1, ruim), /situação inválida/);
+  for (const ruim of [0, -1, 1.5, NaN, 2 ** 60]) assert.throws(() => montarAlterarSituacao(ruim, "A"), /id de produto inválido/);
+  const f = FERRAMENTAS.find((x) => x.nome === "bling.produtos.alterar_situacao")!;
+  assert.equal(f.ativa, false);
+  assert.equal(f.exigeAprovacao, true);
+  assert.equal(f.conferido, false);
+  assert.equal(podeExecutar(f, "apr-1").ok, false, "desligada mesmo com aprovação");
 });
