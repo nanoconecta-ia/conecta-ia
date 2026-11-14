@@ -10,3 +10,6 @@
 .conecta-aprovado-root .faixa-agentes button{min-height:28px;padding:2px 9px;font-size:11px;flex:none;margin-left:auto}
 .conecta-aprovado-root .faixa-agentes button + button{margin-left:0}
 .conecta-aprovado-root .fa-msg{color:var(--suave,#5a544a)}
+.conecta-aprovado-root .faixa-agentes{padding:3px 12px}
+.conecta-aprovado-root .fa-icone{position:relative;width:30px;height:30px;min-height:30px;min-width:30px;padding:0;border-radius:50%;font-size:14px;margin-left:0;flex:none;align-self:flex-start}
+.conecta-aprovado-root .fa-badge{position:absolute;top:-1px;right:-1px;width:9px;height:9px;border-radius:50%;border:1.5px solid var(--cartao,#fbf9f4)}

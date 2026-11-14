@@ -13,6 +13,7 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
   const [linhas, setLinhas] = useState<Linha[]>([]);
   const [agora, setAgora] = useState(Date.now());
   const [msg, setMsg] = useState("");
+  const [aberta, setAberta] = useState(false);
   const carregar = useCallback(async () => {
     const { data } = await supabase.from("pair_dispositivos")
       .select("id, nome, tipo, pair_sessoes(id, expira_em, limite_ate, limite_absoluto_ate, revogado_em)").eq("loja_id", loja.id).is("revogado_em", null).limit(20);
@@ -37,7 +38,10 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
   if (linhas.length === 0) return null;
   return (
     <div className="faixa-agentes" role="status" aria-live="polite">
-      {linhas.map((l) => {
+      <button className="fa-icone" aria-expanded={aberta} aria-label={aberta ? "Recolher agentes conectados" : `Agentes conectados: ${linhas.length}`} onClick={() => setAberta(!aberta)}>
+        <span aria-hidden style={{ fontSize: 11, fontWeight: 600 }}>IA</span><i className="fa-badge" style={{ background: linhas.some((x) => estadoAgente(x.limite_ate, x.ultima, agora, x.token_ate).situacao === "parado") ? "#b42318" : "#1a6f4d" }} aria-hidden />
+      </button>
+      {aberta && linhas.map((l) => {
         const e = estadoAgente(l.limite_ate, l.ultima, agora, l.token_ate);
         const rotulo = e.situacao === "parado" ? "parado: reconectar" : e.situacao === "agindo" ? "agindo agora" : e.situacao === "acabando" ? "sessão acabando" : "conectado";
         const min = l.ultima ? Math.floor((agora - Date.parse(l.ultima)) / 60000) : null;

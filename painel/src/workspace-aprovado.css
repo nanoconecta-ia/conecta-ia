@@ -41,3 +41,10 @@
 .conecta-aprovado-root .visao-hero h1 em{color:#ffb580}
 .conecta-aprovado-root .visao-hero .visao-hero-acoes a.visao-acao-secundaria,.conecta-aprovado-root .visao-hero .visao-hero-acoes a.visao-acao-secundaria:hover{color:#fff}
 .conecta-aprovado-root .visao-hero .visao-hero-acoes a.visao-acao-primaria,.conecta-aprovado-root .visao-hero .visao-hero-acoes a.visao-acao-primaria:hover{color:#171b20}
+.ap-indicadores{margin:0 0 12px}.ap-ind-linha{display:flex;gap:6px;align-items:center}
+.conecta-aprovado-root .ap-ind-bt{position:relative;width:30px;height:30px;min-height:30px;min-width:30px;padding:0;border-radius:50%;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;color:var(--suave)}
+.ap-ind-ponto{position:absolute;top:-1px;right:-1px;width:9px;height:9px;border-radius:50%;border:1.5px solid var(--cartao)}
+.conecta-aprovado-root .ap-ind-recolher{margin-left:auto}
+.ap-ind-detalhe{margin:6px 0 0;font-size:11px;color:var(--suave);line-height:1.4}
+.conecta-aprovado-root .ap-ind-ver{min-height:28px;padding:2px 9px;font-size:11px}
+@media(max-width:780px){.ap-inicio .ap-heading h1{font-size:24px}.ap-inicio .ap-heading>.ap-ativo{display:none}.ap-niveis strong{font-size:26px;font-weight:500;line-height:1.1}.ap-niveis article{padding:16px 18px}}
