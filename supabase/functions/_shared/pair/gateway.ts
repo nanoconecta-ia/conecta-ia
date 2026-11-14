@@ -53,6 +53,10 @@ export interface Dados {
   camposAprovados(loja: string, sku: string): Promise<unknown | null>;
   /** Contexto Vivo (ponte ERP): o SKU vem da tela aberta no ERP; o servidor resolve o produto NA LOJA da sessão e grava como a pessoa que aprovou a sessão. Nunca altera produto nem ERP. */
   registrarContexto(loja: string, usuario: string, sku: string, acao: "aberto" | "fechado"): Promise<unknown>;
+  /** Saúde da sincronização com o ERP: última varredura completa, último erro, erros recentes e SKUs repetidos no ERP. Só leitura. */
+  statusSincronizacao(loja: string): Promise<unknown>;
+  /** Imagens do produto e o estado de cada uma (pendente, aprovada, direitos confirmados). Só leitura. */
+  imagensProduto(loja: string, sku: string): Promise<unknown | null>;
 }
 export interface Portas {
   validar(tokenHash: string, salHash: string): Promise<Sessao | null>;
@@ -235,6 +239,20 @@ export const FERRAMENTAS: readonly Ferramenta[] = [
         grupo: a.versao_de as string | undefined,
       });
     },
+  },
+  {
+    nome: "conecta.get_sync_status", escopo: "produtos:ler", somenteLeitura: true,
+    descricao: "Saúde da sincronização com o ERP (Bling): última varredura completa, último erro, erros da última hora por tipo, SKUs repetidos no ERP (mais de um cadastro com o mesmo código) e quantos produtos estão com o espelho velho. Use para explicar por que um dado alterado no ERP ainda não apareceu. Só leitura.",
+    esquema: { obrig: [], props: {} },
+    inputSchema: js({}),
+    executar: (s, _a, d) => d.statusSincronizacao(s.loja_id),
+  },
+  {
+    nome: "conecta.get_product_images", escopo: "produtos:ler", somenteLeitura: true,
+    descricao: "Imagens de um produto (SKU) com o estado de cada uma: pendente ou aprovada, principal, origem e se os direitos de uso foram confirmados. Imagem pendente ou sem direito confirmado não aparece na loja. Só leitura; aprovar é do lojista.",
+    esquema: { obrig: ["sku"], props: { sku: { tipo: "string", max: 80 } } },
+    inputSchema: js({ sku: { type: "string", minLength: 1, maxLength: 80 } }, ["sku"]),
+    executar: async (s, a, d) => (await d.imagensProduto(s.loja_id, a.sku as string)) ?? { erro: "Produto não encontrado nesta loja." },
   },
   {
     nome: "conecta.get_validated_fields", escopo: "produtos:ler", somenteLeitura: true,

@@ -161,6 +161,8 @@ function ambiente(s: Sessao | null, opcoes: { limite?: (c: string) => boolean; d
     aprovacoesPendentes: async (loja, l) => { chamadasDados.push({ metodo: "aprovacoesPendentes", loja, args: l }); return []; },
     statusTarefa: async (loja, id) => { chamadasDados.push({ metodo: "statusTarefa", loja, args: id }); return null; },
     registrarContexto: async (loja, usuario, sku, acao) => { chamadasDados.push({ metodo: "registrarContexto", loja, args: { usuario, sku, acao } }); return { ok: true, versao: 1 }; },
+    statusSincronizacao: async (loja) => { chamadasDados.push({ metodo: "statusSincronizacao", loja, args: null }); return { conexao: "conectada", skus_repetidos_no_erp: [] }; },
+    imagensProduto: async (loja, sku) => { chamadasDados.push({ metodo: "imagensProduto", loja, args: sku }); return sku === "P1" ? { sku, total: 0, imagens: [] } : null; },
     camposAprovados: async (loja, sku) => { chamadasDados.push({ metodo: "camposAprovados", loja, args: sku }); return sku === "P1" ? { sku, campos: [{ id: "e1", campo: "marca_peca", valor: "Cobreq", fonte: "https://fab.exemplo", aprovado_em: "2026-10-30T00:00:00Z" }] } : null; },
     ...opcoes.dados,
   };
@@ -220,9 +222,9 @@ test("gateway: initialize negocia a versão do protocolo e instrui o modelo a tr
 });
 test("gateway: tools/list mostra só o que o escopo da sessão permite", async () => {
   const nomes = async (escopos: string[]) => ((await chamar(ambiente(sessao(escopos)), rpc("tools/list"))).corpo as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name).sort();
-  assert.deepEqual(await nomes(["produtos:ler"]), ["conecta.get_part_by_code", "conecta.get_product", "conecta.get_validated_fields", "conecta.list_products"]);
+  assert.deepEqual(await nomes(["produtos:ler"]), ["conecta.get_part_by_code", "conecta.get_product", "conecta.get_product_images", "conecta.get_sync_status", "conecta.get_validated_fields", "conecta.list_products"]);
   assert.deepEqual(await nomes([]), []);
-  assert.equal((await nomes([...ESCOPOS])).length, 14); // 13 anteriores + conecta.set_active_product (contexto:registrar)
+  assert.equal((await nomes([...ESCOPOS])).length, 16); // 14 anteriores + get_sync_status + get_product_images (produtos:ler)
 });
 test("gateway: ferramenta sem o escopo é NEGADA, auditada e não toca os dados", async () => {
   const a = ambiente(sessao(["produtos:ler"]));
@@ -517,4 +519,19 @@ test("gateway: sem o escopo contexto:registrar a ferramenta some da lista e a ch
   const r = await chamar(a, tool("conecta.set_active_product", { sku: "OC1224" }));
   assert.equal(resultado(r).isError, true); assert.match(resultado(r).content[0].text, /parear de novo/);
   assert.equal(a.chamadasDados.some((c) => c.metodo === "registrarContexto"), false);
+});
+
+test("gateway: diagnóstico de sincronização e imagens são só leitura, da loja da sessão, e recusam loja_id", async () => {
+  const a = ambiente(sessao(["produtos:ler"]));
+  const r1 = resultado(await chamar(a, tool("conecta.get_sync_status", {})));
+  assert.equal(r1.isError, undefined); assert.match(r1.content[0].text, /conectada/);
+  const r2 = resultado(await chamar(a, tool("conecta.get_product_images", { sku: "P1" })));
+  assert.match(r2.content[0].text, /"total":0/);
+  const r3 = resultado(await chamar(a, tool("conecta.get_product_images", { sku: "NAO" })));
+  assert.match(r3.content[0].text, /não encontrado/);
+  const r4 = resultado(await chamar(a, tool("conecta.get_sync_status", { loja_id: LOJA_B })));
+  assert.equal(r4.isError, true);
+  assert.ok(a.chamadasDados.filter((c) => c.metodo === "statusSincronizacao" || c.metodo === "imagensProduto").every((c) => c.loja === LOJA_A));
+  const sem = resultado(await chamar(ambiente(sessao(["bling:consultar"])), tool("conecta.get_sync_status", {})));
+  assert.equal(sem.isError, true); assert.match(sem.content[0].text, /produtos:ler/);
 });
