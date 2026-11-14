@@ -337,16 +337,31 @@ async function encerrar(auth, ip, p) {
 return { tratarPair: tratarPair, DURACAO_MAX_MIN: DURACAO_MAX_MIN };
 })();
 
+// ---------- supabase/functions/_shared/painel_url.ts ----------
+const __m6 = (() => {
+const ARQUIVO_PAINEL = "conecta.html";
+function urlPainel(appUrl) {
+    const u = new URL(appUrl);
+    if (u.username || u.password || u.search || u.hash) throw new Error("APP_URL não pode ter credenciais, query nem fragmento");
+    const caminho = /\.html?$/i.test(u.pathname) ? u.pathname : `${u.pathname.replace(/\/+$/, "")}/${ARQUIVO_PAINEL}`;
+    return `${u.origin}${caminho}`;
+}
+
+return { ARQUIVO_PAINEL: ARQUIVO_PAINEL, urlPainel: urlPainel };
+})();
+
 // ---------- supabase/functions/_shared/pair/implantacao.ts ----------
 const __m5 = (() => {
+const { urlPainel: urlPainel } = __m6;
 const PROJETO_CONECTA = "https://dsfzhsrudriqkumtlqwj.supabase.co";
 const PAINEL_CONECTA = "https://www.mobisautopecas.com.br/conecta.html";
 function configuracaoPair(get) {
     const producao = get("SUPABASE_URL")?.replace(/\/$/, "") === PROJETO_CONECTA;
     const definido = get("PAIR_AMBIENTE");
     const ambiente = definido === "sintetico" || definido === "real" ? definido : !definido && producao ? "real" : "nao_validado";
+    const app = get("APP_URL");
     return {
-        appUrl: get("APP_URL") || (producao ? PAINEL_CONECTA : undefined),
+        appUrl: app ? urlPainel(app) : producao ? PAINEL_CONECTA : undefined,
         ambiente
     };
 }

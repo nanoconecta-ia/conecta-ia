@@ -5,6 +5,7 @@ import { verificarEstado } from "../_shared/estado.ts";
 import { cifrar, decifrar } from "../_shared/cripto.ts";
 import { chaveiroPlataforma, segredoEstado } from "../_shared/plataforma.ts";
 import { cnpjConfere } from "../_shared/bling_conta.ts";
+import { urlPainel } from "../_shared/painel_url.ts";
 
 const texto = (msg: string, status = 200) =>
   new Response(msg, { status, headers: { "Content-Type": "text/plain; charset=utf-8" } });
@@ -12,7 +13,7 @@ const texto = (msg: string, status = 200) =>
 function voltar(q: string): Response {
   const app = Deno.env.get("APP_URL")?.replace(/\/+$/, "");
   if (!app) return texto(q.startsWith("ok") ? "Conexão com o Bling concluída. Pode fechar esta janela." : `Não foi possível conectar (${q}).`, q.startsWith("ok") ? 200 : 400);
-  return Response.redirect(`${app}/#/bling?${q}`, 302);
+  return Response.redirect(`${urlPainel(app)}#/bling?${q}`, 302);
 }
 
 Deno.serve(async (req) => {

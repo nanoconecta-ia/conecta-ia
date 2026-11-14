@@ -11,3 +11,8 @@ test('ambiente desconhecido não recebe rótulo real e simulação continua expl
   assert.equal(configuracaoPair(k=>k==='PAIR_AMBIENTE'?'sintetico':PROJETO_CONECTA).ambiente,'sintetico');
   assert.equal(configuracaoPair(k=>k==='PAIR_AMBIENTE'?'invalido':PROJETO_CONECTA).ambiente,'nao_validado');
 });
+
+test('configuracaoPair: APP_URL na raiz do site aponta para o painel, não para a vitrine', () => {
+  const c = configuracaoPair(k => k === 'APP_URL' ? 'https://www.mobisautopecas.com.br' : k === 'SUPABASE_URL' ? PROJETO_CONECTA : undefined);
+  assert.equal(c.appUrl, PAINEL_CONECTA);
+});

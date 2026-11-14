@@ -3268,16 +3268,31 @@ async function chaveiroPlataforma(admin, get) {
 return { segredoEstado: segredoEstado, chaveiroPlataforma: chaveiroPlataforma };
 })();
 
+// ---------- supabase/functions/_shared/painel_url.ts ----------
+const __m21 = (() => {
+const ARQUIVO_PAINEL = "conecta.html";
+function urlPainel(appUrl) {
+    const u = new URL(appUrl);
+    if (u.username || u.password || u.search || u.hash) throw new Error("APP_URL não pode ter credenciais, query nem fragmento");
+    const caminho = /\.html?$/i.test(u.pathname) ? u.pathname : `${u.pathname.replace(/\/+$/, "")}/${ARQUIVO_PAINEL}`;
+    return `${u.origin}${caminho}`;
+}
+
+return { ARQUIVO_PAINEL: ARQUIVO_PAINEL, urlPainel: urlPainel };
+})();
+
 // ---------- supabase/functions/_shared/pair/implantacao.ts ----------
 const __m20 = (() => {
+const { urlPainel: urlPainel } = __m21;
 const PROJETO_CONECTA = "https://dsfzhsrudriqkumtlqwj.supabase.co";
 const PAINEL_CONECTA = "https://www.mobisautopecas.com.br/conecta.html";
 function configuracaoPair(get) {
     const producao = get("SUPABASE_URL")?.replace(/\/$/, "") === PROJETO_CONECTA;
     const definido = get("PAIR_AMBIENTE");
     const ambiente = definido === "sintetico" || definido === "real" ? definido : !definido && producao ? "real" : "nao_validado";
+    const app = get("APP_URL");
     return {
-        appUrl: get("APP_URL") || (producao ? PAINEL_CONECTA : undefined),
+        appUrl: app ? urlPainel(app) : producao ? PAINEL_CONECTA : undefined,
         ambiente
     };
 }
@@ -3286,7 +3301,7 @@ return { PROJETO_CONECTA: PROJETO_CONECTA, PAINEL_CONECTA: PAINEL_CONECTA, confi
 })();
 
 // ---------- supabase/functions/_shared/pair/oauth.ts ----------
-const __m21 = (() => {
+const __m22 = (() => {
 const { b64u: b64u, unb64u: unb64u } = __m5;
 const { aleatorioB64u: aleatorioB64u, sha256Hex: sha256Hex, separarToken: separarToken } = __m4;
 const { ESCOPOS: ESCOPOS } = __m3;
@@ -3587,7 +3602,7 @@ return { redirectValido: redirectValido, metadataRecursoMcp: metadataRecursoMcp,
 })();
 
 // ---------- supabase/functions/_shared/exec_local/rotas_dispositivo.ts ----------
-const __m22 = (() => {
+const __m23 = (() => {
 const { HASH_RE: HASH_RE, separarToken: separarToken, sha256Hex: sha256Hex } = __m4;
 const LIMITE_SESSAO_DISPOSITIVO = {
     max: 150,
@@ -3676,8 +3691,8 @@ const { tratar: tratar } = __m1;
 const { dadosSupabase: dadosSupabase } = __m10;
 const { chaveiroPlataforma: chaveiroPlataforma, segredoEstado: segredoEstado } = __m19;
 const { configuracaoPair: configuracaoPair } = __m20;
-const { tratarOAuth: tratarOAuth, desafioOAuth: desafioOAuth } = __m21;
-const { tratarDispositivo: tratarDispositivo } = __m22;
+const { tratarOAuth: tratarOAuth, desafioOAuth: desafioOAuth } = __m22;
+const { tratarDispositivo: tratarDispositivo } = __m23;
 const CORS = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, content-type, mcp-protocol-version, mcp-session-id",
