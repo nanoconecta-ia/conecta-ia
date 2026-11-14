@@ -32,6 +32,14 @@ O lojista (ou o Nano) anexa uma foto a um produto; o Conecta guarda, trata em ve
 4. **Quem pode enviar:** só o responsável da loja (como `bling-sync`) ou também o agente (com aprovação humana depois)?
 5. **Limpeza:** o que fazer com foto rejeitada (apagar o arquivo do Storage na hora ou manter por 30 dias).
 
+## Decisões adotadas (14/11/2026, resposta "Ok" do lojista às recomendações)
+O lojista respondeu "Ok" à pergunta que listava as 5 decisões. Interpretei como aceite das **recomendações 1 e 2**. Para as 3 a 5 eu não havia dado recomendação explícita; adotei os padrões abaixo, **provisórios e revisáveis a qualquer momento**:
+1. Tratamento na própria função, só para arquivo já reduzido no navegador (**opção A**).
+2. Dois buckets formalizados em migração: `produtos-originais` (privado, 3 MB) e `produtos-imagens` (público, só derivados). → PR de migração separado, não aplicado.
+3. Original **só no Storage por ora**; cópia no Drive fica para uma ferramenta própria (não gasta espaço do plano gratuito agora). *Padrão provisório.*
+4. Só o **responsável da loja** envia. O agente continua propondo pelos caminhos que já existem (`imagem_propor`), com decisão humana. *Padrão provisório.*
+5. Foto rejeitada ou retirada: **apagar o arquivo do Storage** (a linha já é removida por `imagem_decidir`). *Padrão provisório.*
+
 ## Riscos e limites
 - **Plano gratuito:** 2 s de CPU e 256 MB por chamada; função de envio e tratamento devem ser separadas para não somar. WASM de ~1,4 MB; conferir limite de tamanho ao publicar.
 - **Não validado:** nada disto rodou no Edge Function publicado; só Deno local e Chrome headless.
