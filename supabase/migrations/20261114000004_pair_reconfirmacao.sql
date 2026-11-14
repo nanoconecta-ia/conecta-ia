@@ -4,6 +4,10 @@
 -- Mudança aditiva: coluna nova + função nova; pair_consultar recriada só para gravar a janela. Sessões existentes: teto = limite_ate atual.
 alter table public.pair_sessoes add column if not exists limite_absoluto_ate timestamptz;
 update public.pair_sessoes set limite_absoluto_ate = limite_ate where limite_absoluto_ate is null;
+-- Outros caminhos (OAuth do agente, testes) também inserem sessões sem conhecer a coluna: o teto padrão é o próprio limite_ate.
+create function private.pair_sessao_teto() returns trigger language plpgsql set search_path = '' as $f$
+begin new.limite_absoluto_ate := coalesce(new.limite_absoluto_ate, new.limite_ate); return new; end $f$;
+create trigger pair_sessao_teto before insert on public.pair_sessoes for each row execute function private.pair_sessao_teto();
 alter table public.pair_sessoes alter column limite_absoluto_ate set not null;
 alter table public.pair_sessoes add constraint pair_sessoes_limites_ok check (limite_ate <= limite_absoluto_ate);
 
@@ -66,7 +70,7 @@ end $$;
 revoke all on function public.pair_reconfirmar(uuid) from public, anon;
 grant execute on function public.pair_reconfirmar(uuid) to authenticated;
 
--- ROLLBACK: drop function public.pair_reconfirmar(uuid); alter table public.pair_sessoes drop constraint pair_sessoes_limites_ok, drop column limite_absoluto_ate;
+-- ROLLBACK: drop trigger pair_sessao_teto on public.pair_sessoes; drop function private.pair_sessao_teto(); drop function public.pair_reconfirmar(uuid); alter table public.pair_sessoes drop constraint pair_sessoes_limites_ok, drop column limite_absoluto_ate;
 --   e recriar pair_consultar a partir de 20261018230657_conecta_pair.sql.
 
 -- O painel precisa ler o teto absoluto para mostrar "reconfirmar" (coluna sem dado sensível).
