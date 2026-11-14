@@ -34,7 +34,7 @@ try{
   await page.goto(base+"/#/loja/mobis");
   await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor({state:"visible",timeout:20000});
   await page.getByRole("heading",{name:/Peças para quem trabalha/}).waitFor();
-  await page.getByText(/Nenhuma peça disponível nessa busca/).waitFor({timeout:10000});
+  await page.getByText(/Catálogo de peças em preparação/).waitFor({timeout:10000});
   const cores=await page.locator('.m2-veiculo').first().evaluate(el=>({fundo:getComputedStyle(el).backgroundColor,imagem:getComputedStyle(el).backgroundImage}));
   assert.deepEqual(cores,{fundo:'rgb(238, 233, 223)',imagem:'none'},'CSS aprovado prevalece sobre o gradiente administrativo');
   assert.equal(await page.locator('.m2-sistema-grade button').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(248, 245, 238)','sistemas preservam superfície aprovada');
