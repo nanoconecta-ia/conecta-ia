@@ -113,6 +113,10 @@ export function cssDosPerfis(): string {
     const g = gerar(p);
     // Claro (todos os temas, exceto os escuros e o alto contraste): acento, cabeçalho, esfera e, nos neutros, as superfícies.
     o.push(`html[data-cor="${p.id}"]${NAO_CONTRASTE} { ${linhas({ ...g.claro, ...(g.superficieClara ?? {}), ...g.orbe, ...g.topo })} }`);
+    // Interface aprovada (.conecta-aprovado-root): ela redeclara as próprias variáveis no elemento, então o perfil escrito em <html>
+    // nunca chegava até ela. Estas regras repetem o acento claro dentro dela (a interface aprovada é sempre clara) e tingem o item ativo do menu.
+    o.push(`html[data-cor="${p.id}"]${NAO_CONTRASTE} :is(.conecta-aprovado-root, .entrada-aprovada) { ${linhas({ "--marca": g.claro["--marca"], "--marca-forte": g.claro["--marca-forte"], "--marca-texto": g.claro["--marca-texto"], "--grafite": g.claro["--grafite"] })} }`);
+    o.push(`html[data-cor="${p.id}"]${NAO_CONTRASTE} .conecta-aprovado-root .ap-sidebar nav a[aria-current=page] { background:color-mix(in srgb, var(--marca) 38%, #11191e); color:#fff !important; box-shadow:inset 3px 0 var(--marca); }`);
     // Escuro: temas escuro e noturno, e o automático quando o aparelho está no escuro.
     const esc = linhas({ ...g.escuro, ...(g.superficieEscura ?? {}) });
     o.push(`html[data-cor="${p.id}"][data-tema="escuro"], html[data-cor="${p.id}"][data-tema="noturno"] { ${esc} }`);

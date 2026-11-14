@@ -53,6 +53,7 @@ try{
   else await page.getByRole('link',{name:'Estúdio do Nano',exact:true}).click();
   await page.locator('[data-nano-layout="aprovado-v2"]').waitFor();const campo=page.getByRole('textbox',{name:'Pergunte',exact:true});await campo.waitFor();
   assert.equal(await page.locator('.estudio-agente,.dock-agente,.balao-genesis').count(),0,'interfaces anteriores não são montadas');assert.equal(await page.locator('.ap-tower button').count(),6);
+  await page.evaluate(()=>document.documentElement.setAttribute('data-cor','azul'));assert.equal(await page.locator('.ap-eyebrow').first().evaluate(el=>getComputedStyle(el).color),'rgb(6, 104, 201)','o perfil de cor escolhido chega à interface aprovada '+width);await page.evaluate(()=>document.documentElement.removeAttribute('data-cor'));
   assert.equal(await campo.isVisible(),true,'conversa visível '+width);
   await campo.click();await page.waitForFunction(()=>getComputedStyle(document.querySelector('.olho-nano')).visibility==='visible');
   assert.equal(await page.locator('.olho-nano').getAttribute('aria-hidden'),'true');assert.equal(await page.locator('.olho-nano').evaluate(el=>getComputedStyle(el).pointerEvents),'none');
