@@ -51,7 +51,7 @@ select public.espera_erro($$select public.pair_iniciar(public.h('X1'), public.h(
 select public.espera_erro($$select public.pair_iniciar(public.h('X2'), public.h('s'), public.h('v'), public.h('t2'), public.h('sal'), 'n', 'navegador', array['produtos:ler','admin:tudo'], '{}', 60)$$, '22023');
 select public.espera_erro($$select public.pair_iniciar(public.h('X3'), public.h('s'), public.h('v'), public.h('t3'), public.h('sal'), 'n', 'navegador', array['produtos:ler'], array['teclado.digitar'], 60)$$, '22023');
 select public.espera_erro($$select public.pair_iniciar('curto', public.h('s'), public.h('v'), public.h('t4'), public.h('sal'), 'n', 'navegador', array['produtos:ler'], '{}', 60)$$, '23514');
-select public.espera_erro($$select public.pair_iniciar(public.h('X5'), public.h('s'), public.h('v'), public.h('t5'), public.h('sal'), 'n', 'navegador', array['produtos:ler'], '{}', 9999)$$, '23514');
+select public.espera_erro($$select public.pair_iniciar(public.h('X5'), public.h('s'), public.h('v'), public.h('t5'), public.h('sal'), 'n', 'navegador', array['produtos:ler'], '{}', 10081)$$, '23514');
 select public.admin();
 select public.afirma(not exists (select 1 from unnest(private.pair_escopos_validos()) e where e ~ '(aprovar|executar|admin)'), 'nenhum escopo permite aprovar, executar ou administrar');
 
