@@ -82,3 +82,13 @@ export function agruparPorProduto(itens: ItemProposta[]): Map<string, ItemPropos
   for (const i of itens) { const k = i.produto_id ?? "sem-produto"; m.set(k, [...(m.get(k) ?? []), i]); }
   return m;
 }
+
+/** Endereço de imagem proposta dentro de `depois` (chaves usuais), só https. Qualquer outro valor → null (nunca renderiza endereço duvidoso). */
+export function urlImagemProposta(depois: Record<string, unknown> | null | undefined): string | null {
+  if (!depois) return null;
+  for (const k of ["imagem_url", "url", "imagem"]) {
+    const v = depois[k];
+    if (typeof v === "string" && /^https:\/\/[^\s"'<>]{4,600}$/i.test(v)) return v;
+  }
+  return null;
+}
