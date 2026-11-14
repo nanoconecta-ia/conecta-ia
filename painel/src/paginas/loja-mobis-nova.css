@@ -252,3 +252,15 @@
  .mobis-v2 .m2-amostra-imagem .ico-peca{width:150px;height:150px}
  .mobis-v2 .m2-amostra dl{grid-template-columns:1fr}
 }
+
+/* Abas da empresa */
+.m2-empresa-abas{display:flex;gap:6px;border-bottom:1px solid rgba(0,0,0,.15);margin-bottom:18px}
+.m2-empresa-abas button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 16px;font:inherit;font-weight:700;color:#1b2227;cursor:pointer}
+.m2-empresa-abas button[aria-selected="true"]{border-bottom-color:#b4532a;color:#b4532a}
+.m2-empresa-painel h2{margin:0 0 10px;font-size:1.4rem;color:#14191d}
+.m2-empresa-painel p,.m2-empresa-painel li,.m2-empresa-painel address{color:#2a3238;font-style:normal;line-height:1.55}
+.m2-empresa-acoes{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.m2-empresa-acoes a,.m2-empresa-acoes button,.m2-empresa-cta{display:inline-block;padding:10px 16px;border-radius:6px;border:1px solid #b4532a;background:#b4532a;color:#fff;font:inherit;font-weight:700;text-decoration:none;cursor:pointer}
+.m2-empresa-acoes button{background:#fff;color:#b4532a}
+.m2-empresa-mapa{width:100%;height:320px;border:0;border-radius:8px}
+.m2-empresa-nota{font-size:.8rem;opacity:.8}

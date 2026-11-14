@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { EmpresaMobis } from "../componentes/EmpresaMobis.tsx";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
 import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
@@ -57,6 +58,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
   const [aviso,setAviso]=useState("");
   const [slide,setSlide]=useState(0);
   const [pausa,setPausa]=useState(false);
+  const [explorar,setExplorar]=useState<"veiculo"|"sistema">("veiculo");
   const produtoTeste=podeExibirProdutoTeste(dados?.loja);
   useEffect(()=>{
     let ativo=true;setDados(null);setEstado("carregando");
@@ -104,6 +106,12 @@ export function LojaMobisNova({slug}:{slug:string}) {
   const opcoes=useMemo(()=>[...new Set((dados?.veiculos??[]).map(x=>x.modelo))].sort(),[dados?.veiculos]);
   const motores=useMemo(()=>[...new Set((dados?.veiculos??[]).filter(x=>!modelo||x.modelo===modelo)
     .map(x=>x.motor).filter((x):x is string=>!!x))].sort(),[dados?.veiculos,modelo]);
+  useEffect(()=>{
+    const t=busca.trim();
+    if(t.length<3&&!(t.length===0&&f.q))return;
+    const id=window.setTimeout(()=>setF(a=>a.q===t?a:{...a,q:t,pagina:1}),600);
+    return()=>window.clearTimeout(id);
+  },[busca]);
   function aplicar(e?:FormEvent){
     e?.preventDefault();
     setF({q:busca.trim(),modelo,motor,ano,categoria,pagina:1});
@@ -138,10 +146,11 @@ export function LojaMobisNova({slug}:{slug:string}) {
       <a className="m2-brand" href="#/loja/mobis" aria-label="MOBIS Autopeças - início" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>
         <span className="m2-brand-mark">M</span><span><strong>MOBIS</strong><small>AUTOPEÇAS</small><i>PICAPES · VANS · UTILITÁRIOS</i></span>
       </a>
-      <nav aria-label="Menu da loja"><button onClick={()=>para("m2-veiculos")}>Seu veículo</button>
-        <button onClick={()=>para("m2-sistemas")}>Peças por sistema</button>
+      <nav aria-label="Menu da loja"><button onClick={()=>{setExplorar("veiculo");para("m2-explorar")}}>Seu veículo</button>
+        <button onClick={()=>{setExplorar("sistema");para("m2-explorar")}}>Peças por sistema</button>
         <button onClick={()=>para("m2-catalogo")}>Catálogo</button>
-        <button onClick={()=>para("m2-destaques")}>Destaques</button></nav>
+        <button onClick={()=>para("m2-destaques")}>Destaques</button>
+        <button onClick={()=>para("m2-empresa")}>A Mobis</button></nav>
       <div className="m2-header-acoes"><button onClick={()=>para("m2-lista")}>Minha lista <span>{lista.length}</span></button>
         {whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Fale com a Mobis <span>WhatsApp ↗</span></a>}
       </div>
@@ -157,7 +166,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
         <div className="m2-hero-texto"><span className="m2-kicker">▰▰▰ &nbsp; A PEÇA CERTA COMEÇA PELO SEU VEÍCULO</span>
           <h1>Peças para quem trabalha <em>com o veículo.</em></h1>
           <p>Conte com a Mobis para encontrar a peça do seu utilitário. Informe o modelo, o ano e o motor. Nossa equipe confere a aplicação com você.</p>
-          <div className="m2-hero-ctas"><button className="m2-laranja" onClick={()=>para("m2-veiculos")}>Escolher meu veículo ↗</button>
+          <div className="m2-hero-ctas"><button className="m2-laranja" onClick={()=>{setExplorar("veiculo");para("m2-explorar")}}>Escolher meu veículo ↗</button>
             <button className="m2-underline" onClick={()=>{para("m2-busca");document.getElementById("m2-pesquisar")?.focus({preventScroll:true});}}>Já tenho o código →</button>
             {produtoTeste&&<button className="m2-underline" onClick={()=>para("m2-produto-teste")}>Ver produto de teste →</button>}</div>
           <small>✓ Atendimento para quem precisa acertar na peça.</small>
@@ -189,17 +198,18 @@ export function LojaMobisNova({slug}:{slug:string}) {
             <button onClick={()=>setPausa(!pausa)}>{pausa?"Reativar":"Pausar"}</button></div>}
         </div>}
       </section>
-      <section id="m2-veiculos" className="m2-band m2-veiculos"><div className="m2-wrap m2-secao">
-        <div className="m2-titulo"><div><span className="m2-kicker">COMECE PELO SEU UTILITÁRIO</span><h2>Qual é o seu veículo?</h2><p>Comece pelo veículo e encontre as peças disponíveis na loja.</p></div><span>01 / 04</span></div>
-        <div className="m2-veiculo-grade">{VEICULOS.map(v=><button className="m2-veiculo" key={v.nome} onClick={()=>escolherVeiculo(v.valor)}>
+      <section id="m2-explorar" className="m2-band m2-veiculos"><div className="m2-wrap m2-secao">
+        <div className="m2-titulo"><div><span className="m2-kicker">ENCONTRE PELO CAMINHO MAIS FÁCIL</span><h2>Comece pelo veículo ou pelo sistema</h2><p>Escolha uma das opções e veja as peças disponíveis na loja.</p></div></div>
+        <div className="m2-empresa-abas" role="tablist" aria-label="Como explorar o catálogo">
+          <button role="tab" aria-selected={explorar==="veiculo"} onClick={()=>setExplorar("veiculo")}>Qual é o seu veículo?</button>
+          <button role="tab" aria-selected={explorar==="sistema"} onClick={()=>setExplorar("sistema")}>O que ele precisa?</button>
+        </div>
+        {explorar==="veiculo"&&<div id="m2-veiculos" role="tabpanel"><div className="m2-veiculo-grade">{VEICULOS.map(v=><button className="m2-veiculo" key={v.nome} onClick={()=>escolherVeiculo(v.valor)}>
           <div><IconeVeiculo tipo={v.icone} largura={157}/></div><strong>{v.nome}</strong><small>{v.nota}</small><span>Encontrar peças <b>↗</b></span>
-        </button>)}</div>
-      </div></section>
-      <section id="m2-sistemas" className="m2-band m2-sistemas"><div className="m2-wrap m2-secao">
-        <div className="m2-titulo"><div><span className="m2-kicker">DO MOTOR À SUSPENSÃO</span><h2>O que seu veículo precisa?</h2><p>Explore por sistema e encontre a categoria da sua peça.</p></div><span>02 / 04</span></div>
-        <div className="m2-sistema-grade">{SISTEMAS.map(s=><button key={s.nome} onClick={()=>escolherSistema(s.busca)}>
+        </button>)}</div></div>}
+        {explorar==="sistema"&&<div id="m2-sistemas" role="tabpanel"><div className="m2-sistema-grade">{SISTEMAS.map(s=><button key={s.nome} onClick={()=>escolherSistema(s.busca)}>
           <IconePeca nome={s.id} tamanho={90}/><span>{s.nome}</span><i>↗</i></button>)}</div>
-        <small className="m2-legenda">Ilustrações das categorias. Consulte aplicação e disponibilidade antes de comprar.</small>
+        <small className="m2-legenda">Ilustrações das categorias. Consulte aplicação e disponibilidade antes de comprar.</small></div>}
       </div></section>
       <section id="m2-busca" className="m2-band m2-busca"><div className="m2-wrap m2-secao">
         <div className="m2-titulo"><div><span className="m2-kicker">CATÁLOGO ONLINE</span><h2>Encontre sua peça automotiva.</h2><p>Pesquise pelo veículo, sistema ou referência. Mostramos somente anúncios aprovados.</p></div><span>03 / 04</span></div>
@@ -234,6 +244,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
         {dados&&paginas>1&&<nav className="m2-paginas" aria-label="Páginas de produtos"><button disabled={f.pagina<=1} onClick={()=>setF({...f,pagina:f.pagina-1})}>Anterior</button><span>{f.pagina} / {paginas}</span><button disabled={f.pagina>=paginas} onClick={()=>setF({...f,pagina:f.pagina+1})}>Próxima</button></nav>}
         <p className="m2-legenda">Preços, aplicação e disponibilidade devem ser confirmados antes da compra. A lista não reserva estoque nem cria pedido.</p>
       </section>
+      <EmpresaMobis whatsapp={whatsapp}/>
       <section id="m2-atendimento" className="m2-atendimento"><div className="m2-wrap m2-atendimento-grid">
         <div><span className="m2-kicker">CONVERSA DIGITAL · ESCOLHA COM CUIDADO</span><h2>Vamos encontrar a sua peça.</h2><p>Um mesmo modelo pode usar peças diferentes conforme motor, ano e versão. Envie essas informações para uma consulta mais precisa.</p><div className="m2-conselho">✓ A equipe confere os detalhes antes de você comprar.</div></div>
         <div className="m2-contato-form"><small>CONSULTA DE PEÇAS</small><h3>Conte o que você procura</h3><p>Use os filtros acima ou monte sua lista para compartilhar com o atendimento.</p><button onClick={()=>para("m2-lista")}>Minha lista de peças ({lista.length})</button>{whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Continuar no WhatsApp ↗</a>}<small>Você poderá revisar a mensagem antes de enviá-la.</small></div>
@@ -243,10 +254,10 @@ export function LojaMobisNova({slug}:{slug:string}) {
         {aviso&&<p role="status">{aviso}</p>}
         {lista.length===0?<p>Nenhuma peça selecionada. Utilize os botões do catálogo.</p>:<ul>{lista.map(x=><li key={x.sku}><span>{x.nome}<small>SKU: {x.sku}</small></span><button onClick={()=>setLista(v=>v.filter(p=>p.sku!==x.sku))}>Retirar</button></li>)}</ul>}
         {lista.length>0&&<div>{whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>}<button onClick={()=>{setLista([]);setAviso("")}}>Limpar lista</button></div>}
-        <p>Não informe CPF, chassi completo, senha ou dados bancários no chat. A lista não conclui compras nem altera dados do Bling.</p>
+        <p>Não informe CPF, chassi completo, senha ou dados bancários no chat. A lista é só consulta e não conclui compra.</p>
       </section>
     </main>
-    <RodapeLoja nome={dados?.loja.nome??"Mobis Autopeças"} slug="mobis" whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas} ultima={dados?.produtos.map(x=>x.atualizado_em).filter(Boolean).sort().at(-1)} secoes={{catalogo:"m2-catalogo",veiculo:"m2-busca",categoria:"m2-sistemas"}}/>
+    <RodapeLoja nome={dados?.loja.nome??"Mobis Autopeças"} slug="mobis" whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas} ultima={dados?.produtos.map(x=>x.atualizado_em).filter(Boolean).sort().at(-1)} secoes={{catalogo:"m2-catalogo",veiculo:"m2-busca",categoria:"m2-explorar",empresa:"m2-empresa"}}/>
     <ChatClienteLoja nome={dados?.loja.nome??"Mobis Autopeças"} whatsapp={dados?.loja.whatsapp}/>
   </div>;
 }

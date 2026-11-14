@@ -37,12 +37,15 @@ try{
   await page.getByText(/Catálogo de peças em preparação/).waitFor({timeout:10000});
   const cores=await page.locator('.m2-veiculo').first().evaluate(el=>({fundo:getComputedStyle(el).backgroundColor,imagem:getComputedStyle(el).backgroundImage}));
   assert.deepEqual(cores,{fundo:'rgb(238, 233, 223)',imagem:'none'},'CSS aprovado prevalece sobre o gradiente administrativo');
+  await page.getByRole('tab',{name:'O que ele precisa?',exact:true}).click();
   assert.equal(await page.locator('.m2-sistema-grade button').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(248, 245, 238)','sistemas preservam superfície aprovada');
+  await page.getByRole('tab',{name:'Qual é o seu veículo?',exact:true}).click();
   assert.equal(await page.locator('.m2-filtros').evaluate(el=>getComputedStyle(el).maxWidth),'none','filtros não herdam largura administrativa de 440px');
   if(width===1280){await page.locator('.m2-veiculo').first().hover();assert.equal(await page.locator('.m2-veiculo').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(238, 233, 223)','hover global antigo não interfere');}
 
   assert.equal(await page.locator(".v-hero").count(),0,"layout antigo não pode ser renderizado");
   assert.equal(await page.locator(".m2-veiculo").count(),4,"4 opções de veículos");
+  await page.getByRole('tab',{name:'O que ele precisa?',exact:true}).click();
   assert.equal(await page.locator(".m2-sistema-grade button").count(),8,"8 módulos de peças");
   assert.equal(await page.locator(".m2-aviso-teste").isVisible(),true,"loja continua em teste");
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),true,
@@ -55,12 +58,12 @@ try{
   await respostaBusca;
   assert.ok(requests.some(x=>x.q==="D4CB"&&x.slug==="mobis"),"busca conecta à API da loja");
   assert.equal(await page.getByRole("heading",{name:"Indexar e enriquecer"}).count(),0,"não expor painel privado");
-  for(const [nome,id] of [["Catálogo de produtos","m2-catalogo"],["Buscar por veículo","m2-busca"],["Categorias de peças","m2-sistemas"],["Voltar aos produtos ↑","m2-catalogo"]]){
+  for(const [nome,id] of [["Catálogo de produtos","m2-catalogo"],["Buscar por veículo","m2-busca"],["Categorias de peças","m2-explorar"],["Voltar aos produtos ↑","m2-catalogo"]]){
    const link=page.getByRole("link",{name:nome,exact:true});
    assert.equal(await link.getAttribute("href"),"#/loja/mobis","abrir em outra aba também mantém a loja");
    await link.click();
    assert.equal(new URL(page.url()).hash,"#/loja/mobis","rodapé não pode sair da vitrine");
-   await page.waitForFunction(id=>{const y=document.getElementById(id)?.getBoundingClientRect().top;return y!==undefined&&y>=0&&y<innerHeight;},id);
+   await page.waitForFunction(id=>{const y=document.getElementById(id)?.getBoundingClientRect().top;return y!==undefined&&y>=-1&&y<innerHeight;},id,{timeout:8000}).catch(async e=>{throw new Error('rolagem falhou para '+nome+' ('+id+') top='+await page.evaluate(i=>document.getElementById(i)?.getBoundingClientRect().top,id)+' w='+width)});
    assert.equal(await page.locator('[data-mobis-layout="aprovado-v2"]').count(),1);
   }
   await context.close();

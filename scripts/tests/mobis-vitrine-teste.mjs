@@ -95,6 +95,7 @@ try {
     assert.equal(consultas.at(-1).q,undefined);
     assert.equal(consultas.at(-1).ano,undefined);
     assert.equal(await page.getByLabel("Ano",{exact:true}).inputValue(),"");
+    await page.getByRole("tab",{name:"O que ele precisa?",exact:true}).click();
     await consultar(page, () => page.locator(".m2-sistema-grade button").filter({hasText:/^Motor/}).click(), q => q.categoria === "motor");
     assert.equal(consultas.at(-1).categoria,"motor");
     assert.equal(consultas.at(-1).modelo,undefined);
@@ -112,8 +113,13 @@ try {
     // Host público SIMULADO, servido apenas pelo build local: não chama a loja real.
     await context.route("https://www.mobisautopecas.com.br/**", async route => {
       const u = new URL(route.request().url());
-      const response = await route.fetch({url:new URL(u.pathname + u.search,base).href});
-      return route.fulfill({response});
+      // Imagens ainda em voo quando o teste termina: se o contexto fechar, o erro é esperado.
+      try {
+        const response = await route.fetch({url:new URL(u.pathname + u.search,base).href});
+        await route.fulfill({response});
+      } catch (e) {
+        if (!/closed/i.test(String(e?.message))) throw e;
+      }
     });
     for (const hash of ["#/", "#/estudio", "#/catalogo-espelho"]) {
       await page.goto("https://www.mobisautopecas.com.br/conecta.html" + hash);
@@ -124,6 +130,7 @@ try {
     await page.goto("https://www.mobisautopecas.com.br/#/estudio");
     await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor();
     assert.equal(await page.locator('[data-acesso-layout="aprovado-v2"]').count(),0,"raiz pública continua loja mesmo com hash administrativo");
+    await context.unrouteAll({behavior:"ignoreErrors"});
     await context.close();
     resultados.push({separacao:"raiz pública = loja; conecta.html exige sessão em início, Nano e catálogo"});
   }
