@@ -24,3 +24,8 @@ test("estadoAgente: agindo, conectado e acabando", () => {
   assert.equal(estadoAgente("2026-11-14T12:30:00Z", "2026-11-14T11:59:30Z", agora).situacao, "acabando");
   assert.equal(estadoAgente("2026-11-14T12:30:00Z", null, agora).restante_min, 30);
 });
+test("estadoAgente: token vencido = parado, mesmo com janela longa", () => {
+  const agora = Date.parse("2026-11-14T12:00:00Z");
+  assert.equal(estadoAgente("2026-11-14T20:00:00Z", null, agora, "2026-11-14T11:50:00Z").situacao, "parado");
+  assert.equal(estadoAgente("2026-11-14T20:00:00Z", null, agora, "2026-11-14T12:10:00Z").situacao, "conectado");
+});

@@ -30,6 +30,7 @@ import { useFonte } from "../lib/useFonte.ts";
 import { PropostaCompacta } from "../componentes/conector/PropostaCompacta.tsx";
 import { escolherInicial, falhaAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 import { identificarModeloEfetivo } from "../lib/modeloEfetivo.ts";
+import { perguntaSobreModelo, respostaSobreModelo } from "../lib/respostaModelo.ts";
 import { AvatarNanoAprovado } from "../componentes/AvatarNanoAprovado.tsx";
 
 /** Uma queda passageira (sessão ainda renovando) não pode travar o chat até recarregar a página: renova a sessão e tenta mais uma vez. */
@@ -288,6 +289,10 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   }
   async function enviar(t: string, repetir = false) {
     if (!repetir && menu && t.trim() && !ocupado && !acaoLocal && !administrando && !retentativa) { const cmd = interpretar(t, menu); if (cmd.tipo !== "nenhum") { await comandoLocal(t, cmd); return; } }
+    if (!repetir && !ocupado && !anexos.length && perguntaSobreModelo(t)) {
+      const ultimo = [...msgs].reverse().find(m => m.de === "ia" && m.modeloUsado)?.modeloUsado ?? null;
+      setMsgs(m => [...m, { de: "eu", texto: t }, { de: "ia", texto: respostaSobreModelo(ultimo) }]); setTexto(""); return;
+    }
     if (!repetir && /^\/(?:ficha|revisar)\s+/i.test(t.trim())) {
      if (ocupado || administrando || !!retentativa || anexos.length) { setErroHistorico("A ficha sem IA exige uma consulta isolada, sem anexos ou outra ação em andamento."); return; }
       const revisao = /^\/revisar\s+/i.test(t.trim());

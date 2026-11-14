@@ -5,7 +5,7 @@ import { ir } from "../lib/rota.ts";
 import { estadoAgente } from "../lib/usoGateway.ts";
 import { restante } from "./Dispositivos.tsx";
 
-type Linha = { id: string; nome: string; tipo: string; sessaoId: string; limite_ate: string; absoluto: string | null; ultima: string | null };
+type Linha = { id: string; nome: string; tipo: string; sessaoId: string; limite_ate: string; token_ate: string; absoluto: string | null; ultima: string | null };
 
 /** Faixa fina no topo: quem está conectado AGORA (agente externo, extensão), quanto tempo resta e se está agindo. Só dados reais da loja. */
 export function FaixaAgentes({ loja }: { loja: Loja }) {
@@ -14,15 +14,15 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
   const [msg, setMsg] = useState("");
   const carregar = useCallback(async () => {
     const { data } = await supabase.from("pair_dispositivos")
-      .select("id, nome, tipo, pair_sessoes(id, limite_ate, limite_absoluto_ate, revogado_em)").eq("loja_id", loja.id).is("revogado_em", null).limit(20);
+      .select("id, nome, tipo, pair_sessoes(id, expira_em, limite_ate, limite_absoluto_ate, revogado_em)").eq("loja_id", loja.id).is("revogado_em", null).limit(20);
     const desde = new Date(Date.now() - 10 * 60_000).toISOString();
     const { data: ev } = await supabase.from("auditoria").select("quando, depois").eq("loja_id", loja.id).like("acao", "gateway.%").gte("quando", desde).order("quando", { ascending: false }).limit(200);
     const ultima = new Map<string, string>();
     for (const e of (ev ?? []) as { quando: string; depois: { dispositivo_id?: string } | null }[]) { const d = e.depois?.dispositivo_id; if (d && !ultima.has(d)) ultima.set(d, e.quando); }
     const l: Linha[] = [];
-    for (const d of (data ?? []) as unknown as { id: string; nome: string; tipo: string; pair_sessoes: { id: string; limite_ate: string; limite_absoluto_ate?: string; revogado_em: string | null }[] }[]) {
+    for (const d of (data ?? []) as unknown as { id: string; nome: string; tipo: string; pair_sessoes: { id: string; expira_em: string; limite_ate: string; limite_absoluto_ate?: string; revogado_em: string | null }[] }[]) {
       const s = d.pair_sessoes.filter((x) => !x.revogado_em && Date.parse(x.limite_ate) > Date.now()).sort((a, b) => Date.parse(b.limite_ate) - Date.parse(a.limite_ate))[0];
-      if (s) l.push({ id: d.id, nome: d.nome, tipo: d.tipo, sessaoId: s.id, limite_ate: s.limite_ate, absoluto: s.limite_absoluto_ate ?? null, ultima: ultima.get(d.id) ?? null });
+      if (s) l.push({ id: d.id, nome: d.nome, tipo: d.tipo, sessaoId: s.id, limite_ate: s.limite_ate, token_ate: s.expira_em, absoluto: s.limite_absoluto_ate ?? null, ultima: ultima.get(d.id) ?? null });
     }
     setLinhas(l);
   }, [loja.id]);
@@ -37,9 +37,9 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
   return (
     <div className="faixa-agentes" role="status" aria-live="polite" style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", alignItems: "center", padding: "6px 12px", fontSize: 13, borderBottom: "1px solid var(--borda, #2a3340)" }}>
       {linhas.map((l) => {
-        const e = estadoAgente(l.limite_ate, l.ultima, agora);
-        const rotulo = e.situacao === "agindo" ? "agindo agora" : e.situacao === "acabando" ? "sessão acabando" : "conectado";
-        const cor = e.situacao === "acabando" ? "#e0a030" : e.situacao === "agindo" ? "#3ecf8e" : "#7aa2f7";
+        const e = estadoAgente(l.limite_ate, l.ultima, agora, l.token_ate);
+        const rotulo = e.situacao === "parado" ? "conexão parada: o agente precisa reconectar" : e.situacao === "agindo" ? "agindo agora" : e.situacao === "acabando" ? "sessão acabando" : "conectado";
+        const cor = e.situacao === "parado" ? "#d9534f" : e.situacao === "acabando" ? "#e0a030" : e.situacao === "agindo" ? "#3ecf8e" : "#7aa2f7";
         const podeEstender = l.absoluto !== null && Date.parse(l.absoluto) - Date.parse(l.limite_ate) > 60_000;
         return (
           <span key={l.id}>
