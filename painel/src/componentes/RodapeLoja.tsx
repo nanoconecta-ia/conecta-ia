@@ -34,7 +34,7 @@ export function RodapeLoja({
   whatsapp?: string | null;
   politicas: PoliticasLojaPublicas | null | undefined;
   ultima?: string | null;
-  secoes?: { catalogo: string; veiculo: string; categoria: string };
+  secoes?: { catalogo: string; veiculo: string; categoria: string; empresa?: string };
 }) {
   const [painel, setPainel] = useState<Painel | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -109,7 +109,11 @@ export function RodapeLoja({
               {!temContato && <small>Consulte o contato informado no atendimento da loja.</small>}
               {!politicas && <small>Identificação empresarial ainda não homologada para publicação.</small>}
             </>
-          ) : <p>Dados cadastrais sujeitos à validação para publicação.</p>}
+          ) : <>
+            <p>Conheça a empresa, o endereço da loja física e como falar com a equipe.</p>
+            {secoes?.empresa && <a href={"#/loja/" + encodeURIComponent(slug ?? "")} onClick={(e) => { e.preventDefault(); document.getElementById(secoes.empresa!)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>A Mobis e onde estamos</a>}
+            {wa && <a href={wa} target="_blank" rel="noopener noreferrer">Falar no WhatsApp ↗</a>}
+          </>}
         </div>
       </div>
       <div className="v-rodape-faixa"><span>© {ano} {nome}. Conteúdo comercial da loja.</span><a {...linkSecao("catalogo", "#catalogo")}>Voltar aos produtos ↑</a></div>

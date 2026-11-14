@@ -95,6 +95,7 @@ try {
     assert.equal(consultas.at(-1).q,undefined);
     assert.equal(consultas.at(-1).ano,undefined);
     assert.equal(await page.getByLabel("Ano",{exact:true}).inputValue(),"");
+    await page.getByRole("tab",{name:"O que ele precisa?",exact:true}).click();
     await consultar(page, () => page.locator(".m2-sistema-grade button").filter({hasText:/^Motor/}).click(), q => q.categoria === "motor");
     assert.equal(consultas.at(-1).categoria,"motor");
     assert.equal(consultas.at(-1).modelo,undefined);
