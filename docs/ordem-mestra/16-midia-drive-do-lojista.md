@@ -109,3 +109,27 @@ Cada imagem registra: `id_arquivo_drive`, hash do conteúdo (sha256), caminho or
 - Quem possui e paga o armazenamento da Pasta A.
 - Se o plano do Supabase foi ampliado (a premissa "Conecta tem espaço de sobra" não está confirmada; o plano ampliado conhecido é o do Bling).
 - Política de direitos de imagem da web (aprovação humana obrigatória) a validar com o dono e, se necessário, com assessoria jurídica.
+
+## 13. Múltiplas entradas de imagem e cópia de garantia (pedido do dono, 13/11/2026 22:14)
+
+### 13.1 Canais de entrada (nenhum é exclusivo)
+1. **Bling:** imagens já presentes no cadastro do produto (leitura; o Bling continua sendo só leitura por padrão).
+2. **Envio direto no Conecta:** notebook ou celular (foto tirada na hora, incluindo giro 360° quando existir).
+3. **Drive do lojista** (pasta B) e **área gerida pelo Conecta** (pasta A).
+4. **Web:** apenas referência/candidata (ver 12.3).
+
+### 13.2 Cópia de garantia
+- Toda imagem aceita por qualquer canal gera uma **cópia de garantia** no armazenamento do Conecta (original intacto, com sha256), independente de onde veio e de a fonte sumir depois.
+- Motivo concreto: as imagens do Bling são links assinados que **expiram** e carregam credencial na URL. Foi verificado em 13/11/2026 com a junta 82892/ (expira em 20/11/2026). O link nunca é guardado como endereço permanente: guarda-se o arquivo, nunca a URL assinada nem a chave.
+- A cópia de garantia não é a imagem publicada: a versão padronizada (WebP, fundo branco) é derivada dela.
+
+### 13.3 Regras por canal
+- **Duplicatas:** a mesma imagem vinda de dois canais é reconhecida por hash e registrada uma vez, com todas as origens.
+- **Conflito:** imagens diferentes para o mesmo SKU não se sobrescrevem; viram candidatas lado a lado, e quem aprova escolhe.
+- **Celular:** remover metadados EXIF (localização GPS) da versão publicada; converter HEIC; limitar tamanho de envio.
+- **Direito de uso:** foto enviada pelo lojista ou vinda do cadastro dele entra como "próprio, a confirmar" (pode conter imagem de fornecedor); web continua "não verificado".
+- **Imagem do Bling não prova a peça:** vale o mesmo critério de associação por evidência (marca + código); a coincidência de código no Bling já provou ser enganosa (5076/5077).
+- Escrita de imagem de volta no Bling segue a regra de escrita no ERP (desligada até teste, Policy Engine e auditoria).
+
+### 13.4 Custo
+A cópia de garantia consome armazenamento do Conecta. Com o plano gratuito do Supabase (1 GB) isso limita o piloto; dimensionar antes de ligar a importação em massa do Bling.
