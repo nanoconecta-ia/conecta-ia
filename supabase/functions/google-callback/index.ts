@@ -12,7 +12,7 @@ const texto = (msg: string, status = 200) =>
 function voltar(q: string): Response {
   const app = Deno.env.get("APP_URL")?.replace(/\/+$/, "");
   if (!app) return texto(q.startsWith("ok") ? "Conexão com o Google concluída. Pode fechar esta janela." : `Não foi possível conectar (${q}).`, q.startsWith("ok") ? 200 : 400);
-  return Response.redirect(`${app}/#/integracoes?google_${q}`, 302);
+  return Response.redirect(`${app}/conecta.html#/integracoes?google_${q}`, 302);
 }
 
 Deno.serve(async (req) => {
