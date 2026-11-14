@@ -77,3 +77,35 @@ Cada imagem registra: `id_arquivo_drive`, hash do conteúdo (sha256), caminho or
 - Onde hospedar vídeo.
 - Escopo do "premium".
 - Foto da junta 82892/: ainda não está no Drive nem no Conecta; a pasta `82892_SABO_JUNTA_CABECOTE` e a planilha `INDICE_IMAGENS_PRODUTOS` foram criadas em `03_IMAGENS_PRODUTOS` (Drive do dono), vazias.
+
+## 12. Duas pastas e imagem herdada pela genética (pedido do dono, 13/11/2026 22:12)
+
+### 12.1 Duas áreas de mídia
+- **Pasta A — gerida pelo Conecta:** o lojista só acessa pelo Conecta (envio/consulta pela página do Conecta). Corresponde ao caminho C da seção 3 e elimina o problema de escopo amplo. Quem é o dono do armazenamento (conta do Conecta, Supabase ou armazenamento externo) **ainda não foi decidido**: uma conta Google gratuita tem cota compartilhada (15 GB entre Drive e Gmail), então uma conta Google única para todos os lojistas não escala.
+- **Pasta B — Drive do próprio lojista**, conectado por conta separada (caminho A ou B da seção 3, a decidir). Fonte de referência: o Conecta pode vasculhar imagens e catálogos PDF ali, com escopo concedido pelo lojista.
+- Busca externa (web) é permitida só como **referência** (ver 12.3).
+
+### 12.2 Formato padrão e rastreio
+- Cada imagem tem registro: SKU, código OEM (da montadora correspondente à aplicação, quando provado), nome, descrição, origem, direito de uso, sha256 do original e da versão padronizada, agente e modelo, data.
+- Formato padrão: WebP, fundo branco, proporção quadrada, alvo ≤ 200 KB. O original é preservado e nunca sobrescrito.
+- A imagem pertence à **peça física** (SKU de referência) e é herdada pelas ofertas (pai, filhos, irmãos). Regra: só herda se a peça for a mesma (mesma marca + código + OEM comprovado). Oferta pode ter imagem própria quando a aparência muda por aplicação. Herança por parentesco de veículo, sem identidade da peça, **não** é permitida.
+
+### 12.3 Imagens da web
+- Entram sempre como **candidata, direito de uso "NÃO VERIFICADO"**. Editar (fundo branco, recorte, redimensionar) e reescrever a descrição **não** transfere direitos para o lojista.
+- Proibido remover marca d'água, logotipo de terceiros ou crédito para disfarçar a origem. Se a imagem tiver marca de outro vendedor, ela só serve como referência interna.
+- Publicação exige fonte autorizada (ex.: banco de imagens do fornecedor com permissão, foto própria) ou aprovação humana explícita do direito de uso.
+- Respeitar termos de uso e robots do site de origem.
+
+### 12.4 Edição por agente
+- Ferramentas de edição mecânica para o Nano IA e outros agentes: remover fundo, recortar, centralizar, redimensionar, converter formato, aplicar fundo branco.
+- **Proibido:** gerar ou alterar o aspecto da peça com IA (furos, textura, marcação, logotipo). Edição não pode mudar o que a peça é. Resultado sempre registrado como versão derivada do original, com hash.
+- Toda edição passa por aprovação humana antes de publicar (candidata → aprovada).
+
+### 12.5 Varredura de catálogos PDF
+- O Nano pode ler PDFs do Drive do lojista e propor aplicações e códigos OEM **com fonte** (arquivo, página, data) e confiança. Resultado entra como `a_confirmar`; nunca publica sozinho.
+- Compatibilidade só com relação técnica provada, nunca pelo nome do produto.
+
+### 12.6 Pendências adicionais
+- Quem possui e paga o armazenamento da Pasta A.
+- Se o plano do Supabase foi ampliado (a premissa "Conecta tem espaço de sobra" não está confirmada; o plano ampliado conhecido é o do Bling).
+- Política de direitos de imagem da web (aprovação humana obrigatória) a validar com o dono e, se necessário, com assessoria jurídica.
