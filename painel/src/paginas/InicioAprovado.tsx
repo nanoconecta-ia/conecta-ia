@@ -1,11 +1,13 @@
 import type { Loja } from "../lib/dados.ts";
 import { useWorkspaceDados } from "../lib/workspaceDados.ts";
 import { AtivoAprovado } from "../componentes/AtivoAprovado.tsx";
+import { IndicadoresInicio } from "./IndicadoresInicio.tsx";
 const numero=(n:number|null|undefined)=>n==null?"—":n.toLocaleString("pt-BR");
 export function InicioAprovado({loja}:{loja:Loja}){
  const {dados,recarregar}=useWorkspaceDados(loja.id);
  return <section className="ap-inicio" data-inicio-layout="aprovado-v2">
-  <div className="ap-heading"><div><span className="ap-eyebrow">CONECTA.IA · PLATAFORMA DE ENRIQUECIMENTO</span><h1>Três níveis.<br/>Uma origem física.</h1><p>{loja.nome} · o Nano.IA organiza o catálogo, as evidências e as próximas decisões.</p></div><AtivoAprovado nome="robo" tamanho={116}/></div>
+  <div className="ap-heading"><div><span className="ap-eyebrow">CONECTA.IA · PLATAFORMA DE ENRIQUECIMENTO</span><h1>Hoje no catálogo</h1><p>{loja.nome} · o Nano.IA organiza o catálogo, as evidências e as próximas decisões.</p></div><AtivoAprovado nome="robo" tamanho={116}/></div>
+  <IndicadoresInicio fila={dados?.fila} erro={dados?.erro}/>
   <div className="ap-kicker"><span>Origem, inteligência e experiência comercial</span><b>Dados da loja autenticada · {loja.ambiente==="producao"?"ambiente interno":"ambiente de teste"}</b></div>
   {dados?.erro&&<p role="alert" className="ap-alerta">{dados.erro} <button onClick={recarregar}>Tentar novamente</button></p>}
   <div className="ap-niveis">

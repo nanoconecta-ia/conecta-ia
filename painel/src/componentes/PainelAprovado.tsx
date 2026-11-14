@@ -16,7 +16,7 @@ export function PainelAprovado({loja,caminho,menu,children,menuMovel,recolhido,a
  loja:Loja|null;caminho:string;menu:[string,string][];children:ReactNode;menuMovel:boolean;recolhido:boolean;
  aoMenu:()=>void;aoRecolher:()=>void;aoBusca:()=>void;aoSair:()=>void;aoAgente:()=>void;res:{esq:number;dir:number};
 }){
- const titulo=caminho==="/"?"Espelhamento":caminho==="/estudio"||caminho==="/assistente"?"Estúdio do Nano":menu.find(x=>x[0]===caminho)?.[1]??"Área de trabalho";
+ const titulo=caminho==="/"?"Início":caminho==="/estudio"||caminho==="/assistente"?"Estúdio do Nano":menu.find(x=>x[0]===caminho)?.[1]??"Área de trabalho";
  const nano=caminho==="/estudio"||caminho==="/assistente";
  return <div className={`conecta-aprovado ${menuMovel?"ap-menu-aberto":""} ${recolhido?"ap-recolhido":""}`} data-conecta-layout="aprovado-v2" data-area={nano?"nano":"painel"} style={{"--res-esq":res.esq+"px","--res-dir":res.dir+"px"} as CSSProperties}>
   {menuMovel&&<button className="ap-menu-fundo" aria-label="Fechar menu de navegação" onClick={aoMenu}/>}
