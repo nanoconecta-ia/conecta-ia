@@ -122,7 +122,9 @@ export function resumirExcluido(lojaId: string, item: ItemLista, anterior: Exist
   };
 }
 
-export async function sincronizar(lojaId: string, p: PortasSync, orcamentoMs = 100_000): Promise<ResultadoSync> {
+/** `forcarSkus`: lê o detalhe desses SKUs mesmo sem mudança na lista. Marca, descrição, categoria e fotos alterados só no Bling não aparecem
+ * na listagem; sem isso o espelho só os atualiza depois de 24 h. Só para poucos SKUs: forçar o catálogo inteiro estoura o orçamento de tempo. */
+export async function sincronizar(lojaId: string, p: PortasSync, orcamentoMs = 100_000, forcarSkus: ReadonlySet<string> = new Set()): Promise<ResultadoSync> {
   const ini = p.agora();
   const r: ResultadoSync = { paginas: 0, vistos: 0, gravados: 0, detalhes: 0, resumosExcluidos: 0, ausentes: 0, completo: false };
   const ex = new Map((await p.existentes()).map((e) => [e.bling_id, e]));
@@ -187,7 +189,7 @@ export async function sincronizar(lojaId: string, p: PortasSync, orcamentoMs = 1
         r.vistos++;
         const anterior = ex.get(id);
         const listado = grupo === "excluidos" ? { ...it, situacao: "E" } : it;
-        if (!precisaDetalhe(listado, anterior, p.agora())) continue;
+        if (!(listado.codigo && forcarSkus.has(listado.codigo)) && !precisaDetalhe(listado, anterior, p.agora())) continue;
         if (p.agora() - ini > orcamentoMs) {
           await descarregar(); r.erro = "tempo esgotado durante a leitura dos detalhes";
           return r;

@@ -183,13 +183,15 @@ Deno.serve(async (req) => {
     lojas = [lojaId];
   }
 
+  // O lojista pode pedir a releitura de poucos SKUs (ex.: acabou de alterar no Bling). Máx. 20 por pedido; o cron nunca força.
+  const forcar = new Set<string>(!enviado && Array.isArray(corpo?.forcar_skus) ? corpo.forcar_skus.filter((x: unknown): x is string => typeof x === "string" && x.length > 0 && x.length <= 60).slice(0, 20) : []);
   const resultado: Record<string, unknown>[] = [];
   for (const lojaId of lojas) {
     try {
       // categorias primeiro (poucas chamadas); falha aqui não impede a varredura de produtos
       let cat: { vistas: number; removidas: number; completo: boolean } | undefined;
       try { const rc = await sincronizarCategorias(lojaId, portasCategorias(admin, lojaId, chaveCifra)); cat = { vistas: rc.vistas, removidas: rc.removidas, completo: rc.completo && !rc.erro }; } catch { cat = { vistas: 0, removidas: 0, completo: false }; }
-      const r = await sincronizar(lojaId, portasDaLoja(admin, lojaId, chaveCifra));
+      const r = await sincronizar(lojaId, portasDaLoja(admin, lojaId, chaveCifra), 100_000, forcar);
       if (r.completo) {
         await admin.from("bling_conexoes").update({ ultimo_sync_ok_em: new Date().toISOString(), ultimo_erro: null }).eq("loja_id", lojaId);
         // Produto novo ou que trocou de categoria no Bling: aplica o mapeamento de taxonomia já definido pelo lojista.

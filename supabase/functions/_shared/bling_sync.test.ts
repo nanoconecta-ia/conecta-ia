@@ -217,3 +217,14 @@ test("sincronizar: sem a porta de imagens o comportamento antigo é idêntico", 
   const r = await sincronizar("L", h.p);
   assert.equal(r.completo, true); assert.equal(r.imagensNovas, undefined);
 });
+
+test("sincronizar: forcarSkus lê o detalhe só dos SKUs pedidos, mesmo sem mudança na lista", async () => {
+  const its: ItemLista[] = [{ id: 1, codigo: "S1", nome: "N1", preco: 1, situacao: "A" }, { id: 2, codigo: "S2", nome: "N2", preco: 1, situacao: "A" }];
+  const ex = (i: number): Existente => ({ bling_id: String(i), sku: `S${i}`, nome: `N${i}`, preco: 1, estoque: null, situacao: "A", sincronizado_em: new Date(AGORA - 3600_000).toISOString() });
+  const h1 = portas(its, [ex(1), ex(2)]);
+  await sincronizar("L", h1.p);
+  assert.equal(h1.detalhes, 0, "sem força e sem mudança: não lê o detalhe (economia de cota)");
+  const h2 = portas(its, [ex(1), ex(2)]);
+  const r = await sincronizar("L", h2.p, 100_000, new Set(["S2"]));
+  assert.equal(h2.detalhes, 1); assert.equal(r.gravados, 1); assert.equal(r.completo, true);
+});
