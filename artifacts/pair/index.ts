@@ -86,7 +86,8 @@ function montarUrlPareamento(appUrl, codigo) {
     const local = u.hostname === "localhost" || u.hostname === "127.0.0.1";
     if (u.protocol !== "https:" && !local) throw new Error("APP_URL deve ser https");
     if (u.username || u.password || u.search || u.hash) throw new Error("APP_URL não pode ter credenciais, query nem fragmento");
-    return `${u.origin}${u.pathname.replace(/\/+$/, "")}/#/parear?c=${codigo}`;
+    const caminho = /\.html?$/i.test(u.pathname) ? u.pathname : `${u.pathname.replace(/\/+$/, "")}/`;
+    return `${u.origin}${caminho}#/parear?c=${codigo}`;
 }
 function codigoDaUrl(url) {
     const m = /#\/parear\?c=([A-Za-z0-9_-]{43,128})$/.exec(url.trim());
@@ -190,6 +191,7 @@ async function tratarPair(req, p) {
             });
     }
 }
+const DURACAO_MAX_MIN = 10080;
 async function iniciar(c, ip, p) {
     if (!await p.limite(`pair-iniciar:${ip}`, 10, 600)) return res(429, {
         erro: "Muitos pedidos de pareamento. Aguarde alguns minutos."
@@ -214,8 +216,8 @@ async function iniciar(c, ip, p) {
         erro: "Capacidades só existem para agente desktop."
     });
     const dur = c.duracao_min === undefined ? 60 : c.duracao_min;
-    if (!Number.isInteger(dur) || dur < 5 || dur > 480) return res(400, {
-        erro: "Duração deve ficar entre 5 e 480 minutos."
+    if (!Number.isInteger(dur) || dur < 5 || dur > DURACAO_MAX_MIN) return res(400, {
+        erro: `Duração deve ficar entre 5 e ${DURACAO_MAX_MIN} minutos.`
     });
     const renovavel = c.renovavel === undefined ? true : c.renovavel;
     if (typeof renovavel !== "boolean") return res(400, {
@@ -332,13 +334,13 @@ async function encerrar(auth, ip, p) {
     });
 }
 
-return { tratarPair: tratarPair };
+return { tratarPair: tratarPair, DURACAO_MAX_MIN: DURACAO_MAX_MIN };
 })();
 
 // ---------- supabase/functions/_shared/pair/implantacao.ts ----------
 const __m5 = (() => {
 const PROJETO_CONECTA = "https://dsfzhsrudriqkumtlqwj.supabase.co";
-const PAINEL_CONECTA = "https://nanoconecta-ia.github.io/conecta-ia/";
+const PAINEL_CONECTA = "https://www.mobisautopecas.com.br/conecta.html";
 function configuracaoPair(get) {
     const producao = get("SUPABASE_URL")?.replace(/\/$/, "") === PROJETO_CONECTA;
     const definido = get("PAIR_AMBIENTE");

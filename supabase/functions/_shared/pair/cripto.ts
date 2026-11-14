@@ -56,7 +56,8 @@ export function montarUrlPareamento(appUrl: string, codigo: string): string {
   const local = u.hostname === "localhost" || u.hostname === "127.0.0.1";
   if (u.protocol !== "https:" && !local) throw new Error("APP_URL deve ser https");
   if (u.username || u.password || u.search || u.hash) throw new Error("APP_URL não pode ter credenciais, query nem fragmento");
-  return `${u.origin}${u.pathname.replace(/\/+$/, "")}/#/parear?c=${codigo}`;
+  const caminho = /\.html?$/i.test(u.pathname) ? u.pathname : `${u.pathname.replace(/\/+$/, "")}/`;
+  return `${u.origin}${caminho}#/parear?c=${codigo}`;
 }
 
 /** Extrai o código de uma URL de pareamento (lado do aprovador que cola o link). Só aceita o formato que montarUrlPareamento gera. */

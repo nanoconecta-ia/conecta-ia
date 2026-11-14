@@ -6,7 +6,7 @@ import { aleatorioB64u, chamarPair, ESCOPOS, mmss, MOTIVOS, ROTULOS_ESCOPO, segu
 
 type Desafio = { codigo: string; url: string; verificacao: string; segredo: string; expira_em: string; renovavel: boolean };
 type Conectado = { token: string; loja_id: string; escopos: string[]; limite_ate: string; renovavel: boolean };
-const DURACOES: [number, string][] = [[15, "15 minutos"], [60, "1 hora"], [240, "4 horas"], [480, "8 horas"]];
+const DURACOES: [number, string][] = [[15, "15 minutos"], [60, "1 hora"], [240, "4 horas"], [480, "8 horas"], [1440, "24 horas"], [4320, "3 dias"], [10080, "7 dias"]];
 
 /** Lado do SOLICITANTE (sem login): mostra o QR, o código de verificação e espera a aprovação do lojista. */
 export function ParearSolicitante() {
@@ -199,7 +199,7 @@ export function ParearAprovador({ codigo, email }: { codigo: string; email: stri
         {det.escopos.map((e) => <label key={e} className="marcar"><input type="checkbox" checked={escopos.includes(e)} onChange={() => setEscopos((l) => (l.includes(e) ? l.filter((x) => x !== e) : [...l, e]))} /> {ROTULOS_ESCOPO[e] ?? e}</label>)}
         <p className="suave">Nenhuma permissão aprova, publica ou altera preço/estoque: o dispositivo só consulta e propõe.</p>
       </fieldset>
-      <label>Duração<select value={duracao} onChange={(e) => setDuracao(Number(e.target.value))}>{duracoes.map((v) => <option key={v} value={v}>{v >= 60 ? `${v / 60} h` : `${v} min`}</option>)}</select></label>
+      <label>Duração<select value={duracao} onChange={(e) => setDuracao(Number(e.target.value))}>{duracoes.map((v) => <option key={v} value={v}>{v >= 1440 ? `${v / 1440} dia(s)` : v >= 60 ? `${v / 60} h` : `${v} min`}</option>)}</select></label>
       <p className="suave">{det.renovavel ? "O token gira a cada uso e expira em 15 minutos sem renovação." : "Este dispositivo guarda um token fixo: ele vale até o fim da duração escolhida."}</p>
       <label>Código mostrado na tela do dispositivo<input inputMode="numeric" autoComplete="one-time-code" maxLength={7} value={verif} onChange={(e) => setVerif(e.target.value)} placeholder="000000" /></label>
       {pedeSenha && <label>Confirme sua senha<input type="password" autoComplete="current-password" value={senha} onChange={(e) => setSenha(e.target.value)} /></label>}

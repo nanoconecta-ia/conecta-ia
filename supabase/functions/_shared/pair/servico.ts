@@ -32,6 +32,9 @@ export async function tratarPair(req: Req, p: PortasPair): Promise<Res> {
   }
 }
 
+/** Teto da autorização (7 dias). O token de acesso continua curto e rotativo; o lojista escolhe a duração ao aprovar e só pode reduzir. */
+export const DURACAO_MAX_MIN = 10080;
+
 async function iniciar(c: Record<string, unknown>, ip: string, p: PortasPair): Promise<Res> {
   if (!(await p.limite(`pair-iniciar:${ip}`, 10, 600))) return res(429, { erro: "Muitos pedidos de pareamento. Aguarde alguns minutos." }, { "Retry-After": "120" });
   const nome = typeof c.nome === "string" ? c.nome.trim() : "";
@@ -42,7 +45,7 @@ async function iniciar(c: Record<string, unknown>, ip: string, p: PortasPair): P
   if (!Array.isArray(caps) || caps.length > 20 || !caps.every((x) => typeof x === "string" && CAP_RE.test(x))) return res(400, { erro: "Capacidades inválidas." });
   if (c.tipo !== "agente_desktop" && caps.length) return res(400, { erro: "Capacidades só existem para agente desktop." });
   const dur = c.duracao_min === undefined ? 60 : c.duracao_min;
-  if (!Number.isInteger(dur) || (dur as number) < 5 || (dur as number) > 480) return res(400, { erro: "Duração deve ficar entre 5 e 480 minutos." });
+  if (!Number.isInteger(dur) || (dur as number) < 5 || (dur as number) > DURACAO_MAX_MIN) return res(400, { erro: `Duração deve ficar entre 5 e ${DURACAO_MAX_MIN} minutos.` });
   const renovavel = c.renovavel === undefined ? true : c.renovavel;
   if (typeof renovavel !== "boolean") return res(400, { erro: "renovavel deve ser verdadeiro/falso." });
   if (typeof c.token_hash !== "string" || !HASH_RE.test(c.token_hash)) return res(400, { erro: "token_hash deve ser o SHA-256 (hex) do token gerado no dispositivo." });
