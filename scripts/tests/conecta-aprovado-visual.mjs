@@ -17,7 +17,8 @@ async function preparar(context,autenticado=true){
  if(autenticado)await context.addInitScript(([k,v])=>localStorage.setItem(k,v),[`sb-${REF}-auth-token`,JSON.stringify(sessao)]);
  await context.route('**/*',async route=>{
   const req=route.request(),u=new URL(req.url());
-  if(u.origin===new URL(base).origin)return route.continue();
+  // O Pages redireciona para o domínio próprio da loja (CNAME): mesmo build estático, não é rede externa.
+  if(u.origin===new URL(base).origin||u.hostname==='www.mobisautopecas.com.br')return route.continue();
   assert.ok(u.hostname.endsWith('supabase.co'),'Rede não autorizada: '+u.hostname);
   if(req.method()==='OPTIONS')return route.fulfill({status:204,headers});
   let body=[],count=null;
