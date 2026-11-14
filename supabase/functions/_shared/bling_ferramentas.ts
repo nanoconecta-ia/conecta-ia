@@ -46,6 +46,10 @@ export const FERRAMENTAS: readonly Ferramenta[] = [
   escrita("bling.produtos.criar", "POST", "/produtos", "MEDIUM"),
   escrita("bling.produtos.alterar", "PATCH", "/produtos/{id}", "MEDIUM"),
   escrita("bling.produtos.alterar_preco", "PATCH", "/produtos/{id}", "MEDIUM"), // só preço de venda, só como item de proposta aprovada; desligada como todas as escritas
+  // Troca SÓ a situação (ativar/inativar), sem regravar nem revalidar o cadastro inteiro (diferente de PATCH /produtos/{id}).
+  // Evidência: página de homologação do Bling (developer.bling.com.br/homologacao) cita PATCH /produtos/{id}/situacoes com a situação no body;
+  // SDK não oficial confirma a rota. NÃO conferido no OpenAPI oficial (valores aceitos e se revalida campos fiscais): conferido=false, desligada.
+  escrita("bling.produtos.alterar_situacao", "PATCH", "/produtos/{id}/situacoes", "MEDIUM"),
   escrita("bling.categorias.criar", "POST", "/categorias/produtos", "MEDIUM"),
   escrita("bling.contatos.criar", "POST", "/contatos", "MEDIUM"),
   escrita("bling.contatos.alterar", "PUT", "/contatos/{id}", "MEDIUM"),
@@ -62,4 +66,12 @@ export function podeExecutar(f: Ferramenta, aprovacaoId: string | null): { ok: b
   if (!f.ativa) return { ok: false, motivo: "ferramenta desligada" };
   if (f.exigeAprovacao && !aprovacaoId) return { ok: false, motivo: "requer aprovação humana" };
   return { ok: true };
+}
+
+export type SituacaoProduto = "A" | "I";
+/** Monta o pedido de troca de situação. Só A (ativo) e I (inativo); excluir não existe aqui. Não executa nada. */
+export function montarAlterarSituacao(idProduto: number, situacao: string): { caminho: string; corpo: { situacao: SituacaoProduto } } {
+  if (!Number.isSafeInteger(idProduto) || idProduto <= 0) throw new Error("id de produto inválido");
+  if (situacao !== "A" && situacao !== "I") throw new Error("situação inválida: use A (ativo) ou I (inativo)");
+  return { caminho: `/produtos/${idProduto}/situacoes`, corpo: { situacao } };
 }
