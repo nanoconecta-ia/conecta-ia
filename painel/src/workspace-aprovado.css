@@ -64,3 +64,4 @@
 .ap-chat-panel .compositor-grade textarea{min-height:44px}
 .ap-chat-panel .barra-extras{display:none}
 }
+.item-imagem{margin:8px 0 0}.item-imagem img{display:block;width:100%;max-height:180px;object-fit:contain;background:#fff;border:1px solid var(--borda);border-radius:6px}.item-imagem figcaption{font-size:10px;color:var(--suave);margin-top:4px}

@@ -1,4 +1,4 @@
-import { compararCampos, type ItemProposta } from "../../lib/propostas.ts";
+import { compararCampos, urlImagemProposta, type ItemProposta } from "../../lib/propostas.ts";
 import type { ProdutoResumo } from "../../lib/conectorDados.ts";
 import { alvoOperacao, SeloItem, SeloRisco } from "./ui.tsx";
 
@@ -36,6 +36,12 @@ export function TabelaItens({ itens, produtos, selecionados, aoAlternar, compact
                 </div>
               ))}
             </div>
+            {urlImagemProposta(i.depois) && (
+              <figure className="item-imagem"><img src={urlImagemProposta(i.depois)!} alt="Imagem proposta para o produto" loading="lazy" referrerPolicy="no-referrer" /><figcaption>imagem proposta · direitos de uso a confirmar</figcaption></figure>
+            )}
+            {compacto && (
+              <p className="suave" style={{ margin: "8px 0 0" }}>{i.fontes.length === 0 ? "Fonte: nenhuma informada (a confirmar)" : <>Fontes: {i.fontes.slice(0, 2).map((f, k) => <span key={k}>{k ? " · " : ""}{f.url ? <a href={f.url} target="_blank" rel="noreferrer noopener nofollow">{f.titulo ?? "fonte"}</a> : (f.documento ?? "documento")}</span>)}{i.fontes.length > 2 ? ` · +${i.fontes.length - 2}` : ""}</>}</p>
+            )}
             {!compacto && (
               <>
                 <p className="suave" style={{ margin: "8px 0 2px" }}>Fontes consultadas:</p>

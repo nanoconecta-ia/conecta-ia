@@ -8,10 +8,10 @@ const RISCO: Record<RiscoTurno, { classe: string; texto: string }> = {
 };
 
 /** Proposta no chat em UMA linha discreta; os detalhes (lidos do banco) só carregam quando o lojista abre. */
-export function PropostaCompacta({ p, fonte, lojaId }: { p: PropostaTurno; fonte: FonteDados | null; lojaId: string }) {
+export function PropostaCompacta({ p, fonte, lojaId, aberta }: { p: PropostaTurno; fonte: FonteDados | null; lojaId: string; aberta?: boolean }) {
   const r = p.risco ? RISCO[p.risco] : null;
   return (
-    <details className="proposta-compacta">
+    <details className="proposta-compacta" open={aberta}>
       <summary aria-label={`Proposta para aprovar: ${p.titulo ?? "sem título"}${r ? `, risco ${r.texto}` : ""}`}>
         <Icone nome="escudo" tamanho={14} />
         <span className="proposta-compacta-titulo">{p.titulo ?? "Proposta para aprovar"}</span>
