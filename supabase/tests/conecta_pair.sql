@@ -501,27 +501,28 @@ select public.afirma((public.pair_aprovar('LONGA', 'aaaaaaaa-0000-0000-0000-0000
 select public.servidor();
 select public.pair_consultar(public.h('LONGA'), public.h('SEG-LONGA'));
 select public.admin();
-select public.afirma((select limite_ate <= now() + interval '8 hours 1 minute' and limite_absoluto_ate > now() + interval '2 days' from public.pair_sessoes where dispositivo_id = (select id from public.pair_dispositivos where nome = 'Notebook da loja' order by criado_em desc limit 1) order by criado_em desc limit 1), 'janela inicial de no máximo 8 h, teto absoluto de 3 dias');
+select set_config('t.longa', (select id::text from public.pair_sessoes where token_hash = public.h('TOK-LONGA')), false);
+select public.afirma((select limite_ate <= now() + interval '8 hours 1 minute' and limite_absoluto_ate > now() + interval '2 days' from public.pair_sessoes where id = current_setting('t.longa')::uuid), 'janela inicial de no máximo 8 h, teto absoluto de 3 dias');
 -- sem login recente: recusa; editor de outra pessoa: sem acesso; outra loja: sem acesso
 select public.como('11111111-1111-1111-1111-111111111111', false);
-select public.afirma((public.pair_reconfirmar((select id from public.pair_sessoes order by criado_em desc limit 1))->>'motivo') = 'login_recente_necessario', 'reconfirmar exige login recente');
+select public.afirma((public.pair_reconfirmar(current_setting('t.longa')::uuid)->>'motivo') = 'login_recente_necessario', 'reconfirmar exige login recente');
 select public.como('33333333-3333-3333-3333-333333333333');
-select public.espera_erro($$select public.pair_reconfirmar((select id from public.pair_sessoes order by criado_em desc limit 1))$$, '42501');
+select public.espera_erro($$select public.pair_reconfirmar(current_setting('t.longa')::uuid)$$, '42501');
 select public.como('22222222-2222-2222-2222-222222222222');
-select public.espera_erro($$select public.pair_reconfirmar((select id from public.pair_sessoes order by criado_em desc limit 1))$$, '42501');
+select public.espera_erro($$select public.pair_reconfirmar(current_setting('t.longa')::uuid)$$, '42501');
 -- lojista dono com login recente: estende a janela, sem passar do teto
 select public.como('11111111-1111-1111-1111-111111111111');
 select public.admin();
-update public.pair_sessoes set limite_ate = now() + interval '1 hour' where id = (select id from public.pair_sessoes order by criado_em desc limit 1);
+update public.pair_sessoes set limite_ate = now() + interval '1 hour' where id = current_setting('t.longa')::uuid;
 select public.como('11111111-1111-1111-1111-111111111111');
-select public.afirma((public.pair_reconfirmar((select id from public.pair_sessoes order by criado_em desc limit 1))->>'estendida')::boolean, 'reconfirmar estende a janela');
+select public.afirma((public.pair_reconfirmar(current_setting('t.longa')::uuid)->>'estendida')::boolean, 'reconfirmar estende a janela');
 select public.admin();
-select public.afirma((select limite_ate > now() + interval '7 hours' and limite_ate <= limite_absoluto_ate from public.pair_sessoes order by criado_em desc limit 1), 'nova janela de ~8 h, nunca acima do teto absoluto');
+select public.afirma((select limite_ate > now() + interval '7 hours' and limite_ate <= limite_absoluto_ate from public.pair_sessoes where id = current_setting('t.longa')::uuid), 'nova janela de ~8 h, nunca acima do teto absoluto');
 select public.afirma(exists (select 1 from public.auditoria where acao = 'pair.sessao_reconfirmada'), 'reconfirmação fica na auditoria');
 -- sessão encerrada não pode ser reconfirmada
-update public.pair_sessoes set limite_ate = now() - interval '1 minute' where id = (select id from public.pair_sessoes order by criado_em desc limit 1);
+update public.pair_sessoes set limite_ate = now() - interval '1 minute' where id = current_setting('t.longa')::uuid;
 select public.como('11111111-1111-1111-1111-111111111111');
-select public.afirma((public.pair_reconfirmar((select id from public.pair_sessoes order by criado_em desc limit 1))->>'motivo') = 'sessao_encerrada', 'sessão já encerrada exige novo pareamento');
+select public.afirma((public.pair_reconfirmar(current_setting('t.longa')::uuid)->>'motivo') = 'sessao_encerrada', 'sessão já encerrada exige novo pareamento');
 select public.admin();
 
 rollback;
