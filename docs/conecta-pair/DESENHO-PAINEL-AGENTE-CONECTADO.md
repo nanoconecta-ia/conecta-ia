@@ -32,11 +32,11 @@ Temporizador em Dispositivos: tempo restante da janela (atualiza a cada 30 s) e 
 ## 7. Ordem sugerida
 (3) chamadas medidas → (4) mini painel do Nano → (5) alertas → (2) modelo informado (migração) → (6) rótulo no chat.
 
-## 8. Decisões do dono
-1. Aprova o campo `modelo_informado` (autodeclarado)?
-2. Alertas só no painel, ou também por e-mail?
-3. Nome oficial do perfil no chat ("NanoClaude"?) e se mostra também o provedor.
-4. Aceita que o consumo do agente externo fique como "indisponível" até ele informar?
+## 8. Decisões do dono (respondidas em 2026-11-14)
+1. **`modelo_informado`: aprovado**, sempre rotulado "informado pelo agente (não verificado pelo servidor)".
+2. **Alertas só no painel** (faixa do topo e notificação interna). Sem e-mail por enquanto.
+3. **Perfil no chat:** nome do produto + provedor e modelo **confirmado pelo retorno do servidor** (ex.: "Nano.IA · OpenRouter Free · modelo"). Rótulo fixo "NanoClaude" fica descartado enquanto o Nano integrado não rodar Claude de fato.
+4. **Consumo de agente externo: "indisponível"** até existir medição real. Medidos: chamadas ao gateway e tokens do Nano integrado.
 
 ## 9. Fora de escopo
 Merge, deploy, migração e qualquer escrita no Bling por este documento.
