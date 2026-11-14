@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { agregarUso, estadoAgente } from "./usoGateway.ts";
+import { agregarUso, estadoAgente, maisRecentePorNome, nomeCurto } from "./usoGateway.ts";
 
 test("agrega chamadas por dispositivo, separa recusas e guarda a última ferramenta", () => {
   const m = agregarUso([
@@ -28,4 +28,10 @@ test("estadoAgente: token vencido = parado, mesmo com janela longa", () => {
   const agora = Date.parse("2026-11-14T12:00:00Z");
   assert.equal(estadoAgente("2026-11-14T20:00:00Z", null, agora, "2026-11-14T11:50:00Z").situacao, "parado");
   assert.equal(estadoAgente("2026-11-14T20:00:00Z", null, agora, "2026-11-14T12:10:00Z").situacao, "conectado");
+});
+test("maisRecentePorNome mantém uma sessão por agente; nomeCurto tira o parêntese", () => {
+  const r = maisRecentePorNome([{ nome: "A", limite_ate: "2026-11-14T10:00:00Z" }, { nome: "A", limite_ate: "2026-11-14T12:00:00Z" }, { nome: "B", limite_ate: "2026-11-14T09:00:00Z" }]);
+  assert.equal(r.length, 2);
+  assert.equal(r.find((x) => x.nome === "A")?.limite_ate, "2026-11-14T12:00:00Z");
+  assert.equal(nomeCurto("Claude Code (desenvolvedor do Conecta.IA)"), "Claude Code");
 });
