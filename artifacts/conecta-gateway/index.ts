@@ -2160,6 +2160,7 @@ const FERRAMENTAS = [
     escrita("bling.produtos.criar", "POST", "/produtos", "MEDIUM"),
     escrita("bling.produtos.alterar", "PATCH", "/produtos/{id}", "MEDIUM"),
     escrita("bling.produtos.alterar_preco", "PATCH", "/produtos/{id}", "MEDIUM"),
+    escrita("bling.produtos.alterar_situacao", "PATCH", "/produtos/{id}/situacoes", "MEDIUM"),
     escrita("bling.categorias.criar", "POST", "/categorias/produtos", "MEDIUM"),
     escrita("bling.contatos.criar", "POST", "/contatos", "MEDIUM"),
     escrita("bling.contatos.alterar", "PUT", "/contatos/{id}", "MEDIUM"),
@@ -2182,8 +2183,18 @@ function podeExecutar(f, aprovacaoId) {
         ok: true
     };
 }
+function montarAlterarSituacao(idProduto, situacao) {
+    if (!Number.isSafeInteger(idProduto) || idProduto <= 0) throw new Error("id de produto inválido");
+    if (situacao !== "A" && situacao !== "I") throw new Error("situação inválida: use A (ativo) ou I (inativo)");
+    return {
+        caminho: `/produtos/${idProduto}/situacoes`,
+        corpo: {
+            situacao
+        }
+    };
+}
 
-return { FERRAMENTAS: FERRAMENTAS, buscarFerramenta: buscarFerramenta, podeExecutar: podeExecutar };
+return { FERRAMENTAS: FERRAMENTAS, buscarFerramenta: buscarFerramenta, podeExecutar: podeExecutar, montarAlterarSituacao: montarAlterarSituacao };
 })();
 
 // ---------- supabase/functions/_shared/cripto.ts ----------
