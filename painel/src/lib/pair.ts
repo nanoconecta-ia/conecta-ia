@@ -9,6 +9,8 @@ export const ESCOPOS = [
   "produtos:ler", "bling:consultar", "enriquecimento:propor", "banners:propor", "categorias:propor", "paginas:propor",
   "catalogo:propor", "campanhas:propor", "aprovacoes:ler", "tarefas:ler", "contexto:registrar",
   "mcp:leitura", "mcp:propor",
+  // Ponte chat do Nano: o agente LÊ as mensagens do chat desta loja e responde (o texto vai ao provedor do agente).
+  "chat:responder",
 ] as const;
 export const ROTULOS_ESCOPO: Record<string, string> = {
   "bling:consultar": "Consultar produto na API Bling (somente leitura, com fallback identificado)",
@@ -24,6 +26,7 @@ export const ROTULOS_ESCOPO: Record<string, string> = {
   "contexto:registrar": "Informar ao Nano qual produto está aberto na tela (some em 30 min; não altera produto nem o ERP)",
   "mcp:leitura": "Consultar produtos, taxonomia e códigos da sua loja (não altera nada)",
   "mcp:propor": "Preparar propostas “a confirmar” (nada é aprovado nem publicado sem você)",
+  "chat:responder": "Ler e responder as mensagens do chat do Nano desta loja (o texto das conversas vai para o agente)",
 };
 export const TIPOS_DISPOSITIVO: [string, string][] = [
   ["navegador", "Navegador"], ["computador", "Computador"], ["smartphone", "Smartphone"], ["agente_externo", "Agente externo (IA / MCP)"], ["agente_desktop", "Agente desktop"],
