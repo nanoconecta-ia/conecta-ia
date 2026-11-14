@@ -33,6 +33,12 @@ test("QR: leva só a URL com o código de uso único — nenhum token, segredo, 
   assert.doesNotMatch(url, /token|segredo|senha|secret|bearer|service_role|bling/i);
   assert.ok(url.length < 200, "URL curta: QR simples e legível");
 });
+test("QR: link do painel em arquivo .html não ganha barra antes do fragmento", () => {
+  const c = aleatorioB64u();
+  assert.equal(montarUrlPareamento("https://www.mobisautopecas.com.br/conecta.html", c), `https://www.mobisautopecas.com.br/conecta.html#/parear?c=${c}`);
+  assert.equal(montarUrlPareamento("https://www.mobisautopecas.com.br", c), `https://www.mobisautopecas.com.br/#/parear?c=${c}`);
+  assert.equal(codigoDaUrl(montarUrlPareamento("https://www.mobisautopecas.com.br/conecta.html", c)), c);
+});
 test("QR: recusa APP_URL insegura ou com credenciais/query e código fora do formato", () => {
   const c = aleatorioB64u();
   assert.throws(() => montarUrlPareamento("http://exemplo.com", c));
@@ -88,7 +94,7 @@ test("pair/iniciar: entradas inválidas são recusadas antes de tocar o banco", 
   const { p, chamadas } = portasPair();
   const casos: Record<string, unknown>[] = [
     { nome: "" }, { nome: "x".repeat(81) }, { nome: "<script>" }, { tipo: "root" }, { escopos: ["aprovacoes:aprovar"] }, { escopos: [] },
-    { duracao_min: 4 }, { duracao_min: 9999 }, { duracao_min: 1.5 }, { token_hash: "abc" }, { capacidades: ["teclado.digitar"] },
+    { duracao_min: 4 }, { duracao_min: 10081 }, { duracao_min: 1.5 }, { token_hash: "abc" }, { capacidades: ["teclado.digitar"] },
   ];
   for (const extra of casos) { const r = await tratarPair({ metodo: "POST", authorization: null, corpo: await corpoIniciar(extra) }, p); assert.equal(r.status, 400, JSON.stringify(extra)); }
   assert.equal(chamadas.length, 0);
