@@ -57,8 +57,9 @@ try{
   assert.equal(await campo.isVisible(),true,'conversa visível '+width);
   await campo.click();await page.waitForFunction(()=>getComputedStyle(document.querySelector('.olho-nano')).visibility==='visible');
   assert.equal(await page.locator('.olho-nano').getAttribute('aria-hidden'),'true');assert.equal(await page.locator('.olho-nano').evaluate(el=>getComputedStyle(el).pointerEvents),'none');
-  await page.getByRole('button',{name:'Ajustar chat',exact:true}).click();await page.getByRole('slider',{name:'Altura da conversa'}).focus();await page.keyboard.press('End');
-  await page.getByRole('button',{name:'Ajustar chat',exact:true}).click();
+  if(width>=781){  await page.getByRole('button',{name:'Ajustar chat',exact:true}).click();await page.getByRole('slider',{name:'Altura da conversa'}).focus();await page.keyboard.press('End');
+  await page.getByRole('button',{name:'Ajustar chat',exact:true}).click();}
+  // celular: o chat ocupa a tela inteira (altura fixa); o ajuste de altura só existe no desktop
   await page.getByRole('button',{name:'Abrir Tabelas',exact:true}).click();await page.getByRole('heading',{name:'Produtos do espelho.',exact:true}).waitFor();
   await page.getByText('Produto sintético para teste',{exact:true}).waitFor({state:'visible'});
   await page.getByRole('button',{name:'Abrir Imagens',exact:true}).click();await page.getByText('Nenhuma imagem aprovada disponível.',{exact:true}).waitFor();

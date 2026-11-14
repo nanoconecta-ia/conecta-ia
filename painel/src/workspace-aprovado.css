@@ -64,3 +64,30 @@
 .ap-chat-panel .compositor-grade textarea{min-height:44px}
 .ap-chat-panel .barra-extras{display:none}
 }
+/* Chat em tela cheia no celular (pedido do lojista, 14/11): do cabeçalho ao rodapé; só as mensagens rolam. */
+@media(max-width:780px){
+.ap-studio-layout .ap-work-panel,.ap-studio-layout .ap-chat-panel{position:fixed!important;top:100px;left:0;right:40px;bottom:0;height:auto!important;min-height:0!important;max-height:none!important;margin:0!important;border-radius:0!important;z-index:20;display:flex;flex-direction:column;overflow:hidden}
+.ap-studio-layout .ap-tower{position:fixed;top:70px;right:3px;z-index:21;max-height:calc(100dvh - 76px);overflow-y:auto}
+.ap-studio-layout .abas-centro{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;height:100%}
+.ap-studio-layout .agente{flex:0 0 auto;flex-wrap:nowrap!important;gap:6px!important;padding:4px 6px!important;min-height:0}
+.ap-studio-layout .agente .agente-titulo{min-width:0;flex:1 1 auto;display:flex;flex-direction:row;align-items:baseline;gap:6px;overflow:hidden}
+.ap-studio-layout .agente h1{font-size:15px!important;flex:none}
+.ap-studio-layout .agente .estado{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ap-studio-layout .agente .ic-aba,.ap-studio-layout .agente .nova-conv{width:30px;height:30px;min-width:30px;min-height:30px;padding:0;margin-left:0!important}
+.ap-studio-layout .nano-motor-status{flex:0 0 auto;padding:2px 8px;font-size:11px;line-height:1.2;max-height:34px;overflow:hidden}
+.ap-studio-layout .nano-motor-status button{min-height:26px;padding:0 8px;font-size:11px}
+.ap-studio-layout .chat{flex:1 1 auto!important;min-height:0!important;height:auto!important;overflow-y:auto}
+.ap-studio-layout .chat-ferramentas{flex:0 0 auto;gap:4px;padding:0 6px;justify-content:flex-end}
+.ap-studio-layout .chat-ferramentas .mini,.ap-studio-layout .chat-ferramentas small{display:none}
+.ap-studio-layout .chat-ferramentas .icone-btn{width:26px;height:26px;min-width:26px;min-height:26px;padding:0}
+.ap-studio-layout .barra-extras{display:none}
+.ap-studio-layout .chat-compositor{flex:0 0 auto;max-height:34dvh!important;padding:4px 6px calc(4px + env(safe-area-inset-bottom))!important}
+.ap-studio-layout .compositor-grade textarea{min-height:40px;max-height:96px;font-size:15px}
+.ap-studio-layout .compositor-grade button{min-height:36px;min-width:36px}
+.ap-studio-layout .ap-work-content{flex:1 1 auto;min-height:0;overflow-y:auto}
+.ap-studio-layout .ap-chat-caption{display:none}
+.ap-nano-workspace .ap-mobile-panes{position:fixed;top:66px;left:0;right:40px;z-index:22;margin:0;padding:2px;gap:3px;border-radius:0;height:34px}
+.ap-nano-workspace .ap-mobile-panes button{min-height:28px;padding:2px 6px}
+.ap-nano-workspace .ap-studio-ledger,.conecta-aprovado-root .ap-ledger{display:none}
+.ap-studio-layout .ap-tower{top:70px}
+}
