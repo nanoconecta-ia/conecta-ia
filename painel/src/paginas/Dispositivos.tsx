@@ -3,6 +3,7 @@ import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { ir } from "../lib/rota.ts";
 import { ROTULOS_ESCOPO, TIPOS_DISPOSITIVO } from "../lib/pair.ts";
+import { agregarUso, LIMITE_EVENTOS, type EventoGateway, type UsoGateway } from "../lib/usoGateway.ts";
 
 type Sessao = { id: string; escopos: string[]; expira_em: string; limite_ate: string; limite_absoluto_ate?: string; ultimo_uso_em: string | null; revogado_em: string | null };
 type Dispositivo = { id: string; nome: string; tipo: string; capacidades: string[]; criado_em: string; ultimo_uso_em: string | null; revogado_em: string | null; pair_sessoes: Sessao[] };
@@ -23,12 +24,18 @@ export function Dispositivos({ loja }: { loja: Loja }) {
   const [ocupado, setOcupado] = useState("");
   const [msg, setMsg] = useState("");
   const [agora, setAgora] = useState(Date.now());
+  const [uso, setUso] = useState<Map<string, UsoGateway>>(new Map());
+  const [truncado, setTruncado] = useState(false);
   useEffect(() => { const t = setInterval(() => setAgora(Date.now()), 30_000); return () => clearInterval(t); }, []);
   const carregar = useCallback(async () => {
     const { data } = await supabase.from("pair_dispositivos")
       .select("id, nome, tipo, capacidades, criado_em, ultimo_uso_em, revogado_em, pair_sessoes(id, escopos, expira_em, limite_ate, limite_absoluto_ate, ultimo_uso_em, revogado_em)")
       .eq("loja_id", loja.id).order("criado_em", { ascending: false }).limit(100);
     setLista((data ?? []) as unknown as Dispositivo[]);
+    const desde = new Date(Date.now() - 24 * 3600_000).toISOString();
+    const { data: ev } = await supabase.from("auditoria").select("acao, quando, depois")
+      .eq("loja_id", loja.id).like("acao", "gateway.%").gte("quando", desde).order("quando", { ascending: false }).limit(LIMITE_EVENTOS);
+    setUso(agregarUso((ev ?? []) as unknown as EventoGateway[])); setTruncado((ev ?? []).length >= LIMITE_EVENTOS);
   }, [loja.id]);
   useEffect(() => { void carregar(); const t = setInterval(() => void carregar(), 20_000); return () => clearInterval(t); }, [carregar]);
 
@@ -79,7 +86,7 @@ export function Dispositivos({ loja }: { loja: Loja }) {
                   {d.tipo === "agente_desktop" && <><br /><span className="suave">Capacidades: {d.capacidades.length ? d.capacidades.join(", ") : "nenhuma"}</span></>}</td>
                 <td className="suave">{(s?.escopos ?? d.pair_sessoes[0]?.escopos ?? []).map((e) => ROTULOS_ESCOPO[e] ?? e).join("; ") || "—"}</td>
                 <td>{viva ? <span className={`selo ${d.tipo === "agente_desktop" ? "atencao" : "ok"}`}>Sessão ativa: restam {restante(s.limite_ate, agora)} · até {new Date(s.limite_ate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span> : <span className="selo">{d.revogado_em ? "Encerrado" : "Expirado"}</span>}{viva && s.limite_absoluto_ate && Date.parse(s.limite_absoluto_ate) - Date.parse(s.limite_ate) > 60000 && <><br /><span className="suave">Teto total aprovado: {restante(s.limite_absoluto_ate, agora)}</span></>}</td>
-                <td className="suave">{d.ultimo_uso_em ? new Date(d.ultimo_uso_em).toLocaleString("pt-BR") : "nunca usado"}</td>
+                <td className="suave">{(() => { const u = uso.get(d.id); return u ? <>{truncado ? "≥ " : ""}{u.ok + u.negado + u.invalido + u.erro} chamadas em 24 h (medido){u.negado + u.invalido + u.erro > 0 && <> · {u.negado + u.invalido + u.erro} recusadas/erro</>}<br />Última: {u.ferramenta ?? "—"}{u.ultima ? ` · ${new Date(u.ultima).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}<br /></> : <>0 chamadas em 24 h (medido)<br /></>; })()}{d.ultimo_uso_em ? new Date(d.ultimo_uso_em).toLocaleString("pt-BR") : "nunca usado"}</td>
                 <td>{viva && s.limite_absoluto_ate && Date.parse(s.limite_absoluto_ate) - Date.parse(s.limite_ate) > 60000 && <button disabled={ocupado === d.id} onClick={() => void reconfirmar(s.id, d.id)}>Reconfirmar +8 h</button>} {viva && <button className="perigo" disabled={ocupado === d.id} onClick={() => void encerrar(d)}>Desconectar</button>}</td>
               </tr>);
           })}</tbody>
