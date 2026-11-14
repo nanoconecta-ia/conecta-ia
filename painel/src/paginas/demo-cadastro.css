@@ -19,3 +19,9 @@
 .dc-aplic li{flex-wrap:nowrap}.dc-aplic li>span:nth-child(2){display:flex;flex-direction:column;flex:1;min-width:0}
 .dc-diff{margin:0;font-size:12px}.dc-diff del{color:#a32d2d}.dc-diff ins{color:#2f6b3a;text-decoration:none;font-weight:500}
 .dc-rodape{display:flex;gap:6px}.dc-rodape button{flex:1}
+
+.dc-abas{display:flex;gap:6px;max-width:560px;margin:0 auto;padding:8px 10px 0}.dc-abas button{flex:1;font-size:12px;padding:6px;border:1px solid var(--borda,#d9d3c7);border-radius:8px;background:var(--cartao,#fbf9f4);color:var(--texto,#1d1b18)}
+.dc-abas button[aria-selected=true]{border-color:var(--marca,#ad4c29);color:var(--marca-forte,#9a4120);font-weight:500}
+.dc-foto-real{object-fit:contain;border-style:solid;background:var(--cartao,#fbf9f4)}
+.dc-mini button{padding:0;border:1px solid var(--borda,#d9d3c7);border-radius:6px;background:var(--fundo,#f6f3ec);width:34px;height:34px;overflow:hidden;cursor:pointer}
+.dc-mini button.ativa{border:2px solid var(--marca,#ad4c29)}.dc-mini button img{display:block;width:100%;height:100%;object-fit:contain}
