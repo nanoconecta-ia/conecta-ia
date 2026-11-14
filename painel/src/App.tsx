@@ -37,6 +37,7 @@ import type { Loja as LojaTipo } from "./lib/dados.ts";
 import { ParearAprovador, ParearSolicitante } from "./paginas/Parear.tsx";
 import { Aprovacoes } from "./paginas/Aprovacoes.tsx";
 import { Dispositivos } from "./paginas/Dispositivos.tsx";
+import { DemoCadastro } from "./paginas/DemoCadastro.tsx";
 import { FaixaAgentes } from "./paginas/FaixaAgentes.tsx";
 import { MeuAgente } from "./paginas/MeuAgente.tsx";
 import { Backup } from "./paginas/Backup.tsx";
@@ -159,6 +160,7 @@ export function App() {
           : caminho === "/catalogo-espelho" ? <Catalogo loja={loja} />
           : caminho === "/ferramentas" ? <FerramentasCatalogo loja={loja} query={query} />
           : caminho === "/estudio" ? <NanoWorkspace key={loja.id} loja={loja} menu={MENU} aoNavegar={ir} />
+          : caminho === "/demonstracao-cadastro" ? <DemoCadastro />
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />
           : PAIR_ATIVO && caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao?.user.email ?? null} />
