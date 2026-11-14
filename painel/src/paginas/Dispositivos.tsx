@@ -4,7 +4,7 @@ import type { Loja } from "../lib/dados.ts";
 import { ir } from "../lib/rota.ts";
 import { ROTULOS_ESCOPO, TIPOS_DISPOSITIVO } from "../lib/pair.ts";
 
-type Sessao = { id: string; escopos: string[]; expira_em: string; limite_ate: string; ultimo_uso_em: string | null; revogado_em: string | null };
+type Sessao = { id: string; escopos: string[]; expira_em: string; limite_ate: string; limite_absoluto_ate?: string; ultimo_uso_em: string | null; revogado_em: string | null };
 type Dispositivo = { id: string; nome: string; tipo: string; capacidades: string[]; criado_em: string; ultimo_uso_em: string | null; revogado_em: string | null; pair_sessoes: Sessao[] };
 
 const ativa = (s: Sessao) => !s.revogado_em && Date.parse(s.limite_ate) > Date.now();
@@ -16,7 +16,7 @@ export function Dispositivos({ loja }: { loja: Loja }) {
   const [msg, setMsg] = useState("");
   const carregar = useCallback(async () => {
     const { data } = await supabase.from("pair_dispositivos")
-      .select("id, nome, tipo, capacidades, criado_em, ultimo_uso_em, revogado_em, pair_sessoes(id, escopos, expira_em, limite_ate, ultimo_uso_em, revogado_em)")
+      .select("id, nome, tipo, capacidades, criado_em, ultimo_uso_em, revogado_em, pair_sessoes(id, escopos, expira_em, limite_ate, limite_absoluto_ate, ultimo_uso_em, revogado_em)")
       .eq("loja_id", loja.id).order("criado_em", { ascending: false }).limit(100);
     setLista((data ?? []) as unknown as Dispositivo[]);
   }, [loja.id]);
@@ -27,6 +27,15 @@ export function Dispositivos({ loja }: { loja: Loja }) {
     const { error } = await supabase.rpc("pair_revogar_dispositivo", { p_dispositivo: d.id, p_motivo: "encerrado pelo lojista no painel" });
     setOcupado("");
     setMsg(error ? "Você não tem permissão para encerrar este dispositivo." : `${d.nome} foi desconectado.`);
+    void carregar();
+  }
+  async function reconfirmar(sessaoId: string, dispId: string) {
+    setOcupado(dispId); setMsg("");
+    const { data, error } = await supabase.rpc("pair_reconfirmar", { p_sessao: sessaoId });
+    setOcupado("");
+    const r = data as { ok?: boolean; motivo?: string; estendida?: boolean } | null;
+    setMsg(error ? "Não foi possível reconfirmar agora." : r?.ok ? (r.estendida ? "Autorização estendida por mais 8 horas." : "A autorização já está no limite total aprovado.")
+      : r?.motivo === "login_recente_necessario" ? "Entre de novo (login recente) para reconfirmar." : "Esta sessão já terminou. Faça um novo pareamento.");
     void carregar();
   }
   async function interromperTudo() {
@@ -61,7 +70,7 @@ export function Dispositivos({ loja }: { loja: Loja }) {
                 <td className="suave">{(s?.escopos ?? d.pair_sessoes[0]?.escopos ?? []).map((e) => ROTULOS_ESCOPO[e] ?? e).join("; ") || "—"}</td>
                 <td>{viva ? <span className={`selo ${d.tipo === "agente_desktop" ? "atencao" : "ok"}`}>Sessão ativa até {new Date(s.limite_ate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span> : <span className="selo">{d.revogado_em ? "Encerrado" : "Expirado"}</span>}</td>
                 <td className="suave">{d.ultimo_uso_em ? new Date(d.ultimo_uso_em).toLocaleString("pt-BR") : "nunca usado"}</td>
-                <td>{viva && <button className="perigo" disabled={ocupado === d.id} onClick={() => void encerrar(d)}>Desconectar</button>}</td>
+                <td>{viva && s.limite_absoluto_ate && Date.parse(s.limite_absoluto_ate) - Date.parse(s.limite_ate) > 60000 && <button disabled={ocupado === d.id} onClick={() => void reconfirmar(s.id, d.id)}>Reconfirmar +8 h</button>} {viva && <button className="perigo" disabled={ocupado === d.id} onClick={() => void encerrar(d)}>Desconectar</button>}</td>
               </tr>);
           })}</tbody>
         </table></div>
