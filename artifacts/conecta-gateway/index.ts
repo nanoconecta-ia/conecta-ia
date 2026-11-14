@@ -1761,6 +1761,47 @@ const FERRAMENTAS = [
         }
     },
     {
+        nome: "conecta.get_sync_status",
+        escopo: "produtos:ler",
+        somenteLeitura: true,
+        descricao: "Saúde da sincronização com o ERP (Bling): última varredura completa, último erro, erros da última hora por tipo, SKUs repetidos no ERP (mais de um cadastro com o mesmo código) e quantos produtos estão com o espelho velho. Use para explicar por que um dado alterado no ERP ainda não apareceu. Só leitura.",
+        esquema: {
+            obrig: [],
+            props: {}
+        },
+        inputSchema: js({}),
+        executar: (s, _a, d)=>d.statusSincronizacao(s.loja_id)
+    },
+    {
+        nome: "conecta.get_product_images",
+        escopo: "produtos:ler",
+        somenteLeitura: true,
+        descricao: "Imagens de um produto (SKU) com o estado de cada uma: pendente ou aprovada, principal, origem e se os direitos de uso foram confirmados. Imagem pendente ou sem direito confirmado não aparece na loja. Só leitura; aprovar é do lojista.",
+        esquema: {
+            obrig: [
+                "sku"
+            ],
+            props: {
+                sku: {
+                    tipo: "string",
+                    max: 80
+                }
+            }
+        },
+        inputSchema: js({
+            sku: {
+                type: "string",
+                minLength: 1,
+                maxLength: 80
+            }
+        }, [
+            "sku"
+        ]),
+        executar: async (s, a, d)=>await d.imagensProduto(s.loja_id, a.sku) ?? {
+                erro: "Produto não encontrado nesta loja."
+            }
+    },
+    {
         nome: "conecta.get_validated_fields",
         escopo: "produtos:ler",
         somenteLeitura: true,
@@ -3018,12 +3059,12 @@ function dadosSupabase(admin, agora = ()=>new Date(), bling) {
             return data ?? [];
         },
         async obterProduto (loja, sku) {
-            const { data: p } = await admin.from("produtos").select(`id, ${COLUNAS_PRODUTO}, gtin, descricao_curta, peso_kg`).eq("loja_id", loja).eq("sku", sku).maybeSingle();
+            const { data: p } = await admin.from("produtos").select(`id, ${COLUNAS_PRODUTO}, gtin, descricao_curta, descricao_complementar, peso_kg, sincronizado_em`).eq("loja_id", loja).eq("sku", sku).maybeSingle();
             if (!p) return null;
-            const { id, ...resto } = p;
+            const { id, descricao_complementar, ...resto } = p;
             const falta = [];
             if (!p.preco) falta.push("preço");
-            if (!p.descricao_curta) falta.push("descrição");
+            if (!p.descricao_curta && !descricao_complementar) falta.push("descrição");
             if (!p.marca) falta.push("marca");
             if (!p.gtin) falta.push("GTIN");
             if (!p.peso_kg) falta.push("peso");
@@ -3037,6 +3078,7 @@ function dadosSupabase(admin, agora = ()=>new Date(), bling) {
             }).eq("loja_id", loja).eq("produto_id", id).eq("status", "aprovado");
             return {
                 ...resto,
+                tem_descricao_longa: !!descricao_complementar,
                 itens_aprovados: count ?? 0,
                 faltando_para_publicar: pend?.faltando ?? falta,
                 automacao_pausada: pend?.automacao_pausada ?? false
@@ -3229,6 +3271,70 @@ function dadosSupabase(admin, agora = ()=>new Date(), bling) {
             return {
                 sku,
                 campos
+            };
+        },
+        async statusSincronizacao (loja) {
+            const umaHora = new Date(agora().getTime() - 3600_000).toISOString();
+            const umDia = new Date(agora().getTime() - 24 * 3600_000).toISOString();
+            const [{ data: con }, { data: erros }, { count: velhos }] = await Promise.all([
+                admin.from("bling_conexoes").select("status, ultimo_sync_ok_em, ultimo_erro").eq("loja_id", loja).maybeSingle(),
+                admin.from("sync_erros").select("mensagem, detalhe").eq("loja_id", loja).gte("criado_em", umaHora).order("criado_em", {
+                    ascending: false
+                }).limit(500),
+                admin.from("produtos").select("id", {
+                    count: "exact",
+                    head: true
+                }).eq("loja_id", loja).eq("situacao", "A").lt("sincronizado_em", umDia)
+            ]);
+            const porTipo = new Map();
+            const repetidos = new Map();
+            for (const e of erros ?? []){
+                porTipo.set(e.mensagem, (porTipo.get(e.mensagem) ?? 0) + 1);
+                const sku = e.detalhe?.sku;
+                if (e.mensagem === "SKU repetido entre IDs do Bling" && typeof sku === "string") (repetidos.get(sku) ?? repetidos.set(sku, new Set()).get(sku)).add(String(e.detalhe?.bling_id ?? ""));
+            }
+            const c = con;
+            return {
+                conexao: c?.status ?? "sem_conexao",
+                ultimo_sync_completo_em: c?.ultimo_sync_ok_em ?? null,
+                ultimo_erro: c?.ultimo_erro ?? null,
+                erros_ultima_hora: [
+                    ...porTipo
+                ].map(([mensagem, total])=>({
+                        mensagem,
+                        total
+                    })).sort((a, b)=>b.total - a.total),
+                skus_repetidos_no_erp: [
+                    ...repetidos
+                ].map(([sku, ids])=>({
+                        sku,
+                        cadastros_extras: ids.size
+                    })).slice(0, 20),
+                produtos_ativos_com_espelho_mais_velho_que_24h: velhos ?? 0,
+                aviso: "Marca, descrição, categoria e fotos alteradas só no ERP não aparecem na listagem: o espelho só as relê em 24 h ou com 'Reler do Bling' no Studio."
+            };
+        },
+        async imagensProduto (loja, sku) {
+            const id = await idDoSku(loja, sku);
+            if (!id) return null;
+            const { data } = await admin.from("produto_imagens").select("url, origem, tipo, ordem, principal, aprovada, direitos_confirmados_em, removida_em").eq("loja_id", loja).eq("produto_id", id).order("ordem").limit(20);
+            const lista = (data ?? []).filter((i)=>!i.removida_em && /^https:\/\//.test(i.url)).map((i)=>({
+                    url: i.url,
+                    origem: i.origem,
+                    tipo: i.tipo,
+                    ordem: i.ordem,
+                    principal: i.principal,
+                    aprovada: i.aprovada,
+                    direitos_confirmados: !!i.direitos_confirmados_em,
+                    aparece_na_loja: i.aprovada && !!i.direitos_confirmados_em
+                }));
+            return {
+                sku,
+                total: lista.length,
+                aprovadas: lista.filter((i)=>i.aprovada).length,
+                na_loja: lista.filter((i)=>i.aparece_na_loja).length,
+                imagens: lista,
+                aviso: "Aprovar imagem e confirmar direitos é decisão do lojista na Fila."
             };
         },
         async statusTarefa (loja, id) {

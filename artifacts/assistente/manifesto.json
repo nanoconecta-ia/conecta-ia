@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "db34ba24af305f84cb7f5fa6b1e545f3facabab19654642f2d6902ee6608faad",
+  "artefato_sha256": "ed2e5b5acc7a337cae8040afd76a2ed41018ca5d94e0b37bad58804cd4a5cbd2",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -170,7 +170,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/aliases.ts",
-      "sha256": "55b774c06a191947e440b571615d3c6a294441b616ab73918af8bb2a37cb3488"
+      "sha256": "689748c7d704eb147c2e393728dba53d98636d88f00389e1f2a7dc80ad7ac1f1"
     },
     {
       "path": "supabase/functions/_shared/ia/ferramentas.ts",

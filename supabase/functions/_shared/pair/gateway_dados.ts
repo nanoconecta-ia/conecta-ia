@@ -40,14 +40,15 @@ export function dadosSupabase(admin: AdminRpc, agora: () => Date = () => new Dat
       return data ?? [];
     },
     async obterProduto(loja, sku) {
-      const { data: p } = await admin.from("produtos").select(`id, ${COLUNAS_PRODUTO}, gtin, descricao_curta, peso_kg`).eq("loja_id", loja).eq("sku", sku).maybeSingle();
+      const { data: p } = await admin.from("produtos").select(`id, ${COLUNAS_PRODUTO}, gtin, descricao_curta, descricao_complementar, peso_kg, sincronizado_em`).eq("loja_id", loja).eq("sku", sku).maybeSingle();
       if (!p) return null;
-      const { id, ...resto } = p;
+      const { id, descricao_complementar, ...resto } = p;
       const falta: string[] = [];
-      if (!p.preco) falta.push("preço"); if (!p.descricao_curta) falta.push("descrição"); if (!p.marca) falta.push("marca"); if (!p.gtin) falta.push("GTIN"); if (!p.peso_kg) falta.push("peso");
+      // descrição = curta OU longa (complementar) do ERP; antes só a curta contava e o Nano dizia "falta descrição" com a longa preenchida
+      if (!p.preco) falta.push("preço"); if (!p.descricao_curta && !descricao_complementar) falta.push("descrição"); if (!p.marca) falta.push("marca"); if (!p.gtin) falta.push("GTIN"); if (!p.peso_kg) falta.push("peso");
       const { data: pend } = await admin.rpc("produto_pendencias", { p_loja: loja, p_produto: id }); // exigências reais de publicação; antes da migração, cai no cálculo simples
       const { count } = await admin.from("produto_enriquecimento").select("id", { count: "exact", head: true }).eq("loja_id", loja).eq("produto_id", id).eq("status", "aprovado");
-      return { ...resto, itens_aprovados: count ?? 0, faltando_para_publicar: pend?.faltando ?? falta, automacao_pausada: pend?.automacao_pausada ?? false };
+      return { ...resto, tem_descricao_longa: !!descricao_complementar, itens_aprovados: count ?? 0, faltando_para_publicar: pend?.faltando ?? falta, automacao_pausada: pend?.automacao_pausada ?? false };
     },
     async registrarContexto(loja, usuario, sku, acao) {
       // A função do banco resolve o SKU DENTRO da loja da sessão e grava como a pessoa que aprovou o pareamento. Falha fechada, sem vazar erro interno.
@@ -128,6 +129,43 @@ export function dadosSupabase(admin: AdminRpc, agora: () => Date = () => new Dat
       for (const c of (cod ?? []) as { id: string; valor: string; fonte: string | null; coletado_em: string | null }[]) campos.push({ id: c.id, campo: "ean", valor: c.valor, fonte: c.fonte, aprovado_em: c.coletado_em });
       for (const i of (imgs ?? []) as { id: string; url: string; origem: string | null; criado_em: string | null }[]) if (/^https:\/\//.test(i.url)) campos.push({ id: i.id, campo: "imagem", valor: i.url, fonte: i.origem, aprovado_em: i.criado_em });
       return { sku, campos };
+    },
+    async statusSincronizacao(loja) {
+      const umaHora = new Date(agora().getTime() - 3600_000).toISOString();
+      const umDia = new Date(agora().getTime() - 24 * 3600_000).toISOString();
+      const [{ data: con }, { data: erros }, { count: velhos }] = await Promise.all([
+        admin.from("bling_conexoes").select("status, ultimo_sync_ok_em, ultimo_erro").eq("loja_id", loja).maybeSingle(),
+        admin.from("sync_erros").select("mensagem, detalhe").eq("loja_id", loja).gte("criado_em", umaHora).order("criado_em", { ascending: false }).limit(500),
+        admin.from("produtos").select("id", { count: "exact", head: true }).eq("loja_id", loja).eq("situacao", "A").lt("sincronizado_em", umDia),
+      ]);
+      const porTipo = new Map<string, number>();
+      const repetidos = new Map<string, Set<string>>();
+      for (const e of (erros ?? []) as { mensagem: string; detalhe: { sku?: string; bling_id?: string | number } | null }[]) {
+        porTipo.set(e.mensagem, (porTipo.get(e.mensagem) ?? 0) + 1);
+        const sku = e.detalhe?.sku;
+        if (e.mensagem === "SKU repetido entre IDs do Bling" && typeof sku === "string") (repetidos.get(sku) ?? repetidos.set(sku, new Set()).get(sku)!).add(String(e.detalhe?.bling_id ?? ""));
+      }
+      const c = con as { status?: string; ultimo_sync_ok_em?: string | null; ultimo_erro?: string | null } | null;
+      return {
+        conexao: c?.status ?? "sem_conexao", ultimo_sync_completo_em: c?.ultimo_sync_ok_em ?? null, ultimo_erro: c?.ultimo_erro ?? null,
+        erros_ultima_hora: [...porTipo].map(([mensagem, total]) => ({ mensagem, total })).sort((a, b) => b.total - a.total),
+        // nunca o ID interno do ERP: só o SKU e quantos cadastros extras ele tem
+        skus_repetidos_no_erp: [...repetidos].map(([sku, ids]) => ({ sku, cadastros_extras: ids.size })).slice(0, 20),
+        produtos_ativos_com_espelho_mais_velho_que_24h: velhos ?? 0,
+        aviso: "Marca, descrição, categoria e fotos alteradas só no ERP não aparecem na listagem: o espelho só as relê em 24 h ou com 'Reler do Bling' no Studio.",
+      };
+    },
+    async imagensProduto(loja, sku) {
+      const id = await idDoSku(loja, sku);
+      if (!id) return null;
+      const { data } = await admin.from("produto_imagens").select("url, origem, tipo, ordem, principal, aprovada, direitos_confirmados_em, removida_em")
+        .eq("loja_id", loja).eq("produto_id", id).order("ordem").limit(20);
+      const lista = ((data ?? []) as { url: string; origem: string | null; tipo: string; ordem: number; principal: boolean; aprovada: boolean; direitos_confirmados_em: string | null; removida_em: string | null }[])
+        .filter((i) => !i.removida_em && /^https:\/\//.test(i.url))
+        .map((i) => ({ url: i.url, origem: i.origem, tipo: i.tipo, ordem: i.ordem, principal: i.principal, aprovada: i.aprovada, direitos_confirmados: !!i.direitos_confirmados_em,
+          aparece_na_loja: i.aprovada && !!i.direitos_confirmados_em }));
+      return { sku, total: lista.length, aprovadas: lista.filter((i) => i.aprovada).length, na_loja: lista.filter((i) => i.aparece_na_loja).length, imagens: lista,
+        aviso: "Aprovar imagem e confirmar direitos é decisão do lojista na Fila." };
     },
     async statusTarefa(loja, id) {
       const { data: a } = await admin.from("aprovacoes").select("id, tipo, ferramenta, estado, versao, expira_em, decidido_em, motivo_decisao, hash_proposta").eq("loja_id", loja).eq("id", id).maybeSingle();
