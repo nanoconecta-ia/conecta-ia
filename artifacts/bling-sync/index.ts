@@ -450,7 +450,7 @@ function resumirExcluido(lojaId, item, anterior, agoraISO) {
         sincronizado_em: agoraISO
     };
 }
-async function sincronizar(lojaId, p, orcamentoMs = 100_000) {
+async function sincronizar(lojaId, p, orcamentoMs = 100_000, forcarSkus = new Set()) {
     const ini = p.agora();
     const r = {
         paginas: 0,
@@ -554,7 +554,7 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000) {
                     ...it,
                     situacao: "E"
                 } : it;
-                if (!precisaDetalhe(listado, anterior, p.agora())) continue;
+                if (!(listado.codigo && forcarSkus.has(listado.codigo)) && !precisaDetalhe(listado, anterior, p.agora())) continue;
                 if (p.agora() - ini > orcamentoMs) {
                     await descarregar();
                     r.erro = "tempo esgotado durante a leitura dos detalhes";
@@ -948,6 +948,7 @@ Deno.serve(async (req)=>{
             lojaId
         ];
     }
+    const forcar = new Set(!enviado && Array.isArray(corpo?.forcar_skus) ? corpo.forcar_skus.filter((x)=>typeof x === "string" && x.length > 0 && x.length <= 60).slice(0, 20) : []);
     const resultado = [];
     for (const lojaId of lojas){
         try {
@@ -966,7 +967,7 @@ Deno.serve(async (req)=>{
                     completo: false
                 };
             }
-            const r = await sincronizar(lojaId, portasDaLoja(admin, lojaId, chaveCifra));
+            const r = await sincronizar(lojaId, portasDaLoja(admin, lojaId, chaveCifra), 100_000, forcar);
             if (r.completo) {
                 await admin.from("bling_conexoes").update({
                     ultimo_sync_ok_em: new Date().toISOString(),
