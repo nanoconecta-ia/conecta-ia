@@ -37,6 +37,7 @@ import type { Loja as LojaTipo } from "./lib/dados.ts";
 import { ParearAprovador, ParearSolicitante } from "./paginas/Parear.tsx";
 import { Aprovacoes } from "./paginas/Aprovacoes.tsx";
 import { Dispositivos } from "./paginas/Dispositivos.tsx";
+import { FaixaAgentes } from "./paginas/FaixaAgentes.tsx";
 import { MeuAgente } from "./paginas/MeuAgente.tsx";
 import { Backup } from "./paginas/Backup.tsx";
 import { PaletaComandos } from "./componentes/PaletaComandos.tsx";
@@ -144,6 +145,7 @@ export function App() {
     <div className="conecta-aprovado-root">
       {demo && <div className="faixa-demo" role="status">{demo.FAIXA}</div>}
       <AvisoVersao />
+      {PAIR_ATIVO && !demoAtivo && loja && <FaixaAgentes loja={loja} />}
       <PainelAprovado loja={loja} caminho={caminho} menu={MENU} menuMovel={menuMovel} recolhido={recolhido}
         aoMenu={() => setMenuMovel(v => !v)} aoRecolher={alternarMenu} aoBusca={() => setPaleta(true)}
         aoSair={() => { if (!demoAtivo) void supabase.auth.signOut(); }}

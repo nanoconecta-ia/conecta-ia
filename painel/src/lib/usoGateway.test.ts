@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { agregarUso } from "./usoGateway.ts";
+import { agregarUso, estadoAgente } from "./usoGateway.ts";
 
 test("agrega chamadas por dispositivo, separa recusas e guarda a última ferramenta", () => {
   const m = agregarUso([
@@ -16,3 +16,11 @@ test("agrega chamadas por dispositivo, separa recusas e guarda a última ferrame
   assert.equal(m.size, 2);
 });
 test("sem eventos, nenhum dispositivo aparece", () => { assert.equal(agregarUso([]).size, 0); });
+test("estadoAgente: agindo, conectado e acabando", () => {
+  const agora = Date.parse("2026-11-14T12:00:00Z");
+  assert.equal(estadoAgente("2026-11-14T20:00:00Z", "2026-11-14T11:59:30Z", agora).situacao, "agindo");
+  assert.equal(estadoAgente("2026-11-14T20:00:00Z", "2026-11-14T11:50:00Z", agora).situacao, "conectado");
+  assert.equal(estadoAgente("2026-11-14T20:00:00Z", null, agora).situacao, "conectado");
+  assert.equal(estadoAgente("2026-11-14T12:30:00Z", "2026-11-14T11:59:30Z", agora).situacao, "acabando");
+  assert.equal(estadoAgente("2026-11-14T12:30:00Z", null, agora).restante_min, 30);
+});
