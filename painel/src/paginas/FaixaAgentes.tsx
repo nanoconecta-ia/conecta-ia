@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { ir } from "../lib/rota.ts";
-import { estadoAgente } from "../lib/usoGateway.ts";
+import { estadoAgente, maisRecentePorNome, nomeCurto } from "../lib/usoGateway.ts";
+import "./faixa-agentes.css";
 import { restante } from "./Dispositivos.tsx";
 
 type Linha = { id: string; nome: string; tipo: string; sessaoId: string; limite_ate: string; token_ate: string; absoluto: string | null; ultima: string | null };
@@ -24,7 +25,7 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
       const s = d.pair_sessoes.filter((x) => !x.revogado_em && Date.parse(x.limite_ate) > Date.now()).sort((a, b) => Date.parse(b.limite_ate) - Date.parse(a.limite_ate))[0];
       if (s) l.push({ id: d.id, nome: d.nome, tipo: d.tipo, sessaoId: s.id, limite_ate: s.limite_ate, token_ate: s.expira_em, absoluto: s.limite_absoluto_ate ?? null, ultima: ultima.get(d.id) ?? null });
     }
-    setLinhas(l);
+    setLinhas(maisRecentePorNome(l));
   }, [loja.id]);
   useEffect(() => { void carregar(); const t = setInterval(() => { setAgora(Date.now()); void carregar(); }, 20_000); return () => clearInterval(t); }, [carregar]);
   async function reconfirmar(sessaoId: string) {
@@ -35,22 +36,25 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
   }
   if (linhas.length === 0) return null;
   return (
-    <div className="faixa-agentes" role="status" aria-live="polite" style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", alignItems: "center", padding: "6px 12px", fontSize: 13, borderBottom: "1px solid var(--borda, #2a3340)" }}>
+    <div className="faixa-agentes" role="status" aria-live="polite">
       {linhas.map((l) => {
         const e = estadoAgente(l.limite_ate, l.ultima, agora, l.token_ate);
-        const rotulo = e.situacao === "parado" ? "conexão parada: o agente precisa reconectar" : e.situacao === "agindo" ? "agindo agora" : e.situacao === "acabando" ? "sessão acabando" : "conectado";
-        const cor = e.situacao === "parado" ? "#d9534f" : e.situacao === "acabando" ? "#e0a030" : e.situacao === "agindo" ? "#3ecf8e" : "#7aa2f7";
+        const rotulo = e.situacao === "parado" ? "parado: reconectar" : e.situacao === "agindo" ? "agindo agora" : e.situacao === "acabando" ? "sessão acabando" : "conectado";
+        const min = l.ultima ? Math.floor((agora - Date.parse(l.ultima)) / 60000) : null;
         const podeEstender = l.absoluto !== null && Date.parse(l.absoluto) - Date.parse(l.limite_ate) > 60_000;
         return (
-          <span key={l.id}>
-            <span aria-hidden style={{ color: cor }}>●</span> <strong>{l.nome}</strong> · {rotulo} · restam {restante(l.limite_ate, agora)}
-            {l.ultima ? ` · última ação ${Math.floor((agora - Date.parse(l.ultima)) / 60000) < 1 ? "agora" : `há ${Math.floor((agora - Date.parse(l.ultima)) / 60000)} min`} (medido)` : ""}
-            {e.situacao === "acabando" && podeEstender && <> <button onClick={() => void reconfirmar(l.sessaoId)}>Reconfirmar +8 h</button></>}
-            {" "}<button className="link" onClick={() => ir("/dispositivos")}>Ver</button>
-          </span>
+          <div key={l.id} className={`fa-item fa-${e.situacao}`} title={`${l.nome}. Nome informado pelo agente; ação medida pelo Conecta.IA.`}>
+            <span className="fa-ponto" aria-hidden>●</span>
+            <strong className="fa-nome">{nomeCurto(l.nome)}</strong>
+            <span className="fa-estado">{rotulo}</span>
+            {e.situacao !== "parado" && <span className="fa-tempo">{restante(l.limite_ate, agora)}</span>}
+            {min !== null && e.situacao !== "parado" && <span className="fa-tempo">{min < 1 ? "agora" : `há ${min} min`}</span>}
+            {e.situacao === "acabando" && podeEstender && <button onClick={() => void reconfirmar(l.sessaoId)}>+8 h</button>}
+            <button onClick={() => ir("/dispositivos")}>Ver</button>
+          </div>
         );
       })}
-      {msg && <span>{msg}</span>}
+      {msg && <span className="fa-msg">{msg}</span>}
     </div>
   );
 }

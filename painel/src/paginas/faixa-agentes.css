@@ -1,0 +1,12 @@
+/* Faixa fina de agentes conectados: uma linha por agente, sem quebrar em várias linhas no celular. */
+.conecta-aprovado-root .faixa-agentes{display:flex;flex-direction:column;gap:2px;padding:4px 12px;background:var(--realce,#efebe1);border-bottom:1px solid var(--borda,#d9d3c7);font-size:11px;line-height:1.3}
+.conecta-aprovado-root .fa-item{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap;overflow:hidden}
+.conecta-aprovado-root .fa-nome{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.conecta-aprovado-root .fa-estado,.conecta-aprovado-root .fa-tempo{flex:none;color:var(--suave,#5a544a)}
+.conecta-aprovado-root .fa-ponto{flex:none;color:#7aa2f7}
+.conecta-aprovado-root .fa-agindo .fa-ponto{color:#1a6f4d}
+.conecta-aprovado-root .fa-acabando .fa-ponto{color:#9a5500}
+.conecta-aprovado-root .fa-parado .fa-ponto,.conecta-aprovado-root .fa-parado .fa-estado{color:#b42318}
+.conecta-aprovado-root .faixa-agentes button{min-height:28px;padding:2px 9px;font-size:11px;flex:none;margin-left:auto}
+.conecta-aprovado-root .faixa-agentes button + button{margin-left:0}
+.conecta-aprovado-root .fa-msg{color:var(--suave,#5a544a)}

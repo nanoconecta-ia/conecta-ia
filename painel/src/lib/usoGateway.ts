@@ -26,3 +26,12 @@ export function estadoAgente(limiteAte: string, ultimaChamada: string | null, ag
   const agindo = ultimaChamada !== null && agora - Date.parse(ultimaChamada) < 60_000;
   return { situacao: agindo ? "agindo" : "conectado", restante_min };
 }
+
+/** Um agente por nome: fica a sessão com a janela mais longa (a mais recente). Evita repetir "Claude Code" para cada pareamento antigo. */
+export function maisRecentePorNome<T extends { nome: string; limite_ate: string }>(linhas: T[]): T[] {
+  const por = new Map<string, T>();
+  for (const l of linhas) { const a = por.get(l.nome); if (!a || Date.parse(l.limite_ate) > Date.parse(a.limite_ate)) por.set(l.nome, l); }
+  return [...por.values()];
+}
+/** Nome curto para a faixa: "Claude Code (desenvolvedor do Conecta.IA)" → "Claude Code". O nome completo fica no title. */
+export const nomeCurto = (nome: string) => nome.replace(/\s*\(.*$/, "").trim() || nome;
