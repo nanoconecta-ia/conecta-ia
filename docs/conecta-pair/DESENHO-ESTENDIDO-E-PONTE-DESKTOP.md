@@ -38,6 +38,19 @@ Proposto:
 5. Auditoria completa e botão de revogar.
 Pendência antes de qualquer código: verificar os termos de uso do Bling sobre automação de interface; preferir a API oficial onde ela cobrir. Telas do Bling mudam sem aviso (manutenção).
 
+## 4-A. Atualização (2026-11-14): a "ferramenta especial" já tem base no repositório
+A extensão **Nano.IA Guardião** (`extensao/`, Chrome/Edge, MV3) já faz o essencial da ponte desktop, no formato seguro do §4:
+- lê a tela real do Bling por rótulos/acessibilidade (nunca por coordenada) e reconhece o cadastro de produto;
+- pareia como `navegador` (escopos `produtos:ler` + `enriquecimento:propor`), com token só em `chrome.storage.session`;
+- preenche **na tela**, com o clique do lojista, **só valores já aprovados** na Fila; confere depois de preencher e oferece Desfazer;
+- **nunca salva nem envia o formulário**; nunca toca SKU, preço, estoque, NCM ou campo fiscal.
+Lacunas reais (o que falta para chegar ao que o dono descreveu):
+1. **Ações nomeadas novas** além de preencher campo (ex.: criar etiqueta/tag no Bling por tela). Cada uma precisa de mapa de tela confirmado com captura real, teste e aprovação por ação.
+2. **Registro no servidor** do que foi preenchido/executado na tela (hoje só no painel, "C2" no README da extensão).
+3. **Agente externo (Claude/GPT) acionando a extensão:** hoje o agente só propõe via gateway; a extensão executa só com o clique do lojista. Para o agente "dirigir" a tela, usar o tipo `agente_desktop` + `capacidades` já previstos no pareamento, com aprovação por ação na Central de Aprovações.
+4. **Sem shell:** continua rejeitado dar PowerShell/terminal livre.
+Ordem sugerida: (2) registro no servidor → (1) uma ação nomeada de teste, só leitura de etiquetas → só depois escrita, por ação, com OK do lojista. Pendente antes de qualquer automação de tela de escrita: confirmação por escrito do suporte do Bling (a busca pública não achou regra proibindo nem autorizando).
+
 ## 5. Correção do link de pareamento
 - `montarUrlPareamento`: preservar `.html` (montar `<origem><path>#/parear?c=…` sem inserir `/` após arquivo); testes para raiz, subpasta e `.html`.
 - `APP_URL` de produção = `https://www.mobisautopecas.com.br/conecta.html`. (O domínio `mobisautoparts` vs `mobisautopecas` segue inconsistente em docs: dono deve confirmar o oficial.)
