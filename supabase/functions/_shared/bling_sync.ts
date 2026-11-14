@@ -51,6 +51,39 @@ export function precisaDetalhe(l: ItemLista, e: Existente | undefined, agora: nu
   return !e.sincronizado_em || agora - Date.parse(e.sincronizado_em) > maxIdadeMs;
 }
 
+/** Imagem encontrada no cadastro do Bling. Entra no Conecta como candidata PENDENTE, nunca aprovada. */
+export interface ImagemBling { bling_id: string; url: string; ordem: number; tipo_bling: "externa" | "interna" }
+
+/** Limite da galeria por produto (invariante do banco, migração 20261102000003). */
+export const MAX_IMAGENS_GALERIA = 8;
+
+const urlHttps = (v: unknown): string | null => {
+  const t = txt(v);
+  if (!t) return null;
+  try { const u = new URL(t); return u.protocol === "https:" ? u.toString() : null; } catch { return null; }
+};
+
+/** Extrai as URLs https de `midia.imagens` (externas e internas) do detalhe do Bling, sem duplicar, na ordem do cadastro.
+ * Só lê; nunca escreve no Bling. Link ilegível ou http é ignorado (não vira dado). */
+export function extrairImagensBling(blingId: string, d: Detalhe | null): ImagemBling[] {
+  const m = d?.midia?.imagens;
+  if (!m) return [];
+  const vistas = new Set<string>();
+  const out: ImagemBling[] = [];
+  const lerLista = (lista: unknown, tipo: "externa" | "interna", campo: string) => {
+    if (!Array.isArray(lista)) return;
+    for (const it of lista) {
+      const url = urlHttps(it?.[campo] ?? it?.link);
+      if (!url || vistas.has(url)) continue;
+      vistas.add(url);
+      out.push({ bling_id: blingId, url, ordem: out.length, tipo_bling: tipo });
+    }
+  };
+  lerLista(m.externas, "externa", "link");
+  lerLista(m.internas, "interna", "link");
+  return out.slice(0, MAX_IMAGENS_GALERIA);
+}
+
 export type GrupoLista = "ativos" | "inativos" | "excluidos";
 export interface PortasSync {
   /** `grupo`: produtos ativos, inativos ou excluídos (critério 2, 3 e 4 da API v3). */
@@ -58,12 +91,14 @@ export interface PortasSync {
   detalhe(id: number): Promise<Detalhe | null>;
   existentes(): Promise<Existente[]>;
   gravar(linhas: LinhaProduto[]): Promise<void>;
+  /** Opcional. Registra imagens do Bling como candidatas pendentes (idempotente por URL). Chamada após `gravar`. */
+  registrarImagens?(imagens: ImagemBling[]): Promise<number>;
   marcarAusentes(blingIds: string[]): Promise<void>; // só chamado com a listagem COMPLETA
   registrarErro(mensagem: string, detalhe?: Record<string, unknown>): Promise<void>;
   espera(ms: number): Promise<void>;
   agora(): number;
 }
-export interface ResultadoSync { paginas: number; vistos: number; gravados: number; detalhes: number; resumosExcluidos: number; ausentes: number; completo: boolean; erro?: string }
+export interface ResultadoSync { paginas: number; vistos: number; gravados: number; detalhes: number; resumosExcluidos: number; ausentes: number; completo: boolean; imagensNovas?: number; erro?: string }
 
 const LIMITE = 100, INTERVALO_MS = 350; // ~3 req/s por conta
 
@@ -97,8 +132,14 @@ export async function sincronizar(lojaId: string, p: PortasSync, orcamentoMs = 1
   let lote: LinhaProduto[] = [];
   let falhasDetalhe = 0;
   let falhasSku = 0;
+  let imagensLote: ImagemBling[] = [];
   const descarregar = async () => {
     if (lote.length) { await p.gravar(lote); r.gravados += lote.length; lote = []; }
+    if (imagensLote.length && p.registrarImagens) {
+      const pend = imagensLote; imagensLote = [];
+      try { r.imagensNovas = (r.imagensNovas ?? 0) + await p.registrarImagens(pend); }
+      catch { await p.registrarErro("falha ao registrar imagens do Bling", { produtos: new Set(pend.map((i) => i.bling_id)).size }); }
+    }
   };
   // Não incluir uma linha com SKU já pertencente a outro ID do Bling.
   // Uma colisão é pendência humana, nunca motivo para sobrescrever o cadastro anterior.
@@ -167,6 +208,7 @@ export async function sincronizar(lojaId: string, p: PortasSync, orcamentoMs = 1
         const linha = mapearProduto(lojaId, listado, d, new Date(p.agora()).toISOString());
         if (grupo === "excluidos") linha.situacao = "E";
         await incluir(linha);
+        if (p.registrarImagens && grupo !== "excluidos") imagensLote.push(...extrairImagensBling(id, d));
       }
       if (pg.itens.length < LIMITE) break;
     }
