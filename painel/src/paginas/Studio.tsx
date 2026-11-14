@@ -5,6 +5,8 @@ import type { Loja } from "../lib/dados.ts";
 import { ir } from "../lib/rota.ts";
 import { dadosPublicos, previaSeo, prontidao, ROTULO_IMAGEM } from "../lib/studio.ts";
 import { useFonte } from "../lib/useFonte.ts";
+import { corpoReleitura, mensagemReleitura } from "../lib/relerBling.ts";
+import { supabase } from "../supabase.ts";
 
 const brl = (v: number | null) => (v == null ? "—" : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
 
@@ -40,10 +42,27 @@ export function Studio({ loja, query }: { loja: Loja; query: URLSearchParams }) 
   const [s, setS] = useState<DadosStudio | null | undefined>(undefined);
   const [modo, setModo] = useState<"desktop" | "mobile">("desktop");
   const [ampliada, setAmpliada] = useState<{ url: string; nome: string } | null>(null);
+  const [relendo, setRelendo] = useState(false); const [relerMsg, setRelerMsg] = useState<{ ok: boolean; texto: string } | null>(null);
 
   useEffect(() => { if (!fonte) return; const t = setTimeout(() => { void fonte.buscarProdutos(loja.id, busca).then(setAchados).catch(() => setAchados([])); }, 250); return () => clearTimeout(t); }, [fonte, busca, loja.id]);
   useEffect(() => { if (!fonte || !produtoId) { setS(undefined); return; } setS(undefined); void fonte.studio(loja.id, produtoId).then(setS).catch(() => setS(null)); }, [fonte, produtoId, loja.id]);
+  useEffect(() => { setRelerMsg(null); }, [produtoId]);
   if (!fonte) return <p className="suave">Carregando…</p>;
+
+  async function relerNoBling(sku: string | null) {
+    const corpo = corpoReleitura(loja.id, sku);
+    if (!corpo || !fonte || !produtoId) return;
+    setRelendo(true); setRelerMsg(null);
+    const { data, error } = await supabase.functions.invoke("bling-sync", { body: corpo });
+    if (error) {
+      let texto = "Não foi possível reler agora.";
+      try { const j = await (error as { context?: Response }).context?.json(); if (j?.erro) texto = String(j.erro); } catch { /* mantém o texto */ }
+      setRelendo(false); setRelerMsg({ ok: false, texto }); return;
+    }
+    setRelerMsg(mensagemReleitura(data));
+    await fonte.studio(loja.id, produtoId).then(setS).catch(() => { /* mantém a tela atual */ });
+    setRelendo(false);
+  }
 
   return (
     <>
@@ -70,6 +89,11 @@ export function Studio({ loja, query }: { loja: Loja; query: URLSearchParams }) 
               <div className="grade dois">
                 <div className="cartao">
                   <h2>Original (Bling)</h2>
+                  <p style={{ marginTop: 0 }}>
+                    <button type="button" className="sec" disabled={relendo || !s.produto.sku} onClick={() => void relerNoBling(s.produto.sku)}>{relendo ? "Relendo no Bling…" : "Reler do Bling"}</button>{" "}
+                    <span className="suave">{relendo ? "Pode levar até 2 minutos. Não feche a tela." : "Só lê o Bling. Use depois de alterar marca, descrição ou fotos lá."}</span>
+                  </p>
+                  {relerMsg && <p className={relerMsg.ok ? "msg-ok" : "msg-erro"} role="status">{relerMsg.texto}</p>}
                   <dl className="dados dados-largo">
                     <dt>Nome</dt><dd>{s.produto.nome ?? "—"}</dd><dt>Marca</dt><dd>{s.produto.marca ?? "—"}</dd><dt>GTIN</dt><dd className="mono">{s.produto.gtin ?? "—"}</dd>
                     <dt>Preço</dt><dd>{brl(s.produto.preco)}</dd><dt>Estoque</dt><dd>{s.produto.estoque ?? "—"}</dd><dt>Unidade</dt><dd>{s.produto.unidade ?? "—"}</dd>
