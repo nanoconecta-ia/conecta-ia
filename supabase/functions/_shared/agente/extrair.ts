@@ -39,13 +39,39 @@ export function extrairDoNome(nome: string): ExtraidoDoNome {
 }
 
 // Palavras-chave -> slug da taxonomia. Sem correspondência clara, null (o agente não chuta).
-const REGRAS: Array<[RegExp, string]> = [
-  [/\bFILTRO\b.*\b(OLEO|ÓLEO)\b/i, "filtro-oleo"],
-  [/\bFILTRO\b.*\bAR\b(?!\s*CONDICIONADO)/i, "filtro-ar"],
-  [/\bFILTRO\b.*\bCOMBUSTIVEL|COMBUSTÍVEL\b/i, "filtro-combustivel"],
-  [/\bFILTRO\b.*\bCABINE\b/i, "filtro-cabine"],
+// O nome é normalizado (maiúsculas, sem acento) e as regras valem em QUALQUER posição do nome, porque há
+// cadastros que começam por código ("10215 - BOMBA DE OLEO"). A ORDEM importa: a primeira regra que casa vence,
+// então as mais específicas vêm antes (motor de partida antes de motor; bronzina de biela antes de biela).
+// Classificar pelo nome é só um palpite rastreável: o dado entra como a_confirmar, nunca como fato.
+const EXCLUIR: RegExp[] = [
+  /^(TAMPA|CAIXA|CARCACA|SUPORTE)\b.*\bFILTRO\b/, // caixa/tampa de filtro não é o filtro
+  /^(TUBO|MANGUEIRA|SENSOR|BATENTE|BUCHA|COXIM)\b/, // acessórios que só citam a peça na aplicação
 ];
+const REGRAS: Array<[RegExp, string]> = [
+  [/\bMOTOR\s+(DE\s+)?PARTIDA\b/, "motores-partida"],
+  [/\bBOMBA\b.*\b(AGUA|DAGUA)\b/, "bombas-agua"],
+  [/\bBOMBA\b.*\bOLEO\b/, "bomba-oleo"],
+  [/\bFILTRO\b.*\b(OLEO|LUBRIFICANTE)\b/, "filtro-oleo"],
+  [/\bFILTRO\b.*\bCOMBUSTIVEL\b/, "filtro-combustivel"],
+  [/\bFILTRO\b.*\bCABINE\b/, "filtro-cabine"],
+  [/\bFILTRO\b.*\bAR\b(?!\s*CONDICIONADO)/, "filtro-ar"],
+  [/\bBRONZINA\b.*\bBIELA\b/, "bronzinas-biela"],
+  [/\b(JUNTA|JUNTAS|RETENTOR)\b/, "juntas-retentores"],
+  [/\b(CORREIA|CORREIAS|TENSOR|TENSIONADOR|DISTRIBUICAO)\b/, "correias-tensores"],
+  [/\bBLOCO\b.*\bMOTOR\b|^MOTOR\b/, "blocos-motores"], // antes de cabeçote: "MOTOR PARCIAL C/ CABECOTE" é motor
+  [/\b(CABECOTE|BALANCIM|TUCHO)\b|\bCOMANDO\s+(DE\s+)?VALVULAS?\b|\bEIXO\s+COMANDO\b/, "cabecote-valvulas"],
+  [/\bBIELA\b/, "bielas"],
+  [/^BANDEJA\b/, "bandejas"],
+  [/^OLEO\b.*\bMOTOR\b/, "oleos-motor"],
+];
+
+export function normalizarNome(nome: string): string {
+  return nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/['\u2019`\u00b4]/g, "").replace(/\s+/g, " ").trim();
+}
+
 export function classificarSlug(nome: string): string | null {
-  for (const [re, slug] of REGRAS) if (re.test(nome)) return slug;
+  const n = normalizarNome(nome);
+  if (EXCLUIR.some((re) => re.test(n))) return null;
+  for (const [re, slug] of REGRAS) if (re.test(n)) return slug;
   return null;
 }
