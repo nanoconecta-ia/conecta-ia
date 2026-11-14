@@ -48,3 +48,19 @@
 .ap-ind-detalhe{margin:6px 0 0;font-size:11px;color:var(--suave);line-height:1.4}
 .conecta-aprovado-root .ap-ind-ver{min-height:28px;padding:2px 9px;font-size:11px}
 @media(max-width:780px){.ap-inicio .ap-heading h1{font-size:24px}.ap-inicio .ap-heading>.ap-ativo{display:none}.ap-niveis strong{font-size:26px;font-weight:500;line-height:1.1}.ap-niveis article{padding:16px 18px}}
+/* Chat grande no celular: ocupa a tela; a Torre vira uma coluna lateral de ícones minúsculos. */
+@media(max-width:780px){
+.ap-nano-workspace .ap-heading p,.ap-nano-workspace .ap-heading .ap-eyebrow{display:none}
+.ap-nano-workspace .ap-heading{margin-bottom:8px}
+.ap-nano-workspace .ap-heading h1{font-size:20px}
+.ap-studio-layout,.ap-chat-amplo{grid-template-columns:minmax(0,1fr) 34px;align-items:stretch}
+.ap-studio-layout .ap-work-panel,.ap-studio-layout .ap-chat-panel{grid-column:1;height:calc(100dvh - 190px)!important;min-height:420px;border-radius:8px}
+.ap-studio-layout .ap-tower{grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:center;gap:3px;margin:0 0 0 4px;padding:4px 2px;border-radius:8px}
+.ap-studio-layout .ap-tower>span{display:none}
+.conecta-aprovado-root .ap-tower button{width:28px;min-height:28px;min-width:28px;height:28px;padding:0;gap:0;font-size:0}
+.ap-tower button small,.ap-tower button>span:not(.ap-ativo){display:none}
+.ap-tower .ap-ativo{width:20px!important;height:20px!important;background-size:contain}
+.ap-chat-panel .chat{padding:10px 8px}
+.ap-chat-panel .compositor-grade textarea{min-height:44px}
+.ap-chat-panel .barra-extras{display:none}
+}
