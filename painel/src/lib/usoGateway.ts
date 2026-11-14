@@ -35,3 +35,10 @@ export function maisRecentePorNome<T extends { nome: string; limite_ate: string 
 }
 /** Nome curto para a faixa: "Claude Code (desenvolvedor do Conecta.IA)" → "Claude Code". O nome completo fica no title. */
 export const nomeCurto = (nome: string) => nome.replace(/\s*\(.*$/, "").trim() || nome;
+
+/** Texto sempre visível da faixa quando há agente conectado pelo QR (antes era só um ícone "IA"). */
+export function resumoFaixa(nomes: readonly string[], restanteTexto: string | null): string {
+  if (nomes.length === 0) return "";
+  if (nomes.length > 1) return `${nomes.length} agentes conectados pelo QR`;
+  return `Agente conectado pelo QR · ${nomeCurto(nomes[0])}${restanteTexto ? ` · ${restanteTexto}` : ""}`;
+}

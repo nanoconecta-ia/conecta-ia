@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { ir } from "../lib/rota.ts";
-import { estadoAgente, maisRecentePorNome, nomeCurto } from "../lib/usoGateway.ts";
+import { estadoAgente, maisRecentePorNome, nomeCurto, resumoFaixa } from "../lib/usoGateway.ts";
 import "./faixa-agentes.css";
 import { restante } from "./Dispositivos.tsx";
 
@@ -35,12 +35,19 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
     setMsg(error || !r?.ok ? (r?.motivo === "login_recente_necessario" ? "Entre de novo para reconfirmar." : "Não foi possível reconfirmar.") : "Estendido por mais 8 horas.");
     void carregar();
   }
-  if (linhas.length === 0) return null;
+  async function desconectar(l: Linha) {
+    if (!window.confirm(`Desconectar ${nomeCurto(l.nome)}? O agente perde o acesso na hora.`)) return;
+    const { error } = await supabase.rpc("pair_revogar_dispositivo", { p_dispositivo: l.id, p_motivo: "desconectado pelo lojista na faixa de agentes" });
+    setMsg(error ? "Não foi possível desconectar. Use a tela Dispositivos." : `${nomeCurto(l.nome)} foi desconectado.`);
+    void carregar();
+  }
+  if (linhas.length === 0) return msg ? <div className="faixa-agentes" role="status"><span className="fa-msg">{msg}</span></div> : null;
   return (
     <div className="faixa-agentes" role="status" aria-live="polite">
       <button className="fa-icone" aria-expanded={aberta} aria-label={aberta ? "Recolher agentes conectados" : `Agentes conectados: ${linhas.length}`} onClick={() => setAberta(!aberta)}>
         <span aria-hidden style={{ fontSize: 11, fontWeight: 600 }}>IA</span><i className="fa-badge" style={{ background: linhas.some((x) => estadoAgente(x.limite_ate, x.ultima, agora, x.token_ate).situacao === "parado") ? "#b42318" : "#1a6f4d" }} aria-hidden />
       </button>
+      {!aberta && <button type="button" className="fa-resumo" onClick={() => setAberta(true)}>{resumoFaixa(linhas.map((x) => x.nome), linhas.length === 1 ? restante(linhas[0].limite_ate, agora) : null)}</button>}
       {aberta && linhas.map((l) => {
         const e = estadoAgente(l.limite_ate, l.ultima, agora, l.token_ate);
         const rotulo = e.situacao === "parado" ? "parado: reconectar" : e.situacao === "agindo" ? "agindo agora" : e.situacao === "acabando" ? "sessão acabando" : "conectado";
@@ -55,6 +62,7 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
             {min !== null && e.situacao !== "parado" && <span className="fa-tempo">{min < 1 ? "agora" : `há ${min} min`}</span>}
             {e.situacao === "acabando" && podeEstender && <button onClick={() => void reconfirmar(l.sessaoId)}>+8 h</button>}
             <button onClick={() => ir("/dispositivos")}>Ver</button>
+            <button className="perigo" onClick={() => void desconectar(l)}>Desconectar</button>
           </div>
         );
       })}
