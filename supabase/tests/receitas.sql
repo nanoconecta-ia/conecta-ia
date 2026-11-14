@@ -54,7 +54,7 @@ select public.recusa($$update public.receita_correcoes set status = 'promovida'$
 -- RLS / grants
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
-select public.afirma((select count(*) from public.receitas) = 1, 'logado vê só a receita ativa');
+select public.afirma((select count(*) from public.receitas where codigo = 'filtro_oleo') = 1, 'logado vê só a receita ativa (a v1 aposentada fica oculta)');
 select public.afirma((select count(*) from public.receita_execucoes) = 2, 'lojista vê só as execuções da própria loja');
 select public.afirma((select count(*) from public.receita_correcoes) = 2, 'lojista vê só as correções da própria loja');
 do $$ begin
