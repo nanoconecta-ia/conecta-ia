@@ -156,6 +156,29 @@ export async function sincronizar(lojaId: string, p: PortasSync, orcamentoMs = 1
     if (lote.length >= 50) await descarregar();
   };
 
+  // SKUs pedidos à mão são lidos ANTES da varredura, direto pelo ID já espelhado: a varredura pode esgotar o tempo
+  // antes de chegar neles. SKU ainda não espelhado segue pela varredura normal.
+  const jaLidos = new Set<string>();
+  for (const e of ex.values()) {
+    if (!e.sku || !forcarSkus.has(e.sku) || e.situacao === "E" || e.situacao === "ausente") continue;
+    const idNum = Number(e.bling_id);
+    if (!Number.isSafeInteger(idNum) || idNum <= 0) continue;
+    const d = await p.detalhe(idNum);
+    r.detalhes++;
+    await p.espera(INTERVALO_MS);
+    if (!d) { await p.registrarErro("detalhe indisponível", { bling_id: idNum, forcado: true }); continue; }
+    const lista: ItemLista = {
+      id: idNum, codigo: e.sku ?? undefined, nome: e.nome ?? undefined, preco: e.preco ?? undefined,
+      situacao: e.situacao ?? undefined, formato: e.formato ?? undefined,
+      idProdutoPai: e.pai_bling_id ? Number(e.pai_bling_id) : undefined,
+      estoque: e.estoque != null ? { saldoVirtualTotal: e.estoque } : undefined,
+    };
+    await incluir(mapearProduto(lojaId, lista, d, new Date(p.agora()).toISOString()));
+    if (p.registrarImagens) imagensLote.push(...extrairImagensBling(e.bling_id, d));
+    jaLidos.add(e.bling_id);
+  }
+  if (jaLidos.size) await descarregar();
+
   for (const grupo of ["ativos", "inativos", "excluidos"] as GrupoLista[]) {
     for (let pagina = 1; ; pagina++) {
       if (p.agora() - ini > orcamentoMs) {
@@ -189,6 +212,7 @@ export async function sincronizar(lojaId: string, p: PortasSync, orcamentoMs = 1
         r.vistos++;
         const anterior = ex.get(id);
         const listado = grupo === "excluidos" ? { ...it, situacao: "E" } : it;
+        if (jaLidos.has(id)) continue; // já lido no início desta execução
         if (!(listado.codigo && forcarSkus.has(listado.codigo)) && !precisaDetalhe(listado, anterior, p.agora())) continue;
         if (p.agora() - ini > orcamentoMs) {
           await descarregar(); r.erro = "tempo esgotado durante a leitura dos detalhes";
