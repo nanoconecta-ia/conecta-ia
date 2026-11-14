@@ -13,7 +13,7 @@ import { armazemSupabase } from "../_shared/bling_armazem.ts";
 import { blingFetch } from "../_shared/bling_api.ts";
 import type { Chaveiro } from "../_shared/cripto.ts";
 import { chaveiroPlataforma } from "../_shared/plataforma.ts";
-import { sincronizar, type Existente, type PortasSync } from "../_shared/bling_sync.ts";
+import { MAX_IMAGENS_GALERIA, sincronizar, type Existente, type PortasSync } from "../_shared/bling_sync.ts";
 import { sincronizarCategorias, type PortasCategorias } from "../_shared/bling_categorias.ts";
 
 const CORS = {
@@ -69,6 +69,44 @@ function portasDaLoja(admin: any, lojaId: string, chaveCifra: Chaveiro): PortasS
         const { error } = await admin.from("produtos").upsert(grupo, { onConflict: "loja_id,bling_id" });
         if (error) throw new Error("falha ao gravar o espelho");
       }
+    },
+    async registrarImagens(imagens) {
+      // Candidatas PENDENTES: origem "Bling", sem aprovação, sem direitos confirmados, nunca principal. Idempotente por URL.
+      let novas = 0;
+      const ids = [...new Set(imagens.map((i) => i.bling_id))];
+      for (let i = 0; i < ids.length; i += 100) {
+        const fatia = ids.slice(i, i + 100);
+        const { data: prods, error: e1 } = await admin.from("produtos").select("id, bling_id").eq("loja_id", lojaId).in("bling_id", fatia);
+        if (e1) throw new Error("falha ao ler produtos para imagens");
+        const porBling = new Map((prods ?? []).map((x: { id: string; bling_id: string }) => [x.bling_id, x.id]));
+        const pids = [...porBling.values()];
+        if (!pids.length) continue;
+        const { data: ja, error: e2 } = await admin.from("produto_imagens").select("produto_id, url, url_original, removida_em").eq("loja_id", lojaId).in("produto_id", pids);
+        if (e2) throw new Error("falha ao ler imagens existentes");
+        const existentes = new Map<string, Set<string>>();
+        const ativas = new Map<string, number>();
+        for (const r of (ja ?? []) as { produto_id: string; url: string; url_original: string | null; removida_em: string | null }[]) {
+          const set = existentes.get(r.produto_id) ?? new Set<string>();
+          set.add(r.url); if (r.url_original) set.add(r.url_original); // inclui removidas: remoção do lojista não é desfeita pela sincronização
+          existentes.set(r.produto_id, set);
+          if (!r.removida_em) ativas.set(r.produto_id, (ativas.get(r.produto_id) ?? 0) + 1);
+        }
+        const novasLinhas: Record<string, unknown>[] = [];
+        for (const im of imagens.filter((x) => fatia.includes(x.bling_id))) {
+          const pid = porBling.get(im.bling_id);
+          if (!pid || existentes.get(pid)?.has(im.url)) continue;
+          if ((ativas.get(pid) ?? 0) >= MAX_IMAGENS_GALERIA) continue; // galeria cheia: não estoura o limite do banco
+          ativas.set(pid, (ativas.get(pid) ?? 0) + 1);
+          existentes.set(pid, (existentes.get(pid) ?? new Set()).add(im.url));
+          novasLinhas.push({ produto_id: pid, loja_id: lojaId, url: im.url, url_original: im.url, ordem: im.ordem, tipo: "real", origem: "Bling", principal: false, aprovada: false });
+        }
+        if (novasLinhas.length) {
+          const { error } = await admin.from("produto_imagens").insert(novasLinhas);
+          if (error) throw new Error("falha ao registrar imagens do Bling");
+          novas += novasLinhas.length;
+        }
+      }
+      return novas;
     },
     async marcarAusentes(ids) {
       for (let i = 0; i < ids.length; i += 200) {

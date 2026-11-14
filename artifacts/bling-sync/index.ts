@@ -397,6 +397,40 @@ function precisaDetalhe(l, e, agora, maxIdadeMs = 24 * 3600_000) {
     if (num(l.preco) !== num(e.preco) || num(l.estoque?.saldoVirtualTotal) !== num(e.estoque)) return true;
     return !e.sincronizado_em || agora - Date.parse(e.sincronizado_em) > maxIdadeMs;
 }
+const MAX_IMAGENS_GALERIA = 8;
+const urlHttps = (v)=>{
+    const t = txt(v);
+    if (!t) return null;
+    try {
+        const u = new URL(t);
+        return u.protocol === "https:" ? u.toString() : null;
+    } catch  {
+        return null;
+    }
+};
+function extrairImagensBling(blingId, d) {
+    const m = d?.midia?.imagens;
+    if (!m) return [];
+    const vistas = new Set();
+    const out = [];
+    const lerLista = (lista, tipo, campo)=>{
+        if (!Array.isArray(lista)) return;
+        for (const it of lista){
+            const url = urlHttps(it?.[campo] ?? it?.link);
+            if (!url || vistas.has(url)) continue;
+            vistas.add(url);
+            out.push({
+                bling_id: blingId,
+                url,
+                ordem: out.length,
+                tipo_bling: tipo
+            });
+        }
+    };
+    lerLista(m.externas, "externa", "link");
+    lerLista(m.internas, "interna", "link");
+    return out.slice(0, MAX_IMAGENS_GALERIA);
+}
 const LIMITE = 100, INTERVALO_MS = 350;
 function resumirExcluido(lojaId, item, anterior, agoraISO) {
     const base = mapearProduto(lojaId, {
@@ -437,11 +471,23 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000) {
     let lote = [];
     let falhasDetalhe = 0;
     let falhasSku = 0;
+    let imagensLote = [];
     const descarregar = async ()=>{
         if (lote.length) {
             await p.gravar(lote);
             r.gravados += lote.length;
             lote = [];
+        }
+        if (imagensLote.length && p.registrarImagens) {
+            const pend = imagensLote;
+            imagensLote = [];
+            try {
+                r.imagensNovas = (r.imagensNovas ?? 0) + await p.registrarImagens(pend);
+            } catch  {
+                await p.registrarErro("falha ao registrar imagens do Bling", {
+                    produtos: new Set(pend.map((i)=>i.bling_id)).size
+                });
+            }
         }
     };
     const incluir = async (linha)=>{
@@ -533,6 +579,7 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000) {
                 const linha = mapearProduto(lojaId, listado, d, new Date(p.agora()).toISOString());
                 if (grupo === "excluidos") linha.situacao = "E";
                 await incluir(linha);
+                if (p.registrarImagens && grupo !== "excluidos") imagensLote.push(...extrairImagensBling(id, d));
             }
             if (pg.itens.length < LIMITE) break;
         }
@@ -560,7 +607,7 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000) {
     return r;
 }
 
-return { mapearProduto: mapearProduto, precisaDetalhe: precisaDetalhe, resumirExcluido: resumirExcluido, sincronizar: sincronizar };
+return { mapearProduto: mapearProduto, precisaDetalhe: precisaDetalhe, MAX_IMAGENS_GALERIA: MAX_IMAGENS_GALERIA, extrairImagensBling: extrairImagensBling, resumirExcluido: resumirExcluido, sincronizar: sincronizar };
 })();
 
 // ---------- supabase/functions/_shared/bling_categorias.ts ----------
@@ -640,7 +687,7 @@ const { createClient: createClient } = __sdk;
 const { armazemSupabase: armazemSupabase } = __m1;
 const { blingFetch: blingFetch } = __m2;
 const { chaveiroPlataforma: chaveiroPlataforma } = __m6;
-const { sincronizar: sincronizar } = __m7;
+const { MAX_IMAGENS_GALERIA: MAX_IMAGENS_GALERIA, sincronizar: sincronizar } = __m7;
 const { sincronizarCategorias: sincronizarCategorias } = __m8;
 const CORS = {
     "Access-Control-Allow-Origin": "*",
@@ -717,6 +764,61 @@ function portasDaLoja(admin, lojaId, chaveCifra) {
                 });
                 if (error) throw new Error("falha ao gravar o espelho");
             }
+        },
+        async registrarImagens (imagens) {
+            let novas = 0;
+            const ids = [
+                ...new Set(imagens.map((i)=>i.bling_id))
+            ];
+            for(let i = 0; i < ids.length; i += 100){
+                const fatia = ids.slice(i, i + 100);
+                const { data: prods, error: e1 } = await admin.from("produtos").select("id, bling_id").eq("loja_id", lojaId).in("bling_id", fatia);
+                if (e1) throw new Error("falha ao ler produtos para imagens");
+                const porBling = new Map((prods ?? []).map((x)=>[
+                        x.bling_id,
+                        x.id
+                    ]));
+                const pids = [
+                    ...porBling.values()
+                ];
+                if (!pids.length) continue;
+                const { data: ja, error: e2 } = await admin.from("produto_imagens").select("produto_id, url, url_original, removida_em").eq("loja_id", lojaId).in("produto_id", pids);
+                if (e2) throw new Error("falha ao ler imagens existentes");
+                const existentes = new Map();
+                const ativas = new Map();
+                for (const r of ja ?? []){
+                    const set = existentes.get(r.produto_id) ?? new Set();
+                    set.add(r.url);
+                    if (r.url_original) set.add(r.url_original);
+                    existentes.set(r.produto_id, set);
+                    if (!r.removida_em) ativas.set(r.produto_id, (ativas.get(r.produto_id) ?? 0) + 1);
+                }
+                const novasLinhas = [];
+                for (const im of imagens.filter((x)=>fatia.includes(x.bling_id))){
+                    const pid = porBling.get(im.bling_id);
+                    if (!pid || existentes.get(pid)?.has(im.url)) continue;
+                    if ((ativas.get(pid) ?? 0) >= MAX_IMAGENS_GALERIA) continue;
+                    ativas.set(pid, (ativas.get(pid) ?? 0) + 1);
+                    existentes.set(pid, (existentes.get(pid) ?? new Set()).add(im.url));
+                    novasLinhas.push({
+                        produto_id: pid,
+                        loja_id: lojaId,
+                        url: im.url,
+                        url_original: im.url,
+                        ordem: im.ordem,
+                        tipo: "real",
+                        origem: "Bling",
+                        principal: false,
+                        aprovada: false
+                    });
+                }
+                if (novasLinhas.length) {
+                    const { error } = await admin.from("produto_imagens").insert(novasLinhas);
+                    if (error) throw new Error("falha ao registrar imagens do Bling");
+                    novas += novasLinhas.length;
+                }
+            }
+            return novas;
         },
         async marcarAusentes (ids) {
             for(let i = 0; i < ids.length; i += 200){

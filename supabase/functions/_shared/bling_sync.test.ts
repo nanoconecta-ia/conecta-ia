@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapearProduto, precisaDetalhe, resumirExcluido, sincronizar, type Existente, type ItemLista, type LinhaProduto, type PortasSync } from "./bling_sync.ts";
+import { MAX_IMAGENS_GALERIA, extrairImagensBling, mapearProduto, precisaDetalhe, resumirExcluido, sincronizar, type Existente, type ItemLista, type LinhaProduto, type PortasSync } from "./bling_sync.ts";
 
 const AGORA = Date.parse("2026-10-18T12:00:00Z");
 // Forma real do getProduct da Mobis (valores do detalhe lido pelo MCP, só leitura).
@@ -170,4 +170,50 @@ test("mapa do resumo excluído mantém identidade por ID, mesmo sem SKU", () => 
   assert.equal(l.sku, null);
   assert.equal(l.bling_id, "100");
   assert.equal(l.situacao, "E");
+});
+
+// ---- imagens do Bling (candidatas pendentes; só leitura) ----
+const midiaReal = { imagens: { externas: [{ link: "https://www.mobisautopecas.com.br/produtos/ci002916/foto1.jpg" }, { link: "https://www.mobisautopecas.com.br/produtos/ci002916/foto2.jpg" }, { link: "https://www.mobisautopecas.com.br/produtos/ci002916/foto1.jpg" }],
+  internas: [{ link: "https://bling.com.br/img/a.jpg" }], imagensURL: [] } };
+
+test("extrair imagens: externas+internas, https, sem duplicar, na ordem do cadastro", () => {
+  const r = extrairImagensBling("55", { midia: midiaReal });
+  assert.deepEqual(r.map((i) => i.url), ["https://www.mobisautopecas.com.br/produtos/ci002916/foto1.jpg", "https://www.mobisautopecas.com.br/produtos/ci002916/foto2.jpg", "https://bling.com.br/img/a.jpg"]);
+  assert.deepEqual(r.map((i) => i.ordem), [0, 1, 2]);
+  assert.deepEqual(r.map((i) => i.tipo_bling), ["externa", "externa", "interna"]);
+  assert.ok(r.every((i) => i.bling_id === "55"));
+});
+
+test("extrair imagens: http, lixo, vazio e produto sem mídia viram nada (não inventa)", () => {
+  assert.deepEqual(extrairImagensBling("1", null), []);
+  assert.deepEqual(extrairImagensBling("1", {}), []);
+  assert.deepEqual(extrairImagensBling("1", { midia: { imagens: { externas: [{ link: "http://x.com/a.jpg" }, { link: "" }, { link: "javascript:alert(1)" }, {}, null] } } }), []);
+});
+
+test("extrair imagens: respeita o limite da galeria", () => {
+  const externas = Array.from({ length: 12 }, (_, i) => ({ link: `https://x.com/${i}.jpg` }));
+  assert.equal(extrairImagensBling("1", { midia: { imagens: { externas } } }).length, MAX_IMAGENS_GALERIA);
+});
+
+test("sincronizar: entrega imagens à porta opcional; falha nela não derruba a varredura nem escreve no Bling", async () => {
+  const itens = [{ id: 1, codigo: "A", nome: "N1", preco: 1, situacao: "A" }, { id: 2, codigo: "B", nome: "N2", preco: 1, situacao: "A" }];
+  const h = portas(itens);
+  const recebidas: { bling_id: string; url: string }[] = [];
+  const antes = h.p.detalhe;
+  h.p.detalhe = async (id) => ({ ...(await antes(id)), midia: id === 1 ? midiaReal : {} });
+  h.p.registrarImagens = async (im) => { recebidas.push(...im); return im.length; };
+  const r = await sincronizar("L", h.p);
+  assert.equal(r.completo, true); assert.equal(r.imagensNovas, 3);
+  assert.deepEqual([...new Set(recebidas.map((i) => i.bling_id))], ["1"]);
+  const h2 = portas(itens);
+  h2.p.detalhe = async (id) => ({ ...detalheReal, id, codigo: `S${id}`, midia: midiaReal });
+  h2.p.registrarImagens = async () => { throw new Error("banco fora"); };
+  const r2 = await sincronizar("L", h2.p);
+  assert.equal(r2.completo, true); assert.ok(h2.erros.includes("falha ao registrar imagens do Bling"));
+});
+
+test("sincronizar: sem a porta de imagens o comportamento antigo é idêntico", async () => {
+  const h = portas([{ id: 1, codigo: "A", nome: "N1", preco: 1, situacao: "A" }]);
+  const r = await sincronizar("L", h.p);
+  assert.equal(r.completo, true); assert.equal(r.imagensNovas, undefined);
 });
