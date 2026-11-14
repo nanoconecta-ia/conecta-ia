@@ -11,9 +11,12 @@
 | `pair` | não (pública, valida e limita taxa) | Conecta Pair, lado do solicitante: `iniciar` (QR), `consultar`/resgatar, `renovar`, `encerrar`. **Proposta: não publicada** (depende da migração `20261019000001`, não aplicada). Contratos em `docs/conecta-pair/API.md` |
 | `conecta-gateway` | não (autenticação própria por sessão do Pair) | Gateway MCP (JSON-RPC) para agentes externos: 6 ferramentas, só leitura e **proposta**. **Proposta: não publicada** |
 | `bling-callback` | não (autenticação própria: state assinado, 10 min) | Troca o código por tokens no servidor, cifra e grava via RPC |
+| `google-conectar` | sim (JWT do responsável da loja) | Gera o link de autorização do Google Drive (escopo mínimo `drive.file`), com state assinado e nonce de uso único. **Proposta: não publicada** (depende da migração `20261114000001`, não aplicada, e das variáveis `GOOGLE_*`) |
+| `google-callback` | não (autenticação própria: state assinado, 10 min) | Troca o código por tokens no servidor, exige `drive.file` + refresh token + e-mail verificado, cifra e grava via RPC. **Proposta: não publicada** |
+| `google-desconectar` | sim (JWT do responsável da loja) | Revoga no Google e apaga os tokens guardados. **Proposta: não publicada** |
 
 Secrets (painel do Supabase > Edge Functions > Secrets; nunca no repositório): `BLING_CLIENT_ID`, `BLING_CLIENT_SECRET`,
-`ESTADO_SEGREDO`, `CREDENCIAIS_CHAVE_CIFRA` (32 bytes em base64) e, opcional, `APP_URL` (para redirecionar ao painel).
+`ESTADO_SEGREDO`, `CREDENCIAIS_CHAVE_CIFRA` (32 bytes em base64), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` (Google Drive) e, opcional, `APP_URL` (para redirecionar ao painel).
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` já existem no ambiente das funções.
 
 Testes locais (Node 22): `node --experimental-strip-types --test supabase/functions/_shared/shared.test.ts supabase/functions/_shared/agente/agente.test.ts supabase/functions/_shared/bling.test.ts supabase/functions/_shared/bling_sync.test.ts supabase/functions/_shared/assistente/assistente.test.ts`.
