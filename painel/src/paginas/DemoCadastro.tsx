@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { EXEMPLO, ROTULO_ESTADO, resumoEstados, type EstadoDado } from "../lib/demoCadastro.ts";
-import { EXEMPLO_MOTOR } from "../lib/demoMotor.ts";
+import { EXEMPLO_MOTOR, VERSOES_MOTOR, type ItemKit } from "../lib/demoMotor.ts";
 import { FOTOS_MOTOR } from "../lib/demoMotorFotos.ts";
 import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
 import "./demo-cadastro.css";
@@ -21,8 +21,18 @@ export function DemoCadastro() {
   );
 }
 
+const Arvore = ({ itens }: { itens: ItemKit[] }) => (
+  <ul className="dc-arvore">
+    {itens.map((n) => (
+      <li key={n.nome}><span>{n.nome}</span> <Selo e={n.estado} />{n.filhos && <Arvore itens={n.filhos} />}</li>
+    ))}
+  </ul>
+);
+
 function DemoMotor() {
   const [i, setI] = useState(0);
+  const [v, setV] = useState<"8v" | "16v">("8v");
+  const ver = VERSOES_MOTOR[v];
   const f = FOTOS_MOTOR[i]!;
   return (
     <section className="dc" aria-label="Demonstração: motor HR 8 válvulas">
@@ -48,6 +58,13 @@ function DemoMotor() {
             <li key={e.dado}><span>{e.dado}</span> <Selo e={e.estado} /><small className="suave">{e.fonte}</small></li>
           ))}
         </ul>
+        <h3>Itens que acompanham o motor</h3>
+        <div className="dc-abas dc-abas-int" role="tablist" aria-label="Versão do motor">
+          <button type="button" role="tab" aria-selected={v === "8v"} onClick={() => setV("8v")}>8V · CI002916</button>
+          <button type="button" role="tab" aria-selected={v === "16v"} onClick={() => setV("16v")}>16V · CI003000</button>
+        </div>
+        <p className="dc-ver"><b>{ver.nome}</b><br /><small className="suave">Bling: {ver.bling}</small><br /><small className="suave">Aplicação (catálogo): {ver.aplicacao}</small></p>
+        <Arvore itens={ver.itens} />
         <h3>Taxonomia proposta</h3>
         <ol className="dc-taxonomia">
           {EXEMPLO_MOTOR.taxonomia.map((n, k) => (

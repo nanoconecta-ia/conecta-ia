@@ -25,3 +25,6 @@
 .dc-foto-real{object-fit:contain;border-style:solid;background:var(--cartao,#fbf9f4)}
 .dc-mini button{padding:0;border:1px solid var(--borda,#d9d3c7);border-radius:6px;background:var(--fundo,#f6f3ec);width:34px;height:34px;overflow:hidden;cursor:pointer}
 .dc-mini button.ativa{border:2px solid var(--marca,#ad4c29)}.dc-mini button img{display:block;width:100%;height:100%;object-fit:contain}
+.dc-abas-int{padding:0}.dc-ver{margin:0;font-size:12px}
+.dc-arvore{list-style:none;margin:0;padding:0 0 0 10px;border-left:1px solid var(--borda,#d9d3c7);display:flex;flex-direction:column;gap:3px;font-size:12px}
+.dc-arvore .dc-arvore{margin-top:3px}
