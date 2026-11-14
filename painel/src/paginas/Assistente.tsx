@@ -32,6 +32,16 @@ import { escolherInicial, falhaAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, 
 import { identificarModeloEfetivo } from "../lib/modeloEfetivo.ts";
 import { AvatarNanoAprovado } from "../componentes/AvatarNanoAprovado.tsx";
 
+/** Uma queda passageira (sessão ainda renovando) não pode travar o chat até recarregar a página: renova a sessão e tenta mais uma vez. */
+async function invocarAssistenteComRenovacao(lojaId: string, acao: string) {
+  const chamar = () => supabase.functions.invoke("assistente", { body: { loja_id: lojaId, acao } });
+  const primeira = await chamar().catch((e: unknown) => ({ data: null, error: e as Error }));
+  if (!primeira.error) return primeira;
+  await supabase.auth.refreshSession().catch(() => undefined);
+  return chamar().catch((e: unknown) => ({ data: null, error: e as Error }));
+}
+
+
 type Evidencia = { origem: string; simulado: boolean; consultado_em: string; sincronizado_em?: string; motivo?: string; dados: { sku?: string; nome?: string; preco?: number | null; estoque?: number | null } };
 type Msg = { de: "eu" | "ia"; texto: string; anexos?: string[]; evidencias?: Evidencia[]; simulado?: boolean; propostas?: PropostaTurno[]; parcial?: boolean; modeloUsado?: string; modeloContingencia?: boolean };
 type Conversa = { id: string; titulo: string; atualizada_em: string };
@@ -119,6 +129,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [carregandoChat, setCarregandoChat] = useState(true);
   const [carregando, setCarregando] = useState(true);
   const [erroConfig, setErroConfig] = useState("");
+  const [tentativaConfig, setTentativaConfig] = useState(0);
   const [aceitaEnvio, setAceitaEnvio] = useState(false);
   const [autorizaFallbackFree, setAutorizaFallbackFree] = useState(false); // autorização separada por sessão; desligado inicialmente
   const [motorPendente, setMotorPendente] = useState<string | null>(null);
@@ -159,17 +170,17 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     setConfig({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 }); setConversas([]); setConversaId(null); setRegistros([]); setRetentativa(null); setAdministrando(false); setErroHistorico("");
     setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false); setAutorizaFallbackFree(false); setMotorPendente(null); setUltimoMotorFalhou(false);
     setMsgs([{ de: "ia", texto: "Olá! Posso consultar os dados desta loja. Escolha um provedor para conversar com IA." }]);
-    supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao: "provedores" } })
+    invocarAssistenteComRenovacao(loja.id, "provedores")
       .then(({ data, error }) => {
         if (!ativo) return;
         if (error || data?.verificado !== true || !Array.isArray(data?.provedores)) {
-          setErroConfig("Não foi possível verificar os provedores. Reabra o Assistente para tentar novamente.");
+          setErroConfig("Não foi possível verificar os provedores agora.");
         } else {
           setProvedores(data.provedores); setProvedor(escolherInicial(data.provedores));
         }
         setCarregando(false);
       }).catch(() => { if (ativo) { setErroConfig("Não foi possível verificar os provedores."); setCarregando(false); } });
-    supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao: "chat_config" } }).then(({ data, error }) => {
+    invocarAssistenteComRenovacao(loja.id, "chat_config").then(({ data, error }) => {
       if (!ativo) return;
       setCarregandoChat(false);
       if (error || !data || data.erro) { setErroHistorico("Histórico persistente ainda indisponível. O resumo local continua disponível."); return; }
@@ -179,7 +190,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     }).catch(() => { if (ativo) { setCarregandoChat(false); setErroHistorico("Não foi possível consultar o histórico."); } });
     supabase.rpc("pode_administrar_loja", { p_loja_id: loja.id }).then(({ data, error }) => { if (ativo) setPodeAdministrar(!error && data === true); });
     return () => { ativo = false; };
-  }, [loja.id]);
+  }, [loja.id, tentativaConfig]);
   const [lerAlto, setLerAlto] = useState(lerPreferenciaFala);
   const fim = useRef<HTMLDivElement>(null);
   const msgsRef = useRef(msgs); msgsRef.current = msgs;
@@ -451,10 +462,10 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       </aside>
       <section className="abas-centro" aria-label="Conversa com o Nano.ia">
       <div className="agente">
-        <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Abrir menu do Nano.IA" onClick={() => { setEsq((v) => !v); setMenuAnexos(false); if (estreito()) setDir(false); }}><Icone nome="menu" tamanho={20} /></button>
+        <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Abrir menu do Nano.IA" onClick={() => { setEsq((v) => !v); setMenuAnexos(false); if (estreito()) setDir(false); }}><Icone nome="menu" tamanho={17} /></button>
         <AvatarNanoAprovado tamanho={33} estado={normalizarEstado(estado)} decorativo /><div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite"><span className="nano-agente-estado">{estado === "pensando" && !acaoLocal && <PontosPensando />}{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span><span className="nano-motor-compacto" title={textoMotor} aria-label={textoMotor}>{nomeMotorCompacto}</span></span></div>
-        {<button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span aria-hidden="true"><Icone nome="mais" tamanho={20} /></span></button>}
-        <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}><Icone nome="ajustes" tamanho={20} /></button>
+        {<button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span aria-hidden="true"><Icone nome="mais" tamanho={17} /></span></button>}
+        <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}><Icone nome="ajustes" tamanho={17} /></button>
       </div>
       <div className="nano-motor-status" data-estado={estadoMotor} role="status" aria-live="polite">
         <span className="nano-motor-ponto" aria-hidden="true" />
@@ -463,7 +474,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       </div>
       {estado !== "parado" && <div className="faixa-acao" role="status" data-estado={estado}><span className="faixa-pulso" aria-hidden="true" />{acaoLocal?.texto ?? { ouvindo: "Ouvindo você…", pensando: "Consultando o modelo e os dados da loja…", falando: "Lendo a resposta em voz alta…" }[estado as string] ?? ""}{estado === "falando" && <button type="button" className="mini sec" onClick={voz.calar}>Parar</button>}</div>}
       {carregando && <p role="status">Verificando provedores…</p>}
-      {erroConfig && <p role="alert" className="msg-erro">{erroConfig}</p>}
+      {erroConfig && <p role="alert" className="msg-erro">{erroConfig} <button type="button" onClick={() => setTentativaConfig(n => n + 1)}>Tentar de novo</button></p>}
       {erroHistorico && <p role="status">{erroHistorico}</p>}
       {registros.length >= 100 && conversaId && <button className="sec" disabled={ocupado} onClick={() => void abrir(conversaId, true, administrando)}>Mensagens anteriores</button>}
       {retentativa && <details className="nano-recuperacao"><summary>Consulta falhou · opções de recuperação</summary><div className="retentativa-linha"><button type="button" className="sec mini" disabled={ocupado || !aceitaEnvio} onClick={() => void enviar(retentativa.texto, true)}>Tentar de novo</button><button type="button" className="sec mini" disabled={ocupado} onClick={nova}>Nova conversa</button>{conversaId && !administrando && <button type="button" className="sec mini" disabled={ocupado} onClick={() => void excluir()}>Apagar conversa</button>}</div></details>}
@@ -501,7 +512,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
           <div className="compositor-campo"><span id="rotulo-pergunta" className="so-leitor">Pergunte</span><textarea aria-labelledby="rotulo-pergunta" value={texto} rows={1} style={{ display: "block", width: "100%", minWidth: 0, height: "48px", minHeight: "48px", maxHeight: "96px", overflowY: "auto", resize: "none", boxSizing: "border-box" }} enterKeyHint="send" placeholder={config.bling ? "Pergunte ou use /revisar SKU (sem IA)" : "Pergunte ao Nano.IA…"} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void enviar(texto); } }} maxLength={1000} /></div>
           <div className="compositor-acoes">
           <button type="button" className="sec mic nano-mais" aria-expanded={menuAnexos} aria-label="Adicionar foto, câmera ou arquivo" title="Adicionar ao Nano.IA"
-            onClick={() => { setMenuAnexos(v => !v); setEsq(false); setDir(false); }}><Icone nome="mais" tamanho={20} /></button>
+            onClick={() => { setMenuAnexos(v => !v); setEsq(false); setDir(false); }}><Icone nome="mais" tamanho={17} /></button>
           {voz.suporteMic && <button type="button" className="sec mic" aria-pressed={voz.ouvindo} aria-label={voz.ouvindo ? "Parar de ouvir" : "Falar com o assistente"} onClick={() => (voz.ouvindo ? voz.parar() : voz.ouvir())} disabled={ocupado}><Icone nome="mic" tamanho={20} /></button>}
           {voz.suporteFala && <button type="button" className="sec mic" aria-pressed={lerAlto} aria-label={lerAlto ? "Desligar a leitura das respostas em voz alta" : "Ler as respostas em voz alta"} title={lerAlto ? "Leitura em voz alta ligada" : "Leitura em voz alta desligada"} onClick={alternarFala}><Icone nome={lerAlto ? "voz" : "voz-mudo"} tamanho={20} /></button>}
             <span className="compositor-espaco" />

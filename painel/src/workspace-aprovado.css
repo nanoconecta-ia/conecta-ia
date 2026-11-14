@@ -23,3 +23,21 @@
 .conecta-aprovado-root,.entrada-aprovada{--ok:#1a6f4d;--ciano:#287387;--roxo:#6b4fd3;--borda-forte:#8b8172;--verde-texto:#fff;--grafite-2:#2a2723;--fonte:Inter,system-ui,sans-serif;--titulo:Inter,system-ui,sans-serif;--sombra:0 4px 14px #1d1b180d;--campo-bw:1px}
 
 .ap-identidade-clara strong span{color:var(--marca)}
+
+/* Torre e abas compactas (14/11/2026): ícones minúsculos, Torre retrátil (padrão recolhida) e cabeçalho do chat mais baixo. */
+.ap-work-tabs{padding:5px 8px;gap:2px}
+.conecta-aprovado-root .ap-work-tabs button{min-height:26px;padding:3px 7px;font-size:10px}
+.ap-chat-panel .agente{gap:4px}
+.ap-chat-panel .agente .ic-aba,.ap-chat-panel .nova-conv{min-width:26px;min-height:28px;padding:3px}
+.ap-tower>span[role=button]{cursor:pointer;user-select:none}
+.ap-tower>span[role=button]:focus-visible{outline:2px solid var(--marca);outline-offset:2px}
+.ap-tower-compacta small{display:none}
+.conecta-aprovado-root .ap-tower-compacta button{min-height:30px;width:30px;padding:3px 1px}
+.ap-tower-compacta .ap-ativo{width:20px!important;height:20px!important}
+@media(min-width:781px){.ap-studio-layout.ap-torre-compacta{grid-template-columns:minmax(0,1fr) 8px minmax(280px,var(--chat-width)) 38px}.ap-tower-compacta{padding:6px 2px;gap:4px}}
+@media(max-width:780px){.ap-tower-compacta{padding:2px}.conecta-aprovado-root .ap-tower-compacta button{width:100%;min-height:32px}.ap-tower-compacta>span[role=button]{display:flex;grid-column:1/-1;justify-content:center;font-size:12px;line-height:1;padding:2px}.ap-tower-aberta>span[role=button]{display:flex;grid-column:1/-1;justify-content:center;font-size:10px;padding:2px}}
+/* Contraste do topo da Central de Operações: título e botão secundário herdavam cor escura sobre fundo escuro (14/11/2026). */
+.conecta-aprovado-root .visao-hero h1{color:#fff}
+.conecta-aprovado-root .visao-hero h1 em{color:#ffb580}
+.conecta-aprovado-root .visao-hero .visao-hero-acoes a.visao-acao-secundaria,.conecta-aprovado-root .visao-hero .visao-hero-acoes a.visao-acao-secundaria:hover{color:#fff}
+.conecta-aprovado-root .visao-hero .visao-hero-acoes a.visao-acao-primaria,.conecta-aprovado-root .visao-hero .visao-hero-acoes a.visao-acao-primaria:hover{color:#171b20}
