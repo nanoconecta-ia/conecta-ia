@@ -16,10 +16,12 @@ export function agregarUso(eventos: readonly EventoGateway[]): Map<string, UsoGa
   return m;
 }
 
-export type EstadoAgente = { situacao: "agindo" | "conectado" | "acabando"; restante_min: number };
-/** Situação para a faixa do painel: "agindo" = chamada nos últimos 60 s; "acabando" = falta < 60 min na janela. Tudo calculado de dados reais. */
-export function estadoAgente(limiteAte: string, ultimaChamada: string | null, agora: number): EstadoAgente {
+export type EstadoAgente = { situacao: "agindo" | "conectado" | "acabando" | "parado"; restante_min: number };
+/** Situação para a faixa do painel. "parado" = o token de acesso (15 min) venceu sem renovação: a janela da sessão ainda vale, mas o agente não consegue agir.
+ *  "agindo" = chamada nos últimos 60 s; "acabando" = falta < 60 min na janela. Tudo calculado de dados reais. */
+export function estadoAgente(limiteAte: string, ultimaChamada: string | null, agora: number, tokenAte?: string | null): EstadoAgente {
   const restante_min = Math.floor((Date.parse(limiteAte) - agora) / 60000);
+  if (tokenAte && Date.parse(tokenAte) <= agora) return { situacao: "parado", restante_min };
   if (restante_min < 60) return { situacao: "acabando", restante_min };
   const agindo = ultimaChamada !== null && agora - Date.parse(ultimaChamada) < 60_000;
   return { situacao: agindo ? "agindo" : "conectado", restante_min };

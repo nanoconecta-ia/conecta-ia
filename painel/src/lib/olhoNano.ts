@@ -4,11 +4,13 @@ export type Caixa = { left: number; top: number; right: number; bottom: number; 
 export type Ponto = { x: number; y: number };
 
 const MARGEM = 34;
+const ALTURA_TOPO = 66;
 const limitar = (v: number, min: number, max: number) => Math.max(min, Math.min(Math.max(min, max), v));
 
 /** Ponto de repouso: canto direito da âncora (o cabeçalho do Estúdio, que existe em qualquer largura). Âncora sem área → null. */
 export function pontoCasa(ancora: Caixa | null, largura: number, altura: number): Ponto | null {
   if (!ancora || !ancora.width || !ancora.height) return null;
+  if (ancora.bottom <= ALTURA_TOPO) return null; // âncora rolou para baixo do topo fixo: o olho não pode ficar cobrindo busca e avatar
   const recuo = largura < 780 ? 30 : 46;
   return { x: limitar(ancora.right - recuo, MARGEM, largura - MARGEM), y: limitar(ancora.top + ancora.height / 2, MARGEM, altura - MARGEM) };
 }

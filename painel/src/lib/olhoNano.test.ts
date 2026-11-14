@@ -17,3 +17,8 @@ test("pontoFoco: vai para a direita do campo se couber, senão para a esquerda; 
   assert.deepEqual(pontoFoco(caixa(1000, 880, 420, 40), 1440, 900), { x: 963, y: 866 });
   assert.equal(pontoFoco(caixa(0, 0, 0, 10), 390, 844), null);
 });
+
+test("pontoCasa: âncora rolada para baixo do topo fixo → null (o olho some em vez de cobrir o topo)", () => {
+  assert.equal(pontoCasa(caixa(14, -120, 362, 60), 390, 844), null);
+  assert.notEqual(pontoCasa(caixa(14, 10, 362, 120), 390, 844), null);
+});
