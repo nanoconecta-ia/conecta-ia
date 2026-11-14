@@ -14,12 +14,8 @@
 .mobis-v2 .m2-micro em{color:#e48846;font-size:.85rem;font-style:normal}
 .mobis-v2 .m2-header{background:var(--m2-dark);color:#f9f4e9;border-bottom:1px solid #374044;position:relative;z-index:4}
 .mobis-v2 .m2-header>.m2-wrap{display:flex;align-items:center;justify-content:space-between;gap:17px;min-height:83px}
-.mobis-v2 .m2-brand{display:flex;align-items:center;gap:7px;text-decoration:none;color:#fff;min-width:168px}
-.mobis-v2 .m2-brand-mark{font-size:2.9rem;font-weight:1000;font-style:italic;line-height:.88;color:var(--m2-orange2);letter-spacing:-.18em;text-shadow:-3px 2px #f9f3e8;padding-right:10px}
-.mobis-v2 .m2-brand>span:last-child{display:flex;flex-direction:column}
-.mobis-v2 .m2-brand strong{color:#fbf4e8;font-weight:1000;letter-spacing:-.09em;font-size:1.7rem;font-style:italic;line-height:.92}
-.mobis-v2 .m2-brand small{color:var(--m2-orange2);font-size:.69rem;font-weight:900;letter-spacing:.055em;line-height:1.3}
-.mobis-v2 .m2-brand i{font-style:normal;font-size:.42rem;color:#bdc0bc;letter-spacing:.19em;margin-top:3px}
+.mobis-v2 .m2-brand{display:flex;align-items:center;text-decoration:none;min-width:168px}
+.mobis-v2 .m2-brand img{display:block;width:clamp(168px,22vw,260px);height:auto}
 .mobis-v2 .m2-header nav{display:flex;gap:19px;align-items:center;flex-wrap:wrap}
 .mobis-v2 .m2-header nav button{border:0;background:none;color:#e0ddd5;font-size:.77rem;padding:6px 0;white-space:nowrap}
 .mobis-v2 .m2-header nav button:hover{color:#f0a16c}
@@ -174,10 +170,7 @@
  .mobis-v2 .m2-header nav{order:3;flex:1 1 100%;justify-content:space-between;gap:8px;padding-top:7px;border-top:1px solid #ffffff22}
  .mobis-v2 .m2-header nav button{font-size:.7rem}
  .mobis-v2 .m2-brand{min-width:0}
- .mobis-v2 .m2-brand-mark{font-size:2.2rem}
- .mobis-v2 .m2-brand strong{font-size:1.4rem}
- .mobis-v2 .m2-brand small{font-size:.58rem}
- .mobis-v2 .m2-brand i{font-size:.36rem}
+ .mobis-v2 .m2-brand img{width:min(220px,58vw)}
  .mobis-v2 .m2-header-acoes button{padding:7px 8px;font-size:.7rem}
  .mobis-v2 .m2-hero-grid{display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:35px 0 28px;min-height:0}
  .mobis-v2 .m2-hero h1{font-size:clamp(2.05rem,8vw,3.15rem);max-width:460px}

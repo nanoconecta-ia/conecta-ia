@@ -7,6 +7,7 @@ import { ChatClienteLoja } from "../componentes/ChatClienteLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 import { modeloDoAtalho, podeExibirProdutoTeste } from "../lib/mobisVitrine.ts";
 import { ProdutoTesteMobis } from "../componentes/ProdutoTesteMobis.tsx";
+import logoMobis from "../assets/marcas/mobis-oficial-fundo-escuro.png";
 import "./loja-mobis-nova.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
@@ -144,7 +145,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
     <div className="m2-micro"><div className="m2-wrap"><span>Goiás, Brasil <b>/</b> Picapes · Vans · Utilitários diesel</span><span>Precisou de ajuda para escolher? <em>↗</em></span></div></div>
     <header className="m2-header"><div className="m2-wrap">
       <a className="m2-brand" href="#/loja/mobis" aria-label="MOBIS Autopeças - início" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>
-        <span className="m2-brand-mark">M</span><span><strong>MOBIS</strong><small>AUTOPEÇAS</small><i>PICAPES · VANS · UTILITÁRIOS</i></span>
+        <img src={logoMobis} width={720} height={128} alt="MOBIS Autopeças"/>
       </a>
       <nav aria-label="Menu da loja"><button onClick={()=>{setExplorar("veiculo");para("m2-explorar")}}>Seu veículo</button>
         <button onClick={()=>{setExplorar("sistema");para("m2-explorar")}}>Peças por sistema</button>

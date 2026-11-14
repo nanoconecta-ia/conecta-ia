@@ -1,8 +1,8 @@
 // Service worker mínimo do app instalável. NÃO guarda dados do usuário nem respostas do servidor (Supabase, funções, login):
 // só a "casca" do painel para abrir sem rede. Navegação vai primeiro à rede (SEM o cache HTTP do navegador); se cair, mostra a última casca guardada.
 // v2: ao trocar de versão, apaga o cache antigo e recarrega UMA vez as janelas abertas, para o app instalado não ficar preso numa tela antiga.
-const VERSAO = "conecta-casca-v4-interface-aprovada";
-const CASCA = ["./", "icones/conecta-favicon-2026.svg", "icones/conecta-wordmark-2026.svg"];
+const VERSAO = "conecta-casca-v5-icone-app";
+const CASCA = ["./", "icones/conecta-app-icone.svg", "icones/conecta-wordmark-2026.svg"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(CASCA)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {
   e.waitUntil((async () => {
