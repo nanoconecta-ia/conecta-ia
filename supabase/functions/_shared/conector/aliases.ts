@@ -54,6 +54,8 @@ export const ALIASES_PAIR: Readonly<Record<string, string | null>> = {
   "conecta.set_active_product": null, // ponte ERP: grava só o contexto efêmero (qual produto está aberto); sem contrato no registro porque não é leitura nem proposta
   // Nano Guardião, fase 3 (leitura dos valores já aprovados por SKU): contrato no registro na C2.
   "conecta.get_validated_fields": null,
+  "conecta.get_sync_status": null, // diagnóstico da sincronização (só leitura); contrato no registro entra na C2
+  "conecta.get_product_images": null, // estado das imagens do SKU (só leitura); contrato no registro entra na C2
 };
 
 export const definicaoDoAssistente = (nome: string): DefinicaoFerramenta | undefined => {

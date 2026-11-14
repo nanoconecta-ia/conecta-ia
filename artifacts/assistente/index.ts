@@ -6365,7 +6365,9 @@ const ALIASES_PAIR = {
     "conecta.get_pending_approvals": null,
     "conecta.get_task_status": null,
     "conecta.set_active_product": null,
-    "conecta.get_validated_fields": null
+    "conecta.get_validated_fields": null,
+    "conecta.get_sync_status": null,
+    "conecta.get_product_images": null
 };
 const definicaoDoAssistente = (nome)=>{
     const id = ALIASES_ASSISTENTE[nome];
