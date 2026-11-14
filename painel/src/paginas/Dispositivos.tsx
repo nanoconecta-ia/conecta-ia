@@ -7,6 +7,14 @@ import { ROTULOS_ESCOPO, TIPOS_DISPOSITIVO } from "../lib/pair.ts";
 type Sessao = { id: string; escopos: string[]; expira_em: string; limite_ate: string; limite_absoluto_ate?: string; ultimo_uso_em: string | null; revogado_em: string | null };
 type Dispositivo = { id: string; nome: string; tipo: string; capacidades: string[]; criado_em: string; ultimo_uso_em: string | null; revogado_em: string | null; pair_sessoes: Sessao[] };
 
+/** "7 h 32 min", "45 min" ou "menos de 1 min". */
+export function restante(ate: string, agora: number): string {
+  const min = Math.floor((Date.parse(ate) - agora) / 60000);
+  if (!Number.isFinite(min) || min < 1) return "menos de 1 min";
+  const h = Math.floor(min / 60), m = min % 60;
+  return h >= 24 ? `${Math.floor(h / 24)} d ${h % 24} h` : h ? `${h} h ${m} min` : `${m} min`;
+}
+
 const ativa = (s: Sessao) => !s.revogado_em && Date.parse(s.limite_ate) > Date.now();
 
 /** Dispositivos pareados: veja quem está conectado agora e encerre na hora (vale já na próxima chamada do dispositivo). */
@@ -14,6 +22,8 @@ export function Dispositivos({ loja }: { loja: Loja }) {
   const [lista, setLista] = useState<Dispositivo[] | null>(null);
   const [ocupado, setOcupado] = useState("");
   const [msg, setMsg] = useState("");
+  const [agora, setAgora] = useState(Date.now());
+  useEffect(() => { const t = setInterval(() => setAgora(Date.now()), 30_000); return () => clearInterval(t); }, []);
   const carregar = useCallback(async () => {
     const { data } = await supabase.from("pair_dispositivos")
       .select("id, nome, tipo, capacidades, criado_em, ultimo_uso_em, revogado_em, pair_sessoes(id, escopos, expira_em, limite_ate, limite_absoluto_ate, ultimo_uso_em, revogado_em)")
@@ -68,7 +78,7 @@ export function Dispositivos({ loja }: { loja: Loja }) {
                 <td><strong>{d.nome}</strong><br /><span className="suave">{TIPOS_DISPOSITIVO.find(([v]) => v === d.tipo)?.[1] ?? d.tipo}</span>
                   {d.tipo === "agente_desktop" && <><br /><span className="suave">Capacidades: {d.capacidades.length ? d.capacidades.join(", ") : "nenhuma"}</span></>}</td>
                 <td className="suave">{(s?.escopos ?? d.pair_sessoes[0]?.escopos ?? []).map((e) => ROTULOS_ESCOPO[e] ?? e).join("; ") || "—"}</td>
-                <td>{viva ? <span className={`selo ${d.tipo === "agente_desktop" ? "atencao" : "ok"}`}>Sessão ativa até {new Date(s.limite_ate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span> : <span className="selo">{d.revogado_em ? "Encerrado" : "Expirado"}</span>}</td>
+                <td>{viva ? <span className={`selo ${d.tipo === "agente_desktop" ? "atencao" : "ok"}`}>Sessão ativa: restam {restante(s.limite_ate, agora)} · até {new Date(s.limite_ate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span> : <span className="selo">{d.revogado_em ? "Encerrado" : "Expirado"}</span>}{viva && s.limite_absoluto_ate && Date.parse(s.limite_absoluto_ate) - Date.parse(s.limite_ate) > 60000 && <><br /><span className="suave">Teto total aprovado: {restante(s.limite_absoluto_ate, agora)}</span></>}</td>
                 <td className="suave">{d.ultimo_uso_em ? new Date(d.ultimo_uso_em).toLocaleString("pt-BR") : "nunca usado"}</td>
                 <td>{viva && s.limite_absoluto_ate && Date.parse(s.limite_absoluto_ate) - Date.parse(s.limite_ate) > 60000 && <button disabled={ocupado === d.id} onClick={() => void reconfirmar(s.id, d.id)}>Reconfirmar +8 h</button>} {viva && <button className="perigo" disabled={ocupado === d.id} onClick={() => void encerrar(d)}>Desconectar</button>}</td>
               </tr>);
