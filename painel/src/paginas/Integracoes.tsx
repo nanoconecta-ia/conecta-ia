@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
+import { GoogleDrive } from "../componentes/GoogleDrive.tsx";
 import { AVISO_FREE, CONFIRMACAO_FREE, exigeConfirmacao, MODOS_FREE, modoDaChave, type ModoFree } from "../lib/modoFree.ts";
 
 async function mensagem(error: unknown, padrao: string) {
@@ -95,6 +96,8 @@ export function Integracoes({ loja }: { loja: Loja }) {
       <h1>Integrações de IA</h1>
       <p className="suave">A chave e as credenciais são cifradas no servidor e nunca voltam para a tela. O agente só lê e propõe; quem aprova é você, na fila.</p>
       {msg && <p className={msg.ok ? "msg-ok" : "msg-erro"}>{msg.texto}</p>}
+
+      <GoogleDrive loja={loja} />
 
       <h2>Provedores de IA</h2>
       <p className="suave">Cadastre a chave de cada provedor no servidor. A contingência não ocorre por falta ou recusa de chave: só tenta uma reserva aprovada diante de falhas transitórias, com consentimento explícito no Nano. A disponibilidade depende da cota real do provedor; nenhum modelo gratuito é ilimitado.</p>
