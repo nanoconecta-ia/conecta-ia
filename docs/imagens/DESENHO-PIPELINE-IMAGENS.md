@@ -43,6 +43,7 @@ Origem: pedido do lojista em 14/11/2026 (chat com foto do produto, ligada ao Bli
 ## 6. Padrão de tamanho (proposta, ajustável)
 - Quadrado 1:1, fundo neutro, **sem esticar** (encaixa com margem; nunca recorta a peça).
 - Mestre 1600×1600 WebP (qualidade ~82) + JPEG de reserva; loja 1200 e 600; chat 160 e 96.
+- **Atenção (14/11):** o repositório já define variantes em `supabase/functions/_shared/imagens/variantes.ts` (site_lista 400, site_detalhe 1200, merchant 800 JPG fundo branco, og 1200×630) e regras de direitos em `regras.ts`. Esses valores vigentes prevalecem; o mestre de 1600 acima é só proposta a decidir. Falta o processador real de pixels (hoje só há um simulado) e o envio de várias fotos por produto com função de cada foto.
 - Rejeitar se o menor lado < 800 px. Mostrar o motivo na proposta.
 - Sem edição que mude a peça (cor, texto, logotipo). Só enquadramento, fundo e compressão.
 
