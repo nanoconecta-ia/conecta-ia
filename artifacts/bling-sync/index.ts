@@ -503,6 +503,38 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000, forcarSkus = new Se
         lote.push(linha);
         if (lote.length >= 50) await descarregar();
     };
+    const jaLidos = new Set();
+    for (const e of ex.values()){
+        if (!e.sku || !forcarSkus.has(e.sku) || e.situacao === "E" || e.situacao === "ausente") continue;
+        const idNum = Number(e.bling_id);
+        if (!Number.isSafeInteger(idNum) || idNum <= 0) continue;
+        const d = await p.detalhe(idNum);
+        r.detalhes++;
+        await p.espera(INTERVALO_MS);
+        if (!d) {
+            await p.registrarErro("detalhe indisponível", {
+                bling_id: idNum,
+                forcado: true
+            });
+            continue;
+        }
+        const lista = {
+            id: idNum,
+            codigo: e.sku ?? undefined,
+            nome: e.nome ?? undefined,
+            preco: e.preco ?? undefined,
+            situacao: e.situacao ?? undefined,
+            formato: e.formato ?? undefined,
+            idProdutoPai: e.pai_bling_id ? Number(e.pai_bling_id) : undefined,
+            estoque: e.estoque != null ? {
+                saldoVirtualTotal: e.estoque
+            } : undefined
+        };
+        await incluir(mapearProduto(lojaId, lista, d, new Date(p.agora()).toISOString()));
+        if (p.registrarImagens) imagensLote.push(...extrairImagensBling(e.bling_id, d));
+        jaLidos.add(e.bling_id);
+    }
+    if (jaLidos.size) await descarregar();
     for (const grupo of [
         "ativos",
         "inativos",
@@ -554,6 +586,7 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000, forcarSkus = new Se
                     ...it,
                     situacao: "E"
                 } : it;
+                if (jaLidos.has(id)) continue;
                 if (!(listado.codigo && forcarSkus.has(listado.codigo)) && !precisaDetalhe(listado, anterior, p.agora())) continue;
                 if (p.agora() - ini > orcamentoMs) {
                     await descarregar();

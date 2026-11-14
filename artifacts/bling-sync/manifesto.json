@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/bling-sync/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "07df7cb3a42204f60da11715a091be598ec6a2b7721923d56f621e5ab4e1fab8",
+  "artefato_sha256": "4a8fde23ee6561e0b5e4e9691966073f3cc86a2cf7809d39cc9d1aa64ef26cae",
   "fontes": [
     {
       "path": "supabase/functions/_shared/bling_armazem.ts",
@@ -30,7 +30,7 @@
     },
     {
       "path": "supabase/functions/_shared/bling_sync.ts",
-      "sha256": "3e815f95e47320716b0d4a49090e2026cf5713f43644617e0e67a7294c9c3aa8"
+      "sha256": "ae5d22f63a998a915fe31a56f0db2a2ae2634af647aa008eebc0fe85a3a92f99"
     },
     {
       "path": "supabase/functions/_shared/bling_categorias.ts",

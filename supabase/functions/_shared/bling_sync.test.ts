@@ -228,3 +228,22 @@ test("sincronizar: forcarSkus lê o detalhe só dos SKUs pedidos, mesmo sem muda
   const r = await sincronizar("L", h2.p, 100_000, new Set(["S2"]));
   assert.equal(h2.detalhes, 1); assert.equal(r.gravados, 1); assert.equal(r.completo, true);
 });
+
+test("sincronizar: SKU forçado é lido e gravado ANTES da varredura, mesmo se o tempo acabar no meio", async () => {
+  // 300 itens novos na frente; o forçado (id 900) estaria no fim da lista. Orçamento curto esgota na varredura.
+  const novos: ItemLista[] = Array.from({ length: 300 }, (_, i) => ({ id: i + 1, codigo: `S${i + 1}`, nome: `N${i + 1}`, preco: 1, situacao: "A" }));
+  const alvo: ItemLista = { id: 900, codigo: "S900", nome: "N900", preco: 1, situacao: "A" };
+  const ex: Existente[] = [{ bling_id: "900", sku: "S900", nome: "N900", preco: 1, estoque: null, situacao: "A", sincronizado_em: new Date(AGORA - 3600_000).toISOString() }];
+  const h = portas([...novos, alvo], ex);
+  const r = await sincronizar("L", h.p, 5_000, new Set(["S900"]));
+  assert.equal(r.completo, false, "o orçamento curto esgota a varredura");
+  assert.equal(h.gravados[0]?.[0]?.bling_id, "900", "o forçado foi o primeiro lote gravado");
+});
+
+test("sincronizar: SKU forçado não é lido duas vezes na mesma execução", async () => {
+  const its: ItemLista[] = [{ id: 1, codigo: "S1", nome: "N1", preco: 1, situacao: "A" }];
+  const ex: Existente[] = [{ bling_id: "1", sku: "S1", nome: "N1", preco: 1, estoque: null, situacao: "A", sincronizado_em: new Date(AGORA - 3600_000).toISOString() }];
+  const h = portas(its, ex);
+  const r = await sincronizar("L", h.p, 100_000, new Set(["S1"]));
+  assert.equal(h.detalhes, 1); assert.equal(r.gravados, 1); assert.equal(r.completo, true);
+});
