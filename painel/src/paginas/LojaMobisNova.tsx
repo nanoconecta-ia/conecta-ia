@@ -10,7 +10,7 @@ import "./loja-mobis-nova.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
- * publicado=true e aprovação. Nada é inferido de snapshots do Bling.
+ * publicado=true e aprovação. Nada é inferido de snapshots do ERP.
  */
 type Produto = {sku:string;nome:string;preco:number|null;marca:string|null;descricao:string|null;imagem:string|null;whatsapp:string|null;em_estoque:boolean|null;atualizado_em:string|null};
 type Veiculo = {modelo:string;motor:string|null;de:number|null;ate:number|null};
@@ -243,7 +243,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
         {aviso&&<p role="status">{aviso}</p>}
         {lista.length===0?<p>Nenhuma peça selecionada. Utilize os botões do catálogo.</p>:<ul>{lista.map(x=><li key={x.sku}><span>{x.nome}<small>SKU: {x.sku}</small></span><button onClick={()=>setLista(v=>v.filter(p=>p.sku!==x.sku))}>Retirar</button></li>)}</ul>}
         {lista.length>0&&<div>{whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>}<button onClick={()=>{setLista([]);setAviso("")}}>Limpar lista</button></div>}
-        <p>Não informe CPF, chassi completo, senha ou dados bancários no chat. A lista não conclui compras nem altera dados do Bling.</p>
+        <p>Não informe CPF, chassi completo, senha ou dados bancários no chat. A lista é só consulta e não conclui compra.</p>
       </section>
     </main>
     <RodapeLoja nome={dados?.loja.nome??"Mobis Autopeças"} slug="mobis" whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas} ultima={dados?.produtos.map(x=>x.atualizado_em).filter(Boolean).sort().at(-1)} secoes={{catalogo:"m2-catalogo",veiculo:"m2-busca",categoria:"m2-sistemas"}}/>
