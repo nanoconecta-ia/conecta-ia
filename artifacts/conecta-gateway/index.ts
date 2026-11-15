@@ -96,7 +96,7 @@ const TIPOS_DISPOSITIVO = [
 ];
 const ehEscopo = (v)=>typeof v === "string" && ESCOPOS.includes(v);
 function escoposValidos(v) {
-    return Array.isArray(v) && v.length >= 1 && v.length <= 12 && new Set(v).size === v.length && v.every(ehEscopo);
+    return Array.isArray(v) && v.length >= 1 && v.length <= ESCOPOS.length && new Set(v).size === v.length && v.every(ehEscopo);
 }
 const ehTipo = (v)=>typeof v === "string" && TIPOS_DISPOSITIVO.includes(v);
 
