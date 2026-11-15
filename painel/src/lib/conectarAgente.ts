@@ -7,7 +7,7 @@ export type ClienteMcp = "chatgpt" | "claude" | "outro";
 export type PermissaoInicial = "consulta" | "consulta_proposta";
 
 export const CLIENTES: { id: ClienteMcp; nome: string; nota: string }[] = [
-  { id: "chatgpt", nome: "ChatGPT", nota: "Servidor MCP personalizado depende do plano da sua conta e do método de autenticação aceito por ele (a documentação da OpenAI cita OAuth). Este gateway hoje aceita chave Bearer: a compatibilidade com o ChatGPT é NÃO VERIFICADA." },
+  { id: "chatgpt", nome: "ChatGPT", nota: "A conexão MCP personalizada depende do plano/workspace do ChatGPT. O Conecta.IA oferece OAuth e chave Bearer; a conexão nativa na conta ChatGPT ainda é NÃO VERIFICADA." },
   { id: "claude", nome: "Claude", nota: "Conector MCP remoto depende do plano e do método de autenticação aceito. Compatibilidade com este gateway: NÃO VERIFICADA." },
   { id: "outro", nome: "Outro cliente MCP", nota: "Qualquer cliente MCP ou HTTP que consiga enviar o cabeçalho Authorization: Bearer. Não funciona de dentro do navegador (o gateway recusa pedidos com Origin)." },
 ];
@@ -32,9 +32,9 @@ export const nomeSugerido = (cliente: ClienteMcp): string => `Agente ${CLIENTES.
 export function passosDeConexao(cliente: ClienteMcp, enderecoMcp: string): string[] {
   const comuns = [
     `Endereço do servidor: ${enderecoMcp}`,
-    "Cadastre a chave somente no campo de segredos do cliente, nunca numa mensagem de chat.",
+    "Esta tela gera chave Bearer para clientes HTTP/MCP que a aceitam; OAuth é um fluxo separado com autorização no Conecta.IA, sem colar a chave em mensagens.",
   ];
-  if (cliente === "chatgpt") return ["Abra o ChatGPT no navegador (computador).", "Plugins → + → Adicionar servidor MCP personalizado (se o seu plano oferecer).", "Nome: Conecta.IA — Nano.", ...comuns, "Se o ChatGPT exigir OAuth, esta conexão ainda não é possível: o OAuth não está implementado.", "Teste lendo a ficha do CI000016. Nada será gravado no Bling."];
+  if (cliente === "chatgpt") return ["Use o ChatGPT no navegador e verifique se seu workspace permite MCP personalizado.", "Plugins → + → Adicionar servidor MCP personalizado (quando disponível).", "Nome: Conecta.IA — Nano.", ...comuns, "Prefira OAuth: o gateway já anuncia autorização, PKCE e renovação de token, mas a compatibilidade com esta conta ChatGPT NÃO FOI HOMOLOGADA.", "Para consulta/propostas, o recurso conector-mcp requer mcp:leitura e, se autorizado, mcp:propor. Para ler e responder ao chat Nano, o recurso conecta-gateway exige chat:responder. São consentimentos distintos.", "Não copie a chave Bearer gerada aqui para a conversa; só informe no campo secreto do cliente, caso ele realmente suporte esse modo.", "Teste somente consulta antes de liberar propostas. Nenhuma escrita no Bling é autorizada."];
   if (cliente === "claude") return ["Abra as configurações de conectores do Claude (se o seu plano oferecer conector remoto).", "Adicione um conector MCP personalizado.", ...comuns, "Teste lendo a ficha do CI000016. Nada será gravado no Bling."];
   return ["No cliente MCP, configure um servidor HTTP/JSON-RPC.", ...comuns, "Envie o cabeçalho Authorization: Bearer <chave> (a chave vai no cliente, não aqui)."];
 }

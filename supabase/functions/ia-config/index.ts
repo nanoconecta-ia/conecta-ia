@@ -4,7 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { cifrar, decifrar } from "../_shared/cripto.ts";
 import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 import { conversar, IaErro } from "../_shared/ia/claude.ts";
-import { testarPlugin, urlPublicaSegura, type PluginRegistro } from "../_shared/ia/plugin.ts";
+import { permissaoAtivacaoPlugin, testarPlugin, urlPublicaSegura, type PluginRegistro } from "../_shared/ia/plugin.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -137,9 +137,11 @@ Deno.serve(async (req) => {
       if (c.acao === "remover_plugin") { await sb.rpc("plugin_remover", { p_loja: lojaId, p_id: id }); await auditar("ia.plugin_removido", { plugin_id: id, nome: p.nome }); return json({ ok: true }); }
       if (c.acao === "desativar_plugin") { await sb.rpc("plugin_definir_ativo", { p_loja: lojaId, p_id: id, p_ativo: false }); await auditar("ia.plugin_desativado", { plugin_id: id }); return json({ ok: true }); }
       if (c.acao === "ativar_plugin") {
-        if (p.tipo === "api" && p.ultimo_teste_ok !== true) return json({ erro: "Teste a conexão do plugin antes de ativar." }, 409);
-        await sb.rpc("plugin_definir_ativo", { p_loja: lojaId, p_id: id, p_ativo: true });
-        await auditar("ia.plugin_ativado", { plugin_id: id, nome: p.nome, risco: p.risco });
+        const avaliacao = permissaoAtivacaoPlugin(p as PluginRegistro & { ultimo_teste_ok: boolean | null });
+        if (!avaliacao.permitido) return json({ erro: avaliacao.motivo }, 409);
+        const { data: alterou, error: falha } = await sb.rpc("plugin_definir_ativo", { p_loja: lojaId, p_id: id, p_ativo: true });
+        if (falha || alterou === false) return json({ erro: "Não foi possível ativar o plugin no servidor." }, 409);
+        await auditar("ia.plugin_ativado", { plugin_id: id, nome: p.nome, risco: p.risco, tipo: p.tipo, capacidades: p.capacidades });
         return json({ ok: true });
       }
       const { data: cred } = await sb.rpc("plugin_credencial", { p_loja: lojaId, p_id: id });
