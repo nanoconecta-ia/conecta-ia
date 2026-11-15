@@ -677,7 +677,10 @@ async function chamarOpenAI(c, msgs) {
         model: c.modelo,
         messages: m,
         ...new URL(c.baseUrl).hostname === "api.openai.com" ? {
-            max_completion_tokens: c.maxTokens
+            max_completion_tokens: c.maxTokens,
+            .../^gpt-(6|5\.6)-/.test(c.modelo) ? {
+                reasoning_effort: "none"
+            } : {}
         } : {
             max_tokens: c.maxTokens
         },
@@ -7908,6 +7911,7 @@ const __m52 = (() => {
 const { urlPublicaSegura: urlPublicaSegura } = __m9;
 const PROVEDORES_CHAT = [
     "compativel_openai",
+    "openai",
     "gemini",
     "claude",
     "openrouter_free"
@@ -7918,9 +7922,10 @@ function validarProvedor(valor) {
     return valor;
 }
 function modeloDaChave(k) {
-    return k.modelo || (k.provedor === "gemini" ? "gemini-2.5-flash" : k.provedor === "claude" ? "claude-sonnet-5-5" : k.provedor === "openrouter_free" ? "openrouter/free" : "");
+    return k.modelo || (k.provedor === "gemini" ? "gemini-2.5-flash" : k.provedor === "claude" ? "claude-sonnet-5-5" : k.provedor === "openrouter_free" ? "openrouter/free" : k.provedor === "openai" ? "gpt-6-luna" : "");
 }
 function nomeProvedor(id, base) {
+    if (id === "openai") return "GPT (OpenAI oficial)";
     if (id === "gemini") return "Gemini";
     if (id === "claude") return "Claude";
     if (id === "openrouter_free") return "Gratuito (OpenRouter)";
@@ -7943,7 +7948,7 @@ function listarProvedores(chaves, falha = false, agora = new Date()) {
             estado = "indisponivel";
             motivo = "Não foi possível consultar a configuração.";
         } else if (k?.ativa) {
-            if (!modeloDaChave(k) || id === "compativel_openai" && (!k.base_url || !urlPublicaSegura(k.base_url))) {
+            if (!modeloDaChave(k) || id === "compativel_openai" && (!k.base_url || !urlPublicaSegura(k.base_url)) || id === "openai" && k.base_url !== null && k.base_url !== "https://api.openai.com/v1") {
                 estado = "indisponivel";
                 motivo = "Configuração incompleta.";
             } else if (k.mes_ref?.slice(0, 7) === mes && k.limite_mensal_tokens != null && k.tokens_mes >= k.limite_mensal_tokens) {
@@ -9637,9 +9642,9 @@ async function atenderChat(c, ctx) {
         const economico = consultaPublicaEconomica(c.texto, anexos.length);
         const perfil = planoLimites(prov, k.base_url, economico);
         if (economico) meta.modo_economico = "glossario_publico_sem_historico";
-        meta.host_provedor = prov === PROVEDOR_FREE ? "openrouter.ai" : prov === "compativel_openai" ? new URL(k.base_url).hostname : prov === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
+        meta.host_provedor = prov === PROVEDOR_FREE ? "openrouter.ai" : prov === "openai" ? "api.openai.com" : prov === "compativel_openai" ? new URL(k.base_url).hostname : prov === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
         if (prov === PROVEDOR_FREE) meta.provedor_efetivo = "openrouter-free";
-        const tipoLlm = prov === PROVEDOR_FREE ? "compativel_openai" : prov;
+        const tipoLlm = prov === PROVEDOR_FREE || prov === "openai" ? "compativel_openai" : prov;
         const propostas = [];
         const { config: searxng, erro: erroSearxng } = configSearxngOuNulo(ctx.get, loja.id);
         if (erroSearxng) console.warn("SearXNG desligado nesta loja:", erroSearxng);
@@ -9648,7 +9653,7 @@ async function atenderChat(c, ctx) {
         const chaveProvedor = await decifrar(k.cifrada, chaveiro);
         const r = await conversar({
             provedor: tipoLlm,
-            baseUrl: prov === PROVEDOR_FREE ? URL_FREE : k.base_url ?? undefined,
+            baseUrl: prov === "openai" ? "https://api.openai.com/v1" : prov === PROVEDOR_FREE ? URL_FREE : k.base_url ?? undefined,
             chave: chaveProvedor,
             modelo,
             mensagens: economico ? [
@@ -10348,7 +10353,14 @@ const chamarOpenAIStream = async (c, msgs, aoTexto, sinal)=>{
     }, {
         model: c.modelo,
         messages: m,
-        max_tokens: c.maxTokens,
+        ...new URL(c.baseUrl).hostname === "api.openai.com" ? {
+            max_completion_tokens: c.maxTokens,
+            .../^gpt-(6|5\.6)-/.test(c.modelo) ? {
+                reasoning_effort: "none"
+            } : {}
+        } : {
+            max_tokens: c.maxTokens
+        },
         tools: tools.length ? tools : undefined,
         stream: true,
         stream_options: {
@@ -10848,7 +10860,7 @@ Deno.serve(async (req)=>{
         codigo: "anexo_sem_provedor"
     }, 409);
     if (k && chaveiro) {
-        const va = c.anexos != null ? await validarAnexos(c.anexos, k.provedor) : null;
+        const va = c.anexos != null ? await validarAnexos(c.anexos, k.provedor === "openai" ? "compativel_openai" : k.provedor) : null;
         if (va && !va.ok) return json({
             erro: va.erro,
             codigo: "anexo_invalido"
@@ -10901,8 +10913,8 @@ Deno.serve(async (req)=>{
         };
         try {
             const r = await conversar({
-                provedor: k.provedor,
-                baseUrl: k.base_url ?? undefined,
+                provedor: k.provedor === "openai" ? "compativel_openai" : k.provedor,
+                baseUrl: k.provedor === "openai" ? "https://api.openai.com/v1" : k.base_url ?? undefined,
                 chave: await decifrar(k.cifrada, chaveiro),
                 modelo: modeloDaChave(k),
                 sistema: `${SISTEMA}\nLoja: ${loja.nome}.${va?.ok && va.anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
