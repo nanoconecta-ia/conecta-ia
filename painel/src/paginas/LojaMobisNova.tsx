@@ -14,7 +14,7 @@ import "./loja-mobis-nova.css";
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
  * publicado=true e aprovação. Nada é inferido de snapshots do Bling.
  */
-type Produto = {sku:string;nome:string;preco:number|null;marca:string|null;descricao:string|null;imagem:string|null;whatsapp:string|null;em_estoque:boolean|null;atualizado_em:string|null};
+type Produto = {sku:string;nome:string;preco:number|null;marca:string|null;descricao:string|null;imagem:string|null;whatsapp:string|null;em_estoque:boolean|null;atualizado_em:string|null;consulta_previa?:boolean;categoria?:string|null};
 type Veiculo = {modelo:string;motor:string|null;de:number|null;ate:number|null};
 type Banner = {sku:string;nome:string;preco:number|null;chamada:string|null;flash:boolean;whatsapp:string|null};
 type Resposta = {
@@ -43,6 +43,16 @@ const SISTEMAS=[
   {nome:"Distribuição",id:"motor",busca:"correias"},
 ];
 const brl=(n:number)=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+/** Ícone de sistema aprovado, nunca representa foto ou compatibilidade do item. */
+function iconeDaCategoria(categoria:string|null|undefined):string {
+  const c=(categoria??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  if(/bandeja|suspens|amortec/.test(c))return "suspensao";
+  if(/freio|pastilha|disco de freio/.test(c))return "freios";
+  if(/embreagem|transmiss|cambio/.test(c))return "transmissao";
+  if(/eletric|sensor|alternador/.test(c))return "eletrica";
+  if(/radiador|arrefecimento|bomba.*agua|termostat/.test(c))return "arrefecimento";
+  return "motor";
+}
 const para=(id:string)=>document.getElementById(id)?.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
 
 export function LojaMobisNova({slug}:{slug:string}) {
@@ -161,7 +171,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
       <input id="m2-busca-rapida" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Nome da peça, código ou referência"/>
       <button type="submit">Buscar peças <span aria-hidden="true">→</span></button>
     </form></div>
-    {dados?.loja.ambiente==="teste"&&<div className="m2-aviso-teste" role="status"><strong>LOJA TESTE</strong> · Catálogo em preparação. Não são concluídos pedidos nem recebidos pagamentos neste site.</div>}
+    {dados?.loja.ambiente==="teste"&&<div className="m2-aviso-teste" role="status"><strong>CATÁLOGO EM PREPARAÇÃO</strong> · Consulte peças e aplicações pelo WhatsApp. Preços e disponibilidade a confirmar; não concluímos pedidos nem recebemos pagamentos neste site.</div>}
     <main>
       <section className="m2-hero"><div className="m2-wrap m2-hero-grid">
         <div className="m2-hero-texto"><span className="m2-kicker">▰▰▰ &nbsp; A PEÇA CERTA COMEÇA PELO SEU VEÍCULO</span>
@@ -234,11 +244,14 @@ export function LojaMobisNova({slug}:{slug:string}) {
         {estado==="naoachada"&&<div className="m2-vazio">Loja não encontrada.</div>}
         {estado==="ok"&&dados?.produtos.length===0&&<div className="m2-vazio"><div><span className="m2-kicker">ATENDIMENTO MOBIS</span><h3>{Object.entries(f).some(([k,v])=>k!=="pagina"&&Boolean(v))?"Nenhuma peça encontrada com esses filtros.":"Catálogo de peças em preparação."}</h3><p>Nenhum anúncio aprovado foi encontrado. Consulte a equipe com o veículo e a referência; isso não significa falta de estoque na loja física.</p><button onClick={()=>para("m2-atendimento")}>Consultar a equipe ↗</button></div></div>}
         {dados&&dados.produtos.length>0&&<div className="m2-produto-grade">{dados.produtos.map(p=><article key={p.sku} className="m2-produto">
-          <div className="m2-foto-produto">{p.imagem?<img src={p.imagem} alt={p.nome} loading="lazy"/>:<IconePeca nome="motor" tamanho={72}/>}</div>
+          <div className="m2-foto-produto">{p.imagem?<img src={p.imagem} alt={p.nome} loading="lazy"/>:<div aria-label="Ilustração de categoria, não é foto da peça"><IconePeca nome={iconeDaCategoria(p.categoria)} tamanho={72}/></div>}</div>
           <div><small>SKU {p.sku}{p.marca?" · "+p.marca:""}</small><h3>{p.nome}</h3>
             {p.descricao&&<p>{p.descricao.slice(0,220)}</p>}
-            <strong>{p.preco==null?"Consulte o preço":brl(p.preco)}</strong><p>Disponibilidade a confirmar</p>
-            <div><a href={"#/p/mobis/"+encodeURIComponent(p.sku)}>Ver ficha da peça</a>
+            <strong>{p.consulta_previa?"Preço sob consulta":p.preco==null?"Consulte o preço":brl(p.preco)}</strong>
+            <p>{p.consulta_previa?"Prévia de catálogo · aplicação e disponibilidade precisam ser confirmadas.":"Disponibilidade a confirmar"}</p>
+            <div>{p.consulta_previa
+                ? p.whatsapp&&<a href={p.whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>
+                : <a href={"#/p/mobis/"+encodeURIComponent(p.sku)}>Ver ficha da peça</a>}
               <button disabled={lista.some(x=>x.sku===p.sku)} onClick={()=>adicionar(p)}>{lista.some(x=>x.sku===p.sku)?"Na lista":"Adicionar à lista +"}</button></div>
           </div>
         </article>)}</div>}
