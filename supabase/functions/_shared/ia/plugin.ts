@@ -14,6 +14,20 @@ export function urlPublicaSegura(url: string): boolean {
   return true;
 }
 
+/**
+ * O cadastro de um plugin não significa que o Nano sabe executar seu protocolo.
+ * Somente a ponte SDK v1 ("api") é executável hoje; MCP/LLM/pull permanecem rascunhos.
+ * Nenhum risco MEDIUM/HIGH/CRITICAL vira autorização de execução automática.
+ */
+export function permissaoAtivacaoPlugin(p: PluginRegistro & { ultimo_teste_ok?: boolean | null }): { permitido: boolean; motivo: string } {
+  if (p.tipo !== "api") return { permitido: false, motivo: `O plugin ${p.tipo.toUpperCase()} está somente cadastrado: a execução desse protocolo pelo Nano ainda não foi implementada. Não é uma conexão MCP autenticada.` };
+  if (p.risco !== "LOW") return { permitido: false, motivo: "Plugins MEDIUM, HIGH ou CRITICAL exigem fluxo de aprovação separado; ativação automática bloqueada." };
+  if (!Array.isArray(p.capacidades) || p.capacidades.length === 0) return { permitido: false, motivo: "Declare pelo menos uma capacidade antes de ativar." };
+  if (!p.url || !urlPublicaSegura(p.url)) return { permitido: false, motivo: "Configure uma URL HTTPS pública permitida antes de ativar." };
+  if (p.ultimo_teste_ok !== true) return { permitido: false, motivo: "Teste a conexão SDK v1 e confirme resultado positivo antes de ativar." };
+  return { permitido: true, motivo: "API SDK v1 testada, somente capacidades declaradas e risco LOW." };
+}
+
 export type ResultadoPlugin = { ok: true; dados: unknown } | { ok: false; erro: string };
 
 export async function chamarPlugin(p: PluginRegistro, credencial: string | null, capacidade: string, entrada: unknown, f: typeof fetch = fetch): Promise<ResultadoPlugin> {

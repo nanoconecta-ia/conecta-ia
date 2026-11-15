@@ -23,11 +23,13 @@ const CAPACIDADES: [string, string][] = [
   ["consultar_catalogo", "Consultar catálogo"], ["consultar_bling", "Consultar Bling"], ["enriquecer", "Enriquecer produto"],
   ["imagem", "Imagens"], ["taxonomia", "Taxonomia"], ["buscar_web", "Buscar na web"],
 ];
+/** Condição para o botão de ativação. A validação definitiva também ocorre no servidor. */
+const podeAtivar = (p: Plugin) => p.tipo === "api" && p.risco === "LOW" && p.ultimo_teste_ok === true && !!p.url && p.capacidades.length > 0;
 const TIPOS: [string, string, string][] = [
-  ["api", "API (a plataforma chama o seu endereço)", "Executado pelo agente quando ativo e de risco LOW."],
-  ["mcp", "MCP (servidor de ferramentas)", "Cadastro pronto; execução pelo agente ainda não implementada."],
+  ["api", "API (SDK v1)", "Há um adaptador SDK v1 com teste e bloqueio por risco. O chat do Nano ainda não carrega os plugins cadastrados automaticamente: não confunda ativação com execução homologada."],
+  ["mcp", "MCP (servidor externo)", "Somente cadastro e planejamento. O Nano ainda NÃO consome servidores MCP cadastrados aqui: sem teste nem execução nativa."],
   ["llm", "Modelo de IA próprio", "Cadastro pronto; execução pelo agente ainda não implementada."],
-  ["plugin_pull", "Plugin que busca tarefas na fila", "Usa a fila de tarefas; chave própria por plugin."],
+  ["plugin_pull", "Plugin que busca tarefas na fila", "Somente cadastro: a execução deste tipo pelo Nano ainda NÃO está implementada nesta tela."],
 ];
 
 export function Integracoes({ loja }: { loja: Loja }) {
@@ -157,17 +159,25 @@ export function Integracoes({ loja }: { loja: Loja }) {
       )}
 
       <h2>Plugins e conexões</h2>
+      <p className="suave">Aqui o Nano é <strong>cliente de plugins externos</strong>. Não confunda com o Gateway MCP, em que GPT/Claude são clientes das ferramentas do Nano. O cadastro de tipo MCP, LLM ou plugin_pull <strong>não estabelece sessão nem habilita execução</strong>.</p>
+      <div className="cartao" aria-label="Matriz efetiva de permissões dos plugins">
+        <h3>Escopos e limites efetivos</h3>
+        <p><strong>API SDK v1 / LOW:</strong> há adaptador de chamada, porém a integração dos registros do banco ao chat do Nano ainda não está homologada. O cadastro só pode ser habilitado após teste positivo, capacidades selecionadas e ativação explícita. Endpoints externos são serviços de terceiros: classificar LOW não comprova leitura sem efeitos.</p>
+        <p><strong>MCP externo, LLM e plugin_pull:</strong> cadastráveis, mas <strong>execução bloqueada</strong> até existir um adaptador homologado, escopo próprio e testes.</p>
+        <p><strong>MEDIUM, HIGH e CRITICAL:</strong> nunca são autorizados a executar automaticamente. Exigem fluxo próprio de consentimento, auditoria e aprovação para qualquer operação sensível.</p>
+        <p><strong>Nano → Bling:</strong> propor não é aprovar, gravar, emitir NF ou transferir estoque; operações reais continuam restritas à Central de Aprovações e às permissões específicas.</p>
+      </div>
       {plugins.length === 0 && <p className="suave">Nenhum plugin cadastrado.</p>}
       {plugins.map((p) => (
         <div key={p.id} className="cartao" style={{ margin: "8px 0" }}>
-          <p><strong>{p.nome}</strong> <span className={`selo ${p.ativo ? "ok" : "atencao"}`}>{p.ativo ? "Ativo" : "Desligado"}</span> <span className="selo">{p.tipo}</span> <span className="selo">risco {p.risco}</span></p>
+          <p><strong>{p.nome}</strong> <span className={`selo ${p.ativo && podeAtivar(p) ? "ok" : "atencao"}`}>{p.ativo && podeAtivar(p) ? "API testada / cadastrada (execução a validar)" : p.ativo ? "Marcado ativo — execução bloqueada" : "Desligado"}</span> <span className="selo">{p.tipo}</span> <span className="selo">risco {p.risco}</span></p>
           <p className="suave">{p.url ?? "sem endereço"} · {p.capacidades.length ? p.capacidades.map((c) => CAPACIDADES.find(([k]) => k === c)?.[1] ?? c).join(", ") : "sem capacidades"}</p>
-          <p className="suave">{p.ultimo_teste_ok === null ? "Ainda não testado." : `Último teste: ${p.ultimo_teste_ok ? "ok" : "falhou"} em ${new Date(p.ultimo_teste_em ?? "").toLocaleString("pt-BR")}.`}{p.risco !== "LOW" ? " Risco acima de LOW: o agente não chama sozinho (exige aprovação)." : ""}</p>
+          <p className="suave">{p.ultimo_teste_ok === null ? "Ainda não testado." : `Último teste: ${p.ultimo_teste_ok ? "ok" : "falhou"} em ${new Date(p.ultimo_teste_em ?? "").toLocaleString("pt-BR")}.`}{p.tipo !== "api" ? " Protocolo cadastrado; execução MCP/LLM/pull não implementada." : ""}{p.risco !== "LOW" ? " Risco acima de LOW: ativação e execução automáticas bloqueadas." : ""}</p>
           <div className="linha">
             {p.tipo === "api" && <button className="sec" disabled={ocupado} onClick={() => void chamar({ acao: "testar_plugin", id: p.id }, "O plugin respondeu.")}>Testar</button>}
             {p.ativo
               ? <button className="sec" disabled={ocupado} onClick={() => void chamar({ acao: "desativar_plugin", id: p.id }, "Plugin desligado.")}>Desligar</button>
-              : <button disabled={ocupado} onClick={() => void chamar({ acao: "ativar_plugin", id: p.id }, "Plugin ativado.")}>Ativar</button>}
+              : <button disabled={ocupado || !podeAtivar(p)} title={!podeAtivar(p) ? "Somente API SDK v1, risco LOW, URL e teste bem-sucedido podem ser ativados." : undefined} onClick={() => void chamar({ acao: "ativar_plugin", id: p.id }, "Plugin ativado.")}>{podeAtivar(p) ? "Ativar" : "Ativação bloqueada"}</button>}
             <button className="sec" disabled={ocupado} onClick={() => { if (confirm(`Remover o plugin ${p.nome}?`)) void chamar({ acao: "remover_plugin", id: p.id }, "Plugin removido."); }}>Remover</button>
           </div>
         </div>
@@ -180,7 +190,7 @@ export function Integracoes({ loja }: { loja: Loja }) {
           <p className="suave">{TIPOS.find(([k]) => k === f.tipo)?.[2]}</p>
           <label>Endereço (https)<input value={f.url} onChange={(e) => setF({ ...f, url: e.target.value })} placeholder="https://api.exemplo.com.br/conecta" required={f.tipo === "api"} /></label>
           <label>Credencial (opcional)<input type="password" value={f.credencial} onChange={(e) => setF({ ...f, credencial: e.target.value })} autoComplete="new-password" spellCheck={false} /></label>
-          <label>Risco<select value={f.risco} onChange={(e) => setF({ ...f, risco: e.target.value })}><option value="LOW">LOW (só leitura)</option><option value="MEDIUM">MEDIUM (exige aprovação)</option><option value="HIGH">HIGH</option><option value="CRITICAL">CRITICAL</option></select></label>
+          <label>Risco<select value={f.risco} onChange={(e) => setF({ ...f, risco: e.target.value })}><option value="LOW">LOW (exige serviço externo confiável e testado)</option><option value="MEDIUM">MEDIUM (exige aprovação)</option><option value="HIGH">HIGH</option><option value="CRITICAL">CRITICAL</option></select></label>
           <fieldset><legend>Capacidades habilitadas</legend>
             {CAPACIDADES.map(([k, t]) => <label key={k} className="linha"><input type="checkbox" checked={f.caps.includes(k)} onChange={() => alternar(k)} style={{ width: "auto" }} /> {t}</label>)}
           </fieldset>

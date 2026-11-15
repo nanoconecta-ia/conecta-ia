@@ -50,7 +50,7 @@ export function GatewayMCP({ loja }: { loja: Loja }) {
     <>
       <div className="cartao">
         <h1>Gateway multiagente (MCP/API)</h1>
-        <p className="suave">Permite que um cliente externo autorizado use as ferramentas do Nano.ia. Cada chave é <strong>só desta loja</strong>, tem escopos limitados, validade e pode ser revogada. Nenhum cliente recebe <code>service_role</code>, token do Bling nem acesso administrativo, e <strong>nenhuma chave pode aprovar ou executar</strong>: quem decide é você, na Central de Inteligência.</p>
+        <p className="suave">Permite que um cliente externo autorizado use as ferramentas do Nano.ia. Cada chave é <strong>só desta loja</strong>, tem escopos limitados, validade e pode ser revogada. Nenhum cliente recebe <code>service_role</code>, token do Bling nem acesso administrativo, e <strong>nenhuma chave pode aprovar ou executar</strong>: quem decide é você, na Central de Inteligência.</p><p className="suave"><strong>OAuth disponível:</strong> em clientes MCP compatíveis, a autorização pode ser feita pelo próprio Conecta.IA sem gerar uma chave Bearer manual. A conexão nativa em cada cliente precisa ser testada e autorizada separadamente.</p>
       </div>
       <div className="grade tres">
         <div className="cartao"><h2>1. LLM via API do provedor</h2><p className="suave">O Nano.ia chama Claude, Gemini ou um modelo compatível com OpenAI usando a <strong>chave que você cadastrou</strong> em Integrações de IA. O custo é do seu provedor.</p></div>
@@ -70,6 +70,13 @@ export function GatewayMCP({ loja }: { loja: Loja }) {
 
       <div className="cartao">
         <h2>Conectar meu Agente</h2>
+        <div className="cartao" aria-label="Separação de escopos de clientes externos">
+          <h3>Escopos distintos para ferramentas e conversa</h3>
+          <p><strong>Ferramentas do Nano (conector-mcp):</strong> <code>mcp:leitura</code> consulta informações; <code>mcp:propor</code> prepara sugestões para aprovação humana.</p>
+          <p><strong>Chat do Nano (conecta-gateway):</strong> <code>chat:responder</code> lê e responde perguntas desta loja. Não permite editar cadastro, executar no Bling ou aprovar propostas.</p>
+          <p><strong>Proibido a clientes externos:</strong> emissão de NF, alterações fiscais, transferência de estoque, aprovação automática e escrita direta no ERP.</p>
+          <p className="suave">O OAuth dessas duas rotas tem recursos distintos. Autorize apenas o necessário; o mesmo QR de chat não deve liberar automaticamente as ferramentas de catálogo.</p>
+        </div>
         <p className="suave">Escolha o agente e a permissão. Será gerada uma chave real, só desta loja. A conexão é feita por você, no cliente escolhido: o Conecta.IA não instala nada na sua conta.</p>
         <form onSubmit={(e) => void criar(e, true)}>
           <fieldset><legend>Agente</legend>

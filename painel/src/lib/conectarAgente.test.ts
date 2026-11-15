@@ -12,11 +12,13 @@ test("resumo sempre mostra escrita no Bling bloqueada", () => {
 });
 test("compatibilidade com ChatGPT/Claude é declarada não verificada, sem fingir conexão", () => {
   for (const c of CLIENTES.filter((x) => x.id !== "outro")) assert.match(c.nota, /NÃO VERIFICADA/);
-  assert.match(passosDeConexao("chatgpt", "https://x/functions/v1/conector-mcp").join(" "), /OAuth/);
+  const texto = passosDeConexao("chatgpt", "https://x/functions/v1/conector-mcp").join(" ");
+  assert.match(texto, /OAuth/); assert.match(texto, /mcp:leitura/); assert.match(texto, /chat:responder/);
+  assert.doesNotMatch(texto, /OAuth não está implementado/);
 });
 test("passos não carregam token e mandam guardar a chave fora do chat", () => {
   const t = passosDeConexao("outro", "https://x/functions/v1/conector-mcp").join("\n");
   assert.match(t, /Bearer <chave>/); assert.doesNotMatch(t, /eyJ|sk-|mcp_[a-z0-9]{16}/i);
-  assert.match(passosDeConexao("claude", "https://x").join(" "), /nunca numa mensagem de chat/);
+  assert.match(passosDeConexao("claude", "https://x").join(" "), /sem colar a chave em mensagens/);
 });
 test("nome sugerido", () => assert.equal(nomeSugerido("claude"), "Agente Claude"));
