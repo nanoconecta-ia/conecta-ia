@@ -36,7 +36,7 @@ do $test_qr$ begin
   raise exception 'FALHOU: outra loja consultou o QR';
 exception when sqlstate '42501' then raise notice 'ok: QR isolado por loja'; end $test_qr$;
 select set_config('request.jwt.claims', '{}', true);
-update public.conversas set turno_pergunta = 'e1000000-0000-0000-0000-000000000001', turno_ate = now() + interval '15 minutes' where id = 'c1000000-0000-0000-0000-000000000001';
+update public.conversas set turno_token = gen_random_uuid(), turno_pergunta = 'e1000000-0000-0000-0000-000000000001', turno_ate = now() + interval '15 minutes' where id = 'c1000000-0000-0000-0000-000000000001';
 
 select public.afirma((public.chat_fila_enfileirar('aaaaaaaa-0000-0000-0000-00000000000a', 'e1000000-0000-0000-0000-000000000001', 90)->>'ok')::boolean, 'enfileira mensagem do lojista');
 select public.afirma((select c.turno_ate = f.prazo_em from public.conversas c join public.chat_fila f on c.id = f.conversa_id where f.mensagem_id = 'e1000000-0000-0000-0000-000000000001'), 'fila QR limita o bloqueio aos 90 segundos');
