@@ -204,7 +204,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     supabase.rpc("pode_administrar_loja", { p_loja_id: loja.id }).then(({ data, error }) => { if (ativo) setPodeAdministrar(!error && data === true); });
     // O navegador não tem SELECT em pair_sessoes: consultar somente o estado mínimo via RPC autorizada.
     const verificarQr = () => {
-      void supabase.rpc("chat_qr_disponivel", { p_loja: loja.id })
+      void Promise.resolve(supabase.rpc("chat_qr_disponivel", { p_loja: loja.id }))
         .then(({ data, error }) => {
           if (!ativo) return;
           setAgenteQrDisponivel(!error && data?.disponivel === true);
