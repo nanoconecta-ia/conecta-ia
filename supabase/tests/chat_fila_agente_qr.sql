@@ -28,14 +28,14 @@ select public.afirma(not has_function_privilege('authenticated', 'public.chat_fi
 select public.afirma(has_function_privilege('service_role', 'public.chat_fila_reivindicar(uuid)', 'execute'), 'service_role (gateway) executa');
 select public.afirma(has_function_privilege('authenticated', 'public.chat_qr_disponivel(uuid)', 'execute'), 'cliente autenticado pode consultar apenas estado QR');
 select public.afirma(not has_table_privilege('authenticated', 'public.pair_sessoes', 'select'), 'cliente nao recebe SELECT nas sessoes Pair');
-select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', true);
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111"}', true);
 select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'disponivel')::boolean, 'dono ve a disponibilidade do QR');
-select set_config('request.jwt.claim.sub', '33333333-3333-3333-3333-333333333333', true);
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333"}', true);
 do $ begin
   perform public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a');
   raise exception 'FALHOU: outra loja consultou o QR';
 exception when sqlstate '42501' then raise notice 'ok: QR isolado por loja'; end $;
-select set_config('request.jwt.claim.sub', '', true);
+select set_config('request.jwt.claims', '{}', true);
 update public.conversas set turno_pergunta = 'e1000000-0000-0000-0000-000000000001', turno_ate = now() + interval '15 minutes' where id = 'c1000000-0000-0000-0000-000000000001';
 
 select public.afirma((public.chat_fila_enfileirar('aaaaaaaa-0000-0000-0000-00000000000a', 'e1000000-0000-0000-0000-000000000001', 90)->>'ok')::boolean, 'enfileira mensagem do lojista');
