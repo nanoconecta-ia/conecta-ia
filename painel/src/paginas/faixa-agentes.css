@@ -13,6 +13,11 @@
 .conecta-aprovado-root .faixa-agentes{padding:3px 12px}
 .conecta-aprovado-root .fa-icone{position:relative;width:30px;height:30px;min-height:30px;min-width:30px;padding:0;border-radius:50%;font-size:14px;margin-left:0;flex:none;align-self:flex-start}
 .conecta-aprovado-root .fa-badge{position:absolute;top:-1px;right:-1px;width:9px;height:9px;border-radius:50%;border:1.5px solid var(--cartao,#fbf9f4)}
+.conecta-aprovado-root .faixa-agentes .fa-qr{display:inline-flex;align-items:center;gap:4px;font-weight:700;flex:none;white-space:nowrap;margin-right:4px}
+.conecta-aprovado-root .faixa-agentes .fa-qr::before{content:'●';font-size:9px}
+.conecta-aprovado-root .faixa-agentes .fa-qr-online{color:#176e4c}
+.conecta-aprovado-root .faixa-agentes .fa-qr-offline{color:#a23e34}
+@media(max-width:650px){.conecta-aprovado-root .faixa-agentes{flex-wrap:wrap}.conecta-aprovado-root .faixa-agentes .fa-qr{font-size:11px}}
 /* Resumo em texto ao lado do ícone: o lojista vê que há agente conectado sem precisar abrir. */
 .conecta-aprovado-root .faixa-agentes:has(.fa-resumo){flex-direction:row;align-items:center;gap:8px}
 .conecta-aprovado-root .faixa-agentes .fa-resumo{margin-left:0;flex:1 1 auto;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;background:transparent;border:0}

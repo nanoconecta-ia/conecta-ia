@@ -30,6 +30,7 @@ select public.afirma(has_function_privilege('authenticated', 'public.chat_qr_dis
 select public.afirma(not has_table_privilege('authenticated', 'public.pair_sessoes', 'select'), 'cliente nao recebe SELECT nas sessoes Pair');
 select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111"}', true);
 select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'disponivel')::boolean, 'dono ve a disponibilidade do QR');
+select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'online')::boolean = false, 'QR autorizado mas sem consumidor fica OFFLINE');
 select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333"}', true);
 do $test_qr$ begin
   perform public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a');
@@ -51,7 +52,15 @@ select public.chat_fila_enfileirar('aaaaaaaa-0000-0000-0000-00000000000a', 'e100
 update public.chat_fila set criado_em = now() - interval '1 second' where mensagem_id = 'e1000000-0000-0000-0000-000000000001';
 
 select public.afirma(public.chat_fila_reivindicar(:S2)->>'motivo' = 'sessao_sem_permissao', 'sessão sem chat:responder não lê o chat');
+select public.afirma((select chat_escuta_em is null from public.pair_sessoes where id=:S2), 'sessao sem escopo nao registra pulso de escuta');
 create temp table r1 as select public.chat_fila_reivindicar(:S1) as j;
+select public.afirma((select chat_escuta_em >= now()-interval '5 seconds' from public.pair_sessoes where id=:S1), 'consumidor autenticado registra pulso da fila');
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111"}', true);
+select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'online')::boolean, 'pulso recente faz QR aparecer ONLINE');
+update public.pair_sessoes set chat_escuta_em = now()-interval '90 seconds' where id=:S1;
+select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'online')::boolean=false,'pulso vencido deixa QR OFFLINE, mesmo com token autorizado');
+update public.pair_sessoes set chat_escuta_em = now() where id=:S1;
+select set_config('request.jwt.claims', '{}', true);
 select public.afirma((select j->>'mensagem' from r1) = 'CI002916', 'agente recebe a mensagem da loja da sessão');
 select public.afirma((select j->>'mensagem' from r1) <> 'segredo da loja B', 'nunca a da loja B');
 select public.afirma((public.chat_fila_reivindicar(:S1)->>'ocupado')::boolean, 'sessão ocupada não recebe a segunda mensagem pendente');
