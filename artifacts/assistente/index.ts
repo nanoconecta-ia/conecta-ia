@@ -281,6 +281,32 @@ function urlPublicaSegura(url) {
     if (h === "localhost" || /\.(local|internal|localhost|lan|home|corp)$/.test(h)) return false;
     return true;
 }
+function permissaoAtivacaoPlugin(p) {
+    if (p.tipo !== "api") return {
+        permitido: false,
+        motivo: `O plugin ${p.tipo.toUpperCase()} está somente cadastrado: a execução desse protocolo pelo Nano ainda não foi implementada. Não é uma conexão MCP autenticada.`
+    };
+    if (p.risco !== "LOW") return {
+        permitido: false,
+        motivo: "Plugins MEDIUM, HIGH ou CRITICAL exigem fluxo de aprovação separado; ativação automática bloqueada."
+    };
+    if (!Array.isArray(p.capacidades) || p.capacidades.length === 0) return {
+        permitido: false,
+        motivo: "Declare pelo menos uma capacidade antes de ativar."
+    };
+    if (!p.url || !urlPublicaSegura(p.url)) return {
+        permitido: false,
+        motivo: "Configure uma URL HTTPS pública permitida antes de ativar."
+    };
+    if (p.ultimo_teste_ok !== true) return {
+        permitido: false,
+        motivo: "Teste a conexão SDK v1 e confirme resultado positivo antes de ativar."
+    };
+    return {
+        permitido: true,
+        motivo: "API SDK v1 testada, somente capacidades declaradas e risco LOW."
+    };
+}
 async function chamarPlugin(p, credencial, capacidade, entrada, f = fetch) {
     if (!p.ativo) return {
         ok: false,
@@ -383,7 +409,7 @@ async function testarPlugin(p, credencial, f = fetch) {
     }
 }
 
-return { urlPublicaSegura: urlPublicaSegura, chamarPlugin: chamarPlugin, testarPlugin: testarPlugin };
+return { urlPublicaSegura: urlPublicaSegura, permissaoAtivacaoPlugin: permissaoAtivacaoPlugin, chamarPlugin: chamarPlugin, testarPlugin: testarPlugin };
 })();
 
 // ---------- supabase/functions/_shared/ia/adaptadores.ts ----------
