@@ -5,16 +5,20 @@ import { ir } from "../lib/rota.ts";
 import { estadoAgente, maisRecentePorNome, nomeCurto, resumoFaixa } from "../lib/usoGateway.ts";
 import "./faixa-agentes.css";
 import { restante } from "./Dispositivos.tsx";
+import { indicadorQr, type PresencaQr } from "../lib/indicadorQr.ts";
 
 type Linha = { id: string; nome: string; tipo: string; sessaoId: string; limite_ate: string; token_ate: string; absoluto: string | null; ultima: string | null };
 
 /** Faixa fina no topo: quem está conectado AGORA (agente externo, extensão), quanto tempo resta e se está agindo. Só dados reais da loja. */
 export function FaixaAgentes({ loja }: { loja: Loja }) {
   const [linhas, setLinhas] = useState<Linha[]>([]);
+  const [presencaQr, setPresencaQr] = useState<PresencaQr>(null);
   const [agora, setAgora] = useState(Date.now());
   const [msg, setMsg] = useState("");
   const [aberta, setAberta] = useState(false);
   const carregar = useCallback(async () => {
+    const { data: estadoQr, error: erroQr } = await supabase.rpc("chat_qr_disponivel", { p_loja: loja.id });
+    setPresencaQr(!erroQr ? (estadoQr as PresencaQr) : null);
     const { data } = await supabase.from("pair_dispositivos")
       .select("id, nome, tipo, pair_sessoes(id, expira_em, limite_ate, limite_absoluto_ate, revogado_em)").eq("loja_id", loja.id).is("revogado_em", null).limit(20);
     const desde = new Date(Date.now() - 10 * 60_000).toISOString();
@@ -41,9 +45,11 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
     setMsg(error ? "Não foi possível desconectar. Use a tela Dispositivos." : `${nomeCurto(l.nome)} foi desconectado.`);
     void carregar();
   }
-  if (linhas.length === 0) return msg ? <div className="faixa-agentes" role="status"><span className="fa-msg">{msg}</span></div> : null;
+  const sinal = indicadorQr(presencaQr, agora);
+  if (linhas.length === 0) return <div className="faixa-agentes faixa-qr-somente" role="status"><span className={`fa-qr ${sinal.online ? "fa-qr-online" : "fa-qr-offline"}`} title={sinal.detalhe} aria-label={sinal.detalhe}>{sinal.rotulo}</span>{msg && <span className="fa-msg">{msg}</span>}</div>;
   return (
     <div className="faixa-agentes" role="status" aria-live="polite">
+      <span className={`fa-qr ${sinal.online ? "fa-qr-online" : "fa-qr-offline"}`} title={sinal.detalhe} aria-label={sinal.detalhe}>{sinal.rotulo}</span>
       <button className="fa-icone" aria-expanded={aberta} aria-label={aberta ? "Recolher agentes conectados" : `Agentes conectados: ${linhas.length}`} onClick={() => setAberta(!aberta)}>
         <span aria-hidden style={{ fontSize: 11, fontWeight: 600 }}>IA</span><i className="fa-badge" style={{ background: linhas.some((x) => estadoAgente(x.limite_ate, x.ultima, agora, x.token_ate).situacao === "parado") ? "#b42318" : "#1a6f4d" }} aria-hidden />
       </button>

@@ -33,6 +33,7 @@ import { identificarModeloEfetivo } from "../lib/modeloEfetivo.ts";
 import { perguntaSobreModelo, respostaSobreModelo } from "../lib/respostaModelo.ts";
 import { AvatarNanoAprovado } from "../componentes/AvatarNanoAprovado.tsx";
 import { RelogioPair } from "../componentes/RelogioPair.tsx";
+import { indicadorQr } from "../lib/indicadorQr.ts";
 
 /** Uma queda passageira (sessão ainda renovando) não pode travar o chat até recarregar a página: renova a sessão e tenta mais uma vez. */
 async function invocarAssistenteComRenovacao(lojaId: string, acao: string) {
@@ -136,6 +137,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [provedores, setProvedores] = useState<OpcaoProvedor[]>([]);
   const [provedor, setProvedor] = useState<SelecaoNano>("");
   const [agenteQrDisponivel, setAgenteQrDisponivel] = useState(false);
+  const [agenteQrOnline, setAgenteQrOnline] = useState(false);
+  const [agenteQrUltimoSinal, setAgenteQrUltimoSinal] = useState<string | null>(null);
   const [agenteQrJanelaAte, setAgenteQrJanelaAte] = useState<string | null>(null);
   const [agenteQrTokenAte, setAgenteQrTokenAte] = useState<string | null>(null);
   const [carregandoChat, setCarregandoChat] = useState(true);
@@ -154,24 +157,26 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const entradaFotos = useRef<HTMLInputElement>(null);
   const selecao = provedores.find((p) => p.id === provedor);
   const modoAgenteQr = provedor === "agente_qr";
+  const sinalQr = indicadorQr({ disponivel: agenteQrDisponivel, online: agenteQrOnline, ultimo_sinal_em: agenteQrUltimoSinal, token_ate: agenteQrTokenAte, janela_ate: agenteQrJanelaAte });
   const ultimoModelo = [...msgs].reverse().find(m => m.de === "ia" && !m.parcial && m.modeloUsado);
   // Nome confirmado apenas por resposta final registrada. "Disponível" do seletor verifica configuração, não rede.
   const textoMotor = motorPendente
     ? `Aguardando resposta de ${motorPendente} · ainda não confirmado`
     : ultimoMotorFalhou
       ? "Última consulta falhou · disponibilidade não confirmada"
+      : modoAgenteQr ? `${sinalQr.rotulo} · ${sinalQr.online ? "consulta autenticada recente à fila" : "sem consumidor ativo confirmado"}`
       : ultimoModelo?.modeloUsado
         ? `Última resposta confirmada: ${ultimoModelo.modeloUsado}${ultimoModelo.modeloContingencia ? " (contingência)" : ""}`
         : carregando ? "Verificando configuração de IA…"
-        : modoAgenteQr ? "Agente conectado pelo QR · aguardando resposta"
         : !provedor ? "Sem LLM ativo · apenas recursos locais"
         : `Selecionado: ${selecao?.nome ?? provedor}${selecao?.modelo ? ` · ${selecao.modelo}` : ""} · ainda não testado`;
   const estadoMotor = motorPendente ? "consultando" : ultimoMotorFalhou ? "falha"
+    : modoAgenteQr ? (sinalQr.online ? "configurado" : "falha")
     : ultimoModelo?.modeloUsado ? "confirmado" : "configurado";
   const nomeMotorCompacto = motorPendente ? (selecao?.nome ?? provedor ?? "IA") + " · consultando"
     : ultimoMotorFalhou ? "IA · falha"
+    : modoAgenteQr ? (sinalQr.online ? "Agente QR · online" : "Agente QR · offline")
     : ultimoModelo?.modeloUsado ? ultimoModelo.modeloUsado.split(" · ")[0] + " · respondeu"
-    : modoAgenteQr ? "Agente QR · selecionado"
     : provedor ? (selecao?.nome ?? provedor) + " · selecionado"
     : "Sem LLM";
   const armazemSessao = typeof sessionStorage === "undefined" ? null : sessionStorage;
@@ -183,7 +188,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   useEffect(() => {
     let ativo = true;
     setConfig({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 }); setConversas([]); setConversaId(null); setRegistros([]); setRetentativa(null); setAdministrando(false); setErroHistorico("");
-    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false); setAutorizaFallbackFree(false); setMotorPendente(null); setUltimoMotorFalhou(false); setAgenteQrDisponivel(false); setAgenteQrJanelaAte(null); setAgenteQrTokenAte(null);
+    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false); setAutorizaFallbackFree(false); setMotorPendente(null); setUltimoMotorFalhou(false); setAgenteQrDisponivel(false); setAgenteQrOnline(false); setAgenteQrUltimoSinal(null); setAgenteQrJanelaAte(null); setAgenteQrTokenAte(null);
     setMsgs([{ de: "ia", texto: "Olá! Posso consultar os dados desta loja. Escolha um provedor para conversar com IA." }]);
     invocarAssistenteComRenovacao(loja.id, "provedores")
       .then(({ data, error }) => {
@@ -215,9 +220,11 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         .then(({ data, error }) => {
           if (!ativo) return;
           setAgenteQrDisponivel(!error && data?.disponivel === true);
+          setAgenteQrOnline(!error && data?.online === true);
+          setAgenteQrUltimoSinal(!error ? data?.ultimo_sinal_em ?? null : null);
           setAgenteQrJanelaAte(!error ? data?.janela_ate ?? null : null);
           setAgenteQrTokenAte(!error ? data?.token_ate ?? null : null);
-        }).catch(() => { if (ativo) { setAgenteQrDisponivel(false); setAgenteQrJanelaAte(null); setAgenteQrTokenAte(null); } });
+        }).catch(() => { if (ativo) { setAgenteQrDisponivel(false); setAgenteQrOnline(false); setAgenteQrUltimoSinal(null); setAgenteQrJanelaAte(null); setAgenteQrTokenAte(null); } });
     };
     verificarQr();
     const checagemQr = window.setInterval(verificarQr, 15000);
@@ -647,9 +654,10 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         }}>
           <option value="">Resumo local (sem IA externa)</option>
           {provedores.map((p) => <option key={p.id} value={p.id} disabled={p.estado !== "disponivel"}>{p.nome}{p.modelo ? ` · ${p.modelo}` : ""} — {ESTADO_PROVEDOR[p.estado]}</option>)}
-          <option value="agente_qr" disabled={!agenteQrDisponivel}>Agente conectado pelo QR — {agenteQrDisponivel ? "token válido (cliente não verificado)" : "sem token válido"}</option>
+          <option value="agente_qr" disabled={!agenteQrDisponivel}>Agente conectado pelo QR — {sinalQr.online ? "ONLINE (consultando fila)" : "OFFLINE"}{agenteQrDisponivel ? " · token autorizado" : " · sem token válido"}</option>
         </select></label>
         {modoAgenteQr && <div>
+          <p role="status"><strong>{sinalQr.rotulo}</strong> — {sinalQr.detalhe}</p>
           <p className="suave">As mensagens serão encaminhadas exclusivamente ao agente QR selecionado; o OpenRouter não assume automaticamente quando o QR expira.</p>
           <RelogioPair tokenAte={agenteQrTokenAte} janelaAte={agenteQrJanelaAte} />
           <button type="button" className="sec mini" onClick={() => aoNavegar?.("/dispositivos")}>Gerenciar e reconfirmar autorização</button>
