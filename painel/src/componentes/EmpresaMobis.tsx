@@ -15,6 +15,7 @@ export function EmpresaMobis({whatsapp}:{whatsapp:string|null}) {
     {aba==="sobre"&&<div role="tabpanel" id="m2-painel-sobre" aria-labelledby="m2-aba-sobre" className="m2-empresa-painel">
       <h2>Empresa de família, há mais de 14 anos vendendo autopeças</h2>
       <p>A Mobis nasceu em Anápolis e hoje atende de Goiânia. Trabalhamos com peças para picapes, vans e utilitários e despachamos para todo o Brasil.</p>
+      <p><strong>Loja brasileira independente.</strong> A MOBIS AUTOPEÇAS não integra montadoras, fabricantes de veículos nem redes de concessionárias. As marcas e os modelos de veículos mencionados identificam aplicações de peças e não representam vínculo oficial ou endosso. A compatibilidade de cada item deve ser confirmada antes da compra.</p>
       <ul><li>Mais de 14 anos no mercado de autopeças</li><li>Empresa familiar, atendimento direto com quem entende da peça</li><li>Envio para todo o território nacional</li></ul>
       {whatsapp&&<a className="m2-empresa-cta" href={whatsapp} target="_blank" rel="noopener noreferrer">Falar com a Mobis no WhatsApp ↗</a>}
     </div>}
