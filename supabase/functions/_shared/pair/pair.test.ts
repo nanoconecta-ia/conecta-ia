@@ -164,6 +164,8 @@ function ambiente(s: Sessao | null, opcoes: { limite?: (c: string) => boolean; d
     statusSincronizacao: async (loja) => { chamadasDados.push({ metodo: "statusSincronizacao", loja, args: null }); return { conexao: "conectada", skus_repetidos_no_erp: [] }; },
     imagensProduto: async (loja, sku) => { chamadasDados.push({ metodo: "imagensProduto", loja, args: sku }); return sku === "P1" ? { sku, total: 0, imagens: [] } : null; },
     camposAprovados: async (loja, sku) => { chamadasDados.push({ metodo: "camposAprovados", loja, args: sku }); return sku === "P1" ? { sku, campos: [{ id: "e1", campo: "marca_peca", valor: "Cobreq", fonte: "https://fab.exemplo", aprovado_em: "2026-10-30T00:00:00Z" }] } : null; },
+    chatReivindicar: async (s) => { chamadasDados.push({ metodo: "chatReivindicar", loja: s.loja_id, args: s.sessao_id }); return { ok: true, vazio: true }; },
+    chatResponder: async (s, filaId, texto) => { chamadasDados.push({ metodo: "chatResponder", loja: s.loja_id, args: { filaId, texto } }); return { ok: true }; },
     ...opcoes.dados,
   };
   const validadas: [string, string][] = [];
@@ -224,7 +226,24 @@ test("gateway: tools/list mostra só o que o escopo da sessão permite", async (
   const nomes = async (escopos: string[]) => ((await chamar(ambiente(sessao(escopos)), rpc("tools/list"))).corpo as { result: { tools: { name: string }[] } }).result.tools.map((t) => t.name).sort();
   assert.deepEqual(await nomes(["produtos:ler"]), ["conecta.get_part_by_code", "conecta.get_product", "conecta.get_product_images", "conecta.get_sync_status", "conecta.get_validated_fields", "conecta.list_products"]);
   assert.deepEqual(await nomes([]), []);
-  assert.equal((await nomes([...ESCOPOS])).length, 16); // 14 anteriores + get_sync_status + get_product_images (produtos:ler)
+  assert.deepEqual(await nomes(["chat:responder"]), ["conecta.chat_reivindicar", "conecta.chat_responder"]);
+  assert.equal((await nomes([...ESCOPOS])).length, 18); // 16 anteriores + as duas ferramentas da fila QR
+});
+test("gateway/chat QR: a fila usa a sessão autenticada e rejeita argumentos extras", async () => {
+  const a = ambiente(sessao(["chat:responder"]));
+  const vazio = resultado(await chamar(a, tool("conecta.chat_reivindicar")));
+  assert.deepEqual(JSON.parse(vazio.content[0].text), { ok: true, vazio: true });
+  const resposta = resultado(await chamar(a, tool("conecta.chat_responder", { fila_id: "11111111-1111-1111-1111-111111111111", texto: "Olá" })));
+  assert.deepEqual(JSON.parse(resposta.content[0].text), { ok: true });
+  assert.deepEqual(a.chamadasDados, [
+    { metodo: "chatReivindicar", loja: LOJA_A, args: "s-1" },
+    { metodo: "chatResponder", loja: LOJA_A, args: { filaId: "11111111-1111-1111-1111-111111111111", texto: "Olá" } },
+  ]);
+  const extra = resultado(await chamar(a, tool("conecta.chat_responder", { fila_id: "11111111-1111-1111-1111-111111111111", texto: "Olá", loja_id: LOJA_B })));
+  assert.equal(extra.isError, true);
+  assert.equal(a.chamadasDados.length, 2);
+  const semEscopo = resultado(await chamar(ambiente(sessao(["produtos:ler"])), tool("conecta.chat_reivindicar")));
+  assert.equal(semEscopo.isError, true);
 });
 test("gateway: ferramenta sem o escopo é NEGADA, auditada e não toca os dados", async () => {
   const a = ambiente(sessao(["produtos:ler"]));
@@ -338,13 +357,13 @@ test("gateway: cada chamada revalida a sessão no banco (revogação vale na pr�
 test("gateway: o catálogo NÃO tem ferramenta que aprove, execute, publique, altere preço/estoque ou grave no Bling", () => {
   for (const f of FERRAMENTAS) {
     // única exceção explícita: set_active_product grava SÓ o contexto efêmero (qual produto está aberto); não altera produto, preço, estoque nem o ERP
-    assert.match(f.nome, /^conecta\.(list_|get_|propose_|bling_consultar_produto$|set_active_product$)/, f.nome);
+    assert.match(f.nome, /^conecta\.(list_|get_|propose_|bling_consultar_produto$|set_active_product$|chat_(reivindicar|responder)$)/, f.nome);
     // regra do sistema: o agente nunca apaga nota fiscal nem o cadastro espelhado do Bling; não existe ferramenta nem escopo para isso
     assert.doesNotMatch(f.nome + " " + f.escopo, /delete|remove|destroy|excluir|apagar|nfe|nota|invoice|emit|cancel/i, f.nome);
     assert.equal(f.inputSchema.type, "object");
     assert.doesNotMatch(f.nome + f.descricao.split(".")[0], /approve|execute|publish|delete|price|stock/i, f.nome);
     assert.ok(ESCOPOS.includes(f.escopo), f.nome);
-    assert.equal(f.somenteLeitura, !f.nome.includes("propose_") && f.nome !== "conecta.set_active_product", `${f.nome}: leitura x proposta`);
+    assert.equal(f.somenteLeitura, !f.nome.includes("propose_") && f.nome !== "conecta.set_active_product" && f.nome !== "conecta.chat_responder", `${f.nome}: leitura x proposta`);
     assert.equal(JSON.stringify(f.inputSchema).includes("loja_id"), false, `${f.nome} não aceita loja`);
     assert.equal((f.inputSchema as { additionalProperties: boolean }).additionalProperties, false);
   }

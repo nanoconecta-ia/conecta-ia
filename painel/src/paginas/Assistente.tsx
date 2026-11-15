@@ -82,6 +82,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [motivo, setMotivo] = useState("");
   const [dias, setDias] = useState(180);
   const [podeAdministrar, setPodeAdministrar] = useState(false);
+  type SelecaoNano = ProvedorChat | "agente_qr" | "";
   const [retentativa, setRetentativa] = useState<{ texto: string; chave: string; provedor: ProvedorChat; conversa: string | null } | null>(null);
   const [abertas, setAbertas] = useState<Set<number>>(new Set());
   const [modoMsgs, setModoMsgs] = useState<"auto" | "recolher" | "expandir">("auto");
@@ -132,7 +133,9 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const caixa = useRef<HTMLDivElement>(null);
   const estreito = () => (caixa.current?.clientWidth ?? 0) < 820; // em tela estreita as abas são gavetas sobrepostas: só uma por vez
   const [provedores, setProvedores] = useState<OpcaoProvedor[]>([]);
-  const [provedor, setProvedor] = useState<ProvedorChat | "">("");
+  const [provedor, setProvedor] = useState<SelecaoNano>("");
+  const [agenteQrDisponivel, setAgenteQrDisponivel] = useState(false);
+  const [agenteQrExpira, setAgenteQrExpira] = useState<string | null>(null);
   const [carregandoChat, setCarregandoChat] = useState(true);
   const [carregando, setCarregando] = useState(true);
   const [erroConfig, setErroConfig] = useState("");
@@ -148,6 +151,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const entradaCamera = useRef<HTMLInputElement>(null);
   const entradaFotos = useRef<HTMLInputElement>(null);
   const selecao = provedores.find((p) => p.id === provedor);
+  const modoAgenteQr = provedor === "agente_qr";
   const ultimoModelo = [...msgs].reverse().find(m => m.de === "ia" && !m.parcial && m.modeloUsado);
   // Nome confirmado apenas por resposta final registrada. "Disponível" do seletor verifica configuração, não rede.
   const textoMotor = motorPendente
@@ -157,6 +161,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       : ultimoModelo?.modeloUsado
         ? `Última resposta confirmada: ${ultimoModelo.modeloUsado}${ultimoModelo.modeloContingencia ? " (contingência)" : ""}`
         : carregando ? "Verificando configuração de IA…"
+        : modoAgenteQr ? "Agente conectado pelo QR · aguardando resposta"
         : !provedor ? "Sem LLM ativo · apenas recursos locais"
         : `Selecionado: ${selecao?.nome ?? provedor}${selecao?.modelo ? ` · ${selecao.modelo}` : ""} · ainda não testado`;
   const estadoMotor = motorPendente ? "consultando" : ultimoMotorFalhou ? "falha"
@@ -164,6 +169,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const nomeMotorCompacto = motorPendente ? (selecao?.nome ?? provedor ?? "IA") + " · consultando"
     : ultimoMotorFalhou ? "IA · falha"
     : ultimoModelo?.modeloUsado ? ultimoModelo.modeloUsado.split(" · ")[0] + " · respondeu"
+    : modoAgenteQr ? "Agente QR · selecionado"
     : provedor ? (selecao?.nome ?? provedor) + " · selecionado"
     : "Sem LLM";
   const armazemSessao = typeof sessionStorage === "undefined" ? null : sessionStorage;
@@ -171,11 +177,11 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const autorizarEnvio = () => { if (!provedor) return; gravarConsentimento(armazemSessao, loja.id, provedor, true); setAceitaEnvio(true); };
   const revogarEnvio = () => { if (provedor) gravarConsentimento(armazemSessao, loja.id, provedor, false); setAceitaEnvio(false); };
   const modoFichaSemIA = /^\/ficha\s+[A-Za-z0-9_.\/-]{1,60}$/i.test(texto.trim());
-  const podeEnviar = !ocupado && ((!carregandoChat && config.bling && modoFichaSemIA) || (!carregandoChat && !carregando && !erroConfig && (!provedor || (selecao?.estado === "disponivel" && aceitaEnvio))));
+  const podeEnviar = !ocupado && ((!carregandoChat && config.bling && modoFichaSemIA) || (!carregandoChat && !carregando && !erroConfig && (modoAgenteQr ? agenteQrDisponivel : (!provedor || (selecao?.estado === "disponivel" && aceitaEnvio)))));
   useEffect(() => {
     let ativo = true;
     setConfig({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 }); setConversas([]); setConversaId(null); setRegistros([]); setRetentativa(null); setAdministrando(false); setErroHistorico("");
-    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false); setAutorizaFallbackFree(false); setMotorPendente(null); setUltimoMotorFalhou(false);
+    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false); setAutorizaFallbackFree(false); setMotorPendente(null); setUltimoMotorFalhou(false); setAgenteQrDisponivel(false); setAgenteQrExpira(null);
     setMsgs([{ de: "ia", texto: "Olá! Posso consultar os dados desta loja. Escolha um provedor para conversar com IA." }]);
     invocarAssistenteComRenovacao(loja.id, "provedores")
       .then(({ data, error }) => {
@@ -196,6 +202,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       void restaurarConversa(data.persistente === true);
     }).catch(() => { if (ativo) { setCarregandoChat(false); setErroHistorico("Não foi possível consultar o histórico."); } });
     supabase.rpc("pode_administrar_loja", { p_loja_id: loja.id }).then(({ data, error }) => { if (ativo) setPodeAdministrar(!error && data === true); });
+    supabase.from("pair_sessoes").select("id, limite_ate").eq("loja_id", loja.id).is("revogado_em", null).gt("limite_ate", new Date().toISOString()).contains("escopos", ["chat:responder"]).order("limite_ate", { ascending: false }).limit(1).maybeSingle()
+      .then(({ data, error }) => { if (ativo && !error && data) { setAgenteQrDisponivel(true); setAgenteQrExpira(data.limite_ate); } });
     return () => { ativo = false; };
   }, [loja.id, tentativaConfig]);
   const [lerAlto, setLerAlto] = useState(lerPreferenciaFala);
@@ -324,7 +332,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     const persistente = !!provedor && config.persistente;
     const tentativa = repetir ? retentativa : null;
     const chave = tentativa?.chave ?? crypto.randomUUID();
-    const prov = tentativa?.provedor ?? provedor;
+    const prov = tentativa?.provedor ?? (provedor === "agente_qr" ? null : provedor);
     const conv = tentativa ? tentativa.conversa : conversaId;
     if (repetir && (!tentativa || provedor !== tentativa.provedor)) return;
     const historico = msgsRef.current.slice(1);
@@ -332,12 +340,12 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     if (!repetir) setMsgs(m => [...m, { de: "eu", texto: t, ...(anexosEnvio.length ? { anexos: anexosEnvio.map((a) => a.nome) } : {}) }]);
     setAnexos([]); setErroAnexo("");
     setTexto(""); setOcupado(true); setErroHistorico(""); setUltimoMotorFalhou(false);
-    setMotorPendente(prov ? `${selecao?.nome ?? prov}${selecao?.modelo ? ` · ${selecao.modelo}` : ""}` : null);
+    setMotorPendente(provedor === "agente_qr" ? "Agente conectado pelo QR" : prov ? `${selecao?.nome ?? prov}${selecao?.modelo ? ` · ${selecao.modelo}` : ""}` : null);
     if (persistente && prov) setRetentativa({ texto: t, chave, provedor: prov, conversa: conv });
     try {
-      const campos = { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio, consentimento_fallback_free: autorizaFallbackFree && ((prov === "gemini" && config.fallback_free_disponivel === true) || (prov === "openrouter_free" && config.fallback_auxiliar_disponivel === true)) } : { historico }), ...(prov ? { provedor: prov } : { sem_ia: true }), ...(anexosEnvio.length ? { anexos: anexosEnvio.map(({ nome, tipo, dados }) => ({ nome, tipo, dados })) } : {}) };
+      const campos = { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio, consentimento_fallback_free: autorizaFallbackFree && ((prov === "gemini" && config.fallback_free_disponivel === true) || (prov === "openrouter_free" && config.fallback_auxiliar_disponivel === true)) } : { historico }), ...(provedor === "agente_qr" ? { idempotency_key: chave } : prov ? { provedor: prov } : { sem_ia: true }), ...(anexosEnvio.length ? { anexos: anexosEnvio.map(({ nome, tipo, dados }) => ({ nome, tipo, dados })) } : {}) };
       // B2b (#166): com o servidor anunciando streaming, o texto aparece enquanto o provedor escreve; o que vale é o resultado final registrado.
-      const data = persistente && config.streaming ? await perguntarStreaming(campos, lojaDoEnvio) : await chamada(persistente ? "chat_perguntar" : "perguntar", campos);
+      const data = provedor === "agente_qr" ? await chamada("chat_qr_perguntar", campos) : persistente && config.streaming ? await perguntarStreaming(campos, lojaDoEnvio) : await chamada(persistente ? "chat_perguntar" : "perguntar", campos);
       if (lojaAtual.current !== lojaDoEnvio) return;
       const resposta = String(data.resposta ?? "");
       const motor = identificarModeloEfetivo(data);
@@ -587,10 +595,12 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       <aside className="aba aba-dir" id="aba-modelo" aria-label="Modelo e privacidade">
         <div className="aba-topo"><strong>Modelo e privacidade</strong><button type="button" className="sec mini" onClick={() => setDir(false)} aria-label="Recolher modelo e privacidade">Recolher</button></div>
         <div className="aba-corpo">
-        <label>Modelo de IA<select value={provedor} disabled={ocupado || carregando || !!erroConfig || !!retentativa || administrando} onChange={(e) => { setProvedor(e.target.value as ProvedorChat | ""); setAceitaEnvio(false); setAutorizaFallbackFree(false); }}>
+        <label>Modelo de IA<select value={provedor} disabled={ocupado || carregando || !!erroConfig || !!retentativa || administrando} onChange={(e) => { setProvedor(e.target.value as SelecaoNano); setAceitaEnvio(false); setAutorizaFallbackFree(false); }}>
           <option value="">Resumo local (sem IA externa)</option>
           {provedores.map((p) => <option key={p.id} value={p.id} disabled={p.estado !== "disponivel"}>{p.nome}{p.modelo ? ` · ${p.modelo}` : ""} — {ESTADO_PROVEDOR[p.estado]}</option>)}
+          <option value="agente_qr" disabled={!agenteQrDisponivel}>Agente conectado pelo QR — {agenteQrDisponivel ? "disponível" : "não conectado"}</option>
         </select></label>
+        {modoAgenteQr && <p className="suave" role="status">As mensagens desta loja serão entregues ao agente conectado pelo QR e marcadas como “agente via QR”. {agenteQrExpira ? `Sessão válida até ${new Date(agenteQrExpira).toLocaleString("pt-BR")}.` : ""}</p>}
         <fieldset className="grupo-orbe" aria-label="Nano Auto: IA auxiliar de contingência">
           <legend>Nano Auto · IA auxiliar</legend>
           <p className="suave" role="status">{carregandoChat

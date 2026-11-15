@@ -1884,6 +1884,56 @@ const FERRAMENTAS = [
         executar: async (s, a, d)=>await d.statusTarefa(s.loja_id, a.id) ?? {
                 erro: "Não encontrado nesta loja."
             }
+    },
+    {
+        nome: "conecta.chat_reivindicar",
+        escopo: "chat:responder",
+        somenteLeitura: true,
+        descricao: "Lê uma mensagem pendente do chat desta loja. A entrega fica reservada para esta sessão; uma sessão só pode ter uma mensagem ativa por vez e mensagens vencidas são descartadas.",
+        esquema: {
+            obrig: [],
+            props: {}
+        },
+        inputSchema: js({}),
+        executar: (s, _a, d)=>d.chatReivindicar(s)
+    },
+    {
+        nome: "conecta.chat_responder",
+        escopo: "chat:responder",
+        somenteLeitura: false,
+        descricao: "Responde uma mensagem que esta sessão reivindicou. A resposta é enviada uma única vez dentro do prazo e marcada como agente via QR.",
+        esquema: {
+            obrig: [
+                "fila_id",
+                "texto"
+            ],
+            props: {
+                fila_id: {
+                    tipo: "string",
+                    max: 40,
+                    formato: "uuid"
+                },
+                texto: {
+                    tipo: "string",
+                    max: 8000
+                }
+            }
+        },
+        inputSchema: js({
+            fila_id: {
+                type: "string",
+                format: "uuid"
+            },
+            texto: {
+                type: "string",
+                minLength: 1,
+                maxLength: 8000
+            }
+        }, [
+            "fila_id",
+            "texto"
+        ]),
+        executar: (s, a, d)=>d.chatResponder(s, a.fila_id, a.texto)
     }
 ];
 const rpcErro = (id, code, message)=>({
@@ -3350,6 +3400,28 @@ function dadosSupabase(admin, agora = ()=>new Date(), bling) {
                 origem: "enriquecimento",
                 ...t
             } : null;
+        },
+        async chatReivindicar (sessao) {
+            const { data, error } = await admin.rpc("chat_fila_reivindicar", {
+                p_sessao: sessao.sessao_id
+            });
+            if (error) throw new Error("falha ao ler a fila do chat");
+            return data ?? {
+                ok: true,
+                vazio: true
+            };
+        },
+        async chatResponder (sessao, filaId, texto) {
+            const { data, error } = await admin.rpc("chat_fila_responder", {
+                p_sessao: sessao.sessao_id,
+                p_fila: filaId,
+                p_texto: texto
+            });
+            if (error) throw new Error("falha ao responder no chat");
+            return data ?? {
+                ok: false,
+                motivo: "resposta_indisponivel"
+            };
         }
     };
 }
