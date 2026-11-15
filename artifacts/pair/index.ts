@@ -362,8 +362,10 @@ function configuracaoPair(get) {
     const definido = get("PAIR_AMBIENTE");
     const ambiente = definido === "sintetico" || definido === "real" ? definido : !definido && producao ? "real" : "nao_validado";
     const app = get("APP_URL");
+    const configurado = app ? urlPainel(app) : undefined;
+    const redirecionado = producao && configurado && new URL(configurado).hostname === "nanoconecta-ia.github.io";
     return {
-        appUrl: app ? urlPainel(app) : producao ? PAINEL_CONECTA : undefined,
+        appUrl: redirecionado ? PAINEL_CONECTA : configurado ?? (producao ? PAINEL_CONECTA : undefined),
         ambiente
     };
 }
