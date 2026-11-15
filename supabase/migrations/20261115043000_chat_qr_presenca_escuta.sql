@@ -39,7 +39,7 @@ begin
     raise exception 'acesso negado' using errcode = '42501';
   end if;
   select s.expira_em, s.limite_ate into v_token, v_janela
-    from public.pair_sessoes s
+    from public.pair_sessoes s join public.pair_dispositivos d on d.id = s.dispositivo_id and d.revogado_em is null
    where s.loja_id = p_loja
      and s.revogado_em is null
      and s.limite_ate > now()
@@ -47,7 +47,7 @@ begin
    order by s.expira_em desc, s.limite_ate desc
    limit 1;
   -- Pulso da fila somente de sessões realmente autorizadas e com token ativo.
-  select max(s.chat_escuta_em) into v_escuta from public.pair_sessoes s
+  select max(s.chat_escuta_em) into v_escuta from public.pair_sessoes s join public.pair_dispositivos d on d.id = s.dispositivo_id and d.revogado_em is null
    where s.loja_id = p_loja and s.revogado_em is null
      and s.expira_em > now() and s.limite_ate > now()
      and 'chat:responder' = any(s.escopos);

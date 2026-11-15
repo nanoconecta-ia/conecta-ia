@@ -91,6 +91,14 @@ update public.pair_sessoes set expira_em = now() + interval '1 hour' where id = 
 select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'disponivel')::boolean, 'token renovado volta a aparecer como ativo');
 select set_config('request.jwt.claims', '{}', true);
 
+-- Revogação do DISPOSITIVO derruba o indicador imediatamente, mesmo que a sessão tenha pulso recente.
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111"}', true);
+update public.pair_dispositivos set revogado_em = now() where id = 'd1000000-0000-0000-0000-000000000001';
+select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'online')::boolean = false, 'dispositivo revogado fica OFFLINE');
+select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'disponivel')::boolean = false, 'dispositivo revogado nao figura como autorizado');
+update public.pair_dispositivos set revogado_em = null where id = 'd1000000-0000-0000-0000-000000000001';
+select set_config('request.jwt.claims', '{}', true);
+
 -- sessão revogada perde o acesso na hora
 update public.pair_sessoes set revogado_em = now() where id = :S1;
 select public.afirma(public.chat_fila_reivindicar(:S1)->>'motivo' = 'sessao_sem_permissao', 'sessão revogada não lê mais');
