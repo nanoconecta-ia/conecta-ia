@@ -179,7 +179,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  let anexos: AnexoValido[] = [];
  if (c.anexos != null) {
   if (provedor === PROVEDOR_FREE) return resultado({ erro: "O modelo gratuito não recebe anexos. Escolha outro provedor para enviar arquivos." }, 400);
-  const va = await validarAnexos(c.anexos, provedor);
+  const va = await validarAnexos(c.anexos, provedor === "openai" ? "compativel_openai" : provedor);
   if (!va.ok) return resultado({ erro: va.erro }, 400);
   anexos = va.anexos;
  }
