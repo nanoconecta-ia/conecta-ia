@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/conecta-gateway/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "3a54199ea63525db1e28048891afda624cf1bd17f42becafc3c8ca1fff0aa0ed",
+  "artefato_sha256": "5f878406dc9ef3b6f82fa47c5406628dd0adadcf31feef02d4690aeffea68fc1",
   "fontes": [
     {
       "path": "supabase/functions/_shared/ia/reducao.ts",
@@ -38,7 +38,7 @@
     },
     {
       "path": "supabase/functions/_shared/pair/gateway.ts",
-      "sha256": "527eb771fa23b111ac83934a04b28b2ca454fb1ca3a01610d1b0f45753721f69"
+      "sha256": "60b7051e739c486ad6f4cead9a304ca617e4c02ab3b19846147af5cad340677d"
     },
     {
       "path": "supabase/functions/_shared/assistente/ficha_sem_llm.ts",

@@ -363,7 +363,7 @@ test("gateway: o catálogo NÃO tem ferramenta que aprove, execute, publique, al
     assert.equal(f.inputSchema.type, "object");
     assert.doesNotMatch(f.nome + f.descricao.split(".")[0], /approve|execute|publish|delete|price|stock/i, f.nome);
     assert.ok(ESCOPOS.includes(f.escopo), f.nome);
-    assert.equal(f.somenteLeitura, !f.nome.includes("propose_") && f.nome !== "conecta.set_active_product" && f.nome !== "conecta.chat_responder", `${f.nome}: leitura x proposta`);
+    assert.equal(f.somenteLeitura, !f.nome.includes("propose_") && f.nome !== "conecta.set_active_product" && f.nome !== "conecta.chat_responder" && f.nome !== "conecta.chat_reivindicar", `${f.nome}: leitura x proposta`);
     assert.equal(JSON.stringify(f.inputSchema).includes("loja_id"), false, `${f.nome} não aceita loja`);
     assert.equal((f.inputSchema as { additionalProperties: boolean }).additionalProperties, false);
   }

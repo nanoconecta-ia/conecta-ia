@@ -1888,7 +1888,7 @@ const FERRAMENTAS = [
     {
         nome: "conecta.chat_reivindicar",
         escopo: "chat:responder",
-        somenteLeitura: true,
+        somenteLeitura: false,
         descricao: "Lê uma mensagem pendente do chat desta loja. A entrega fica reservada para esta sessão; uma sessão só pode ter uma mensagem ativa por vez e mensagens vencidas são descartadas.",
         esquema: {
             obrig: [],
