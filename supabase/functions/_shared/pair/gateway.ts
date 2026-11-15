@@ -280,7 +280,7 @@ export const FERRAMENTAS: readonly Ferramenta[] = [
     executar: async (s, a, d) => (await d.statusTarefa(s.loja_id, a.id as string)) ?? { erro: "Não encontrado nesta loja." },
   },
   {
-    nome: "conecta.chat_reivindicar", escopo: "chat:responder", somenteLeitura: true,
+    nome: "conecta.chat_reivindicar", escopo: "chat:responder", somenteLeitura: false,
     descricao: "Lê uma mensagem pendente do chat desta loja. A entrega fica reservada para esta sessão; uma sessão só pode ter uma mensagem ativa por vez e mensagens vencidas são descartadas.",
     esquema: { obrig: [], props: {} },
     inputSchema: js({}),
