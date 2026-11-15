@@ -28,7 +28,7 @@ import { gravarConversaAtiva, lerConversaAtiva } from "../lib/conversaAtiva.ts";
 import { perguntarComStreaming, propostasDoTurno, type PropostaTurno } from "../lib/streamAssistente.ts";
 import { useFonte } from "../lib/useFonte.ts";
 import { PropostaCompacta } from "../componentes/conector/PropostaCompacta.tsx";
-import { escolherInicial, falhaAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
+import { escolherPersistido, falhaAssistente, ESTADO_PROVEDOR, type OpcaoProvedor, type ProvedorChat } from "../lib/provedores.ts";
 import { identificarModeloEfetivo } from "../lib/modeloEfetivo.ts";
 import { perguntaSobreModelo, respostaSobreModelo } from "../lib/respostaModelo.ts";
 import { AvatarNanoAprovado } from "../componentes/AvatarNanoAprovado.tsx";
@@ -189,7 +189,12 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         if (error || data?.verificado !== true || !Array.isArray(data?.provedores)) {
           setErroConfig("Não foi possível verificar os provedores agora.");
         } else {
-          setProvedores(data.provedores); setProvedor(escolherInicial(data.provedores));
+          // Escolha explícita do lojista tem prioridade sobre o provedor "principal" do servidor.
+          // Persistir apenas o identificador do modelo (nunca credencial ou token QR).
+          const preferencia = (() => {
+            try { return armazemSessao?.getItem(`conecta:chat:provedor:${loja.id}`) ?? null; } catch { return null; }
+          })();
+          setProvedores(data.provedores); setProvedor(escolherPersistido(data.provedores, preferencia));
         }
         setCarregando(false);
       }).catch(() => { if (ativo) { setErroConfig("Não foi possível verificar os provedores."); setCarregando(false); } });
@@ -631,7 +636,12 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       <aside className="aba aba-dir" id="aba-modelo" aria-label="Modelo e privacidade">
         <div className="aba-topo"><strong>Modelo e privacidade</strong><button type="button" className="sec mini" onClick={() => setDir(false)} aria-label="Recolher modelo e privacidade">Recolher</button></div>
         <div className="aba-corpo">
-        <label>Modelo de IA<select value={provedor} disabled={ocupado || carregando || !!erroConfig || !!retentativa || administrando} onChange={(e) => { setProvedor(e.target.value as SelecaoNano); setAceitaEnvio(false); setAutorizaFallbackFree(false); }}>
+        <label>Modelo de IA<select value={provedor} disabled={ocupado || carregando || !!erroConfig || !!retentativa || administrando} onChange={(e) => {
+          const escolhido = e.target.value as SelecaoNano;
+          setProvedor(escolhido);
+          try { armazemSessao?.setItem(`conecta:chat:provedor:${loja.id}`, escolhido); } catch { /* armazenamento indisponível */ }
+          setAceitaEnvio(false); setAutorizaFallbackFree(false);
+        }}>
           <option value="">Resumo local (sem IA externa)</option>
           {provedores.map((p) => <option key={p.id} value={p.id} disabled={p.estado !== "disponivel"}>{p.nome}{p.modelo ? ` · ${p.modelo}` : ""} — {ESTADO_PROVEDOR[p.estado]}</option>)}
           <option value="agente_qr" disabled={!agenteQrDisponivel}>Agente conectado pelo QR — {agenteQrDisponivel ? "sessão ativa" : "sem sessão autorizada"}</option>
