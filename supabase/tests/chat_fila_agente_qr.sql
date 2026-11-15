@@ -31,10 +31,10 @@ select public.afirma(not has_table_privilege('authenticated', 'public.pair_sesso
 select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111"}', true);
 select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'disponivel')::boolean, 'dono ve a disponibilidade do QR');
 select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333"}', true);
-do $ begin
+do $test_qr$ begin
   perform public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a');
   raise exception 'FALHOU: outra loja consultou o QR';
-exception when sqlstate '42501' then raise notice 'ok: QR isolado por loja'; end $;
+exception when sqlstate '42501' then raise notice 'ok: QR isolado por loja'; end $test_qr$;
 select set_config('request.jwt.claims', '{}', true);
 update public.conversas set turno_pergunta = 'e1000000-0000-0000-0000-000000000001', turno_ate = now() + interval '15 minutes' where id = 'c1000000-0000-0000-0000-000000000001';
 
