@@ -2963,7 +2963,7 @@ const FERRAMENTAS_CONECTOR = [
     }, [
         "id",
         "corpo"
-    ]), "MEDIUM", "Ler o produto e conferir que todas as URLs enviadas aparecem na galeria.", "Timeout => desconhecido; a trava do produto fica até a reconciliação (leitura do Bling) e nunca se repete às cegas."),
+    ]), "MEDIUM", "Ler o produto e conferir que todas as URLs enviadas aparecem na galeria.", "Timeout => desconhecido; a trava do produto fica até a reconciliação (leitura do Bling) e nunca se repete às cegas.", "ativa"),
     execucao("bling.categorias.criar", "Cria categoria de produto no Bling (POST /categorias/produtos).", obj({
         corpo: livre
     }, [

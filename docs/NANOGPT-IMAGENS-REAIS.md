@@ -14,7 +14,9 @@ Lock por produto no bucket privado `agente-anexos` impede duas exportações con
 
 A gravação da galeria deixou de chamar o Bling diretamente. Agora ela é a ferramenta `bling.produtos.imagens_adicionar`, registrada em `_shared/bling_ferramentas.ts` e em `_shared/conector/registro.ts`, e só sai pela porta fechada `BlingEscritaReal`, que recusa qualquer corpo que não seja apenas `midia.imagens.imagensURL` com links https.
 
-Antes de qualquer cópia, o endpoint consulta o Policy Engine (`decidir`), com a trava operacional do produto (`produto_travas`). **A ferramenta nasce DESLIGADA**: imagem não está entre os campos que o dono liberou para escrita no Bling em 29/10/2026. Enquanto estiver desligada, a exportação é negada com as duas flags ligadas, nada é copiado e a negativa fica na auditoria (`nanogpt.exportacao_negada`). Ligar exige decisão registrada do dono para este campo e a troca do estado no registro, em PR próprio.
+Antes de qualquer cópia, o endpoint consulta o Policy Engine (`decidir`), com a trava operacional do produto (`produto_travas`). Diretriz do dono em 15/11/2026: liberar as ferramentas de enriquecimento (imagem e taxonomia) para o trabalho real, com aprovação humana e preservando os dados fiscais. Por isso a ferramenta está `ativa` no registro (implementada e testada), mas **não grava sozinha**. Cada gravação exige, ao mesmo tempo: liberação registrada da loja em `agente_escrita_liberada` (RPC `agente_escrita_liberar`, com referência da autorização, auditada e revogável), as duas flags do servidor, lojista autenticado, imagem aprovada com direitos confirmados e confirmação do hash. Sem qualquer um, nada é copiado e a negativa fica na auditoria (`nanogpt.exportacao_negada`). Revogar a liberação da loja interrompe novas gravações sem novo deploy.
+
+Dados fiscais: o corpo enviado só pode conter `midia.imagens.imagensURL`; qualquer outro campo (inclusive NCM, CEST, tributação, preço, estoque e SKU) é recusado antes da rede.
 
 Cada operação leva uma chave de idempotência (`nanogpt-midia:<imagem>:<sha256>`) no recibo e na auditoria. Como nas outras escritas, a chave vale no Conecta.IA e não é enviada ao Bling.
 
@@ -41,7 +43,7 @@ Bling e Drive constam conectados. OpenRouter e GPT-OSS via Groq ativos; Gemini i
 1. Revisar o PR, sem merge automático. Publicar `nanogpt-midia` com verificação JWT e atualizar `assistente` com seus módulos compartilhados.
 2. Publicar o painel para disponibilizar a rota. Não criar tabela nem migrar o banco; usa estruturas existentes.
 3. Configurar um buscador real, caso o status reporte ausência; não confundir OAuth do Drive com serviço de busca na web.
-4. Homologar com uma imagem aprovada, direitos confirmados e um SKU escolhido pelo dono. Para permitir cópia: decisão do dono liberando o campo de imagens, ferramenta `bling.produtos.imagens_adicionar` ligada no registro, `NANOGPT_MIDIA_EXPORTAR=1` e o controle existente `BLING_ESCRITA_REAL=1`. Nenhuma flag foi alterada nesta tarefa.
+4. Homologar com uma imagem aprovada, direitos confirmados e um SKU escolhido pelo dono. Para permitir cópia: liberação da loja para `bling.produtos.imagens_adicionar` (`agente_escrita_liberar`, com referência), `NANOGPT_MIDIA_EXPORTAR=1` e o controle existente `BLING_ESCRITA_REAL=1`. Nenhuma flag foi alterada nesta tarefa.
 5. Conferir isolamento entre lojas, recusa de editor, hash alterado, timeout parcial, recibos e leitura após escrita. Desligar `NANOGPT_MIDIA_EXPORTAR` interrompe novas exportações.
 
 ## Limites

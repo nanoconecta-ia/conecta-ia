@@ -18,6 +18,11 @@ const get = (n: string) => Deno.env.get(n);
 const flagsLigadas = () => get("NANOGPT_MIDIA_EXPORTAR") === "1" && get("BLING_ESCRITA_REAL") === "1";
 /** Estados da trava operacional em que o produto não pode receber escrita por aqui (bloqueado ou com proposta em execução). */
 const TRAVADO = ["bloqueado", "aprovado_execucao", "em_execucao"];
+/** Liberação da escrita por loja e por ferramenta (decisão do dono, com referência e auditoria; revogável). Falha fechada. */
+const liberadaNaLoja = async (admin: any, lojaId: string) => {
+  const r = await admin.from("agente_escrita_liberada").select("ferramenta").eq("loja_id", lojaId).eq("ferramenta", FERRAMENTA_IMAGENS).is("revogada_em", null).maybeSingle();
+  return !r.error && !!r.data;
+};
 const uuid = (v: unknown) => typeof v === "string" && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v);
 Deno.serve(async req => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -42,7 +47,8 @@ Deno.serve(async req => {
     if (b.acao === "status") {
       const [bling, google] = await Promise.all([admin.from("bling_conexoes").select("status").eq("loja_id", lojaId).maybeSingle(), admin.from("google_conexoes").select("status").eq("loja_id", lojaId).maybeSingle()]);
       if (bling.error || google.error || bi.error) throw new Error("Não foi possível verificar as conexões.");
-      return json({ busca: searxng ? "searxng" : bi.data?.ativa ? "google" : null, bling: bling.data?.status ?? "ausente", drive: google.data?.status ?? "ausente", exportacao: flagsLigadas() && buscarDefinicao(FERRAMENTA_IMAGENS)?.estado === "ativa", exportacao_motivo: buscarDefinicao(FERRAMENTA_IMAGENS)?.estado !== "ativa" ? "Ferramenta de imagens desligada no registro: falta a decisão do dono para este campo." : flagsLigadas() ? null : "Flags do servidor desligadas.", request_id: requestId });
+      const liberada = await liberadaNaLoja(admin, lojaId), ativa = buscarDefinicao(FERRAMENTA_IMAGENS)?.estado === "ativa";
+      return json({ busca: searxng ? "searxng" : bi.data?.ativa ? "google" : null, bling: bling.data?.status ?? "ausente", drive: google.data?.status ?? "ausente", exportacao: flagsLigadas() && ativa && liberada, exportacao_motivo: !ativa ? "Ferramenta de imagens desligada no registro." : !liberada ? "Falta a liberação desta loja para gravar imagens no Bling." : flagsLigadas() ? null : "Flags do servidor desligadas.", request_id: requestId });
     }
     if (b.acao === "buscar") {
       let buscaImagem = null;
@@ -112,7 +118,7 @@ Deno.serve(async req => {
     // Policy Engine ANTES de qualquer cópia: aprovação humana = lojista + imagem aprovada + direitos + hash confirmado nesta chamada.
     const trava = await admin.from("produto_travas").select("estado").eq("loja_id", lojaId).eq("produto_id", produto.id).maybeSingle();
     if (trava.error) throw new Error("Não foi possível ler a trava do produto.");
-    const politica = decidir(buscarDefinicao(FERRAMENTA_IMAGENS), { origem: "executor", aprovacaoValida: true, simulado: false, escritaRealLiberada: true, produtoTravado: TRAVADO.includes(trava.data?.estado) });
+    const politica = decidir(buscarDefinicao(FERRAMENTA_IMAGENS), { origem: "executor", aprovacaoValida: true, simulado: false, escritaRealLiberada: await liberadaNaLoja(admin, lojaId), produtoTravado: TRAVADO.includes(trava.data?.estado) });
     if (politica.decisao !== "permitida") {
       await audit("exportacao_negada", { imagem_id: imagem.id, sku: produto.sku, politica });
       return json({ erro: `Política do Conecta.IA não permite esta escrita agora (${politica.motivo}).` }, 409);

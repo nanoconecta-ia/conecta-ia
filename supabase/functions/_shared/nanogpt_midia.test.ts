@@ -25,16 +25,17 @@ test("Drive transmite bytes originais e exige id e tamanho confirmados", async (
 });
 
 const ctx = { origem: "executor" as const, aprovacaoValida: true, simulado: false, escritaRealLiberada: true, produtoTravado: false };
-test("Policy Engine: a ferramenta de imagens existe nos dois registros e nasce DESLIGADA", () => {
+test("Policy Engine: a ferramenta de imagens existe nos dois registros, fora do chat e do MCP, e não grava sem liberação da loja", () => {
   const def = buscarDefinicao(FERRAMENTA_IMAGENS)!;
-  assert.equal(def.estado, "desligada"); assert.equal(def.permissao, "executar"); assert.equal(def.escreveExterno, true);
+  assert.equal(def.estado, "ativa"); assert.equal(def.permissao, "executar"); assert.equal(def.escreveExterno, true);
   assert.equal(def.exigeAprovacao, true); assert.equal(def.idempotencia, "chave"); assert.equal(def.exposicao.chat, false); assert.equal(def.exposicao.mcp, false);
-  assert.equal(decidir(def, ctx).decisao, "negada");
+  assert.equal(decidir(def, { ...ctx, escritaRealLiberada: false }).decisao, "negada");
+  assert.equal(decidir({ ...def, estado: "desligada" }, ctx).decisao, "negada");
   const f = buscarFerramenta(FERRAMENTA_IMAGENS)!;
   assert.equal(f.ativa, false); assert.equal(f.exigeIdempotencyKey, true); assert.equal(podeExecutar(f, "aprovacao").ok, false);
 });
-test("Policy Engine: mesmo ligada, só o executor, com aprovação, liberação e produto sem trava", () => {
-  const ligada = { ...buscarDefinicao(FERRAMENTA_IMAGENS)!, estado: "ativa" as const };
+test("Policy Engine: só o executor, com aprovação, liberação e produto sem trava", () => {
+  const ligada = buscarDefinicao(FERRAMENTA_IMAGENS)!;
   assert.equal(decidir(ligada, ctx).decisao, "permitida");
   assert.equal(decidir(ligada, { ...ctx, origem: "chat" }).decisao, "negada");
   assert.equal(decidir(ligada, { ...ctx, origem: "gateway_mcp" }).decisao, "negada");
