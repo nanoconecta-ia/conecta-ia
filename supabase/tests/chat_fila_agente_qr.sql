@@ -26,8 +26,20 @@ insert into public.pair_sessoes (id, loja_id, usuario_id, dispositivo_id, token_
 select public.afirma('chat:responder' = any(private.pair_escopos_validos()), 'escopo chat:responder existe');
 select public.afirma(not has_function_privilege('authenticated', 'public.chat_fila_reivindicar(uuid)', 'execute') and not has_function_privilege('anon', 'public.chat_fila_responder(uuid,uuid,text)', 'execute'), 'navegador não chama as funções da fila');
 select public.afirma(has_function_privilege('service_role', 'public.chat_fila_reivindicar(uuid)', 'execute'), 'service_role (gateway) executa');
+select public.afirma(has_function_privilege('authenticated', 'public.chat_qr_disponivel(uuid)', 'execute'), 'cliente autenticado pode consultar apenas estado QR');
+select public.afirma(not has_table_privilege('authenticated', 'public.pair_sessoes', 'select'), 'cliente nao recebe SELECT nas sessoes Pair');
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111"}', true);
+select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'disponivel')::boolean, 'dono ve a disponibilidade do QR');
+select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333"}', true);
+do $test_qr$ begin
+  perform public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a');
+  raise exception 'FALHOU: outra loja consultou o QR';
+exception when sqlstate '42501' then raise notice 'ok: QR isolado por loja'; end $test_qr$;
+select set_config('request.jwt.claims', '{}', true);
+update public.conversas set turno_token = gen_random_uuid(), turno_pergunta = 'e1000000-0000-0000-0000-000000000001', turno_ate = now() + interval '15 minutes' where id = 'c1000000-0000-0000-0000-000000000001';
 
 select public.afirma((public.chat_fila_enfileirar('aaaaaaaa-0000-0000-0000-00000000000a', 'e1000000-0000-0000-0000-000000000001', 90)->>'ok')::boolean, 'enfileira mensagem do lojista');
+select public.afirma((select c.turno_ate = f.prazo_em from public.conversas c join public.chat_fila f on c.id = f.conversa_id where f.mensagem_id = 'e1000000-0000-0000-0000-000000000001'), 'fila QR limita o bloqueio aos 90 segundos');
 select public.afirma((public.chat_fila_enfileirar('aaaaaaaa-0000-0000-0000-00000000000a', 'e1000000-0000-0000-0000-000000000001', 90)->>'fila_id') = (select id::text from public.chat_fila where mensagem_id = 'e1000000-0000-0000-0000-000000000001'), 'reenfileirar a mesma mensagem não duplica');
 select public.afirma(public.chat_fila_enfileirar('aaaaaaaa-0000-0000-0000-00000000000a', 'e2000000-0000-0000-0000-000000000001', 90)->>'motivo' = 'mensagem_invalida', 'mensagem de outra loja não entra na fila da loja A');
 select public.afirma(public.chat_fila_enfileirar('aaaaaaaa-0000-0000-0000-00000000000a', 'e1000000-0000-0000-0000-000000000002', 5)->>'motivo' = 'prazo_invalido', 'prazo fora de 30-300 s recusado');
@@ -50,6 +62,7 @@ select public.afirma(public.chat_fila_responder(:S2, (select (j->>'fila_id')::uu
 select public.afirma(public.chat_fila_responder(:S1, (select (j->>'fila_id')::uuid from r1), '')->>'motivo' = 'texto_invalido', 'texto vazio recusado');
 select public.afirma((public.chat_fila_responder(:S1, (select (j->>'fila_id')::uuid from r1), 'O CI002916 está ativo no Bling.')->>'ok')::boolean, 'agente responde no prazo');
 select public.afirma((select metadados->>'origem' from public.mensagens where em_resposta_a = 'e1000000-0000-0000-0000-000000000001') = 'agente_qr', 'resposta marcada como agente_qr');
+select public.afirma((select turno_ate is null and turno_pergunta is null from public.conversas where id = 'c1000000-0000-0000-0000-000000000001'), 'resposta QR libera novo turno imediatamente');
 select public.afirma(public.chat_fila_responder(:S1, (select (j->>'fila_id')::uuid from r1), 'de novo')->>'motivo' = 'estado_respondida', 'não responde duas vezes');
 
 -- prazo vencido: não entrega e não aceita resposta

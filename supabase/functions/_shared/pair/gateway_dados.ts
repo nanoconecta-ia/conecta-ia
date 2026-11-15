@@ -173,5 +173,15 @@ export function dadosSupabase(admin: AdminRpc, agora: () => Date = () => new Dat
       const { data: t } = await admin.from("enriquecimento_tarefas").select("id, tipo, status, tentativas, criado_em, concluido_em").eq("loja_id", loja).eq("id", id).maybeSingle();
       return t ? { origem: "enriquecimento", ...t } : null;
     },
+    async chatReivindicar(sessao) {
+      const { data, error } = await admin.rpc("chat_fila_reivindicar", { p_sessao: sessao.sessao_id });
+      if (error) throw new Error("falha ao ler a fila do chat");
+      return data ?? { ok: true, vazio: true };
+    },
+    async chatResponder(sessao, filaId, texto) {
+      const { data, error } = await admin.rpc("chat_fila_responder", { p_sessao: sessao.sessao_id, p_fila: filaId, p_texto: texto });
+      if (error) throw new Error("falha ao responder no chat");
+      return data ?? { ok: false, motivo: "resposta_indisponivel" };
+    },
   };
 }
