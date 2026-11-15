@@ -75,6 +75,7 @@ export function RodapeLoja({
         <div className="v-rodape-apresentacao">
           <strong>{nome}</strong>
           <p>Peças automotivas e busca por veículo. Confirme a aplicação e as condições da oferta antes da compra.</p>
+          {mobis && <p>Loja de autopeças independente em Goiânia (GO). Marcas e modelos de veículos citados servem apenas para indicar aplicações; não há vínculo com as montadoras.</p>}
           {mobis && <a className="v-rodape-site" href={MOBIS.site}>mobisautopecas.com.br</a>}
           <div className="v-rodape-sociais" aria-label="Redes sociais e localização">
             {wa && <a href={wa} target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp da loja"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 11.5a9 9 0 0 1-13 8L3 21l1.5-4.7A9 9 0 1 1 21 11.5Z"/><path d="M8 8.5c.4 3 3 5.6 6 6.4l1.5-1.5 2 1c-.5 1.7-2.1 2.6-3.8 2.2-4.2-1-7.3-4.2-8.2-8.2-.3-1.5.6-2.9 2.1-3.4l1.2 2Z"/></svg> WhatsApp</a>}
