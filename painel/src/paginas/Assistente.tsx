@@ -223,6 +223,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   async function chamada(acao: string, campos: Record<string, unknown> = {}) {
     const { data, error } = await supabase.functions.invoke("assistente", { body: { loja_id: loja.id, acao, ...campos } });
     if (error) throw await falhaAssistente(error);
+    // HTTP 202 com fila QR pendente não é falha definitiva: o turno pode responder em até 90s.
+    if (acao === "chat_qr_perguntar" && data?.codigo === "agente_qr_em_espera" && typeof data?.conversa_id === "string") return data;
     if (data?.erro || Number(data?.http_status) >= 400) throw erroDoChat(data);
     return data;
   }
