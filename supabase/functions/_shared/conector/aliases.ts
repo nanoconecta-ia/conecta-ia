@@ -56,6 +56,8 @@ export const ALIASES_PAIR: Readonly<Record<string, string | null>> = {
   "conecta.get_validated_fields": null,
   "conecta.get_sync_status": null, // diagnóstico da sincronização (só leitura); contrato no registro entra na C2
   "conecta.get_product_images": null, // estado das imagens do SKU (só leitura); contrato no registro entra na C2
+  "conecta.chat_reivindicar": null, // ponte da fila QR; contrato do registro entra quando a ferramenta virar superfície de catálogo
+  "conecta.chat_responder": null, // ponte da fila QR; escrita restrita à mensagem já reivindicada
 };
 
 export const definicaoDoAssistente = (nome: string): DefinicaoFerramenta | undefined => {
