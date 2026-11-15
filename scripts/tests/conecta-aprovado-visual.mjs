@@ -52,7 +52,7 @@ try{
   if(width<781){await page.getByRole('button',{name:'Abrir navegação',exact:true}).click();await page.getByRole('link',{name:'Estúdio do Nano',exact:true}).click();}
   else await page.getByRole('link',{name:'Estúdio do Nano',exact:true}).click();
   await page.locator('[data-nano-layout="aprovado-v2"]').waitFor();const campo=page.getByRole('textbox',{name:'Pergunte',exact:true});await campo.waitFor();
-  assert.equal(await page.locator('.estudio-agente,.dock-agente,.balao-genesis').count(),0,'interfaces anteriores não são montadas');assert.equal(await page.locator('.ap-tower button').count(),6);
+  assert.equal(await page.locator('.estudio-agente,.dock-agente,.balao-genesis').count(),0,'interfaces anteriores não são montadas');assert.equal(await page.locator('.ap-tower').count(),0,'a Torre duplicada não é montada');assert.equal(await page.locator('.ap-work-tabs button').count(),5,'apenas uma navegação de artefatos permanece');await page.getByRole('button',{name:/Ações do Nano/}).click();await page.getByRole('navigation',{name:'Ações do Nano'}).getByRole('button',{name:'Atualizar dados do espelho'}).waitFor();await page.getByRole('button',{name:/Ações do Nano/}).click();
   await page.evaluate(()=>document.documentElement.setAttribute('data-cor','azul'));assert.equal(await page.locator('.ap-eyebrow').first().evaluate(el=>getComputedStyle(el).color),'rgb(6, 104, 201)','o perfil de cor escolhido chega à interface aprovada '+width);await page.evaluate(()=>document.documentElement.removeAttribute('data-cor'));
   assert.equal(await campo.isVisible(),true,'conversa visível '+width);
   await campo.click();await page.waitForFunction(()=>getComputedStyle(document.querySelector('.olho-nano')).visibility==='visible');
@@ -60,10 +60,11 @@ try{
   if(width>=781){  await page.getByRole('button',{name:'Ajustar chat',exact:true}).click();await page.getByRole('slider',{name:'Altura da conversa'}).focus();await page.keyboard.press('End');
   await page.getByRole('button',{name:'Ajustar chat',exact:true}).click();}
   // celular: o chat ocupa a tela inteira (altura fixa); o ajuste de altura só existe no desktop
-  await page.getByRole('button',{name:'Abrir Tabelas',exact:true}).click();await page.getByRole('heading',{name:'Produtos do espelho.',exact:true}).waitFor();
+  if(width<781)await page.getByRole('button',{name:'Área de trabalho',exact:true}).click();
+  await page.locator('.ap-work-tabs button').nth(1).click();await page.getByRole('heading',{name:'Produtos do espelho.',exact:true}).waitFor();
   await page.getByText('Produto sintético para teste',{exact:true}).waitFor({state:'visible'});
-  await page.getByRole('button',{name:'Abrir Imagens',exact:true}).click();await page.getByText('Nenhuma imagem aprovada disponível.',{exact:true}).waitFor();
-  await page.getByRole('button',{name:'Abrir Gráficos',exact:true}).click();
+  await page.locator('.ap-work-tabs button').nth(2).click();await page.getByText('Nenhuma imagem aprovada disponível.',{exact:true}).waitFor();
+  await page.locator('.ap-work-tabs button').nth(0).click();
   if(width<781)await page.getByRole('button',{name:'Conversa',exact:true}).click();
   await campo.fill('ajuda');await campo.press('Enter');await page.waitForFunction(()=>document.querySelectorAll('.ap-chat-panel .bolha,.ap-chat-panel .bolha-linha').length>=3);
   assert.equal(await campo.inputValue(),'');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'Nano sem overflow '+width);
