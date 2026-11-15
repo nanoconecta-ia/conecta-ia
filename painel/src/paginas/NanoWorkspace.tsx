@@ -4,7 +4,6 @@ import type { Item } from "../lib/comandosNL.ts";
 import { useWorkspaceDados } from "../lib/workspaceDados.ts";
 import { supabase } from "../supabase.ts";
 import { Assistente } from "./Assistente.tsx";
-import { OlhoNano } from "../componentes/OlhoNano.tsx";
 import { AtivoAprovado } from "../componentes/AtivoAprovado.tsx";
 import { Icone } from "../componentes/Icone.tsx";
 import "./nano-workspace-unificado.css";
@@ -16,7 +15,7 @@ export function NanoWorkspace({loja,menu,aoNavegar}:{loja:Loja;menu:[string,stri
  const [aba,setAba]=useState<Aba>('graficos'),[ajustes,setAjustes]=useState(false),[acoesAbertas,setAcoesAbertas]=useState(false),[amplo,setAmplo]=useState(false),[pane,setPane]=useState<'chat'|'trabalho'>('chat');
  const [largura,setLargura]=useState(350),[altura,setAltura]=useState(640);
  const [fotos,setFotos]=useState<Imagem[]|null>(null),[erroFotos,setErroFotos]=useState(false);
- const raiz=useRef<HTMLElement>(null),arrasto=useRef<{x:number;largura:number}|null>(null);
+ const arrasto=useRef<{x:number;largura:number}|null>(null);
  const {dados,recarregar}=useWorkspaceDados(loja.id);
  function navegar(rota:string){
   if(['/catalogo','/catalogo-espelho','/catalogo-aplicacao'].includes(rota)){abrir('tabela');return;}
@@ -37,8 +36,7 @@ export function NanoWorkspace({loja,menu,aoNavegar}:{loja:Loja;menu:[string,stri
  function acao(rota:string){setAcoesAbertas(false);aoNavegar(rota);}
  function abrir(a:Aba){setAba(a);setPane('trabalho');}
  function mover(e:PointerEvent<HTMLDivElement>){if(arrasto.current){const w=Math.max(280,Math.min(520,Math.round(arrasto.current.largura+arrasto.current.x-e.clientX)));dimensionar(w,altura);}}
- return <section ref={raiz} className="ap-nano-workspace" data-nano-layout="aprovado-v2">
-  <OlhoNano area={raiz} ancora=".ap-heading"/>
+ return <section className="ap-nano-workspace" data-nano-layout="aprovado-v2">
   <header className="ap-heading"><div><span className="ap-eyebrow">CONECTA.IA · NANO.IA · {loja.nome}</span><h1>Estúdio do Nano</h1><p>Conversa e resultados no mesmo espaço. Ações sob demanda, sem menus duplicados.</p></div><div className="ap-heading-acoes"><button type="button" aria-expanded={acoesAbertas} aria-controls="ap-nano-acoes" onClick={()=>setAcoesAbertas(v=>!v)}>Ações do Nano <span aria-hidden="true">{acoesAbertas?'▴':'▾'}</span></button><button aria-expanded={ajustes} aria-controls="ap-chat-ajustes" onClick={()=>setAjustes(!ajustes)}><Icone nome="ajustes" tamanho={17}/> Ajustar chat</button></div></header>
   {acoesAbertas&&<nav className="ap-nano-acoes" id="ap-nano-acoes" aria-label="Ações do Nano"><p>Ações operacionais. A Área de trabalho é o único lugar para visualizar Gráficos, Tabelas, Imagens, Web e Contexto.</p><div className="ap-nano-acoes-grid"><button type="button" onClick={()=>{setAcoesAbertas(false);void recarregar();}}>Atualizar dados do espelho</button>{menu.some(([rota])=>rota==='/fila')&&<button type="button" onClick={()=>acao('/fila')}>Revisar propostas</button>}{menu.some(([rota])=>rota==='/ferramentas')&&<button type="button" onClick={()=>acao('/ferramentas')}>Indexar e enriquecer</button>}{menu.some(([rota])=>rota==='/integracoes')&&<button type="button" onClick={()=>acao('/integracoes')}>Configurar provedores IA</button>}{menu.some(([rota])=>rota==='/parear')&&<button type="button" onClick={()=>acao('/parear')}>Conectar agente QR/MCP</button>}</div><small>Preparar uma proposta não aprova nem altera produtos, estoque ou notas fiscais.</small></nav>}
   {ajustes&&<div className="ap-chat-ajustes" id="ap-chat-ajustes"><label>Largura da conversa <output>{largura}px</output><input aria-label="Largura da conversa" type="range" min={280} max={520} step={10} value={largura} onChange={e=>dimensionar(Number(e.target.value),altura)}/></label><label>Altura da conversa <output>{altura}px</output><input aria-label="Altura da conversa" type="range" min={480} max={820} step={10} value={altura} onChange={e=>dimensionar(largura,Number(e.target.value))}/></label><button onClick={()=>dimensionar(320,640)}>Compacto</button><button onClick={()=>dimensionar(390,640)}>Smartphone</button><button onClick={()=>dimensionar(480,740)}>Amplo</button></div>}
@@ -55,7 +53,7 @@ export function NanoWorkspace({loja,menu,aoNavegar}:{loja:Loja;menu:[string,stri
     </div>
    </section>
    <div className="ap-chat-splitter" role="separator" tabIndex={0} aria-label="Redimensionar largura da conversa" aria-orientation="vertical" aria-valuemin={280} aria-valuemax={520} aria-valuenow={largura} onPointerDown={e=>{arrasto.current={x:e.clientX,largura};e.currentTarget.setPointerCapture(e.pointerId);}} onPointerMove={mover} onPointerUp={e=>{arrasto.current=null;e.currentTarget.releasePointerCapture(e.pointerId);}} onPointerCancel={()=>{arrasto.current=null;}} onKeyDown={e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();dimensionar(Math.max(280,Math.min(520,largura+(e.key==='ArrowLeft'?10:-10))),altura);}}}/>
-   <section className="ap-chat-panel"><div className="ap-chat-caption"><span>CONVERSA · NANO.IA</span><button onClick={()=>setAmplo(!amplo)} aria-label={amplo?'Voltar à área dividida':'Ampliar conversa'}><Icone nome={amplo?'recolher':'monitor'} tamanho={18}/></button></div><Assistente key={loja.id} loja={loja} menu={menu as Item[]} aoNavegar={navegar}/></section>
+   <section className="ap-chat-panel"><div className="ap-chat-caption"><span>CONVERSA</span><button onClick={()=>setAmplo(!amplo)} aria-label={amplo?'Voltar à área dividida':'Ampliar conversa'}><Icone nome={amplo?'recolher':'monitor'} tamanho={18}/></button></div><Assistente key={loja.id} loja={loja} menu={menu as Item[]} aoNavegar={navegar} identidadeCompacta/></section>
 
   </div>
   <footer className="ap-studio-ledger"><span>Fontes e evidências identificadas · loja autenticada</span><span>Estoque e dados fiscais preservados</span></footer>

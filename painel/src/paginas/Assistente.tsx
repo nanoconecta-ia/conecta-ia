@@ -68,7 +68,7 @@ const espera = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 /** Texto de erro para a tela: sem o prefixo técnico "Error:". */
 const msgErro = (e: unknown): string => (e instanceof Error ? e.message : String(e)).replace(/^Error:\s*/, "");
 
-export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[]; aoNavegar?: (rota: string) => void }) {
+export function Assistente({ loja, menu, aoNavegar, identidadeCompacta = false }: { loja: Loja; menu?: Item[]; aoNavegar?: (rota: string) => void; identidadeCompacta?: boolean }) {
   const [msgs, setMsgs] = useState<Msg[]>([{ de: "ia", texto: "Olá! Posso resumir a loja, mostrar o que aguarda aprovação e o que falta para publicar. Para conversar com IA e usar plugins, configure um provedor em Integrações de IA." }]);
   const fonte = useFonte(); // B2b: cartões de proposta leem a proposta do banco (RLS), nunca do texto do modelo
   const [config, setConfig] = useState<{ persistente: boolean; bling: boolean; leitura_administrativa: boolean; retencao_dias: number; streaming?: boolean; fallback_free_disponivel?: boolean; fallback_auxiliar_disponivel?: boolean }>({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 });
@@ -533,7 +533,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       <section className="abas-centro" aria-label="Conversa com o Nano.ia">
       <div className="agente">
         <button type="button" className="sec ic-aba" aria-expanded={esq} aria-controls="aba-conversas" aria-label="Abrir menu do Nano.IA" onClick={() => { setEsq((v) => !v); setMenuAnexos(false); if (estreito()) setDir(false); }}><Icone nome="menu" tamanho={17} /></button>
-        <AvatarNanoAprovado tamanho={33} estado={normalizarEstado(estado)} decorativo /><div className="agente-titulo"><h1 style={{ margin: 0 }}>Nano.ia</h1><span className="estado" aria-live="polite"><span className="nano-agente-estado">{estado === "pensando" && !acaoLocal && <PontosPensando />}{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span><span className="nano-motor-compacto" title={textoMotor} aria-label={textoMotor}>{nomeMotorCompacto}</span></span></div>
+        {!identidadeCompacta&&<AvatarNanoAprovado tamanho={33} estado={normalizarEstado(estado)} decorativo />}<div className="agente-titulo">{!identidadeCompacta&&<h1 style={{ margin: 0 }}>Nano.ia</h1>}<span className="estado" aria-live="polite"><span className="nano-agente-estado">{estado === "pensando" && !acaoLocal && <PontosPensando />}{acaoLocal?.texto ?? ({ parado: "Pronto para ajudar", ouvindo: "Ouvindo você…", pensando: "Pensando…", falando: "Falando…" } as Record<string, string>)[estado] ?? "Trabalhando…"}</span><span className="nano-motor-compacto" title={textoMotor} aria-label={textoMotor}>{nomeMotorCompacto}</span></span></div>
         {<button className="sec nova-conv" style={{ marginLeft: "auto" }} disabled={ocupado} onClick={nova} aria-label="Nova conversa"><span aria-hidden="true"><Icone nome="mais" tamanho={17} /></span></button>}
         <button type="button" className="sec ic-aba" aria-expanded={dir} aria-controls="aba-modelo" aria-label="Modelo e privacidade" onClick={() => { setDir((v) => !v); if (estreito()) setEsq(false); }}><Icone nome="ajustes" tamanho={17} /></button>
       </div>
