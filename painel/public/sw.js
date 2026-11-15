@@ -1,8 +1,8 @@
 // Service worker mínimo do app instalável. NÃO guarda dados do usuário nem respostas do servidor (Supabase, funções, login):
 // só a "casca" do painel para abrir sem rede. Navegação vai primeiro à rede (SEM o cache HTTP do navegador); se cair, mostra a última casca guardada.
 // v2: ao trocar de versão, apaga o cache antigo e recarrega UMA vez as janelas abertas, para o app instalado não ficar preso numa tela antiga.
-const VERSAO = "conecta-casca-v5-icone-app";
-const CASCA = ["./", "icones/conecta-app-icone.svg", "icones/conecta-wordmark-2026.svg"];
+const VERSAO = "conecta-casca-v6-mobis-pwa";
+const CASCA = ["./", "./conecta.html", "./mobis.webmanifest", "./manifest.webmanifest", "icones/mobis-app-192.png", "icones/conecta-app-icone.svg", "icones/conecta-wordmark-2026.svg"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(CASCA)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {
   e.waitUntil((async () => {
@@ -18,6 +18,6 @@ self.addEventListener("fetch", (e) => {
   const r = e.request;
   if (r.method !== "GET" || new URL(r.url).origin !== self.location.origin) return; // outros domínios e escritas: direto pela rede
   if (r.mode === "navigate") {
-    e.respondWith(fetch(r, { cache: "no-store" }).then((resp) => { const copia = resp.clone(); void caches.open(VERSAO).then((c) => c.put("./", copia)); return resp; }).catch(() => caches.match("./").then((m) => m || Response.error())));
+    e.respondWith(fetch(r, { cache: "no-store" }).then((resp) => { const copia = resp.clone(); const caminho = new URL(r.url).pathname.endsWith("/conecta.html") ? "./conecta.html" : "./"; void caches.open(VERSAO).then((c) => c.put(caminho, copia)); return resp; }).catch(() => caches.match(new URL(r.url).pathname.endsWith("/conecta.html") ? "./conecta.html" : "./").then((m) => m || Response.error())));
   }
 });
