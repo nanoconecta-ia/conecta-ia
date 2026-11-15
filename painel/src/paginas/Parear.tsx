@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase.ts";
 import { ir } from "../lib/rota.ts";
 import { QrCode } from "../componentes/QrCode.tsx";
+import { RelogioPair } from "../componentes/RelogioPair.tsx";
 import { aleatorioB64u, chamarPair, ESCOPOS, mmss, MOTIVOS, ROTULOS_ESCOPO, segundosAte, sha256Hex, TIPOS_DISPOSITIVO, URL_GATEWAY } from "../lib/pair.ts";
 
 type Desafio = { codigo: string; url: string; verificacao: string; segredo: string; expira_em: string; renovavel: boolean };
-type Conectado = { token: string; loja_id: string; escopos: string[]; limite_ate: string; renovavel: boolean };
+type Conectado = { token: string; loja_id: string; escopos: string[]; limite_ate: string; token_ate: string | null; renovavel: boolean };
 const DURACOES: [number, string][] = [[15, "15 minutos"], [60, "1 hora"], [240, "4 horas"], [480, "8 horas"], [1440, "24 horas"], [4320, "3 dias"], [10080, "7 dias"]];
 
 /** Lado do SOLICITANTE (sem login): mostra o QR, o código de verificação e espera a aprovação do lojista. */
@@ -20,6 +21,9 @@ export function ParearSolicitante() {
   const [mensagem, setMensagem] = useState("");
   const [restante, setRestante] = useState(0);
   const [mostrarToken, setMostrarToken] = useState(false);
+  const [renovandoToken, setRenovandoToken] = useState(false);
+  const [avisoToken, setAvisoToken] = useState("");
+  const renovacaoEmAndamento = useRef(false);
   const token = useRef<string>("");   // 1ª metade do token: nasce AQUI
   const sal = useRef<string>("");     // 2ª metade: entregue pelo servidor (dá a entropia mínima)
   const completo = () => `${token.current}.${sal.current}`;
@@ -40,7 +44,7 @@ export function ParearSolicitante() {
       if (!vivo) return;
       const estado = r.corpo.estado;
       if (estado === "resgatado") {
-        setConectado({ token: completo(), loja_id: String(r.corpo.loja_id), escopos: (r.corpo.escopos as string[]) ?? [], limite_ate: String(r.corpo.limite_ate), renovavel: d.renovavel });
+        setConectado({ token: completo(), loja_id: String(r.corpo.loja_id), escopos: (r.corpo.escopos as string[]) ?? [], limite_ate: String(r.corpo.limite_ate), token_ate: typeof r.corpo.sessao_expira_em === "string" ? r.corpo.sessao_expira_em : null, renovavel: d.renovavel });
         return;
       }
       if (estado === "recusado" || estado === "expirado" || estado === "invalido" || estado === "cancelado") {
@@ -53,17 +57,40 @@ export function ParearSolicitante() {
     return () => { vivo = false; };
   }, [d, conectado]);
 
-  // renovação automática do token (gira a cada 10 min enquanto esta aba estiver aberta)
-  useEffect(() => {
-    if (!conectado?.renovavel) return;
-    const t = setInterval(async () => {
+  // Só o dispositivo que possui o token pode renová-lo. O lojista reconfirma a janela em Dispositivos.
+  async function renovarToken() {
+    if (!conectado?.renovavel || renovacaoEmAndamento.current) return;
+    const vence = Date.parse(conectado.token_ate ?? "");
+    if (!Number.isFinite(vence) || vence <= Date.now()) {
+      setAvisoToken("Token vencido: a renovação não é permitida. Faça novo pareamento QR."); return;
+    }
+    renovacaoEmAndamento.current = true; setRenovandoToken(true); setAvisoToken("");
+    try {
       const novo = aleatorioB64u();
       const r = await chamarPair({ acao: "renovar", novo_token_hash: await sha256Hex(novo) }, completo());
-      if (r.status === 200) { token.current = novo; setConectado((c) => (c ? { ...c, token: completo() } : c)); }
-      else { setConectado(null); setD(null); setMensagem("A sessão terminou. Faça um novo pareamento."); }
-    }, 10 * 60 * 1000);
-    return () => clearInterval(t);
-  }, [conectado?.renovavel]);
+      if (r.status === 200 && r.corpo.ok === true && typeof r.corpo.expira_em === "string") {
+        token.current = novo; // só gira após confirmação do servidor
+        setConectado((c) => c ? { ...c, token: completo(), token_ate: String(r.corpo.expira_em), limite_ate: typeof r.corpo.limite_ate === "string" ? r.corpo.limite_ate : c.limite_ate } : c);
+        setAvisoToken("Token renovado com sucesso. A autorização do lojista não foi ampliada.");
+      } else {
+        setAvisoToken(r.status === 401 ? "Token expirou ou foi revogado. Faça novo pareamento QR." : "Não foi possível renovar. Verifique a conexão e tente de novo antes do vencimento.");
+      }
+    } catch { setAvisoToken("Falha de rede durante a renovação. Tente novamente."); }
+    finally { renovacaoEmAndamento.current = false; setRenovandoToken(false); }
+  }
+
+  useEffect(() => {
+    if (!conectado?.renovavel || !conectado.token_ate) return;
+    const verificar = () => {
+      const ms = Date.parse(conectado.token_ate ?? "") - Date.now();
+      if (ms > 0 && ms <= 5 * 60_000) void renovarToken();
+    };
+    const intervalo = window.setInterval(verificar, 30_000);
+    const visivel = () => { if (!document.hidden) verificar(); };
+    document.addEventListener("visibilitychange", visivel);
+    verificar();
+    return () => { window.clearInterval(intervalo); document.removeEventListener("visibilitychange", visivel); };
+  }, [conectado?.renovavel, conectado?.token_ate]);
 
   async function iniciar() {
     setMensagem(""); setMostrarToken(false);
@@ -84,9 +111,12 @@ export function ParearSolicitante() {
   if (conectado) {
     return (
       <div className="entrar">
-        <h1>Conectado <span className="selo ok">sessão ativa</span></h1>
+        <h1>Dispositivo pareado</h1>
         <p className="suave">Este dispositivo está pareado com a loja e pode: {conectado.escopos.map((e) => ROTULOS_ESCOPO[e] ?? e).join("; ")}.</p>
-        <p className="suave">Vale até {new Date(conectado.limite_ate).toLocaleString("pt-BR")}. {conectado.renovavel ? "O token gira sozinho enquanto esta aba estiver aberta." : "O token não gira: vale até o fim da duração aprovada."} O lojista pode encerrar a qualquer momento.</p>
+        <RelogioPair tokenAte={conectado.token_ate} janelaAte={conectado.limite_ate} />
+        <p className="suave">{conectado.renovavel ? "O token se renova automaticamente antes do vencimento enquanto esta aba permanecer em execução. Se o navegador for suspenso por muito tempo, poderá ser necessário novo QR." : "Renovação automática desativada neste dispositivo."} Para ampliar a janela autorizada, o lojista deve abrir Dispositivos e reconfirmar manualmente.</p>
+        {conectado.renovavel && <button type="button" className="sec" disabled={renovandoToken || !conectado.token_ate || Date.parse(conectado.token_ate) <= Date.now()} onClick={() => void renovarToken()}>{renovandoToken ? "Renovando…" : "Renovar token agora"}</button>}
+        {avisoToken && <p role="status" className="suave">{avisoToken}</p>}
         {tipo === "agente_externo" && (
           <div className="cartao">
             <h2>Usar em um agente externo</h2>

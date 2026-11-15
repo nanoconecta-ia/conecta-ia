@@ -32,6 +32,7 @@ import { escolherPersistido, falhaAssistente, ESTADO_PROVEDOR, type OpcaoProvedo
 import { identificarModeloEfetivo } from "../lib/modeloEfetivo.ts";
 import { perguntaSobreModelo, respostaSobreModelo } from "../lib/respostaModelo.ts";
 import { AvatarNanoAprovado } from "../componentes/AvatarNanoAprovado.tsx";
+import { RelogioPair } from "../componentes/RelogioPair.tsx";
 
 /** Uma queda passageira (sessão ainda renovando) não pode travar o chat até recarregar a página: renova a sessão e tenta mais uma vez. */
 async function invocarAssistenteComRenovacao(lojaId: string, acao: string) {
@@ -135,7 +136,8 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   const [provedores, setProvedores] = useState<OpcaoProvedor[]>([]);
   const [provedor, setProvedor] = useState<SelecaoNano>("");
   const [agenteQrDisponivel, setAgenteQrDisponivel] = useState(false);
-  const [agenteQrExpira, setAgenteQrExpira] = useState<string | null>(null);
+  const [agenteQrJanelaAte, setAgenteQrJanelaAte] = useState<string | null>(null);
+  const [agenteQrTokenAte, setAgenteQrTokenAte] = useState<string | null>(null);
   const [carregandoChat, setCarregandoChat] = useState(true);
   const [carregando, setCarregando] = useState(true);
   const [erroConfig, setErroConfig] = useState("");
@@ -181,7 +183,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
   useEffect(() => {
     let ativo = true;
     setConfig({ persistente: false, bling: false, leitura_administrativa: false, retencao_dias: 180 }); setConversas([]); setConversaId(null); setRegistros([]); setRetentativa(null); setAdministrando(false); setErroHistorico("");
-    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false); setAutorizaFallbackFree(false); setMotorPendente(null); setUltimoMotorFalhou(false); setAgenteQrDisponivel(false); setAgenteQrExpira(null);
+    setCarregandoChat(true); setCarregando(true); setErroConfig(""); setProvedores([]); setProvedor(""); setAceitaEnvio(false); setAutorizaFallbackFree(false); setMotorPendente(null); setUltimoMotorFalhou(false); setAgenteQrDisponivel(false); setAgenteQrJanelaAte(null); setAgenteQrTokenAte(null);
     setMsgs([{ de: "ia", texto: "Olá! Posso consultar os dados desta loja. Escolha um provedor para conversar com IA." }]);
     invocarAssistenteComRenovacao(loja.id, "provedores")
       .then(({ data, error }) => {
@@ -213,8 +215,9 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         .then(({ data, error }) => {
           if (!ativo) return;
           setAgenteQrDisponivel(!error && data?.disponivel === true);
-          setAgenteQrExpira(!error && data?.disponivel === true ? data.ate ?? null : null);
-        }).catch(() => { if (ativo) { setAgenteQrDisponivel(false); setAgenteQrExpira(null); } });
+          setAgenteQrJanelaAte(!error ? data?.janela_ate ?? null : null);
+          setAgenteQrTokenAte(!error ? data?.token_ate ?? null : null);
+        }).catch(() => { if (ativo) { setAgenteQrDisponivel(false); setAgenteQrJanelaAte(null); setAgenteQrTokenAte(null); } });
     };
     verificarQr();
     const checagemQr = window.setInterval(verificarQr, 15000);
@@ -644,9 +647,14 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         }}>
           <option value="">Resumo local (sem IA externa)</option>
           {provedores.map((p) => <option key={p.id} value={p.id} disabled={p.estado !== "disponivel"}>{p.nome}{p.modelo ? ` · ${p.modelo}` : ""} — {ESTADO_PROVEDOR[p.estado]}</option>)}
-          <option value="agente_qr" disabled={!agenteQrDisponivel}>Agente conectado pelo QR — {agenteQrDisponivel ? "sessão ativa" : "sem sessão autorizada"}</option>
+          <option value="agente_qr" disabled={!agenteQrDisponivel}>Agente conectado pelo QR — {agenteQrDisponivel ? "token válido (cliente não verificado)" : "sem token válido"}</option>
         </select></label>
-        {modoAgenteQr && <p className="suave" role="status">As mensagens desta loja serão entregues ao agente conectado pelo QR e marcadas como “agente via QR”. {agenteQrExpira ? `Sessão válida até ${new Date(agenteQrExpira).toLocaleString("pt-BR")}.` : ""}</p>}
+        {modoAgenteQr && <div>
+          <p className="suave">As mensagens serão encaminhadas exclusivamente ao agente QR selecionado; o OpenRouter não assume automaticamente quando o QR expira.</p>
+          <RelogioPair tokenAte={agenteQrTokenAte} janelaAte={agenteQrJanelaAte} />
+          <button type="button" className="sec mini" onClick={() => aoNavegar?.("/dispositivos")}>Gerenciar e reconfirmar autorização</button>
+          <p className="suave">O token é renovado no dispositivo conectado. A janela autorizada só pode ser estendida pelo lojista, dentro do teto aprovado.</p>
+        </div>}
         <fieldset className="grupo-orbe" aria-label="Nano Auto: IA auxiliar de contingência">
           <legend>Nano Auto · IA auxiliar</legend>
           <p className="suave" role="status">{carregandoChat

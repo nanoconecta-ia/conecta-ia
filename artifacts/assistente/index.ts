@@ -9151,7 +9151,8 @@ async function atenderChat(c, ctx) {
         if (typeof c.texto !== "string" || !c.texto.trim() || c.texto.length > 1000 || typeof c.idempotency_key !== "string" || c.idempotency_key.length < 8 || c.idempotency_key.length > 120 || c.conversa_id != null && !uuid(c.conversa_id)) return resultado({
             erro: "Turno inválido."
         }, 400);
-        const { data: sessoes, error: sessaoErro } = await admin.from("pair_sessoes").select("id").eq("loja_id", loja.id).is("revogado_em", null).gt("limite_ate", new Date().toISOString()).contains("escopos", [
+        const agoraQr = new Date().toISOString();
+        const { data: sessoes, error: sessaoErro } = await admin.from("pair_sessoes").select("id").eq("loja_id", loja.id).is("revogado_em", null).gt("limite_ate", agoraQr).gt("expira_em", agoraQr).contains("escopos", [
             "chat:responder"
         ]).limit(1);
         if (sessaoErro) return resultado({
