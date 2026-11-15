@@ -116,7 +116,7 @@ export function ParearSolicitante() {
         <RelogioPair tokenAte={conectado.token_ate} janelaAte={conectado.limite_ate} />
         <p className="suave">{conectado.renovavel ? "O token se renova automaticamente antes do vencimento enquanto esta aba permanecer em execução. Se o navegador for suspenso por muito tempo, poderá ser necessário novo QR." : "Renovação automática desativada neste dispositivo."} Para ampliar a janela autorizada, o lojista deve abrir Dispositivos e reconfirmar manualmente.</p>
         {conectado.renovavel && <button type="button" className="sec" disabled={renovandoToken || !conectado.token_ate || Date.parse(conectado.token_ate) <= Date.now()} onClick={() => void renovarToken()}>{renovandoToken ? "Renovando…" : "Renovar token agora"}</button>}
-        {avisoToken && <p role="status" className="suave">{avisoToken}</p>
+        {avisoToken && <p role="status" className="suave">{avisoToken}</p>}
         {tipo === "agente_externo" && (
           <div className="cartao">
             <h2>Usar em um agente externo</h2>
