@@ -46,6 +46,9 @@ export const FERRAMENTAS: readonly Ferramenta[] = [
   escrita("bling.produtos.criar", "POST", "/produtos", "MEDIUM"),
   escrita("bling.produtos.alterar", "PATCH", "/produtos/{id}", "MEDIUM"),
   escrita("bling.produtos.alterar_preco", "PATCH", "/produtos/{id}", "MEDIUM"), // só preço de venda, só como item de proposta aprovada; desligada como todas as escritas
+  // Só midia.imagens.imagensURL (galeria por URL), só imagem aprovada com direitos confirmados, só por pessoa (nunca pelo modelo). Usada por nanogpt-midia.
+  // Contrato citado em docs/NANOGPT-IMAGENS-REAIS.md (leitura do OpenAPI feita fora deste ambiente): conferido=false, desligada como todas as escritas.
+  escrita("bling.produtos.imagens_adicionar", "PATCH", "/produtos/{id}", "MEDIUM"),
   // Troca SÓ a situação (ativar/inativar), sem regravar nem revalidar o cadastro inteiro (diferente de PATCH /produtos/{id}).
   // Evidência: página de homologação do Bling (developer.bling.com.br/homologacao) cita PATCH /produtos/{id}/situacoes com a situação no body;
   // SDK não oficial confirma a rota. NÃO conferido no OpenAPI oficial (valores aceitos e se revalida campos fiscais): conferido=false, desligada.

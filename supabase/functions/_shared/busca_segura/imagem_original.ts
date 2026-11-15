@@ -81,6 +81,8 @@ export interface OpcoesBaixar {
   /** Resolve o nome para IPs (A/AAAA) para barrar nome que aponta para rede interna. Sem resolvedor, só a checagem estática vale. */
   resolver?: (host: string) => Promise<string[]>;
   maxBytes?: number; tempoMs?: number;
+  /** Uso interno do servidor; os bytes nunca entram na resposta do agente. */
+  capturarBytes?: (bytes: Uint8Array) => void;
 }
 
 async function lerLimitado(r: Response, max: number): Promise<Uint8Array | null> {
@@ -133,6 +135,7 @@ export async function baixarImagemOriginal(entrada: string, op: OpcoesBaixar = {
       if (!info) return { ok: false, erro: "O arquivo não é uma imagem JPEG, PNG ou WebP válida." };
       const avisos: string[] = [];
       if (Math.min(info.largura_px, info.altura_px) < IMAGEM_RESOLUCAO_BAIXA_PX) avisos.push(`Resolução baixa (${info.largura_px}x${info.altura_px}); o ideal é pelo menos ${IMAGEM_RESOLUCAO_BAIXA_PX}px no menor lado.`);
+      op.capturarBytes?.(bytes);
       return { ok: true, imagem: { sha256: await sha256Hex(bytes), bytes: bytes.length, mime: info.mime, largura_px: info.largura_px, altura_px: info.altura_px, url_final: v.url, avisos } };
     } finally { clearTimeout(timer); }
   }

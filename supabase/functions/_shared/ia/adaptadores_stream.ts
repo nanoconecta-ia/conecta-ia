@@ -181,7 +181,7 @@ export const chamarOpenAIStream: AdaptadorStream = async (c, msgs, aoTexto, sina
   }
   const tools = c.ferramentas.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.input_schema } }));
   const { eventos, encerrar } = await abrirEventos(c, `${c.baseUrl.replace(/\/+$/, "")}/chat/completions`, { authorization: `Bearer ${c.chave}` },
-    { model: c.modelo, messages: m, max_tokens: c.maxTokens, tools: tools.length ? tools : undefined, stream: true, stream_options: { include_usage: true } }, sinal);
+    { model: c.modelo, messages: m, ...(new URL(c.baseUrl).hostname === "api.openai.com" ? { max_completion_tokens: c.maxTokens, ...(/^gpt-(6|5\.6)-/.test(c.modelo) ? { reasoning_effort: "none" } : {}) } : { max_tokens: c.maxTokens }), tools: tools.length ? tools : undefined, stream: true, stream_options: { include_usage: true } }, sinal);
   try {
     let texto = "", tokens = 0, terminou = false, respostaId: string | undefined, modelo: string | undefined, parada: Parada | undefined;
     const chamadas = new Map<number, { id?: string; nome: string; args: string }>();

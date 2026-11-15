@@ -23,8 +23,8 @@ import { conteudoComAnexos, REGRAS_ANEXO, resumoParaRegistro, validarAnexos, typ
 
 /** Ferramentas de PROPOSTA do Bling liberadas neste fluxo (nenhuma grava no Bling; o lojista aprova a versão exata na Central de Inteligência). */
 export const FERRAMENTAS_PROPOSTA_BLING = ["bling_categorias", "bling_propor_categoria", "bling_propor_trocar_categoria", "bling_propor_reativar_produto", "bling_propor_ajuste_produto", "bling_propor_cadastro_produto", "bling_propor_alterar_preco"] as const;
-/** Pesquisa somente leitura; passa pelo mesmo Policy Engine e pelo limite do chat por loja/usuario. */
-export const FERRAMENTAS_PESQUISA = ["buscar_imagem_web", "buscar_dados_tecnicos_web"] as const;
+/** Pesquisa e propostas pendentes; mesmo Policy Engine, nunca aprova nem exporta imagens. */
+export const FERRAMENTAS_PESQUISA = ["buscar_imagem_web", "buscar_dados_tecnicos_web", "propor_imagem", "propor_codigo", "propor_aplicacao", "propor_enriquecimento"] as const;
 export interface ChatContexto {
  usuario: any; admin: any; loja: { id: string; nome: string }; userId: string; get(n: string): string | undefined; fetch?: typeof fetch;
  /** B2b (#166): texto da resposta assim que existir (streaming). Opcional: sem ele o turno é idêntico ao de antes. */
@@ -179,7 +179,7 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
  let anexos: AnexoValido[] = [];
  if (c.anexos != null) {
   if (provedor === PROVEDOR_FREE) return resultado({ erro: "O modelo gratuito não recebe anexos. Escolha outro provedor para enviar arquivos." }, 400);
-  const va = await validarAnexos(c.anexos, provedor);
+  const va = await validarAnexos(c.anexos, provedor === "openai" ? "compativel_openai" : provedor);
   if (!va.ok) return resultado({ erro: va.erro }, 400);
   anexos = va.anexos;
  }
@@ -222,14 +222,14 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   const economico = consultaPublicaEconomica(c.texto, anexos.length);
   const perfil = planoLimites(prov, k.base_url, economico);
   if (economico) meta.modo_economico = "glossario_publico_sem_historico";
-  meta.host_provedor = prov === PROVEDOR_FREE ? "openrouter.ai" : prov === "compativel_openai" ? new URL(k.base_url).hostname : prov === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
+  meta.host_provedor = prov === PROVEDOR_FREE ? "openrouter.ai" : prov === "openai" ? "api.openai.com" : prov === "compativel_openai" ? new URL(k.base_url).hostname : prov === "claude" ? "api.anthropic.com" : "generativelanguage.googleapis.com";
   if (prov === PROVEDOR_FREE) meta.provedor_efetivo = "openrouter-free";
-  const tipoLlm = (prov === PROVEDOR_FREE ? "compativel_openai" : prov) as "claude" | "gemini" | "compativel_openai";
+  const tipoLlm = (prov === PROVEDOR_FREE || prov === "openai" ? "compativel_openai" : prov) as "claude" | "gemini" | "compativel_openai";
   const propostas: Record<string, unknown>[] = [];
   const { config: searxng, erro: erroSearxng } = configSearxngOuNulo(ctx.get, loja.id); if (erroSearxng) console.warn("SearXNG desligado nesta loja:", erroSearxng); // Ambiente privado + allowlist por loja; nunca vem do usuario.
   iniciouChamadaProvedor = true; inicioProv = Date.now();
   const chaveProvedor = await decifrar(k.cifrada, chaveiro);
-  const r = await conversar({ provedor: tipoLlm, baseUrl: prov === PROVEDOR_FREE ? URL_FREE : k.base_url ?? undefined, chave: chaveProvedor, modelo, mensagens: economico ? [{ role: "user", content: c.texto }] : mensagens,
+  const r = await conversar({ provedor: tipoLlm, baseUrl: prov === "openai" ? "https://api.openai.com/v1" : prov === PROVEDOR_FREE ? URL_FREE : k.base_url ?? undefined, chave: chaveProvedor, modelo, mensagens: economico ? [{ role: "user", content: c.texto }] : mensagens,
    sistema: economico ? PROMPT_PUBLICO_ECONOMICO : `${SISTEMA}${prov === PROVEDOR_FREE ? `\n${SISTEMA_FREE}` : ""}\nLoja: ${loja.nome}. A ferramenta buscar_imagem_web e a pesquisa tecnica devolvem somente links candidatos com pagina de origem, se houver provedor configurado. Elas nao provam identidade, aplicacao nem direito de uso; nao publique nem invente imagens. Neste fluxo existem bling_consultar_produto (leitura), as de leitura do catálogo espelhado (resumo_loja, listar_produtos, ver_produto) e as ferramentas de PROPOSTA bling_categorias, bling_propor_categoria, bling_propor_trocar_categoria, bling_propor_reativar_produto, bling_propor_ajuste_produto, bling_propor_alterar_preco (preço de venda) e bling_propor_cadastro_produto (produto novo): nenhuma grava no Bling, o lojista aprova a versão exata depois na Central de Inteligência. Cite origem (API ou espelho) e data; não confunda dado simulado com real. Valores ausentes permanecem desconhecidos.\n${REGRA_CATALOGO}\nREGRAS DA BUSCA: a ferramenta devolve os campos candidatos (com origem, situação e achado_por), fontes e conclusao. Relate TODOS os candidatos, inclusive excluídos e inativos, sem fundi-los. Se lista_parcial for true, diga que a lista é parcial e quantos foram omitidos (total_candidatos). conclusao.ausencia_nos_filtros_pesquisados=true significa APENAS zero resultados nos filtros descritos em conclusao.escopo (SKU, nome, GTIN se válido), nunca prova de inexistência no ERP: cite o escopo e o que não foi coberto (descrição, marca/fabricante, código do fornecedor). Ausência no espelho nunca prova ausência no ERP. Nunca recomende nem prepare criar cadastro de PRODUTO com base em ausência (proposta de categoria é outro fluxo). Se a ferramenta falhar ou vier "NÃO CONCLUÍDA", diga que a consulta não foi concluída e não afirme resultado. Respostas curtas: termine sempre a frase.${anexos.length ? `\n${REGRAS_ANEXO}` : ""}`,
    maxPassos: economico ? 1 : 5, maxTokens: economico ? 480 : 1536, aoTexto: ctx.aoTexto ? (delta: string) => { if (delta) transmitiuTextoPrincipal = true; ctx.aoTexto?.(delta); } : undefined, adaptadorStream: ctx.aoTexto && !anexos.length ? ctx.adaptadorStream?.(tipoLlm) : undefined, ferramentas: economico ? [] : prov === PROVEDOR_FREE ? (ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_CATALOGO as readonly string[]).includes(f.name))] : []) : ativo("chat_consulta_bling") ? [CONSULTAR_PRODUTO, ...FERRAMENTAS.filter(f => (FERRAMENTAS_PROPOSTA_BLING as readonly string[]).includes(f.name) || (FERRAMENTAS_PESQUISA as readonly string[]).includes(f.name) || (FERRAMENTAS_CATALOGO as readonly string[]).includes(f.name))] : [], fetch: ctx.fetch,
    antesDoPasso: async () => {

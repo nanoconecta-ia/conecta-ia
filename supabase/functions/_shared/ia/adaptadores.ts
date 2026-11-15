@@ -113,7 +113,7 @@ export async function chamarOpenAI(c: Chamada, msgs: Mensagem[]): Promise<Passo>
   }
   const tools = c.ferramentas.map((t) => ({ type: "function", function: { name: t.name, description: t.description, parameters: t.input_schema } }));
   const j = await enviar(c.fetch ?? fetch, `${c.baseUrl.replace(/\/+$/, "")}/chat/completions`, { authorization: `Bearer ${c.chave}` },
-    { model: c.modelo, messages: m, ...(new URL(c.baseUrl).hostname === "api.openai.com" ? { max_completion_tokens: c.maxTokens } : { max_tokens: c.maxTokens }), tools: tools.length ? tools : undefined }) as
+    { model: c.modelo, messages: m, ...(new URL(c.baseUrl).hostname === "api.openai.com" ? { max_completion_tokens: c.maxTokens, ...(/^gpt-(6|5\.6)-/.test(c.modelo) ? { reasoning_effort: "none" } : {}) } : { max_tokens: c.maxTokens }), tools: tools.length ? tools : undefined }) as
     { id?: string; model?: string; choices?: { finish_reason?: string | null; message?: { content?: string | null; tool_calls?: { id: string; function: { name: string; arguments?: string } }[] } }[]; usage?: { total_tokens?: number } };
   const msg = j.choices?.[0]?.message;
   if (!msg) throw new IaErro(502, "Resposta inesperada do provedor de IA.");

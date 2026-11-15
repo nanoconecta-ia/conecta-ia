@@ -1,3 +1,4 @@
+import { NanoGPT } from "./paginas/NanoGPT.tsx";
 import { AutorizarAgente } from "./paginas/AutorizarAgente.tsx";
 import { useEffect, useState } from "react";
 import { BACKUP_ATIVO, BANNERS_ATIVO, CENTRAL_ATIVA, CONECTOR_ATIVO, PAIR_ATIVO, ROTAS_DA_CENTRAL, ROTAS_DO_CONECTOR } from "./lib/flags.ts";
@@ -65,6 +66,7 @@ const ITENS: [string, string][] = [
   ["/indicadores", "Indicadores"],
   ["/studio", "Studio de produtos"],
   ["/estudio", "Estúdio do Nano"],
+  ["/nanogpt", "NanoGPT · trabalho real"],
   ["/assistente", "Conversa com Nano.IA"],
   ["/catalogo", "Catálogo"],
   ["/fila", "Fila de aprovação"],
@@ -159,6 +161,7 @@ export function App() {
           : caminho === "/visao-geral" ? <VisaoGeral loja={loja} />
           : caminho === "/catalogo-espelho" ? <Catalogo loja={loja} />
           : caminho === "/ferramentas" ? <FerramentasCatalogo loja={loja} query={query} />
+          : caminho === "/nanogpt" ? <NanoGPT key={loja.id} loja={loja} menu={MENU} />
           : caminho === "/estudio" ? <NanoWorkspace key={loja.id} loja={loja} menu={MENU} aoNavegar={ir} />
           : caminho === "/demonstracao-cadastro" ? <DemoCadastro />
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
