@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
   const { data: kRows, error: erroChave } = c.sem_ia === true
     ? { data: null, error: null }
     : await sb.rpc("ia_chave_ativa", { p_loja: loja.id, ...(provedor ? { p_provedor: provedor } : {}) });
-  const k = (kRows as { provedor: "claude" | "gemini" | "compativel_openai"; cifrada: string; modelo: string | null; limite: number | null; tokens_mes: number; base_url: string | null }[] | null)?.[0];
+  const k = (kRows as { provedor: "claude" | "gemini" | "compativel_openai" | "openai"; cifrada: string; modelo: string | null; limite: number | null; tokens_mes: number; base_url: string | null }[] | null)?.[0];
   if (erroChave) return json({ erro: "Não foi possível consultar a configuração de IA.", codigo: "provedor_indisponivel" }, 503);
   if (provedor && (!k || k.provedor !== provedor)) return json({ erro: "Este provedor não está configurado. Escolha outro em Integrações de IA.", codigo: "provedor_nao_configurado" }, 409);
   if (k && !modeloDaChave(k)) return json({ erro: "Configure o modelo em Integrações de IA.", codigo: "provedor_indisponivel" }, 409);
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
   if (k && !chaveiro) return json({ erro: "O provedor está indisponível na configuração do servidor.", codigo: "provedor_indisponivel" }, 503);
   if (c.anexos != null && !(k && chaveiro)) return json({ erro: "Anexos exigem um provedor de IA configurado.", codigo: "anexo_sem_provedor" }, 409);
   if (k && chaveiro) {
-    const va = c.anexos != null ? await validarAnexos(c.anexos, k.provedor) : null;
+    const va = c.anexos != null ? await validarAnexos(c.anexos, k.provedor === "openai" ? "compativel_openai" : k.provedor) : null;
     if (va && !va.ok) return json({ erro: va.erro, codigo: "anexo_invalido" }, 400);
     if (k.limite != null && k.tokens_mes >= k.limite) return json({ erro: "O limite mensal deste provedor foi atingido. Ajuste em Integrações de IA ou escolha outro provedor.", codigo: "limite_ia" }, 429);
     const { data: plugs } = await usuario.from("loja_plugins").select("id, nome, tipo, url, capacidades, risco, ativo").eq("loja_id", loja.id);
@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
     const conector = { origem: "chat" as const, lojaId: loja.id, userId: u.user.id, dados: dadosSupabase(sb, loja.id), rpc: (fn: string, args: Record<string, unknown>) => sb.rpc(fn, args), admin: sb, bling, agente: { nome: "Nano.ia", provedor: k.provedor, modelo: modeloDaChave(k) } };
     try {
       const r = await conversar({
-        provedor: k.provedor, baseUrl: k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: modeloDaChave(k), sistema: `${SISTEMA}\nLoja: ${loja.nome}.${va?.ok && va.anexos.length ? `\n${REGRAS_ANEXO}` : ""}`, mensagens, ferramentas: FERRAMENTAS,
+        provedor: k.provedor === "openai" ? "compativel_openai" : k.provedor, baseUrl: k.provedor === "openai" ? "https://api.openai.com/v1" : k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: modeloDaChave(k), sistema: `${SISTEMA}\nLoja: ${loja.nome}.${va?.ok && va.anexos.length ? `\n${REGRAS_ANEXO}` : ""}`, mensagens, ferramentas: FERRAMENTAS,
         executar: (nome, entrada) => executarFerramenta(nome, entrada, {
           usuario, admin: sb, lojaId: loja.id, plugins: (plugs ?? []) as PluginRegistro[], buscaImagem,
           searxng: configSearxngOuNulo((n) => Deno.env.get(n), loja.id).config, conector,
