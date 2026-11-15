@@ -51,3 +51,36 @@
  .conecta-aprovado-root .ap-nano-workspace .ap-estudio-unificado.ap-chat-amplo[data-pane="trabalho"] .ap-work-panel{display:flex}
  .conecta-aprovado-root .ap-nano-workspace .ap-estudio-unificado.ap-chat-amplo[data-pane="trabalho"] .ap-chat-panel{display:none}
 }
+
+/* Compatibilidade com chat mobile em tela cheia existente: a Torre removida
+   libera os 40px reservados para ela. O comando Ações entra na faixa fixa
+   acima do chat, onde nunca é encoberto pelo painel fixo. */
+@media(max-width:780px){
+ .conecta-aprovado-root .ap-nano-workspace .ap-heading-acoes button[aria-controls="ap-nano-acoes"]{
+  display:none!important;
+ }
+ .conecta-aprovado-root .ap-nano-workspace .ap-mobile-panes{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  right:0;
+  width:100%;
+ }
+ .conecta-aprovado-root .ap-nano-workspace .ap-mobile-panes .ap-mobile-acoes{
+  min-height:28px;
+  padding:2px 6px;
+  font-size:11px;
+  border:1px solid var(--borda);
+  background:var(--cartao)!important;
+ }
+ .conecta-aprovado-root .ap-nano-workspace .ap-mobile-panes .ap-mobile-acoes[aria-expanded="true"]{
+  color:var(--marca-forte);border-color:var(--marca-forte);background:var(--realce)!important;
+ }
+ .conecta-aprovado-root .ap-nano-workspace .ap-nano-acoes{
+  position:fixed;left:0;right:0;top:100px;bottom:auto;
+  z-index:24;max-height:calc(100dvh - 102px);overflow-y:auto;
+  margin:0;border-radius:0 0 10px 10px;box-shadow:0 15px 25px #1117;
+ }
+ .conecta-aprovado-root .ap-nano-workspace .ap-estudio-unificado .ap-work-panel,
+ .conecta-aprovado-root .ap-nano-workspace .ap-estudio-unificado .ap-chat-panel{
+  right:0!important;
+ }
+}
