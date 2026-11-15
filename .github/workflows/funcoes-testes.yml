@@ -43,6 +43,7 @@ jobs:
       - run: ./supabase/tests/conecta_pair_concorrencia.sh
       - run: ./supabase/tests/exec_local_concorrencia.sh
       - run: node scripts/tests/chat-concorrencia.mjs
+      - run: node scripts/tests/chat-fila-concorrencia.mjs
       - name: Validar reversão somente no banco descartável
         env:
           PGDATABASE: conecta_teste
@@ -50,6 +51,6 @@ jobs:
           psql -Xq -v ON_ERROR_STOP=1 -f docs/chat-operacional/REVERSAO.sql
           psql -XqAt -v ON_ERROR_STOP=1 <<'SQL'
           do $$ begin
-            if to_regclass('public.conversas') is not null or to_regclass('public.mensagens') is not null or to_regclass('public.auditoria') is null then raise exception 'reversão inválida'; end if;
+            if to_regclass('public.chat_fila') is not null or to_regprocedure('public.chat_fila_reivindicar(uuid)') is not null or to_regclass('public.conversas') is not null or to_regclass('public.mensagens') is not null or to_regclass('public.auditoria') is null then raise exception 'reversão inválida'; end if;
           end $$;
           SQL

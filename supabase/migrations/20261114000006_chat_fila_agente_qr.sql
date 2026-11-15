@@ -28,6 +28,8 @@ create table public.chat_fila (
   check ((estado = 'respondida') = (resposta_id is not null and respondida_em is not null)),
   check (estado = 'pendente' or estado in ('expirada', 'fallback') or (sessao_id is not null and entregue_em is not null))
 );
+-- Defesa adicional: nenhuma sessão mantém duas entregas ativas, inclusive sob concorrência.
+create unique index chat_fila_uma_entrega_sessao_idx on public.chat_fila (sessao_id) where estado = 'entregue';
 create index chat_fila_pendentes_idx on public.chat_fila (loja_id, estado, criado_em);
 
 alter table public.chat_fila enable row level security;
@@ -64,13 +66,18 @@ create function public.chat_fila_reivindicar(p_sessao uuid) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare s public.pair_sessoes; f public.chat_fila; v_texto text; v_hist jsonb;
 begin
+  -- Serializa reivindicações da mesma sessão, inclusive quando ainda não há linha entregue para bloquear.
+  perform pg_advisory_xact_lock(hashtextextended('chat-fila-sessao:' || p_sessao::text, 0));
   s := private.chat_sessao_valida(p_sessao);
   if s.id is null then return jsonb_build_object('ok', false, 'motivo', 'sessao_sem_permissao'); end if;
   update public.chat_fila set estado = 'expirada'
    where loja_id = s.loja_id and estado in ('pendente', 'entregue') and prazo_em <= now();
+  if exists (select 1 from public.chat_fila where sessao_id = s.id and estado = 'entregue') then
+    return jsonb_build_object('ok', true, 'vazio', true, 'ocupado', true);
+  end if;
   select * into f from public.chat_fila
    where loja_id = s.loja_id and estado = 'pendente' and prazo_em > now()
-   order by criado_em limit 1 for update skip locked;
+   order by criado_em, id limit 1 for update skip locked;
   if f.id is null then return jsonb_build_object('ok', true, 'vazio', true); end if;
   update public.chat_fila set estado = 'entregue', sessao_id = s.id, entregue_em = now() where id = f.id;
   select conteudo into v_texto from public.mensagens where id = f.mensagem_id;

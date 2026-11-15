@@ -1,7 +1,7 @@
 -- Ponte chat do Nano <-> agente do QR: escopo, isolamento por loja, uma entrega por vez, prazo, uma resposta só.
 begin;
 create or replace function public.afirma(ok boolean, msg text) returns void language plpgsql as
-$$ begin if not ok then raise exception 'FALHOU: %', msg; end if; raise notice 'ok: %', msg; end $$;
+$$ begin if ok is distinct from true then raise exception 'FALHOU: %', msg; end if; raise notice 'ok: %', msg; end $$;
 insert into public.lojas (id, nome, slug) values ('aaaaaaaa-0000-0000-0000-00000000000a', 'Loja A', 'loja-a'), ('bbbbbbbb-0000-0000-0000-00000000000b', 'Loja B', 'loja-b');
 insert into public.usuarios_loja (loja_id, user_id, papel) values
   ('aaaaaaaa-0000-0000-0000-00000000000a', '11111111-1111-1111-1111-111111111111', 'lojista'),
@@ -33,11 +33,18 @@ select public.afirma(public.chat_fila_enfileirar('aaaaaaaa-0000-0000-0000-000000
 select public.afirma(public.chat_fila_enfileirar('aaaaaaaa-0000-0000-0000-00000000000a', 'e1000000-0000-0000-0000-000000000002', 5)->>'motivo' = 'prazo_invalido', 'prazo fora de 30-300 s recusado');
 select public.chat_fila_enfileirar('bbbbbbbb-0000-0000-0000-00000000000b', 'e2000000-0000-0000-0000-000000000001', 90);
 
+select public.chat_fila_enfileirar('aaaaaaaa-0000-0000-0000-00000000000a', 'e1000000-0000-0000-0000-000000000002', 90);
+
+-- now() é constante nesta transação; torna a ordem das duas perguntas explícita.
+update public.chat_fila set criado_em = now() - interval '1 second' where mensagem_id = 'e1000000-0000-0000-0000-000000000001';
+
 select public.afirma(public.chat_fila_reivindicar(:S2)->>'motivo' = 'sessao_sem_permissao', 'sessão sem chat:responder não lê o chat');
 create temp table r1 as select public.chat_fila_reivindicar(:S1) as j;
 select public.afirma((select j->>'mensagem' from r1) = 'CI002916', 'agente recebe a mensagem da loja da sessão');
 select public.afirma((select j->>'mensagem' from r1) <> 'segredo da loja B', 'nunca a da loja B');
-select public.afirma((public.chat_fila_reivindicar(:S1)->>'vazio')::boolean, 'uma entrega por vez: não há outra pendente');
+select public.afirma((public.chat_fila_reivindicar(:S1)->>'ocupado')::boolean, 'sessão ocupada não recebe a segunda mensagem pendente');
+select public.afirma((select count(*) from public.chat_fila where sessao_id = :S1 and estado = 'entregue') = 1, 'apenas uma entrega ativa por sessão');
+select public.afirma((select estado from public.chat_fila where mensagem_id = 'e1000000-0000-0000-0000-000000000002') = 'pendente', 'segunda mensagem preservada na fila');
 
 select public.afirma(public.chat_fila_responder(:S2, (select (j->>'fila_id')::uuid from r1), 'oi')->>'motivo' = 'sessao_sem_permissao', 'outra sessão não responde');
 select public.afirma(public.chat_fila_responder(:S1, (select (j->>'fila_id')::uuid from r1), '')->>'motivo' = 'texto_invalido', 'texto vazio recusado');
@@ -48,6 +55,7 @@ select public.afirma(public.chat_fila_responder(:S1, (select (j->>'fila_id')::uu
 -- prazo vencido: não entrega e não aceita resposta
 select public.chat_fila_enfileirar('aaaaaaaa-0000-0000-0000-00000000000a', 'e1000000-0000-0000-0000-000000000002', 30);
 create temp table r2 as select public.chat_fila_reivindicar(:S1) as j;
+select public.afirma((select j->>'mensagem' from r2) = 'e o CI003000?', 'responder libera a sessão para a próxima mensagem');
 update public.chat_fila set prazo_em = now() - interval '1 second', criado_em = now() - interval '1 minute' where id = (select (j->>'fila_id')::uuid from r2);
 select public.afirma(public.chat_fila_responder(:S1, (select (j->>'fila_id')::uuid from r2), 'tarde')->>'motivo' = 'prazo_vencido', 'resposta atrasada é recusada (o Nano já assumiu)');
 select public.afirma((select estado from public.chat_fila where id = (select (j->>'fila_id')::uuid from r2)) = 'expirada', 'fila marcada como expirada');
