@@ -23,8 +23,8 @@ import { conteudoComAnexos, REGRAS_ANEXO, resumoParaRegistro, validarAnexos, typ
 
 /** Ferramentas de PROPOSTA do Bling liberadas neste fluxo (nenhuma grava no Bling; o lojista aprova a versão exata na Central de Inteligência). */
 export const FERRAMENTAS_PROPOSTA_BLING = ["bling_categorias", "bling_propor_categoria", "bling_propor_trocar_categoria", "bling_propor_reativar_produto", "bling_propor_ajuste_produto", "bling_propor_cadastro_produto", "bling_propor_alterar_preco"] as const;
-/** Pesquisa somente leitura; passa pelo mesmo Policy Engine e pelo limite do chat por loja/usuario. */
-export const FERRAMENTAS_PESQUISA = ["buscar_imagem_web", "buscar_dados_tecnicos_web"] as const;
+/** Pesquisa e propostas pendentes; mesmo Policy Engine, nunca aprova nem exporta imagens. */
+export const FERRAMENTAS_PESQUISA = ["buscar_imagem_web", "buscar_dados_tecnicos_web", "propor_imagem", "propor_codigo", "propor_aplicacao", "propor_enriquecimento"] as const;
 export interface ChatContexto {
  usuario: any; admin: any; loja: { id: string; nome: string }; userId: string; get(n: string): string | undefined; fetch?: typeof fetch;
  /** B2b (#166): texto da resposta assim que existir (streaming). Opcional: sem ele o turno é idêntico ao de antes. */
