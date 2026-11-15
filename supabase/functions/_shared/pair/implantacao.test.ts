@@ -16,3 +16,10 @@ test('configuracaoPair: APP_URL na raiz do site aponta para o painel, não para 
   const c = configuracaoPair(k => k === 'APP_URL' ? 'https://www.mobisautopecas.com.br' : k === 'SUPABASE_URL' ? PROJETO_CONECTA : undefined);
   assert.equal(c.appUrl, PAINEL_CONECTA);
 });
+
+test('QR de producao nunca gera URL que redireciona do GitHub Pages para a Mobis', () => {
+  const c = configuracaoPair(k => k === 'APP_URL' ? 'https://nanoconecta-ia.github.io/conecta-ia' : k === 'SUPABASE_URL' ? PROJETO_CONECTA : undefined);
+  assert.equal(c.appUrl, PAINEL_CONECTA);
+  const teste = configuracaoPair(k => k === 'APP_URL' ? 'https://nanoconecta-ia.github.io/conecta-ia' : undefined);
+  assert.equal(teste.appUrl, 'https://nanoconecta-ia.github.io/conecta-ia/conecta.html');
+});
