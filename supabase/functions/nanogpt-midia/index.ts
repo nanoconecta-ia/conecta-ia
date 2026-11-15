@@ -8,10 +8,16 @@ import { configSearxngOuNulo } from "../_shared/ia/searxng.ts";
 import { escolherProvedorBusca } from "../_shared/ia/provedor_busca.ts";
 import { proporImagem } from "../_shared/ia/escrita.ts";
 import { baixarImagemOriginal, urlImagemSegura, sha256Hex } from "../_shared/busca_segura/imagem_original.ts";
-import { validarImagemAprovada, corpoImagensBling, copiarDrive } from "../_shared/nanogpt_midia.ts";
+import { validarImagemAprovada, corpoImagensBling, copiarDrive, decidirReconciliacao, chaveIdempotencia, FERRAMENTA_IMAGENS } from "../_shared/nanogpt_midia.ts";
+import { buscarDefinicao } from "../_shared/conector/registro.ts";
+import { decidir } from "../_shared/conector/policy.ts";
+import { BlingEscritaReal } from "../_shared/conector/porta_bling.ts";
 import { blingFetch } from "../_shared/bling_api.ts";
 import { armazemSupabase } from "../_shared/bling_armazem.ts";
 const get = (n: string) => Deno.env.get(n);
+const flagsLigadas = () => get("NANOGPT_MIDIA_EXPORTAR") === "1" && get("BLING_ESCRITA_REAL") === "1";
+/** Estados da trava operacional em que o produto não pode receber escrita por aqui (bloqueado ou com proposta em execução). */
+const TRAVADO = ["bloqueado", "aprovado_execucao", "em_execucao"];
 const uuid = (v: unknown) => typeof v === "string" && /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v);
 Deno.serve(async req => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -36,7 +42,7 @@ Deno.serve(async req => {
     if (b.acao === "status") {
       const [bling, google] = await Promise.all([admin.from("bling_conexoes").select("status").eq("loja_id", lojaId).maybeSingle(), admin.from("google_conexoes").select("status").eq("loja_id", lojaId).maybeSingle()]);
       if (bling.error || google.error || bi.error) throw new Error("Não foi possível verificar as conexões.");
-      return json({ busca: searxng ? "searxng" : bi.data?.ativa ? "google" : null, bling: bling.data?.status ?? "ausente", drive: google.data?.status ?? "ausente", exportacao: get("NANOGPT_MIDIA_EXPORTAR") === "1" && get("BLING_ESCRITA_REAL") === "1", request_id: requestId });
+      return json({ busca: searxng ? "searxng" : bi.data?.ativa ? "google" : null, bling: bling.data?.status ?? "ausente", drive: google.data?.status ?? "ausente", exportacao: flagsLigadas() && buscarDefinicao(FERRAMENTA_IMAGENS)?.estado === "ativa", exportacao_motivo: buscarDefinicao(FERRAMENTA_IMAGENS)?.estado !== "ativa" ? "Ferramenta de imagens desligada no registro: falta a decisão do dono para este campo." : flagsLigadas() ? null : "Flags do servidor desligadas.", request_id: requestId });
     }
     if (b.acao === "buscar") {
       let buscaImagem = null;
@@ -58,13 +64,40 @@ Deno.serve(async req => {
       const proposta = await proporImagem(admin, lojaId, { sku: b.sku, url: b.url, pagina: b.pagina, origem: "Pesquisa revisada pelo lojista" });
       return json(proposta);
     }
-    if (!["preparar", "exportar"].includes(b.acao) || !uuid(b.imagem_id)) return json({ erro: "Ação ou imagem inválida." }, 422);
+    if (!["preparar", "exportar", "reconciliar"].includes(b.acao) || !uuid(b.imagem_id)) return json({ erro: "Ação ou imagem inválida." }, 422);
     if (s.papel !== "lojista") return json({ erro: "Só o responsável da loja pode exportar imagens." }, 403);
     const { data: imagem, error: ei } = await admin.from("produto_imagens").select("*").eq("loja_id", lojaId).eq("id", b.imagem_id).maybeSingle();
     if (ei) throw new Error("Falha na leitura da imagem.");
-    validarImagemAprovada(imagem);
+    if (!imagem) return json({ erro: "Imagem não encontrada nesta loja." }, 404);
     const { data: produto, error: ep } = await admin.from("produtos").select("id,sku,nome,bling_id").eq("loja_id", lojaId).eq("id", imagem.produto_id).single();
     if (ep || !produto || !/^\d+$/.test(String(produto.bling_id))) throw new Error("Produto sem vínculo confirmado com o Bling.");
+    // Trava pendente deste produto: nada novo começa antes da reconciliação (leitura do Bling por uma pessoa).
+    const lock = `${lojaId}/nanogpt-locks/${produto.id}.txt`;
+    const travaArq = await admin.storage.from("agente-anexos").download(lock);
+    let pendente: Record<string, unknown> | null = null;
+    if (!travaArq.error && travaArq.data) { try { pendente = JSON.parse(await travaArq.data.text()); } catch { pendente = { estado: "ilegivel" }; } }
+    if (b.acao === "reconciliar") {
+      if (!pendente) return json({ erro: "Não há operação pendente para este produto." }, 404);
+      if (pendente.imagem_id !== imagem.id) return json({ erro: "A pendência deste produto é de outra imagem; confira pelo recibo.", recibo: pendente }, 409);
+      const prefixo = admin.storage.from("produtos-imagens").getPublicUrl(`${lojaId}/${produto.id}/`).data.publicUrl;
+      if (typeof pendente.conecta_url !== "string" || !pendente.conecta_url.startsWith(prefixo)) return json({ erro: "Recibo não corresponde a este produto; conferência manual necessária.", recibo: pendente }, 409);
+      if (!chaveiro) throw new Error("Cofre indisponível.");
+      const lido = await blingFetch(armazemSupabase(admin), lojaId, `/produtos/${produto.bling_id}`, { chaveCifra: chaveiro });
+      if (!lido.ok) return json({ erro: "Bling não respondeu à conferência; a trava continua.", recibo: pendente }, 409);
+      const links = ((await lido.json()).data?.midia?.imagens?.externas ?? []).map((x: any) => x.link);
+      const conclusao = decidirReconciliacao(pendente, links);
+      if (b.confirmar !== true || conclusao.tipo === "aguardar") return json({ recibo: pendente, conclusao, liberada: false });
+      if (conclusao.tipo === "gravado" && !imagem.enviada_bling_em) {
+        const v = await admin.from("produto_imagens").update({ url: pendente.conecta_url, enviada_bling_em: new Date().toISOString() }).eq("loja_id", lojaId).eq("id", imagem.id).is("enviada_bling_em", null).select("id");
+        if (v.error || v.data?.length !== 1) return json({ erro: "Não foi possível registrar o vínculo local; a trava continua.", recibo: pendente }, 409);
+      }
+      await audit("reconciliacao", { recibo: pendente, conclusao, drive_orfao: conclusao.tipo === "nao_gravado" ? pendente.drive_id ?? null : null });
+      const solta = await admin.storage.from("agente-anexos").remove([lock]);
+      if (solta.error) return json({ erro: "Conferência registrada, mas a trava não foi removida. Tente de novo.", recibo: pendente }, 409);
+      return json({ recibo: { ...pendente, estado: conclusao.tipo === "gravado" ? "confirmado" : "liberado_sem_gravar" }, conclusao, liberada: true });
+    }
+    if (pendente) return json({ erro: "Há uma operação pendente neste produto. Confira e libere a trava antes de copiar de novo.", recibo: pendente }, 409);
+    validarImagemAprovada(imagem);
     let arquivo: Uint8Array | undefined;
     const original = await baixarImagemOriginal(imagem.url, { maxBytes: 5 * 1024 * 1024, capturarBytes: x => { arquivo = x; }, resolver: async host => {
       const r = await Promise.allSettled([Deno.resolveDns(host, "A"), Deno.resolveDns(host, "AAAA")]);
@@ -75,7 +108,15 @@ Deno.serve(async req => {
     if (imagem.enviada_bling_em) return json({ erro: "Esta imagem já foi enviada ao Bling. Confira a auditoria antes de copiar novamente." }, 409);
     if (b.acao === "preparar") return json({ imagem_id: imagem.id, sku: produto.sku, nome: produto.nome, url: imagem.url, ...info, destinos: ["Conecta.IA", "Google Drive", "Bling"] });
     if (b.confirmar !== true || b.sha256 !== info.sha256) return json({ erro: "Revise e confirme a versão exata da imagem. O arquivo pode ter mudado." }, 409);
-    if (get("NANOGPT_MIDIA_EXPORTAR") !== "1" || get("BLING_ESCRITA_REAL") !== "1") return json({ erro: "Exportação real ainda não habilitada neste ambiente." }, 409);
+    if (!flagsLigadas()) return json({ erro: "Exportação real ainda não habilitada neste ambiente." }, 409);
+    // Policy Engine ANTES de qualquer cópia: aprovação humana = lojista + imagem aprovada + direitos + hash confirmado nesta chamada.
+    const trava = await admin.from("produto_travas").select("estado").eq("loja_id", lojaId).eq("produto_id", produto.id).maybeSingle();
+    if (trava.error) throw new Error("Não foi possível ler a trava do produto.");
+    const politica = decidir(buscarDefinicao(FERRAMENTA_IMAGENS), { origem: "executor", aprovacaoValida: true, simulado: false, escritaRealLiberada: true, produtoTravado: TRAVADO.includes(trava.data?.estado) });
+    if (politica.decisao !== "permitida") {
+      await audit("exportacao_negada", { imagem_id: imagem.id, sku: produto.sku, politica });
+      return json({ erro: `Política do Conecta.IA não permite esta escrita agora (${politica.motivo}).` }, 409);
+    }
     if (!chaveiro) throw new Error("Cofre indisponível.");
     const cliente = clienteDoAmbiente(get); if (!cliente) throw new Error("Google não configurado no servidor.");
     const cred = await admin.rpc("google_ler_credenciais", { p_loja_id: lojaId }); const g = cred.data?.[0];
@@ -89,6 +130,7 @@ Deno.serve(async req => {
       if (salvo.error) throw new Error("Não foi possível guardar a renovação do Google.");
     }
     const arm = armazemSupabase(admin), cfg = { chaveCifra: chaveiro };
+    const porta = new BlingEscritaReal(arm, lojaId, cfg, true); // flags e política já conferidas acima
     const id = String(produto.bling_id), caminho = `/produtos/${id}`;
     const ler = async () => { const r = await blingFetch(arm, lojaId, caminho, cfg); if (!r.ok) throw new Error("Bling não confirmou leitura do produto."); return (await r.json()).data; };
     const antes = await ler(); if (antes?.codigo !== produto.sku) throw new Error("SKU no Bling mudou; sincronize e revise.");
@@ -100,9 +142,8 @@ Deno.serve(async req => {
     if (!ids.ok) throw new Error("Drive indisponível antes da gravação.");
     const driveId = (await ids.json()).ids?.[0]; if (!driveId) throw new Error("Drive não reservou o arquivo.");
     // Lock persistente por produto: um erro/timeout NÃO libera nova escrita às cegas.
-    const lock = `${lojaId}/nanogpt-locks/${produto.id}.txt`;
-    const recibo: any = { request_id: requestId, imagem_id: imagem.id, sha256: info.sha256, sku: produto.sku, drive_id: driveId, conecta_url: url, estado: "iniciando" };
-    const armazenar = async (upsert: boolean) => { const r = await admin.storage.from("agente-anexos").upload(lock, new Blob([JSON.stringify(recibo)], { type: "text/plain" }), { upsert, contentType: "text/plain" }); if (r.error) throw new Error("Operação bloqueada ou pendente de conferência. Não repita; consulte a auditoria."); };
+    const recibo: any = { request_id: requestId, idempotency_key: chaveIdempotencia(imagem.id, info.sha256), ferramenta: FERRAMENTA_IMAGENS, imagem_id: imagem.id, sha256: info.sha256, sku: produto.sku, drive_id: driveId, conecta_url: url, estado: "iniciando" };
+    const armazenar = async (upsert: boolean) => { recibo.atualizado_em = new Date().toISOString(); const r = await admin.storage.from("agente-anexos").upload(lock, new Blob([JSON.stringify(recibo)], { type: "text/plain" }), { upsert, contentType: "text/plain" }); if (r.error) throw new Error("Operação bloqueada ou pendente de conferência. Não repita; consulte a auditoria."); };
     await armazenar(false);
     try {
       const revisada = await admin.from("produto_imagens").select("*").eq("loja_id", lojaId).eq("id", imagem.id).single();
@@ -123,8 +164,8 @@ Deno.serve(async req => {
       const atual = await ler();
       if (JSON.stringify(atual.midia) !== JSON.stringify(antes.midia) || atual.codigo !== antes.codigo) throw new Error("Galeria mudou durante a cópia; revise antes de enviar ao Bling.");
       recibo.estado = "bling_enviando"; await armazenar(true);
-      const escrita = await blingFetch(arm, lojaId, caminho, cfg, { metodo: "PATCH", corpo, recuos: [] });
-      if (!escrita.ok) throw new Error(`Bling respondeu HTTP ${escrita.status}; confira antes de repetir.`);
+      const escrita = await porta.chamar(FERRAMENTA_IMAGENS, { id, corpo }, recibo.idempotency_key);
+      if (escrita.status < 200 || escrita.status >= 300) throw new Error(`Bling respondeu HTTP ${escrita.status}; confira antes de repetir.`);
       const depois = await ler();
       const links = (depois.midia?.imagens?.externas ?? []).map((x: any) => x.link);
       if (!corpo.midia.imagens.imagensURL.every(x => links.includes(x.link))) throw new Error("Bling não confirmou todas as imagens. Conferência necessária.");
@@ -137,7 +178,7 @@ Deno.serve(async req => {
       if (liberar.error) throw new Error("Cópias confirmadas; a trava exige liberação manual.");
       return json({ ok: true, recibo });
     } catch (e) {
-      recibo.estado = "conferencia_necessaria";
+      recibo.etapa_interrompida = recibo.estado; recibo.estado = "conferencia_necessaria";
       await armazenar(true).catch(() => undefined); await audit("exportacao_pendente", recibo).catch(() => undefined);
       return json({ erro: e instanceof Error ? e.message : "Cópia não confirmada.", recibo }, 409);
     }

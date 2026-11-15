@@ -39,8 +39,8 @@ test("leitura real nunca escreve e se declara sem escrita", async () => {
   assert.throws(() => l.chamar(), /escrita_real_desligada/);
 });
 
-test("lista fechada: só produtos.alterar e categorias.criar; o resto (inclui estoque, pedido, contato, produtos.criar) é recusado", async () => {
-  assert.deepEqual([...FERRAMENTAS_ESCRITA_REAL].sort(), ["bling.categorias.criar", "bling.produtos.alterar"]);
+test("lista fechada: só produtos.alterar, produtos.imagens_adicionar e categorias.criar; o resto (inclui estoque, pedido, contato, produtos.criar) é recusado", async () => {
+  assert.deepEqual([...FERRAMENTAS_ESCRITA_REAL].sort(), ["bling.categorias.criar", "bling.produtos.alterar", "bling.produtos.imagens_adicionar"]);
   const { p, chamadas } = await porta(true, () => resp(201));
   for (const f of ["bling.estoque.lancar", "bling.pedidos_venda.criar", "bling.contatos.criar", "bling.produtos.criar", "bling.nfe.listar", "qualquer"]) {
     await assert.rejects(() => p.chamar(f, { corpo: { a: 1 } }, "k"), /escrita_nao_suportada/, f);
@@ -66,6 +66,20 @@ test("produto: PATCH /produtos/{id} só com id numérico", async () => {
   for (const id of [undefined, "", "70a", "../1", "701/estoques", "1;drop"]) {
     await assert.rejects(() => p.chamar("bling.produtos.alterar", { id, corpo: { categoria: { id: 1 } } }, "k"), /alvo_invalido/, String(id));
   }
+  assert.equal(chamadas.length, 1);
+});
+
+test("imagens: PATCH /produtos/{id} só com midia.imagens.imagensURL; qualquer outro campo é recusado antes da rede", async () => {
+  const { p, chamadas } = await porta(true, () => resp(200, {}));
+  const corpo = { midia: { imagens: { imagensURL: [{ link: "https://conecta.exemplo/a.jpg" }] } } };
+  await p.chamar("bling.produtos.imagens_adicionar", { id: "701", corpo }, "chave-idem-img");
+  assert.equal(chamadas[0].metodo, "PATCH"); assert.equal(chamadas[0].url, "https://api.bling.com.br/Api/v3/produtos/701");
+  assert.deepEqual(JSON.parse(chamadas[0].corpo!), corpo);
+  assert.ok(!JSON.stringify(chamadas[0]).includes("chave-idem-img"));
+  for (const ruim of [{ ...corpo, nome: "x" }, { nome: "x" }, { midia: { imagens: { imagensURL: [{ link: "http://inseguro/a.jpg" }] } } }]) {
+    await assert.rejects(() => p.chamar("bling.produtos.imagens_adicionar", { id: "701", corpo: ruim }, "k"), /corpo_invalido/);
+  }
+  await assert.rejects(() => p.chamar("bling.produtos.imagens_adicionar", { id: "x", corpo }, "k"), /alvo_invalido/);
   assert.equal(chamadas.length, 1);
 });
 

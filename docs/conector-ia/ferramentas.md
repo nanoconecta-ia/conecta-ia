@@ -6,7 +6,7 @@ Legenda — **estado**: `ativa` = handler implementado e testado; `planejada` = 
 **permissão**: `leitura`, `propor` (cria proposta, nunca altera nada), `simular`, `executar` (**só o executor**, após aprovação humana; nunca exposta a chat nem a cliente externo). `*` = campo obrigatório.
 Ninguém aprova por ferramenta: a aprovação é ato de pessoa autenticada (`conector-aprovacoes`).
 
-Resumo: 64 ferramentas — 46 ativas, 15 planejadas, 3 desligadas.
+Resumo: 65 ferramentas — 46 ativas, 15 planejadas, 4 desligadas.
 
 ## Grupo: conecta
 
@@ -124,6 +124,7 @@ Resumo: 64 ferramentas — 46 ativas, 15 planejadas, 3 desligadas.
 | `bling.produtos.criar` | desligada | executar | MEDIUM | sim | não | não | sim | chave | `corpo*:object` |
 | `bling.produtos.alterar_preco` | desligada | executar | MEDIUM | sim | não | não | sim | chave | `id*:string` `corpo*:object` |
 | `bling.produtos.alterar` | ativa | executar | MEDIUM | sim | não | não | sim | chave | `id*:string` `corpo*:object` |
+| `bling.produtos.imagens_adicionar` | desligada | executar | MEDIUM | sim | não | não | sim | chave | `id*:string` `corpo*:object` |
 | `bling.categorias.criar` | ativa | executar | MEDIUM | sim | não | não | sim | chave | `corpo*:object` |
 | `bling.produtos.confirmar` | desligada | executar | LOW | sim | não | não | sim | chave | `id*:string` |
 
@@ -169,6 +170,9 @@ Resumo: 64 ferramentas — 46 ativas, 15 planejadas, 3 desligadas.
 - **`bling.produtos.alterar`** — Altera campos permitidos de um produto no Bling (PATCH /produtos/{id}).
   - *Verificação:* Ler o produto e comparar campo a campo.
   - *Recuperação:* Timeout => desconhecido; ler o produto e comparar antes de repetir.
+- **`bling.produtos.imagens_adicionar`** — Acrescenta à galeria do produto no Bling a URL de uma imagem aprovada (PATCH /produtos/{id}, só midia.imagens.imagensURL), preservando as URLs externas atuais.
+  - *Verificação:* Ler o produto e conferir que todas as URLs enviadas aparecem na galeria.
+  - *Recuperação:* Timeout => desconhecido; a trava do produto fica até a reconciliação (leitura do Bling) e nunca se repete às cegas.
 - **`bling.categorias.criar`** — Cria categoria de produto no Bling (POST /categorias/produtos).
   - *Verificação:* Listar categorias e localizar a criada.
   - *Recuperação:* Timeout => desconhecido; listar e procurar pelo nome/pai antes de repetir.

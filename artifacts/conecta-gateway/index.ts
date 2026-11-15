@@ -451,6 +451,7 @@ async function baixarImagemOriginal(entrada, op = {}) {
             };
             const avisos = [];
             if (Math.min(info.largura_px, info.altura_px) < IMAGEM_RESOLUCAO_BAIXA_PX) avisos.push(`Resolução baixa (${info.largura_px}x${info.altura_px}); o ideal é pelo menos ${IMAGEM_RESOLUCAO_BAIXA_PX}px no menor lado.`);
+            op.capturarBytes?.(bytes);
             return {
                 ok: true,
                 imagem: {
@@ -2253,6 +2254,7 @@ const FERRAMENTAS = [
     escrita("bling.produtos.criar", "POST", "/produtos", "MEDIUM"),
     escrita("bling.produtos.alterar", "PATCH", "/produtos/{id}", "MEDIUM"),
     escrita("bling.produtos.alterar_preco", "PATCH", "/produtos/{id}", "MEDIUM"),
+    escrita("bling.produtos.imagens_adicionar", "PATCH", "/produtos/{id}", "MEDIUM"),
     escrita("bling.produtos.alterar_situacao", "PATCH", "/produtos/{id}/situacoes", "MEDIUM"),
     escrita("bling.categorias.criar", "POST", "/categorias/produtos", "MEDIUM"),
     escrita("bling.contatos.criar", "POST", "/contatos", "MEDIUM"),

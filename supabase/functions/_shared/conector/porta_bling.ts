@@ -2,6 +2,7 @@
 // e BlingEscritaReal (POST/PATCH de uma lista FECHADA de ferramentas, DESLIGADA por padrão: precisa do segredo BLING_ESCRITA_REAL=1).
 import { blingFetch } from "../bling_api.ts";
 import { chaveProibidaNaEscrita } from "./bling_campos.ts";
+import { corpoSoImagens } from "../nanogpt_midia.ts";
 import type { Armazem, Config } from "../bling_token.ts";
 
 export interface RespostaBling { status: number; corpo?: unknown }
@@ -42,6 +43,8 @@ export class BlingLeituraReal implements PortaBling {
 const ROTAS_ESCRITA: Readonly<Record<string, { metodo: "POST" | "PATCH"; caminho: (id?: string) => string | null }>> = {
   "bling.produtos.alterar": { metodo: "PATCH", caminho: (id) => (id && /^\d{1,20}$/.test(id) ? `/produtos/${id}` : null) },
   "bling.categorias.criar": { metodo: "POST", caminho: () => "/categorias/produtos" },
+  // Só a galeria por URL (midia.imagens.imagensURL); o corpo é conferido em `chamar`. Quem decide se pode é o Policy Engine (registro: desligada).
+  "bling.produtos.imagens_adicionar": { metodo: "PATCH", caminho: (id) => (id && /^\d{1,20}$/.test(id) ? `/produtos/${id}` : null) },
 };
 export const FERRAMENTAS_ESCRITA_REAL = Object.keys(ROTAS_ESCRITA);
 export const INTERVALO_ESCRITA_MS = 350; // no máximo ~3 escritas por segundo (desenho: escrita-categoria-no-bling.md, seção 5)
@@ -71,6 +74,7 @@ export class BlingEscritaReal implements PortaBling {
     if (!args.corpo || typeof args.corpo !== "object" || Array.isArray(args.corpo)) throw new Error("corpo_invalido");
     const proibida = chaveProibidaNaEscrita(ferramenta, args.corpo);
     if (proibida) throw new Error(`campo_proibido: ${proibida}`);
+    if (ferramenta === "bling.produtos.imagens_adicionar") { const m = corpoSoImagens(args.corpo); if (m) throw new Error(`corpo_invalido: ${m}`); }
     const espera = this.cfg.espera ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
     const agora = Date.now(), falta = this.ultimaEm + INTERVALO_ESCRITA_MS - agora;
     if (falta > 0) await espera(falta);

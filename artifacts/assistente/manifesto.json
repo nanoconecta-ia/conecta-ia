@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "ec4dc73ae5f2ad8f422bfa890aa03cf2e76a1512259fc0a8877079103b4ac18f",
+  "artefato_sha256": "b2337cc781695f692e2f637cd95034c03182c820002d049605f051d714d82040",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -42,7 +42,7 @@
     },
     {
       "path": "supabase/functions/_shared/busca_segura/imagem_original.ts",
-      "sha256": "ff646cb448dc51275f2e7bf219c4db21967274a0fdf45d88edfacb3c19e2c336"
+      "sha256": "cbe884bddeb573b189d4c726db8b86b0308669a147674b7e4532430add29375a"
     },
     {
       "path": "supabase/functions/_shared/aplicacoes/regras_aplicacao.ts",
@@ -90,7 +90,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/registro.ts",
-      "sha256": "087a1291cdf49f16fee96583ce5addf1749a3e50fb5c0e2ab7b8f871e7f8df58"
+      "sha256": "bfde009e5e971d821638cde0960b4338115d84a7597305d9a509c651160e5abd"
     },
     {
       "path": "supabase/functions/_shared/conector/bling_campos.ts",
@@ -197,8 +197,12 @@
       "sha256": "b4111a685e011d2d051d8f9d40d6a5e8a6fde2da8232c0871360f2e09ddbd8fb"
     },
     {
+      "path": "supabase/functions/_shared/nanogpt_midia.ts",
+      "sha256": "d3c57ae65d7765622d5250edb81fbd3703ee94f5a0235205bf23900c855a1292"
+    },
+    {
       "path": "supabase/functions/_shared/conector/porta_bling.ts",
-      "sha256": "ce31b78ff97fcb603c2b332c83412bf3d2aaba376be5c347c358f69c0dd1240d"
+      "sha256": "75e8fb74ddcafc8627a515f1b9321a0b557be984f2aca6d1085ea0ab45c7c731"
     },
     {
       "path": "supabase/functions/_shared/bling_armazem.ts",
@@ -226,7 +230,7 @@
     },
     {
       "path": "supabase/functions/_shared/bling_ferramentas.ts",
-      "sha256": "8dec3ee47614bb87e505e5a27a6103c4d818eca630822ee9976643f766cc4ad5"
+      "sha256": "fc11ac7f2de84e8a96e5a3daf0ae064199ca3a2f8c5959c05898d04d88cd232e"
     },
     {
       "path": "supabase/functions/_shared/assistente/busca_produto.ts",
@@ -254,7 +258,7 @@
     },
     {
       "path": "supabase/functions/_shared/assistente/chat.ts",
-      "sha256": "e6dbdf84943591c57a8a8e43bb31982f4727ba35ff4238753bfe14d9c3e252fb"
+      "sha256": "35770cfbb74e601b6f5dada29f65bbc9d343921683202e2769c3459b7fdcf15c"
     },
     {
       "path": "supabase/functions/_shared/ia/adaptadores_stream.ts",
