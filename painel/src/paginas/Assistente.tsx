@@ -164,18 +164,19 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     ? `Aguardando resposta de ${motorPendente} · ainda não confirmado`
     : ultimoMotorFalhou
       ? "Última consulta falhou · disponibilidade não confirmada"
+      : modoAgenteQr ? `${sinalQr.rotulo} · ${sinalQr.online ? "consulta autenticada recente à fila" : "sem consumidor ativo confirmado"}`
       : ultimoModelo?.modeloUsado
         ? `Última resposta confirmada: ${ultimoModelo.modeloUsado}${ultimoModelo.modeloContingencia ? " (contingência)" : ""}`
         : carregando ? "Verificando configuração de IA…"
-        : modoAgenteQr ? "Agente conectado pelo QR · aguardando resposta"
         : !provedor ? "Sem LLM ativo · apenas recursos locais"
         : `Selecionado: ${selecao?.nome ?? provedor}${selecao?.modelo ? ` · ${selecao.modelo}` : ""} · ainda não testado`;
   const estadoMotor = motorPendente ? "consultando" : ultimoMotorFalhou ? "falha"
+    : modoAgenteQr ? (sinalQr.online ? "configurado" : "falha")
     : ultimoModelo?.modeloUsado ? "confirmado" : "configurado";
   const nomeMotorCompacto = motorPendente ? (selecao?.nome ?? provedor ?? "IA") + " · consultando"
     : ultimoMotorFalhou ? "IA · falha"
+    : modoAgenteQr ? (sinalQr.online ? "Agente QR · online" : "Agente QR · offline")
     : ultimoModelo?.modeloUsado ? ultimoModelo.modeloUsado.split(" · ")[0] + " · respondeu"
-    : modoAgenteQr ? "Agente QR · selecionado"
     : provedor ? (selecao?.nome ?? provedor) + " · selecionado"
     : "Sem LLM";
   const armazemSessao = typeof sessionStorage === "undefined" ? null : sessionStorage;
