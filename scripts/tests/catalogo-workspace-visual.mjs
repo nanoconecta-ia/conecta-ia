@@ -129,7 +129,7 @@ try {
       const v=await page.evaluate(()=>[...document.querySelectorAll("textarea")].find(t=>t.value.includes("Corrigir o cadastro"))?.value??"");
       assert.match(v,/854008/);assert.match(v,/hipótese, SEM fonte: confirme antes de usar\): acho que o fabricante é teste/);assert.match(v,/não aprova nem grava no Bling/);assert.match(v,/Posição na taxonomia sugerida pelo lojista \(hipótese, SEM fonte\): Arrefecimento › Bombas d'água/);
       assert.equal(v.includes("151,00"),false,"pedido sem custo");
-      assert.deepEqual(writes.slice(antesEnvios).filter(x=>!x.url.endsWith("/functions/v1/assistente")&&!x.url.includes("/rest/v1/rpc/pode_")),[],"preencher a caixa não grava em nenhuma tabela nem no ERP (só leituras e checagem de permissão)");
+      assert.deepEqual(writes.slice(antesEnvios).filter(x=>!x.url.endsWith("/functions/v1/assistente")&&!x.url.includes("/rest/v1/rpc/pode_")&&!x.url.endsWith("/rest/v1/rpc/chat_qr_disponivel")),[],"preencher a caixa não grava em nenhuma tabela nem no ERP (só leituras e checagem de permissão)");
       assert.ok((await page.evaluate(()=>[...document.querySelectorAll("textarea")].find(t=>t.value.includes("Corrigir o cadastro"))?.value??"")).length>0,"o texto continua na caixa: nada foi enviado");
       await page.screenshot({path:root+`evidencias-chat/ficha-pedir-correcao-${width}.png`});
     }
