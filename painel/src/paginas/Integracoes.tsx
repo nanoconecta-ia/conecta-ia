@@ -14,6 +14,7 @@ type Chave = { provedor: string; ativa: boolean; principal: boolean; final_chave
 const PROVEDORES = [
   { id: "claude", nome: "Claude", aviso: "Pago por uso; crie a chave no console do provedor.", modelo: "claude-sonnet-5-5", precisaEndereco: false },
   { id: "gemini", nome: "Gemini (Google AI Studio)", aviso: "Há plano gratuito, mas no gratuito o Google pode usar o conteúdo enviado para melhorar os produtos dele. O agente não envia custo nem fornecedor, só dados de catálogo.", modelo: "gemini-2.5-flash", precisaEndereco: false },
+  { id: "openai", nome: "GPT direto (OpenAI oficial)", aviso: "Conexão direta à API da OpenAI, independente do ChatGPT Plus e do Groq. Requer chave API própria e possui custo por tokens. Para o piloto: GPT-6 Luna (mais econômico). As ferramentas só leem e propõem; gravação no Bling exige aprovação separada.", modelo: "gpt-6-luna", precisaEndereco: false },
   { id: "compativel_openai", nome: "Llama ou outro modelo compatível com OpenAI", aviso: "Para atuar como reserva do OpenRouter neste piloto, use Groq (https://api.groq.com/openai/v1) ou Cerebras (https://api.cerebras.ai/v1), com modelo e chave próprios, limite mensal de 1.000 a 50.000 tokens e plano sem cobrança. Outros servidores podem funcionar manualmente, mas não entram na contingência. A autorização por sessão fica no chat do Nano.", modelo: "", precisaEndereco: true },
   { id: "openrouter_free", nome: "Gratuito (OpenRouter)", aviso: AVISO_FREE, modelo: "openrouter/free", precisaEndereco: false },
 ] as const;

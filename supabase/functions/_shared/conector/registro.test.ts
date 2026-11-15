@@ -8,7 +8,9 @@ import { gerarToken, pareceTokenMcp, sha256Hex } from "./cripto.ts";
 const d = (id: string) => buscarDefinicao(id)!;
 
 /** Escritas no Bling ativas no registro. Estoque, pedidos, contatos e criação de produto seguem desligados. */
-const ESCRITA_BLING_LIBERADA = new Set(["bling.produtos.alterar", "bling.categorias.criar"]);
+// bling.produtos.imagens_adicionar: diretriz do dono de 15/11/2026 (chat) — liberar as ferramentas de enriquecimento (imagem e taxonomia) para o trabalho real
+// com aprovação humana, preservando o fiscal. Só a galeria por URL; continua exigindo a liberação da loja no banco, as flags do servidor e a confirmação por imagem.
+const ESCRITA_BLING_LIBERADA = new Set(["bling.produtos.alterar", "bling.categorias.criar", "bling.produtos.imagens_adicionar"]);
 
 test("registro: ids únicos, formato aceito pelo banco e contrato completo em toda ferramenta", () => {
   const ids = new Set<string>();

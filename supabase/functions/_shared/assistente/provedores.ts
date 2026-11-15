@@ -1,7 +1,7 @@
 // Metadados públicos; nunca recebe nem devolve o segredo cifrado.
 import { urlPublicaSegura } from "../ia/plugin.ts";
 
-export const PROVEDORES_CHAT = ["compativel_openai", "gemini", "claude", "openrouter_free"] as const;
+export const PROVEDORES_CHAT = ["compativel_openai", "openai", "gemini", "claude", "openrouter_free"] as const;
 export type ProvedorChat = typeof PROVEDORES_CHAT[number];
 export type EstadoProvedor = "disponivel" | "nao_configurado" | "indisponivel";
 export interface ChavePublica {
@@ -18,10 +18,11 @@ export function validarProvedor(valor: unknown): ProvedorChat | undefined {
 }
 
 export function modeloDaChave(k: { provedor: string; modelo: string | null }): string {
-  return k.modelo || (k.provedor === "gemini" ? "gemini-2.5-flash" : k.provedor === "claude" ? "claude-sonnet-5-5" : k.provedor === "openrouter_free" ? "openrouter/free" : "");
+  return k.modelo || (k.provedor === "gemini" ? "gemini-2.5-flash" : k.provedor === "claude" ? "claude-sonnet-5-5" : k.provedor === "openrouter_free" ? "openrouter/free" : k.provedor === "openai" ? "gpt-6-luna" : "");
 }
 
 export function nomeProvedor(id: string, base?: string | null): string {
+  if (id === "openai") return "GPT (OpenAI oficial)";
   if (id === "gemini") return "Gemini";
   if (id === "claude") return "Claude";
   if (id === "openrouter_free") return "Gratuito (OpenRouter)";
@@ -41,7 +42,7 @@ export function listarProvedores(chaves: ChavePublica[], falha = false, agora = 
     let motivo = "";
     if (falha) { estado = "indisponivel"; motivo = "Não foi possível consultar a configuração."; }
     else if (k?.ativa) {
-      if (!modeloDaChave(k) || (id === "compativel_openai" && (!k.base_url || !urlPublicaSegura(k.base_url)))) {
+      if (!modeloDaChave(k) || (id === "compativel_openai" && (!k.base_url || !urlPublicaSegura(k.base_url))) || (id === "openai" && k.base_url !== null && k.base_url !== "https://api.openai.com/v1")) {
         estado = "indisponivel"; motivo = "Configuração incompleta.";
       } else if (k.mes_ref?.slice(0, 7) === mes && k.limite_mensal_tokens != null && k.tokens_mes >= k.limite_mensal_tokens) {
         estado = "indisponivel"; motivo = "Limite mensal atingido.";
