@@ -34,6 +34,6 @@ export type TipoDispositivo = typeof TIPOS_DISPOSITIVO[number];
 
 export const ehEscopo = (v: unknown): v is Escopo => typeof v === "string" && (ESCOPOS as readonly string[]).includes(v);
 export function escoposValidos(v: unknown): v is Escopo[] {
-  return Array.isArray(v) && v.length >= 1 && v.length <= 12 && new Set(v).size === v.length && v.every(ehEscopo);
+  return Array.isArray(v) && v.length >= 1 && v.length <= ESCOPOS.length && new Set(v).size === v.length && v.every(ehEscopo);
 }
 export const ehTipo = (v: unknown): v is TipoDispositivo => typeof v === "string" && (TIPOS_DISPOSITIVO as readonly string[]).includes(v);

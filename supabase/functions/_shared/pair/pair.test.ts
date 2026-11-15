@@ -60,6 +60,9 @@ test("escopos: mesma lista da migração (private.pair_escopos_validos) e nenhum
 });
 test("escopos: validação recusa vazio, repetido, desconhecido e não-lista", () => {
   assert.ok(escoposValidos(["produtos:ler"]));
+  assert.equal(ESCOPOS.length, 14, "todos os escopos oferecidos na tela podem ser solicitados");
+  assert.ok(escoposValidos([...ESCOPOS]), "selecionar todas as 14 permissões deve ser válido");
+  assert.ok(!escoposValidos([...ESCOPOS, ESCOPOS[0]]), "escopo duplicado e excesso são inválidos");
   assert.ok(!escoposValidos([])); assert.ok(!escoposValidos(["produtos:ler", "produtos:ler"]));
   assert.ok(!escoposValidos(["aprovacoes:aprovar"])); assert.ok(!escoposValidos("produtos:ler")); assert.ok(!escoposValidos(null));
 });

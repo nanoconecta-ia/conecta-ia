@@ -153,6 +153,8 @@ export function ParearSolicitante() {
       <label>Tipo<select value={tipo} onChange={(e) => { setTipo(e.target.value); setRenovavel(e.target.value !== "agente_externo"); }}>{TIPOS_DISPOSITIVO.filter(([v]) => v !== "agente_desktop").map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select></label>
       {tipo === "agente_externo" && <p className="suave">Para consultar a API Bling, marque a permissão específica abaixo. A conexão deste agente com o ChatGPT ainda requer OAuth; gerar o QR não conecta esta conversa automaticamente.</p>}
       <fieldset><legend>O que ele poderá fazer</legend>
+        <p className="suave">{escopos.length} de {ESCOPOS.length} permissões selecionadas. Nenhuma concede aprovação ou execução direta no Bling.</p>
+        <div className="linha"><button type="button" className="sec" onClick={() => setEscopos([...ESCOPOS])}>Selecionar todas ({ESCOPOS.length})</button><button type="button" className="sec" onClick={() => setEscopos([])}>Desmarcar todas</button></div>
         {ESCOPOS.map((e) => <label key={e} className="marcar"><input type="checkbox" checked={escopos.includes(e)} onChange={() => alternar(e)} /> {ROTULOS_ESCOPO[e]}</label>)}
       </fieldset>
       <label>Duração máxima<select value={duracao} onChange={(e) => setDuracao(Number(e.target.value))}>{DURACOES.map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select></label>
