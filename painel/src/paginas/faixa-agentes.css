@@ -21,3 +21,14 @@
 /* Resumo em texto ao lado do ícone: o lojista vê que há agente conectado sem precisar abrir. */
 .conecta-aprovado-root .faixa-agentes:has(.fa-resumo){flex-direction:row;align-items:center;gap:8px}
 .conecta-aprovado-root .faixa-agentes .fa-resumo{margin-left:0;flex:1 1 auto;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;background:transparent;border:0}
+
+/* No painel aprovado a navegação lateral é fixa e cobre o começo da página.
+   O indicador de presença deve começar na mesma área visível que o conteúdo. */
+@media (min-width: 901px) {
+  .conecta-aprovado-root .faixa-agentes { padding-left: 236px; }
+  .conecta-aprovado-root:has(.ap-recolhido) .faixa-agentes { padding-left: 88px; }
+}
+@media (min-width: 781px) and (max-width: 900px) {
+  .conecta-aprovado-root .faixa-agentes { padding-left: 202px; }
+  .conecta-aprovado-root:has(.ap-recolhido) .faixa-agentes { padding-left: 88px; }
+}
