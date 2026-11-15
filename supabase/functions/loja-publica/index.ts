@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
   // filtros calculados do dado aprovado (categorias com ícone, montadoras, fabricantes); falha aqui não derruba a vitrine
   const { data: filtros } = await sb.rpc("filtros_da_vitrine", { p_loja: loja.id });
 
-  let consulta = sb.from("produtos").select("nome, sku, preco, estoque, marca, descricao_curta, sincronizado_em, publicado, exibicao_teste", { count: "exact" })
+  let consulta = sb.from("produtos").select("nome, sku, preco, estoque, marca, descricao_curta, sincronizado_em, publicado, exibicao_teste, taxonomia_no_id", { count: "exact" })
     .eq("loja_id", loja.id);
   consulta = previaConsultaMobis
     ? consulta.or("publicado.eq.true,exibicao_teste.eq.true")
@@ -125,13 +125,16 @@ Deno.serve(async (req) => {
     .filter((l: { sku: string | null; publicado: boolean; exibicao_teste: boolean }) =>
       previaConsultaMobis && l.exibicao_teste && !l.publicado)
     .map((l: { sku: string | null }) => l.sku).filter(Boolean) as string[]);
+  const categoriaPorNo = new Map((nos ?? []).map((n: { id: string; nome: string }) => [n.id, n.nome]));
+  const categoriaPorSku = new Map((linhas ?? []).map((l: { sku: string | null; taxonomia_no_id: string | null }) =>
+    [l.sku, categoriaPorNo.get(l.taxonomia_no_id ?? "") ?? null]));
   const produtos = montarVitrine((linhas ?? []).map((l: Record<string, unknown>) => ({
     ...l,
     preco: skusConsulta.has(String(l.sku)) ? null : l.preco,
     estoque: skusConsulta.has(String(l.sku)) ? null : l.estoque,
     imagem: imagens.get(String(l.sku)) ?? null,
   }) as never), loja.whatsapp, urlDoProduto)
-    .map((produto) => ({ ...produto, consulta_previa: skusConsulta.has(produto.sku) }));
+    .map((produto) => ({ ...produto, consulta_previa: skusConsulta.has(produto.sku), categoria: categoriaPorSku.get(produto.sku) ?? null }));
   // banners de oferta no ar (loja_banners): só produto publicado e dentro do período; falha aqui não derruba a vitrine
   const { data: bn } = await sb.rpc("banners_da_vitrine", { p_loja: loja.id });
   const banners = montarBanners(Array.isArray(bn) ? bn : [], loja.whatsapp, urlDoProduto);
