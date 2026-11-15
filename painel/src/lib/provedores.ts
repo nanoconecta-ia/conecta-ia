@@ -6,6 +6,15 @@ export function escolherInicial(opcoes: OpcaoProvedor[]): ProvedorChat | "" {
   return opcoes.find((p) => p.principal && p.estado === "disponivel")?.id
     ?? opcoes.find((p) => p.estado === "disponivel")?.id ?? "";
 }
+/** Uma escolha explícita no Estúdio não pode ser substituída pelo provedor principal ao recarregar. */
+export function escolherPersistido(opcoes: OpcaoProvedor[], salvo: string | null): ProvedorChat | "agente_qr" | "" {
+  if (salvo === null) return escolherInicial(opcoes);
+  if (salvo === "agente_qr" || salvo === "") return salvo;
+  // Se o provedor escolhido ficou indisponível, não trocar silenciosamente para outro.
+  const escolhido = opcoes.find((p) => p.id === salvo);
+  return escolhido ? escolhido.id : "";
+}
+
 export async function erroAssistente(error: unknown): Promise<string> {
   try { const j = await (error as { context?: Response }).context?.json(); if (typeof j?.erro === "string") return j.erro; } catch { /* mensagem segura */ }
   return "Não consegui responder agora. Tente novamente ou escolha outro provedor.";
