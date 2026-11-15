@@ -15,10 +15,13 @@ const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { sta
 const CAPACIDADES = ["consultar_bling", "enriquecer", "imagem", "taxonomia", "consultar_catalogo", "buscar_web"];
 const TIPOS = ["mcp", "api", "llm", "plugin_pull"];
 const RISCOS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-const PROVEDORES = ["claude", "gemini", "compativel_openai", "openrouter_free"];
+const PROVEDORES = ["claude", "gemini", "compativel_openai", "openai", "openrouter_free"];
+// Chat Completions com ferramentas exige reasoning_effort none nos GPT-6 abaixo.
+const MODELOS_OPENAI_PILOTO = ["gpt-6-luna", "gpt-6-sol", "gpt-5.6-terra", "gpt-5.6-luna"] as const;
+const URL_OPENAI = "https://api.openai.com/v1";
 const URL_OPENROUTER = "https://openrouter.ai/api/v1";
 // Modelos padrão conferem com a documentação pública na data do código; o lojista pode trocar. Compatível com OpenAI não tem padrão.
-const MODELO_PADRAO: Record<string, string> = { claude: "claude-sonnet-5-5", gemini: "gemini-2.5-flash", openrouter_free: "openrouter/free" };
+const MODELO_PADRAO: Record<string, string> = { claude: "claude-sonnet-5-5", gemini: "gemini-2.5-flash", openrouter_free: "openrouter/free", openai: "gpt-6-luna" };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -52,6 +55,8 @@ Deno.serve(async (req) => {
       const base = texto(c.base_url, 300);
       const limite = c.limite_mensal_tokens == null || c.limite_mensal_tokens === "" ? null : Number(c.limite_mensal_tokens);
       if (!PROVEDORES.includes(provedor)) return json({ erro: "Provedor não habilitado." }, 400);
+      if (provedor === "openai" && !/^sk-[A-Za-z0-9_-]{16,}$/.test(chave)) return json({ erro: "Informe uma chave da API oficial da OpenAI (não a assinatura do ChatGPT)." }, 400);
+      if (provedor === "openai" && !(MODELOS_OPENAI_PILOTO as readonly string[]).includes(modelo)) return json({ erro: "Modelo ainda não homologado para ferramentas pelo adaptador atual. Escolha GPT-6 Luna, GPT-6 Sol ou GPT-5.6 Terra/Luna." }, 400);
       if (provedor === "openrouter_free" && !/^sk-or-v1-[A-Za-z0-9_-]{15,}$/.test(chave)) return json({ erro: "Esta chave não é do OpenRouter (começa com sk-or-v1-). Nunca enviamos outra credencial para o OpenRouter." }, 400);
       if (chave.length < (provedor === "claude" ? 20 : 8) || /\s/.test(chave)) return json({ erro: "Confira a chave copiada (sem espaços)." }, 400);
       if (!/^[A-Za-z0-9][A-Za-z0-9._:/-]{2,79}$/.test(modelo)) return json({ erro: provedor === "compativel_openai" ? "Informe o nome do modelo (ex.: o Llama do seu provedor)." : "Nome de modelo inválido." }, 400);
@@ -59,7 +64,7 @@ Deno.serve(async (req) => {
       if (limite !== null && (!Number.isInteger(limite) || limite < 1000)) return json({ erro: "O limite mensal deve ser um número de tokens (mínimo 1000) ou ficar vazio." }, 400);
       const { error } = await sb.rpc("ia_salvar_chave", { p_loja: lojaId, p_provedor: provedor, p_cifrada: await cifrar(chave, chaveiro), p_final: chave.slice(-4), p_modelo: modelo, p_limite: limite, p_base_url: provedor === "compativel_openai" ? base : null });
       if (error) return json({ erro: "Não foi possível salvar a chave." }, 500);
-      await auditar("ia.chave_salva", { provedor, final: chave.slice(-4), modelo, limite, base_url: provedor === "compativel_openai" ? base : undefined });
+      await auditar("ia.chave_salva", { provedor, final: chave.slice(-4), modelo, limite, base_url: provedor === "compativel_openai" ? base : provedor === "openai" ? URL_OPENAI : undefined });
       return json({ ok: true });
     }
     case "testar_chave": {
@@ -69,7 +74,7 @@ Deno.serve(async (req) => {
       const k = (data as { provedor: string; cifrada: string; modelo: string | null; base_url: string | null }[] | null)?.[0];
       if (!k) return json({ erro: "Nenhuma chave ativa para este provedor. Salve a chave primeiro." }, 409);
       try {
-        const r = await conversar({ provedor: (provedor === "openrouter_free" ? "compativel_openai" : provedor) as "claude" | "gemini" | "compativel_openai", baseUrl: provedor === "openrouter_free" ? URL_OPENROUTER : k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: k.modelo ?? MODELO_PADRAO[provedor] ?? "", sistema: "Responda apenas: ok", mensagens: [{ role: "user", content: "ping" }], ferramentas: [], executar: async () => null, maxTokens: 16 });
+        const r = await conversar({ provedor: (provedor === "openrouter_free" || provedor === "openai" ? "compativel_openai" : provedor) as "claude" | "gemini" | "compativel_openai", baseUrl: provedor === "openai" ? URL_OPENAI : provedor === "openrouter_free" ? URL_OPENROUTER : k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: k.modelo ?? MODELO_PADRAO[provedor] ?? "", sistema: "Responda apenas: ok", mensagens: [{ role: "user", content: "ping" }], ferramentas: [], executar: async () => null, maxTokens: 16 });
         await sb.rpc("ia_registrar_uso", { p_loja: lojaId, p_provedor: provedor, p_tokens: r.tokens });
         return json({ ok: true });
       } catch (e) {
