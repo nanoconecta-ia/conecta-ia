@@ -4,7 +4,7 @@
   "short_name": "Conecta.IA",
   "description": "Painel do lojista e vitrine inteligente: catálogo espelhado do ERP, Nano.ia e orçamento por WhatsApp.",
   "lang": "pt-BR",
-  "start_url": "./",
+  "start_url": "./conecta.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
