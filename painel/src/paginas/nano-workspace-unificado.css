@@ -1,0 +1,86 @@
+/* Estúdio Nano V3: uma só navegação de artefatos. A Torre duplicada foi removida.
+ * O painel público não herda estas regras. */
+.conecta-aprovado-root .ap-nano-workspace .ap-studio-layout.ap-estudio-unificado{
+ grid-template-columns:minmax(0,1fr) 8px minmax(280px,var(--chat-width));
+}
+.conecta-aprovado-root .ap-nano-workspace .ap-studio-layout.ap-estudio-unificado.ap-chat-amplo{
+ grid-template-columns:minmax(0,1fr);
+}
+.conecta-aprovado-root .ap-nano-acoes{
+ margin:0 0 14px;padding:16px 17px;background:var(--cartao);border:1px solid var(--borda);
+ border-radius:10px;box-shadow:0 7px 18px #0000000c;
+}
+.conecta-aprovado-root .ap-nano-acoes p{font-size:12px;color:var(--suave);margin:0 0 12px;line-height:1.5}
+.conecta-aprovado-root .ap-nano-acoes-grid{display:flex;flex-wrap:wrap;gap:9px}
+.conecta-aprovado-root .ap-nano-acoes-grid button{
+ background:var(--realce)!important;color:var(--texto);font-size:12px;font-weight:700;
+ min-height:44px;border:1px solid var(--borda);padding:10px 12px;border-radius:8px;
+}
+.conecta-aprovado-root .ap-nano-acoes-grid button:hover{border-color:var(--marca-forte);color:var(--marca-forte)}
+.conecta-aprovado-root .ap-nano-acoes small{display:block;margin-top:12px;color:var(--suave);font-size:11px;line-height:1.5}
+.conecta-aprovado-root .ap-heading-acoes button[aria-expanded="true"]{
+ border-color:var(--marca-forte);color:var(--marca-forte);background:var(--realce)!important;
+}
+.conecta-aprovado-root .ap-work-header small{font-size:9px;letter-spacing:.07em}
+.conecta-aprovado-root .ap-work-tabs{background:var(--realce);gap:5px;flex-wrap:wrap}
+.conecta-aprovado-root .ap-work-tabs button{min-height:42px;font-size:11px!important;padding:7px 10px!important;border-radius:6px}
+.conecta-aprovado-root .ap-studio-layout.ap-estudio-unificado .ap-chat-panel{min-width:0}
+@media(max-width:900px) and (min-width:781px){
+ .conecta-aprovado-root .ap-nano-workspace .ap-studio-layout.ap-estudio-unificado{
+ grid-template-columns:minmax(0,1fr) 8px 280px;
+ }
+}
+@media(max-width:780px){
+ .conecta-aprovado-root .ap-nano-workspace .ap-studio-layout.ap-estudio-unificado,
+ .conecta-aprovado-root .ap-nano-workspace .ap-studio-layout.ap-estudio-unificado.ap-chat-amplo{
+ grid-template-columns:minmax(0,1fr);
+ }
+ .conecta-aprovado-root .ap-nano-acoes{padding:12px;margin-bottom:10px}
+ .conecta-aprovado-root .ap-nano-acoes-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .conecta-aprovado-root .ap-nano-acoes-grid button{font-size:11px;padding:8px}
+ .conecta-aprovado-root .ap-work-tabs{gap:4px;padding:8px}
+ .conecta-aprovado-root .ap-work-tabs button{font-size:10px!important;min-height:44px}
+}
+@media(max-width:390px){
+ .conecta-aprovado-root .ap-nano-acoes-grid{grid-template-columns:1fr}
+ .conecta-aprovado-root .ap-nano-acoes-grid button{width:100%}
+}
+
+/* Em celular, alternar para Trabalho continua possível mesmo após ampliar o chat. */
+@media(max-width:780px){
+ .conecta-aprovado-root .ap-nano-workspace .ap-estudio-unificado.ap-chat-amplo[data-pane="trabalho"] .ap-work-panel{display:flex}
+ .conecta-aprovado-root .ap-nano-workspace .ap-estudio-unificado.ap-chat-amplo[data-pane="trabalho"] .ap-chat-panel{display:none}
+}
+
+/* Compatibilidade com chat mobile em tela cheia existente: a Torre removida
+   libera os 40px reservados para ela. O comando Ações entra na faixa fixa
+   acima do chat, onde nunca é encoberto pelo painel fixo. */
+@media(max-width:780px){
+ .conecta-aprovado-root .ap-nano-workspace .ap-heading-acoes button[aria-controls="ap-nano-acoes"]{
+  display:none!important;
+ }
+ .conecta-aprovado-root .ap-nano-workspace .ap-mobile-panes{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  right:0;
+  width:100%;
+ }
+ .conecta-aprovado-root .ap-nano-workspace .ap-mobile-panes .ap-mobile-acoes{
+  min-height:28px;
+  padding:2px 6px;
+  font-size:11px;
+  border:1px solid var(--borda);
+  background:var(--cartao)!important;
+ }
+ .conecta-aprovado-root .ap-nano-workspace .ap-mobile-panes .ap-mobile-acoes[aria-expanded="true"]{
+  color:var(--marca-forte);border-color:var(--marca-forte);background:var(--realce)!important;
+ }
+ .conecta-aprovado-root .ap-nano-workspace .ap-nano-acoes{
+  position:fixed;left:0;right:0;top:100px;bottom:auto;
+  z-index:24;max-height:calc(100dvh - 102px);overflow-y:auto;
+  margin:0;border-radius:0 0 10px 10px;box-shadow:0 15px 25px #1117;
+ }
+ .conecta-aprovado-root .ap-nano-workspace .ap-estudio-unificado .ap-work-panel,
+ .conecta-aprovado-root .ap-nano-workspace .ap-estudio-unificado .ap-chat-panel{
+  right:0!important;
+ }
+}
