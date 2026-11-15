@@ -14,6 +14,14 @@ test('somente a API OpenAI é rotulada GPT', () => {
   for (const base of ['https://api.openai.com.evil.invalid/v1', 'https://api.openai.com/outro', 'https://outro.invalid/v1']) assert.notEqual(nomeProvedor('compativel_openai', base), 'GPT');
 });
 test('enum fechado rejeita null, array, vazio e ids arbitrários', () => {
-  for (const v of [null, [], {}, '', 'openai', '__proto__']) assert.throws(() => validarProvedor(v));
-  assert.equal(validarProvedor(undefined), undefined); assert.equal(validarProvedor('gemini'), 'gemini');
+  for (const v of [null, [], {}, '', '__proto__']) assert.throws(() => validarProvedor(v));
+  assert.equal(validarProvedor(undefined), undefined); assert.equal(validarProvedor('gemini'), 'gemini'); assert.equal(validarProvedor('openai'), 'openai');
+});
+
+test('GPT oficial é separado do Groq e só fica disponível com configuração própria', () => {
+  const lista = listarProvedores([{ ...k, provedor: 'openai', modelo: 'gpt-6-luna', base_url: null, limite_mensal_tokens: 1000, tokens_mes: 0 }], false, new Date('2026-11-15'));
+  assert.equal(lista.find(p => p.id === 'openai')?.nome, 'GPT (OpenAI oficial)');
+  assert.equal(lista.find(p => p.id === 'openai')?.estado, 'disponivel');
+  assert.equal(lista.find(p => p.id === 'compativel_openai')?.estado, 'nao_configurado');
+  assert.equal(listarProvedores([{ ...k, provedor: 'openai', base_url: 'https://api.groq.com/openai/v1' }]).find(p => p.id === 'openai')?.estado, 'indisponivel');
 });

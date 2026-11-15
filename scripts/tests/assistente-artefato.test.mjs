@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import { readFile, mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { SourceTextModule, SyntheticModule, createContext } from 'node:vm';
 import { gerar, SDK } from '../gerar-autocontido.mjs';
 import { cifrar } from '../../supabase/functions/_shared/cripto.ts';
 
-const root = new URL('../../', import.meta.url).pathname;
+const root = fileURLToPath(new URL('../../', import.meta.url));
 const codigo = await readFile(new URL('../../artifacts/assistente/index.ts', import.meta.url), 'utf8');
 const chaveCifra = btoa('x'.repeat(32)); // exclusivamente sintética
 const segredo = 'chave-sintetica-nao-valida';
@@ -118,7 +119,7 @@ test('segurança: loja alheia é 404 e não chega ao serviço/provedor', async (
 
 test('metadados não expõem segredo; erro fecha todos os estados', async () => {
   const a = await ambiente(); const r = await a.chamar({ acao: 'provedores' });
-  assert.equal(r.body.provedores.length, 4); assert.ok(!JSON.stringify(r.body).includes(segredo));
+  assert.equal(r.body.provedores.length, 5); assert.ok(!JSON.stringify(r.body).includes(segredo));
   assert.ok(!a.rpcs.some((r) => r.fn === 'ia_chave_ativa'));
   const b = await ambiente({ falhaConfig: true });
   assert.ok((await b.chamar({ acao: 'provedores' })).body.provedores.every((p) => p.estado === 'indisponivel'));
@@ -136,7 +137,7 @@ test('M6: falha na RPC nega lojista; lojista aprovado mantém auditoria', async 
   assert.equal(b.auditoria[0].user_id, 'user-lojista');
 });
 
-for (const provedor of ['claude', 'gemini', 'compativel_openai']) test(`seletor: ${provedor} usa adaptador existente e ferramenta (rede SIMULADA)`, async () => {
+for (const provedor of ['claude', 'gemini', 'compativel_openai', 'openai']) test(`seletor: ${provedor} usa adaptador existente e ferramenta (rede SIMULADA)`, async () => {
   const a = await ambiente({ provedor, tool: true });
   const r = await a.chamar({ acao: 'perguntar', texto: 'produto TEST-1?', provedor, modelo: 'modelo-caro-nao-permitido' });
   assert.equal(r.status, 200); assert.equal(r.body.provedor, provedor); assert.equal(r.body.ia, true);

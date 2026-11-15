@@ -52,3 +52,22 @@ Não implantado nesta tarefa; não foi executada uma cópia real em produto do c
 
 Fonte do contrato de imagens: https://developer.bling.com.br/build/assets/openapi-CR5QY_N1.json (ProdutosDadosPatchDTO / ProdutosImagensDTO; imagensURL é gravável, externas é somente leitura).
 Fonte do upload: https://developers.google.com/workspace/drive/api/guides/manage-uploads
+
+## Conector oficial GPT no Nano (piloto de 15/11/2026)
+
+O painel oferece **GPT direto (OpenAI oficial)**, provedor `openai`, SEPARADO de `compativel_openai` (Groq/Cerebras). O backend envia pedidos autenticados exclusivamente a `https://api.openai.com/v1/chat/completions`; o navegador nunca vê o segredo. A chave API oficial fica cifrada por loja e pode ser testada na tela Integrações de IA. ChatGPT Plus/Pro não fornece uma chave API nem paga esses tokens.
+
+- Modelos homologados no adaptador Chat Completions com ferramentas e raciocínio desativado: `gpt-6-luna` (padrão econômico), `gpt-6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna`. Para GPT-6 Astra/6.1 Sol com ferramentas, será necessário adaptador novo da Responses API; **não alegar suporte** até implementá-lo.
+- O modelo só executa ferramentas de **leitura e proposta** disponíveis no chat; a escrita externa segue fora das ferramentas do LLM, passa pelo Policy Engine, autorização por loja e aprovação humana.
+- Configuração pendente do responsável: cadastrar chave de `platform.openai.com` em Integrações, definir limite mensal de tokens e tocar em **Testar chave**. Cadastrar não ativa escrita no Bling.
+- A migração `20261115190000_openai_oficial_chat.sql` acrescenta o identificador `openai` aos RPCs de persistência e consumo, preservando permissões atuais. Não aplicar em produção sem revisão.
+
+### Conector ChatGPT para o Conecta.IA (direção inversa)
+
+O endpoint `conector-mcp` já existe, para uso como servidor MCP remoto autenticado pelo ChatGPT (se o usuário decidir instalar um plugin personalizado na sua conta). **Isso não implica que o ChatGPT da conversa corrente esteja pareado ou que a chave da conta ChatGPT seja reutilizada no Nano.** A conexão deve ser configurada e testada separadamente, com OAuth/escopos por loja, somente leitura/propostas, usando o gateway e não uma URL de Bling diretamente.
+
+### Trava reforçada para o piloto de imagem
+
+Antes de qualquer cópia ou PATCH, além das permissões anteriores, o servidor exige as variáveis `NANOGPT_PILOTO_LOJA_ID` (UUID da Mobis), `NANOGPT_PILOTO_SKU` (SKU exato) e `NANOGPT_PILOTO_IMAGEM_ID` (UUID da imagem aprovada). Se qualquer valor estiver ausente/incorreto, a exportação é negada; não há fallback para todos os SKUs. O usuário precisa escolher SKU e imagem antes de configurar as três variáveis. O endpoint de status indica que o piloto não foi delimitado, sem divulgar IDs sensíveis.
+
+O servidor ainda requer `NANOGPT_MIDIA_EXPORTAR=1`, `BLING_ESCRITA_REAL=1` e liberação por ferramenta na loja. Após o primeiro recibo confirmado, desligar `NANOGPT_MIDIA_EXPORTAR` e revogar a liberação da loja. Testar e comparar antes/depois da ficha do Bling, sem tocar em NCM, preço, estoque, SKU, emissão fiscal ou transferência.
