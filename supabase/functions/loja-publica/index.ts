@@ -43,6 +43,9 @@ Deno.serve(async (req) => {
   if (host && loja.ambiente !== "producao") return json({ erro: "Loja ainda em preparação." }, 404);
   const fase = loja.ambiente === "producao" ? "producao" : "teste";
   const faseCliente = modoCliente(fase, loja.modo_venda);
+  // Catálogo consultivo limitado à Mobis em teste: NÃO altera a publicação
+  // definitiva, não informa preço/estoque e não autoriza anúncios ou checkout.
+  const previaConsultaMobis = loja.slug === "mobis" && fase === "teste";
 
   const pagina = Math.max(1, Math.min(Number.isInteger(c?.pagina) ? c.pagina : 1, 1000));
   const limpar = (v: unknown, n = 60) => (typeof v === "string" ? v.replace(/[%,()*\\]/g, " ").trim().slice(0, n) : "");
@@ -52,7 +55,11 @@ Deno.serve(async (req) => {
   const ano = Number.isInteger(c?.ano) && c.ano >= 1950 && c.ano <= 2100 ? (c.ano as number) : undefined;
 
   // Publicados (id + categoria) e as aplicações APROVADAS deles: alimentam as opções de busca e os filtros.
-  const { data: pub } = await sb.from("produtos").select("id, taxonomia_no_id").eq("loja_id", loja.id).eq("publicado", true).limit(5000);
+  let consultaPublicados = sb.from("produtos").select("id, taxonomia_no_id").eq("loja_id", loja.id);
+  consultaPublicados = previaConsultaMobis
+    ? consultaPublicados.or("publicado.eq.true,exibicao_teste.eq.true")
+    : consultaPublicados.eq("publicado", true);
+  const { data: pub } = await consultaPublicados.limit(5000);
   const idsPublicados = (pub ?? []).map((p: { id: string }) => p.id);
   let apls: Aplicacao[] = [];
   if (idsPublicados.length) {
@@ -69,8 +76,12 @@ Deno.serve(async (req) => {
   // filtros calculados do dado aprovado (categorias com ícone, montadoras, fabricantes); falha aqui não derruba a vitrine
   const { data: filtros } = await sb.rpc("filtros_da_vitrine", { p_loja: loja.id });
 
-  let consulta = sb.from("produtos").select("nome, sku, preco, estoque, marca, descricao_curta, sincronizado_em", { count: "exact" })
-    .eq("loja_id", loja.id).eq("publicado", true).order("nome").range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1);
+  let consulta = sb.from("produtos").select("nome, sku, preco, estoque, marca, descricao_curta, sincronizado_em, publicado, exibicao_teste, taxonomia_no_id", { count: "exact" })
+    .eq("loja_id", loja.id);
+  consulta = previaConsultaMobis
+    ? consulta.or("publicado.eq.true,exibicao_teste.eq.true")
+    : consulta.eq("publicado", true);
+  consulta = consulta.order("nome").range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1);
   if (busca) consulta = consulta.or(`nome.ilike.%${busca}%,sku.ilike.%${busca}%`);
   if (modelo || motor || ano !== undefined) {
     const ids = [...produtosDoVeiculo(apls, { modelo, motor, ano })];
@@ -90,7 +101,11 @@ Deno.serve(async (req) => {
   const skuFicha = typeof c?.sku === "string" && c.sku.length <= 80 && !/[\u0000-\u001F\u007F]/.test(c.sku) ? c.sku : "";
   let ficha: { veiculos: ReturnType<typeof veiculosDaFicha> } | null = null;
   if (skuFicha) {
-    const { data: alvo } = await sb.from("produtos").select("id").eq("loja_id", loja.id).eq("publicado", true).eq("sku", skuFicha).maybeSingle();
+    let consultaFicha = sb.from("produtos").select("id").eq("loja_id", loja.id).eq("sku", skuFicha);
+    consultaFicha = previaConsultaMobis
+      ? consultaFicha.or("publicado.eq.true,exibicao_teste.eq.true")
+      : consultaFicha.eq("publicado", true);
+    const { data: alvo } = await consultaFicha.maybeSingle();
     if (alvo) ficha = { veiculos: veiculosDaFicha(apls, alvo.id as string) };
   }
 
@@ -104,7 +119,22 @@ Deno.serve(async (req) => {
     const { data: imgs } = await sb.from("imagens_publicaveis").select("produto_id, url, principal, ordem").eq("loja_id", loja.id).in("produto_id", [...porId.keys()]).order("principal", { ascending: false }).order("ordem");
     for (const i of imgs ?? []) { const s = porId.get(i.produto_id); if (s && !imagens.has(s)) imagens.set(s, i.url); }
   }
-  const produtos = montarVitrine((linhas ?? []).map((l: Record<string, unknown>) => ({ ...(l as object), imagem: imagens.get(String(l.sku)) ?? null }) as never), loja.whatsapp, urlDoProduto);
+  // Itens só de consulta não mostram preço, estoque ou disponibilidade como
+  // certeza. Continuam usando exclusivamente imagens com direitos liberados.
+  const skusConsulta = new Set((linhas ?? [])
+    .filter((l: { sku: string | null; publicado: boolean; exibicao_teste: boolean }) =>
+      previaConsultaMobis && l.exibicao_teste && !l.publicado)
+    .map((l: { sku: string | null }) => l.sku).filter(Boolean) as string[]);
+  const categoriaPorNo = new Map((nos ?? []).map((n: { id: string; nome: string }) => [n.id, n.nome]));
+  const categoriaPorSku = new Map((linhas ?? []).map((l: { sku: string | null; taxonomia_no_id: string | null }) =>
+    [l.sku, categoriaPorNo.get(l.taxonomia_no_id ?? "") ?? null]));
+  const produtos = montarVitrine((linhas ?? []).map((l: Record<string, unknown>) => ({
+    ...l,
+    preco: skusConsulta.has(String(l.sku)) ? null : l.preco,
+    estoque: skusConsulta.has(String(l.sku)) ? null : l.estoque,
+    imagem: imagens.get(String(l.sku)) ?? null,
+  }) as never), loja.whatsapp, urlDoProduto)
+    .map((produto) => ({ ...produto, consulta_previa: skusConsulta.has(produto.sku), categoria: categoriaPorSku.get(produto.sku) ?? null }));
   // banners de oferta no ar (loja_banners): só produto publicado e dentro do período; falha aqui não derruba a vitrine
   const { data: bn } = await sb.rpc("banners_da_vitrine", { p_loja: loja.id });
   const banners = montarBanners(Array.isArray(bn) ? bn : [], loja.whatsapp, urlDoProduto);
