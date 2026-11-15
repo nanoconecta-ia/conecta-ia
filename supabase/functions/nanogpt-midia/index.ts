@@ -16,6 +16,11 @@ import { blingFetch } from "../_shared/bling_api.ts";
 import { armazemSupabase } from "../_shared/bling_armazem.ts";
 const get = (n: string) => Deno.env.get(n);
 const flagsLigadas = () => get("NANOGPT_MIDIA_EXPORTAR") === "1" && get("BLING_ESCRITA_REAL") === "1";
+// Piloto excepcional: uma loja, um SKU, uma imagem. Nenhuma escrita sem os tres identificadores configurados.
+const pilotoLoja = (lojaId: string) => get("NANOGPT_PILOTO_LOJA_ID") === lojaId
+  && !!get("NANOGPT_PILOTO_SKU") && !!get("NANOGPT_PILOTO_IMAGEM_ID");
+const pilotoImagem = (lojaId: string, sku: string, imagemId: string) => pilotoLoja(lojaId)
+  && get("NANOGPT_PILOTO_SKU") === sku && get("NANOGPT_PILOTO_IMAGEM_ID") === imagemId;
 /** Estados da trava operacional em que o produto não pode receber escrita por aqui (bloqueado ou com proposta em execução). */
 const TRAVADO = ["bloqueado", "aprovado_execucao", "em_execucao"];
 /** Liberação da escrita por loja e por ferramenta (decisão do dono, com referência e auditoria; revogável). Falha fechada. */
@@ -48,7 +53,7 @@ Deno.serve(async req => {
       const [bling, google] = await Promise.all([admin.from("bling_conexoes").select("status").eq("loja_id", lojaId).maybeSingle(), admin.from("google_conexoes").select("status").eq("loja_id", lojaId).maybeSingle()]);
       if (bling.error || google.error || bi.error) throw new Error("Não foi possível verificar as conexões.");
       const liberada = await liberadaNaLoja(admin, lojaId), ativa = buscarDefinicao(FERRAMENTA_IMAGENS)?.estado === "ativa";
-      return json({ busca: searxng ? "searxng" : bi.data?.ativa ? "google" : null, bling: bling.data?.status ?? "ausente", drive: google.data?.status ?? "ausente", exportacao: flagsLigadas() && ativa && liberada, exportacao_motivo: !ativa ? "Ferramenta de imagens desligada no registro." : !liberada ? "Falta a liberação desta loja para gravar imagens no Bling." : flagsLigadas() ? null : "Flags do servidor desligadas.", request_id: requestId });
+      return json({ busca: searxng ? "searxng" : bi.data?.ativa ? "google" : null, bling: bling.data?.status ?? "ausente", drive: google.data?.status ?? "ausente", exportacao: flagsLigadas() && ativa && liberada && pilotoLoja(lojaId), exportacao_motivo: !ativa ? "Ferramenta de imagens desligada no registro." : !liberada ? "Falta a liberação desta loja para gravar imagens no Bling." : !pilotoLoja(lojaId) ? "Piloto ainda não limitado a uma loja, SKU e imagem autorizados." : flagsLigadas() ? null : "Flags do servidor desligadas.", request_id: requestId });
     }
     if (b.acao === "buscar") {
       let buscaImagem = null;
@@ -115,6 +120,7 @@ Deno.serve(async req => {
     if (b.acao === "preparar") return json({ imagem_id: imagem.id, sku: produto.sku, nome: produto.nome, url: imagem.url, ...info, destinos: ["Conecta.IA", "Google Drive", "Bling"] });
     if (b.confirmar !== true || b.sha256 !== info.sha256) return json({ erro: "Revise e confirme a versão exata da imagem. O arquivo pode ter mudado." }, 409);
     if (!flagsLigadas()) return json({ erro: "Exportação real ainda não habilitada neste ambiente." }, 409);
+    if (!pilotoImagem(lojaId, produto.sku, imagem.id)) return json({ erro: "Fora do piloto: somente a imagem e o SKU autorizados desta loja podem ser enviados ao Bling." }, 403);
     // Policy Engine ANTES de qualquer cópia: aprovação humana = lojista + imagem aprovada + direitos + hash confirmado nesta chamada.
     const trava = await admin.from("produto_travas").select("estado").eq("loja_id", lojaId).eq("produto_id", produto.id).maybeSingle();
     if (trava.error) throw new Error("Não foi possível ler a trava do produto.");
