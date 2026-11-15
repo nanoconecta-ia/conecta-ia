@@ -6,6 +6,10 @@ do $$ begin if exists(select 1 from pg_extension where extname='pg_cron') then p
 drop trigger chat_flags on public.loja_recursos;
 drop trigger chat_retencao on public.lojas;
 drop function public.chat_iniciar(uuid,uuid,uuid,text,text,text), public.chat_responder(uuid,uuid,uuid,uuid,text,jsonb),public.chat_excluir(uuid),public.chat_definir_retencao(uuid,int),public.chat_ler_como_administrador(uuid,uuid,text,timestamptz,uuid),public.chat_expurgar();
+-- A ponte QR depende das mensagens: remover explicitamente antes, sem CASCADE genérico.
+-- IF EXISTS mantém a reversão válida também antes da instalação da ponte.
+drop function if exists public.chat_fila_responder(uuid,uuid,text), public.chat_fila_reivindicar(uuid), public.chat_fila_enfileirar(uuid,uuid,int), private.chat_sessao_valida(uuid);
+drop table if exists public.chat_fila;
 drop table public.mensagens;
 drop table public.conversas;
 drop function private.chat_imutavel(),private.chat_proteger_recurso(),private.chat_guardar_retencao(),private.chat_recurso(uuid,text),private.chat_vinculo(uuid,uuid),private.chat_visivel(uuid,timestamptz);

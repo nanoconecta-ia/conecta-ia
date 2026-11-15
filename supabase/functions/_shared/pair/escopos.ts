@@ -7,6 +7,8 @@ export const ESCOPOS = [
   "contexto:registrar",
   // Recurso conector-mcp (só valem para ele; os de cima só para o conecta-gateway). Nenhum aprova, executa ou administra.
   "mcp:leitura", "mcp:propor",
+  // Ponte chat do Nano: o agente LÊ as mensagens do chat desta loja e responde (o texto vai ao provedor do agente).
+  "chat:responder",
 ] as const;
 export type Escopo = typeof ESCOPOS[number];
 
@@ -24,6 +26,7 @@ export const ROTULOS: Record<Escopo, string> = {
   "contexto:registrar": "Informar ao Nano qual produto está aberto na tela (some em 30 min; não altera produto nem o ERP)",
   "mcp:leitura": "Consultar produtos, taxonomia e códigos da sua loja (não altera nada)",
   "mcp:propor": "Preparar propostas “a confirmar” (nada é aprovado nem publicado sem você)",
+  "chat:responder": "Ler e responder as mensagens do chat do Nano desta loja (o texto das conversas vai para o agente)",
 };
 
 export const TIPOS_DISPOSITIVO = ["navegador", "computador", "smartphone", "agente_externo", "agente_desktop"] as const;
