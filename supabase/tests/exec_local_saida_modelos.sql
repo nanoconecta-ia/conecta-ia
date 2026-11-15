@@ -73,5 +73,6 @@ select public.afirma((select bool_and(octet_length(private.exec_local_cortar_byt
                       and octet_length(private.exec_local_cortar_bytes(repeat(c, 70000), 65536)) > 65536 - 4)
                        from unnest(array['a', 'é', '€', '😀']) c), 'corte nunca ultrapassa o limite (1, 2, 3 e 4 bytes) e perde no máximo 3 bytes');
 select public.afirma(private.exec_local_cortar_bytes(null, 10) = '' and private.exec_local_cortar_bytes('abc', 10) = 'abc', 'corte: nulo vira vazio; texto curto intacto');
-select public.afirma((select count(*) from public.auditoria where acao like 'exec_local.%' and (depois::text like '%saida%' or depois::text like '%aaaa%' or depois::text like '%😀%')) = 0, 'auditoria não carrega a saída nem dado sensível');
+-- 40 letras 'a' seguidas: a saída de teste é repeat('a', ...). Com só 4, o tarefa_id (UUID aleatório) da própria auditoria casava por acaso e o teste falhava de vez em quando.
+select public.afirma((select count(*) from public.auditoria where acao like 'exec_local.%' and (depois::text like '%saida%' or depois::text like '%' || repeat('a', 40) || '%' or depois::text like '%😀%')) = 0, 'auditoria não carrega a saída nem dado sensível');
 rollback;
