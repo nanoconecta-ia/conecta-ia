@@ -4,6 +4,7 @@ import type { Loja } from "../lib/dados.ts";
 import { ir } from "../lib/rota.ts";
 import { ROTULOS_ESCOPO, TIPOS_DISPOSITIVO } from "../lib/pair.ts";
 import { agregarUso, LIMITE_EVENTOS, type EventoGateway, type UsoGateway } from "../lib/usoGateway.ts";
+import { RelogioPair } from "../componentes/RelogioPair.tsx";
 
 type Sessao = { id: string; escopos: string[]; expira_em: string; limite_ate: string; limite_absoluto_ate?: string; ultimo_uso_em: string | null; revogado_em: string | null };
 type Dispositivo = { id: string; nome: string; tipo: string; capacidades: string[]; criado_em: string; ultimo_uso_em: string | null; revogado_em: string | null; pair_sessoes: Sessao[] };
@@ -16,7 +17,8 @@ export function restante(ate: string, agora: number): string {
   return h >= 24 ? `${Math.floor(h / 24)} d ${h % 24} h` : h ? `${h} h ${m} min` : `${m} min`;
 }
 
-const ativa = (s: Sessao) => !s.revogado_em && Date.parse(s.limite_ate) > Date.now();
+const autorizada = (s: Sessao) => !s.revogado_em && Date.parse(s.limite_ate) > Date.now();
+const ativa = (s: Sessao) => autorizada(s) && Date.parse(s.expira_em) > Date.now();
 
 /** Dispositivos pareados: veja quem está conectado agora e encerre na hora (vale já na próxima chamada do dispositivo). */
 export function Dispositivos({ loja }: { loja: Loja }) {
@@ -63,12 +65,12 @@ export function Dispositivos({ loja }: { loja: Loja }) {
     setMsg(error ? "Você não tem permissão de lojista nesta loja." : `${(data as { sessoes_encerradas: number }).sessoes_encerradas} sessão(ões) encerrada(s).`);
     void carregar();
   }
-  const ativos = (lista ?? []).filter((d) => !d.revogado_em && d.pair_sessoes.some(ativa));
+  const ativos = (lista ?? []).filter((d) => !d.revogado_em && d.pair_sessoes.some(autorizada));
 
   return (
     <div className="cartao">
       <h1>Dispositivos conectados</h1>
-      <p className="suave">Computadores, celulares, navegadores e agentes pareados com a sua loja. Eles só consultam e propõem; quem aprova é você.</p>
+      <p className="suave">Computadores, celulares, navegadores e agentes pareados com a sua loja. O token pode ser renovado pelo próprio dispositivo, mas estender a janela autorizada exige sua confirmação. Alertas aparecem aos 15, 5 e 1 minuto.</p>
       <div className="linha">
         <button onClick={() => ir("/parear")}>Conectar novo dispositivo</button>
         <button className="perigo" disabled={ativos.length === 0 || ocupado === "todos"} onClick={() => void interromperTudo()}>Interromper todos ({ativos.length})</button>
@@ -78,16 +80,16 @@ export function Dispositivos({ loja }: { loja: Loja }) {
         <div className="rolagem"><table>
           <thead><tr><th>Dispositivo</th><th>Permissões</th><th>Estado</th><th>Último uso</th><th /></tr></thead>
           <tbody>{lista.map((d) => {
-            const s = d.pair_sessoes.filter(ativa).sort((a, b) => Date.parse(b.limite_ate) - Date.parse(a.limite_ate))[0];
-            const viva = !d.revogado_em && !!s;
+            const s = d.pair_sessoes.filter(autorizada).sort((a, b) => Date.parse(b.limite_ate) - Date.parse(a.limite_ate))[0];
+            const viva = !d.revogado_em && !!s && ativa(s);
             return (
               <tr key={d.id}>
                 <td><strong>{d.nome}</strong><br /><span className="suave">{TIPOS_DISPOSITIVO.find(([v]) => v === d.tipo)?.[1] ?? d.tipo}</span>
                   {d.tipo === "agente_desktop" && <><br /><span className="suave">Capacidades: {d.capacidades.length ? d.capacidades.join(", ") : "nenhuma"}</span></>}</td>
                 <td className="suave">{(s?.escopos ?? d.pair_sessoes[0]?.escopos ?? []).map((e) => ROTULOS_ESCOPO[e] ?? e).join("; ") || "—"}</td>
-                <td>{viva ? <span className={`selo ${d.tipo === "agente_desktop" ? "atencao" : "ok"}`}>Sessão ativa: restam {restante(s.limite_ate, agora)} · até {new Date(s.limite_ate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span> : <span className="selo">{d.revogado_em ? "Encerrado" : "Expirado"}</span>}{viva && s.limite_absoluto_ate && Date.parse(s.limite_absoluto_ate) - Date.parse(s.limite_ate) > 60000 && <><br /><span className="suave">Teto total aprovado: {restante(s.limite_absoluto_ate, agora)}</span></>}</td>
+                <td>{s && !d.revogado_em ? <><RelogioPair compacto tokenAte={s.expira_em} janelaAte={s.limite_ate} />{s.limite_absoluto_ate && Date.parse(s.limite_absoluto_ate) - Date.parse(s.limite_ate) > 60000 && <span className="suave">Teto total aprovado: {restante(s.limite_absoluto_ate, agora)}</span>}</> : <span className="selo">{d.revogado_em ? "Encerrado" : "Expirado"}</span>}</td>
                 <td className="suave">{(() => { const u = uso.get(d.id); return u ? <>{truncado ? "≥ " : ""}{u.ok + u.negado + u.invalido + u.erro} chamadas em 24 h (medido){u.negado + u.invalido + u.erro > 0 && <> · {u.negado + u.invalido + u.erro} recusadas/erro</>}<br />Última: {u.ferramenta ?? "—"}{u.ultima ? ` · ${new Date(u.ultima).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : ""}<br /></> : <>0 chamadas em 24 h (medido)<br /></>; })()}{d.ultimo_uso_em ? new Date(d.ultimo_uso_em).toLocaleString("pt-BR") : "nunca usado"}</td>
-                <td>{viva && s.limite_absoluto_ate && Date.parse(s.limite_absoluto_ate) - Date.parse(s.limite_ate) > 60000 && <button disabled={ocupado === d.id} onClick={() => void reconfirmar(s.id, d.id)}>Reconfirmar +8 h</button>} {viva && <button className="perigo" disabled={ocupado === d.id} onClick={() => void encerrar(d)}>Desconectar</button>}</td>
+                <td>{viva && s.limite_absoluto_ate && Date.parse(s.limite_absoluto_ate) - Date.parse(s.limite_ate) > 60000 && <button disabled={ocupado === d.id} onClick={() => void reconfirmar(s.id, d.id)}>Reconfirmar +8 h</button>} {s && !d.revogado_em && <button className="perigo" disabled={ocupado === d.id} onClick={() => void encerrar(d)}>Desconectar</button>}</td>
               </tr>);
           })}</tbody>
         </table></div>

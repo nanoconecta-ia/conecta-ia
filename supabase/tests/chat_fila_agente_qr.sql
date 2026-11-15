@@ -73,6 +73,15 @@ update public.chat_fila set prazo_em = now() - interval '1 second', criado_em = 
 select public.afirma(public.chat_fila_responder(:S1, (select (j->>'fila_id')::uuid from r2), 'tarde')->>'motivo' = 'prazo_vencido', 'resposta atrasada é recusada (o Nano já assumiu)');
 select public.afirma((select estado from public.chat_fila where id = (select (j->>'fila_id')::uuid from r2)) = 'expirada', 'fila marcada como expirada');
 
+-- Um token vencido nao pode aparecer como QR conectado, mesmo com janela autorizada.
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111"}', true);
+update public.pair_sessoes set expira_em = now() - interval '1 second' where id = :S1;
+select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'disponivel')::boolean = false, 'QR nao anuncia token vencido como ativo');
+select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'janela_ate') is not null, 'lojista ve prazo da janela sem acessar hashes');
+update public.pair_sessoes set expira_em = now() + interval '1 hour' where id = :S1;
+select public.afirma((public.chat_qr_disponivel('aaaaaaaa-0000-0000-0000-00000000000a')->>'disponivel')::boolean, 'token renovado volta a aparecer como ativo');
+select set_config('request.jwt.claims', '{}', true);
+
 -- sessão revogada perde o acesso na hora
 update public.pair_sessoes set revogado_em = now() where id = :S1;
 select public.afirma(public.chat_fila_reivindicar(:S1)->>'motivo' = 'sessao_sem_permissao', 'sessão revogada não lê mais');

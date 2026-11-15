@@ -105,7 +105,8 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
   // O Nano entrega a pergunta ao agente externo; nenhuma chave de IA é consultada neste modo.
   if (!ativo("chat_persistente")) return resultado({ erro: "Histórico desligado nesta loja." }, 409);
   if (typeof c.texto !== "string" || !c.texto.trim() || c.texto.length > 1000 || typeof c.idempotency_key !== "string" || c.idempotency_key.length < 8 || c.idempotency_key.length > 120 || c.conversa_id != null && !uuid(c.conversa_id)) return resultado({ erro: "Turno inválido." }, 400);
-  const { data: sessoes, error: sessaoErro } = await admin.from("pair_sessoes").select("id").eq("loja_id", loja.id).is("revogado_em", null).gt("limite_ate", new Date().toISOString()).contains("escopos", ["chat:responder"]).limit(1);
+  const agoraQr = new Date().toISOString();
+  const { data: sessoes, error: sessaoErro } = await admin.from("pair_sessoes").select("id").eq("loja_id", loja.id).is("revogado_em", null).gt("limite_ate", agoraQr).gt("expira_em", agoraQr).contains("escopos", ["chat:responder"]).limit(1);
   if (sessaoErro) return resultado({ erro: "Não foi possível verificar o agente conectado." }, 503);
   if (!sessoes?.length) return resultado({ erro: "Nenhum agente está conectado pelo QR nesta loja.", codigo: "agente_qr_indisponivel" }, 409);
   const { data: turno, error: inicioErro } = await admin.rpc("chat_iniciar", { p_loja: loja.id, p_user: userId, p_conversa: c.conversa_id ?? null, p_texto: c.texto, p_idem: c.idempotency_key, p_provedor: null });
