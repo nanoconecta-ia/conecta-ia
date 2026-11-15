@@ -171,7 +171,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
       <input id="m2-busca-rapida" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Nome da peça, código ou referência"/>
       <button type="submit">Buscar peças <span aria-hidden="true">→</span></button>
     </form></div>
-    {dados?.loja.ambiente==="teste"&&<div className="m2-aviso-teste" role="status"><strong>CATÁLOGO EM PREPARAÇÃO</strong> · Consulte peças e aplicações pelo WhatsApp. Preços e disponibilidade a confirmar; não concluímos pedidos nem recebemos pagamentos neste site.</div>}
+    {dados?.loja.ambiente==="teste"&&<div className="m2-aviso-teste" role="status"><strong>LOJA TESTE</strong> · Catálogo em preparação. Consulte peças e aplicações pelo WhatsApp. Preços e disponibilidade a confirmar; não concluímos pedidos nem recebemos pagamentos neste site.</div>}
     <main>
       <section className="m2-hero"><div className="m2-wrap m2-hero-grid">
         <div className="m2-hero-texto"><span className="m2-kicker">▰▰▰ &nbsp; A PEÇA CERTA COMEÇA PELO SEU VEÍCULO</span>
