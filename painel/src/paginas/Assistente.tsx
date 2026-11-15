@@ -202,9 +202,18 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
       void restaurarConversa(data.persistente === true);
     }).catch(() => { if (ativo) { setCarregandoChat(false); setErroHistorico("Não foi possível consultar o histórico."); } });
     supabase.rpc("pode_administrar_loja", { p_loja_id: loja.id }).then(({ data, error }) => { if (ativo) setPodeAdministrar(!error && data === true); });
-    supabase.from("pair_sessoes").select("id, limite_ate").eq("loja_id", loja.id).is("revogado_em", null).gt("limite_ate", new Date().toISOString()).contains("escopos", ["chat:responder"]).order("limite_ate", { ascending: false }).limit(1).maybeSingle()
-      .then(({ data, error }) => { if (ativo && !error && data) { setAgenteQrDisponivel(true); setAgenteQrExpira(data.limite_ate); } });
-    return () => { ativo = false; };
+    // O navegador não tem SELECT em pair_sessoes: consultar somente o estado mínimo via RPC autorizada.
+    const verificarQr = () => {
+      void supabase.rpc("chat_qr_disponivel", { p_loja: loja.id })
+        .then(({ data, error }) => {
+          if (!ativo) return;
+          setAgenteQrDisponivel(!error && data?.disponivel === true);
+          setAgenteQrExpira(!error && data?.disponivel === true ? data.ate ?? null : null);
+        }).catch(() => { if (ativo) { setAgenteQrDisponivel(false); setAgenteQrExpira(null); } });
+    };
+    verificarQr();
+    const checagemQr = window.setInterval(verificarQr, 15000);
+    return () => { ativo = false; window.clearInterval(checagemQr); };
   }, [loja.id, tentativaConfig]);
   const [lerAlto, setLerAlto] = useState(lerPreferenciaFala);
   const fim = useRef<HTMLDivElement>(null);
@@ -345,8 +354,32 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     try {
       const campos = { texto: t, ...(persistente ? { conversa_id: conv, idempotency_key: chave, consentimento_ia: aceitaEnvio, consentimento_fallback_free: autorizaFallbackFree && ((prov === "gemini" && config.fallback_free_disponivel === true) || (prov === "openrouter_free" && config.fallback_auxiliar_disponivel === true)) } : { historico }), ...(provedor === "agente_qr" ? { idempotency_key: chave } : prov ? { provedor: prov } : { sem_ia: true }), ...(anexosEnvio.length ? { anexos: anexosEnvio.map(({ nome, tipo, dados }) => ({ nome, tipo, dados })) } : {}) };
       // B2b (#166): com o servidor anunciando streaming, o texto aparece enquanto o provedor escreve; o que vale é o resultado final registrado.
-      const data = provedor === "agente_qr" ? await chamada("chat_qr_perguntar", campos) : persistente && config.streaming ? await perguntarStreaming(campos, lojaDoEnvio) : await chamada(persistente ? "chat_perguntar" : "perguntar", campos);
+      let data = provedor === "agente_qr" ? await chamada("chat_qr_perguntar", campos) : persistente && config.streaming ? await perguntarStreaming(campos, lojaDoEnvio) : await chamada(persistente ? "chat_perguntar" : "perguntar", campos);
       if (lojaAtual.current !== lojaDoEnvio) return;
+      // O servidor espera 30s; a resposta pode chegar depois disso, ainda dentro dos 90s da fila.
+      // Consulte apenas o histórico desta pessoa e loja: não enfileire a mesma pergunta outra vez.
+      if (provedor === "agente_qr" && data.codigo === "agente_qr_em_espera" && typeof data.conversa_id === "string") {
+        setConversaId(data.conversa_id);
+        let respostaQr: Registro | undefined;
+        let falhas = 0;
+        for (let i = 0; i < 39; i++) {
+          await espera(1500);
+          if (lojaAtual.current !== lojaDoEnvio) return;
+          try {
+            const historicoQr = await chamada("chat_mensagens", { conversa_id: data.conversa_id });
+            const linhas = (historicoQr.mensagens ?? []) as Registro[];
+            const ultimaPergunta = linhas.map((m) => m.papel === "usuario" && m.conteudo === t).lastIndexOf(true);
+            respostaQr = ultimaPergunta < 0 ? undefined : linhas.slice(ultimaPergunta + 1).find((m) => m.papel === "assistente" && m.metadados?.origem === "agente_qr");
+            if (respostaQr) break;
+          } catch { if (++falhas >= 3) break; }
+        }
+        if (!respostaQr) {
+          setMsgs((m) => [...m, { de: "ia", texto: "A pergunta foi registrada no histórico, mas o agente QR não respondeu a tempo ou a conexão falhou. Confira esta conversa; após o prazo da fila (90 segundos), você pode enviar uma nova pergunta. Nenhum outro modelo foi acionado automaticamente." }]);
+          await listarConversas(false);
+          return;
+        }
+        data = { resposta: respostaQr.conteudo, conversa_id: data.conversa_id, origem: "agente_qr" };
+      }
       const resposta = String(data.resposta ?? "");
       const motor = identificarModeloEfetivo(data);
       setUltimoMotorFalhou(!!prov && !motor);
@@ -399,6 +432,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
     if (entradaArquivo.current) entradaArquivo.current.value = "";
     if (entradaCamera.current) entradaCamera.current.value = "";
     if (entradaFotos.current) entradaFotos.current.value = "";
+    if (provedor === "agente_qr") { setErroAnexo("O agente conectado pelo QR recebe somente texto neste modo. Envie imagens por uma ferramenta autorizada separada."); return; }
     if (provedor === "openrouter_free") { setErroAnexo("O modelo gratuito não recebe anexos. Escolha outro modelo para enviar arquivos."); return; }
     setErroAnexo(""); const pdfOk = provedor !== "compativel_openai"; let atual = [...anexos];
     for (const f of arquivos) {
@@ -598,7 +632,7 @@ export function Assistente({ loja, menu, aoNavegar }: { loja: Loja; menu?: Item[
         <label>Modelo de IA<select value={provedor} disabled={ocupado || carregando || !!erroConfig || !!retentativa || administrando} onChange={(e) => { setProvedor(e.target.value as SelecaoNano); setAceitaEnvio(false); setAutorizaFallbackFree(false); }}>
           <option value="">Resumo local (sem IA externa)</option>
           {provedores.map((p) => <option key={p.id} value={p.id} disabled={p.estado !== "disponivel"}>{p.nome}{p.modelo ? ` · ${p.modelo}` : ""} — {ESTADO_PROVEDOR[p.estado]}</option>)}
-          <option value="agente_qr" disabled={!agenteQrDisponivel}>Agente conectado pelo QR — {agenteQrDisponivel ? "disponível" : "não conectado"}</option>
+          <option value="agente_qr" disabled={!agenteQrDisponivel}>Agente conectado pelo QR — {agenteQrDisponivel ? "sessão ativa" : "sem sessão autorizada"}</option>
         </select></label>
         {modoAgenteQr && <p className="suave" role="status">As mensagens desta loja serão entregues ao agente conectado pelo QR e marcadas como “agente via QR”. {agenteQrExpira ? `Sessão válida até ${new Date(agenteQrExpira).toLocaleString("pt-BR")}.` : ""}</p>}
         <fieldset className="grupo-orbe" aria-label="Nano Auto: IA auxiliar de contingência">
