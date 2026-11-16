@@ -38,6 +38,21 @@ try{
   assert.equal(await page.locator('.mgv').evaluate(el=>getComputedStyle(el).color),'rgb(31, 35, 39)',"glassy com texto grafite sobre vidro claro");
   await page.getByRole("heading",{name:/Peças para quem trabalha/}).waitFor();
   await page.getByText(/Catálogo de peças em preparação/).waitFor({timeout:10000});
+  const banners=page.locator('.mbi');
+  await banners.waitFor();
+  assert.equal(await banners.locator('.mbi-ponto').count(),3,'três banners institucionais oficiais');
+  await banners.getByRole('button',{name:'Próximo banner'}).click();
+  assert.match(await banners.locator('h2').innerText(),/código é a chave/);
+  await banners.getByRole('button',{name:'Pesquisar referência'}).click();
+  assert.equal(await page.getByRole('tab',{name:'SKU, fabricante ou OEM'}).getAttribute('aria-selected'),'true','CTA habilita modo código');
+  await page.locator('#m2-pesquisar').fill('CI000120');
+  const respostaCodigo=page.waitForResponse(resp=>resp.url().includes('/loja-publica')&&(resp.request().postData()||'').includes('"q":"CI000120"')&&(resp.request().postData()||'').includes('"referencia_exata":true'));
+  await page.locator('.m2-search button').click();
+  await respostaCodigo;
+  assert.ok(requests.some(x=>x.q==='CI000120'&&x.referencia_exata===true),'busca de referência exata chega ao servidor');
+  await page.getByRole('tab',{name:'Nome, peça ou sistema'}).click();
+  await page.locator('#m2-pesquisar').fill('');
+
   const cores=await page.locator('.m2-veiculo').first().evaluate(el=>({fundo:getComputedStyle(el).backgroundColor,imagem:getComputedStyle(el).backgroundImage}));
   assert.deepEqual(cores,{fundo:'rgb(255, 255, 255)',imagem:'none'},'paleta branca prevalece sobre o tema administrativo');
   await page.getByRole('tab',{name:'O que ele precisa?',exact:true}).click();
