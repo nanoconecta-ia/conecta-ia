@@ -179,11 +179,11 @@ export function LojaMobisNova({slug}:{slug:string}) {
     </div></header>
     <div className="m2-busca-rapida"><div className="m2-wrap m3-nav">
       <button className="m3-nav-categories" type="button" onClick={()=>para("m3-categorias")} aria-label="Ver todas as categorias">☰ <span>Todas as categorias</span></button>
-      <form role="search" aria-label="Busca rápida por peça, SKU, código OEM ou aplicação" onSubmit={aplicar}>
-        <label className="sr" htmlFor="m2-busca-rapida">Buscar por código, OEM, SKU, peça ou aplicação</label>
+      <form role="search" aria-label="Busca rápida de peças" onSubmit={aplicar}>
+        <label className="sr" htmlFor="m2-busca-rapida">Qual peça você procura?</label>
         <input id="m2-busca-rapida" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)}
           placeholder="Código OEM, SKU, peça ou aplicação…"/>
-        <button type="submit">Buscar ↗</button>
+        <button type="submit">Buscar peças ↗</button>
       </form>
       <button className="m3-nav-vehicles" type="button" onClick={()=>{setExplorar("veiculo");para("m2-explorar")}}>▰ Escolher meu veículo</button>
       {whatsapp&&<a className="m3-nav-wa" href={whatsapp} target="_blank" rel="noopener noreferrer">WhatsApp <small>Consultar peças</small></a>}
@@ -196,8 +196,9 @@ export function LojaMobisNova({slug}:{slug:string}) {
         temAplicacao={valor=>Boolean(modeloDoAtalho(valor,opcoes))}
         consultarVeiculo={valor=>{setConsultaModelo(valor);para("m2-atendimento")}}
         escolherSistema={escolherSistema}
-        buscarCodigo={()=>{setAbaBusca("referencia");para("m2-busca");window.setTimeout(()=>document.getElementById("m2-pesquisar")?.focus({preventScroll:true}),80)}}
+        buscarCodigo={()=>{setAbaBusca("referencia");para("m2-busca");document.getElementById("m2-pesquisar")?.focus({preventScroll:true});}}
       />
+      {produtoTeste&&<div className="m3-shortcut-teste"><button type="button" onClick={()=>para("m2-produto-teste")}>Ver produto de teste →</button></div>}
       <div className="m2-progresso"><div className="m2-wrap"><span><b>01</b> Atendimento especializado</span>
         <span><b>02</b> Aplicação conferida com você</span><span><b>03</b> Consulta direta via WhatsApp</span></div></div>
       {produtoTeste&&<ProdutoTesteMobis/>}
