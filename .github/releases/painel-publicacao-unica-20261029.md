@@ -91,3 +91,13 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - CSS separado `painel/src/paginas/loja-mobis-branco.css` e indicador `data-mobis-palette="branco-gelo"`; testes de regressão atualizados para telas 360, 390, 412 e 1280 px. Arquivos adicionais de mascotes e banner do Drive são cópias de referência, não anúncios publicados.
 - Sem alteração de Bling, Supabase, SKU/OEM, preços, estoque, DNS, checkout ou aprovação de anúncio. A vitrine mantém modo TESTE e consulta via WhatsApp.
 - Homologar o GitHub Pages por version.json, teste real do domínio de publicação e screenshots antes de afirmar entrega.
+
+
+## Publicação autorizada — banners Mobis e busca por referências homologadas (16/11/2026)
+- O proprietário autorizou continuar as duas pendências de banners e busca OEM/SKU na vitrine comercial Mobis.
+- PR #415 integrado na main (squash `677922bf379cfbb0e69b0a9dccc621329a956485`) depois de dez workflows de PR aprovados.
+- Supabase Edge Function `loja-publica` v12 implantada separadamente, mantendo `verify_jwt=false` e limite de requisições existente, sem mudança de esquema. Verificado do desktop: `CI000120 → SKU 5074`, `CI000119 → SKU 5075`, `CI000117 → SKU 5076`; referência inexistente não gera item.
+- Publicar apenas frontend estático do GitHub Pages pelo workflow existente. Banners institucionais usam mascotes e ícones originais da Mobis; não anunciam preço, estoque, desconto ou aplicação não homologada. A loja continua em modo TESTE, sem checkout e pagamentos.
+- Novas abas: pesquisa por nome/sistema e pesquisa por código exato (SKU/código fabricante/OEM aprovado); registros pendentes não se tornam correspondências públicas. A apresentação usa branco-gelo, grafite, laranja e vermelho como detalhes.
+- Não alterar Bling, estoque, notas fiscais, domínio/DNS, configuração de produção do Supabase ou quaisquer produtos. Os banners promocionais `loja_banners` permanecem sem anúncios cadastrados até aprovação comercial.
+- Conferir `version.json`, Playwright publicado em quatro larguras e resposta real da API antes de declarar conclusão.
