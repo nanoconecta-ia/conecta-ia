@@ -7,6 +7,7 @@ import { ChatClienteLoja } from "../componentes/ChatClienteLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 import { modeloDoAtalho, podeExibirProdutoTeste } from "../lib/mobisVitrine.ts";
 import { ProdutoTesteMobis } from "../componentes/ProdutoTesteMobis.tsx";
+import { CarrosselVidroMobis } from "../componentes/CarrosselVidroMobis.tsx";
 import logoMobis from "../assets/marcas/mobis-oficial-fundo-escuro.png";
 import "./loja-mobis-nova.css";
 
@@ -193,6 +194,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
       <div className="m2-progresso"><div className="m2-wrap"><span><b>01</b> Atendimento especializado</span>
         <span><b>02</b> Aplicação conferida com você</span><span><b>03</b> Consulta direta via WhatsApp</span></div></div>
       {produtoTeste&&<ProdutoTesteMobis/>}
+      <div className="m2-wrap"><CarrosselVidroMobis aoSelecionar={escolherSistema}/></div>
       <section id="m2-destaques" className="m2-wrap m2-secao m2-destaques">
         <div className="m2-cab-secao"><div><span className="m2-kicker">LOJA ONLINE MOBIS</span><h2>Peças automotivas para a sua rotina</h2></div><button onClick={()=>para("m2-catalogo")}>Ver catálogo ↗</button></div>
         <div className="m2-trio">

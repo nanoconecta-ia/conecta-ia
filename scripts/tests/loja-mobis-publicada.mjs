@@ -34,6 +34,17 @@ try{
   assert.equal(dados.loja.ambiente,"teste","loja deve permanecer em teste");
   assert.notEqual(dados.loja.venda_habilitada,true,"vendas não podem estar habilitadas");
   await page.locator(".m2-aviso-teste").waitFor();
+  // Glassy V2 na loja comercial: ícones oficiais, navegação e CTA sem publicar produtos.
+  const glassy=page.locator(".mgv");
+  await glassy.waitFor();
+  assert.equal(await glassy.locator(".mgv-miniatura").count(),6,"seis sistemas visuais aprovados");
+  await glassy.getByRole("button",{name:"Próximo sistema"}).click();
+  assert.match(await glassy.locator(".mgv-copy h3").innerText(),/Suspensão/);
+  await glassy.getByRole("button",{name:"Exibir categoria Motores diesel"}).click();
+  assert.match(await glassy.locator(".mgv-copy h3").innerText(),/Motores diesel/);
+  assert.equal(await glassy.locator(".mgv-imagem .ico-3d").count(),1,"usar ícone 3D da Mobis");
+  assert.equal(await glassy.locator(".mgv").count(),0,"não aninhar carrossel na própria raiz");
+
   const cores=await page.locator('.m2-veiculo').first().evaluate(el=>({fundo:getComputedStyle(el).backgroundColor,imagem:getComputedStyle(el).backgroundImage}));
   assert.deepEqual(cores,{fundo:'rgb(238, 233, 223)',imagem:'none'},'CSS aprovado prevalece sobre o gradiente administrativo');
   await page.getByRole("tab",{name:"O que ele precisa?",exact:true}).click(); // sistemas ficam na aba "O que ele precisa?" desde o #335
