@@ -151,13 +151,18 @@ begin
       raise exception 'pacote_cancelado' using errcode = '23514';
     end if;
   end if;
-  select p.bling_id, p.sku into v_bling, v_sku
-    from public.produtos p where p.id = new.produto_id and p.loja_id = new.loja_id;
-  if not found or v_bling is distinct from new.bling_id
-     or v_sku is distinct from new.sku_espelho
-     or new.snapshot_espelho->>'bling_id' is distinct from new.bling_id
-     or new.snapshot_espelho->>'sku' is distinct from new.sku_espelho
-    then raise exception 'pacote_espelho_bling_divergente' using errcode = '23514';
+  -- A identidade é conferida na CAPTURA. Em atualizações de estado,
+  -- permitir marcar 'divergente' caso o espelho tenha mudado depois.
+  -- A futura decisão comparará snapshot_hash/versao novamente.
+  if tg_op = 'INSERT' then
+    select p.bling_id, p.sku into v_bling, v_sku
+      from public.produtos p where p.id = new.produto_id and p.loja_id = new.loja_id;
+    if not found or v_bling is distinct from new.bling_id
+       or v_sku is distinct from new.sku_espelho
+       or new.snapshot_espelho->>'bling_id' is distinct from new.bling_id
+       or new.snapshot_espelho->>'sku' is distinct from new.sku_espelho
+      then raise exception 'pacote_espelho_bling_divergente' using errcode = '23514';
+    end if;
   end if;
   return new;
 end;
