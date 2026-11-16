@@ -195,6 +195,10 @@ Deno.serve(async (req) => {
         slug: a.pagina_slug, titulo: a.pagina_titulo, modelo: a.modelo, status: a.status,
       });
     }
+    // Ordem estável ao clicar na foto: HR -> Bongo -> demais; nunca escolher
+    // aplicação aleatória baseada na ordem retornada pelo Postgres.
+    for (const paginas of Object.values(paginasPorSku))
+      paginas.sort((a, b) => a.modelo.localeCompare(b.modelo, "pt-BR"));
   }
 
   // banners de oferta no ar (loja_banners): só produto publicado e dentro do período; falha aqui não derruba a vitrine
