@@ -42,7 +42,7 @@ export function RodapeLoja({
   const [painel, setPainel] = useState<Painel | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const linkSecao = (secao: "catalogo" | "veiculo" | "categoria", ancora: string) => ({
-    href: secoes ? "#/loja/" + encodeURIComponent(slug ?? "") : ancora,
+    href: secoes ? "#/loja/" + encodeURIComponent(slug ?? "") : slug === MOBIS.slug ? "#/loja/mobis" : ancora,
     onClick: secoes ? (e: MouseEvent<HTMLAnchorElement>) => {
       e.preventDefault();
       document.getElementById(secoes[secao])?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -65,7 +65,8 @@ export function RodapeLoja({
   const mobis = slug === MOBIS.slug;
   // A Edge Function só retorna politicas com status 'aprovada'. Nada é inferido do nome/slug.
   const razao = politicas?.razao_social?.trim() || null;
-  const cnpj = politicas?.cnpj?.trim() || null;
+  const cnpjOriginal = politicas?.cnpj?.trim() || null;
+  const cnpj = cnpjOriginal && /^\\d{14}$/.test(cnpjOriginal) ? cnpjOriginal.replace(/^(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})$/, "$1.$2.$3/$4-$5") : cnpjOriginal;
   const endereco = politicas?.endereco?.trim() || null;
   const telefone = politicas?.telefone?.trim() || null;
   const mapaAprovado = endereco ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(endereco) : null;
@@ -77,7 +78,7 @@ export function RodapeLoja({
   const youtube=perfilSeguro(perfisSociais?.youtube,"youtube.com");
 
   return (
-    <footer className="v-rodape-comercial" aria-label="Informações da loja">
+    <footer className={"v-rodape-comercial" + (mobis ? " v-rodape-mobis" : "")} aria-label="Informações da loja">
       <div className="v-rodape-grade">
         <div className="v-rodape-apresentacao">
           {mobis&&<img className="v-rodape-logo-mobis" src={logoMobis} alt="MOBIS AUTOPEÇAS"/>}
