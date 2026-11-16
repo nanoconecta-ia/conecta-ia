@@ -10,7 +10,8 @@ type Aplicacao = {
   status:string; indexavel:boolean; sku_pai:string; marca:string|null;
   categoria:string|null; fotos:string[]; preco:null; estoque:null; whatsapp:string|null;
   codigo_oem?:string|null; codigo_fiscal?:string|null; bula_tecnica?:string|null;
-  restricao?:string|null; contraindicacao?:string|null; foto_veiculo?:string|null; logo_montadora?:string|null
+  restricao?:string|null; contraindicacao?:string|null; foto_veiculo?:string|null; logo_montadora?:string|null;
+  codigos_cruzados?:Array<{marca:string;codigo:string;tipo:string}>
 };
 type Resposta = {loja:{nome:string;slug:string;ambiente:string};pagina_aplicacao:Aplicacao};
 
@@ -42,13 +43,26 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
   },[slug]);
   const p=dados?.pagina_aplicacao;
   const [fotoSelecionada,setFotoSelecionada]=useState(0);
-  useEffect(()=>setFotoSelecionada(0),[slug]);
+  const [imagemAberta,setImagemAberta]=useState(false);
+  const [aba,setAba]=useState<"tecnica"|"aplicacao"|"codigos">("tecnica");
+  useEffect(()=>{setFotoSelecionada(0);setImagemAberta(false);setAba("tecnica");},[slug]);
   const veiculo=identidadeVeiculo(p?.modelo??"");
   const categoria=(p?.categoria??"").toLowerCase();
   const icone=/bandeja|suspens/.test(categoria)?"suspensao":/filtro/.test(categoria)?"filtros":"motor";
   const fotos=p?.fotos??[];
   const foto=fotos[fotoSelecionada]??fotos[0]??null;
   const oem=p?.status==="aprovado"&&p.codigo_oem?p.codigo_oem:null;
+  const trocarFoto=(delta:number)=>setFotoSelecionada(atual=>((atual+delta+fotos.length)%fotos.length));
+  useEffect(()=>{
+    if(!imagemAberta)return;
+    const teclas=(e:KeyboardEvent)=>{
+      if(e.key==="Escape")setImagemAberta(false);
+      if(e.key==="ArrowRight")setFotoSelecionada(atual=>fotos.length?(atual+1)%fotos.length:0);
+      if(e.key==="ArrowLeft")setFotoSelecionada(atual=>fotos.length?(atual-1+fotos.length)%fotos.length:0);
+    };
+    window.addEventListener("keydown",teclas);
+    return ()=>window.removeEventListener("keydown",teclas);
+  },[imagemAberta,fotos.length]);
   const tituloSocial=p?("MOBIS AUTOPEÇAS | "+p.modelo+" | "+p.sku_pai):"MOBIS AUTOPEÇAS";
   const compartilhar=()=>{if(!p)return;const url=window.location.href;
     if(navigator.share){void navigator.share({title:tituloSocial,url}).catch(()=>{});}
@@ -80,7 +94,14 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
         <div className="m2-ficha-grid">
           <section className="m2-ficha-painel" aria-label="Fotografias reais do produto">
             <h2>Fotografias do produto físico</h2>
-            {foto?<a href={foto} target="_blank" rel="noopener noreferrer" className="m2-ficha-foto"><img src={foto} alt={"Foto autorizada da peça real código "+p.sku_pai}/></a>
+            {foto?<div className="m2-galeria">
+              <div className="m2-galeria-palco">
+                {fotos.length>1&&<button type="button" className="m2-galeria-seta" aria-label="Fotografia anterior" onClick={()=>trocarFoto(-1)}>‹</button>}
+                <button type="button" className="m2-galeria-zoom" onClick={()=>setImagemAberta(true)} aria-label="Ampliar fotografia sem sair da página"><img src={foto} alt={"Fotografia real da peça "+p.sku_pai+", imagem "+(fotoSelecionada+1)}/><span>⌕ Ampliar</span></button>
+                {fotos.length>1&&<button type="button" className="m2-galeria-seta" aria-label="Próxima fotografia" onClick={()=>trocarFoto(1)}>›</button>}
+              </div>
+              <p className="m2-galeria-contador" aria-live="polite">{fotoSelecionada+1} de {fotos.length} fotografias</p>
+            </div>
               :<div className="m2-ficha-sem-foto"><IconePeca nome={icone} tamanho={90}/><strong>Foto real aguardando autorização</strong><small>Nenhuma imagem ilustrativa de motor substitui a peça verdadeira.</small></div>}
             {fotos.length>1&&<div className="m2-ficha-miniaturas" aria-label="Selecionar foto real">{fotos.map((src,idx)=><button type="button" key={src} onClick={()=>setFotoSelecionada(idx)} aria-pressed={fotoSelecionada===idx} aria-label={"Mostrar fotografia "+(idx+1)}><img src={src} alt=""/></button>)}</div>}
             <p className="m2-ficha-nota">As imagens deste espaço devem ser do produto comercializado, com autorização de uso. Confirme composição e versão antes da compra.</p>
@@ -106,12 +127,44 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
             <p className="m2-ficha-nota">Uma vitrine por veículo, um único cadastro físico e saldo. Esta ficha não reserva nem movimenta estoque.</p>
           </section>
         </div>
-        <div className="m2-ficha-secoes">
-          <section className="m2-ficha-painel"><h2>Descrição técnica</h2><p>{p.descricao||"Aguardando descrição técnica da aplicação."}</p></section>
-          <section className="m2-ficha-painel"><h2>Bula técnica e composição</h2><p>{p.bula_tecnica??"Aguardando bula técnica documentada e conferência dos componentes incluídos."}</p></section>
-          <section className="m2-ficha-painel"><h2>Contraindicações e verificações</h2><p>{p.contraindicacao??p.restricao??"Verificar código OEM, chassi, versão, sensores, suportes e periféricos antes de instalar."}</p></section>
-          <section className="m2-ficha-painel"><h2>Garantia, consumidor e privacidade</h2><p>Consulte as condições de garantia, instalação e atendimento da MOBIS. Seus direitos legais como consumidor são preservados. Envie dados de chassi somente por canal apropriado, conforme a política de privacidade da loja.</p><p>Loja independente; as marcas de veículos indicam aplicação e não vínculo de representação oficial.</p></section>
-        </div>
+        <section className="m2-ficha-painel m2-ficha-conteudo" aria-label="Informações completas">
+          <h2>Conheça o produto</h2>
+          <div className="m2-ficha-abas" role="tablist" aria-label="Detalhes do produto">
+            <button type="button" role="tab" aria-selected={aba==="tecnica"} onClick={()=>setAba("tecnica")}><IconePeca nome={icone} tamanho={21}/> Ficha técnica</button>
+            <button type="button" role="tab" aria-selected={aba==="aplicacao"} onClick={()=>setAba("aplicacao")}>▣ Aplicação</button>
+            <button type="button" role="tab" aria-selected={aba==="codigos"} onClick={()=>setAba("codigos")}># Códigos e marcas</button>
+          </div>
+          <div className="m2-ficha-aba-corpo" role="tabpanel">
+            {aba==="tecnica"&&<>
+              <h3>Descrição e composição</h3><p>{p.descricao||"Aguardando descrição técnica da aplicação."}</p>
+              <details><summary>▤ Abrir bula técnica e itens incluídos</summary><p>{p.bula_tecnica??"Aguardando bula técnica documentada e conferência dos componentes."}</p></details>
+              <details><summary>⚠ Contraindicações e cuidados de instalação</summary><p>{p.contraindicacao??p.restricao??"Verificar OEM, chassi, versão, sensores, suportes e periféricos antes de instalar."}</p></details>
+            </>}
+            {aba==="aplicacao"&&<>
+              <h3>Veículo de referência</h3>
+              <p><strong>{veiculo.montadora} · {p.modelo}</strong> — {p.motorizacao??"Motor não informado"}. Início: {p.ano_inicial??"pendente"}; fim: {p.ano_final??"pendente"}.</p>
+              <p>{p.status==="aprovado"?"Confirme a disponibilidade e a versão do produto.":"Aplicação ainda em revisão. É obrigatório confirmar a compatibilidade técnica por chassi e OEM."}</p>
+              <details><summary>▣ O que conferir antes de comprar?</summary><p>{p.restricao??"Código original, chassi, geração, tipo de motor, ano, sensores, suportes e periféricos."}</p></details>
+            </>}
+            {aba==="codigos"&&<>
+              <h3>Referências e cruzamentos</h3>
+              <dl className="m2-ficha-dados"><dt>Marca da peça</dt><dd>{p.marca??"Não informada"}</dd><dt>SKU interno</dt><dd>{p.sku_pai}</dd><dt>OEM da aplicação</dt><dd>{oem??"Pendente de homologação"}</dd></dl>
+              {(p.codigos_cruzados??[]).length>0?<div className="m2-ficha-codigos">{p.codigos_cruzados?.map((c,i)=><div key={i}><span aria-hidden="true">▦</span><strong>{c.marca}</strong><code>{c.codigo}</code><small>{c.tipo}</small></div>)}</div>:<p>Não há referências cruzadas homologadas para exibição. Não presumimos equivalência por nomes parecidos.</p>}
+            </>}
+          </div>
+          <details className="m2-ficha-termos"><summary>ⓘ Garantia, atendimento e direitos do consumidor</summary><p>Consulte condições de garantia e instalação com a equipe MOBIS. Direitos legais preservados; dados de chassi devem ser enviados por canal apropriado. A MOBIS é revendedora independente das montadoras.</p></details>
+        </section>
+        {imagemAberta&&foto&&<div className="m2-galeria-overlay" role="presentation" onMouseDown={(e)=>{if(e.target===e.currentTarget)setImagemAberta(false);}}>
+          <div className="m2-galeria-dialogo" role="dialog" aria-modal="true" aria-label={"Fotografia ampliada do produto "+p.sku_pai}>
+            <div className="m2-galeria-dialogo-topo"><strong>{p.marca??"Peça"} · {p.sku_pai}</strong><button type="button" onClick={()=>setImagemAberta(false)} aria-label="Fechar fotografia ampliada">✕ Fechar</button></div>
+            <div className="m2-galeria-dialogo-imagem">
+              {fotos.length>1&&<button type="button" aria-label="Foto anterior" onClick={()=>trocarFoto(-1)}>‹</button>}
+              <img src={foto} alt={"Fotografia real ampliada do produto "+p.sku_pai}/>
+              {fotos.length>1&&<button type="button" aria-label="Foto seguinte" onClick={()=>trocarFoto(1)}>›</button>}
+            </div>
+            <small>{fotoSelecionada+1} / {fotos.length} · Use ← → e Esc no teclado</small>
+          </div>
+        </div>}
         <p className="m2-ficha-disclaimer">{p.status==="aprovado"?"Confirme disponibilidade e condições com nossa equipe.":"Aplicação em revisão técnica. A presença do veículo na página não comprova compatibilidade."}</p>
       </>}
     </div>
