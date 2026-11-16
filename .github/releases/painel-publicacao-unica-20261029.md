@@ -82,3 +82,12 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Publicar só o frontend estático em GitHub Pages pelo workflow existente. Nova seção Glassy V2 3D na vitrine Mobis com seis categorias, imagens 3D oficiais da loja, navegação por teclado e miniaturas, e buscas pelo catálogo real.
 - Preservar marca, mascotes, tipografia, hero, Studio Nano, flags de build e loja em modo teste, sem ativar checkout, preços inventados ou produtos não homologados. Não alterar Bling, Supabase, migrações, funções Edge, DNS ou credenciais.
 - Exigir build/deploy verde, verificação de `version.json` e testes visuais da loja antes de declarar publicação concluída.
+
+
+## Publicação autorizada — Paleta branca / branco-gelo da vitrine MOBIS (16/11/2026)
+- Solicitação do proprietário: "Colocar a paleta branca na loja virtual". Trabalho executado no notebook remoto Mobis, branch isolada de correção.
+- PR #414 integrado na main em `168cb3c8fc1b035397da1230d12e75af01722d85` após 8 workflows de PR aprovados.
+- Escopo do release: frontend estático da vitrine Mobis com tema branco #FFFFFF, branco-gelo #F5F5F5, grafite #1F2327, laranja #FF6A00, vermelho #D60000 e cinza #8A8F98. Atualizados cabeçalho com logo oficial para fundo claro, hero, destaques, categorias, busca, produtos, atendimento, rodapé e Glassy Carousel V2.
+- CSS separado `painel/src/paginas/loja-mobis-branco.css` e indicador `data-mobis-palette="branco-gelo"`; testes de regressão atualizados para telas 360, 390, 412 e 1280 px. Arquivos adicionais de mascotes e banner do Drive são cópias de referência, não anúncios publicados.
+- Sem alteração de Bling, Supabase, SKU/OEM, preços, estoque, DNS, checkout ou aprovação de anúncio. A vitrine mantém modo TESTE e consulta via WhatsApp.
+- Homologar o GitHub Pages por version.json, teste real do domínio de publicação e screenshots antes de afirmar entrega.
