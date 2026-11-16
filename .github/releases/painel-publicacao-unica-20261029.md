@@ -111,3 +111,13 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Banco: rascunho inativo `loja_banners` para SKU CI003696, sem preço anunciado. Publicar no frontend apenas destaque de consulta, renderizado condicionalmente a produto realmente retornado pelo catálogo. Não anunciar R$ 17.800 em 3x, prazo ou estoque até conciliar Bling e confirmar vigência.
 - Publicação limitada ao frontend estático; manter modo TESTE, noindex, sem checkout/pagamento. Não tocar em preços, notas, estoque, cadastro do Bling, domínios nem autorizar novos produtos.
 - Exigir build, deploy, teste do site publicado por versão e comportamento antes de declarar conclusão.
+
+
+## Publicação autorizada — novo layout fotográfico Mobis vermelho/branco (16/11/2026)
+- Autorização explícita do proprietário: "Ok faz" após aprovar mockup com cabeçalho branco, barra vermelha, hero automotivo preto/vermelho, modelos por foto e peças por sistema.
+- PR #417 integrado em `5157004794f4940987827f13e05b571beff8a1fa` após oito workflows concluídos com sucesso, incluindo teste do produto demonstrativo e mobile.
+- Deploy limitado ao frontend estático: cinco fotografias **reais e licenciadas** de veículos obtidas em Wikimedia Commons (fotografia Hyundai Porter ilustra família relacionada ao HR, mas não garante versão brasileira); origens, créditos CC BY-SA 4.0 / CC0 / PD em `painel/src/assets/veiculos-reais/README.md`, links também na loja. Sem imagens externas em runtime.
+- Hero escuro com banners de veículos e miniaturas, oito categorias com ícones 3D originais, navegação por SKU/OEM e paleta base branco-gelo com vermelho/grafite. Preserva logo Mobis oficial para fundo claro, mascotes originais e Glassy V2 já implantado.
+- Seleção por modelos sem aplicação homologada dirige a atendimento; nunca inventa equivalência nem produto físico. Não atualiza preços, estoque, promoções, Bling, Supabase, fiscal, DNS ou anúncios pagos.
+- Manter `ambiente=teste`, `venda_habilitada=false`, `noindex`, atendimento WhatsApp sem checkout. A publicação não aprova automaticamente imagens de produtos ou ofertas.
+- Verificar GitHub Pages pelo `version.json`, Playwright em larguras 360/390/412/1280 e navegador real no domínio oficial antes de declarar conclusão.
