@@ -16,6 +16,7 @@ import { Bling } from "./paginas/Bling.tsx";
 import { Contador } from "./paginas/Contador.tsx";
 import { Taxonomia } from "./paginas/Taxonomia.tsx";
 import { Fila } from "./paginas/Fila.tsx";
+import { AuditoriaNanoMobis } from "./paginas/AuditoriaNanoMobis.tsx";
 import { Integracoes } from "./paginas/Integracoes.tsx";
 import { ProdutoPublico } from "./paginas/ProdutoPublico.tsx";
 import { ConectorIA } from "./paginas/ConectorIA.tsx";
@@ -87,6 +88,12 @@ const MENU_BASE: [string, string][] = semRotasSemAceite(montarMenu(ITENS, ITENS_
 const MENU_BACKUP: [string, string][] = BACKUP_ATIVO ? MENU_BASE.flatMap((i) => (i[0] === "/bling" ? [i, ["/backup", "Backup do Bling"] as [string, string]] : [i])) : MENU_BASE;
 const MENU: [string, string][] = BANNERS_ATIVO ? MENU_BACKUP.flatMap((i) => (i[0] === "/aparencia" ? [i, ["/banners", "Banners de oferta"] as [string, string]] : [i])) : MENU_BACKUP;
 
+const MENU_MOBIS:[string,string][] = MENU.flatMap(item =>
+  item[0]==="/fila"
+    ? [item,["/auditoria-nano","Auditoria técnica Nano"] as [string,string]]
+    : [item]
+);
+
 export function App() {
   const { sessao, recuperando, fimRecuperacao } = useSessao();
   const { caminho, query } = useRota();
@@ -144,6 +151,7 @@ export function App() {
   if (!demoAtivo && sessao && PAIR_ATIVO && caminho === "/autorizar-agente") return <AutorizarAgente codigo={query.get("c") ?? ""} />;
   if (!demoAtivo && sessao && PAIR_ATIVO && caminho === "/parear") return <ParearAprovador codigo={query.get("c") ?? ""} email={sessao?.user.email ?? null} />;
   const loja = demoAtivo ? demo?.lojaDemo ?? null : lojas?.[0] ?? null;
+  const menuAtual = loja?.slug === "mobis" ? MENU_MOBIS : MENU;
   const bloqueada = rotaBloqueada(caminho, { conectorAtivo: CONECTOR_ATIVO, centralAtiva: CENTRAL_ATIVA }, ROTAS_DO_CONECTOR, ROTAS_DA_CENTRAL); // backend não publicado ou exige aceite
   const res = { esq: 0, dir: 0 };
   const filtroInd = caminho.match(/^\/indicadores\/([a-z_:]+)$/);
@@ -152,7 +160,7 @@ export function App() {
       {demo && <div className="faixa-demo" role="status">{demo.FAIXA}</div>}
       <AvisoVersao />
       {PAIR_ATIVO && !demoAtivo && loja && <FaixaAgentes loja={loja} />}
-      <PainelAprovado loja={loja} caminho={caminho} menu={MENU} menuMovel={menuMovel} recolhido={recolhido}
+      <PainelAprovado loja={loja} caminho={caminho} menu={menuAtual} menuMovel={menuMovel} recolhido={recolhido}
         aoMenu={() => setMenuMovel(v => !v)} aoRecolher={alternarMenu} aoBusca={() => setPaleta(true)}
         aoSair={() => { if (!demoAtivo) void supabase.auth.signOut(); }}
         aoAgente={() => ir("/estudio")} res={res}>
@@ -164,11 +172,12 @@ export function App() {
           : caminho === "/visao-geral" ? <VisaoGeral loja={loja} />
           : caminho === "/catalogo-espelho" ? <Catalogo loja={loja} />
           : caminho === "/ferramentas" ? <FerramentasCatalogo loja={loja} query={query} />
-          : caminho === "/nanogpt" ? <NanoGPT key={loja.id} loja={loja} menu={MENU} />
-          : caminho === "/estudio" ? <NanoWorkspace key={loja.id} loja={loja} menu={MENU} aoNavegar={ir} />
+          : caminho === "/nanogpt" ? <NanoGPT key={loja.id} loja={loja} menu={menuAtual} />
+          : caminho === "/estudio" ? <NanoWorkspace key={loja.id} loja={loja} menu={menuAtual} aoNavegar={ir} />
           : caminho === "/demonstracao-cadastro" ? <DemoCadastro />
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />
+          : caminho === "/auditoria-nano" && loja.slug === "mobis" ? <AuditoriaNanoMobis loja={loja} />
           : PAIR_ATIVO && caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao?.user.email ?? null} />
           : PAIR_ATIVO && caminho === "/meu-agente" ? <MeuAgente loja={loja} />
           : PAIR_ATIVO && caminho === "/dispositivos" ? <Dispositivos loja={loja} />
@@ -179,7 +188,7 @@ export function App() {
           : caminho === "/indicadores" ? <Indicadores loja={loja} />
           : caminho === "/studio" ? <Studio loja={loja} query={query} />
           : caminho === "/gateway" ? <GatewayMCP loja={loja} />
-          : caminho === "/assistente" ? <NanoWorkspace key={loja.id} loja={loja} menu={MENU} aoNavegar={ir} />
+          : caminho === "/assistente" ? <NanoWorkspace key={loja.id} loja={loja} menu={menuAtual} aoNavegar={ir} />
           : caminho === "/aparencia" ? <Aparencia loja={loja} />
           : caminho === "/publicacao" ? <PublicacaoLoja loja={loja} />
           : BANNERS_ATIVO && caminho === "/banners" ? <Banners loja={loja} />
@@ -193,7 +202,7 @@ export function App() {
           : caminho === "/contador" ? <Contador loja={loja} />
           : <VisaoGeral loja={loja} />}
       </PainelAprovado>
-      <PaletaComandos itens={MENU} aberta={paleta} aoFechar={() => setPaleta(false)} />
+      <PaletaComandos itens={menuAtual} aberta={paleta} aoFechar={() => setPaleta(false)} />
     </div>
   );
 }
