@@ -40,3 +40,11 @@
 .gs-arquivo input{background:white;border:1px solid #cdd7d0;border-radius:8px;padding:10px;max-width:100%;font-size:.8rem}
 @media(max-width:620px){.gs-cabecalho>button{width:100%}.gs-controles{align-items:stretch}.gs-contagem{width:100%;margin:0}.gs-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.gs-card{padding:7px}.gs-imagem{height:137px;padding:4px}.gs-card-topo{flex-wrap:wrap}.gs-meta>div{flex-direction:column;gap:1px}.gs-meta dd{text-align:left;max-width:100%}.gs-acoes button{font-size:.7rem}}
 @media(max-width:350px){.gs-grade{grid-template-columns:1fr}.gs-imagem{height:200px}}
+
+.gs-fila-produtos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px;margin:14px 0}
+.gs-fila-escolher{display:grid;gap:5px;text-align:left;padding:11px!important;white-space:normal;min-height:66px}
+.gs-fila-escolher strong{font-size:.86rem}
+.gs-fila-escolher span{font-size:.76rem;color:#63786b}
+.gs-fila-escolher.gs-fila-ativo{outline:2px solid #297958;outline-offset:1px;background:#f1f9f4}
+.gs-fila-revisao{border-top:2px solid #d2e3d6;margin-top:19px;padding-top:18px}
+.gs-fila-revisao h3{margin-top:0}
