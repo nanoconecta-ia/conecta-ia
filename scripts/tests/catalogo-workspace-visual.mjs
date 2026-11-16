@@ -75,13 +75,26 @@ try {
     assert.match(await modal.innerText(),/IN D I S A|INDISA/);
     assert.match(await modal.innerText(),/GTIN\/EAN/);
     assert.equal((await modal.innerText()).includes("151,00"),false,"custo confidencial não exibido");
-    // PR #242: galeria de até 8 imagens na ficha: estado, origem, licença e aprovação por imagem; nada publicável sem direitos
+    // Nano Studio: galeria real reaproveitada; 8 no máximo, seleção para comparação,
+    // status de identidade/direitos e aprovação humana POR IMAGEM.
     const galeria=modal.locator(".galeria-produto");await galeria.waitFor();
-    assert.equal(await galeria.locator(".galeria-item").count(),3,"as três imagens do produto aparecem");
+    assert.equal(await galeria.locator(".gs-card").count(),3,"as três imagens do produto aparecem na grade");
     const txtGaleria=await galeria.innerText();
-    assert.match(txtGaleria,/3 de 8/);assert.match(txtGaleria,/fabricante\.exemplo\.com\.br/);assert.match(txtGaleria,/Imagem ilustrativa/);assert.match(txtGaleria,/não prova a peça/);assert.match(txtGaleria,/aprovar não publica/);
-    assert.equal(await galeria.locator(".galeria-item").nth(0).getByText("publicável",{exact:true}).count(),0,"pendente sem direitos nunca é publicável");
-    assert.equal(await galeria.getByRole("button",{name:"Aprovar esta"}).count(),2,"só as pendentes têm botão de aprovar");
+    assert.match(txtGaleria,/3\\/8/);
+    assert.match(txtGaleria,/fabricante\\.exemplo\\.com\\.br/);
+    assert.match(txtGaleria,/Imagem ilustrativa/);
+    assert.match(txtGaleria,/Não comprovada/);
+    assert.match(txtGaleria,/Direitos pendentes/);
+    assert.equal(await galeria.locator(".gs-card").nth(0).getByText("Direitos e aprovação OK").count(),0,
+      "foto sem direitos nunca é classificada como apta para publicar");
+    assert.equal(await galeria.getByRole("button",{name:"Aprovar foto"}).count(),2,
+      "somente as duas pendentes oferecem aprovação individual");
+    await galeria.getByLabel("Foto 1").check();
+    await galeria.getByLabel("Foto 2").check();
+    assert.equal(await galeria.locator(".gs-comparacao figure").count(),2,"duas fotos na comparação");
+    await galeria.getByRole("button",{name:"Pré-selecionar principal"}).first().click();
+    assert.match(await galeria.locator(".gs-preprincipal").innerText(),/não gravada/,
+      "prévia principal não executa gravação no banco");
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,`galeria sem overflow a ${width}px`);
     await page.keyboard.press("Escape");await modal.waitFor({state:"hidden"});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,`sem overflow a ${width}px`);
