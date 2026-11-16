@@ -51,8 +51,8 @@ export function GaleriaProduto({
   useEffect(() => {
     let ativo = true;
     void supabase.rpc("pode_administrar_loja", { p_loja_id: loja.id })
-      .then(({ data }) => { if (ativo) setPodeDecidir(data === true); })
-      .catch(() => { if (ativo) setPodeDecidir(false); });
+      .then(({ data }) => { if (ativo) setPodeDecidir(data === true); },
+        () => { if (ativo) setPodeDecidir(false); });
     return () => { ativo = false; };
   }, [loja.id]);
 
