@@ -22,6 +22,7 @@ export interface ProvedorBusca {
 export const MSG_SEM_PROVEDOR =
   "Busca indisponível: não há provedor de pesquisa configurado nesta loja. A ferramenta existe; falta o provedor. " +
   "O Google encerrou novas contas da Custom Search API em 20/01/2026 (clientes atuais têm até 01/01/2027), então não adianta criar uma chave nova do Google. " +
+  "Para ativar a pesquisa, o responsável da loja cola a chave do Firecrawl em Integrações de IA > Busca na web. " +
   "Enquanto isso, posso receber o link da imagem junto com a fonte, ou uma foto sua, e registrar como proposta.";
 
 /** Resposta padronizada da ferramenta quando algo falha: o motivo real, em texto, e o código para o app decidir. */

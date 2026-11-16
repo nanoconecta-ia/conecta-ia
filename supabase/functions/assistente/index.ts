@@ -3,6 +3,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import { AJUDA_LOJISTA, intencaoLojista } from "../_shared/intencoes.ts";
 import { decifrar } from "../_shared/cripto.ts";
+import { configFirecrawlDaLoja } from "../_shared/ia/firecrawl.ts";
 import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 import { conversar, IaErro, type Mensagem } from "../_shared/ia/claude.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../_shared/ia/ferramentas.ts";
@@ -118,6 +119,7 @@ Deno.serve(async (req) => {
     const { data: biRows } = await sb.rpc("busca_imagem_ler", { p_loja: loja.id });
     const bi = (biRows as { api_key_cifrada: string; cx: string }[] | null)?.[0];
     const buscaImagem = bi ? { chave: await decifrar(bi.api_key_cifrada, chaveiro), cx: bi.cx } : null;
+    const firecrawl = await configFirecrawlDaLoja((fn, a) => sb.rpc(fn, a), loja.id, (x) => decifrar(x, chaveiro)); // chave da loja (Integrações de IA); sem chave = null
     const historico: Mensagem[] = (Array.isArray(c.historico) ? c.historico : []).slice(-10)
       .filter((m: any) => m && (m.de === "eu" || m.de === "ia") && typeof m.texto === "string")
       .map((m: any): Mensagem => ({ role: m.de === "eu" ? "user" : "assistant", content: m.texto.slice(0, 2000) }));
@@ -134,7 +136,7 @@ Deno.serve(async (req) => {
       const r = await conversar({
         provedor: k.provedor === "openai" ? "compativel_openai" : k.provedor, baseUrl: k.provedor === "openai" ? "https://api.openai.com/v1" : k.base_url ?? undefined, chave: await decifrar(k.cifrada, chaveiro), modelo: modeloDaChave(k), sistema: `${SISTEMA}\nLoja: ${loja.nome}.${va?.ok && va.anexos.length ? `\n${REGRAS_ANEXO}` : ""}`, mensagens, ferramentas: FERRAMENTAS,
         executar: (nome, entrada) => executarFerramenta(nome, entrada, {
-          usuario, admin: sb, lojaId: loja.id, plugins: (plugs ?? []) as PluginRegistro[], buscaImagem,
+          usuario, admin: sb, lojaId: loja.id, plugins: (plugs ?? []) as PluginRegistro[], buscaImagem, firecrawl,
           searxng: configSearxngOuNulo((n) => Deno.env.get(n), loja.id).config, conector,
           credencial: async (pid) => { const { data } = await sb.rpc("plugin_credencial", { p_loja: loja.id, p_id: pid }); return typeof data === "string" ? await decifrar(data, chaveiro) : null; },
         }),

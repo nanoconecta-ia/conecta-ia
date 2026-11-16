@@ -4,6 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { cifrar, decifrar } from "../_shared/cripto.ts";
 import { chaveiroPlataforma } from "../_shared/plataforma.ts";
 import { conversar, IaErro } from "../_shared/ia/claude.ts";
+import { chaveFirecrawlValida, testarFirecrawl } from "../_shared/ia/firecrawl.ts";
 import { permissaoAtivacaoPlugin, testarPlugin, urlPublicaSegura, type PluginRegistro } from "../_shared/ia/plugin.ts";
 
 const CORS = {
@@ -116,6 +117,35 @@ Deno.serve(async (req) => {
     case "remover_busca_imagem": {
       await sb.rpc("busca_imagem_desativar", { p_loja: lojaId });
       await auditar("ia.busca_imagem_removida", {});
+      return json({ ok: true });
+    }
+    case "salvar_busca_firecrawl": {
+      // O sistema "reconhece" a chave: testa com uma busca mínima ANTES de guardar. Chave recusada pelo Firecrawl nunca é gravada.
+      const chave = texto(c.chave, 250);
+      const limite = c.limite_mensal === undefined || c.limite_mensal === null || c.limite_mensal === "" ? 300 : Number(c.limite_mensal);
+      if (!chaveFirecrawlValida(chave)) return json({ erro: "Esta não parece uma chave do Firecrawl (começa com fc-, sem espaços). Copie de firecrawl.dev, em API Keys." }, 400);
+      if (!Number.isInteger(limite) || limite < 10 || limite > 100000) return json({ erro: "O limite mensal de buscas deve ficar entre 10 e 100000." }, 400);
+      const teste = await testarFirecrawl(chave);
+      if (!teste.ok && teste.motivo === "credencial_invalida") return json({ erro: teste.erro, motivo: teste.motivo }, 400);
+      const { error } = await sb.rpc("busca_firecrawl_salvar", { p_loja: lojaId, p_cifrada: await cifrar(chave, chaveiro), p_final: chave.slice(-4), p_limite: limite });
+      if (error) return json({ erro: "Não foi possível salvar a chave." }, 500);
+      await auditar("ia.busca_firecrawl_salva", { final: chave.slice(-4), limite_mensal: limite, reconhecida: teste.ok });
+      return json(teste.ok ? { ok: true, reconhecida: true } : { ok: true, reconhecida: false, aviso: `Chave guardada, mas não deu para confirmar agora: ${teste.erro}` });
+    }
+    case "testar_busca_firecrawl": {
+      const { data } = await sb.rpc("busca_firecrawl_ler", { p_loja: lojaId });
+      const k = (data as { chave_cifrada: string }[] | null)?.[0];
+      if (!k) return json({ erro: "Nenhuma chave do Firecrawl ativa. Cole a chave primeiro." }, 409);
+      let chave = "";
+      try { chave = await decifrar(k.chave_cifrada, chaveiro); } catch { return json({ erro: "Não foi possível abrir a chave guardada. Cole-a novamente." }, 409); }
+      const teste = await testarFirecrawl(chave);
+      if (teste.ok) await sb.rpc("busca_firecrawl_registrar", { p_loja: lojaId, p_buscas: 1 });
+      await auditar("ia.busca_firecrawl_testada", { ok: teste.ok, motivo: teste.ok ? undefined : teste.motivo });
+      return teste.ok ? json({ ok: true }) : json({ erro: teste.erro, motivo: teste.motivo }, 502);
+    }
+    case "remover_busca_firecrawl": {
+      await sb.rpc("busca_firecrawl_desativar", { p_loja: lojaId });
+      await auditar("ia.busca_firecrawl_removida", {});
       return json({ ok: true });
     }
     case "salvar_plugin": {

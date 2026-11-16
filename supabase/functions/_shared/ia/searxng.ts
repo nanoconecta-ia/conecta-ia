@@ -10,7 +10,7 @@ const DADOS_PRIVADOS = /(?:\bcusto\b|\bmargem\b|\bfornecedor\b|\bcnpj\b|\bcpf\b|
 function hostPublico(h: string): boolean {
   return h.includes(".") && !h.includes(":") && !/^\d+(?:\.\d+){3}$/.test(h) && !BLOQUEADOS.test(h);
 }
-function urlSegura(s: unknown): s is string {
+export function urlSegura(s: unknown): s is string {
   if (typeof s !== "string" || s.length > 2048) return false;
   try {
     const u = new URL(s);
@@ -40,7 +40,7 @@ export function configSearxngOuNulo(get: (n: string) => string | undefined, loja
   try { return { config: configSearxngPorLoja(get, lojaId) }; }
   catch (e) { return { config: null, erro: e instanceof Error ? e.message : "configuracao SearXNG invalida" }; }
 }
-function consultaPublica(q: string): string {
+export function consultaPublica(q: string): string {
   const s = typeof q === "string" ? q.trim().slice(0, 160) : "";
   if (s.length < 3 || DADOS_PRIVADOS.test(s))
     throw new BuscaErro(400, "recusada", "Consulta invalida ou contendo dado interno. Pesquise apenas referencia, fabricante e aplicacao publicos.");

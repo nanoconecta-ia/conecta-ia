@@ -4,6 +4,7 @@ import { executarTurno, type EventoChat } from "../_shared/conector/chat.ts";
 import { portasChatSupabase } from "../_shared/conector/chat_portas.ts";
 import { dadosSupabase } from "../_shared/conector/dados.ts";
 import { ADAPTADORES_STREAM } from "../_shared/ia/adaptadores_stream.ts";
+import { configFirecrawlDaLoja } from "../_shared/ia/firecrawl.ts";
 import { autenticar, blingLeitura, CORS, decifrarComChaveiro, json } from "../_shared/conector/edge.ts";
 import type { PluginRegistro } from "../_shared/ia/plugin.ts";
 
@@ -18,13 +19,14 @@ Deno.serve(async (req) => {
   const { data: biRows } = await s.admin.rpc("busca_imagem_ler", { p_loja: s.lojaId });
   const bi = (biRows as { api_key_cifrada: string; cx: string }[] | null)?.[0];
   const buscaImagem = bi ? { chave: await decifrar(bi.api_key_cifrada), cx: bi.cx } : null;
+  const firecrawl = await configFirecrawlDaLoja((fn, a) => s.admin.rpc(fn, a), s.lojaId, decifrar);
 
   const portas = portasChatSupabase({
     admin: s.admin, lojaId: s.lojaId, userId: s.userId, nomeLoja: s.nomeLoja, decifrar,
     adaptadorStream: (p) => ADAPTADORES_STREAM[p],
     contexto: (conversaId) => ({
       origem: "chat", lojaId: s.lojaId, userId: s.userId, dados: dadosSupabase(s.admin, s.lojaId), rpc: (fn, args) => s.admin.rpc(fn, args), admin: s.admin, bling, conversaId,
-      agente: { nome: "Nano.ia" }, plugins: (plugs ?? []) as PluginRegistro[], buscaImagem,
+      agente: { nome: "Nano.ia" }, plugins: (plugs ?? []) as PluginRegistro[], buscaImagem, firecrawl,
       credencialPlugin: async (pid) => { const { data } = await s.admin.rpc("plugin_credencial", { p_loja: s.lojaId, p_id: pid }); return typeof data === "string" ? await decifrar(data) : null; },
     }),
   });

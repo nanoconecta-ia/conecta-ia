@@ -6,6 +6,7 @@ import { decifrar, cifrar } from "../_shared/cripto.ts";
 import { clienteDoAmbiente, renovarAccess } from "../_shared/google_oauth.ts";
 import { configSearxngOuNulo } from "../_shared/ia/searxng.ts";
 import { escolherProvedorBusca } from "../_shared/ia/provedor_busca.ts";
+import { configFirecrawlDaLoja } from "../_shared/ia/firecrawl.ts";
 import { proporImagem } from "../_shared/ia/escrita.ts";
 import { baixarImagemOriginal, urlImagemSegura, sha256Hex } from "../_shared/busca_segura/imagem_original.ts";
 import { validarImagemAprovada, corpoImagensBling, copiarDrive, decidirReconciliacao, chaveIdempotencia, FERRAMENTA_IMAGENS } from "../_shared/nanogpt_midia.ts";
@@ -49,11 +50,12 @@ Deno.serve(async req => {
     const chaveiro = await chaveiroPlataforma(admin, get);
     const { config: searxng } = configSearxngOuNulo(get, lojaId);
     const bi = await admin.from("loja_busca_imagem").select("ativa").eq("loja_id", lojaId).maybeSingle();
+    const fc = await admin.from("loja_busca_firecrawl").select("ativa").eq("loja_id", lojaId).maybeSingle();
     if (b.acao === "status") {
       const [bling, google] = await Promise.all([admin.from("bling_conexoes").select("status").eq("loja_id", lojaId).maybeSingle(), admin.from("google_conexoes").select("status").eq("loja_id", lojaId).maybeSingle()]);
       if (bling.error || google.error || bi.error) throw new Error("Não foi possível verificar as conexões.");
       const liberada = await liberadaNaLoja(admin, lojaId), ativa = buscarDefinicao(FERRAMENTA_IMAGENS)?.estado === "ativa";
-      return json({ busca: searxng ? "searxng" : bi.data?.ativa ? "google" : null, bling: bling.data?.status ?? "ausente", drive: google.data?.status ?? "ausente", exportacao: flagsLigadas() && ativa && liberada && pilotoLoja(lojaId), exportacao_motivo: !ativa ? "Ferramenta de imagens desligada no registro." : !liberada ? "Falta a liberação desta loja para gravar imagens no Bling." : !pilotoLoja(lojaId) ? "Piloto ainda não limitado a uma loja, SKU e imagem autorizados." : flagsLigadas() ? null : "Flags do servidor desligadas.", request_id: requestId });
+      return json({ busca: searxng ? "searxng" : fc.data?.ativa ? "firecrawl" : bi.data?.ativa ? "google" : null, bling: bling.data?.status ?? "ausente", drive: google.data?.status ?? "ausente", exportacao: flagsLigadas() && ativa && liberada && pilotoLoja(lojaId), exportacao_motivo: !ativa ? "Ferramenta de imagens desligada no registro." : !liberada ? "Falta a liberação desta loja para gravar imagens no Bling." : !pilotoLoja(lojaId) ? "Piloto ainda não limitado a uma loja, SKU e imagem autorizados." : flagsLigadas() ? null : "Flags do servidor desligadas.", request_id: requestId });
     }
     if (b.acao === "buscar") {
       let buscaImagem = null;
@@ -62,8 +64,9 @@ Deno.serve(async req => {
         const k = Array.isArray(r.data) ? r.data[0] : r.data;
         if (k?.api_key_cifrada) buscaImagem = { chave: await decifrar(k.api_key_cifrada, chaveiro), cx: k.cx };
       }
-      const busca = escolherProvedorBusca({ searxng, buscaImagem });
-      if (!busca) return json({ erro: "Nenhum buscador configurado. Configure o SearXNG privado ou informe URL e fonte da imagem.", codigo: "sem_provedor" }, 503);
+      const firecrawl = !searxng && chaveiro ? await configFirecrawlDaLoja((fn, a) => admin.rpc(fn, a), lojaId, (x) => decifrar(x, chaveiro)) : null;
+      const busca = escolherProvedorBusca({ searxng, firecrawl, buscaImagem });
+      if (!busca) return json({ erro: "Nenhum buscador configurado. Cole a chave do Firecrawl em Integrações de IA ou informe URL e fonte da imagem.", codigo: "sem_provedor" }, 503);
       if (typeof b.consulta !== "string" || b.consulta.trim().length < 3 || b.consulta.length > 160) return json({ erro: "Informe referência e fabricante (3 a 160 caracteres)." }, 422);
       const candidatas = await busca.imagens(b.consulta, 4);
       await audit("busca", { quantidade: candidatas.length, provedor: busca.id });
