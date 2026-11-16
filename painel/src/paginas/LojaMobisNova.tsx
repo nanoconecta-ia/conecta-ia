@@ -19,17 +19,20 @@ type Produto = {sku:string;nome:string;preco:number|null;marca:string|null;descr
 type Veiculo = {modelo:string;motor:string|null;de:number|null;ate:number|null};
 type Banner = {sku:string;nome:string;preco:number|null;chamada:string|null;flash:boolean;whatsapp:string|null};
 type PaginaAplicacao = {slug:string;titulo:string;modelo:string;status:string};
+type HistoriaMobis = {titulo:string;resumo:string;status:string;eventos:Array<{ano:string;titulo:string;texto:string}>;fontes:Array<{url:string;titulo:string;tipo:string}>};
+type MarcaCatalogo = {chave:string;nome:string;quantidade:number;logo:string|null};
 type Resposta = {
   paginas_aplicacao?:Record<string,PaginaAplicacao[]>;
   midias_veiculo?:Record<string,{foto:string|null;logo:string|null;credito:string|null}>;
+  marcas?:MarcaCatalogo[];marca_historia?:HistoriaMobis|null;
   loja:{nome:string;slug:string;ambiente?:"teste"|"producao";whatsapp?:string|null;venda_habilitada?:boolean};
   produtos:Produto[];banners?:Banner[];veiculos:Veiculo[];
   categorias:{nome:string;slug:string;total:number}[];
   politicas?:PoliticasLojaPublicas|null;
   total:number;pagina:number;por_pagina:number
 };
-type Filtros={q:string;modelo:string;motor:string;ano:string;categoria:string;pagina:number};
-const VAZIO:Filtros={q:"",modelo:"",motor:"",ano:"",categoria:"",pagina:1};
+type Filtros={q:string;modelo:string;motor:string;ano:string;categoria:string;marca:string;pagina:number};
+const VAZIO:Filtros={q:"",modelo:"",motor:"",ano:"",categoria:"",marca:"",pagina:1};
 const VEICULOS=[
   {nome:"Hyundai HR",valor:"HR",icone:"caminhao",nota:"Peças para o utilitário do dia a dia"},
   {nome:"Kia Bongo K2500",valor:"Bongo",icone:"caminhao",nota:"Encontre componentes para seu Bongo"},
@@ -74,13 +77,14 @@ export function LojaMobisNova({slug}:{slug:string}) {
   const [slide,setSlide]=useState(0);
   const [pausa,setPausa]=useState(false);
   const [explorar,setExplorar]=useState<"veiculo"|"sistema">("veiculo");
+  const [marcasAbertas,setMarcasAbertas]=useState(false);
   const produtoTeste=podeExibirProdutoTeste(dados?.loja);
   useEffect(()=>{
     let ativo=true;setDados(null);setEstado("carregando");
     fetch(SUPABASE_URL+"/functions/v1/loja-publica",{
       method:"POST",headers:{"content-type":"application/json",apikey:SUPABASE_CHAVE_PUBLICAVEL},
       body:JSON.stringify({slug,q:f.q||undefined,modelo:f.modelo||undefined,motor:f.motor||undefined,
-        ano:f.ano?Number(f.ano):undefined,categoria:f.categoria||undefined,pagina:f.pagina})
+        ano:f.ano?Number(f.ano):undefined,categoria:f.categoria||undefined,marca:f.marca||undefined,pagina:f.pagina})
     }).then(async r=>{
       if(!ativo)return;
       if(r.status===404){setEstado("naoachada");return;}
@@ -129,8 +133,18 @@ export function LojaMobisNova({slug}:{slug:string}) {
   },[busca]);
   function aplicar(e?:FormEvent){
     e?.preventDefault();
-    setF({q:busca.trim(),modelo,motor,ano,categoria,pagina:1});
+    setF({q:busca.trim(),modelo,motor,ano,categoria,marca:f.marca,pagina:1});
     para("m2-catalogo");
+  }
+  function escolherMarca(m:MarcaCatalogo){
+    setMarcasAbertas(false);
+    setBusca("");setModelo("");setMotor("");setAno("");setCategoria("");
+    setF({...VAZIO,marca:m.chave});
+    window.requestAnimationFrame(()=>para("m2-catalogo"));
+  }
+  function limparMarca(){
+    setMarcasAbertas(false);setF(VAZIO);setBusca("");
+    setModelo("");setMotor("");setAno("");setCategoria("");
   }
   function escolherVeiculo(valor:string){
     const escolhido=modeloDoAtalho(valor,opcoes);
@@ -163,6 +177,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
       </a>
       <nav aria-label="Menu da loja"><button onClick={()=>{setExplorar("veiculo");para("m2-explorar")}}>Seu veículo</button>
         <button onClick={()=>{setExplorar("sistema");para("m2-explorar")}}>Peças por sistema</button>
+        <button aria-expanded={marcasAbertas} aria-controls="m2-menu-marcas" onClick={()=>setMarcasAbertas(v=>!v)}>Marcas dos produtos ▾</button>
         <button onClick={()=>para("m2-catalogo")}>Catálogo</button>
         <button onClick={()=>para("m2-destaques")}>Destaques</button>
         <button onClick={()=>para("m2-empresa")}>A Mobis</button></nav>
@@ -170,6 +185,14 @@ export function LojaMobisNova({slug}:{slug:string}) {
         {whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Fale com a Mobis <span>WhatsApp ↗</span></a>}
       </div>
     </div></header>
+    {marcasAbertas&&<section id="m2-menu-marcas" className="m2-menu-marcas m2-wrap" aria-label="Seleção de marcas dos produtos">
+      <div className="m2-menu-marcas-topo"><div><strong>Conheça as marcas da MOBIS</strong><p>Selecione a marca para ver seus produtos reais, categorias e aplicações disponíveis.</p></div><button onClick={()=>setMarcasAbertas(false)} aria-label="Fechar menu de marcas">✕</button></div>
+      <div className="m2-menu-marcas-grid">{(dados?.marcas??[]).map(m=><button type="button" key={m.chave} onClick={()=>escolherMarca(m)} aria-label={"Ver peças da marca "+m.nome}>
+        <span className="m2-menu-marcas-logo">{m.logo?<img src={m.logo} alt={"Logo autorizado "+m.nome}/>:<span aria-hidden="true">▣</span>}</span>
+        <span><strong>{m.nome}</strong><small>{m.quantidade} produto(s) disponível(is) para consulta</small></span><span aria-hidden="true">›</span>
+      </button>)}</div>
+      {(dados?.marcas??[]).length===0&&<p>As marcas aparecerão à medida que produtos forem liberados para a vitrine.</p>}
+    </section>}
     <div className="m2-busca-rapida"><form className="m2-wrap" role="search" aria-label="Busca rápida de peças" onSubmit={aplicar}>
       <label htmlFor="m2-busca-rapida">Qual peça você procura?</label>
       <input id="m2-busca-rapida" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Nome da peça, código ou referência"/>
@@ -242,6 +265,17 @@ export function LojaMobisNova({slug}:{slug:string}) {
         </form>
       </div></section>
       <section className="m2-wrap m2-secao m2-catalogo" id="m2-catalogo" aria-live="polite">
+        {f.marca&&<div className="m2-marca-perfil">
+          <div className="m2-marca-perfil-titulo"><span className="m2-kicker">CATÁLOGO POR MARCA</span><h2>{dados?.marcas?.find(m=>m.chave===f.marca)?.nome??f.marca}</h2>
+            <p>Peças vinculadas a essa identificação comercial. Verifique cada aplicação e a marca verdadeira da embalagem.</p>
+            <button onClick={limparMarca}>← Todas as marcas e produtos</button></div>
+          {dados?.marca_historia&&<details className="m2-marca-historia"><summary>▣ Conheça a história da marca</summary><h3>{dados.marca_historia.titulo}</h3><p>{dados.marca_historia.resumo}</p>
+            {dados.marca_historia.status!=="aprovado"&&<small>Histórico editorial em revisão; não constitui garantia de compatibilidade.</small>}
+            <ol>{dados.marca_historia.eventos.map((e,i)=><li key={i}><strong>{e.ano} · {e.titulo}</strong><p>{e.texto}</p></li>)}</ol>
+            <details><summary>Fontes e pesquisa</summary>{dados.marca_historia.fontes.map((f,i)=><p key={i}><a href={f.url} target="_blank" rel="noopener noreferrer">{f.titulo}</a></p>)}</details>
+          </details>}
+        </div>}
+
         <div className="m2-cab-secao"><div><span className="m2-kicker">PEÇAS E COMPONENTES</span><h2>Produtos no catálogo</h2><small>{estado==="carregando"?"Consultando…":String(dados?.total??0)+" produto(s) encontrado(s)"}</small></div><button onClick={()=>para("m2-lista")}>Minha lista <b>{lista.length}</b></button></div>
         {estado==="carregando"&&<div className="m2-vazio">Consultando catálogo público autorizado…</div>}
         {(estado==="erro"||estado==="limite")&&<div className="m2-vazio"><strong>Não foi possível carregar o catálogo.</strong><p>{estado==="limite"?"Limite de consultas atingido.":"Tente novamente."}</p><button onClick={()=>setTentativa(x=>x+1)}>Tentar novamente</button></div>}
