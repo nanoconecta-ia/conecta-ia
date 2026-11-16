@@ -34,9 +34,22 @@ try{
   await page.goto(base+"/#/loja/mobis");
   await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor({state:"visible",timeout:20000});
   assert.equal(await page.locator('[data-mobis-palette="branco-gelo"]').count(),1,"tema oficial branco-gelo ativo");
+  // Modelo MOBIS v3: veículos em fotografias reais com fontes e ícones 3D intactos.
+  assert.equal(await page.locator('[data-mobis-visual="fotografico-v3"]').count(),1,"layout fotográfico aplicado");
+  const hero=page.locator('.m3-hero');
+  await hero.waitFor();
+  assert.equal(await hero.locator('.m3-hero-foto img').count(),5,"cinco fotografias de veículos por modelo");
+  const primeiraFoto=hero.locator('.m3-hero-foto img').first();
+  await primeiraFoto.waitFor({state:"visible"});
+  await primeiraFoto.evaluate(async img=>{if(!img.complete)await new Promise((resolve,reject)=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',reject,{once:true});});});
+  assert.equal(await primeiraFoto.evaluate(img=>img.naturalWidth>0),true,"foto real local acessível");
+  assert.equal(await page.locator('.m3-faixa-lista button').count(),8,"oito categorias funcionais com ícones Mobis");
+  assert.match(await page.locator('.m2-busca-rapida').evaluate(el=>getComputedStyle(el).backgroundImage),/linear-gradient/,"menu de busca em vermelho");
+  assert.ok(await page.locator('#m3-creditos').count()===1,"créditos de licença acessíveis");
+
   assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho branco");
   assert.equal(await page.locator('.mgv').evaluate(el=>getComputedStyle(el).color),'rgb(31, 35, 39)',"glassy com texto grafite sobre vidro claro");
-  await page.getByRole("heading",{name:/Peças para quem trabalha/}).waitFor();
+  await page.locator(".m3-hero h1").getByText(/PICAPES, VANS E UTILITÁRIOS DIESEL/).waitFor();
   await page.getByText(/Catálogo de peças em preparação/).waitFor({timeout:10000});
   const banners=page.locator('.mbi');
   await banners.waitFor();
