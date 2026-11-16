@@ -80,8 +80,8 @@ try {
     const galeria=modal.locator(".galeria-produto");await galeria.waitFor();
     assert.equal(await galeria.locator(".gs-card").count(),3,"as três imagens do produto aparecem na grade");
     const txtGaleria=await galeria.innerText();
-    assert.match(txtGaleria,/3\\/8/);
-    assert.match(txtGaleria,/fabricante\\.exemplo\\.com\\.br/);
+    assert.ok(txtGaleria.includes("3/8"));
+    assert.ok(txtGaleria.includes("fabricante.exemplo.com.br"));
     assert.match(txtGaleria,/Imagem ilustrativa/);
     assert.match(txtGaleria,/Não comprovada/);
     assert.match(txtGaleria,/Direitos pendentes/);
