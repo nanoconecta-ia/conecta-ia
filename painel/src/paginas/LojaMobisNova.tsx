@@ -201,6 +201,8 @@ export function LojaMobisNova({slug}:{slug:string}) {
       {produtoTeste&&<ProdutoTesteMobis/>}
       <div className="m2-wrap"><BannersInstitucionaisMobis
         abrirCatalogo={()=>para("m2-catalogo")}
+        destaqueMotor={dados?.produtos.find(p=>p.sku==="CI003696")??null}
+        abrirDestaque={()=>{setAbaBusca("referencia");setBusca("CI003696");setModelo("");setMotor("");setAno("");setCategoria("");setF({...VAZIO,q:"CI003696"});para("m2-catalogo");}}
         abrirVeiculos={()=>{setExplorar("veiculo");para("m2-explorar")}}
         abrirBuscaCodigos={()=>{setAbaBusca("referencia");setBusca("");setModelo("");setMotor("");setAno("");setCategoria("");setF(VAZIO);para("m2-busca");window.setTimeout(()=>document.getElementById("m2-pesquisar")?.focus({preventScroll:true}),100)}}
       /></div>

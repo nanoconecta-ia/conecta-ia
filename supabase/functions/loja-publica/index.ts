@@ -138,7 +138,27 @@ Deno.serve(async (req) => {
       .ilike("valor", busca).limit(100);
     if (erroCodigo) console.warn("loja-publica codigo-aprovado indisponivel", erroCodigo.code);
     const publicados = new Set(idsPublicados);
-    idsPorReferencia = [...new Set((codigos ?? [])
+    const refsDiretas = (codigos ?? []) as { produto_id: string; valor?: string }[];
+    let refsVerificadas = refsDiretas;
+    // Normalização APENAS de separadores de código (ex.: 54410-4B000 = 544104B000).
+    // Nunca usar correspondência aproximada nem códigos pendentes. Para lotes maiores,
+    // migrar para índice canônico em vez de expandir consulta indiscriminadamente.
+    if (!erroCodigo && refsDiretas.length === 0 && busca.length >= 5 &&
+      /^[a-z0-9.\/\s-]+$/i.test(busca) && /\d/.test(busca)) {
+      const canonico = (v: string) => v.normalize("NFKC").replace(/[^a-z0-9]/gi, "").toUpperCase();
+      const chave = canonico(busca);
+      const { data: candidatas, error: erroNormalizacao } = await sb.from("produto_codigos")
+        .select("produto_id,valor").eq("loja_id", loja.id).eq("status", "aprovado")
+        .in("tipo", ["oem", "fabricante", "sku", "ean", "similar", "substituto", "antigo"])
+        .limit(1000);
+      if (erroNormalizacao) console.warn("loja-publica codigo-normalizado indisponivel", erroNormalizacao.code);
+      if (!erroNormalizacao && (candidatas?.length ?? 0) < 1000) {
+        refsVerificadas = (candidatas ?? []).filter((r: { valor: string }) => canonico(r.valor) === chave);
+      } else if ((candidatas?.length ?? 0) >= 1000) {
+        console.warn("loja-publica limite de normalizacao atingido; falha fechada");
+      }
+    }
+    idsPorReferencia = [...new Set(refsVerificadas
       .map((c: { produto_id: string }) => c.produto_id)
       .filter((id: string) => publicados.has(id) && /^[a-f0-9-]{36}$/i.test(id)))];
   }
