@@ -8,8 +8,9 @@ import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 import { modeloDoAtalho, podeExibirProdutoTeste } from "../lib/mobisVitrine.ts";
 import { ProdutoTesteMobis } from "../componentes/ProdutoTesteMobis.tsx";
 import { CarrosselVidroMobis } from "../componentes/CarrosselVidroMobis.tsx";
-import logoMobis from "../assets/marcas/mobis-oficial-fundo-escuro.png";
+import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
 import "./loja-mobis-nova.css";
+import "./loja-mobis-branco.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -154,7 +155,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
     "peças para meu veículo")+". Favor confirmar aplicação, preço e disponibilidade. Esta é uma consulta, não um pedido.";
   const whatsapp=linkWhatsAppPublico(dados?.loja.whatsapp,msg);
   const paginas=Math.max(1,Math.ceil((dados?.total??0)/(dados?.por_pagina||24)));
-  return <div className="mobis-v2" id="m2-topo" data-mobis-layout="aprovado-v2">
+  return <div className="mobis-v2" id="m2-topo" data-mobis-layout="aprovado-v2" data-mobis-palette="branco-gelo">
     <div className="m2-micro"><div className="m2-wrap"><span>Goiás, Brasil <b>/</b> Picapes · Vans · Utilitários diesel</span><span>Precisou de ajuda para escolher? <em>↗</em></span></div></div>
     <header className="m2-header"><div className="m2-wrap">
       <a className="m2-brand" href="#/loja/mobis" aria-label="MOBIS Autopeças - início" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>
