@@ -66,3 +66,11 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - PR #321 integrado em 87870577bfd315be6094e81f8cfb5d0daf5ad2d4, oito workflows aprovados no head 0dfdbeecc8fc49cdfec25dcb65d27ce899041991. 394 unitários e TypeScript/build aprovados; regressão Playwright verifica cores calculadas, ausência do gradiente antigo, hover e formulários em 360/390/412/1280px.
 - Excluir apenas .mobis-v2 das duas regras globais e restaurar largura própria dos formulários. Nenhum design novo; demais clientes e painel preservados.
 - Republicar frontend pelo fluxo já autorizado e repetir as verificações públicas e administrativas. Comparar version.json ao SHA do release. Sem alteração de servidor, dados, vendas ou DNS; domínio oficial continua pendente.
+
+
+## Publicação autorizada — Glassy Carousel V2, PR #412 (16-11-2026)
+- Autorização explícita do proprietário nesta sessão: «Pode faz merge e publicar».
+- PR #412 integrado na `main` em `997405c55d80a2694ba51cf19f68bf799f5d7328`; oito verificações do GitHub Actions concluídas com sucesso no head `0f9115ef9c5721cd5eb07678114ca3403eced8c6`.
+- Publicar **exclusivamente o frontend estático** do painel Conecta.IA no GitHub Pages pelo workflow `painel-pages.yml`, mantendo as flags de build já existentes. A mudança visual é o carrossel Glassy V2 na galeria do Nano Studio e na revisão de fotografias, com seleção de até oito fotos e prévia local.
+- Não publicar imagem candidata sem direitos e aprovação; sem modificações em migrações, Supabase, Edge Functions, Bling, preços, estoque, notas fiscais, checkout, DNS ou domínio oficial.
+- A publicação é considerada comprovada somente após o workflow finalizar e conferir o `version.json`/commit e a homologação visual, inclusive no celular. Este marcador não autoriza publicar o catálogo comercial sem aprovação.
