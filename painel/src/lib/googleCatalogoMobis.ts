@@ -17,7 +17,7 @@ export type AnaliseShoppingMobis={
 };
 export function verificarGtin(gtin:string):boolean{
   const n=gtin.replace(/[ -]/g,"");
-  if(!/^(?:\\d{8}|\\d{12}|\\d{13}|\\d{14})$/.test(n))return false;
+  if(!/^(?:\d{8}|\d{12}|\d{13}|\d{14})$/.test(n))return false;
   let soma=0;
   for(let i=n.length-2,peso=3;i>=0;i--,peso=peso===3?1:3)soma+=Number(n[i])*peso;
   return (10-soma%10)%10===Number(n[n.length-1]);
