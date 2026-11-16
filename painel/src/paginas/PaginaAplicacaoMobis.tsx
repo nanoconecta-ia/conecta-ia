@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
 import logoMobis from "../assets/marcas/mobis-oficial-fundo-escuro.png";
+import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import "./loja-mobis-nova.css";
 
 type Aplicacao = {
@@ -13,7 +14,7 @@ type Aplicacao = {
   restricao?:string|null; contraindicacao?:string|null; foto_veiculo?:string|null; logo_montadora?:string|null;
   codigos_cruzados?:Array<{marca:string;codigo:string;tipo:string}>
 };
-type Resposta = {loja:{nome:string;slug:string;ambiente:string};pagina_aplicacao:Aplicacao};
+type Resposta = {loja:{nome:string;slug:string;ambiente:string;whatsapp?:string|null};politicas:PoliticasLojaPublicas|null;pagina_aplicacao:Aplicacao};
 
 /** Identificador visual de modelo, sem placa nem fotografia de terceiro. */
 function identidadeVeiculo(modelo:string){
@@ -168,5 +169,6 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
         <p className="m2-ficha-disclaimer">{p.status==="aprovado"?"Confirme disponibilidade e condições com nossa equipe.":"Aplicação em revisão técnica. A presença do veículo na página não comprova compatibilidade."}</p>
       </>}
     </div>
+    {dados?.loja&&<RodapeLoja nome={dados.loja.nome} slug={dados.loja.slug} whatsapp={dados.loja.whatsapp} politicas={dados.politicas} />}
   </main>;
 }
