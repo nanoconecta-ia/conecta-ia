@@ -31,7 +31,7 @@ create table if not exists public.veiculo_midias (
   constraint veiculo_midias_foto_check check (
     not foto_aprovada or (
       status='aprovado' and foto_fundo_transparente and
-      foto_png_url ~* '^https://[^ ]+\\.png([?][^ ]*)?$' and
+      foto_png_url like 'https://%' and lower(right(split_part(foto_png_url,'?',1),4))='.png' and
       nullif(btrim(foto_fonte),'') is not null and
       nullif(btrim(foto_licenca),'') is not null and
       nullif(btrim(foto_autor),'') is not null
@@ -40,7 +40,7 @@ create table if not exists public.veiculo_midias (
   constraint veiculo_midias_logo_check check (
     not logo_aprovado or (
       status='aprovado' and
-      logo_png_url ~* '^https://[^ ]+\\.png([?][^ ]*)?$' and
+      logo_png_url like 'https://%' and lower(right(split_part(logo_png_url,'?',1),4))='.png' and
       nullif(btrim(logo_fonte),'') is not null and
       nullif(btrim(logo_direito_uso),'') is not null
     )
