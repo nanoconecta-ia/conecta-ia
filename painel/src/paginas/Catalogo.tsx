@@ -6,9 +6,9 @@ import { alternar, alternarTodos, erroAutomacao, mensagemAutomacao, textoLote } 
 import { despublicar, publicar } from "../lib/contextoPagina.ts";
 import { mapaDoCatalogo } from "../lib/mapaPagina.ts";
 import { resumoDoLote } from "../lib/catalogoExperiencia.ts";
-import { TAMANHO_LOTE_CATALOGO, expressaoBuscaCatalogo, juntarProdutosPorId, existemMaisProdutos } from "../lib/catalogoPaginacao.ts";
+import { TAMANHO_LOTE_CATALOGO, termoBuscaCatalogo, expressaoBuscaCatalogo, juntarProdutosPorId, existemMaisProdutos } from "../lib/catalogoPaginacao.ts";
+import { pedidoEnriquecimentoLote, rotaStudioDoProduto } from "../lib/contextoEnriquecimentoNano.ts";
 import { Icone } from "../componentes/Icone.tsx";
-import { GaleriaProduto } from "../componentes/GaleriaProduto.tsx";
 import "./catalogo-workspace.css";
 import { IconePeca } from "../componentes/IconePeca.tsx";
 import { iconeDaCategoria } from "../lib/icones.ts";
@@ -27,11 +27,20 @@ export function Catalogo({ loja }: { loja: Loja }) {
   const [itens, setItens] = useState<Produto[] | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
+  const [planoLoja, setPlanoLoja] = useState<{produtos:number;entrariam_na_fila:number;ja_na_fila:number;sem_receita:number;sem_tipo:number}|null>(null);
+  const [permitidoPlanejar, setPermitidoPlanejar] = useState(false);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [pausados, setPausados] = useState<Set<string>>(new Set());
   // Sistema de enriquecimento indexado: o Nano precisa saber o que o lojista seleciona, então o compartilhamento NASCE LIGADO e lembra a escolha (por loja).
   // O interruptor continua visível: o lojista pode desligar, e a escolha dele é respeitada nas próximas sessões.
   const chaveCompartilhar = `nano:contexto:compartilhar:${loja.id}`;
+  useEffect(() => {
+    let ativo = true;
+    void supabase.rpc("pode_administrar_loja",{p_loja_id:loja.id})
+      .then(({data})=>{if(ativo)setPermitidoPlanejar(data===true);},
+        ()=>{if(ativo)setPermitidoPlanejar(false);});
+    return ()=>{ativo=false;};
+  },[loja.id]);
   const [compartilhar, setCompartilharEstado] = useState(() => { try { return localStorage.getItem(chaveCompartilhar) !== "0"; } catch { return true; } });
   const setCompartilhar = (v: boolean) => { setCompartilharEstado(v); try { localStorage.setItem(chaveCompartilhar, v ? "1" : "0"); } catch { /* sem armazenamento: vale só nesta sessão */ } };
   const jaPublicou = useRef(false); // não publica "seleção vazia" só por abrir a tela: isso apagaria o produto aberto pela extensão no Bling
@@ -87,7 +96,25 @@ export function Catalogo({ loja }: { loja: Loja }) {
       setCategorias(new Map());
       setNos(new Map());
     }
-    const codigoFiltro = expressaoBuscaCatalogo(buscaAplicada);
+    // Consulta OEM em tabelas próprias: RLS valida loja e usuário.
+    // Nunca transforma código encontrado em equivalência técnica aprovada.
+    const termo = termoBuscaCatalogo(buscaAplicada);
+    let idsReferencia: string[] = [];
+    let avisoReferencia = "";
+    if (termo) {
+      const [codigos,aplicacoes] = await Promise.all([
+        supabase.from("produto_codigos").select("produto_id")
+          .eq("loja_id",loja.id).ilike("valor","%"+termo+"%").limit(100),
+        supabase.from("produto_aplicacoes").select("produto_id")
+          .eq("loja_id",loja.id).ilike("codigo_oem","%"+termo+"%").limit(100),
+      ]);
+      if (sequenciaConsulta.current !== chamada) return;
+      if (codigos.error || aplicacoes.error)
+        avisoReferencia = "Pesquisa em referências OEM temporariamente indisponível; a consulta por nome/SKU continua.";
+      else idsReferencia = [...new Set([...(codigos.data??[]),...(aplicacoes.data??[])]
+        .map(x=>x.produto_id as string))];
+    }
+    const codigoFiltro = expressaoBuscaCatalogo(buscaAplicada,idsReferencia);
     let produtosQuery = supabase.from("produtos")
       .select("id, sku, nome, preco, estoque, publicado, marca, gtin, peso_kg, descricao_curta, descricao_complementar, categoria_bling_id, situacao, taxonomia_no_id", { count: "exact" })
       .eq("loja_id", loja.id)
@@ -106,6 +133,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
         setErroConsulta("Falha ao consultar produtos do espelho. A lista anterior não foi alterada no Bling.");
         return;
       }
+      if (avisoReferencia) setErroConsulta(avisoReferencia);
       const registros = prod.data as Omit<Produto, "imagens">[];
       const ids = registros.map(p => p.id);
       // Consultar imagens/pausas apenas para os SKUs desta página — nunca carregar a loja inteira.
@@ -171,6 +199,42 @@ export function Catalogo({ loja }: { loja: Loja }) {
     if (error) setMsg({ ok: false, texto: erroAutomacao(error.code, ids.length) });
     else { setMsg({ ok: true, texto: mensagemAutomacao(pausar, ids.length) }); setSelecionados(new Set()); void carregar(); }
   }
+  /** Cria texto de trabalho contextual; a mensagem só é ENVIADA quando o usuário confirmar no chat. */
+  async function pedirEnriquecimentoSelecionados() {
+    const ids = [...selecionados];
+    if (ids.some(id=>pausados.has(id))) {
+      setMsg({ok:false,texto:"Há produtos com automação pausada. Retome apenas os que deseja pesquisar."});
+      return;
+    }
+    const pedido=pedidoEnriquecimentoLote(itens??[],selecionados);
+    if (!pedido.texto) {setMsg({ok:false,texto:pedido.erro??"Seleção inválida."});return;}
+    setOcupado("nano");setMsg(null);
+    if (compartilhar) {
+      const contexto=await publicarSelecao(
+        (a)=>supabase.rpc("contexto_registrar",a) as unknown as Promise<{data:unknown;error:unknown}>,
+        loja.id,ids,estadoContexto.current);
+      if (!contexto.ok) {
+        setOcupado(null);
+        setMsg({ok:false,texto:"Não foi possível vincular a seleção ao Nano. Nenhuma pesquisa foi executada."});
+        return;
+      }
+    }
+    setOcupado(null);
+    pedirAoNanoNaConversa(pedido.texto);
+  }
+  /** Consulta global: é prévia real da fila, sem enfileirar e sem consultar o Bling. */
+  async function planejarEnriquecimentoDaLoja() {
+    if (!permitidoPlanejar) return;
+    setOcupado("planejar");setMsg(null);setPlanoLoja(null);
+    const {data,error}=await supabase.functions.invoke("enriquecimento-fila",
+      {body:{loja_id:loja.id,acao:"relatorio"}});
+    setOcupado(null);
+    if(error || data?.erro || data?.modo!=="relatorio") {
+      setMsg({ok:false,texto:"Não foi possível consultar o planejador da loja. Nenhuma tarefa foi criada."});
+      return;
+    }
+    setPlanoLoja(data.resumo??null);
+  }
   const idsListados = new Set(categorias.keys());
   const mapa = useMemo(() => {
     if (!itens || totalBanco === null || itens.length < totalBanco || buscaAplicada !== "") return null;
@@ -230,8 +294,8 @@ export function Catalogo({ loja }: { loja: Loja }) {
         <div><Icone nome="imagem" tamanho={22}/><strong>{itens === null ? "…" : resumo.semImagem.toLocaleString("pt-BR")}</strong><span>Sem imagem no espelho</span></div>
       </section>
       <div className="catalogo-barra">
-        <label className="catalogo-pesquisa"><span>Buscar por SKU, nome, marca ou GTIN em todo o espelho</span>
-          <div><Icone nome="busca" tamanho={19} /><input type="search" aria-label="Buscar produto por SKU, nome, marca ou GTIN" placeholder="SKU, nome, marca ou GTIN…" value={busca} onChange={(e) => { setBusca(e.target.value); setSelecionados(new Set()); }} /></div>
+        <label className="catalogo-pesquisa"><span>Buscar SKU, nome, descrição, GTIN, OEM ou referência cruzada</span>
+          <div><Icone nome="busca" tamanho={19} /><input type="search" aria-label="Buscar produto por SKU, nome, descrição, GTIN ou OEM" placeholder="SKU, descrição, OEM, GTIN ou referência…" value={busca} onChange={(e) => { setBusca(e.target.value); setSelecionados(new Set()); }} /></div>
         </label>
         <div className="catalogo-modos" role="group" aria-label="Modo de visualização">
           <button type="button" className={vista === "tabela" ? "ativo" : ""} aria-pressed={vista === "tabela"} onClick={() => setVista("tabela")}><Icone nome="fila" tamanho={17} /> Tabela</button>
@@ -255,19 +319,37 @@ export function Catalogo({ loja }: { loja: Loja }) {
       {selecionados.size > 0 && (
         <div className="linha" role="group" aria-label="Ações para os produtos selecionados">
           <strong>{textoLote(selecionados.size)} selecionado(s)</strong>
+          <button type="button" disabled={ocupado!==null} onClick={() => void pedirEnriquecimentoSelecionados()}>
+            Enriquecer selecionados com Nano · preparar chat
+          </button>
           <button className="sec" disabled={ocupado === "lote"} onClick={() => void automacao(true)}>Parar cadastro automático</button>
           <button className="sec" disabled={ocupado === "lote"} onClick={() => void automacao(false)}>Retomar cadastro automático</button>
         </div>
       )}
+      <section className="catalogo-operacao-nano" aria-label="Enriquecimento de todos os produtos da loja">
+        <div>
+          <strong>Enriquecimento de toda a loja</strong>
+          <p>O Catálogo mostra só os lotes carregados. Consulte o planejador do Nano para todos os produtos da loja, sem criar tarefas ou alterar o Bling. A execução depende de agente operacional, receitas e aprovação humana.</p>
+        </div>
+        <button type="button" className="sec" disabled={!permitidoPlanejar || ocupado!==null}
+          onClick={()=>void planejarEnriquecimentoDaLoja()}>
+          {ocupado==="planejar"?"Consultando…":"Planejar toda a loja (sem executar)"}
+        </button>
+        {planoLoja && <p role="status" className="catalogo-planejamento">
+          {planoLoja.produtos} produtos analisados · {planoLoja.entrariam_na_fila} elegíveis para a fila ·
+          {" "}{planoLoja.ja_na_fila} já na fila · {planoLoja.sem_receita} sem receita · {planoLoja.sem_tipo} sem classificação.
+          Esta análise NÃO executou enriquecimento. Para iniciar um lote use o Nano ou o fluxo de confirmação da Fila.
+        </p>}
+      </section>
       {itens === null ? <p className="suave">Carregando…</p> : itens.length === 0 ? <p className="suave">Nenhum produto encontrado nesta pesquisa. Confira a busca ou a conexão com o Bling.</p> : visiveis.length === 0 ? <p className="suave">Nenhum produto corresponde à busca e ao filtro selecionados.</p> : vista === "tabela" ? (
         <div className="rolagem catalogo-rolagem">
           <table>
             <thead><tr><th><input type="checkbox" aria-label="Selecionar todos" checked={idsVisiveis.length > 0 && idsVisiveis.every((i) => selecionados.has(i))} onChange={() => setSelecionados(alternarTodos(selecionados, idsVisiveis))} style={{ width: 20, minHeight: 20 }} /></th><th>SKU</th><th>Nome</th><th>Marca</th><th>Categoria no Bling</th><th>Lugar na taxonomia</th><th>Preço</th><th>Estoque</th><th>Falta</th><th>Ficha</th><th>Site</th></tr></thead>
             <tbody>{visiveis.map((p) => (
-              <tr key={p.id}><td><input type="checkbox" aria-label={`Selecionar ${p.sku ?? p.nome ?? "produto"}`} checked={selecionados.has(p.id)} onChange={() => setSelecionados(alternar(selecionados, p.id))} style={{ width: 20, minHeight: 20 }} /></td><td className="mono">{p.sku ?? "—"}</td><td>{p.nome ?? "—"}{p.situacao !== "A" && <>{" "}<span className="selo atencao">{situacaoTexto(p.situacao)}</span></>}{pausados.has(p.id) && <>{" "}<span className="selo atencao">automação parada</span></>}</td><td>{p.marca ?? "—"}</td>
+              <tr key={p.id}><td><input type="checkbox" aria-label={`Selecionar ${p.sku ?? p.nome ?? "produto"}`} checked={selecionados.has(p.id)} onChange={() => setSelecionados(alternar(selecionados, p.id))} style={{ width: 20, minHeight: 20 }} /></td><td className="mono">{p.sku ?? "—"}</td><td><button type="button" className="catalogo-nome-abrir" onClick={()=>setFichaId(p.id)} title="Abrir ficha técnica e acessar o Estúdio deste produto">{p.nome ?? "Produto sem nome"}</button>{p.situacao !== "A" && <>{" "}<span className="selo atencao">{situacaoTexto(p.situacao)}</span></>}{pausados.has(p.id) && <>{" "}<span className="selo atencao">automação parada</span></>}</td><td>{p.marca ?? "—"}</td>
                 <td>{semCategoria(p, idsListados) ? <span className="selo atencao">sem categoria</span> : categorias.get(p.categoria_bling_id ?? "") ?? "—"}</td><td>{p.taxonomia_no_id ? nomeNo(p.taxonomia_no_id) : <span className="selo atencao">sem lugar</span>}</td><td>{brl(p.preco)}</td><td>{p.estoque ?? "—"}</td>
                 <td>{camposFaltando(p).length === 0 ? <span className="selo ok">sem lacunas verificadas</span> : camposFaltando(p).join(", ")}</td>
-                <td><button type="button" className="sec" onClick={() => setFichaId(p.id)}>Ver ficha</button></td>
+                <td className="catalogo-ficha-acoes"><button type="button" className="sec" onClick={() => setFichaId(p.id)}>Ver ficha</button><a className="sec" href={rotaStudioDoProduto(p.id)??"#/catalogo"}>Estúdio · fotos</a></td>
                 <td>
                   <span className={`selo ${p.publicado ? "ok" : "atencao"}`}>{p.publicado ? "visível" : "oculto"}</span>{" "}
                   {p.publicado
@@ -300,6 +382,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
               <div className="catalogo-produto-acoes">
                 <label><input type="checkbox" checked={selecionados.has(p.id)} onChange={() => setSelecionados(alternar(selecionados, p.id))} /> Selecionar</label>
                 <button type="button" className="sec" onClick={() => setFichaId(p.id)}>Ver ficha técnica</button>
+                <a className="sec" href={rotaStudioDoProduto(p.id)??"#/catalogo"}>Imagens no Estúdio</a>
                 {p.sku && <a className="sec" href={"#/ferramentas?sku="+encodeURIComponent(p.sku)}>Indexar · ERP</a>}
               </div>
             </article>
@@ -345,7 +428,13 @@ export function Catalogo({ loja }: { loja: Loja }) {
               </label>
               <small>Isto não grava nada: a posição escolhida vai no pedido ao Nano, que propõe com fonte e você aprova na fila.</small>
             </div>
-            <GaleriaProduto key={ficha.id} loja={loja} produtoId={ficha.id} sku={ficha.sku} aoFechar={() => setFichaId(null)} />
+            <div className="catalogo-galeria-atalho">
+              <strong>Imagens e referências técnicas</strong>
+              <p>{ficha.imagens} imagem(ns) registrada(s). A galeria de até oito candidatas abre em largura completa no Estúdio, para comparar fotos, verificar licenças e escolher com clareza.</p>
+              <a className="botao" href={rotaStudioDoProduto(ficha.id)??"#/catalogo"} onClick={()=>setFichaId(null)}>
+                Abrir Estúdio de fotos deste produto
+              </a>
+            </div>
             <div className="catalogo-ficha-pendencias">
               <strong>Campos faltando no espelho</strong>
               <p>{camposFaltando(ficha).length ? camposFaltando(ficha).join(" · ") : "Nenhuma das lacunas básicas detectadas. Aplicações e equivalências exigem comprovação independente."}</p>
@@ -372,7 +461,7 @@ export function Catalogo({ loja }: { loja: Loja }) {
               <button type="button" disabled={corrigindo} onClick={() => void criarPropostaCorrecao()}>{corrigindo ? "Criando…" : "Criar proposta de correção"}</button>
               {msgCorrecao && <p role="status" className={msgCorrecao.ok ? "correcao-ok" : "correcao-erro"}>{msgCorrecao.texto}{msgCorrecao.ok && <> <a href="#/fila" onClick={() => setFichaId(null)}>Abrir aprovações</a></>}</p>}
             </div>
-            <div className="catalogo-ficha-links"><a href="#/assistente" onClick={() => setFichaId(null)}><Icone nome="agentes" tamanho={18}/> Consultar Nano.IA</a><a href="#/fila" onClick={() => setFichaId(null)}>Abrir aprovações</a></div>
+            <div className="catalogo-ficha-links"><a href={rotaStudioDoProduto(ficha.id)??"#/catalogo"} onClick={()=>setFichaId(null)}>Ver ficha e fotos no Estúdio</a><a href="#/assistente" onClick={() => setFichaId(null)}><Icone nome="agentes" tamanho={18}/> Consultar Nano.IA</a><a href="#/fila" onClick={() => setFichaId(null)}>Abrir aprovações</a></div>
           </section>
         </div>
       )}
