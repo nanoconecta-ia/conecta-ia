@@ -81,7 +81,7 @@ export function VitrineFotograficaMobis({
 }) {
   return (
     <>
-      <section className="m3-hero" aria-label="Peças para picapes, vans e utilitários diesel">
+      <section className="m3-hero m2-hero" aria-label="Peças para picapes, vans e utilitários diesel">
         <div className="m3-hero-tarjeta">
           <span className="m3-hero-etiqueta">MOBIS AUTOPEÇAS · LOJA INDEPENDENTE</span>
           <h1>PEÇAS PARA <strong>PICAPES, VANS E UTILITÁRIOS DIESEL</strong></h1>
