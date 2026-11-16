@@ -35,3 +35,22 @@
 .mobis-auditoria-rodape{font-size:.84rem;line-height:1.65;color:#56615e;padding:12px;background:#f4f8f6;border:1px solid #d6e3db;border-radius:10px}
 @media(max-width:900px){.mobis-auditoria-resumo{grid-template-columns:repeat(2,minmax(0,1fr))}.mobis-auditoria-produto dl{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.mobis-auditoria-header{flex-direction:column}.mobis-auditoria-resumo{gap:8px}.mobis-auditoria-metrica{padding:10px}.mobis-auditoria-metrica strong{font-size:1.5rem}.mobis-auditoria-busca{flex-direction:column;align-items:stretch}.mobis-auditoria-busca>div{flex-direction:column}.mobis-auditoria-busca input{min-width:0;width:100%}.mobis-auditoria-filtros{flex-direction:column}}
+
+
+.mobis-auditoria-epc{border-top:2px solid #d6c8b7}
+.mobis-auditoria-epc>p>a{display:inline-flex;color:#147c76;font-weight:800;overflow-wrap:anywhere}
+.mobis-auditoria-epc-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0 18px}
+.mobis-auditoria-epc-form label{display:flex;flex-direction:column;gap:6px;font-size:.8rem;font-weight:750;min-width:0}
+.mobis-auditoria-epc-form input,.mobis-auditoria-epc-form textarea{background:#fff;border:1px solid #afc0ba;border-radius:8px;padding:11px;min-width:0;color:#233739;font:inherit}
+.mobis-auditoria-epc-form label:has(input[type="url"]),.mobis-auditoria-epc-observacao,.mobis-auditoria-epc-vinculo{grid-column:1 / -1}
+.mobis-auditoria-epc-vinculo{padding:12px;background:#f1f7f3;border-radius:8px;font-size:.88rem}
+.mobis-auditoria-epc-form button{grid-column:1 / -1;background:#143f37;color:#fff;border:0;border-radius:9px;min-height:46px;font-weight:850;cursor:pointer}
+.mobis-auditoria-epc-form button:disabled{opacity:.55}
+.mobis-auditoria-epc-ok{background:#eff9f0;color:#204a30;padding:12px;border-left:4px solid #33845c;border-radius:7px}
+.mobis-auditoria-epc-lista{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:12px;margin:14px 0}
+.mobis-auditoria-epc-lista article{border:1px solid #c9d5cd;background:#f8fbf9;padding:13px;border-radius:10px}
+.mobis-auditoria-epc-lista article>div{display:flex;flex-direction:column;gap:4px}
+.mobis-auditoria-epc-lista article small{font-size:.72rem;color:#75522a}
+.mobis-auditoria-epc-lista article p{font-size:.81rem;margin:9px 0;color:#4a5f58}
+.mobis-auditoria-epc-lista article a{font-size:.79rem;font-weight:800;overflow-wrap:anywhere}
+@media(max-width:680px){.mobis-auditoria-epc-form{grid-template-columns:1fr}}
