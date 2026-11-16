@@ -84,3 +84,26 @@
   right:0!important;
  }
 }
+
+/* Produto do Catálogo abre no Estúdio unificado com chat ao lado. */
+.ap-ficha-ativa{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;background:var(--cartao);border:1px solid var(--borda);border-left:4px solid var(--marca);border-radius:12px;margin-bottom:12px;min-width:0}
+.ap-ficha-ativa>div:first-child{flex:1 1 270px;min-width:0}
+.ap-ficha-ativa strong{font-size:.87rem}
+.ap-ficha-ativa p{font-size:.77rem;color:var(--suave);margin:5px 0 0;overflow-wrap:anywhere}
+.ap-ficha-ativa-acoes{display:flex;flex-wrap:wrap;gap:7px}
+.ap-ficha-ativa-acoes button,.ap-ficha-ativa-acoes a{display:inline-flex;align-items:center;justify-content:center;min-height:39px;padding:7px 11px;border:1px solid var(--borda);border-radius:8px;font-size:.77rem;font-weight:750;background:var(--cartao);color:var(--texto);text-decoration:none;white-space:normal;text-align:center}
+.ap-ficha-ativa-acoes button:hover,.ap-ficha-ativa-acoes a:hover{border-color:var(--marca)}
+.ap-imagens-produto{min-width:0;width:100%;display:grid;gap:11px}
+.ap-imagens-produto h2{margin:4px 0;font-size:clamp(1.05rem,2vw,1.4rem);overflow-wrap:anywhere}
+.ap-imagens-produto>p{margin:0;font-size:.8rem;color:var(--suave);line-height:1.6}
+.ap-work-panel .ap-imagens-produto .gs-grade{grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr))}
+.ap-work-panel .ap-imagens-produto .gs-imagem{height:215px}
+.ap-contexto-produto{display:grid;gap:9px;border:1px solid var(--borda);border-radius:12px;padding:15px;background:var(--cartao);min-width:0}
+.ap-contexto-produto p{font-size:.81rem;color:var(--suave);margin:0}
+.ap-contexto-produto h3{font-size:.91rem;margin:8px 0 0}
+.ap-contexto-produto ul{padding-left:22px;margin:0;display:grid;gap:5px}
+.ap-contexto-produto li{font-size:.8rem;line-height:1.5;overflow-wrap:anywhere}
+.ap-contexto-produto button{justify-self:start;min-height:42px}
+.ap-codigo-estado{display:inline-block;margin-left:7px;border:1px solid var(--borda);padding:1px 6px;border-radius:12px;color:var(--suave);font-size:.7rem}
+@media(max-width:760px){.ap-ficha-ativa{padding:12px}.ap-ficha-ativa-acoes{width:100%}.ap-ficha-ativa-acoes button,.ap-ficha-ativa-acoes a{flex:1 1 40%}.ap-work-panel .ap-imagens-produto .gs-grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:490px){.ap-work-panel .ap-imagens-produto .gs-grade{grid-template-columns:1fr}.ap-work-panel .ap-imagens-produto .gs-imagem{height:225px}}
