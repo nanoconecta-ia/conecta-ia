@@ -101,3 +101,13 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Novas abas: pesquisa por nome/sistema e pesquisa por código exato (SKU/código fabricante/OEM aprovado); registros pendentes não se tornam correspondências públicas. A apresentação usa branco-gelo, grafite, laranja e vermelho como detalhes.
 - Não alterar Bling, estoque, notas fiscais, domínio/DNS, configuração de produção do Supabase ou quaisquer produtos. Os banners promocionais `loja_banners` permanecem sem anúncios cadastrados até aprovação comercial.
 - Conferir `version.json`, Playwright publicado em quatro larguras e resposta real da API antes de declarar conclusão.
+
+
+## Publicação autorizada — auditoria OEM e destaque consultivo CI003696 (16/11/2026)
+- Autorização do proprietário: "pendente faz todos" após publicação de banners e busca. Somente dados com evidência foram homologados.
+- PR #416 mergeado: `e8bc6a187c8ee07414212114f6b074e8eb2d66e8`; 10 verificações de PR aprovadas.
+- Banco Conecta.IA `dsfzhsrudriqkumtlqwj`: oito OE corroboradas Quatro + CTR/RIW/Teknorot, total 14 códigos aprovados; nove pendentes documentados em `docs/conector-ia/mobis-homologacao-oem-banners-20261116.md`; motivos preservados no campo fonte e confiança revisada.
+- API `loja-publica` v13 implantada com normalização estrita de hífens e espaços em códigos aprovados; verificado pelo desktop `54410-4B000 => SKU 5074`, `54430-4B000 => 5075`, `54510-4F000 => 5076`, códigos pendentes não revelados.
+- Banco: rascunho inativo `loja_banners` para SKU CI003696, sem preço anunciado. Publicar no frontend apenas destaque de consulta, renderizado condicionalmente a produto realmente retornado pelo catálogo. Não anunciar R$ 17.800 em 3x, prazo ou estoque até conciliar Bling e confirmar vigência.
+- Publicação limitada ao frontend estático; manter modo TESTE, noindex, sem checkout/pagamento. Não tocar em preços, notas, estoque, cadastro do Bling, domínios nem autorizar novos produtos.
+- Exigir build, deploy, teste do site publicado por versão e comportamento antes de declarar conclusão.
