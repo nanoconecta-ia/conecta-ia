@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
-import { galeriaDaFicha, LIMITE_GALERIA, pedidoDeImagens, type LinhaImagem } from "../lib/galeriaProduto.ts";
+import { galeriaDaFicha, LIMITE_GALERIA, pedidoDeImagensComPerfil, type LinhaImagem, type PerfilFotoNano } from "../lib/galeriaProduto.ts";
 import { alterarSelecao, avaliarPreviaPrincipal, selecaoAtual } from "../lib/seletorImagensNano.ts";
 import { pedirAoNanoNaConversa } from "../lib/contextoPagina.ts";
 import { Visualizador } from "./Visualizador.tsx";
@@ -82,6 +82,45 @@ export function GaleriaProduto({
     } finally { setOcupado(""); }
   }
 
+  async function pesquisarComPerfil() {
+    if (ocupado) return;
+    setOcupado("pesquisa");setErro("");setMensagem("");
+    try {
+      const { data: p,error: ep } = await supabase.from("produtos")
+        .select("id,bling_id,sku,nome,marca,gtin,taxonomia_no_id")
+        .eq("loja_id",loja.id).eq("id",produtoId).maybeSingle();
+      if(ep || !p) {setErro("Produto físico não encontrado no espelho. Confira o ID Bling antes de pesquisar.");return;}
+      // NUNCA utilizar códigos/aplicações 'a_confirmar' como prova para fotos.
+      const [{data:codigos,error:ec},{data:apps,error:ea}] = await Promise.all([
+        supabase.from("produto_codigos").select("tipo,valor")
+          .eq("loja_id",loja.id).eq("produto_id",produtoId).eq("status","aprovado")
+          .in("tipo",["oem","fabricante"]).limit(12),
+        supabase.from("produto_aplicacoes").select("modelo,motorizacao,ano_inicial,ano_final,codigo_oem")
+          .eq("loja_id",loja.id).eq("produto_id",produtoId).eq("status","aprovado")
+          .limit(12),
+      ]);
+      if(ec || ea) {setErro("Não foi possível conferir referências e aplicações aprovadas; pesquisa de imagens suspensa.");return;}
+      let nomeNo:string|null=null;
+      if(p.taxonomia_no_id){
+        const {data:n,error:en}=await supabase.from("taxonomia_nos")
+          .select("nome").eq("id",p.taxonomia_no_id).maybeSingle();
+        if(en){setErro("Taxonomia do produto indisponível. Confira antes de pesquisar fotografias.");return;}
+        nomeNo=n?.nome??null;
+      }
+      const perfil:PerfilFotoNano={
+        produtoId:p.id,blingId:p.bling_id??null,sku:p.sku??null,
+        nome:p.nome??null,marca:p.marca??null,gtin:p.gtin??null,
+        noTaxonomia:nomeNo,
+        codigosAprovados:(codigos??[]) as PerfilFotoNano["codigosAprovados"],
+        aplicacoesAprovadas:(apps??[]) as PerfilFotoNano["aplicacoesAprovadas"],
+      };
+      pedirAoNanoNaConversa(pedidoDeImagensComPerfil(perfil));
+      aoFechar?.();
+    }catch{
+      setErro("Falha na leitura do perfil técnico. Não foi solicitado nenhum cruzamento de imagens.");
+    }finally{setOcupado("");}
+  }
+
   const g = linhas ? galeriaDaFicha(linhas) : null;
   const ids = g?.itens.map(i => i.id) ?? [];
   const selecionadasAtuais = selecaoAtual(selecionadas, ids);
@@ -115,9 +154,9 @@ export function GaleriaProduto({
           <h3>Escolher fotografias <span className="gs-contador">{g ? `${g.itens.length}/${LIMITE_GALERIA}` : "…"}</span></h3>
           <p>Compare até oito imagens reais da mesma peça. O Nano sugere; você decide. Os dados originais do Bling permanecem intactos.</p>
         </div>
-        <button type="button" className="sec" disabled={!sku}
-          onClick={() => { if (sku) { pedirAoNanoNaConversa(pedidoDeImagens(sku)); aoFechar?.(); } }}>
-          Pesquisar imagens com o Nano
+        <button type="button" className="sec" disabled={ocupado!==""}
+          onClick={() => void pesquisarComPerfil()}>
+          {ocupado==="pesquisa"?"Validando ficha técnica…":"Pesquisar imagens com base na ficha"}
         </button>
       </header>
 

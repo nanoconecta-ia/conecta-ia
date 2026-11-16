@@ -8,7 +8,7 @@ export const TAMANHO_LOTE_CATALOGO = 100;
 export function expressaoBuscaCatalogo(busca: string): string | null {
   const termo = busca.trim().slice(0, 80).replace(/[^\p{L}\p{N} \-/]/gu, " ").replace(/\s+/g, " ").trim();
   if (!termo) return null;
-  return ["sku", "nome", "marca", "gtin"].map(campo => `${campo}.ilike.%${termo}%`).join(",");
+  return ["sku", "nome", "marca", "gtin", "descricao", "descricao_curta", "descricao_complementar"].map(campo => `${campo}.ilike.%${termo}%`).join(",");
 }
 
 /** Ordenação da API: nome + ID; evita duplicações mesmo após um refresh. */
@@ -20,4 +20,10 @@ export function juntarProdutosPorId<T extends { id: string }>(existentes: readon
 export function existemMaisProdutos(carregados: number, total: number | null, ultimoLote: number): boolean {
   if (total !== null) return carregados < total && ultimoLote > 0;
   return ultimoLote === TAMANHO_LOTE_CATALOGO;
+}
+
+/** Termo literal para a busca de CÓDIGOS OEM; nunca pressupõe aplicação comprovada. */
+export function termoBuscaOem(busca: string): string | null {
+  const valor = busca.trim().slice(0, 80).replace(/[^\p{L}\p{N} ./-]/gu, " ").replace(/\s+/g," ").trim();
+  return valor.length ? valor : null;
 }
