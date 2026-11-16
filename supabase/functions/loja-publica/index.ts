@@ -75,8 +75,13 @@ Deno.serve(async (req) => {
         "Olá, preciso confirmar a aplicação em " + app.modelo + " (" + (app.motorizacao ?? "motor não informado") +
         "), peça Mobis SKU " + p.sku + ". Podem conferir pelo chassi e informar disponibilidade?")
       : null;
+    // Informações institucionais: exclusivamente política aprovada para a loja.
+    const { data: politicasAplicacao } = await sb.from("loja_politicas")
+      .select("razao_social,cnpj,endereco,telefone,email_contato,privacidade_texto,troca_devolucao_texto,entrega_texto,garantia_texto,termos_texto")
+      .eq("loja_id",loja.id).eq("status","aprovada").maybeSingle();
     return json({
-      loja: { nome: loja.nome, slug: loja.slug, ambiente: fase },
+      loja: { nome: loja.nome, slug: loja.slug, ambiente: fase, whatsapp: tel },
+      politicas: politicasAplicacao ?? null,
       pagina_aplicacao: {
         slug: app.pagina_slug, titulo: app.pagina_titulo, descricao: app.pagina_descricao,
         modelo: app.modelo, motorizacao: app.motorizacao,
