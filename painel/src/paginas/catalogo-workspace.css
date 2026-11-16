@@ -120,3 +120,34 @@
 .galeria-acoes { display:flex; flex-wrap:wrap; gap:6px; }
 .galeria-acoes button { min-height:40px; flex:1 1 90px; }
 @media (min-width:1024px) { .galeria-grade { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+
+/* Catálogo como centro da pesquisa técnica, da ficha e da seleção de imagens. */
+.catalogo-nome-abrir{display:inline;text-align:left;color:var(--texto);font:inherit;font-weight:750;line-height:1.45;border:0;padding:2px 0;background:transparent;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
+.catalogo-nome-abrir:hover{color:var(--marca);text-decoration:underline;text-underline-offset:3px}
+.catalogo-nome-abrir:focus-visible,.catalogo-foto-abrir:focus-visible,.catalogo-foto-cartao:focus-visible{outline:3px solid var(--marca);outline-offset:2px}
+.catalogo-foto-abrir{width:62px;height:62px;border-radius:10px;display:grid;place-items:center;background:#fff;border:1px solid var(--borda);padding:4px;cursor:pointer;color:#67796e}
+.catalogo-foto-abrir img,.catalogo-foto-cartao img{width:100%;height:100%;object-fit:contain}
+.catalogo-foto-cartao{cursor:pointer}
+.catalogo-site-link{display:inline-block;font-size:.77rem;font-weight:750;margin:4px 7px;text-decoration:underline;text-underline-offset:2px}
+.catalogo-enriquecer{border:1px solid var(--borda-forte);border-radius:17px;padding:clamp(15px,2vw,22px);background:var(--cartao);display:grid;gap:12px;box-shadow:var(--sombra)}
+.catalogo-enriquecer-topo{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.catalogo-enriquecer-topo>div{flex:1 1 300px}
+.catalogo-enriquecer-topo strong{font-size:1rem}
+.catalogo-enriquecer-topo strong span{color:var(--marca)}
+.catalogo-enriquecer-topo p{color:var(--suave);font-size:.83rem;line-height:1.55;margin:5px 0 0}
+.catalogo-enriquecer-corpo{display:grid;gap:13px;padding-top:13px;border-top:1px solid var(--borda)}
+.catalogo-enriquecer-opcoes{display:flex;gap:15px;flex-wrap:wrap;align-items:center}
+.catalogo-enriquecer-opcoes label{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:.83rem;font-weight:650}
+.catalogo-enriquecer-opcoes select{min-height:42px;border:1px solid var(--borda-forte);background:var(--cartao);color:var(--texto);border-radius:8px;padding:7px}
+.catalogo-enriquecer-opcoes input[type=radio]{accent-color:var(--marca);width:18px;height:18px}
+.catalogo-enriquecer-nota{font-size:.79rem;color:var(--suave);line-height:1.55;margin:0}
+.catalogo-enriquecer-corpo>button{justify-self:start;min-height:44px}
+.catalogo-enriquecer-previa{display:grid;gap:10px;padding:13px;border:1px solid var(--borda-forte);border-radius:12px;background:var(--realce)}
+.catalogo-enriquecer-previa h3{font-size:.93rem;margin:0}
+.catalogo-enriquecer-previa p{font-size:.81rem;color:var(--suave);line-height:1.5;margin:0}
+.catalogo-enriquecer-numeros{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.catalogo-enriquecer-numeros span{border:1px solid var(--borda);border-radius:9px;background:var(--cartao);padding:10px;display:grid;gap:3px;font-size:.72rem;line-height:1.35}
+.catalogo-enriquecer-numeros b{font-size:1.25rem;font-variant-numeric:tabular-nums}
+.catalogo-enriquecer-previa>button{justify-self:start;min-height:44px}
+@media(max-width:850px){.catalogo-enriquecer-numeros{grid-template-columns:repeat(2,minmax(0,1fr))}.catalogo-barra .catalogo-modos{flex:1 1 210px}}
+@media(max-width:520px){.catalogo-enriquecer-opcoes{display:grid;align-items:start}.catalogo-enriquecer-corpo>button,.catalogo-enriquecer-previa>button{width:100%}.catalogo-enriquecer-numeros{gap:6px}.catalogo-foto-abrir{width:54px;height:54px}}
