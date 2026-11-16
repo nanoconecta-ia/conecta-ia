@@ -58,3 +58,16 @@ Inserido `agente_prompts.nome='nano_catalogo_mobis', versao=2, estado='proposto'
 5. Só então criar páginas individuais por aplicação e publicação/Shopping após validação de disponibilidade, dados estruturados e SEO rastreável.
 
 **Observação:** conteúdo editorial sobre marcas/veículos não é evidência de intercambialidade.
+
+
+## 6. Painel administrativo de auditoria — incremento 16/11/2026
+- Novo endereço **interno** na Conecta.IA: `/auditoria-nano`, visível apenas no menu da loja MOBIS para usuário logado; o backend exige **administrador real da mesma loja**.
+- `AuditoriaNanoMobis.tsx` apresenta contadores completos de produtos sem SKU, marca, nó, aplicações sem OEM/modelo, cruzamentos incompletos e aprovações contraditórias.
+- Permite pesquisar produto por **ID Bling ou SKU** diretamente em `produtos` sob RLS; não atribui SKU por heurística. Exemplo para revisão: ID `16275882008` / filtro OC1224.
+- Uma tabela mostra as **primeiras 200 pendências de maior prioridade**, com motivos de revisão. Essa amostra **não representa o total completo** e os filtros operam somente sobre os itens carregados; os contadores de cima são consultas completas.
+- RPCs `mobis_fila_admin` e `mobis_fila_resumo_admin`: uso exclusivo do contexto autenticado com `auth.uid()` + `public.pode_administrar_loja(loja_id)`, sem gravar dados, com `search_path=''` e concessão de EXECUTE apenas a `authenticated`.
+- A função base `mobis_revisao_catalogo` permanece acessível somente a `service_role`.
+- Testes de privilégios no banco: anon sem EXECUTE nas três funções; authenticated sem EXECUTE na função base; RPC de administração verifica permissão em tempo de execução.
+- **Não há ação de aprovação, postagem ou alteração no Bling nesse painel.** Para revisar propostas, ele oferece navegação para `/fila`, que possui governança própria.
+
+**Pendência funcional:** testes ponta a ponta com sessão real de administrador e conferência mobile antes de merge/deploy. Não alterar RLS de tabelas para expor diretamente a auditoria.
