@@ -53,12 +53,12 @@ Deno.serve(async (req) => {
   const slugAplicacao = typeof c?.aplicacao_slug === "string" && /^[a-z0-9-]{4,110}$/.test(c.aplicacao_slug) ? c.aplicacao_slug : null;
   if (slugAplicacao && loja.slug === "mobis") {
     const { data: app } = await sb.from("produto_aplicacoes")
-      .select("produto_id,modelo,motorizacao,ano_inicial,ano_final,status,pagina_slug,pagina_titulo,pagina_descricao,pagina_indexavel")
+      .select("id,produto_id,modelo_id,modelo,motorizacao,ano_inicial,ano_final,status,pagina_slug,pagina_titulo,pagina_descricao,pagina_indexavel,codigo_oem,restricao,contraindicacao")
       .eq("loja_id", loja.id).eq("pagina_slug", slugAplicacao).maybeSingle();
     if (!app || (!previaConsultaMobis && !(app.status === "aprovado" && app.pagina_indexavel)))
       return json({ erro: "Aplicação indisponível." }, 404);
     const { data: p } = await sb.from("produtos")
-      .select("id,sku,marca,publicado,exibicao_teste,taxonomia_no_id")
+      .select("id,sku,marca,publicado,exibicao_teste,taxonomia_no_id,descricao_complementar")
       .eq("loja_id", loja.id).eq("id", app.produto_id).maybeSingle();
     if (!p || (!p.publicado && !(previaConsultaMobis && p.exibicao_teste)))
       return json({ erro: "Produto indisponível." }, 404);
@@ -75,8 +75,81 @@ Deno.serve(async (req) => {
         "Olá, preciso confirmar a aplicação em " + app.modelo + " (" + (app.motorizacao ?? "motor não informado") +
         "), peça Mobis SKU " + p.sku + ". Podem conferir pelo chassi e informar disponibilidade?")
       : null;
+    // Procedência só pode ser anunciada depois de conferência documental.
+    const { data: procedencia }=await sb.from("produto_procedencia")
+      .select("originalidade,condicao_importacao,pais_fabricacao,estado")
+      .eq("loja_id",loja.id).eq("produto_id",p.id).eq("estado","aprovado").maybeSingle();
+    // A vitrine recebe SOMENTE o NCM cadastrado/validado, sem fornecedor,
+    // custo, nota fiscal de entrada, observações internas ou origem comercial.
+    // NCM do Bling ainda pendente de XML da NF pode ser exibido como "cadastrado",
+    // mas jamais confundido com homologação fiscal concluída.
+    const { data: fiscal } = await sb.from("produto_fiscal")
+      .select("ncm,origem_ncm,status")
+      .eq("loja_id",loja.id).eq("produto_id",p.id).maybeSingle();
+    const ncmBruto = fiscal && fiscal.status !== "rejeitado"
+      && (fiscal.status === "validado" || fiscal.origem_ncm === "bling_erp")
+      && typeof fiscal.ncm === "string" && /^[0-9]{8}$/.test(fiscal.ncm)
+        ? fiscal.ncm : null;
+    const ncmPublico = ncmBruto ? ncmBruto.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1.$2.$3") : null;
+    // Ícones de veículos: somente fotos REAIS PNG e logotipos autorizados,
+    // vinculados à montadora real do modelo e a registro de mídia aprovado.
+    let fotoVeiculo: string | null = null;
+    let logoMontadora: string | null = null;
+    let fotoCredito: string | null = null;
+    if (app.modelo_id) {
+      const { data: modeloRef } = await sb.from("modelos")
+        .select("montadora_id").eq("id",app.modelo_id).maybeSingle();
+      if (modeloRef?.montadora_id) {
+        const camposMidia = "modelo_id,aplicacao_id,montadora_id,ano_inicial,ano_final,foto_png_url,foto_aprovada,logo_png_url,logo_aprovado,foto_autor,foto_licenca,foto_fonte";
+        const { data: especial } = await sb.from("veiculo_midias")
+          .select(camposMidia).eq("loja_id",loja.id).eq("aplicacao_id",app.id)
+          .eq("status","aprovado").limit(1).maybeSingle();
+        const { data: gerais } = await sb.from("veiculo_midias")
+          .select(camposMidia).eq("loja_id",loja.id).eq("modelo_id",app.modelo_id)
+          .eq("status","aprovado").order("atualizado_em",{ascending:false}).limit(12);
+        const midias = [...(especial ? [especial] : []),...(gerais ?? [])];
+        for (const m of midias) {
+          if (m.montadora_id !== modeloRef.montadora_id) continue;
+          if (!logoMontadora && m.logo_aprovado && typeof m.logo_png_url==="string")
+            logoMontadora=m.logo_png_url;
+          const anosCobertos = m.aplicacao_id === app.id ||
+            (app.ano_inicial != null && app.ano_final != null
+             && m.ano_inicial != null && m.ano_final != null
+             && m.ano_inicial <= app.ano_inicial && m.ano_final >= app.ano_final);
+          if (!fotoVeiculo && anosCobertos && m.foto_aprovada && typeof m.foto_png_url==="string") {
+            fotoVeiculo=m.foto_png_url;
+            fotoCredito=[m.foto_autor,m.foto_licenca,m.foto_fonte].filter(Boolean).join(" · ");
+          }
+        }
+      }
+    }
+    // História editorial de modelo / marca, com fontes e status explícitos.
+    // Nunca usar história para homologar aplicação nem como OEM do produto.
+    let historiaVeiculo: Record<string,unknown>|null=null;
+    if (app.modelo_id) {
+      const historiaQ=sb.from("catalogo_historias")
+        .select("titulo,resumo,eventos,fontes,status").eq("loja_id",loja.id).eq("modelo_id",app.modelo_id);
+      const { data: h }=await (previaConsultaMobis?historiaQ.in("status",["aprovado","a_confirmar"]):historiaQ.eq("status","aprovado")).maybeSingle();
+      if (h) historiaVeiculo=h;
+    }
+    let historiaMarca: Record<string,unknown>|null=null;
+    if (p.marca) {
+      const { data: marca }=await sb.from("marcas").select("id")
+        .eq("loja_id",loja.id).eq("tipo","peca").ilike("nome",p.marca).limit(1).maybeSingle();
+      if (marca) {
+        const marcaQ=sb.from("catalogo_historias")
+          .select("titulo,resumo,eventos,fontes,status").eq("loja_id",loja.id).eq("marca_id",marca.id);
+        const { data: h }=await (previaConsultaMobis?marcaQ.in("status",["aprovado","a_confirmar"]):marcaQ.eq("status","aprovado")).maybeSingle();
+        if (h) historiaMarca=h;
+      }
+    }
+    // Informações institucionais: exclusivamente política aprovada para a loja.
+    const { data: politicasAplicacao } = await sb.from("loja_politicas")
+      .select("razao_social,cnpj,endereco,telefone,email_contato,privacidade_texto,troca_devolucao_texto,entrega_texto,garantia_texto,termos_texto")
+      .eq("loja_id",loja.id).eq("status","aprovada").maybeSingle();
     return json({
-      loja: { nome: loja.nome, slug: loja.slug, ambiente: fase },
+      loja: { nome: loja.nome, slug: loja.slug, ambiente: fase, whatsapp: tel },
+      politicas: politicasAplicacao ?? null,
       pagina_aplicacao: {
         slug: app.pagina_slug, titulo: app.pagina_titulo, descricao: app.pagina_descricao,
         modelo: app.modelo, motorizacao: app.motorizacao,
@@ -84,7 +157,16 @@ Deno.serve(async (req) => {
         status: app.status, indexavel: app.status === "aprovado" && app.pagina_indexavel === true,
         sku_pai: p.sku, marca: p.marca, categoria: no?.nome ?? null,
         fotos: (imgs ?? []).map((i: { url: string }) => i.url),
-        preco: null, estoque: null, whatsapp,
+        // OEM só pode ser exibido como referência confirmada após homologação.
+        codigo_oem: app.status === "aprovado" ? app.codigo_oem ?? null : null,
+        restricao: app.restricao ?? null, contraindicacao: app.contraindicacao ?? null,
+        bula_tecnica: p.descricao_complementar ? "Informações declaradas no cadastro da peça (confirmar documentação técnica do fabricante):\\n" + p.descricao_complementar : null,
+        // Só preencher com registros fiscais validados e arquivos licenciados após integração específica.
+        codigo_fiscal: ncmPublico, foto_veiculo: fotoVeiculo, logo_montadora: logoMontadora, foto_credito: fotoCredito,
+        procedencia_publica: procedencia?{
+          originalidade:procedencia.originalidade,importacao:procedencia.condicao_importacao,
+          pais:procedencia.pais_fabricacao??null}:null,
+        preco: null, estoque: null, whatsapp, historia_veiculo: historiaVeiculo, historia_marca: historiaMarca,
       },
     });
   }
@@ -92,12 +174,15 @@ Deno.serve(async (req) => {
   const pagina = Math.max(1, Math.min(Number.isInteger(c?.pagina) ? c.pagina : 1, 1000));
   const limpar = (v: unknown, n = 60) => (typeof v === "string" ? v.replace(/[%,()*\\]/g, " ").trim().slice(0, n) : "");
   const busca = limpar(c?.q);
+  const chaveMarca = typeof c?.marca === "string" && c.marca.length <= 80
+    ? c.marca.trim().toUpperCase().replace(/\s+/g," ") : "";
+  const nomeMarcaNormalizado=(x:string)=>x.trim().toUpperCase().replace(/\s+/g," ");
   const modelo = limpar(c?.modelo), motor = limpar(c?.motor), categoria = typeof c?.categoria === "string" && SLUG_RE.test(c.categoria) ? c.categoria : "";
   const tipo = typeof c?.tipo === "string" && Object.hasOwn(TIPOS_VEICULO, c.tipo) ? c.tipo : "";
   const ano = Number.isInteger(c?.ano) && c.ano >= 1950 && c.ano <= 2100 ? (c.ano as number) : undefined;
 
   // Publicados (id + categoria) e as aplicações APROVADAS deles: alimentam as opções de busca e os filtros.
-  let consultaPublicados = sb.from("produtos").select("id, sku, taxonomia_no_id").eq("loja_id", loja.id);
+  let consultaPublicados = sb.from("produtos").select("id, sku, taxonomia_no_id, marca").eq("loja_id", loja.id);
   consultaPublicados = previaConsultaMobis
     ? consultaPublicados.or("publicado.eq.true,exibicao_teste.eq.true")
     : consultaPublicados.eq("publicado", true);
@@ -115,6 +200,50 @@ Deno.serve(async (req) => {
   const { data: nos } = nosIds.length ? await sb.from("taxonomia_nos").select("id, nome, slug").in("id", nosIds) : { data: [] as { id: string; nome: string; slug: string }[] };
   const categorias = (nos ?? []).map((n: { id: string; nome: string; slug: string }) => ({ nome: n.nome, slug: n.slug, total: (pub ?? []).filter((p: { taxonomia_no_id: string | null }) => p.taxonomia_no_id === n.id).length }));
 
+  // Diretório de marcas baseado APENAS em SKUs visíveis na mesma vitrine.
+  // Variações de grafia permanecem separadas até homologação de alias;
+  // só espaço/capitalização não mudam a identidade literal.
+  const { data: catalogoMarcas }=await sb.from("marcas")
+    .select("id,nome").eq("loja_id",loja.id).eq("tipo","peca").limit(800);
+  const mapaIdMarca=new Map((catalogoMarcas??[]).map(m=>[m.id,m.nome]));
+  const { data: aliasesAprovados }=await sb.from("marca_aliases")
+    .select("marca_id,nome_normalizado").eq("loja_id",loja.id).eq("estado","aprovado").limit(800);
+  const aliasesSeguros=new Map((aliasesAprovados??[])
+    .filter(a=>mapaIdMarca.has(a.marca_id))
+    .map(a=>[nomeMarcaNormalizado(a.nome_normalizado),nomeMarcaNormalizado(mapaIdMarca.get(a.marca_id)??"")]));
+  const porMarca=new Map<string,{chave:string;nome:string;quantidade:number;valores:string[]}>();
+  for(const p of pub??[]) {
+    const raw=typeof p.marca==="string"?p.marca.trim():"";
+    if(!raw || /^(importado|sem marca|n[aã]o informado|diversos)$/i.test(raw)) continue;
+    const normalizado=nomeMarcaNormalizado(raw);
+    const chave=aliasesSeguros.get(normalizado)??normalizado;
+    let perfil=porMarca.get(chave);
+    if(!perfil){perfil={chave,nome:raw,quantidade:0,valores:[]};porMarca.set(chave,perfil);}
+    perfil.quantidade++;
+    if(!perfil.valores.includes(raw))perfil.valores.push(raw);
+  }
+  const marcasOrdenadas=[...porMarca.values()].sort((a,b)=>b.quantidade-a.quantidade||a.nome.localeCompare(b.nome,"pt-BR"));
+  const marcasVitrine=marcasOrdenadas.map(({chave,nome,quantidade})=>({chave,nome,quantidade,logo:null as string|null}));
+  const valoresMarca=chaveMarca?porMarca.get(chaveMarca)?.valores??[]:[];
+  // Identidades editoriais só entram se marca + logotipo aprovado e uso documentado.
+  const porIdMarca=new Map((catalogoMarcas??[]).map(m=>[nomeMarcaNormalizado(m.nome),m.id]));
+  const listaIds=[...new Set([...porIdMarca.values()])];
+  const { data: logosMarca }=listaIds.length ? await sb.from("marca_identidade_publica")
+    .select("marca_id,logo_png_url,status").eq("loja_id",loja.id).eq("status","aprovado")
+    .in("marca_id",listaIds) : {data:[]};
+  const logosPorId=new Map((logosMarca??[]).map(m=>[m.marca_id,m.logo_png_url]));
+  for(const m of marcasVitrine){const id=porIdMarca.get(m.chave);m.logo=id?logosPorId.get(id)??null:null;}
+  let historiaMarcaCatalogo:Record<string,unknown>|null=null;
+  if (chaveMarca && valoresMarca.length) {
+    const id=porIdMarca.get(chaveMarca);
+    if(id){
+      const qHist=sb.from("catalogo_historias").select("titulo,resumo,eventos,fontes,status")
+        .eq("loja_id",loja.id).eq("marca_id",id);
+      const { data: h }=await (previaConsultaMobis?qHist.in("status",["aprovado","a_confirmar"]):qHist.eq("status","aprovado")).maybeSingle();
+      if(h)historiaMarcaCatalogo=h;
+    }
+  }
+
   // filtros calculados do dado aprovado (categorias com ícone, montadoras, fabricantes); falha aqui não derruba a vitrine
   const { data: filtros } = await sb.rpc("filtros_da_vitrine", { p_loja: loja.id });
 
@@ -124,6 +253,7 @@ Deno.serve(async (req) => {
     ? consulta.or("publicado.eq.true,exibicao_teste.eq.true")
     : consulta.eq("publicado", true);
   consulta = consulta.order("nome").range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1);
+  if (chaveMarca) consulta = consulta.in("marca",valoresMarca.length?valoresMarca:["__marca_inexistente__"]);
   if (busca) consulta = consulta.or(`nome.ilike.%${busca}%,sku.ilike.%${busca}%`);
   if (modelo || motor || ano !== undefined) {
     const ids = [...produtosDoVeiculo(apls, { modelo, motor, ano })];
@@ -201,6 +331,47 @@ Deno.serve(async (req) => {
       paginas.sort((a, b) => a.modelo.localeCompare(b.modelo, "pt-BR"));
   }
 
+  // Miniaturas institucionais reais para as três entradas do catálogo.
+  // Modelo e montadora devem coincidir. A imagem ilustrativa do MODELO nunca
+  // substitui o registro de compatibilidade do MOTOR ou da peça.
+  const midiasVeiculoCatalogo: Record<string,{foto:string|null;logo:string|null;credito:string|null}> = {};
+  if (loja.slug === "mobis") {
+    const { data: modelosVitrine } = await sb.from("modelos")
+      .select("id,nome,montadora_id").in("nome",["HR","Bongo K2500","L200"]);
+    const idsModelo = (modelosVitrine??[]).map(m=>m.id);
+    const { data: fotosModelo } = idsModelo.length ? await sb.from("veiculo_midias")
+      .select("modelo_id,montadora_id,foto_png_url,foto_aprovada,logo_png_url,logo_aprovado,foto_autor,foto_licenca,foto_fonte")
+      .eq("loja_id",loja.id).in("modelo_id",idsModelo).eq("status","aprovado").limit(15)
+      : {data:[]};
+    for(const m of modelosVitrine??[]) {
+      const r=(fotosModelo??[]).find(f=>f.modelo_id===m.id && f.montadora_id===m.montadora_id);
+      if(!r)continue;
+      const chave=m.nome==="Bongo K2500"?"Bongo":m.nome;
+      midiasVeiculoCatalogo[chave]={
+        foto:r.foto_aprovada?r.foto_png_url:null,
+        logo:r.logo_aprovado?r.logo_png_url:null,
+        credito:r.foto_aprovada?[r.foto_autor,r.foto_licenca,r.foto_fonte].filter(Boolean).join(" · "):null,
+      };
+    }
+  }
+
+  // Banner institucional por marca, independente de alteração de SKU/estoque/preço.
+  const agora=new Date().toISOString();
+  const { data: campanhasAprovadas }=loja.slug==="mobis"
+    ? await sb.from("marca_campanhas")
+      .select("marca_id,titulo,chamada,banner_imagem_url,ordem")
+      .eq("loja_id",loja.id).eq("status","aprovado")
+      .lte("inicio",agora).or("fim.is.null,fim.gt."+agora)
+      .order("ordem",{ascending:true}).limit(12)
+    : {data:[]};
+  const chavePorIdMarca=new Map([...porIdMarca.entries()].map(([chave,id])=>[id,chave]));
+  const bannersMarca=(campanhasAprovadas??[]).flatMap(c=>{
+    const chave=chavePorIdMarca.get(c.marca_id);
+    if(!chave||!porMarca.has(chave))return [];
+    return [{marca_chave:chave,nome:c.titulo,chamada:c.chamada??null,
+      imagem:c.banner_imagem_url??null}];
+  });
+
   // banners de oferta no ar (loja_banners): só produto publicado e dentro do período; falha aqui não derruba a vitrine
   const { data: bn } = await sb.rpc("banners_da_vitrine", { p_loja: loja.id });
   const banners = montarBanners(Array.isArray(bn) ? bn : [], loja.whatsapp, urlDoProduto);
@@ -214,5 +385,5 @@ Deno.serve(async (req) => {
   const { data: politicasAprovadas } = await sb.from("loja_politicas")
     .select("razao_social, cnpj, endereco, telefone, email_contato, privacidade_texto, troca_devolucao_texto, entrega_texto, garantia_texto, termos_texto")
     .eq("loja_id", loja.id).eq("status", "aprovada").maybeSingle();
-  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
+  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, midias_veiculo: midiasVeiculoCatalogo, marcas:marcasVitrine, marca_historia:historiaMarcaCatalogo, banners_marca:bannersMarca, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
 });
