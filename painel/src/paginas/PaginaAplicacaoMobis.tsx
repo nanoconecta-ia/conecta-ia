@@ -8,7 +8,9 @@ type Aplicacao = {
   slug:string; titulo:string; descricao:string; modelo:string;
   motorizacao:string|null; ano_inicial:number|null; ano_final:number|null;
   status:string; indexavel:boolean; sku_pai:string; marca:string|null;
-  categoria:string|null; fotos:string[]; preco:null; estoque:null; whatsapp:string|null
+  categoria:string|null; fotos:string[]; preco:null; estoque:null; whatsapp:string|null;
+  codigo_oem?:string|null; codigo_fiscal?:string|null; bula_tecnica?:string|null;
+  restricao?:string|null; contraindicacao?:string|null; foto_veiculo?:string|null; logo_montadora?:string|null
 };
 type Resposta = {loja:{nome:string;slug:string;ambiente:string};pagina_aplicacao:Aplicacao};
 
@@ -39,65 +41,78 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
     return ()=>{montado=false;document.title="MOBIS AUTOPEÇAS"};
   },[slug]);
   const p=dados?.pagina_aplicacao;
-  const foto=p?.fotos?.[0]??null;
+  const [fotoSelecionada,setFotoSelecionada]=useState(0);
+  useEffect(()=>setFotoSelecionada(0),[slug]);
   const veiculo=identidadeVeiculo(p?.modelo??"");
   const categoria=(p?.categoria??"").toLowerCase();
   const icone=/bandeja|suspens/.test(categoria)?"suspensao":/filtro/.test(categoria)?"filtros":"motor";
-  return <main className="mobis-v2" style={{minHeight:"100vh",background:"#f5f2eb",color:"#1f2327",paddingBottom:45}}>
-    <header style={{background:"#1f2327",padding:"14px max(16px, calc((100vw - 1200px)/2))",display:"flex",alignItems:"center",flexWrap:"wrap",gap:20,justifyContent:"space-between"}}>
-      <img src={logoMobis} alt="MOBIS AUTOPEÇAS" style={{height:58,maxWidth:"min(260px, 70vw)",objectFit:"contain"}} />
-      <a href="#/loja/mobis" style={{color:"#fff",fontWeight:700,textDecoration:"none"}}>← Voltar ao catálogo</a>
+  const fotos=p?.fotos??[];
+  const foto=fotos[fotoSelecionada]??fotos[0]??null;
+  const oem=p?.status==="aprovado"&&p.codigo_oem?p.codigo_oem:null;
+  const tituloSocial=p?("MOBIS AUTOPEÇAS | "+p.modelo+" | "+p.sku_pai):"MOBIS AUTOPEÇAS";
+  const compartilhar=()=>{if(!p)return;const url=window.location.href;
+    if(navigator.share){void navigator.share({title:tituloSocial,url}).catch(()=>{});}
+    else if(navigator.clipboard){void navigator.clipboard.writeText(url);}
+  };
+  return <main className="mobis-v2 m2-ficha-real">
+    <header className="m2-ficha-header">
+      <a href="#/loja/mobis" aria-label="Voltar ao catálogo MOBIS"><img src={logoMobis} alt="MOBIS AUTOPEÇAS"/></a>
+      <a href="#/loja/mobis">← Voltar à loja</a>
     </header>
-    <div style={{maxWidth:1120,margin:"30px auto",padding:"0 18px"}}>
-      {estado==="carregando"&&<p role="status">Buscando a ficha da aplicação…</p>}
-      {estado==="erro"&&<div role="alert"><h1>Aplicação indisponível</h1><p>Confira a peça com nossa equipe.</p><a href="#/loja/mobis">Voltar ao catálogo</a></div>}
+    <div className="m2-ficha-wrap">
+      {estado==="carregando"&&<p role="status">Consultando dados reais da aplicação…</p>}
+      {estado==="erro"&&<div role="alert"><h1>Ficha indisponível</h1><a href="#/loja/mobis">Voltar ao catálogo</a></div>}
       {p&&<>
-        <p style={{color:"#914a27",fontWeight:800,letterSpacing:"0.06em"}}>MOBIS AUTOPEÇAS · CONSULTA POR VEÍCULO</p>
-        <div className="m2-aplicacao-identidade" aria-label={"Veículo de referência: "+p.modelo+". Ilustração sem placa."}>
-          <div className="m2-aplicacao-veiculo"><IconeVeiculo tipo={veiculo.tipo} largura={105}/></div>
-          <div className="m2-aplicacao-identidade-texto">
-            <span className="m2-aplicacao-montadora">{veiculo.montadora}</span>
-            <strong>{p.modelo}</strong>
-            <small>{p.motorizacao??"Motorização a confirmar"} · {p.ano_inicial??"Ano inicial a confirmar"} – {p.ano_final??"ano final a confirmar"}</small>
-            <small>Ilustração da categoria do veículo, não fotografia da versão exata.</small>
+        <section className="m2-ficha-banner" aria-label={"Ficha do veículo "+p.modelo}>
+          {p.foto_veiculo&&<img className="m2-ficha-fundo-veiculo" src={p.foto_veiculo} alt={"Fotografia licenciada do veículo "+p.modelo}/>}
+          <div className="m2-ficha-banner-conteudo">
+            <span className="m2-ficha-selo">MOBIS AUTOPEÇAS · PEÇAS PARA UTILITÁRIOS DIESEL</span>
+            <div className="m2-ficha-identidade">
+              {p.logo_montadora?<img src={p.logo_montadora} alt={"Logotipo autorizado "+veiculo.montadora} className="m2-ficha-marca-img"/>:<span className="m2-ficha-marca-texto">{veiculo.montadora}</span>}
+              <span className="m2-ficha-miniatura"><IconeVeiculo tipo={veiculo.tipo} largura={98}/></span>
+              <div><strong>{p.modelo}</strong><small>{p.motorizacao??"Motor a confirmar"} · {p.ano_inicial??"Início a confirmar"} – {p.ano_final??"fim a confirmar"}</small></div>
+            </div>
+            <h1>{p.titulo}</h1>
+            <p>Fabricante da peça: <strong>{p.marca??"Não informado"}</strong> · Código: <strong>{p.sku_pai}</strong></p>
+            <div className="m2-ficha-badges"><span><IconePeca nome={icone} tamanho={24}/> {p.categoria??"Sistema automotivo"}</span><span>{p.status==="aprovado"?"Aplicação tecnicamente aprovada":"Aplicação em revisão — confirme pelo chassi"}</span></div>
           </div>
-        </div>
-        <h1 style={{fontSize:"clamp(1.6rem, 4vw, 2.3rem)",lineHeight:1.25,margin:"8px 0 16px"}}>{p.titulo}</h1>
-        <p role="status" style={{padding:"12px 15px",background:"#fff3dd",borderLeft:"5px solid #c25a1b",fontWeight:600}}>
-          {p.status==="aprovado"?"Consulte preço e disponibilidade com nossa equipe.":"Prévia de aplicação em validação técnica. Não é confirmação de compatibilidade. Informe o chassi antes da compra."}
-        </p>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,310px),1fr))",gap:26,alignItems:"start"}}>
-          <section style={{background:"#fff",border:"1px solid #dfd8ca",borderRadius:12,padding:16}}>
-            {foto?<a href={foto} target="_blank" rel="noopener noreferrer" aria-label="Abrir foto real da peça" style={{display:"block"}}>
-                <img src={foto} alt={"Fotografia da peça física SKU "+p.sku_pai} style={{width:"100%",height:"auto",maxHeight:430,objectFit:"contain"}} />
-              </a>:<div style={{minHeight:245,display:"grid",placeItems:"center",gap:6}}>
-                <IconePeca nome={icone} tamanho={120}/>
-                <p style={{color:"#6b645b",fontSize:14}}>Ícone de categoria. Foto da peça aguardando autorização.</p>
-              </div>}
-            {p.fotos.length>1&&<div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:12}}>{p.fotos.slice(1,5).map(src=><a href={src} target="_blank" rel="noopener noreferrer" key={src}><img src={src} alt="Outra foto da mesma peça física" loading="lazy" style={{width:74,height:74,objectFit:"contain",border:"1px solid #ddd",borderRadius:4}}/></a>)}</div>}
-            <p style={{fontSize:13,color:"#595959"}}>{foto?"Fotos do mesmo SKU físico Mobis; aparência e conteúdo devem ser conferidos.":"Nenhuma foto comercial autorizada para esse SKU."}</p>
+        </section>
+        <div className="m2-ficha-grid">
+          <section className="m2-ficha-painel" aria-label="Fotografias reais do produto">
+            <h2>Fotografias do produto físico</h2>
+            {foto?<a href={foto} target="_blank" rel="noopener noreferrer" className="m2-ficha-foto"><img src={foto} alt={"Foto autorizada da peça real código "+p.sku_pai}/></a>
+              :<div className="m2-ficha-sem-foto"><IconePeca nome={icone} tamanho={90}/><strong>Foto real aguardando autorização</strong><small>Nenhuma imagem ilustrativa de motor substitui a peça verdadeira.</small></div>}
+            {fotos.length>1&&<div className="m2-ficha-miniaturas" aria-label="Selecionar foto real">{fotos.map((src,idx)=><button type="button" key={src} onClick={()=>setFotoSelecionada(idx)} aria-pressed={fotoSelecionada===idx} aria-label={"Mostrar fotografia "+(idx+1)}><img src={src} alt=""/></button>)}</div>}
+            <p className="m2-ficha-nota">As imagens deste espaço devem ser do produto comercializado, com autorização de uso. Confirme composição e versão antes da compra.</p>
           </section>
-          <section style={{background:"#fff",border:"1px solid #dfd8ca",borderRadius:12,padding:22}}>
-            <p style={{fontSize:13,letterSpacing:"0.05em",color:"#914a27",fontWeight:800,display:"flex",alignItems:"center",gap:10}}>
-              <IconePeca nome={icone} tamanho={37}/> {p.categoria??"Sistema automotivo"}
-            </p>
-            <dl style={{display:"grid",gridTemplateColumns:"120px minmax(0,1fr)",gap:"9px 14px",fontSize:15,lineHeight:1.5}}>
-              <dt>Veículo</dt><dd style={{margin:0,fontWeight:700}}>{p.modelo}</dd>
-              <dt>Motorização</dt><dd style={{margin:0}}>{p.motorizacao??"Confirmar pelo chassi"}</dd>
-              <dt>Anos</dt><dd style={{margin:0}}>{p.ano_inicial??"A confirmar"} {p.ano_final?"– "+p.ano_final:"(ano final a confirmar)"}</dd>
-              <dt>Código da peça</dt><dd style={{margin:0,fontWeight:700}}>{p.sku_pai}</dd>
-              <dt>Marca da peça</dt><dd style={{margin:0}}>{p.marca??"Confirmar fabricante"}</dd>
+          <section className="m2-ficha-painel">
+            <h2>Identificação e referências</h2>
+            <dl className="m2-ficha-dados">
+              <dt>Montadora</dt><dd>{veiculo.montadora}</dd>
+              <dt>Veículo</dt><dd>{p.modelo}</dd>
+              <dt>Motor</dt><dd>{p.motorizacao??"A confirmar"}</dd>
+              <dt>Período</dt><dd>{p.ano_inicial??"Ano inicial pendente"} – {p.ano_final??"ano final pendente"}</dd>
+              <dt>Marca da peça</dt><dd>{p.marca??"A confirmar"}</dd>
+              <dt>SKU da peça</dt><dd>{p.sku_pai}</dd>
+              <dt>OEM original</dt><dd>{oem??"Não homologado — conferir pelo chassi"}</dd>
+              <dt>Código fiscal / NCM</dt><dd>{p.codigo_fiscal??"Consultar documentação fiscal da peça"}</dd>
+              <dt>Código de barras</dt><dd>Exibir somente quando GTIN verdadeiro e validado</dd>
             </dl>
-            <h2 style={{fontSize:"1.1rem",marginTop:28}}>Informações desta aplicação</h2>
-            <p style={{fontSize:15,lineHeight:1.65}}>{p.descricao}</p>
-            <p style={{fontSize:21,fontWeight:800}}>Preço sob consulta</p>
-            {p.whatsapp&&<a href={p.whatsapp} target="_blank" rel="noopener noreferrer"
-              style={{display:"block",textAlign:"center",background:"#b65321",padding:"15px",borderRadius:8,fontWeight:800,color:"#fff",textDecoration:"none"}}>
-              Consultar aplicação no WhatsApp ↗
-            </a>}
-            <p style={{fontSize:13,color:"#565656",lineHeight:1.55}}>Um único produto físico com saldo compartilhado entre as aplicações. As páginas por veículo não representam peças ou estoques diferentes. A MOBIS AUTOPEÇAS é revendedora independente, sem vínculo oficial com as montadoras.</p>
+            <p className="m2-ficha-consulta">Preço e disponibilidade sob consulta</p>
+            <div className="m2-ficha-acoes">
+              {p.whatsapp&&<a className="m2-ficha-whatsapp" href={p.whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>}
+              <button type="button" onClick={compartilhar}>Compartilhar ficha ↗</button>
+            </div>
+            <p className="m2-ficha-nota">Uma vitrine por veículo, um único cadastro físico e saldo. Esta ficha não reserva nem movimenta estoque.</p>
           </section>
         </div>
+        <div className="m2-ficha-secoes">
+          <section className="m2-ficha-painel"><h2>Descrição técnica</h2><p>{p.descricao||"Aguardando descrição técnica da aplicação."}</p></section>
+          <section className="m2-ficha-painel"><h2>Bula técnica e composição</h2><p>{p.bula_tecnica??"Aguardando bula técnica documentada e conferência dos componentes incluídos."}</p></section>
+          <section className="m2-ficha-painel"><h2>Contraindicações e verificações</h2><p>{p.contraindicacao??p.restricao??"Verificar código OEM, chassi, versão, sensores, suportes e periféricos antes de instalar."}</p></section>
+          <section className="m2-ficha-painel"><h2>Garantia, consumidor e privacidade</h2><p>Consulte as condições de garantia, instalação e atendimento da MOBIS. Seus direitos legais como consumidor são preservados. Envie dados de chassi somente por canal apropriado, conforme a política de privacidade da loja.</p><p>Loja independente; as marcas de veículos indicam aplicação e não vínculo de representação oficial.</p></section>
+        </div>
+        <p className="m2-ficha-disclaimer">{p.status==="aprovado"?"Confirme disponibilidade e condições com nossa equipe.":"Aplicação em revisão técnica. A presença do veículo na página não comprova compatibilidade."}</p>
       </>}
     </div>
   </main>;
