@@ -1,0 +1,144 @@
+/* MOBIS AUTOPEÇAS | tema branco-gelo oficial da vitrine.
+   Camada isolada: não afeta o Studio Nano, Bling nem páginas de outras lojas.
+   Referência: #F5F5F5 branco-gelo, #1F2327 grafite, #FF6A00 laranja,
+   #D60000 vermelho e #8A8F98 cinza. */
+.mobis-v2{
+  --m2-white:#fff;--m2-ice:#f5f5f5;--m2-ink:#1f2327;--m2-muted:#535a61;
+  --m2-orange:#ff6a00;--m2-red:#d60000;--m2-gray:#8a8f98;
+  --m2-cream:var(--m2-ice);--m2-ivory:#edf0f2;--m2-line:#dfe3e8;
+  --m2-dark:#1f2327;--m2-dark2:#333a42;
+  background:#f5f5f5;color:#1f2327;color-scheme:light;
+}
+.mobis-v2 :is(h1,h2,h3){color:#1f2327}
+.mobis-v2 :is(a,button,input,select):focus-visible{outline:3px solid #d60000;outline-offset:3px}
+.mobis-v2 .m2-micro{background:#f5f5f5;border-bottom:1px solid #e1e5e9;color:#48505a}
+.mobis-v2 .m2-micro b{color:#d60000}
+.mobis-v2 .m2-micro em{color:#9b4300}
+.mobis-v2 .m2-header{background:#fff;color:#1f2327;border-bottom:1px solid #dde1e6;box-shadow:0 4px 18px #1f23270d}
+.mobis-v2 .m2-header nav button{color:#1f2327;font-weight:740}
+.mobis-v2 .m2-header nav button:hover{color:#9f4300}
+.mobis-v2 .m2-header-acoes button{background:#fff;color:#1f2327;border:1px solid #c4cad2}
+.mobis-v2 .m2-header-acoes button span{background:#d60000;color:#fff}
+.mobis-v2 .m2-header-acoes>a{color:#252d36}
+.mobis-v2 .m2-header-acoes>a span{color:#a24808}
+.mobis-v2 .m2-hero{
+  color:#1f2327;
+  background:radial-gradient(ellipse at 92% 13%,#ff6a0012,transparent 40%),radial-gradient(ellipse at 13% 71%,#d5e5f153,transparent 52%),linear-gradient(125deg,#fff,#f5f5f5);
+  border-bottom:1px solid #e1e5e9;
+}
+.mobis-v2 .m2-hero:after{background:repeating-linear-gradient(130deg,transparent 0 54px,#1f232703 55px 57px,transparent 58px 112px)}
+.mobis-v2 .m2-hero .m2-kicker{color:#974000}
+.mobis-v2 .m2-kicker{color:#9c4200}
+.mobis-v2 .m2-hero h1{color:#1f2327}
+.mobis-v2 .m2-hero h1 em{color:#ad4900}
+.mobis-v2 .m2-hero-texto>p{color:#4e5861}
+.mobis-v2 .m2-hero-texto>small{color:#56636e}
+.mobis-v2 .m2-laranja{background:#c45400;color:#fff;border-color:#9f4000}
+.mobis-v2 .m2-underline{background:transparent;color:#1f2327;border-bottom:2px solid #c45400}
+.mobis-v2 .m2-foto{background:#fff;color:#1f2327;border:1px solid #d5d9df;box-shadow:0 16px 28px #1f232719}
+.mobis-v2 .m2-progresso{background:#fff;border-bottom:1px solid #e2e5e8}
+.mobis-v2 .m2-progresso span{color:#48515b}
+.mobis-v2 .m2-progresso b{color:#a94600}
+.mobis-v2 .m2-aviso-teste{background:#fff4e9;border:1px solid #e4be9c;color:#754016}
+.mobis-v2 .m2-cab-secao>button{background:#fff;color:#8b3e06;border-color:#d8dfe6}
+.mobis-v2 .m2-trio .m2-bloco{
+  background:linear-gradient(145deg,#fff,#f6f8fa);
+  color:#1f2327;border:1px solid #dce2e8;border-top:4px solid #ff6a00;
+  box-shadow:0 9px 22px #1f23270c;border-radius:14px;
+}
+.mobis-v2 .m2-trio .m2-bloco:nth-child(2){border-top-color:#d60000}
+.mobis-v2 .m2-trio .m2-bloco:nth-child(3){border-top-color:#8a8f98}
+.mobis-v2 .m2-trio .m2-bloco:after{border-color:#ff6a000a}
+.mobis-v2 .m2-trio .m2-bloco small{color:#934003}
+.mobis-v2 .m2-trio .m2-bloco h3{color:#1f2327}
+.mobis-v2 .m2-trio .m2-bloco p{color:#53606a}
+.mobis-v2 .m2-trio .m2-bloco button{color:#9d4200;border-color:#cf875c}
+.mobis-v2 .m2-flash{background:linear-gradient(115deg,#fff,#fff5ed);color:#1f2327;border:1px solid #f0c3a2;box-shadow:0 10px 24px #1f232710}
+.mobis-v2 .m2-flash h3{color:#1f2327}
+.mobis-v2 .m2-flash p{color:#4d5861}
+.mobis-v2 .m2-flash>a{background:#a74400;color:#fff}
+.mobis-v2 .m2-flash-controles button{background:#fff;color:#1f2327;border:1px solid #c6cdd3}
+.mobis-v2 .m2-band,.mobis-v2 .m2-veiculos,.mobis-v2 .m2-sistemas,.mobis-v2 .m2-busca{background:#f5f5f5;border-top-color:#e3e6ea}
+.mobis-v2 .m2-veiculo,.mobis-v2 .m2-sistema-grade button{
+  background:#fff;color:#1f2327;border:1px solid #dce2e8;border-radius:13px;box-shadow:0 8px 18px #1f23270b;
+}
+.mobis-v2 .m2-veiculo:hover,.mobis-v2 .m2-sistema-grade button:hover{border-color:#ff6a00}
+.mobis-v2 .m2-veiculo>div{background:#f7f9fb}
+.mobis-v2 .m2-veiculo small,.mobis-v2 .m2-legenda,.mobis-v2 .m2-titulo p{color:#505a63}
+.mobis-v2 .m2-veiculo>span{color:#9b4100;border-top-color:#e1e5e9}
+.mobis-v2 .m2-sistema-grade i{color:#9f4300}
+.mobis-v2 .m2-search,.mobis-v2 .m2-filtros{background:#fff;border:1px solid #dce2e8;border-radius:13px;box-shadow:0 6px 19px #1f23270a}
+.mobis-v2 .m2-search>span{color:#9f4300}
+.mobis-v2 .m2-search button{background:#1f2327;color:#fff}
+.mobis-v2 .m2-filtros-grid :is(select,input){background:#fff;color:#1f2327;border-color:#c5cdd5}
+.mobis-v2 .m2-filtros-rodape button{background:#a74400;color:#fff}
+.mobis-v2 .m2-filtros-rodape p{color:#78431f}
+.mobis-v2 .m2-catalogo{background:#f5f5f5}
+.mobis-v2 .m2-vazio{background:#fff;border-color:#d5dce3}
+.mobis-v2 .m2-produto{background:#fff;border:1px solid #dce2e8;border-radius:14px;box-shadow:0 10px 24px #1f23270c}
+.mobis-v2 .m2-foto-produto{background:#f8fafb}
+.mobis-v2 .m2-produto small,.mobis-v2 .m2-produto p{color:#515c65}
+.mobis-v2 .m2-produto :is(a,button){background:#fff;border-color:#b45a1e;color:#934006}
+.mobis-v2 .m2-atendimento{background:#fff;color:#1f2327;border-top:1px solid #dce2e8}
+.mobis-v2 .m2-atendimento-grid>div:first-child h2{color:#1f2327}
+.mobis-v2 .m2-atendimento-grid>div:first-child p{color:#505b64}
+.mobis-v2 .m2-conselho{color:#7d430f;border-color:#e0e4e9}
+.mobis-v2 .m2-contato-form{background:#f5f5f5;border:1px solid #dde3e9;box-shadow:0 8px 20px #1f23270a}
+.mobis-v2 .m2-contato-form h3{color:#1f2327}
+.mobis-v2 .m2-contato-form p{color:#56626a}
+.mobis-v2 .m2-contato-form a{background:#a74400;color:#fff}
+.mobis-v2 .m2-lista li{background:#fff;border-color:#dde3e9}
+.mobis-v2 .m2-busca-rapida{background:#fff;border-bottom-color:#e1e5e9}
+.mobis-v2 .m2-busca-rapida input{background:#fff;border-color:#bfc8d1}
+.mobis-v2 .m2-busca-rapida button,.mobis-v2 .m2-amostra button{background:#a74400;border-color:#8c3900;color:#fff}
+.mobis-v2 .m2-amostra{background:#fff;border-color:#dce2e8;box-shadow:0 9px 22px #1f23270a}
+.mobis-v2 .m2-amostra-imagem{background:#f8fafb}
+.mobis-v2 .m2-amostra-selo{background:#fff2e3;border-color:#e2b78b;color:#70400f}
+.mobis-v2 .m2-aplicacao-identidade{background:#fff;border-color:#dce2e8}
+.mobis-v2 .m2-aplicacao-veiculo{background:#f5f5f5}
+.mobis-v2 .m2-empresa-abas button[aria-selected="true"]{color:#a74400;border-bottom-color:#ff6a00}
+.mobis-v2 .m2-empresa-acoes a,.mobis-v2 .m2-empresa-cta{background:#a74400;border-color:#a74400;color:#fff}
+.mobis-v2 .m2-empresa-acoes button{background:#fff;color:#873b05;border-color:#a74400}
+/* Glassmorphism em fundo claro: não usar superfície escura para simular vidro. */
+.mobis-v2 .mgv{
+  --mgv-gelo:#f5f5f5;--mgv-vermelho:#d60000;--mgv-grafite:#1f2327;
+  color:#1f2327;
+  background:radial-gradient(circle at 90% 9%,#ff6a001c,transparent 34%),linear-gradient(135deg,#fff,#f5f5f5);
+  border:1px solid #dce2e8;box-shadow:0 18px 42px #1f232718;
+}
+.mobis-v2 .mgv-vidro{
+  background:#ffffffba;border:1px solid #fff;box-shadow:0 12px 32px #1f232714,inset 0 1px #fff;
+  -webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);
+}
+.mobis-v2 .mgv-orbita{background:radial-gradient(ellipse at 36% 55%,#e0e9f1,transparent 53%)}
+.mobis-v2 .mgv h2,.mobis-v2 .mgv-copy h3{color:#1f2327}
+.mobis-v2 .mgv-sobretitulo,.mobis-v2 .mgv-ref{color:#973d00}
+.mobis-v2 .mgv-topo p,.mobis-v2 .mgv-copy p,.mobis-v2 .mgv-contador span,.mobis-v2 .mgv-aviso{color:#4c5761}
+.mobis-v2 .mgv-seta{
+  color:#1f2327!important;background:#fff!important;border:1px solid #c7d0d8;
+}
+.mobis-v2 .mgv-seta:hover{background:#f0f4f7!important}
+.mobis-v2 .mgv-imagem{background:radial-gradient(circle at center,#fff,#eef2f5);border:1px solid #dce2e8;box-shadow:0 10px 22px #1f232713}
+.mobis-v2 .mgv-cta{background:#a74400!important;border-color:#a74400!important;color:#fff!important}
+.mobis-v2 .mgv-miniatura{
+  background:#fff!important;border:1px solid #cfd7de;color:#1f2327!important;box-shadow:0 5px 15px #1f23270c;
+}
+.mobis-v2 .mgv-miniatura.mgv-ativa{
+  background:#fff4eb!important;border:2px solid #ff6a00;box-shadow:0 0 0 2px #ff6a0020;
+}
+.mobis-v2 .mgv :is(button,.mgv-vidro):focus-visible{outline:3px solid #d60000;outline-offset:3px}
+@supports not (backdrop-filter:blur(1px)){.mobis-v2 .mgv-vidro{background:#fff}}
+/* Rodapé no mesmo tema da loja; mantém política e contatos reais. */
+.mobis-v2 .v-rodape-comercial{background:#fff;color:#44515d;border-top:1px solid #dce2e8}
+.mobis-v2 .v-rodape-comercial h2,.mobis-v2 .v-rodape-apresentacao>strong{color:#1f2327}
+.mobis-v2 .v-rodape-comercial p,.mobis-v2 .v-rodape-comercial :is(nav a,.v-rodape-grupo button,.v-rodape-grupo>a){color:#48545f}
+.mobis-v2 .v-rodape-comercial :is(.v-rodape-apresentacao small,.v-rodape-grupo small){color:#56636e}
+.mobis-v2 .v-rodape-comercial a:hover,.mobis-v2 .v-rodape-grupo button:hover{color:#963e00}
+.mobis-v2 .v-rodape-faixa{color:#58636e;border-top-color:#e0e5e8}
+.mobis-v2 .v-rodape-site,.mobis-v2 .v-rodape-faixa a{color:#904008}
+.mobis-v2 .v-rodape-sociais a{color:#744014;border-color:#bdcad3;background:#fff}
+.mobis-v2 .v-rodape-sociais a:hover{background:#f5f5f5}
+@media(max-width:720px){
+  .mobis-v2 .m2-header nav{border-top-color:#e1e5e9}
+  .mobis-v2 .mgv{box-shadow:0 10px 24px #1f232712}
+}
