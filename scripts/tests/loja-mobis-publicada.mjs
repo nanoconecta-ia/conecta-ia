@@ -29,9 +29,23 @@ try{
   await page.goto(base+"?release="+esperado+"#/loja/mobis");
   await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor();
   assert.equal(await page.locator('[data-mobis-palette="branco-gelo"]').count(),1,"publicação usa paleta branca");
+  // Modelo MOBIS v3: veículos em fotografias reais com fontes e ícones 3D intactos.
+  assert.equal(await page.locator('[data-mobis-visual="fotografico-v3"]').count(),1,"layout fotográfico aplicado");
+  const hero=page.locator('.m3-hero');
+  await hero.waitFor();
+  assert.equal(await hero.locator('.m3-hero-foto img').count(),5,"cinco fotografias de veículos por modelo");
+  const primeiraFoto=hero.locator('.m3-hero-foto img').first();
+  await primeiraFoto.waitFor({state:"visible"});
+  await primeiraFoto.evaluate(async img=>{if(!img.complete)await new Promise((resolve,reject)=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',reject,{once:true});});});
+  assert.equal(await primeiraFoto.evaluate(img=>img.naturalWidth>0),true,"foto real local acessível");
+  assert.equal(await page.locator('.m3-faixa-lista button').count(),8,"oito categorias funcionais com ícones Mobis");
+  assert.match(await page.locator('.m2-busca-rapida').evaluate(el=>getComputedStyle(el).backgroundImage),/linear-gradient/,"menu de busca em vermelho");
+  assert.ok(await page.locator('#m3-creditos').count()===1,"créditos de licença acessíveis");
+
   assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho publicado é branco");
   assert.equal(await page.locator('.mgv').evaluate(el=>getComputedStyle(el).color),'rgb(31, 35, 39)',"glassy publicado é claro");
   assert.equal(await page.locator(".v-hero").count(),0);
+  assert.equal(await page.locator(".m3-veiculo-card img").count(),5,"escolha inferior por modelos com fotos locais");
   const r=await consulta;assert.equal(r.status(),200,"catálogo público deve carregar");
   const dados=await r.json();assert.equal(dados.loja.slug,"mobis");
   assert.equal(dados.loja.ambiente,"teste","loja deve permanecer em teste");

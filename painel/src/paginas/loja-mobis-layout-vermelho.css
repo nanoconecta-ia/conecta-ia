@@ -1,0 +1,80 @@
+/* Modelo editorial MOBIS v3. Branco e grafite na base, vermelho nos controles.
+   Escopado ao novo layout: preserva o padrão da marca e as demais páginas. */
+.mobis-v2[data-mobis-visual="fotografico-v3"]{--m3-red:#bf0000;--m3-red-dark:#8c0000;--m3-white:#fff;--m3-carbon:#15191d;background:#f5f5f5;color:#1f2327;}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-micro{background:#fff;border-bottom:1px solid #e6e9ef;color:#434a52;letter-spacing:.02em;font-size:.69rem}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-micro b{color:#bb0000}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-header{background:#fff;border-bottom:3px solid #d60000;box-shadow:none}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-header>.m2-wrap{max-width:1550px;width:min(1550px,calc(100% - 42px));min-height:90px;gap:15px}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-header .m2-brand img{width:clamp(175px,22vw,295px)}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-header nav button:hover{color:#c50000}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-header-acoes button{border-color:#e5e9ed;background:#f5f5f5;border-radius:8px}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-header-acoes button span{background:#bb0000}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-busca-rapida{background:linear-gradient(95deg,#bd0000,#910000);padding:8px 0;border-bottom:0;color:#fff}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav{max-width:1550px;width:min(1550px,calc(100% - 30px));display:grid;grid-template-columns:auto minmax(230px,1fr) auto auto;gap:10px;align-items:stretch}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav button,.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav a{min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:9px;white-space:nowrap;border-radius:9px;text-decoration:none;font-weight:830;font-size:.82rem}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav-categories{padding:8px 17px;color:#fff;border:1px solid #ffffff58;background:#ffffff17}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav-vehicles{padding:8px 12px;color:#fff;border:1px solid #ffffff70;background:#ffffff1c}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav-wa{padding:7px 10px;color:#fff;border:1px solid #ffffff6b;background:#073d2d}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav-wa small{font-size:.68rem;font-weight:650;line-height:1.2}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav-wa strong{font-size:.77rem}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav form{display:flex;align-items:center;min-width:0;gap:0}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav form input{height:46px;width:100%;min-width:0;flex:1;padding:10px 13px;border:0;border-radius:9px 0 0 9px;background:#fff;color:#1f2327;font-size:.85rem}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav form button{min-width:92px;border:0;border-left:1px solid #e6e9ed;background:#fff;border-radius:0 9px 9px 0;padding:7px 14px;color:#a50000}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav form button:hover{background:#f4f4f4}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-aviso-teste{background:#fff2e6;color:#723e1c;border-color:#e5c8ab;font-size:.78rem}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-progresso{background:#fff;border-top:1px solid #e3e7ec;border-bottom:1px solid #e3e7ec}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-progresso b{font-size:1rem;color:#bd0000}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-progresso span{color:#39434e;font-weight:720}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-sistema-grade button{border-bottom:4px solid #ba0000}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-sistema-grade button:hover{border-color:#ba0000}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-veiculo:hover{border-color:#ba0000}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-veiculo>span{color:#a50000}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-search button{background:#ad0000;color:#fff}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-catalogo .m2-cab-secao{border-bottom:2px solid #e1e4e8}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-flash{border-left:4px solid #ba0000}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-consulta-aviso{background:#fff2e8;border:1px solid #f0c49b;border-radius:9px;padding:10px 14px;color:#6e3918;margin-bottom:16px;font-size:.83rem;line-height:1.6}
+@media(max-width:1110px){
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m2-header nav{display:none}
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav{grid-template-columns:auto minmax(160px,1fr) auto}
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav-wa{display:none}
+}
+@media(max-width:700px){
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m2-header>.m2-wrap{min-height:67px;width:calc(100% - 26px);gap:8px}
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m2-header .m2-brand img{width:min(54vw,235px)}
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav{grid-template-columns:1fr auto;gap:7px}
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav form{grid-column:1/-1;grid-row:1}
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav-categories{grid-row:2;min-height:40px}
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav-vehicles{grid-row:2;min-height:40px}
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav button{font-size:.75rem;padding:8px}
+}
+@media(max-width:420px){
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m2-header-acoes>a{display:none}
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m2-header-acoes button{font-size:.69rem;padding:8px}
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m3-nav form button{min-width:76px}
+}
+
+/* A mesma fotografia real acompanha o filtro por modelo, não apenas o hero. */
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-veiculo-grade{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-veiculo.m3-veiculo-card,.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-veiculo.m3-veiculo-generico{padding:8px;min-height:225px}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-veiculo-card>div{padding:0;min-height:118px;height:118px;background:#f5f5f5;overflow:hidden;border-radius:8px}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-veiculo-card>div img{width:100%;height:100%;object-fit:cover;display:block}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-veiculo-card strong{font-size:.83rem;margin-top:4px}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-veiculo-card small{font-size:.69rem;margin:4px 0 8px}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-veiculo-generico{border-style:dashed}
+@media(max-width:1100px){.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-veiculo-grade{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-veiculo-grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Compatibilidade com a âncora da hero usada pelos testes e pela vitrine de consulta. */
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-hero.m3-hero{
+  display:grid;grid-template-columns:minmax(270px,340px) minmax(0,1fr);
+  background:#101418;color:#fff;overflow:hidden;position:relative;min-height:0;
+}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-hero.m3-hero:after{display:none}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-hero.m3-hero h1{color:#fff;max-width:none;margin:0;font-size:clamp(1.75rem,2.9vw,2.85rem);line-height:1.05;font-style:italic}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-shortcut-teste{background:#fff7ee;display:flex;justify-content:center;padding:7px 14px}
+.mobis-v2[data-mobis-visual="fotografico-v3"] .m3-shortcut-teste button{border:1px solid #bd8c6b;background:#fff;padding:7px 14px;color:#693819;font-size:.77rem;font-weight:800;border-radius:7px}
+@media(max-width:800px){
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m2-hero.m3-hero{grid-template-columns:1fr}
+ .mobis-v2[data-mobis-visual="fotografico-v3"] .m2-hero.m3-hero h1{font-size:clamp(1.75rem,7vw,2.65rem)}
+}
+@media(max-width:520px){.mobis-v2[data-mobis-visual="fotografico-v3"] .m2-hero.m3-hero h1{font-size:1.9rem}}
