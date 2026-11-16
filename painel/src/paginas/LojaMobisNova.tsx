@@ -3,6 +3,7 @@ import { EmpresaMobis } from "../componentes/EmpresaMobis.tsx";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { IconePeca } from "../componentes/IconePeca.tsx";
 import { VeiculoRealMobis } from "../componentes/VeiculoRealMobis.tsx";
+import { NanoVendedorMobis } from "../componentes/NanoVendedorMobis.tsx";
 import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import { ChatClienteLoja } from "../componentes/ChatClienteLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
@@ -220,6 +221,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
           <div className="m2-foto m2-foto3"><VeiculoRealMobis montadora="Hyundai" modelo="HR" tamanho="banner" {...(dados?.midias_veiculo?.["HR"]??{})}/><small>03 / Hyundai HR</small></div>
         </div>
       </div></section>
+      <div className="m2-wrap"><NanoVendedorMobis whatsapp={whatsapp}/></div>
       <div className="m2-progresso"><div className="m2-wrap"><span><b>01</b> Atendimento especializado</span>
         <span><b>02</b> Aplicação conferida com você</span><span><b>03</b> Consulta direta via WhatsApp</span></div></div>
 {destaque&&<div className="m2-wrap m2-flash-topo"><div className="m2-flash" onMouseEnter={()=>setPausa(true)} onMouseLeave={()=>setPausa(false)} onFocusCapture={()=>setPausa(true)} onBlurCapture={()=>setPausa(false)}>
