@@ -120,3 +120,32 @@
 .galeria-acoes { display:flex; flex-wrap:wrap; gap:6px; }
 .galeria-acoes button { min-height:40px; flex:1 1 90px; }
 @media (min-width:1024px) { .galeria-grade { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+
+/* Catálogo → Nano → Studio: tornar o nome clicável e a revisão de fotos legível. */
+.catalogo-nome-abrir{padding:2px 0!important;border:0!important;background:none!important;color:var(--texto)!important;font:inherit!important;font-weight:750!important;text-align:left;white-space:normal!important;cursor:pointer;line-height:1.45;max-width:330px}
+.catalogo-nome-abrir:hover,.catalogo-nome-abrir:focus-visible{color:var(--marca)!important;text-decoration:underline}
+.catalogo-rolagem tbody tr:hover{background:color-mix(in srgb,var(--marca) 4%,var(--cartao))}
+.catalogo-ficha-acoes{min-width:140px}
+.catalogo-ficha-acoes button,.catalogo-ficha-acoes a{display:block;max-width:100%;margin:4px 0;font-size:.77rem;white-space:normal!important;text-decoration:none}
+.catalogo-operacao-nano{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:13px;background:var(--cartao);border:1px solid var(--borda);border-left:4px solid var(--marca);border-radius:14px;padding:14px 17px}
+.catalogo-operacao-nano>div{flex:1 1 360px}.catalogo-operacao-nano strong{font-size:.93rem}
+.catalogo-operacao-nano p{margin:6px 0 0;font-size:.82rem;color:var(--suave);line-height:1.55}
+.catalogo-operacao-nano button{min-height:44px;white-space:normal;text-align:center}
+.catalogo-planejamento{flex:1 1 100%;padding:11px;border-radius:9px;background:var(--realce);font-variant-numeric:tabular-nums}
+.catalogo-galeria-atalho{border:1px solid var(--borda);padding:15px;border-radius:13px;background:var(--realce);display:grid;gap:8px}
+.catalogo-galeria-atalho strong{font-weight:800;font-size:.94rem}
+.catalogo-galeria-atalho p{font-size:.81rem;color:var(--suave);line-height:1.5;margin:0}
+.catalogo-galeria-atalho a{display:flex;justify-content:center;align-items:center;padding:11px 14px;min-height:46px;background:var(--marca);color:var(--marca-texto);border-radius:10px;text-decoration:none;font-weight:800;text-align:center}
+.studio-imagens-espacoso{min-width:0;width:100%;overflow:visible}
+.studio-imagens-cabecalho{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:start;gap:16px}
+.studio-imagens-cabecalho>div{flex:1 1 350px}
+.studio-imagens-cabecalho h2{margin-top:0}
+.studio-imagens-cabecalho p{font-size:.85rem;color:var(--suave);line-height:1.55;margin:7px 0}
+.studio-imagens-cabecalho button{min-height:44px;max-width:300px}
+.studio-dna-resumo{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+.studio-dna-resumo>div{display:grid;gap:3px;align-content:start;background:var(--realce);border:1px solid var(--borda);border-radius:12px;padding:12px;min-width:0}
+.studio-dna-resumo span{font-size:.71rem;font-weight:700;color:var(--suave)}
+.studio-dna-resumo strong{font-size:1.17rem;overflow-wrap:anywhere}
+.studio-dna-resumo small{color:var(--suave);font-size:.72rem;overflow-wrap:anywhere}
+@media(max-width:850px){.studio-dna-resumo{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.catalogo-operacao-nano>button{width:100%}.studio-imagens-cabecalho>button{max-width:100%;width:100%}.studio-dna-resumo{gap:7px}.studio-dna-resumo>div{padding:10px}}

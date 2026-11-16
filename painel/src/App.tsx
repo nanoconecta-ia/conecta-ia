@@ -165,7 +165,7 @@ export function App() {
           : caminho === "/catalogo-espelho" ? <Catalogo loja={loja} />
           : caminho === "/ferramentas" ? <FerramentasCatalogo loja={loja} query={query} />
           : caminho === "/nanogpt" ? <NanoGPT key={loja.id} loja={loja} menu={MENU} />
-          : caminho === "/estudio" ? <NanoWorkspace key={loja.id} loja={loja} menu={MENU} aoNavegar={ir} />
+          : caminho === "/estudio" ? <NanoWorkspace key={loja.id} loja={loja} menu={MENU} aoNavegar={ir} query={query} />
           : caminho === "/demonstracao-cadastro" ? <DemoCadastro />
           : caminho === "/catalogo" ? <Catalogo loja={loja} />
           : caminho === "/fila" ? <Fila loja={loja} />

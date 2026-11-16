@@ -38,6 +38,12 @@ try {
       if(u.pathname.endsWith("/rest/v1/lojas"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([{id:lojaId,nome:"Loja DEMO",slug:"loja-demo",modo_venda:"whatsapp",ambiente:"teste",perfil_ramo:"autopecas"}])});
       if(u.pathname.endsWith("/rest/v1/produtos")) {
         assert.equal(u.searchParams.get("loja_id"),"eq."+lojaId,"somente loja autorizada");
+        if(u.searchParams.get("id")==="eq."+todos[todos.length-1].id) {
+          const p=todos[todos.length-1];
+          const single={...p,unidade:"UN",largura_cm:15,altura_cm:15,profundidade_cm:15,
+            taxonomia_nos:{nome:"Bombas de água"},descricao_complementar:"Descrição do Bling"};
+          return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify(single)});
+        }
         const filtro=u.searchParams.get("or")??"";
         const listados=filtro?todos.filter(x=>[x.sku,x.nome,x.marca,x.gtin].some(v=>v&&String(v).toLowerCase().includes(filtro.toLowerCase().includes("854008")?"854008":"___nenhum___"))):todos;
         const offset=Number(u.searchParams.get("offset")??0), limit=Number(u.searchParams.get("limit")??100);
@@ -47,12 +53,24 @@ try {
         const range=`${offset}-${Math.max(offset,offset+lote.length-1)}/${listados.length}`;
         return route.fulfill({status:200,contentType:"application/json",headers:{...h,"content-range":range},body:JSON.stringify(lote)});
       }
+      if(u.pathname.endsWith("/rest/v1/produto_codigos"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([
+        {produto_id:todos[todos.length-1].id,tipo:"oem",valor:"TESTE-OEM-20910",status:"aprovado",fonte:"CATÁLOGO SINTÉTICO"},
+        {produto_id:todos[todos.length-1].id,tipo:"similar",valor:"TESTE-REF-PENDENTE",status:"a_confirmar",fonte:"HIPÓTESE SINTÉTICA"}
+      ])});
+      if(u.pathname.endsWith("/rest/v1/produto_aplicacoes"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([
+        {produto_id:todos[todos.length-1].id,modelo:"HR TESTE",motorizacao:"TESTE",ano_inicial:2015,ano_final:2018,status:"a_confirmar",fonte:"HIPÓTESE SINTÉTICA"}
+      ])});
+      if(u.pathname.endsWith("/rest/v1/produto_enriquecimento"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:"[]"});
       if(u.pathname.endsWith("/rest/v1/produto_imagens")){
         // consulta da galeria da ficha (filtra por produto e pede as colunas completas) x contagem de imagens da lista (só produto_id)
         if((u.searchParams.get("select")||"").includes("url_original")){
           const img=(n,p={})=>({id:`cccccccc-0000-0000-0000-00000000000${n}`,url:"data:image/gif;base64,R0lGODlhAQABAAAAACw=",tipo:"real",origem:"busca_web",url_original:`https://www.fabricante.exemplo.com.br/pagina/${n}`,licenca_tipo:"fabricante",cruzamento_tipo:"oem",cruzamento_valor:"20910-4AU07",confianca:0.9,largura_px:1200,altura_px:900,aprovada:false,principal:false,direitos_confirmados_em:null,removida_em:null,ordem:n,...p});
           return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([img(1),img(2,{tipo:"ilustrativa",licenca_tipo:null,cruzamento_tipo:"similar",largura_px:200,altura_px:150}),img(3,{aprovada:true,principal:true,licenca_tipo:"propria"})])});
         }
+        if((u.searchParams.get("select")||"").includes("alt_texto"))
+          return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([
+            {id:"cccccccc-0000-0000-0000-000000000001",url:"data:image/gif;base64,R0lGODlhAQABAAAAACw=",tipo:"real",aprovada:true,principal:true,alt_texto:"Peça sintética",licenca_tipo:"propria"}
+          ])});
         return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([{produto_id:"bbbbbbbb-0000-0000-0000-000000000003"}])});
       }
       if(u.pathname.endsWith("/rest/v1/taxonomia_nos"))return route.fulfill({status:200,contentType:"application/json",headers:h,body:JSON.stringify([{id:"n1",pai_id:null,nome:"Arrefecimento",slug:"arrefecimento",ordem:1},{id:"n2",pai_id:"n1",nome:"Bombas d'água",slug:"bombas-agua",ordem:1}])});
@@ -63,7 +81,7 @@ try {
     await page.goto(base+"/#/catalogo");
     await page.getByRole("heading",{name:/Catálogo técnico/}).waitFor();
     await page.getByRole("group",{name:"Modo de visualização"}).getByRole("button",{name:"Cartões"}).click();
-    const query=page.getByRole("searchbox",{name:"Buscar produto por SKU, nome, marca ou GTIN"});
+    const query=page.getByRole("searchbox",{name:"Buscar produto por SKU, nome, descrição, GTIN ou OEM"});
     await query.fill("854008");
     await page.locator(".catalogo-produto").filter({hasText:"INDISA"}).waitFor();
     await page.getByRole("status").filter({hasText:"1 encontrado(s)"}).waitFor();
@@ -75,26 +93,13 @@ try {
     assert.match(await modal.innerText(),/IN D I S A|INDISA/);
     assert.match(await modal.innerText(),/GTIN\/EAN/);
     assert.equal((await modal.innerText()).includes("151,00"),false,"custo confidencial não exibido");
-    // Nano Studio: galeria real reaproveitada; 8 no máximo, seleção para comparação,
-    // status de identidade/direitos e aprovação humana POR IMAGEM.
-    const galeria=modal.locator(".galeria-produto");await galeria.waitFor();
-    assert.equal(await galeria.locator(".gs-card").count(),3,"as três imagens do produto aparecem na grade");
-    const txtGaleria=await galeria.innerText();
-    assert.ok(txtGaleria.includes("3/8"));
-    assert.ok(txtGaleria.includes("fabricante.exemplo.com.br"));
-    assert.match(txtGaleria,/Imagem ilustrativa/);
-    assert.match(txtGaleria,/Não comprovada/);
-    assert.match(txtGaleria,/Direitos pendentes/);
-    assert.equal(await galeria.locator(".gs-card").nth(0).getByText("Direitos e aprovação OK").count(),0,
-      "foto sem direitos nunca é classificada como apta para publicar");
-    assert.equal(await galeria.getByRole("button",{name:"Aprovar foto"}).count(),2,
-      "somente as duas pendentes oferecem aprovação individual");
-    await galeria.getByLabel("Foto 1").check();
-    await galeria.getByLabel("Foto 2").check();
-    assert.equal(await galeria.locator(".gs-comparacao figure").count(),2,"duas fotos na comparação");
-    await galeria.getByRole("button",{name:"Pré-selecionar principal"}).first().click();
-    assert.match(await galeria.locator(".gs-preprincipal").innerText(),/não gravada/,
-      "prévia principal não executa gravação no banco");
+    // A galeria completa saiu da ficha lateral estreita e abre o Estúdio do Nano.
+    const linkStudio=modal.getByRole("link",{name:"Abrir Estúdio de fotos deste produto"});
+    await linkStudio.waitFor();
+    const urlStudio=await linkStudio.getAttribute("href");
+    assert.equal(urlStudio,"#/estudio?produto="+todos[todos.length-1].id,"o mesmo ID físico segue para o Estúdio");
+    assert.equal(await modal.locator(".galeria-produto").count(),0,"não renderizar oito cartões comprimidos na lateral");
+    assert.ok((await modal.innerText()).includes("em largura completa"));
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,`galeria sem overflow a ${width}px`);
     await page.keyboard.press("Escape");await modal.waitFor({state:"hidden"});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,`sem overflow a ${width}px`);
@@ -113,12 +118,12 @@ try {
     }
     { // ponte ficha -> Nano.IA: o pedido leva o produto e as pendências à caixa do chat, sem enviar nada
       await page.goto(base+"/#/catalogo");await page.getByRole("heading",{name:/Catálogo técnico/}).waitFor();
-      await page.getByRole("searchbox",{name:"Buscar produto por SKU, nome, marca ou GTIN"}).fill("854008");
+      await page.getByRole("searchbox",{name:"Buscar produto por SKU, nome, descrição, GTIN ou OEM"}).fill("854008");
       await page.getByRole("status").filter({hasText:"1 encontrado(s)"}).waitFor();
       await page.getByRole("button",{name:"Ver ficha técnica"}).click();
       const ficha=page.getByRole("dialog");await ficha.waitFor();
       assert.equal(await ficha.getAttribute("aria-modal"),"false","ficha lateral não é modal");
-      if(width>=960){const f=await ficha.boundingBox(),b=await page.getByRole("searchbox",{name:"Buscar produto por SKU, nome, marca ou GTIN"}).boundingBox();assert.ok(b.x+b.width<=f.x+1,`ficha ao lado do catálogo, sem cobrir a busca (${Math.round(b.x+b.width)} vs ${Math.round(f.x)})`);}
+      if(width>=960){const f=await ficha.boundingBox(),b=await page.getByRole("searchbox",{name:"Buscar produto por SKU, nome, descrição, GTIN ou OEM"}).boundingBox();assert.ok(b.x+b.width<=f.x+1,`ficha ao lado do catálogo, sem cobrir a busca (${Math.round(b.x+b.width)} vs ${Math.round(f.x)})`);}
       await ficha.getByLabel("Propor outra posição").selectOption({label:"Bombas d'água"});
       await ficha.getByLabel(/O que você sabe sobre ele/).fill("acho que o fabricante é teste");
       { // correção de cadastro SEM IA: valida no cliente, cria só a PROPOSTA (nenhuma gravação no ERP)
@@ -146,6 +151,22 @@ try {
       assert.ok((await page.evaluate(()=>[...document.querySelectorAll("textarea")].find(t=>t.value.includes("Corrigir o cadastro"))?.value??"")).length>0,"o texto continua na caixa: nada foi enviado");
       await page.screenshot({path:root+`evidencias-chat/ficha-pedir-correcao-${width}.png`});
     }
+    // Fluxo real de navegação Catálogo -> Estúdio com produto em foco e chat.
+    await page.goto(base+"/#/estudio?produto="+todos[todos.length-1].id);
+    await page.locator(".ap-ficha-ativa").waitFor();
+    await page.getByText("Peça em foco no Estúdio").waitFor();
+    const pane=page.locator(".ap-imagens-produto");
+    await pane.waitFor();
+    await pane.getByText("Bomba d'água INDISA").waitFor();
+    await pane.locator(".gs-card").first().waitFor();
+    const meta=await pane.innerText();
+    assert.ok(meta.includes("códigos aprovados")||meta.includes("código aprovado"),"Estúdio sabe o estado dos códigos");
+    await pane.getByRole("button",{name:"Pesquisar imagens com DNA da peça"}).click();
+    const consulta=await page.evaluate(()=>[...document.querySelectorAll("textarea")].map(t=>t.value).find(x=>x.includes("TESTE-OEM-20910"))??"");
+    assert.ok(consulta.includes("TESTE-OEM-20910"),"OEM aprovado chega ao chat");
+    assert.ok(consulta.includes("TESTE-REF-PENDENTE"),"referência não aprovada é marcada como hipótese");
+    assert.ok(consulta.includes("A CONFIRMAR"),"aplicações pendentes não são homologadas");
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),true,"Estúdio de imagens sem overflow");
     assert.deepEqual(writes.filter(x=>/bling|produtos|produto_automacao/.test(x.url)),[],"nenhuma escrita no ERP ou catálogo");
     assert.deepEqual(errors,[],"sem exceções no navegador");
     await context.close();
