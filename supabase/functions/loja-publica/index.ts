@@ -69,8 +69,8 @@ Deno.serve(async (req) => {
       .order("principal", { ascending: false }).order("ordem").limit(8);
     const { data: no } = p.taxonomia_no_id ? await sb.from("taxonomia_nos")
       .select("nome").eq("id", p.taxonomia_no_id).maybeSingle() : { data: null };
-    const tel = String(loja.whatsapp ?? "").replace(/\\D/g, "");
-    const whatsapp = /^55\\d{10,11}$/.test(tel)
+    const tel = String(loja.whatsapp ?? "").replace(/\D/g, "");
+    const whatsapp = /^55\d{10,11}$/.test(tel)
       ? "https://wa.me/" + tel + "?text=" + encodeURIComponent(
         "Olá, preciso confirmar a aplicação em " + app.modelo + " (" + (app.motorizacao ?? "motor não informado") +
         "), peça Mobis SKU " + p.sku + ". Podem conferir pelo chassi e informar disponibilidade?")
