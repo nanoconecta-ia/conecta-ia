@@ -75,6 +75,18 @@ Deno.serve(async (req) => {
         "Olá, preciso confirmar a aplicação em " + app.modelo + " (" + (app.motorizacao ?? "motor não informado") +
         "), peça Mobis SKU " + p.sku + ". Podem conferir pelo chassi e informar disponibilidade?")
       : null;
+    // A vitrine recebe SOMENTE o NCM cadastrado/validado, sem fornecedor,
+    // custo, nota fiscal de entrada, observações internas ou origem comercial.
+    // NCM do Bling ainda pendente de XML da NF pode ser exibido como "cadastrado",
+    // mas jamais confundido com homologação fiscal concluída.
+    const { data: fiscal } = await sb.from("produto_fiscal")
+      .select("ncm,origem_ncm,status")
+      .eq("loja_id",loja.id).eq("produto_id",p.id).maybeSingle();
+    const ncmBruto = fiscal && fiscal.status !== "rejeitado"
+      && (fiscal.status === "validado" || fiscal.origem_ncm === "bling_erp")
+      && typeof fiscal.ncm === "string" && /^[0-9]{8}$/.test(fiscal.ncm)
+        ? fiscal.ncm : null;
+    const ncmPublico = ncmBruto ? ncmBruto.replace(/^(\\d{4})(\\d{2})(\\d{2})$/, "$1.$2.$3") : null;
     // Informações institucionais: exclusivamente política aprovada para a loja.
     const { data: politicasAplicacao } = await sb.from("loja_politicas")
       .select("razao_social,cnpj,endereco,telefone,email_contato,privacidade_texto,troca_devolucao_texto,entrega_texto,garantia_texto,termos_texto")
@@ -94,7 +106,7 @@ Deno.serve(async (req) => {
         restricao: app.restricao ?? null, contraindicacao: app.contraindicacao ?? null,
         bula_tecnica: p.descricao_complementar ? "Informações declaradas no cadastro da peça (confirmar documentação técnica do fabricante):\\n" + p.descricao_complementar : null,
         // Só preencher com registros fiscais validados e arquivos licenciados após integração específica.
-        codigo_fiscal: null, foto_veiculo: null, logo_montadora: null,
+        codigo_fiscal: ncmPublico, foto_veiculo: null, logo_montadora: null,
         preco: null, estoque: null, whatsapp,
       },
     });
