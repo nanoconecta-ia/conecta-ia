@@ -24,6 +24,6 @@ export function existemMaisProdutos(carregados: number, total: number | null, ul
 
 /** Termo literal para a busca de CÓDIGOS OEM; nunca pressupõe aplicação comprovada. */
 export function termoBuscaOem(busca: string): string | null {
-  const valor = busca.trim().slice(0, 80).replace(/[^\\p{L}\\p{N} ./-]/gu, " ").replace(/\\s+/g," ").trim();
+  const valor = busca.trim().slice(0, 80).replace(/[^\p{L}\p{N} ./-]/gu, " ").replace(/\s+/g," ").trim();
   return valor.length ? valor : null;
 }
