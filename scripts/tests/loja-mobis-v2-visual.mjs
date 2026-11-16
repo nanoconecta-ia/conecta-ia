@@ -75,7 +75,8 @@ try{
   if(width===1280){await page.locator('.m2-veiculo').first().hover();assert.equal(await page.locator('.m2-veiculo').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','hover preserva fundo branco');}
 
   assert.equal(await page.locator(".v-hero").count(),0,"layout antigo não pode ser renderizado");
-  assert.equal(await page.locator(".m2-veiculo").count(),4,"4 opções de veículos");
+  assert.equal(await page.locator(".m2-veiculo").count(),6,"cinco modelos com fotos reais e consulta a outros modelos");
+  assert.equal(await page.locator(".m3-veiculo-card img").count(),5,"fotos reais também na escolha por modelo");
   await page.getByRole('tab',{name:'O que ele precisa?',exact:true}).click();
   assert.equal(await page.locator(".m2-sistema-grade button").count(),8,"8 módulos de peças");
   assert.equal(await page.locator(".m2-aviso-teste").isVisible(),true,"loja continua em teste");
