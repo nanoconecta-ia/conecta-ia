@@ -1,0 +1,78 @@
+/* Carrossel Vidro V2 do Nano: tratamento original, não replica tutorial externo.
+   Paleta MOBIS usa tokens da plataforma: grafite, vermelho de acento e gelo. */
+.gv2 {
+  --gv2-acento:var(--marca,#c53c42);
+  color:#f6f8fb;
+  isolation:isolate;position:relative;display:grid;gap:15px;min-width:0;
+  border:1px solid rgba(255,255,255,.24);border-radius:24px;
+  padding:clamp(13px,2.5vw,26px);
+  background:
+    radial-gradient(ellipse 65% 80% at 80% 16%,color-mix(in srgb,var(--gv2-acento) 42%,transparent),transparent 76%),
+    radial-gradient(ellipse 70% 70% at 5% 90%,rgba(142,160,177,.27),transparent 70%),
+    linear-gradient(125deg,#151b25,#2a2f3b 58%,#232c3a);
+  box-shadow:0 22px 55px rgba(9,15,26,.27),0 1px 0 rgba(255,255,255,.19) inset;
+  overflow:hidden;
+}
+.gv2::before{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;
+  background:linear-gradient(140deg,rgba(255,255,255,.11),transparent 45%,rgba(255,255,255,.035));
+}
+.gv2-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative;z-index:1}
+.gv2-marca{display:flex;align-items:center;gap:8px;letter-spacing:.11em;font-size:.71rem;font-weight:800;color:#f2f3f5}
+.gv2-ponto{width:9px;height:9px;border-radius:50%;background:var(--gv2-acento);box-shadow:0 0 0 4px rgba(255,255,255,.11),0 0 17px var(--gv2-acento)}
+.gv2-numero{font-size:1.25rem;font-weight:850;font-variant-numeric:tabular-nums}
+.gv2-numero span{font-size:.8rem;color:#c5ccd7;font-weight:650}
+.gv2-superficie{
+  position:relative;min-width:0;border-radius:19px;
+  display:grid;gap:12px;padding:clamp(10px,1.8vw,20px);
+  background:rgba(245,248,252,.095);border:1px solid rgba(255,255,255,.24);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3);
+  backdrop-filter:blur(16px) saturate(1.3);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.23),0 12px 24px rgba(0,0,0,.13);
+}
+.gv2-halo{pointer-events:none;position:absolute;z-index:-1;inset:8% 25%;border-radius:50%;filter:blur(28px);background:rgba(230,233,237,.08)}
+.gv2-espaco-foto{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;align-items:center;gap:10px;min-height:300px}
+.gv2-foto{position:relative;display:grid;place-items:center;min-width:0;width:100%;height:clamp(240px,29vw,430px);border-radius:15px;padding:clamp(14px,3vw,28px);border:1px solid rgba(255,255,255,.48);cursor:zoom-in;overflow:hidden;box-shadow:0 15px 34px rgba(4,12,20,.22)}
+.gv2-foto:focus-visible,.gv2-seta:focus-visible,.gv2-miniatura:focus-visible,.gv2-botao:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.gv2-foto-branca{background:#fff}
+.gv2-foto-xadrez{background:repeating-conic-gradient(#dce1e4 0 25%,#fff 0 50%) 50%/22px 22px}
+.gv2-foto img{width:100%;height:100%;object-fit:contain;display:block;animation:gv2-entrada .23s ease-out both}
+.gv2-seta{display:grid;place-items:center;width:46px;height:54px;padding:0;border-radius:14px;color:#fff;background:rgba(255,255,255,.12)!important;border:1px solid rgba(255,255,255,.32);font-size:2.15rem;line-height:1;box-shadow:inset 0 1px 0 rgba(255,255,255,.2);cursor:pointer;transition:background .18s,transform .18s}
+.gv2-seta:hover:not(:disabled){background:rgba(255,255,255,.23)!important;transform:translateY(-2px)}
+.gv2-seta:disabled{opacity:.35;cursor:not-allowed}
+.gv2-cabeca{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.gv2-titulo{display:grid;gap:3px;min-width:180px;flex:1}
+.gv2-titulo strong{font-size:.94rem;overflow-wrap:anywhere}
+.gv2-titulo span{font-size:.77rem;color:#d3dae3}
+.gv2-estados{display:flex;gap:6px;flex-wrap:wrap}
+.gv2-estados span{display:inline-block;border:1px solid rgba(255,255,255,.22);border-radius:99px;font-size:.68rem;font-weight:750;padding:5px 9px;color:#fff;background:rgba(255,255,255,.095)}
+.gv2-estados .gv2-aprovada{border-color:rgba(159,233,183,.43);color:#c9f3d4}
+.gv2-estados .gv2-pendente{border-color:rgba(252,202,158,.5);color:#ffe3c1}
+.gv2-miniaturas{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:7px;min-width:0}
+.gv2-miniatura{position:relative;display:grid;place-items:center;border:1px solid rgba(255,255,255,.24);border-radius:10px;padding:5px;min-width:0;height:clamp(48px,8vw,81px);background:rgba(255,255,255,.12)!important;cursor:pointer;color:#fff;transition:border-color .15s,transform .15s,background .15s}
+.gv2-miniatura:hover{background:rgba(255,255,255,.23)!important;transform:translateY(-2px)}
+.gv2-miniatura-ativa{border:2px solid #f3f5f9;box-shadow:0 0 0 2px var(--gv2-acento),0 5px 14px rgba(0,0,0,.23)}
+.gv2-miniatura img{display:block;max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.15))}
+.gv2-miniatura span{position:absolute;left:4px;bottom:4px;font-size:.62rem;font-weight:800;background:rgba(21,26,35,.85);border-radius:4px;padding:1px 4px}
+.gv2-miniatura i{position:absolute;right:4px;top:4px;background:#f6f8fb;color:#29303b;border-radius:100%;font-size:.64rem;font-style:normal;font-weight:800;width:17px;height:17px;display:grid;place-items:center}
+.gv2-rodape{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.gv2-rodape p{flex:1 1 260px;font-size:.74rem;line-height:1.55;color:#cbd4df;margin:0}
+.gv2-acoes{display:flex;gap:8px;flex-wrap:wrap}
+.gv2-botao{min-height:42px;padding:9px 14px;border-radius:11px;font-size:.79rem;font-weight:750;cursor:pointer}
+.gv2-botao-claro{background:rgba(255,255,255,.12)!important;border:1px solid rgba(255,255,255,.37);color:#fff}
+.gv2-botao-acento{background:var(--gv2-acento)!important;border:1px solid rgba(255,255,255,.25);color:#fff}
+.gv2-botao:hover{filter:brightness(1.1)}
+@keyframes gv2-entrada{from{opacity:.6;transform:scale(.975)}to{opacity:1;transform:scale(1)}}
+@media(max-width:650px){
+  .gv2{border-radius:18px;padding:12px;gap:10px}
+  .gv2-espaco-foto{grid-template-columns:31px minmax(0,1fr) 31px;gap:5px;min-height:190px}
+  .gv2-foto{height:clamp(190px,55vw,295px);padding:8px}
+  .gv2-seta{width:31px;height:45px;border-radius:10px;font-size:1.6rem}
+  .gv2-miniaturas{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .gv2-miniatura{height:67px}
+  .gv2-marca{font-size:.57rem;letter-spacing:.05em}
+  .gv2-cabeca{align-items:start}
+  .gv2-acoes{width:100%}
+  .gv2-botao{flex:1;min-width:128px}
+}
+@media(prefers-reduced-motion:reduce){.gv2 *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@supports not (backdrop-filter:blur(1px)){.gv2-superficie{background:rgba(49,57,69,.93)}}
