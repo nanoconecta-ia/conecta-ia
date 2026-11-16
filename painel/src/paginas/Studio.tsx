@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Visualizador } from "../componentes/Visualizador.tsx";
+import { GaleriaProduto } from "../componentes/GaleriaProduto.tsx";
 import type { DadosStudio, ProdutoResumo } from "../lib/conectorDados.ts";
 import type { Loja } from "../lib/dados.ts";
 import { ir } from "../lib/rota.ts";
-import { dadosPublicos, previaSeo, prontidao, ROTULO_IMAGEM } from "../lib/studio.ts";
+import { dadosPublicos, previaSeo, prontidao } from "../lib/studio.ts";
 import { useFonte } from "../lib/useFonte.ts";
 import { corpoReleitura, mensagemReleitura } from "../lib/relerBling.ts";
 import { supabase } from "../supabase.ts";
@@ -41,7 +41,6 @@ export function Studio({ loja, query }: { loja: Loja; query: URLSearchParams }) 
   const [busca, setBusca] = useState(""); const [achados, setAchados] = useState<ProdutoResumo[]>([]);
   const [s, setS] = useState<DadosStudio | null | undefined>(undefined);
   const [modo, setModo] = useState<"desktop" | "mobile">("desktop");
-  const [ampliada, setAmpliada] = useState<{ url: string; nome: string } | null>(null);
   const [relendo, setRelendo] = useState(false); const [relerMsg, setRelerMsg] = useState<{ ok: boolean; texto: string } | null>(null);
 
   useEffect(() => { if (!fonte) return; const t = setTimeout(() => { void fonte.buscarProdutos(loja.id, busca).then(setAchados).catch(() => setAchados([])); }, 250); return () => clearTimeout(t); }, [fonte, busca, loja.id]);
@@ -76,7 +75,6 @@ export function Studio({ loja, query }: { loja: Loja; query: URLSearchParams }) 
         : s === undefined ? <p className="suave">Carregando…</p>
         : s === null ? <div className="cartao"><p className="msg-erro" role="alert">Não foi possível carregar este produto.</p></div> : (() => {
           const pub = dadosPublicos(s), seo = previaSeo(s), prot = prontidao(s);
-          const pendentes = s.imagens.filter((i) => !i.aprovada);
           return (
             <>
               <div className="cartao">
@@ -121,16 +119,9 @@ export function Studio({ loja, query }: { loja: Loja; query: URLSearchParams }) 
               </div>
 
               <div className="cartao">
-                <h2>Imagens</h2>
-                <p className="suave">Aprovadas: {pub.imagens.length} · Aguardando decisão: {pendentes.length}. A origem de terceiros fica só no banco; aqui e na loja só aparece a imagem tratada.</p>
-                {s.imagens.length === 0 ? <p className="suave">Este produto ainda não tem imagens.</p> : (
-                  <div className="grade">{s.imagens.map((i) => (
-                    <figure key={i.id} className="figura">
-                      <button className="sec miniatura-g" onClick={() => setAmpliada({ url: i.url, nome: ROTULO_IMAGEM[i.tipo] })} aria-label={`Ampliar imagem: ${ROTULO_IMAGEM[i.tipo]}`}><img src={i.url} alt={i.alt_texto ?? ""} /></button>
-                      <figcaption><span className={`selo ${i.aprovada ? "ok" : "atencao"}`}>{i.aprovada ? "aprovada" : "pendente"}</span> {i.principal && <span className="selo">principal</span>}<br /><span className="suave">{ROTULO_IMAGEM[i.tipo]}</span></figcaption>
-                    </figure>))}
-                  </div>)}
-                <p className="aviso">Geração de imagens: <strong>serviço não configurado</strong>. É uma capacidade independente (não faz parte de nenhum modelo de texto) e só será usada depois de configurada e autorizada. Imagem sintética nunca substitui a foto real.</p>
+                <h2>Filtro de fotos · Studio do Nano</h2>
+                <p className="suave">O Nano reúne até oito candidatas por produto. Filtre, amplie, compare e aprove cada fotografia pela Fila existente. A prévia da principal e o preparo branco não salvam nem publicam imagens.</p>
+                <GaleriaProduto loja={loja} produtoId={s.produto.id} sku={s.produto.sku} />
               </div>
 
               <div className="grade dois">
@@ -150,7 +141,6 @@ export function Studio({ loja, query }: { loja: Loja; query: URLSearchParams }) 
                 <p className="suave">Só dados aprovados. Produto incompleto não é publicado.</p>
                 <PaginaPublica s={s} largura={modo} />
               </div>
-              <Visualizador url={ampliada?.url ?? null} legenda={ampliada?.nome ?? ""} aoFechar={() => setAmpliada(null)} />
             </>
           );
         })()}
