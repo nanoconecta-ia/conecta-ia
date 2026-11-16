@@ -284,9 +284,18 @@ export function Catalogo({ loja }: { loja: Loja }) {
         <div><Icone nome="imagem" tamanho={22}/><strong>{itens === null ? "…" : resumo.semImagem.toLocaleString("pt-BR")}</strong><span>Sem imagem no espelho</span></div>
       </section>
       <div className="catalogo-barra">
-        <label className="catalogo-pesquisa"><span>Buscar por SKU, nome, marca ou GTIN em todo o espelho</span>
-          <div><Icone nome="busca" tamanho={19} /><input type="search" aria-label="Buscar produto por SKU, nome, marca ou GTIN" placeholder="SKU, nome, marca ou GTIN…" value={busca} onChange={(e) => { setBusca(e.target.value); setSelecionados(new Set()); }} /></div>
+        <label className="catalogo-pesquisa"><span>{modoBusca==="oem"?"Buscar referência OEM, inclusive proposta a confirmar":"Buscar SKU, nome, marca, GTIN e descrição em todo o espelho"}</span>
+          <div><Icone nome="busca" tamanho={19} /><input type="search"
+            aria-label={modoBusca==="oem"?"Buscar por código OEM":"Buscar SKU, nome, marca, GTIN ou descrição"}
+            placeholder={modoBusca==="oem"?"Ex.: 26300-42040, 0K…":"SKU, nome, marca, GTIN ou descrição…"}
+            value={busca} onChange={(e) => { setBusca(e.target.value); setSelecionados(new Set()); }} /></div>
         </label>
+        <div className="catalogo-modos" role="group" aria-label="Tipo de pesquisa">
+          <button type="button" className={modoBusca==="texto"?"ativo":""} aria-pressed={modoBusca==="texto"}
+            onClick={()=>{setModoBusca("texto");setSelecionados(new Set());setFiltro("todos");}}>Dados e descrição</button>
+          <button type="button" className={modoBusca==="oem"?"ativo":""} aria-pressed={modoBusca==="oem"}
+            onClick={()=>{setModoBusca("oem");setSelecionados(new Set());setFiltro("todos");}}>Códigos OEM</button>
+        </div>
         <div className="catalogo-modos" role="group" aria-label="Modo de visualização">
           <button type="button" className={vista === "tabela" ? "ativo" : ""} aria-pressed={vista === "tabela"} onClick={() => setVista("tabela")}><Icone nome="fila" tamanho={17} /> Tabela</button>
           <button type="button" className={vista === "cartoes" ? "ativo" : ""} aria-pressed={vista === "cartoes"} onClick={() => setVista("cartoes")}><Icone nome="caixas" tamanho={17} /> Cartões</button>
@@ -300,6 +309,8 @@ export function Catalogo({ loja }: { loja: Loja }) {
         ))}
       </div>
       <p className="catalogo-informacao" role="note"><Icone nome="escudo" tamanho={18} /><span>A pesquisa é feita no espelho da <strong>sua loja</strong> em lotes de 100. Os indicadores e filtros técnicos mostram apenas os produtos <strong>já carregados</strong>; use "Carregar mais" para continuar. Custos e fornecedores não são exibidos. Publicação e pausa continuam sob aprovação do lojista.</span></p>
+
+      {modoBusca==="oem" && avisoOem && <p className="catalogo-informacao" role="note"><Icone nome="escudo" tamanho={18}/><span>{avisoOem}</span></p>}
       <div className="catalogo-resultados" role="status">{itens === null ? "Consultando o espelho…" : `${visiveis.length} filtrado(s) entre ${itens.length} carregado(s)${totalBanco !== null ? ` · ${totalBanco.toLocaleString("pt-BR")} encontrado(s) na busca do servidor` : ""}`}{pesquisaPendente ? " · atualizando pesquisa…" : ""}</div>
       {erroConsulta && <div className="msg-erro" role="alert">{erroConsulta} <button type="button" className="sec" onClick={() => void carregar(0)}>Tentar novamente</button></div>}
       {msg && <p className={msg.ok ? "msg-ok" : "msg-erro"} role="status">{msg.texto}</p>}
@@ -313,17 +324,28 @@ export function Catalogo({ loja }: { loja: Loja }) {
           <button className="sec" disabled={ocupado === "lote"} onClick={() => void automacao(false)}>Retomar cadastro automático</button>
         </div>
       )}
+      <EnriquecerCatalogo loja={loja} idsSelecionados={[...selecionados]} />
       {itens === null ? <p className="suave">Carregando…</p> : itens.length === 0 ? <p className="suave">Nenhum produto encontrado nesta pesquisa. Confira a busca ou a conexão com o Bling.</p> : visiveis.length === 0 ? <p className="suave">Nenhum produto corresponde à busca e ao filtro selecionados.</p> : vista === "tabela" ? (
         <div className="rolagem catalogo-rolagem">
           <table>
-            <thead><tr><th><input type="checkbox" aria-label="Selecionar todos" checked={idsVisiveis.length > 0 && idsVisiveis.every((i) => selecionados.has(i))} onChange={() => setSelecionados(alternarTodos(selecionados, idsVisiveis))} style={{ width: 20, minHeight: 20 }} /></th><th>SKU</th><th>Nome</th><th>Marca</th><th>Categoria no Bling</th><th>Lugar na taxonomia</th><th>Preço</th><th>Estoque</th><th>Falta</th><th>Ficha</th><th>Site</th></tr></thead>
+            <thead><tr><th><input type="checkbox" aria-label="Selecionar todos" checked={idsVisiveis.length > 0 && idsVisiveis.every((i) => selecionados.has(i))} onChange={() => setSelecionados(alternarTodos(selecionados, idsVisiveis))} style={{ width: 20, minHeight: 20 }} /></th><th>SKU</th><th>Foto</th><th>Nome — clique para abrir ficha</th><th>Marca</th><th>Categoria no Bling</th><th>Lugar na taxonomia</th><th>Preço</th><th>Estoque</th><th>Falta</th><th>Ficha</th><th>Site</th></tr></thead>
             <tbody>{visiveis.map((p) => (
-              <tr key={p.id}><td><input type="checkbox" aria-label={`Selecionar ${p.sku ?? p.nome ?? "produto"}`} checked={selecionados.has(p.id)} onChange={() => setSelecionados(alternar(selecionados, p.id))} style={{ width: 20, minHeight: 20 }} /></td><td className="mono">{p.sku ?? "—"}</td><td>{p.nome ?? "—"}{p.situacao !== "A" && <>{" "}<span className="selo atencao">{situacaoTexto(p.situacao)}</span></>}{pausados.has(p.id) && <>{" "}<span className="selo atencao">automação parada</span></>}</td><td>{p.marca ?? "—"}</td>
+              <tr key={p.id}><td><input type="checkbox" aria-label={`Selecionar ${p.sku ?? p.nome ?? "produto"}`} checked={selecionados.has(p.id)} onChange={() => setSelecionados(alternar(selecionados, p.id))} style={{ width: 20, minHeight: 20 }} /></td><td className="mono">{p.sku ?? "—"}</td>
+                <td><button type="button" className="catalogo-foto-abrir"
+                  aria-label={`Abrir galeria de ${p.nome??p.sku??"produto"}`}
+                  onClick={()=>setFichaId(p.id)}>{p.imagemPrincipal
+                    ? <img src={p.imagemPrincipal} loading="lazy" referrerPolicy="no-referrer" alt=""/>
+                    : <Icone nome="imagem" tamanho={24}/>}</button></td>
+                <td><button type="button" className="catalogo-nome-abrir" onClick={()=>setFichaId(p.id)}
+                  title="Abrir ficha, aplicações e imagens deste produto">{p.nome??"Produto sem nome"}</button>{p.situacao !== "A" && <>{" "}<span className="selo atencao">{situacaoTexto(p.situacao)}</span></>}{pausados.has(p.id) && <>{" "}<span className="selo atencao">automação parada</span></>}</td><td>{p.marca ?? "—"}</td>
                 <td>{semCategoria(p, idsListados) ? <span className="selo atencao">sem categoria</span> : categorias.get(p.categoria_bling_id ?? "") ?? "—"}</td><td>{p.taxonomia_no_id ? nomeNo(p.taxonomia_no_id) : <span className="selo atencao">sem lugar</span>}</td><td>{brl(p.preco)}</td><td>{p.estoque ?? "—"}</td>
                 <td>{camposFaltando(p).length === 0 ? <span className="selo ok">sem lacunas verificadas</span> : camposFaltando(p).join(", ")}</td>
                 <td><button type="button" className="sec" onClick={() => setFichaId(p.id)}>Ver ficha</button></td>
                 <td>
                   <span className={`selo ${p.publicado ? "ok" : "atencao"}`}>{p.publicado ? "visível" : "oculto"}</span>{" "}
+                  {p.publicado && p.sku && <a className="catalogo-site-link"
+                    href={`#/p/${encodeURIComponent(loja.slug)}/${encodeURIComponent(p.sku)}`}
+                    title="Abrir a página pública do produto">Ver no site</a>}
                   {p.publicado
                     ? <button className="sec" disabled={ocupado === p.id} onClick={() => void alterar(p, false)}>Ocultar do site</button>
                     : <button disabled={ocupado === p.id} onClick={() => void alterar(p, true)}>Mostrar no site</button>}
@@ -336,11 +358,14 @@ export function Catalogo({ loja }: { loja: Loja }) {
           {visiveis.map((p) => (
             <article className="catalogo-produto" key={p.id}>
               <div className="catalogo-produto-topo">
-                <span className="catalogo-produto-icone" aria-hidden="true"><Icone nome="catalogo" tamanho={29}/></span>
+                <button type="button" className="catalogo-produto-icone catalogo-foto-cartao"
+                  aria-label={`Abrir imagens de ${p.nome??p.sku??"produto"}`} onClick={()=>setFichaId(p.id)}>
+                  {p.imagemPrincipal ? <img src={p.imagemPrincipal} alt="" loading="lazy" referrerPolicy="no-referrer" />
+                    : <Icone nome="imagem" tamanho={29}/>}</button>
                 <span className={`selo ${p.situacao === "A" ? "ok" : "atencao"}`}>{situacaoTexto(p.situacao)}</span>
               </div>
               <span className="catalogo-sku">{p.sku ?? "SKU não cadastrado"}</span>
-              <h2>{p.nome ?? "Produto sem nome"}</h2>
+              <h2><button type="button" className="catalogo-nome-abrir" onClick={()=>setFichaId(p.id)}>{p.nome??"Produto sem nome"}</button></h2>
               <span className="catalogo-marca">{p.marca ?? "Marca pendente"}</span>
               <div className="catalogo-produto-numeros">
                 <div><small>Preço no espelho</small><strong>{brl(p.preco)}</strong></div>
@@ -354,6 +379,9 @@ export function Catalogo({ loja }: { loja: Loja }) {
               <div className="catalogo-produto-acoes">
                 <label><input type="checkbox" checked={selecionados.has(p.id)} onChange={() => setSelecionados(alternar(selecionados, p.id))} /> Selecionar</label>
                 <button type="button" className="sec" onClick={() => setFichaId(p.id)}>Ver ficha técnica</button>
+                <a className="sec" href={"#/studio?produto="+encodeURIComponent(p.id)}>Abrir no Studio</a>
+                {p.publicado && p.sku && <a className="sec"
+                  href={`#/p/${encodeURIComponent(loja.slug)}/${encodeURIComponent(p.sku)}`}>Ver no site</a>}
                 {p.sku && <a className="sec" href={"#/ferramentas?sku="+encodeURIComponent(p.sku)}>Indexar · ERP</a>}
               </div>
             </article>
@@ -426,7 +454,13 @@ export function Catalogo({ loja }: { loja: Loja }) {
               <button type="button" disabled={corrigindo} onClick={() => void criarPropostaCorrecao()}>{corrigindo ? "Criando…" : "Criar proposta de correção"}</button>
               {msgCorrecao && <p role="status" className={msgCorrecao.ok ? "correcao-ok" : "correcao-erro"}>{msgCorrecao.texto}{msgCorrecao.ok && <> <a href="#/fila" onClick={() => setFichaId(null)}>Abrir aprovações</a></>}</p>}
             </div>
-            <div className="catalogo-ficha-links"><a href="#/assistente" onClick={() => setFichaId(null)}><Icone nome="agentes" tamanho={18}/> Consultar Nano.IA</a><a href="#/fila" onClick={() => setFichaId(null)}>Abrir aprovações</a></div>
+            <div className="catalogo-ficha-links">
+              <a href={"#/studio?produto="+encodeURIComponent(ficha.id)} onClick={()=>setFichaId(null)}>
+                <Icone nome="imagem" tamanho={18}/> Abrir no Studio do Nano</a>
+              {ficha.publicado && ficha.sku && <a
+                href={`#/p/${encodeURIComponent(loja.slug)}/${encodeURIComponent(ficha.sku)}`}
+                onClick={()=>setFichaId(null)}>Ver página do produto no site</a>}
+              <a href="#/assistente" onClick={() => setFichaId(null)}><Icone nome="agentes" tamanho={18}/> Consultar Nano.IA</a><a href="#/fila" onClick={() => setFichaId(null)}>Abrir aprovações</a></div>
           </section>
         </div>
       )}
