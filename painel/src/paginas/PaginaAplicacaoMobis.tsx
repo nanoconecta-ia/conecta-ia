@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
-import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
+import { IconePeca } from "../componentes/IconePeca.tsx";
+import { VeiculoRealMobis } from "../componentes/VeiculoRealMobis.tsx";
 import logoMobis from "../assets/marcas/mobis-oficial-fundo-escuro.png";
 import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import "./loja-mobis-nova.css";
 
+type Historia = {titulo:string;resumo:string;status:string;eventos:Array<{ano:string;titulo:string;texto:string}>;fontes:Array<{url:string;titulo:string;tipo:string}>};
 type Aplicacao = {
   slug:string; titulo:string; descricao:string; modelo:string;
   motorizacao:string|null; ano_inicial:number|null; ano_final:number|null;
@@ -12,7 +14,8 @@ type Aplicacao = {
   categoria:string|null; fotos:string[]; preco:null; estoque:null; whatsapp:string|null;
   codigo_oem?:string|null; codigo_fiscal?:string|null; bula_tecnica?:string|null;
   restricao?:string|null; contraindicacao?:string|null; foto_veiculo?:string|null; logo_montadora?:string|null;
-  codigos_cruzados?:Array<{marca:string;codigo:string;tipo:string}>
+  codigos_cruzados?:Array<{marca:string;codigo:string;tipo:string}>;
+  foto_credito?:string|null; historia_veiculo?:Historia|null; historia_marca?:Historia|null
 };
 type Resposta = {loja:{nome:string;slug:string;ambiente:string;whatsapp?:string|null};politicas:PoliticasLojaPublicas|null;pagina_aplicacao:Aplicacao};
 
@@ -45,7 +48,7 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
   const p=dados?.pagina_aplicacao;
   const [fotoSelecionada,setFotoSelecionada]=useState(0);
   const [imagemAberta,setImagemAberta]=useState(false);
-  const [aba,setAba]=useState<"tecnica"|"aplicacao"|"codigos">("tecnica");
+  const [aba,setAba]=useState<"tecnica"|"aplicacao"|"codigos"|"historia"|"marca">("tecnica");
   useEffect(()=>{setFotoSelecionada(0);setImagemAberta(false);setAba("tecnica");},[slug]);
   const veiculo=identidadeVeiculo(p?.modelo??"");
   const categoria=(p?.categoria??"").toLowerCase();
@@ -79,12 +82,11 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
       {estado==="erro"&&<div role="alert"><h1>Ficha indisponível</h1><a href="#/loja/mobis">Voltar ao catálogo</a></div>}
       {p&&<>
         <section className="m2-ficha-banner" aria-label={"Ficha do veículo "+p.modelo}>
-          {p.foto_veiculo&&<img className="m2-ficha-fundo-veiculo" src={p.foto_veiculo} alt={"Fotografia licenciada do veículo "+p.modelo}/>}
           <div className="m2-ficha-banner-conteudo">
             <span className="m2-ficha-selo">MOBIS AUTOPEÇAS · PEÇAS PARA UTILITÁRIOS DIESEL</span>
             <div className="m2-ficha-identidade">
               {p.logo_montadora?<img src={p.logo_montadora} alt={"Logotipo autorizado "+veiculo.montadora} className="m2-ficha-marca-img"/>:<span className="m2-ficha-marca-texto">{veiculo.montadora}</span>}
-              <span className="m2-ficha-miniatura"><IconeVeiculo tipo={veiculo.tipo} largura={98}/></span>
+              <span className="m2-ficha-miniatura"><VeiculoRealMobis tamanho="mini" montadora={veiculo.montadora} modelo={p.modelo} foto={p.foto_veiculo} logo={null} credito={p.foto_credito}/></span>
               <div><strong>{p.modelo}</strong><small>{p.motorizacao??"Motor a confirmar"} · {p.ano_inicial??"Início a confirmar"} – {p.ano_final??"fim a confirmar"}</small></div>
             </div>
             <h1>{p.titulo}</h1>
@@ -134,12 +136,18 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
             <button type="button" role="tab" aria-selected={aba==="tecnica"} onClick={()=>setAba("tecnica")}><IconePeca nome={icone} tamanho={21}/> Ficha técnica</button>
             <button type="button" role="tab" aria-selected={aba==="aplicacao"} onClick={()=>setAba("aplicacao")}>▣ Aplicação</button>
             <button type="button" role="tab" aria-selected={aba==="codigos"} onClick={()=>setAba("codigos")}># Códigos e marcas</button>
+            <button type="button" role="tab" aria-selected={aba==="historia"} onClick={()=>setAba("historia")}>▤ História do veículo</button>
+            <button type="button" role="tab" aria-selected={aba==="marca"} onClick={()=>setAba("marca")}>▣ Marca da peça</button>
           </div>
           <div className="m2-ficha-aba-corpo" role="tabpanel">
             {aba==="tecnica"&&<>
               <h3>Descrição e composição</h3><p>{p.descricao||"Aguardando descrição técnica da aplicação."}</p>
               <details><summary>▤ Abrir bula técnica e itens incluídos</summary><p>{p.bula_tecnica??"Aguardando bula técnica documentada e conferência dos componentes."}</p></details>
               <details><summary>⚠ Contraindicações e cuidados de instalação</summary><p>{p.contraindicacao??p.restricao??"Verificar OEM, chassi, versão, sensores, suportes e periféricos antes de instalar."}</p></details>
+              <details><summary>▣ Procedência, originalidade e garantia legal</summary>
+                <p>Marca comercial registrada: <strong>{p.marca??"Não informada"}</strong>. Origem industrial e importador: consultar nota de entrada, embalagem e documentação do fornecedor; sem comprovação pública até a revisão.</p>
+                <p>O prefixo do SKU não comprova país de fabricação, originalidade ou identidade do importador. Uma peça de reposição não é anunciada como genuína da montadora sem prova documental. A garantia legal dos produtos duráveis e as responsabilidades da cadeia de fornecedores seguem o Código de Defesa do Consumidor, sem excluir a responsabilidade da MOBIS.</p>
+              </details>
             </>}
             {aba==="aplicacao"&&<>
               <h3>Veículo de referência</h3>
@@ -152,6 +160,19 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
               <dl className="m2-ficha-dados"><dt>Marca da peça</dt><dd>{p.marca??"Não informada"}</dd><dt>SKU interno</dt><dd>{p.sku_pai}</dd><dt>OEM da aplicação</dt><dd>{oem??"Pendente de homologação"}</dd></dl>
               {(p.codigos_cruzados??[]).length>0?<div className="m2-ficha-codigos">{p.codigos_cruzados?.map((c,i)=><div key={i}><span aria-hidden="true">▦</span><strong>{c.marca}</strong><code>{c.codigo}</code><small>{c.tipo}</small></div>)}</div>:<p>Não há referências cruzadas homologadas para exibição. Não presumimos equivalência por nomes parecidos.</p>}
             </>}
+            {(aba==="historia"||aba==="marca")&&(()=>{
+              const h=aba==="historia"?p.historia_veiculo:p.historia_marca;
+              return <div className="m2-ficha-historia">
+                <h3>{h?.titulo??(aba==="historia"?"História do modelo em pesquisa":"História da marca em pesquisa")}</h3>
+                {h?<>
+                  <p>{h.resumo}</p>
+                  {h.status!=="aprovado"&&<p className="m2-ficha-historia-pendente">Texto histórico em revisão. Não substitui a homologação da aplicação ou da origem do produto.</p>}
+                  <ol className="m2-ficha-linha-do-tempo">{(h.eventos??[]).map((e,i)=><li key={i}><strong>{e.ano} — {e.titulo}</strong><p>{e.texto}</p></li>)}</ol>
+                  <details><summary>⊙ Fontes da pesquisa</summary>{(h.fontes??[]).map((f,i)=><p key={i}><a href={f.url} target="_blank" rel="noopener noreferrer">{f.titulo}</a></p>)}</details>
+                </>:<p>A história desta {aba==="historia"?"geração veicular":"marca de produto"} ainda aguarda pesquisa e aprovação documental. Não há dados inventados para completar a página.</p>}
+                <p><strong>Importante:</strong> a história da montadora ou da fabricante não comprova compatibilidade. Confirme motor, ano, OEM e chassi com a MOBIS.</p>
+              </div>;
+            })()}
           </div>
           <details className="m2-ficha-termos"><summary>ⓘ Garantia, atendimento e direitos do consumidor</summary><p>Consulte condições de garantia e instalação com a equipe MOBIS. Direitos legais preservados; dados de chassi devem ser enviados por canal apropriado. A MOBIS é revendedora independente das montadoras.</p></details>
         </section>
