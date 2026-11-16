@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { EmpresaMobis } from "../componentes/EmpresaMobis.tsx";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
-import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
+import { IconePeca } from "../componentes/IconePeca.tsx";
+import { VeiculoRealMobis } from "../componentes/VeiculoRealMobis.tsx";
 import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import { ChatClienteLoja } from "../componentes/ChatClienteLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
@@ -20,6 +21,7 @@ type Banner = {sku:string;nome:string;preco:number|null;chamada:string|null;flas
 type PaginaAplicacao = {slug:string;titulo:string;modelo:string;status:string};
 type Resposta = {
   paginas_aplicacao?:Record<string,PaginaAplicacao[]>;
+  midias_veiculo?:Record<string,{foto:string|null;logo:string|null;credito:string|null}>;
   loja:{nome:string;slug:string;ambiente?:"teste"|"producao";whatsapp?:string|null;venda_habilitada?:boolean};
   produtos:Produto[];banners?:Banner[];veiculos:Veiculo[];
   categorias:{nome:string;slug:string;total:number}[];
@@ -184,10 +186,10 @@ export function LojaMobisNova({slug}:{slug:string}) {
             {produtoTeste&&<button className="m2-underline" onClick={()=>para("m2-produto-teste")}>Ver produto de teste →</button>}</div>
           <small>✓ Atendimento para quem precisa acertar na peça.</small>
         </div>
-        <div className="m2-hero-veiculos" aria-label="Ilustrações de picapes, vans e utilitários">
-          <div className="m2-foto m2-foto1"><IconeVeiculo tipo="picape" largura={220}/><small>01 / Picapes</small></div>
-          <div className="m2-foto m2-foto2"><IconeVeiculo tipo="furgao" largura={220}/><small>02 / Vans</small></div>
-          <div className="m2-foto m2-foto3"><IconeVeiculo tipo="caminhao" largura={220}/><small>03 / Utilitários diesel</small></div>
+        <div className="m2-hero-veiculos" aria-label="Veículos de referência do catálogo MOBIS">
+          <div className="m2-foto m2-foto1"><VeiculoRealMobis montadora="Mitsubishi" modelo="L200" tamanho="banner" {...(dados?.midias_veiculo?.["L200"]??{})}/><small>01 / Mitsubishi L200</small></div>
+          <div className="m2-foto m2-foto2"><VeiculoRealMobis montadora="Kia" modelo="Bongo K2500" tamanho="banner" {...(dados?.midias_veiculo?.["Bongo"]??{})}/><small>02 / Kia Bongo</small></div>
+          <div className="m2-foto m2-foto3"><VeiculoRealMobis montadora="Hyundai" modelo="HR" tamanho="banner" {...(dados?.midias_veiculo?.["HR"]??{})}/><small>03 / Hyundai HR</small></div>
         </div>
       </div></section>
       <div className="m2-progresso"><div className="m2-wrap"><span><b>01</b> Atendimento especializado</span>
@@ -218,7 +220,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
           <button role="tab" aria-selected={explorar==="sistema"} onClick={()=>setExplorar("sistema")}>O que ele precisa?</button>
         </div>
         {explorar==="veiculo"&&<div id="m2-veiculos" role="tabpanel"><div className="m2-veiculo-grade">{VEICULOS.map(v=><button className="m2-veiculo" key={v.nome} onClick={()=>escolherVeiculo(v.valor)}>
-          <div><IconeVeiculo tipo={v.icone} largura={157}/></div><strong>{v.nome}</strong><small>{v.nota}</small><span>Encontrar peças <b>↗</b></span>
+          <div><VeiculoRealMobis tamanho="cartao" montadora={v.nome.split(" ")[0]==="Mitsubishi"?"Mitsubishi":v.nome.split(" ")[0]==="Kia"?"Kia":v.nome.split(" ")[0]==="Hyundai"?"Hyundai":"MOBIS"} modelo={v.nome} {...(dados?.midias_veiculo?.[v.valor==="HR"?"HR":v.valor==="Bongo"?"Bongo":v.valor==="L200"?"L200":""]??{})}/></div><strong>{v.nome}</strong><small>{v.nota}</small><span>Encontrar peças <b>↗</b></span>
         </button>)}</div></div>}
         {explorar==="sistema"&&<div id="m2-sistemas" role="tabpanel"><div className="m2-sistema-grade">{SISTEMAS.map(s=><button key={s.nome} onClick={()=>escolherSistema(s.busca)}>
           <IconePeca nome={s.id} tamanho={90}/><span>{s.nome}</span><i>↗</i></button>)}</div>
