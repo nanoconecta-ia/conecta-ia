@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { IconePeca } from "./IconePeca.tsx";
 import mascotes from "../assets/mobis/mascotes-10-especialistas.jpg";
 import equipeAnimada from "../assets/mobis/nano-equipe-vendedores.gif";
 import marcaGrafite from "../assets/mobis/logo-banner-grafite.png";
 import "./banners-institucionais-mobis.css";
 
-type Acao = "catalogo" | "codigos" | "veiculos";
-const paineis: readonly {
+type Acao = "catalogo" | "codigos" | "veiculos" | "destaque";
+const paineisBase: readonly {
   titulo: string; destaque: string; chamada: string; subtitulo: string;
   acao: Acao; botao: string; visual: "mascotes" | "motor" | "nano";
 }[] = [
@@ -31,14 +31,25 @@ const paineis: readonly {
 ];
 
 export function BannersInstitucionaisMobis({
-  abrirCatalogo, abrirBuscaCodigos, abrirVeiculos,
+  abrirCatalogo, abrirBuscaCodigos, abrirVeiculos, abrirDestaque, destaqueMotor,
 }: {
   abrirCatalogo: () => void; abrirBuscaCodigos: () => void; abrirVeiculos: () => void;
+  abrirDestaque: () => void;
+  destaqueMotor?: { sku: string; nome: string } | null;
 }) {
   const [indice, setIndice] = useState(0);
-  const painel = paineis[indice];
+  // O destaque só aparece quando o produto está realmente presente no catálogo retornado.
+  const paineis = destaqueMotor?.sku === "CI003696" ? [...paineisBase, {
+    titulo: "Destaque de consulta", destaque: "Motor parcial D4CB 2.5 16V",
+    chamada: "MOBIS · MOTOR PARCIAL · SKU CI003696",
+    subtitulo: "Hyundai HR / Kia Bongo K2500. Consulte condições e confirme aplicação por chassi e disponibilidade com a equipe.",
+    acao: "destaque" as const, botao: "Consultar este motor", visual: "motor" as const,
+  }] : paineisBase;
+  useEffect(() => { if (indice >= paineis.length) setIndice(0); }, [indice,paineis.length]);
+  const painel = paineis[Math.min(indice, paineis.length - 1)];
   const acionar = () => {
-    if (painel.acao === "codigos") abrirBuscaCodigos();
+    if (painel.acao === "destaque") abrirDestaque();
+    else if (painel.acao === "codigos") abrirBuscaCodigos();
     else if (painel.acao === "veiculos") abrirVeiculos();
     else abrirCatalogo();
   };
@@ -54,7 +65,7 @@ export function BannersInstitucionaisMobis({
           <h2>{painel.titulo} <strong>{painel.destaque}</strong></h2>
           <p>{painel.subtitulo}</p>
           <button type="button" className="mbi-botao" onClick={acionar}>{painel.botao} <span aria-hidden="true">→</span></button>
-          <small>Banners institucionais · sem oferta de preço ou reserva de estoque</small>
+          <small>{painel.acao === "destaque" ? "Destaque de consulta · SKU CI003696 · preço e disponibilidade sob confirmação" : "Banners institucionais · sem oferta de preço ou reserva de estoque"}</small>
         </div>
         <div className="mbi-artes" aria-hidden="true" key={painel.visual}>
           {painel.visual === "mascotes" && <img className="mbi-mascotes" src={mascotes} alt="" loading="lazy" />}
