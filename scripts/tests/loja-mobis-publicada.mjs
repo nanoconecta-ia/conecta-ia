@@ -45,6 +45,7 @@ try{
   assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho publicado é branco");
   assert.equal(await page.locator('.mgv').evaluate(el=>getComputedStyle(el).color),'rgb(31, 35, 39)',"glassy publicado é claro");
   assert.equal(await page.locator(".v-hero").count(),0);
+  assert.equal(await page.locator(".m3-veiculo-card img").count(),5,"escolha inferior por modelos com fotos locais");
   const r=await consulta;assert.equal(r.status(),200,"catálogo público deve carregar");
   const dados=await r.json();assert.equal(dados.loja.slug,"mobis");
   assert.equal(dados.loja.ambiente,"teste","loja deve permanecer em teste");
