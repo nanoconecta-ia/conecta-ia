@@ -13,10 +13,11 @@ const negado = (e: unknown) => (e as { context?: { status?: number } } | null)?.
 type Filtro = "todas" | "pendentes" | "aprovadas" | "publicaveis" | "sem_direitos";
 
 export function GaleriaProduto({
-  loja, produtoId, sku, aoFechar, aoDecidir,
+  loja, produtoId, sku, aoFechar, aoDecidir, contextoDePesquisa,
 }: {
   loja: Loja; produtoId: string; sku: string | null;
   aoFechar?: () => void; aoDecidir?: () => void;
+  contextoDePesquisa?: string;
 }) {
   const [linhas, setLinhas] = useState<LinhaImagem[] | null>(null);
   const [erro, setErro] = useState("");
@@ -115,9 +116,12 @@ export function GaleriaProduto({
           <h3>Escolher fotografias <span className="gs-contador">{g ? `${g.itens.length}/${LIMITE_GALERIA}` : "…"}</span></h3>
           <p>Compare até oito imagens reais da mesma peça. O Nano sugere; você decide. Os dados originais do Bling permanecem intactos.</p>
         </div>
-        <button type="button" className="sec" disabled={!sku}
-          onClick={() => { if (sku) { pedirAoNanoNaConversa(pedidoDeImagens(sku)); aoFechar?.(); } }}>
-          Pesquisar imagens com o Nano
+        <button type="button" className="sec" disabled={!sku && !contextoDePesquisa}
+          onClick={() => {
+            const pedido = contextoDePesquisa ?? (sku ? pedidoDeImagens(sku) : null);
+            if (pedido) { pedirAoNanoNaConversa(pedido); aoFechar?.(); }
+          }}>
+          {contextoDePesquisa ? "Pesquisar imagens com DNA da peça" : "Pesquisar imagens com o Nano"}
         </button>
       </header>
 
