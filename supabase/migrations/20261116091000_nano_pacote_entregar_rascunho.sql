@@ -122,10 +122,18 @@ begin
   end if;
 
   -- Medidas logísticas estimadas exigem referência identificada e margem explícita.
-  if p_payload #>> '{logistica,estimado}' = 'true'
-    and (nullif(btrim(coalesce(p_payload #>> '{logistica,base}','')),'') is null
+  if p_payload #>> '{logistica,estimado}' = 'true' then
+    if nullif(btrim(coalesce(p_payload #>> '{logistica,base}','')),'') is null
       or (p_payload #>> '{logistica,margem_percentual}') is null
-      or (p_payload #>> '{logistica,margem_percentual}') !~ '^[0-9]+(\.[0-9]+)?
+      or (p_payload #>> '{logistica,margem_percentual}') !~ '^[0-9]+([.][0-9]+)?$'
+    then raise exception 'pacote_logistica_estimativa_sem_base' using errcode='22023';
+    end if;
+    if (p_payload #>> '{logistica,margem_percentual}')::numeric not between 10 and 20
+    then raise exception 'pacote_logistica_estimativa_sem_base' using errcode='22023';
+    end if;
+  end if;
+
+  v_gtin := nullif(btrim(coalesce(p_payload #>> '{identidade,gtin}','')),'');
   if v_gtin is not null then
     if v_gtin !~ '^([0-9]{8}|[0-9]{12}|[0-9]{13}|[0-9]{14})$' then
       raise exception 'pacote_gtin_invalido' using errcode='22023';
