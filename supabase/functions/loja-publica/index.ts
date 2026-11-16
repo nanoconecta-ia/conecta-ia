@@ -75,6 +75,10 @@ Deno.serve(async (req) => {
         "Olá, preciso confirmar a aplicação em " + app.modelo + " (" + (app.motorizacao ?? "motor não informado") +
         "), peça Mobis SKU " + p.sku + ". Podem conferir pelo chassi e informar disponibilidade?")
       : null;
+    // Procedência só pode ser anunciada depois de conferência documental.
+    const { data: procedencia }=await sb.from("produto_procedencia")
+      .select("originalidade,condicao_importacao,pais_fabricacao,estado")
+      .eq("loja_id",loja.id).eq("produto_id",p.id).eq("estado","aprovado").maybeSingle();
     // A vitrine recebe SOMENTE o NCM cadastrado/validado, sem fornecedor,
     // custo, nota fiscal de entrada, observações internas ou origem comercial.
     // NCM do Bling ainda pendente de XML da NF pode ser exibido como "cadastrado",
@@ -159,6 +163,9 @@ Deno.serve(async (req) => {
         bula_tecnica: p.descricao_complementar ? "Informações declaradas no cadastro da peça (confirmar documentação técnica do fabricante):\\n" + p.descricao_complementar : null,
         // Só preencher com registros fiscais validados e arquivos licenciados após integração específica.
         codigo_fiscal: ncmPublico, foto_veiculo: fotoVeiculo, logo_montadora: logoMontadora, foto_credito: fotoCredito,
+        procedencia_publica: procedencia?{
+          originalidade:procedencia.originalidade,importacao:procedencia.condicao_importacao,
+          pais:procedencia.pais_fabricacao??null}:null,
         preco: null, estoque: null, whatsapp, historia_veiculo: historiaVeiculo, historia_marca: historiaMarca,
       },
     });
@@ -196,11 +203,20 @@ Deno.serve(async (req) => {
   // Diretório de marcas baseado APENAS em SKUs visíveis na mesma vitrine.
   // Variações de grafia permanecem separadas até homologação de alias;
   // só espaço/capitalização não mudam a identidade literal.
+  const { data: catalogoMarcas }=await sb.from("marcas")
+    .select("id,nome").eq("loja_id",loja.id).eq("tipo","peca").limit(800);
+  const mapaIdMarca=new Map((catalogoMarcas??[]).map(m=>[m.id,m.nome]));
+  const { data: aliasesAprovados }=await sb.from("marca_aliases")
+    .select("marca_id,nome_normalizado").eq("loja_id",loja.id).eq("estado","aprovado").limit(800);
+  const aliasesSeguros=new Map((aliasesAprovados??[])
+    .filter(a=>mapaIdMarca.has(a.marca_id))
+    .map(a=>[nomeMarcaNormalizado(a.nome_normalizado),nomeMarcaNormalizado(mapaIdMarca.get(a.marca_id)??"")]));
   const porMarca=new Map<string,{chave:string;nome:string;quantidade:number;valores:string[]}>();
   for(const p of pub??[]) {
     const raw=typeof p.marca==="string"?p.marca.trim():"";
     if(!raw || /^(importado|sem marca|n[aã]o informado|diversos)$/i.test(raw)) continue;
-    const chave=nomeMarcaNormalizado(raw);
+    const normalizado=nomeMarcaNormalizado(raw);
+    const chave=aliasesSeguros.get(normalizado)??normalizado;
     let perfil=porMarca.get(chave);
     if(!perfil){perfil={chave,nome:raw,quantidade:0,valores:[]};porMarca.set(chave,perfil);}
     perfil.quantidade++;
@@ -210,8 +226,6 @@ Deno.serve(async (req) => {
   const marcasVitrine=marcasOrdenadas.map(({chave,nome,quantidade})=>({chave,nome,quantidade,logo:null as string|null}));
   const valoresMarca=chaveMarca?porMarca.get(chaveMarca)?.valores??[]:[];
   // Identidades editoriais só entram se marca + logotipo aprovado e uso documentado.
-  const { data: catalogoMarcas }=marcasOrdenadas.length ? await sb.from("marcas")
-    .select("id,nome").eq("loja_id",loja.id).eq("tipo","peca").limit(800) : {data:[]};
   const porIdMarca=new Map((catalogoMarcas??[]).map(m=>[nomeMarcaNormalizado(m.nome),m.id]));
   const listaIds=[...new Set([...porIdMarca.values()])];
   const { data: logosMarca }=listaIds.length ? await sb.from("marca_identidade_publica")
