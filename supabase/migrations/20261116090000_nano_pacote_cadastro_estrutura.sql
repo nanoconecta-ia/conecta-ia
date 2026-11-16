@@ -58,7 +58,7 @@ create table public.pacote_evidencias (
   documento_ref_interno text check (
     documento_ref_interno is null or (
       length(documento_ref_interno) between 9 and 300
-      and documento_ref_interno ~ '^(nf|arquivo|drive|bling|storage):[A-Za-z0-9_./-]{3,280}$'
+      and documento_ref_interno ~ '^(nf|arquivo|drive|bling|storage):[A-Za-z0-9_./-]{3,240}$'
     )
   ),
   trecho text check (trecho is null or length(trecho) <= 1800),
