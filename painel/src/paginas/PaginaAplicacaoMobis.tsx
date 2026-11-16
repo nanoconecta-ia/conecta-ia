@@ -117,7 +117,7 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
               <dt>Marca da peça</dt><dd>{p.marca??"A confirmar"}</dd>
               <dt>SKU da peça</dt><dd>{p.sku_pai}</dd>
               <dt>OEM original</dt><dd>{oem??"Não homologado — conferir pelo chassi"}</dd>
-              <dt>Código fiscal / NCM</dt><dd>{p.codigo_fiscal??"Consultar documentação fiscal da peça"}</dd>
+              <dt>NCM cadastrado no ERP</dt><dd>{p.codigo_fiscal??"NCM não informado para exibição"}</dd>
               <dt>Código de barras</dt><dd>Exibir somente quando GTIN verdadeiro e validado</dd>
             </dl>
             <p className="m2-ficha-consulta">Preço e disponibilidade sob consulta</p>
