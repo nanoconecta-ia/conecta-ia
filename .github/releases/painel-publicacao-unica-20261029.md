@@ -74,3 +74,11 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Publicar **exclusivamente o frontend estático** do painel Conecta.IA no GitHub Pages pelo workflow `painel-pages.yml`, mantendo as flags de build já existentes. A mudança visual é o carrossel Glassy V2 na galeria do Nano Studio e na revisão de fotografias, com seleção de até oito fotos e prévia local.
 - Não publicar imagem candidata sem direitos e aprovação; sem modificações em migrações, Supabase, Edge Functions, Bling, preços, estoque, notas fiscais, checkout, DNS ou domínio oficial.
 - A publicação é considerada comprovada somente após o workflow finalizar e conferir o `version.json`/commit e a homologação visual, inclusive no celular. Este marcador não autoriza publicar o catálogo comercial sem aprovação.
+
+
+## Publicação autorizada — Glassy Carousel V2 na vitrine Mobis, PR #413 (16-11-2026)
+- O proprietário autorizou prosseguir com a atualização e o site nesta sessão.
+- PR #413 integrado em `c3e3eef56cf351da0e49d6a05ffcdc2552dea90a`; oito workflows aprovados no head `2a3ea0e8a581150e53599361433d3380f6fb3a04`.
+- Publicar só o frontend estático em GitHub Pages pelo workflow existente. Nova seção Glassy V2 3D na vitrine Mobis com seis categorias, imagens 3D oficiais da loja, navegação por teclado e miniaturas, e buscas pelo catálogo real.
+- Preservar marca, mascotes, tipografia, hero, Studio Nano, flags de build e loja em modo teste, sem ativar checkout, preços inventados ou produtos não homologados. Não alterar Bling, Supabase, migrações, funções Edge, DNS ou credenciais.
+- Exigir build/deploy verde, verificação de `version.json` e testes visuais da loja antes de declarar publicação concluída.
