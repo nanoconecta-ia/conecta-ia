@@ -86,6 +86,13 @@ try {
     assert.match(await carrossel.locator(".gv2-numero").innerText(),/2\s*\/\s*3/);
     await carrossel.getByRole("button",{name:/Mostrar fotografia 3 de 3/}).click();
     assert.match(await carrossel.locator(".gv2-numero").innerText(),/3\s*\/\s*3/);
+    await carrossel.locator(".gv2-superficie").focus();
+    await page.keyboard.press("ArrowLeft");
+    assert.match(await carrossel.locator(".gv2-numero").innerText(),/2\s*\/\s*3/,
+      "seta do teclado navega para imagem anterior");
+    await page.keyboard.press("ArrowRight");
+    assert.match(await carrossel.locator(".gv2-numero").innerText(),/3\s*\/\s*3/,
+      "seta do teclado retorna à imagem escolhida");
     await carrossel.getByRole("button",{name:"Adicionar à comparação"}).click();
     assert.equal(await galeria.locator(".gs-comparacao figure").count(),1,"carrossel seleciona para comparação, sem aprovar");
     await carrossel.getByRole("button",{name:"Retirar da comparação"}).click();
