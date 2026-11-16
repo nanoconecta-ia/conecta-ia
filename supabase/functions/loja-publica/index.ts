@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       && (fiscal.status === "validado" || fiscal.origem_ncm === "bling_erp")
       && typeof fiscal.ncm === "string" && /^[0-9]{8}$/.test(fiscal.ncm)
         ? fiscal.ncm : null;
-    const ncmPublico = ncmBruto ? ncmBruto.replace(/^(\\d{4})(\\d{2})(\\d{2})$/, "$1.$2.$3") : null;
+    const ncmPublico = ncmBruto ? ncmBruto.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1.$2.$3") : null;
     // Ícones de veículos: somente fotos REAIS PNG e logotipos autorizados,
     // vinculados à montadora real do modelo e a registro de mídia aprovado.
     let fotoVeiculo: string | null = null;
@@ -175,8 +175,8 @@ Deno.serve(async (req) => {
   const limpar = (v: unknown, n = 60) => (typeof v === "string" ? v.replace(/[%,()*\\]/g, " ").trim().slice(0, n) : "");
   const busca = limpar(c?.q);
   const chaveMarca = typeof c?.marca === "string" && c.marca.length <= 80
-    ? c.marca.trim().toUpperCase().replace(/\\s+/g," ") : "";
-  const nomeMarcaNormalizado=(x:string)=>x.trim().toUpperCase().replace(/\\s+/g," ");
+    ? c.marca.trim().toUpperCase().replace(/\s+/g," ") : "";
+  const nomeMarcaNormalizado=(x:string)=>x.trim().toUpperCase().replace(/\s+/g," ");
   const modelo = limpar(c?.modelo), motor = limpar(c?.motor), categoria = typeof c?.categoria === "string" && SLUG_RE.test(c.categoria) ? c.categoria : "";
   const tipo = typeof c?.tipo === "string" && Object.hasOwn(TIPOS_VEICULO, c.tipo) ? c.tipo : "";
   const ano = Number.isInteger(c?.ano) && c.ano >= 1950 && c.ano <= 2100 ? (c.ano as number) : undefined;
