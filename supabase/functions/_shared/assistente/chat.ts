@@ -14,6 +14,7 @@ import { CONSULTAR_PRODUTO, consultarProduto } from "./bling_consultar.ts";
 import { gerarFichaSemLLM } from "./ficha_sem_llm.ts";
 import { executarFerramenta, FERRAMENTAS, SISTEMA } from "../ia/ferramentas.ts";
 import { configSearxngOuNulo } from "../ia/searxng.ts";
+import { configFirecrawlDaLoja, type ConfigFirecrawl } from "../ia/firecrawl.ts";
 import { dadosSupabase } from "../conector/dados.ts";
 import { despachar } from "../conector/despacho.ts";
 import { textoDoContexto, type RespostaContexto } from "../contexto/ler.ts";
@@ -258,7 +259,9 @@ export async function atenderChat(c: Record<string, any>, ctx: ChatContexto) {
        const bi = (biRows as { api_key_cifrada: string; cx: string }[] | null)?.[0];
        if (bi) buscaImagem = { chave: await decifrar(bi.api_key_cifrada, chaveiro), cx: bi.cx };
       }
-      const out = await executarFerramenta(nome, entrada, { usuario, admin, lojaId: loja.id, plugins: [], credencial: async () => null, fetch: ctx.fetch, conector, buscaImagem, searxng }) as Record<string, any>;
+      let firecrawl: ConfigFirecrawl | null = null;
+      if ((FERRAMENTAS_PESQUISA as readonly string[]).includes(nome) && !searxng) firecrawl = await configFirecrawlDaLoja((fn, a) => admin.rpc(fn, a), loja.id, (x) => decifrar(x, chaveiro));
+      const out = await executarFerramenta(nome, entrada, { usuario, admin, lojaId: loja.id, plugins: [], credencial: async () => null, fetch: ctx.fetch, conector, buscaImagem, firecrawl, searxng }) as Record<string, any>;
       tentativas.push({ ferramenta: nome, ok: !out?.erro });
       if (out?.proposta_id) { propostas.push({ id: out.proposta_id, titulo: out.titulo, versao: out.versao, hash: out.hash, risco: out.risco }); meta.propostas = propostas; }
       return out;

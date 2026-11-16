@@ -27,6 +27,7 @@ import { proporAplicacao, proporCodigo, proporEnriquecimento, proporImagem, type
 import { chamarPlugin, type PluginRegistro } from "../ia/plugin.ts";
 import { escolherProvedorBusca } from "../ia/provedor_busca.ts";
 import type { ConfigSearxng } from "../ia/searxng.ts";
+import type { ConfigFirecrawl } from "../ia/firecrawl.ts";
 import { SEM_PROVEDOR, erroDeBusca } from "../ia/busca.ts";
 
 export interface ContextoFerramenta {
@@ -44,6 +45,7 @@ export interface ContextoFerramenta {
   credencialPlugin?: (id: string) => Promise<string | null>;
   buscaImagem?: { chave: string; cx: string } | null;
   searxng?: ConfigSearxng | null;
+  firecrawl?: ConfigFirecrawl | null;
   fetch?: typeof fetch;
 }
 

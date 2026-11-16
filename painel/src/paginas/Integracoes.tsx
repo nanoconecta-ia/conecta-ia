@@ -43,6 +43,8 @@ export function Integracoes({ loja }: { loja: Loja }) {
   const [novo, setNovo] = useState(false);
   const [busca, setBusca] = useState<{ ativa: boolean } | null>(null);
   const [buscaChave, setBuscaChave] = useState(""); const [buscaCx, setBuscaCx] = useState(""); const [editandoBusca, setEditandoBusca] = useState(false);
+  const [fc, setFc] = useState<{ ativa: boolean; final_chave: string | null; limite_mensal: number | null; buscas_mes: number } | null>(null);
+  const [fcChave, setFcChave] = useState(""); const [fcLimite, setFcLimite] = useState("300"); const [editandoFc, setEditandoFc] = useState(false);
   const [f, setF] = useState({ nome: "", tipo: "api", url: "", credencial: "", risco: "LOW", caps: [] as string[] });
 
   const carregar = () => {
@@ -56,6 +58,8 @@ export function Integracoes({ loja }: { loja: Loja }) {
       .then(({ data }) => setPlugins((data ?? []) as Plugin[]));
     supabase.from("loja_busca_imagem").select("ativa").eq("loja_id", loja.id).maybeSingle()
       .then(({ data }) => setBusca((data as { ativa: boolean } | null)?.ativa ? (data as { ativa: boolean }) : null));
+    supabase.from("loja_busca_firecrawl").select("ativa, final_chave, limite_mensal, buscas_mes").eq("loja_id", loja.id).maybeSingle()
+      .then(({ data }) => setFc((data as { ativa: boolean; final_chave: string | null; limite_mensal: number | null; buscas_mes: number } | null)?.ativa ? (data as { ativa: boolean; final_chave: string | null; limite_mensal: number | null; buscas_mes: number }) : null));
   };
   useEffect(carregar, [loja.id]);
 
@@ -88,6 +92,11 @@ export function Integracoes({ loja }: { loja: Loja }) {
     if (r?.ok) { setF({ nome: "", tipo: "api", url: "", credencial: "", risco: "LOW", caps: [] }); setNovo(false); }
   }
   const alternar = (c: string) => setF((x) => ({ ...x, caps: x.caps.includes(c) ? x.caps.filter((y) => y !== c) : [...x.caps, c] }));
+  async function salvarFirecrawl(e: FormEvent) {
+    e.preventDefault();
+    const r = await chamar({ acao: "salvar_busca_firecrawl", chave: fcChave, limite_mensal: fcLimite || null }, "Chave reconhecida pelo Firecrawl e guardada. A busca na web já está ativa.");
+    if (r?.ok) { setFcChave(""); setEditandoFc(false); } // a chave nunca fica na tela nem no navegador
+  }
   async function salvarBusca(e: FormEvent) {
     e.preventDefault();
     const r = await chamar({ acao: "salvar_busca_imagem", chave: buscaChave, cx: buscaCx }, "Busca de imagens ativada.");
@@ -144,8 +153,27 @@ export function Integracoes({ loja }: { loja: Loja }) {
         );
       })}
 
-      <h2>Busca de imagem de produto</h2>
-      <p className="suave">Permite o agente procurar fotos da peça na web e propor para a sua aprovação. Use uma chave do Google Programmable Search (cse.google.com): 100 buscas grátis por dia.</p>
+      <h2>Busca na web (Firecrawl)</h2>
+      <p className="suave">Permite o Nano pesquisar páginas técnicas e fotos candidatas da peça. Tudo volta como pista a conferir: não prova aplicação, código nem direito de uso da imagem. Crie a chave em firecrawl.dev (API Keys) e cole aqui; o sistema testa a chave antes de guardar. Cada busca gasta crédito da sua conta Firecrawl, por isso há um limite mensal.</p>
+      {fc && !editandoFc ? (
+        <div>
+          <p className="suave">Chave terminada em <code>{fc.final_chave}</code> · {fc.buscas_mes} de {fc.limite_mensal ?? "sem limite"} buscas usadas neste mês</p>
+          <div className="linha"><span className="selo ok">Ativa</span>
+            <button className="sec" disabled={ocupado} onClick={() => void chamar({ acao: "testar_busca_firecrawl" }, "A chave respondeu normalmente.")}>Testar chave</button>
+            <button className="sec" onClick={() => setEditandoFc(true)}>Trocar chave ou limite</button>
+            <button className="sec" disabled={ocupado} onClick={() => { if (confirm("Desligar a busca na web?")) void chamar({ acao: "remover_busca_firecrawl" }, "Busca na web desligada e chave apagada."); }}>Desligar</button>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={(e) => void salvarFirecrawl(e)}>
+          <label>Chave do Firecrawl<input type="password" value={fcChave} onChange={(e) => setFcChave(e.target.value)} required minLength={20} placeholder="fc-..." autoComplete="new-password" spellCheck={false} /></label>
+          <label>Limite de buscas por mês<input value={fcLimite} onChange={(e) => setFcLimite(e.target.value.replace(/\D/g, ""))} inputMode="numeric" placeholder="300" /></label>
+          <div className="linha"><button disabled={ocupado}>Testar e salvar</button>{fc && <button type="button" className="sec" onClick={() => setEditandoFc(false)}>Cancelar</button>}</div>
+        </form>
+      )}
+
+      <h2>Busca de imagem de produto (Google, legado)</h2>
+      <p className="suave">Opção antiga: o Google encerrou novas contas desta busca em 20/01/2026. Se você já tem uma chave, ela continua valendo até 01/01/2027; se não, use o Firecrawl acima.</p>
       {busca && !editandoBusca ? (
         <div className="linha"><span className="selo ok">Ativa</span>
           <button className="sec" onClick={() => setEditandoBusca(true)}>Trocar</button>

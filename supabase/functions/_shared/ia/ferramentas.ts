@@ -5,6 +5,7 @@ import { chamarPlugin, type PluginRegistro } from "./plugin.ts";
 import { BASES, CAMPOS_ENRIQUECIMENTO, REGIMES, TIPOS_ANO, TIPOS_FONTE, proporAplicacao, proporCodigo, proporEnriquecimento, proporImagem, TIPOS_CODIGO, type AdminRpc } from "./escrita.ts";
 import { escolherProvedorBusca } from "./provedor_busca.ts";
 import type { ConfigSearxng } from "./searxng.ts";
+import type { ConfigFirecrawl } from "./firecrawl.ts";
 import { SEM_PROVEDOR, erroDeBusca } from "./busca.ts";
 import { despachar, type ContextoDespacho } from "../conector/despacho.ts";
 import { ALIASES_ASSISTENTE, politicaDoAssistente } from "../conector/aliases.ts";
@@ -68,6 +69,7 @@ export interface Contexto {
   credencial(pluginId: string): Promise<string | null>; fetch?: typeof fetch;
   buscaImagem?: { chave: string; cx: string } | null;
   searxng?: ConfigSearxng | null;
+  firecrawl?: ConfigFirecrawl | null;
   /** Despacho do motor de propostas (Policy Engine -> handler -> auditoria). Sem ele, as ferramentas bling_* respondem que estão indisponíveis. */
   conector?: ContextoDespacho;
 }
