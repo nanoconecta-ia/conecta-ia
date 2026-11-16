@@ -53,12 +53,12 @@ Deno.serve(async (req) => {
   const slugAplicacao = typeof c?.aplicacao_slug === "string" && /^[a-z0-9-]{4,110}$/.test(c.aplicacao_slug) ? c.aplicacao_slug : null;
   if (slugAplicacao && loja.slug === "mobis") {
     const { data: app } = await sb.from("produto_aplicacoes")
-      .select("produto_id,modelo,motorizacao,ano_inicial,ano_final,status,pagina_slug,pagina_titulo,pagina_descricao,pagina_indexavel")
+      .select("produto_id,modelo,motorizacao,ano_inicial,ano_final,status,pagina_slug,pagina_titulo,pagina_descricao,pagina_indexavel,codigo_oem,restricao,contraindicacao")
       .eq("loja_id", loja.id).eq("pagina_slug", slugAplicacao).maybeSingle();
     if (!app || (!previaConsultaMobis && !(app.status === "aprovado" && app.pagina_indexavel)))
       return json({ erro: "Aplicação indisponível." }, 404);
     const { data: p } = await sb.from("produtos")
-      .select("id,sku,marca,publicado,exibicao_teste,taxonomia_no_id")
+      .select("id,sku,marca,publicado,exibicao_teste,taxonomia_no_id,descricao_complementar")
       .eq("loja_id", loja.id).eq("id", app.produto_id).maybeSingle();
     if (!p || (!p.publicado && !(previaConsultaMobis && p.exibicao_teste)))
       return json({ erro: "Produto indisponível." }, 404);
@@ -84,6 +84,12 @@ Deno.serve(async (req) => {
         status: app.status, indexavel: app.status === "aprovado" && app.pagina_indexavel === true,
         sku_pai: p.sku, marca: p.marca, categoria: no?.nome ?? null,
         fotos: (imgs ?? []).map((i: { url: string }) => i.url),
+        // OEM só pode ser exibido como referência confirmada após homologação.
+        codigo_oem: app.status === "aprovado" ? app.codigo_oem ?? null : null,
+        restricao: app.restricao ?? null, contraindicacao: app.contraindicacao ?? null,
+        bula_tecnica: p.descricao_complementar ? "Informações declaradas no cadastro da peça (confirmar documentação técnica do fabricante):\\n" + p.descricao_complementar : null,
+        // Só preencher com registros fiscais validados e arquivos licenciados após integração específica.
+        codigo_fiscal: null, foto_veiculo: null, logo_montadora: null,
         preco: null, estoque: null, whatsapp,
       },
     });
