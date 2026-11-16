@@ -24,6 +24,11 @@ type Resumo = {
   enriquecimentos_conflitantes: number;
   momento: string;
 };
+type EvidenciaOem = {
+ id:string; produto_id:string; aplicacao_id:string|null; codigo_oem:string;
+ url_evidencia:string; diagrama_epc:string|null; regiao_catalogo:string;
+ situacao_evidencia:string; relacao_sku:string; consultado_em:string;
+};
 type ProdutoLocalizado = {
   id:string;
   bling_id:string|null;
@@ -64,13 +69,25 @@ export function AuditoriaNanoMobis({loja}:{loja:Loja}){
   const [produto,setProduto]=useState<ProdutoLocalizado|null>(null);
   const [erroBusca,setErroBusca]=useState("");
   const [buscando,setBuscando]=useState(false);
+  const [evidencias,setEvidencias]=useState<EvidenciaOem[]>([]);
+  const [codigoEpc,setCodigoEpc]=useState("");
+  const [urlEpc,setUrlEpc]=useState("");
+  const [diagramaEpc,setDiagramaEpc]=useState("");
+  const [regiaoEpc,setRegiaoEpc]=useState("a_confirmar");
+  const [observacaoEpc,setObservacaoEpc]=useState("");
+  const [gravandoEpc,setGravandoEpc]=useState(false);
+  const [msgEpc,setMsgEpc]=useState("");
+  const [erroEpc,setErroEpc]=useState("");
+
 
   const carregar=useCallback(async()=>{
     setCarregando(true);setErro("");
-    const [q,res]=await Promise.all([
+    const [q,res,oem]=await Promise.all([
       supabase.rpc("mobis_fila_admin",{p_loja:loja.id,p_limite:200}),
       supabase.rpc("mobis_fila_resumo_admin",{p_loja:loja.id}),
+      supabase.rpc("mobis_evidencias_oem_admin",{p_loja:loja.id,p_limite:150}),
     ]);
+    setEvidencias(oem.error?[]:(oem.data??[]) as EvidenciaOem[]);
     if(q.error||res.error){
       setItens([]);setResumo(null);
       setErro(q.error?.code==="42501"||res.error?.code==="42501"
@@ -109,6 +126,29 @@ export function AuditoriaNanoMobis({loja}:{loja:Loja}){
     if(!data?.length){setErroBusca("Cadastro não encontrado. O código do nome não substitui o SKU do Bling.");return;}
     if(data.length>1){setErroBusca("Mais de um produto encontrado: solicite auditoria antes de editar.");return;}
     setProduto(data[0] as ProdutoLocalizado);
+  }
+
+  async function registrarEpc(){
+    if(!produto){setErroEpc("Localize um produto pelo SKU ou ID do Bling.");return;}
+    if(!/^[A-Za-z0-9][A-Za-z0-9 ./_-]{3,79}$/.test(codigoEpc.trim())){
+      setErroEpc("Informe um número OEM válido de 4 a 80 caracteres.");return;
+    }
+    if(!/^https:\/\/(www\.|meta\.)?partsouq\.com\//i.test(urlEpc.trim())){
+      setErroEpc("Utilize uma URL direta HTTPS do PartSouq.");return;
+    }
+    setGravandoEpc(true);setErroEpc("");setMsgEpc("");
+    const {data,error}=await supabase.rpc("mobis_registrar_oem_partsouq",{
+      p_loja:loja.id,p_produto:produto.id,p_codigo:codigoEpc.trim(),
+      p_url:urlEpc.trim(),p_aplicacao:null,
+      p_diagrama:diagramaEpc.trim()||null,p_item:null,
+      p_regiao:regiaoEpc.trim()||"a_confirmar",
+      p_vin_consultado:false,p_observacoes:observacaoEpc.trim()||null,
+    });
+    setGravandoEpc(false);
+    if(error){setErroEpc("Não foi possível registrar: confira código, URL, cadastro e autorização.");return;}
+    setMsgEpc("Evidência registrada como CANDIDATA ("+String(data).slice(0,8)+"…). Nenhuma aplicação ou equivalência foi aprovada.");
+    const q=await supabase.rpc("mobis_evidencias_oem_admin",{p_loja:loja.id,p_limite:150});
+    if(!q.error)setEvidencias((q.data??[]) as EvidenciaOem[]);
   }
 
   if(loja.slug!=="mobis")return <section className="cartao"><h1>Auditoria Nano</h1><p>Este piloto está disponível apenas para a MOBIS AUTOPEÇAS.</p></section>;
@@ -162,6 +202,38 @@ export function AuditoriaNanoMobis({loja}:{loja:Loja}){
         </div>}
       </div>
 
+      <div className="mobis-auditoria-sec mobis-auditoria-epc" aria-label="Evidências PartSouq EPC">
+        <h2>PartSouq — Evidências OEM / EPC</h2>
+        <p className="suave">O catálogo eletrônico identifica números OEM e diagramas por veículo. A ligação com a peça física da MOBIS continua independente e exige prova. Não digite VIN completo, dados de clientes ou números de chassi nesta ficha.</p>
+        <p><a href="https://partsouq.com/catalogs/" target="_blank" rel="noopener noreferrer">Pesquisar no PartSouq (catálogo original)</a></p>
+        {!produto?<p className="mobis-auditoria-alerta">Localize acima o produto mestre pelo ID do Bling ou SKU para registrar a referência OEM.</p>:
+          <form onSubmit={e=>{e.preventDefault();void registrarEpc();}} className="mobis-auditoria-epc-form">
+            <p className="mobis-auditoria-epc-vinculo">Peça selecionada: <strong>{produto.nome??produto.bling_id}</strong> · ID Bling {produto.bling_id}. A inclusão não aprova compatibilidade.</p>
+            <label>Número OEM candidato
+              <input required value={codigoEpc} onChange={e=>setCodigoEpc(e.target.value)} maxLength={80} placeholder="Ex.: 2630042040"/></label>
+            <label>URL exata da consulta no PartSouq
+              <input required type="url" value={urlEpc} onChange={e=>setUrlEpc(e.target.value)} maxLength={1200} placeholder="https://partsouq.com/en/search/all?q=..."/></label>
+            <label>Diagrama / grupo EPC
+              <input value={diagramaEpc} onChange={e=>setDiagramaEpc(e.target.value)} maxLength={180} placeholder="Ex.: ENGINE / FRONT CASE & OIL FILTER"/></label>
+            <label>Mercado / região do catálogo
+              <input value={regiaoEpc} onChange={e=>setRegiaoEpc(e.target.value)} maxLength={120} placeholder="Ex.: EUR; confirmar Brasil"/></label>
+            <label className="mobis-auditoria-epc-observacao">Ressalvas técnicas (sem VIN)
+              <textarea rows={3} maxLength={1200} value={observacaoEpc} onChange={e=>setObservacaoEpc(e.target.value)} placeholder="Motor, ano e critérios a conferir; não presuma equivalência pelo nome."/></label>
+            <button type="submit" disabled={gravandoEpc}>{gravandoEpc?"Registrando…":"Registrar como candidato — sem aprovar"}</button>
+          </form>}
+        {erroEpc&&<p role="alert" className="mobis-auditoria-erro">{erroEpc}</p>}
+        {msgEpc&&<p role="status" className="mobis-auditoria-epc-ok">{msgEpc}</p>}
+        <h3>Referências EPC em revisão</h3>
+        {evidencias.filter(x=>!produto||x.produto_id===produto.id).length===0
+          ?<p className="suave">Nenhuma evidência cadastrada para esta seleção.</p>
+          :<div className="mobis-auditoria-epc-lista">{evidencias
+            .filter(x=>!produto||x.produto_id===produto.id).map(e=><article key={e.id}>
+              <div><strong>OEM {e.codigo_oem}</strong> <small>{e.situacao_evidencia} · SKU: {e.relacao_sku.replace(/_/g," ")}</small></div>
+              <p>{e.diagrama_epc??"Diagrama não identificado"} · {e.regiao_catalogo}</p>
+              <a href={e.url_evidencia} target="_blank" rel="noopener noreferrer">Abrir evidência PartSouq</a>
+            </article>)}</div>}
+        <p className="suave">Não são copiadas imagens ou diagramas do PartSouq. Não há importação em lote e nenhuma informação é escrita na aba fiscal ou nas aplicações aprovadas do Bling.</p>
+      </div>
       <div className="mobis-auditoria-sec">
         <h2>Pendências verificadas</h2>
         <p className="suave">Exibindo uma amostra de até 200 registros prioritários. Os indicadores acima refletem o catálogo completo; a lista não é uma contagem total.</p>
