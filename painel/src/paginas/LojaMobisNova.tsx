@@ -18,13 +18,14 @@ import "./loja-mobis-nova.css";
 type Produto = {sku:string;nome:string;preco:number|null;marca:string|null;descricao:string|null;imagem:string|null;whatsapp:string|null;em_estoque:boolean|null;atualizado_em:string|null;consulta_previa?:boolean;categoria?:string|null};
 type Veiculo = {modelo:string;motor:string|null;de:number|null;ate:number|null};
 type Banner = {sku:string;nome:string;preco:number|null;chamada:string|null;flash:boolean;whatsapp:string|null};
+type BannerMarca = {marca_chave:string;nome:string;chamada:string|null;imagem:string|null};
 type PaginaAplicacao = {slug:string;titulo:string;modelo:string;status:string};
 type HistoriaMobis = {titulo:string;resumo:string;status:string;eventos:Array<{ano:string;titulo:string;texto:string}>;fontes:Array<{url:string;titulo:string;tipo:string}>};
 type MarcaCatalogo = {chave:string;nome:string;quantidade:number;logo:string|null};
 type Resposta = {
   paginas_aplicacao?:Record<string,PaginaAplicacao[]>;
   midias_veiculo?:Record<string,{foto:string|null;logo:string|null;credito:string|null}>;
-  marcas?:MarcaCatalogo[];marca_historia?:HistoriaMobis|null;
+  marcas?:MarcaCatalogo[];marca_historia?:HistoriaMobis|null;banners_marca?:BannerMarca[];
   loja:{nome:string;slug:string;ambiente?:"teste"|"producao";whatsapp?:string|null;venda_habilitada?:boolean};
   produtos:Produto[];banners?:Banner[];veiculos:Veiculo[];
   categorias:{nome:string;slug:string;total:number}[];
@@ -116,12 +117,16 @@ export function LojaMobisNova({slug}:{slug:string}) {
     return()=>{if(criada)tag?.remove();else if(tag&&anterior!==null)tag.content=anterior;};
   },[dados?.loja.ambiente]);
   const banners=dados?.banners??[];
-  useEffect(()=>setSlide(0),[banners[0]?.sku]);
+  const bannersMarca=dados?.banners_marca??[];
+  const flash=[...banners.map(b=>({...b,marca_chave:null as string|null,imagem:null as string|null})),
+    ...bannersMarca.map(b=>({...b,sku:"",preco:null,flash:true,whatsapp:null}))];
+  const destaque=flash[Math.min(slide,flash.length-1)];
+  useEffect(()=>setSlide(0),[banners[0]?.sku,bannersMarca[0]?.marca_chave]);
   useEffect(()=>{
-    if(banners.length<2||pausa||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
-    const t=window.setInterval(()=>{if(!document.hidden)setSlide(i=>(i+1)%banners.length);},6500);
+    if(flash.length<2||pausa||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+    const t=window.setInterval(()=>{if(!document.hidden)setSlide(i=>(i+1)%flash.length);},6500);
     return()=>window.clearInterval(t);
-  },[banners.length,pausa]);
+  },[flash.length,pausa]);
   const opcoes=useMemo(()=>[...new Set((dados?.veiculos??[]).map(x=>x.modelo))].sort(),[dados?.veiculos]);
   const motores=useMemo(()=>[...new Set((dados?.veiculos??[]).filter(x=>!modelo||x.modelo===modelo)
     .map(x=>x.motor).filter((x):x is string=>!!x))].sort(),[dados?.veiculos,modelo]);
@@ -217,6 +222,19 @@ export function LojaMobisNova({slug}:{slug:string}) {
       </div></section>
       <div className="m2-progresso"><div className="m2-wrap"><span><b>01</b> Atendimento especializado</span>
         <span><b>02</b> Aplicação conferida com você</span><span><b>03</b> Consulta direta via WhatsApp</span></div></div>
+{destaque&&<div className="m2-wrap m2-flash-topo"><div className="m2-flash" onMouseEnter={()=>setPausa(true)} onMouseLeave={()=>setPausa(false)} onFocusCapture={()=>setPausa(true)} onBlurCapture={()=>setPausa(false)}>
+          <div><span className="m2-kicker">{dados?.loja.ambiente==="teste"?"PRÉVIA · NÃO É OFERTA PUBLICADA":destaque.marca_chave?"DESTAQUE DE MARCA":"DESTAQUE · OFERTA"}</span>
+            <h3>{destaque.nome}</h3>
+            <p>{destaque.chamada??"Confira os produtos e aplicações com a equipe MOBIS."}</p>
+            {destaque.preco!=null&&<strong>{brl(destaque.preco)}</strong>}</div>
+          {destaque.imagem&&<img className="m2-flash-arte" src={destaque.imagem} alt={"Arte aprovada da marca "+destaque.nome}/>}
+          {destaque.marca_chave
+            ? <button type="button" className="m2-flash-cta" onClick={()=>{const m=dados?.marcas?.find(x=>x.chave===destaque.marca_chave);if(m)escolherMarca(m);}}>Produtos da marca ↗</button>
+            : <a href={"#/p/mobis/"+encodeURIComponent(destaque.sku)}>Ver produto real ↗</a>}
+          {flash.length>1&&<div className="m2-flash-controles"><button aria-label="Banner anterior" onClick={()=>setSlide((slide+flash.length-1)%flash.length)}>‹</button>
+            <span>{slide+1}/{flash.length}</span><button aria-label="Próximo banner" onClick={()=>setSlide((slide+1)%flash.length)}>›</button>
+            <button onClick={()=>setPausa(!pausa)}>{pausa?"Reativar":"Pausar"}</button></div>}
+        </div></div>}
       {produtoTeste&&<ProdutoTesteMobis/>}
       <section id="m2-destaques" className="m2-wrap m2-secao m2-destaques">
         <div className="m2-cab-secao"><div><span className="m2-kicker">LOJA ONLINE MOBIS</span><h2>Peças automotivas para a sua rotina</h2></div><button onClick={()=>para("m2-catalogo")}>Ver catálogo ↗</button></div>
@@ -225,16 +243,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
           <article className="m2-bloco m2-bloco2"><small>BUSCA INTELIGENTE</small><h3>A peça certa para o veículo certo.</h3><p>Filtre por modelo, motor, ano e categoria.</p><button onClick={()=>para("m2-busca")}>Buscar por veículo ↗</button></article>
           <article className="m2-bloco m2-bloco3"><small>ATENDIMENTO MOBIS</small><h3>Precisa de ajuda para escolher?</h3><p>Nossa equipe confirma a aplicação e disponibilidade.</p><button onClick={()=>para("m2-atendimento")}>Falar com a equipe ↗</button></article>
         </div>
-        {banners.length>0&&<div className="m2-flash" onMouseEnter={()=>setPausa(true)} onMouseLeave={()=>setPausa(false)} onFocusCapture={()=>setPausa(true)} onBlurCapture={()=>setPausa(false)}>
-          <div><span className="m2-kicker">{dados?.loja.ambiente==="teste"?"PRÉVIA DE OFERTA · TESTE":"DESTAQUE · OFERTA"}</span>
-            <h3>{banners[Math.min(slide,banners.length-1)].nome}</h3>
-            <p>{banners[Math.min(slide,banners.length-1)].chamada??"Confirme a aplicação com a equipe."}</p>
-            {banners[Math.min(slide,banners.length-1)].preco!=null&&<strong>{brl(banners[Math.min(slide,banners.length-1)].preco!)}</strong>}</div>
-          <a href={"#/p/mobis/"+encodeURIComponent(banners[Math.min(slide,banners.length-1)].sku)}>Ver detalhes ↗</a>
-          {banners.length>1&&<div className="m2-flash-controles"><button aria-label="Banner anterior" onClick={()=>setSlide((slide+banners.length-1)%banners.length)}>‹</button>
-            <span>{slide+1}/{banners.length}</span><button aria-label="Próximo banner" onClick={()=>setSlide((slide+1)%banners.length)}>›</button>
-            <button onClick={()=>setPausa(!pausa)}>{pausa?"Reativar":"Pausar"}</button></div>}
-        </div>}
+        
       </section>
       <section id="m2-explorar" className="m2-band m2-veiculos"><div className="m2-wrap m2-secao">
         <div className="m2-titulo"><div><span className="m2-kicker">ENCONTRE PELO CAMINHO MAIS FÁCIL</span><h2>Comece pelo veículo ou pelo sistema</h2><p>Escolha uma das opções e veja as peças disponíveis na loja.</p></div></div>
