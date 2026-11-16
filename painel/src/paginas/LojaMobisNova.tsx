@@ -9,7 +9,7 @@ import { modeloDoAtalho, podeExibirProdutoTeste } from "../lib/mobisVitrine.ts";
 import { ProdutoTesteMobis } from "../componentes/ProdutoTesteMobis.tsx";
 import { CarrosselVidroMobis } from "../componentes/CarrosselVidroMobis.tsx";
 import { BannersInstitucionaisMobis } from "../componentes/BannersInstitucionaisMobis.tsx";
-import { VitrineFotograficaMobis } from "../componentes/VitrineFotograficaMobis.tsx";
+import { VitrineFotograficaMobis, FOTOS_VEICULOS_MOBIS } from "../componentes/VitrineFotograficaMobis.tsx";
 import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
 import "./loja-mobis-nova.css";
 import "./loja-mobis-branco.css";
@@ -233,9 +233,19 @@ export function LojaMobisNova({slug}:{slug:string}) {
           <button role="tab" aria-selected={explorar==="veiculo"} onClick={()=>setExplorar("veiculo")}>Qual é o seu veículo?</button>
           <button role="tab" aria-selected={explorar==="sistema"} onClick={()=>setExplorar("sistema")}>O que ele precisa?</button>
         </div>
-        {explorar==="veiculo"&&<div id="m2-veiculos" role="tabpanel"><div className="m2-veiculo-grade">{VEICULOS.map(v=><button className="m2-veiculo" key={v.nome} onClick={()=>escolherVeiculo(v.valor)}>
-          <div><IconeVeiculo tipo={v.icone} largura={157}/></div><strong>{v.nome}</strong><small>{v.nota}</small><span>Encontrar peças <b>↗</b></span>
-        </button>)}</div></div>}
+        {explorar==="veiculo"&&<div id="m2-veiculos" role="tabpanel"><div className="m2-veiculo-grade">
+          {FOTOS_VEICULOS_MOBIS.map(v=><button className="m2-veiculo m3-veiculo-card" key={v.nome}
+            onClick={()=>{if(modeloDoAtalho(v.valor,opcoes)){escolherVeiculo(v.valor)}else{setConsultaModelo(v.nome);para("m2-atendimento")}}}>
+            <div><img src={v.foto} alt={v.alt} loading="lazy" decoding="async"/></div>
+            <strong>{v.nome}</strong>
+            <small>{modeloDoAtalho(v.valor,opcoes)?"Peças cadastradas por aplicação":"Consulte a aplicação com nossa equipe"}</small>
+            <span>{modeloDoAtalho(v.valor,opcoes)?"Encontrar peças":"Consultar modelo"} <b>↗</b></span>
+          </button>)}
+          <button className="m2-veiculo m3-veiculo-generico" onClick={()=>{setConsultaModelo("outros modelos");para("m2-atendimento")}}>
+            <div><IconeVeiculo tipo="furgao" largura={157}/></div><strong>Outros modelos</strong>
+            <small>Consulte com chassi, ano e motor</small><span>Falar com a equipe <b>↗</b></span>
+          </button>
+        </div></div>}
         {explorar==="sistema"&&<div id="m2-sistemas" role="tabpanel"><div className="m2-sistema-grade">{SISTEMAS.map(s=><button key={s.nome} onClick={()=>escolherSistema(s.busca)}>
           <IconePeca nome={s.id} tamanho={90}/><span>{s.nome}</span><i>↗</i></button>)}</div>
         <small className="m2-legenda">Ilustrações das categorias. Consulte aplicação e disponibilidade antes de comprar.</small></div>}
