@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { IconePeca } from "../componentes/IconePeca.tsx";
 import { VeiculoRealMobis } from "../componentes/VeiculoRealMobis.tsx";
+import { NanoVendedorMobis } from "../componentes/NanoVendedorMobis.tsx";
 import logoMobis from "../assets/marcas/mobis-oficial-fundo-escuro.png";
 import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import "./loja-mobis-nova.css";
@@ -95,6 +96,7 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
             <div className="m2-ficha-badges"><span><IconePeca nome={icone} tamanho={24}/> {p.categoria??"Sistema automotivo"}</span><span>{p.status==="aprovado"?"Aplicação tecnicamente aprovada":"Aplicação em revisão — confirme pelo chassi"}</span></div>
           </div>
         </section>
+        <NanoVendedorMobis whatsapp={p.whatsapp}/>
         <div className="m2-ficha-grid">
           <section className="m2-ficha-painel" aria-label="Fotografias reais do produto">
             <h2>Fotografias do produto físico</h2>
