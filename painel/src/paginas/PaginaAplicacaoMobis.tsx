@@ -15,7 +15,8 @@ type Aplicacao = {
   codigo_oem?:string|null; codigo_fiscal?:string|null; bula_tecnica?:string|null;
   restricao?:string|null; contraindicacao?:string|null; foto_veiculo?:string|null; logo_montadora?:string|null;
   codigos_cruzados?:Array<{marca:string;codigo:string;tipo:string}>;
-  foto_credito?:string|null; historia_veiculo?:Historia|null; historia_marca?:Historia|null
+  foto_credito?:string|null; historia_veiculo?:Historia|null; historia_marca?:Historia|null;
+  procedencia_publica?:{originalidade:string;importacao:string;pais:string|null}|null
 };
 type Resposta = {loja:{nome:string;slug:string;ambiente:string;whatsapp?:string|null};politicas:PoliticasLojaPublicas|null;pagina_aplicacao:Aplicacao};
 
@@ -146,6 +147,7 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
               <details><summary>⚠ Contraindicações e cuidados de instalação</summary><p>{p.contraindicacao??p.restricao??"Verificar OEM, chassi, versão, sensores, suportes e periféricos antes de instalar."}</p></details>
               <details><summary>▣ Procedência, originalidade e garantia legal</summary>
                 <p>Marca comercial registrada: <strong>{p.marca??"Não informada"}</strong>. Origem industrial e importador: consultar nota de entrada, embalagem e documentação do fornecedor; sem comprovação pública até a revisão.</p>
+                {p.procedencia_publica&&<p><strong>Classificação documentada:</strong> {p.procedencia_publica.originalidade.replace(/_/g," ")} · {p.procedencia_publica.importacao.replace(/_/g," ")}{p.procedencia_publica.pais?" · fabricação: "+p.procedencia_publica.pais:""}.</p>}
                 <p>O prefixo do SKU não comprova país de fabricação, originalidade ou identidade do importador. Uma peça de reposição não é anunciada como genuína da montadora sem prova documental. A garantia legal dos produtos duráveis e as responsabilidades da cadeia de fornecedores seguem o Código de Defesa do Consumidor, sem excluir a responsabilidade da MOBIS.</p>
               </details>
             </>}
