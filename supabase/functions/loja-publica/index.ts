@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
   const slugAplicacao = typeof c?.aplicacao_slug === "string" && /^[a-z0-9-]{4,110}$/.test(c.aplicacao_slug) ? c.aplicacao_slug : null;
   if (slugAplicacao && loja.slug === "mobis") {
     const { data: app } = await sb.from("produto_aplicacoes")
-      .select("produto_id,modelo,motorizacao,ano_inicial,ano_final,status,pagina_slug,pagina_titulo,pagina_descricao,pagina_indexavel,codigo_oem,restricao,contraindicacao")
+      .select("id,produto_id,modelo_id,modelo,motorizacao,ano_inicial,ano_final,status,pagina_slug,pagina_titulo,pagina_descricao,pagina_indexavel,codigo_oem,restricao,contraindicacao")
       .eq("loja_id", loja.id).eq("pagina_slug", slugAplicacao).maybeSingle();
     if (!app || (!previaConsultaMobis && !(app.status === "aprovado" && app.pagina_indexavel)))
       return json({ erro: "Aplicação indisponível." }, 404);
@@ -87,6 +87,38 @@ Deno.serve(async (req) => {
       && typeof fiscal.ncm === "string" && /^[0-9]{8}$/.test(fiscal.ncm)
         ? fiscal.ncm : null;
     const ncmPublico = ncmBruto ? ncmBruto.replace(/^(\\d{4})(\\d{2})(\\d{2})$/, "$1.$2.$3") : null;
+    // Ícones de veículos: somente fotos REAIS PNG e logotipos autorizados,
+    // vinculados à montadora real do modelo e a registro de mídia aprovado.
+    let fotoVeiculo: string | null = null;
+    let logoMontadora: string | null = null;
+    let fotoCredito: string | null = null;
+    if (app.modelo_id) {
+      const { data: modeloRef } = await sb.from("modelos")
+        .select("montadora_id").eq("id",app.modelo_id).maybeSingle();
+      if (modeloRef?.montadora_id) {
+        const camposMidia = "modelo_id,aplicacao_id,montadora_id,ano_inicial,ano_final,foto_png_url,foto_aprovada,logo_png_url,logo_aprovado,foto_autor,foto_licenca,foto_fonte";
+        const { data: especial } = await sb.from("veiculo_midias")
+          .select(camposMidia).eq("loja_id",loja.id).eq("aplicacao_id",app.id)
+          .eq("status","aprovado").limit(1).maybeSingle();
+        const { data: gerais } = await sb.from("veiculo_midias")
+          .select(camposMidia).eq("loja_id",loja.id).eq("modelo_id",app.modelo_id)
+          .eq("status","aprovado").order("atualizado_em",{ascending:false}).limit(12);
+        const midias = [...(especial ? [especial] : []),...(gerais ?? [])];
+        for (const m of midias) {
+          if (m.montadora_id !== modeloRef.montadora_id) continue;
+          if (!logoMontadora && m.logo_aprovado && typeof m.logo_png_url==="string")
+            logoMontadora=m.logo_png_url;
+          const anosCobertos = m.aplicacao_id === app.id ||
+            (app.ano_inicial != null && app.ano_final != null
+             && m.ano_inicial != null && m.ano_final != null
+             && m.ano_inicial <= app.ano_inicial && m.ano_final >= app.ano_final);
+          if (!fotoVeiculo && anosCobertos && m.foto_aprovada && typeof m.foto_png_url==="string") {
+            fotoVeiculo=m.foto_png_url;
+            fotoCredito=[m.foto_autor,m.foto_licenca,m.foto_fonte].filter(Boolean).join(" · ");
+          }
+        }
+      }
+    }
     // Informações institucionais: exclusivamente política aprovada para a loja.
     const { data: politicasAplicacao } = await sb.from("loja_politicas")
       .select("razao_social,cnpj,endereco,telefone,email_contato,privacidade_texto,troca_devolucao_texto,entrega_texto,garantia_texto,termos_texto")
@@ -106,7 +138,7 @@ Deno.serve(async (req) => {
         restricao: app.restricao ?? null, contraindicacao: app.contraindicacao ?? null,
         bula_tecnica: p.descricao_complementar ? "Informações declaradas no cadastro da peça (confirmar documentação técnica do fabricante):\\n" + p.descricao_complementar : null,
         // Só preencher com registros fiscais validados e arquivos licenciados após integração específica.
-        codigo_fiscal: ncmPublico, foto_veiculo: null, logo_montadora: null,
+        codigo_fiscal: ncmPublico, foto_veiculo: fotoVeiculo, logo_montadora: logoMontadora, foto_credito: fotoCredito,
         preco: null, estoque: null, whatsapp,
       },
     });
@@ -224,6 +256,30 @@ Deno.serve(async (req) => {
       paginas.sort((a, b) => a.modelo.localeCompare(b.modelo, "pt-BR"));
   }
 
+  // Miniaturas institucionais reais para as três entradas do catálogo.
+  // Modelo e montadora devem coincidir. A imagem ilustrativa do MODELO nunca
+  // substitui o registro de compatibilidade do MOTOR ou da peça.
+  const midiasVeiculoCatalogo: Record<string,{foto:string|null;logo:string|null;credito:string|null}> = {};
+  if (loja.slug === "mobis") {
+    const { data: modelosVitrine } = await sb.from("modelos")
+      .select("id,nome,montadora_id").in("nome",["HR","Bongo K2500","L200"]);
+    const idsModelo = (modelosVitrine??[]).map(m=>m.id);
+    const { data: fotosModelo } = idsModelo.length ? await sb.from("veiculo_midias")
+      .select("modelo_id,montadora_id,foto_png_url,foto_aprovada,logo_png_url,logo_aprovado,foto_autor,foto_licenca,foto_fonte")
+      .eq("loja_id",loja.id).in("modelo_id",idsModelo).eq("status","aprovado").limit(15)
+      : {data:[]};
+    for(const m of modelosVitrine??[]) {
+      const r=(fotosModelo??[]).find(f=>f.modelo_id===m.id && f.montadora_id===m.montadora_id);
+      if(!r)continue;
+      const chave=m.nome==="Bongo K2500"?"Bongo":m.nome;
+      midiasVeiculoCatalogo[chave]={
+        foto:r.foto_aprovada?r.foto_png_url:null,
+        logo:r.logo_aprovado?r.logo_png_url:null,
+        credito:r.foto_aprovada?[r.foto_autor,r.foto_licenca,r.foto_fonte].filter(Boolean).join(" · "):null,
+      };
+    }
+  }
+
   // banners de oferta no ar (loja_banners): só produto publicado e dentro do período; falha aqui não derruba a vitrine
   const { data: bn } = await sb.rpc("banners_da_vitrine", { p_loja: loja.id });
   const banners = montarBanners(Array.isArray(bn) ? bn : [], loja.whatsapp, urlDoProduto);
@@ -237,5 +293,5 @@ Deno.serve(async (req) => {
   const { data: politicasAprovadas } = await sb.from("loja_politicas")
     .select("razao_social, cnpj, endereco, telefone, email_contato, privacidade_texto, troca_devolucao_texto, entrega_texto, garantia_texto, termos_texto")
     .eq("loja_id", loja.id).eq("status", "aprovada").maybeSingle();
-  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
+  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, midias_veiculo: midiasVeiculoCatalogo, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
 });
