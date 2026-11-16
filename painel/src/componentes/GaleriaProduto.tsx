@@ -6,6 +6,7 @@ import { alterarSelecao, avaliarPreviaPrincipal, selecaoAtual } from "../lib/sel
 import { pedirAoNanoNaConversa } from "../lib/contextoPagina.ts";
 import { Visualizador } from "./Visualizador.tsx";
 import { PreviaBranca } from "./PreviaBranca.tsx";
+import { CarrosselVidroNano } from "./CarrosselVidroNano.tsx";
 import "./galeria-seletor-nano.css";
 
 const CAMPOS = "id, url, tipo, origem, url_original, licenca_tipo, cruzamento_tipo, cruzamento_valor, largura_px, altura_px, aprovada, principal, direitos_confirmados_em, removida_em, ordem";
@@ -180,6 +181,16 @@ export function GaleriaProduto({
       {podeDecidir === false && <p className="suave">Somente o administrador da loja aprova ou rejeita fotografias.</p>}
       {erro && <p className="msg-erro" role="alert">{erro}</p>}
       {mensagem && <p className="msg-ok" role="status">{mensagem}</p>}
+      {visiveis.length > 0 && (
+        <CarrosselVidroNano
+          itens={visiveis}
+          branco={preverBranco}
+          selecionadas={selecionadasAtuais}
+          onComparar={alternar}
+          onAmpliar={(item) => setAmpliada({url:item.url,legenda:`Imagem · ${item.origem}`})}
+          onPreviaPrincipal={setPrincipalPrevia}
+        />
+      )}
       {g === null ? <p className="suave" role="status">Carregando candidatas…</p>
         : g.itens.length === 0 ? <p className="suave">Nenhuma candidata na galeria. Pesquise pelo código original/fabricante ou utilize uma foto própria.</p>
         : <div className="gs-grade">
