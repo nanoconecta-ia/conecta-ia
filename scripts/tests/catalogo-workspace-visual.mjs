@@ -63,7 +63,7 @@ try {
     await page.goto(base+"/#/catalogo");
     await page.getByRole("heading",{name:/Catálogo técnico/}).waitFor();
     await page.getByRole("group",{name:"Modo de visualização"}).getByRole("button",{name:"Cartões"}).click();
-    const query=page.getByRole("searchbox",{name:"Buscar produto por SKU, nome, marca ou GTIN"});
+    const query=page.getByRole("searchbox",{name:"Buscar SKU, nome, marca, GTIN ou descrição"});
     await query.fill("854008");
     await page.locator(".catalogo-produto").filter({hasText:"INDISA"}).waitFor();
     await page.getByRole("status").filter({hasText:"1 encontrado(s)"}).waitFor();
@@ -113,12 +113,12 @@ try {
     }
     { // ponte ficha -> Nano.IA: o pedido leva o produto e as pendências à caixa do chat, sem enviar nada
       await page.goto(base+"/#/catalogo");await page.getByRole("heading",{name:/Catálogo técnico/}).waitFor();
-      await page.getByRole("searchbox",{name:"Buscar produto por SKU, nome, marca ou GTIN"}).fill("854008");
+      await page.getByRole("searchbox",{name:"Buscar SKU, nome, marca, GTIN ou descrição"}).fill("854008");
       await page.getByRole("status").filter({hasText:"1 encontrado(s)"}).waitFor();
       await page.getByRole("button",{name:"Ver ficha técnica"}).click();
       const ficha=page.getByRole("dialog");await ficha.waitFor();
       assert.equal(await ficha.getAttribute("aria-modal"),"false","ficha lateral não é modal");
-      if(width>=960){const f=await ficha.boundingBox(),b=await page.getByRole("searchbox",{name:"Buscar produto por SKU, nome, marca ou GTIN"}).boundingBox();assert.ok(b.x+b.width<=f.x+1,`ficha ao lado do catálogo, sem cobrir a busca (${Math.round(b.x+b.width)} vs ${Math.round(f.x)})`);}
+      if(width>=960){const f=await ficha.boundingBox(),b=await page.getByRole("searchbox",{name:"Buscar SKU, nome, marca, GTIN ou descrição"}).boundingBox();assert.ok(b.x+b.width<=f.x+1,`ficha ao lado do catálogo, sem cobrir a busca (${Math.round(b.x+b.width)} vs ${Math.round(f.x)})`);}
       await ficha.getByLabel("Propor outra posição").selectOption({label:"Bombas d'água"});
       await ficha.getByLabel(/O que você sabe sobre ele/).fill("acho que o fabricante é teste");
       { // correção de cadastro SEM IA: valida no cliente, cria só a PROPOSTA (nenhuma gravação no ERP)
