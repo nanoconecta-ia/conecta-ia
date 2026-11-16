@@ -13,11 +13,12 @@ const negado = (e: unknown) => (e as { context?: { status?: number } } | null)?.
 type Filtro = "todas" | "pendentes" | "aprovadas" | "publicaveis" | "sem_direitos";
 
 export function GaleriaProduto({
-  loja, produtoId, sku, aoFechar, aoDecidir, contextoDePesquisa,
+  loja, produtoId, sku, aoFechar, aoDecidir, contextoDePesquisa, aoPrepararPesquisa,
 }: {
   loja: Loja; produtoId: string; sku: string | null;
   aoFechar?: () => void; aoDecidir?: () => void;
   contextoDePesquisa?: string;
+  aoPrepararPesquisa?: (pedido: string) => void;
 }) {
   const [linhas, setLinhas] = useState<LinhaImagem[] | null>(null);
   const [erro, setErro] = useState("");
@@ -119,7 +120,11 @@ export function GaleriaProduto({
         <button type="button" className="sec" disabled={!sku && !contextoDePesquisa}
           onClick={() => {
             const pedido = contextoDePesquisa ?? (sku ? pedidoDeImagens(sku) : null);
-            if (pedido) { pedirAoNanoNaConversa(pedido); aoFechar?.(); }
+            if (pedido) {
+              if (aoPrepararPesquisa) aoPrepararPesquisa(pedido);
+              else pedirAoNanoNaConversa(pedido);
+              aoFechar?.();
+            }
           }}>
           {contextoDePesquisa ? "Pesquisar imagens com DNA da peça" : "Pesquisar imagens com o Nano"}
         </button>
