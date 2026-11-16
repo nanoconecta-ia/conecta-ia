@@ -33,15 +33,18 @@ try{
   });
   await page.goto(base+"/#/loja/mobis");
   await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor({state:"visible",timeout:20000});
+  assert.equal(await page.locator('[data-mobis-palette="branco-gelo"]').count(),1,"tema oficial branco-gelo ativo");
+  assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho branco");
+  assert.equal(await page.locator('.mgv').evaluate(el=>getComputedStyle(el).color),'rgb(31, 35, 39)',"glassy com texto grafite sobre vidro claro");
   await page.getByRole("heading",{name:/Peças para quem trabalha/}).waitFor();
   await page.getByText(/Catálogo de peças em preparação/).waitFor({timeout:10000});
   const cores=await page.locator('.m2-veiculo').first().evaluate(el=>({fundo:getComputedStyle(el).backgroundColor,imagem:getComputedStyle(el).backgroundImage}));
-  assert.deepEqual(cores,{fundo:'rgb(238, 233, 223)',imagem:'none'},'CSS aprovado prevalece sobre o gradiente administrativo');
+  assert.deepEqual(cores,{fundo:'rgb(255, 255, 255)',imagem:'none'},'paleta branca prevalece sobre o tema administrativo');
   await page.getByRole('tab',{name:'O que ele precisa?',exact:true}).click();
-  assert.equal(await page.locator('.m2-sistema-grade button').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(248, 245, 238)','sistemas preservam superfície aprovada');
+  assert.equal(await page.locator('.m2-sistema-grade button').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','sistemas exibem superfície branca');
   await page.getByRole('tab',{name:'Qual é o seu veículo?',exact:true}).click();
   assert.equal(await page.locator('.m2-filtros').evaluate(el=>getComputedStyle(el).maxWidth),'none','filtros não herdam largura administrativa de 440px');
-  if(width===1280){await page.locator('.m2-veiculo').first().hover();assert.equal(await page.locator('.m2-veiculo').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(238, 233, 223)','hover global antigo não interfere');}
+  if(width===1280){await page.locator('.m2-veiculo').first().hover();assert.equal(await page.locator('.m2-veiculo').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','hover preserva fundo branco');}
 
   assert.equal(await page.locator(".v-hero").count(),0,"layout antigo não pode ser renderizado");
   assert.equal(await page.locator(".m2-veiculo").count(),4,"4 opções de veículos");
