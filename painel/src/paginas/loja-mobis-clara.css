@@ -1,6 +1,7 @@
 /* MOBIS AUTOPEÇAS | modelo claro v4 da loja pública.
    Última camada da vitrine: superfícies brancas, texto grafite e um único acento,
    o laranja do "M" do logotipo oficial (o arquivo do logo não é alterado).
+   Veículos: imagem do modelo correto em cada cartão; nunca a mesma imagem em dois modelos.
    Layout fluido: as mesmas regras servem do smartphone ao monitor largo; os poucos
    @media só reorganizam colunas. Escopo: apenas .mobis-v2.m4 (a página da loja). */
 .mobis-v2.m4{
@@ -65,7 +66,7 @@
 .mobis-v2.m4 .m4-banner-arte{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(8px,1.6vw,16px);min-width:0;align-items:end}
 .mobis-v2.m4 .m4-banner-arte figure{margin:0;min-width:0;background:#fff;border:1px solid var(--m4-linha);border-radius:var(--m4-raio);padding:clamp(6px,1vw,10px);box-shadow:0 10px 28px #1f232712;text-align:center}
 .mobis-v2.m4 .m4-banner-arte figure:nth-child(2){transform:translateY(clamp(-22px,-2.2vw,-10px))}
-.mobis-v2.m4 .m4-banner-arte .ico-veiculo{display:block;width:100%;height:auto;aspect-ratio:1/.82;object-fit:cover;border-radius:8px}
+.mobis-v2.m4 .m4-foto-veiculo{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:contain;background:#fff;border-radius:8px}
 .mobis-v2.m4 .m4-banner-arte figcaption{font-size:clamp(.8125rem,.75rem + .3vw,.9375rem);font-weight:750;color:var(--m4-tinta);padding:8px 2px 2px;line-height:1.2}
 .mobis-v2.m4 .m4-banner-nota{font-size:.8125rem;color:#56606a;margin:clamp(16px,2.5vw,26px) auto 0}
 
@@ -89,11 +90,11 @@
 .mobis-v2.m4 .m2-empresa-abas button[aria-selected="true"]{color:var(--m4-acento);border-bottom-color:var(--m4-acento)}
 
 /* Veículos: cartões brancos compactos, grade automática */
-.mobis-v2.m4 .m2-veiculo-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:12px}
+.mobis-v2.m4 .m2-veiculo-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),260px));gap:12px}
 .mobis-v2.m4 .m2-veiculo{background:#fff;background-image:none;border:1px solid var(--m4-linha);border-radius:var(--m4-raio);padding:10px;min-height:0;color:var(--m4-tinta);box-shadow:none}
 .mobis-v2.m4 .m2-veiculo:hover{background:#fff;border-color:var(--m4-acento);transform:translateY(-2px)}
 .mobis-v2.m4 .m2-veiculo>div{background:none;min-height:0;margin-bottom:10px;border-radius:8px}
-.mobis-v2.m4 .m2-veiculo .ico-veiculo{width:100%;max-width:none;height:auto;aspect-ratio:1/.62;object-fit:cover;border-radius:8px}
+.mobis-v2.m4 .m2-veiculo>.m4-outros{aspect-ratio:4/3;display:grid;place-items:center;background:var(--m4-gelo);border:1px dashed #c5ccd3;color:var(--m4-acento);font-size:2.5rem;font-weight:300;line-height:1}
 .mobis-v2.m4 .m2-veiculo strong{font-size:1rem;line-height:1.25}
 .mobis-v2.m4 .m2-veiculo small{font-size:.8125rem;color:var(--m4-texto);margin:4px 0 10px}
 .mobis-v2.m4 .m2-veiculo>span{border-top:1px solid var(--m4-linha);padding-top:8px;font-size:.875rem;color:var(--m4-acento);font-weight:750}

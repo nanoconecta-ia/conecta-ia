@@ -1,17 +1,12 @@
 import type { ReactNode } from "react";
-import { IconeVeiculo } from "./IconePeca.tsx";
 
 /** Banner principal da loja Mobis (modelo claro v4).
  * Um único bloco fluido: mesma marcação do smartphone ao monitor largo, sem versões separadas.
- * Usa só as ilustrações 3D aprovadas de tipos de veículo: não representa modelo, ano nem aplicação.
+ * Mostra a imagem do veículo correto de cada modelo (recebidas da página); a imagem identifica
+ * o modelo, não o ano, a versão nem a aplicação da peça.
  */
-const TIPOS = [
-  { tipo: "picape", rotulo: "Picapes" },
-  { tipo: "furgao", rotulo: "Vans" },
-  { tipo: "caminhao", rotulo: "Utilitários diesel" },
-] as const;
-
-export function BannerMobis({ abrirEscolha, buscarCodigo, extra }: {
+export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra }: {
+  veiculos: readonly { nome: string; foto: string }[];
   abrirEscolha: () => void;
   buscarCodigo: () => void;
   /** Ação opcional do ambiente de teste (ex.: atalho do produto de teste). */
@@ -35,16 +30,16 @@ export function BannerMobis({ abrirEscolha, buscarCodigo, extra }: {
             <li>Consulta direta via WhatsApp</li>
           </ul>
         </div>
-        <div className="m4-banner-arte" aria-label="Tipos de veículo atendidos">
-          {TIPOS.map(t => (
-            <figure key={t.tipo}>
-              <IconeVeiculo tipo={t.tipo} largura={240} titulo="" />
-              <figcaption>{t.rotulo}</figcaption>
+        <div className="m4-banner-arte" aria-label="Modelos atendidos">
+          {veiculos.map((v, i) => (
+            <figure key={v.nome}>
+              <img className="m4-foto-veiculo" src={v.foto} width={480} height={360} alt="" loading={i === 0 ? "eager" : "lazy"} decoding="async" />
+              <figcaption>{v.nome}</figcaption>
             </figure>
           ))}
         </div>
       </div>
-      <p className="m2-wrap m4-banner-nota">Ilustrações de tipos de veículo. Aplicação, versão, preço e disponibilidade são confirmados pelo chassi.</p>
+      <p className="m2-wrap m4-banner-nota">Imagens ilustrativas dos modelos; ano e versão podem variar. Aplicação, preço e disponibilidade são confirmados pelo chassi.</p>
     </section>
   );
 }

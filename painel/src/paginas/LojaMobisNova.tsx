@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { EmpresaMobis } from "../componentes/EmpresaMobis.tsx";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
-import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
+import { IconePeca } from "../componentes/IconePeca.tsx";
 import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import { ChatClienteLoja } from "../componentes/ChatClienteLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 import { modeloDoAtalho, podeExibirProdutoTeste } from "../lib/mobisVitrine.ts";
 import { ProdutoTesteMobis } from "../componentes/ProdutoTesteMobis.tsx";
 import { BannerMobis } from "../componentes/BannerMobis.tsx";
+import fotoHR from "../assets/veiculos-mobis/hyundai-hr.webp";
+import fotoBongo from "../assets/veiculos-mobis/kia-bongo-k2500.webp";
+import fotoL200 from "../assets/veiculos-mobis/mitsubishi-l200.webp";
 import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
 import "./loja-mobis-nova.css";
 import "./loja-mobis-branco.css";
@@ -31,14 +34,13 @@ type Resposta = {
 };
 type Filtros={q:string;modelo:string;motor:string;ano:string;categoria:string;pagina:number};
 const VAZIO:Filtros={q:"",modelo:"",motor:"",ano:"",categoria:"",pagina:1};
-/** Atalhos por veículo. A ilustração 3D aprovada indica só o tipo (picape, van, utilitário),
- * nunca o modelo, a geração ou a aplicação. */
+/** Atalhos por veículo. Cada modelo usa a imagem do veículo correto, enviada pelo proprietário;
+ * a imagem identifica o modelo, não o ano, a versão nem a aplicação. Modelo sem imagem própria
+ * não entra aqui (fica em "Outros modelos"): nunca repetir a imagem de um veículo em outro. */
 const VEICULOS=[
-  {nome:"Hyundai HR",valor:"HR",icone:"caminhao"},
-  {nome:"Kia Bongo K2500",valor:"Bongo",icone:"caminhao"},
-  {nome:"Mitsubishi L200",valor:"L200",icone:"picape"},
-  {nome:"Mercedes Sprinter",valor:"Sprinter",icone:"furgao"},
-  {nome:"Iveco Daily",valor:"Daily",icone:"furgao"},
+  {nome:"Hyundai HR",valor:"HR",foto:fotoHR},
+  {nome:"Kia Bongo K2500",valor:"Bongo",foto:fotoBongo},
+  {nome:"Mitsubishi L200",valor:"L200",foto:fotoL200},
 ];
 /** Modelos sempre oferecidos no filtro; os demais só entram quando há aplicação aprovada. */
 const MODELOS_FILTRO=["HR","Bongo","L200"];
@@ -190,6 +192,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
     {dados?.loja.ambiente==="teste"&&<div className="m2-aviso-teste" role="status"><strong>LOJA TESTE</strong> · Catálogo em preparação. Consulte peças e aplicações pelo WhatsApp. Preços e disponibilidade a confirmar; não concluímos pedidos nem recebemos pagamentos neste site.</div>}
     <main>
       <BannerMobis
+        veiculos={VEICULOS}
         abrirEscolha={()=>{setExplorar("veiculo");para("m2-explorar");}}
         buscarCodigo={()=>{setAbaBusca("referencia");para("m2-busca");document.getElementById("m2-pesquisar")?.focus({preventScroll:true});}}
         extra={produtoTeste&&<button type="button" className="m4-botao m4-botao-claro" onClick={()=>para("m2-produto-teste")}>Ver produto de teste →</button>}
@@ -204,16 +207,16 @@ export function LojaMobisNova({slug}:{slug:string}) {
         {explorar==="veiculo"&&<div id="m2-veiculos" role="tabpanel"><div className="m2-veiculo-grade">
           {VEICULOS.map(v=>{const tem=Boolean(modeloDoAtalho(v.valor,opcoes));return <button className="m2-veiculo" key={v.nome}
             onClick={()=>{if(tem){escolherVeiculo(v.valor)}else{setConsultaModelo(v.nome);para("m2-atendimento")}}}>
-            <div><IconeVeiculo tipo={v.icone} largura={157} titulo=""/></div>
+            <div><img className="m4-foto-veiculo" src={v.foto} width={480} height={360} alt="" loading="lazy" decoding="async"/></div>
             <strong>{v.nome}</strong>
             <small>{tem?"Peças cadastradas por aplicação":"Consulte a aplicação com nossa equipe"}</small>
             <span>{tem?"Encontrar peças":"Consultar modelo"} <b aria-hidden="true">→</b></span>
           </button>})}
           <button className="m2-veiculo" onClick={()=>{setConsultaModelo("outros modelos");para("m2-atendimento")}}>
-            <div><IconeVeiculo tipo="picape" largura={157} titulo=""/></div><strong>Outros modelos</strong>
+            <div className="m4-outros" aria-hidden="true">+</div><strong>Outros modelos</strong>
             <small>Consulte com chassi, ano e motor</small><span>Falar com a equipe <b aria-hidden="true">→</b></span>
           </button>
-        </div><small className="m2-legenda">Ilustrações de tipos de veículo, não do modelo. Confirme a aplicação antes de comprar.</small></div>}
+        </div><small className="m2-legenda">Imagens ilustrativas dos modelos; ano e versão podem variar. Confirme a aplicação antes de comprar.</small></div>}
         {explorar==="sistema"&&<div id="m2-sistemas" role="tabpanel"><div className="m2-sistema-grade">{SISTEMAS.map(s=><button key={s.nome} onClick={()=>escolherSistema(s.busca)}>
           <IconePeca nome={s.id} tamanho={90}/><span>{s.nome}</span><i>↗</i></button>)}</div>
         <small className="m2-legenda">Ilustrações das categorias. Consulte aplicação e disponibilidade antes de comprar.</small></div>}

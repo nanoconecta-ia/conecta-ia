@@ -29,17 +29,22 @@ try{
   await page.goto(base+"?release="+esperado+"#/loja/mobis");
   await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor();
   assert.equal(await page.locator('[data-mobis-palette="branco-gelo"]').count(),1,"publicação usa paleta branca");
-  // Modelo claro v4: banner fluido com ilustrações 3D aprovadas; nenhuma fotografia de terceiros nem mascote.
+  // Modelo claro v4: banner fluido com a imagem do veículo correto de cada modelo; sem as fotos do Wikimedia nem mascotes.
   assert.equal(await page.locator('[data-mobis-visual="claro-v4"]').count(),1,"layout claro publicado");
   const hero=page.locator('.m4-banner');
   await hero.waitFor();
-  assert.equal(await hero.locator('.m4-banner-arte .ico-veiculo.ico-3d').count(),3,"três ilustrações 3D aprovadas no banner");
-  assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem fotos de terceiros nem mascotes na loja");
+  const fotosBanner=hero.locator('.m4-banner-arte img.m4-foto-veiculo');
+  assert.equal(await fotosBanner.count(),3,"banner com a imagem de cada modelo");
+  const origens=await fotosBanner.evaluateAll(l=>l.map(i=>i.currentSrc||i.src));
+  assert.equal(new Set(origens).size,3,"nenhuma imagem de veículo repetida entre modelos");
+  await fotosBanner.first().evaluate(async img=>{if(!img.complete)await new Promise((ok,erro)=>{img.addEventListener('load',ok,{once:true});img.addEventListener('error',erro,{once:true});});});
+  assert.equal(await fotosBanner.first().evaluate(img=>img.naturalWidth>0),true,"imagem do veículo carrega");
+  assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem as fotos do Wikimedia nem mascotes na loja");
   assert.equal(await page.locator('.mbi,.mgv,.m3-hero,.m3-faixa-sistemas').count(),0,"blocos duplicados removidos");
 
   assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho publicado é branco");
   assert.equal(await page.locator(".v-hero").count(),0);
-  assert.equal(await page.locator(".m2-veiculo .ico-veiculo.ico-3d").count(),6,"cartões de veículo com ilustrações 3D aprovadas");
+  assert.equal(await page.locator(".m2-veiculo img.m4-foto-veiculo").count(),3,"cada modelo com a imagem do veículo correto");
   const r=await consulta;assert.equal(r.status(),200,"catálogo público deve carregar");
   const dados=await r.json();assert.equal(dados.loja.slug,"mobis");
   assert.equal(dados.loja.ambiente,"teste","loja deve permanecer em teste");

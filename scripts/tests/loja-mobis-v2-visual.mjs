@@ -34,12 +34,17 @@ try{
   await page.goto(base+"/#/loja/mobis");
   await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor({state:"visible",timeout:20000});
   assert.equal(await page.locator('[data-mobis-palette="branco-gelo"]').count(),1,"tema oficial branco-gelo ativo");
-  // Modelo claro v4: banner fluido com ilustrações 3D aprovadas; nenhuma fotografia de terceiros nem mascote.
+  // Modelo claro v4: banner fluido com a imagem do veículo correto de cada modelo; sem as fotos do Wikimedia nem mascotes.
   assert.equal(await page.locator('[data-mobis-visual="claro-v4"]').count(),1,"layout claro aplicado");
   const hero=page.locator('.m4-banner');
   await hero.waitFor();
-  assert.equal(await hero.locator('.m4-banner-arte .ico-veiculo.ico-3d').count(),3,"três ilustrações 3D aprovadas no banner");
-  assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem fotos de terceiros nem mascotes na loja");
+  const fotosBanner=hero.locator('.m4-banner-arte img.m4-foto-veiculo');
+  assert.equal(await fotosBanner.count(),3,"banner com a imagem de cada modelo");
+  const origens=await fotosBanner.evaluateAll(l=>l.map(i=>i.currentSrc||i.src));
+  assert.equal(new Set(origens).size,3,"nenhuma imagem de veículo repetida entre modelos");
+  await fotosBanner.first().evaluate(async img=>{if(!img.complete)await new Promise((ok,erro)=>{img.addEventListener('load',ok,{once:true});img.addEventListener('error',erro,{once:true});});});
+  assert.equal(await fotosBanner.first().evaluate(img=>img.naturalWidth>0),true,"imagem do veículo carrega");
+  assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem as fotos do Wikimedia nem mascotes na loja");
   assert.equal(await page.locator('.mbi,.mgv,.m3-hero,.m3-faixa-sistemas').count(),0,"blocos duplicados removidos");
   assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.mobis-v2')).backgroundColor),'rgb(255, 255, 255)',"fundo branco");
   assert.equal(await page.locator('.m2-busca-rapida').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"busca rápida branca");
@@ -69,8 +74,9 @@ try{
   if(width===1280){await page.locator('.m2-veiculo').first().hover();assert.equal(await page.locator('.m2-veiculo').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','hover preserva fundo branco');}
 
   assert.equal(await page.locator(".v-hero").count(),0,"layout antigo não pode ser renderizado");
-  assert.equal(await page.locator(".m2-veiculo").count(),6,"cinco modelos e consulta a outros modelos");
-  assert.equal(await page.locator(".m2-veiculo .ico-veiculo.ico-3d").count(),6,"cartões de veículo usam as ilustrações 3D aprovadas");
+  assert.equal(await page.locator(".m2-veiculo").count(),4,"três modelos e consulta a outros modelos");
+  assert.equal(await page.locator(".m2-veiculo img.m4-foto-veiculo").count(),3,"cada modelo com a imagem do veículo correto");
+  assert.equal(new Set(await page.locator(".m2-veiculo img").evaluateAll(l=>l.map(i=>i.currentSrc||i.src))).size,3,"nenhuma imagem repetida nos cartões");
   await page.getByRole('tab',{name:'O que ele precisa?',exact:true}).click();
   assert.equal(await page.locator(".m2-sistema-grade button").count(),8,"8 módulos de peças");
   assert.equal(await page.locator(".m2-aviso-teste").isVisible(),true,"loja continua em teste");
