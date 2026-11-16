@@ -47,6 +47,48 @@ Deno.serve(async (req) => {
   // definitiva, não informa preço/estoque e não autoriza anúncios ou checkout.
   const previaConsultaMobis = loja.slug === "mobis" && fase === "teste";
 
+
+  // Página filha comercial por veículo: a aplicação aponta para o MESMO produto
+  // físico do Bling. Em teste, rascunhos ficam noindex e sem preço/estoque.
+  const slugAplicacao = typeof c?.aplicacao_slug === "string" && /^[a-z0-9-]{4,110}$/.test(c.aplicacao_slug) ? c.aplicacao_slug : null;
+  if (slugAplicacao && loja.slug === "mobis") {
+    const { data: app } = await sb.from("produto_aplicacoes")
+      .select("produto_id,modelo,motorizacao,ano_inicial,ano_final,status,pagina_slug,pagina_titulo,pagina_descricao,pagina_indexavel")
+      .eq("loja_id", loja.id).eq("pagina_slug", slugAplicacao).maybeSingle();
+    if (!app || (!previaConsultaMobis && !(app.status === "aprovado" && app.pagina_indexavel)))
+      return json({ erro: "Aplicação indisponível." }, 404);
+    const { data: p } = await sb.from("produtos")
+      .select("id,sku,marca,publicado,exibicao_teste,taxonomia_no_id")
+      .eq("loja_id", loja.id).eq("id", app.produto_id).maybeSingle();
+    if (!p || (!p.publicado && !(previaConsultaMobis && p.exibicao_teste)))
+      return json({ erro: "Produto indisponível." }, 404);
+    // Só imagens com direitos confirmados são herdadas pelo filho. Fotos
+    // candidatas da internet e recortes de fornecedores nunca saem desta view.
+    const { data: imgs } = await sb.from("imagens_publicaveis")
+      .select("url,principal,ordem").eq("loja_id", loja.id).eq("produto_id", p.id)
+      .order("principal", { ascending: false }).order("ordem").limit(8);
+    const { data: no } = p.taxonomia_no_id ? await sb.from("taxonomia_nos")
+      .select("nome").eq("id", p.taxonomia_no_id).maybeSingle() : { data: null };
+    const tel = String(loja.whatsapp ?? "").replace(/\\D/g, "");
+    const whatsapp = /^55\\d{10,11}$/.test(tel)
+      ? "https://wa.me/" + tel + "?text=" + encodeURIComponent(
+        "Olá, preciso confirmar a aplicação em " + app.modelo + " (" + (app.motorizacao ?? "motor não informado") +
+        "), peça Mobis SKU " + p.sku + ". Podem conferir pelo chassi e informar disponibilidade?")
+      : null;
+    return json({
+      loja: { nome: loja.nome, slug: loja.slug, ambiente: fase },
+      pagina_aplicacao: {
+        slug: app.pagina_slug, titulo: app.pagina_titulo, descricao: app.pagina_descricao,
+        modelo: app.modelo, motorizacao: app.motorizacao,
+        ano_inicial: app.ano_inicial, ano_final: app.ano_final,
+        status: app.status, indexavel: app.status === "aprovado" && app.pagina_indexavel === true,
+        sku_pai: p.sku, marca: p.marca, categoria: no?.nome ?? null,
+        fotos: (imgs ?? []).map((i: { url: string }) => i.url),
+        preco: null, estoque: null, whatsapp,
+      },
+    });
+  }
+
   const pagina = Math.max(1, Math.min(Number.isInteger(c?.pagina) ? c.pagina : 1, 1000));
   const limpar = (v: unknown, n = 60) => (typeof v === "string" ? v.replace(/[%,()*\\]/g, " ").trim().slice(0, n) : "");
   const busca = limpar(c?.q);
@@ -55,7 +97,7 @@ Deno.serve(async (req) => {
   const ano = Number.isInteger(c?.ano) && c.ano >= 1950 && c.ano <= 2100 ? (c.ano as number) : undefined;
 
   // Publicados (id + categoria) e as aplicações APROVADAS deles: alimentam as opções de busca e os filtros.
-  let consultaPublicados = sb.from("produtos").select("id, taxonomia_no_id").eq("loja_id", loja.id);
+  let consultaPublicados = sb.from("produtos").select("id, sku, taxonomia_no_id").eq("loja_id", loja.id);
   consultaPublicados = previaConsultaMobis
     ? consultaPublicados.or("publicado.eq.true,exibicao_teste.eq.true")
     : consultaPublicados.eq("publicado", true);
@@ -135,6 +177,26 @@ Deno.serve(async (req) => {
     imagem: imagens.get(String(l.sku)) ?? null,
   }) as never), loja.whatsapp, urlDoProduto)
     .map((produto) => ({ ...produto, consulta_previa: skusConsulta.has(produto.sku), categoria: categoriaPorSku.get(produto.sku) ?? null }));
+
+  const paginasPorSku: Record<string, { slug: string; titulo: string; modelo: string; status: string }[]> = {};
+  if (loja.slug === "mobis" && idsPublicados.length) {
+    let aq = sb.from("produto_aplicacoes")
+      .select("produto_id,pagina_slug,pagina_titulo,modelo,status,pagina_indexavel")
+      .eq("loja_id", loja.id).in("produto_id", idsPublicados).not("pagina_slug", "is", null);
+    aq = previaConsultaMobis
+      ? aq.in("status", ["aprovado", "a_confirmar"])
+      : aq.eq("status", "aprovado").eq("pagina_indexavel", true);
+    const { data: aps } = await aq.limit(1500);
+    const skusDosIds = new Map((pub ?? []).map((p: { id: string; sku?: string | null }) => [p.id, p.sku]));
+    for (const a of aps ?? []) {
+      const sku = skusDosIds.get(a.produto_id);
+      if (!sku || !a.pagina_slug || !a.pagina_titulo) continue;
+      (paginasPorSku[sku] ??= []).push({
+        slug: a.pagina_slug, titulo: a.pagina_titulo, modelo: a.modelo, status: a.status,
+      });
+    }
+  }
+
   // banners de oferta no ar (loja_banners): só produto publicado e dentro do período; falha aqui não derruba a vitrine
   const { data: bn } = await sb.rpc("banners_da_vitrine", { p_loja: loja.id });
   const banners = montarBanners(Array.isArray(bn) ? bn : [], loja.whatsapp, urlDoProduto);
@@ -148,5 +210,5 @@ Deno.serve(async (req) => {
   const { data: politicasAprovadas } = await sb.from("loja_politicas")
     .select("razao_social, cnpj, endereco, telefone, email_contato, privacidade_texto, troca_devolucao_texto, entrega_texto, garantia_texto, termos_texto")
     .eq("loja_id", loja.id).eq("status", "aprovada").maybeSingle();
-  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, politicas: politicasAprovadas ?? null, produtos, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
+  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
 });
