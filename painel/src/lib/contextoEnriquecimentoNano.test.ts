@@ -26,6 +26,6 @@ test("pesquisa de imagem diferencia OEM aprovado, código pendente e aplicação
  assert.ok(r.includes(id));
 });
 test("rota de Estúdio aceita só UUID",()=>{
- assert.equal(rotaStudioDoProduto(id),"#/studio?produto="+id);
+ assert.equal(rotaStudioDoProduto(id),"#/estudio?produto="+id);
  assert.equal(rotaStudioDoProduto("javascript:alert(1)"),null);
 });
