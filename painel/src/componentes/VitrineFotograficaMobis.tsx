@@ -64,9 +64,10 @@ const sistemas = [
 ] as const;
 
 export function VitrineFotograficaMobis({
-  escolherVeiculo, consultarVeiculo, temAplicacao, escolherSistema, buscarCodigo,
+  escolherVeiculo, consultarVeiculo, temAplicacao, escolherSistema, buscarCodigo, abrirEscolha,
 }:{
   escolherVeiculo:(valor:string)=>void;
+  abrirEscolha:()=>void;
   consultarVeiculo:(valor:string)=>void;
   temAplicacao:(valor:string)=>boolean;
   escolherSistema:(valor:string)=>void;
@@ -80,7 +81,7 @@ export function VitrineFotograficaMobis({
           <h1>PEÇAS PARA <strong>PICAPES, VANS E UTILITÁRIOS DIESEL</strong></h1>
           <p>Motor, suspensão, transmissão, elétrica e muito mais. Procure pelo seu modelo ou referência técnica.</p>
           <div className="m3-hero-acoes">
-            <button type="button" onClick={()=>escolherVeiculo("HR")}>Escolher meu veículo <span aria-hidden="true">↗</span></button>
+            <button type="button" onClick={abrirEscolha}>Escolher meu veículo <span aria-hidden="true">↗</span></button>
             <button type="button" onClick={buscarCodigo}>Já tenho o código <span aria-hidden="true">→</span></button>
           </div>
           <small>Aplicação, versão, preço e disponibilidade sujeitos à confirmação por chassi.</small>
@@ -99,7 +100,7 @@ export function VitrineFotograficaMobis({
         </div>
         <p className="m3-hero-aviso">Fotografias reais ilustrativas (gerações e versões podem variar). Nomes de montadoras indicam aplicação, não vínculo comercial com a Mobis. <a href="#m3-creditos">Créditos das imagens</a>.</p>
       </section>
-      <section className="m3-faixa-sistemas" aria-label="Buscar por sistemas e categorias">
+      <section id="m3-categorias" className="m3-faixa-sistemas" aria-label="Buscar por sistemas e categorias">
         <div className="m3-faixa-topo">
           <strong>Encontre peças por sistema</strong>
           <span>Selecione uma categoria para pesquisar o catálogo real</span>
