@@ -15,7 +15,7 @@ type VeiculoFoto = {
   origem: string;
 };
 
-const veiculos: readonly VeiculoFoto[] = [
+export const FOTOS_VEICULOS_MOBIS: readonly VeiculoFoto[] = [
   {
     nome: "Hyundai HR",
     valor: "HR",
@@ -93,7 +93,7 @@ export function VitrineFotograficaMobis({
           <small>Aplicação, versão, preço e disponibilidade sujeitos à confirmação por chassi.</small>
         </div>
         <div className="m3-hero-fotos" aria-label="Fotos reais ilustrativas dos veículos atendidos">
-          {veiculos.map(v=><article className="m3-hero-foto" key={v.nome}>
+          {FOTOS_VEICULOS_MOBIS.map(v=><article className="m3-hero-foto" key={v.nome}>
             <img src={v.foto} alt={v.alt} loading={v.valor==="HR"?"eager":"lazy"} decoding="async"/>
             <div className="m3-hero-foto-barra">
               <strong>{v.nome}</strong>
@@ -120,7 +120,7 @@ export function VitrineFotograficaMobis({
         </div>
       </section>
       <aside className="m3-creditos" id="m3-creditos" aria-label="Licenças das fotografias">
-        {veiculos.map((v)=><a key={v.nome} href={v.origem} target="_blank" rel="noopener noreferrer">{v.credito}</a>)}
+        {FOTOS_VEICULOS_MOBIS.map((v)=><a key={v.nome} href={v.origem} target="_blank" rel="noopener noreferrer">{v.credito}</a>)}
         <span>Fotografias: Wikimedia Commons. Arquivos redimensionados para carregamento rápido; CC BY-SA 4.0 nas fotos indicadas. <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">Licença</a>.</span>
       </aside>
     </>
