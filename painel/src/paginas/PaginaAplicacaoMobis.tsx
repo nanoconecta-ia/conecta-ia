@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
-import { IconePeca } from "../componentes/IconePeca.tsx";
+import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
 import logoMobis from "../assets/marcas/mobis-oficial-fundo-escuro.png";
 import "./loja-mobis-nova.css";
 
@@ -11,6 +11,14 @@ type Aplicacao = {
   categoria:string|null; fotos:string[]; preco:null; estoque:null; whatsapp:string|null
 };
 type Resposta = {loja:{nome:string;slug:string;ambiente:string};pagina_aplicacao:Aplicacao};
+
+/** Identificador visual de modelo, sem placa nem fotografia de terceiro. */
+function identidadeVeiculo(modelo:string){
+  if(/^Hyundai\b/i.test(modelo))return {montadora:"HYUNDAI",tipo:"caminhao"};
+  if(/^Kia\b/i.test(modelo))return {montadora:"KIA",tipo:"caminhao"};
+  if(/^Mitsubishi\b/i.test(modelo))return {montadora:"MITSUBISHI",tipo:/Pajero/i.test(modelo)?"picape":"picape"};
+  return {montadora:"MONTADORA A CONFIRMAR",tipo:"picape"};
+}
 
 export function PaginaAplicacaoMobis({slug}:{slug:string}){
   const [dados,setDados]=useState<Resposta|null>(null);
@@ -32,6 +40,7 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
   },[slug]);
   const p=dados?.pagina_aplicacao;
   const foto=p?.fotos?.[0]??null;
+  const veiculo=identidadeVeiculo(p?.modelo??"");
   const categoria=(p?.categoria??"").toLowerCase();
   const icone=/bandeja|suspens/.test(categoria)?"suspensao":/filtro/.test(categoria)?"filtros":"motor";
   return <main className="mobis-v2" style={{minHeight:"100vh",background:"#f5f2eb",color:"#1f2327",paddingBottom:45}}>
@@ -44,6 +53,15 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
       {estado==="erro"&&<div role="alert"><h1>Aplicação indisponível</h1><p>Confira a peça com nossa equipe.</p><a href="#/loja/mobis">Voltar ao catálogo</a></div>}
       {p&&<>
         <p style={{color:"#914a27",fontWeight:800,letterSpacing:"0.06em"}}>MOBIS AUTOPEÇAS · CONSULTA POR VEÍCULO</p>
+        <div className="m2-aplicacao-identidade" aria-label={"Veículo de referência: "+p.modelo+". Ilustração sem placa."}>
+          <div className="m2-aplicacao-veiculo"><IconeVeiculo tipo={veiculo.tipo} largura={105}/></div>
+          <div className="m2-aplicacao-identidade-texto">
+            <span className="m2-aplicacao-montadora">{veiculo.montadora}</span>
+            <strong>{p.modelo}</strong>
+            <small>{p.motorizacao??"Motorização a confirmar"} · {p.ano_inicial??"Ano inicial a confirmar"} – {p.ano_final??"ano final a confirmar"}</small>
+            <small>Ilustração da categoria do veículo, não fotografia da versão exata.</small>
+          </div>
+        </div>
         <h1 style={{fontSize:"clamp(1.6rem, 4vw, 2.3rem)",lineHeight:1.25,margin:"8px 0 16px"}}>{p.titulo}</h1>
         <p role="status" style={{padding:"12px 15px",background:"#fff3dd",borderLeft:"5px solid #c25a1b",fontWeight:600}}>
           {p.status==="aprovado"?"Consulte preço e disponibilidade com nossa equipe.":"Prévia de aplicação em validação técnica. Não é confirmação de compatibilidade. Informe o chassi antes da compra."}
@@ -67,7 +85,7 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
               <dt>Veículo</dt><dd style={{margin:0,fontWeight:700}}>{p.modelo}</dd>
               <dt>Motorização</dt><dd style={{margin:0}}>{p.motorizacao??"Confirmar pelo chassi"}</dd>
               <dt>Anos</dt><dd style={{margin:0}}>{p.ano_inicial??"A confirmar"} {p.ano_final?"– "+p.ano_final:"(ano final a confirmar)"}</dd>
-              <dt>SKU Bling</dt><dd style={{margin:0,fontWeight:700}}>{p.sku_pai}</dd>
+              <dt>Código da peça</dt><dd style={{margin:0,fontWeight:700}}>{p.sku_pai}</dd>
               <dt>Marca da peça</dt><dd style={{margin:0}}>{p.marca??"Confirmar fabricante"}</dd>
             </dl>
             <h2 style={{fontSize:"1.1rem",marginTop:28}}>Informações desta aplicação</h2>
@@ -77,7 +95,7 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
               style={{display:"block",textAlign:"center",background:"#b65321",padding:"15px",borderRadius:8,fontWeight:800,color:"#fff",textDecoration:"none"}}>
               Consultar aplicação no WhatsApp ↗
             </a>}
-            <p style={{fontSize:13,color:"#565656",lineHeight:1.55}}>Um único produto físico e estoque no Bling. Aplicações por veículo não são peças diferentes. A Mobis é uma loja independente, sem vínculo oficial com montadoras.</p>
+            <p style={{fontSize:13,color:"#565656",lineHeight:1.55}}>Um único produto físico com saldo compartilhado entre as aplicações. As páginas por veículo não representam peças ou estoques diferentes. A MOBIS AUTOPEÇAS é revendedora independente, sem vínculo oficial com as montadoras.</p>
           </section>
         </div>
       </>}
