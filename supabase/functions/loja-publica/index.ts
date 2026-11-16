@@ -92,6 +92,10 @@ Deno.serve(async (req) => {
   const pagina = Math.max(1, Math.min(Number.isInteger(c?.pagina) ? c.pagina : 1, 1000));
   const limpar = (v: unknown, n = 60) => (typeof v === "string" ? v.replace(/[%,()*\\]/g, " ").trim().slice(0, n) : "");
   const busca = limpar(c?.q);
+  // O modo "código" limita a busca ao SKU real e a referências APROVADAS.
+  // O texto de busca nunca é interpretado como SQL, filtro ou id arbitrário.
+  const referenciaExata = loja.slug === "mobis" && c?.referencia_exata === true;
+  const buscaOr = busca.replace(/[.:"']/g, " ");
   const modelo = limpar(c?.modelo), motor = limpar(c?.motor), categoria = typeof c?.categoria === "string" && SLUG_RE.test(c.categoria) ? c.categoria : "";
   const tipo = typeof c?.tipo === "string" && Object.hasOwn(TIPOS_VEICULO, c.tipo) ? c.tipo : "";
   const ano = Number.isInteger(c?.ano) && c.ano >= 1950 && c.ano <= 2100 ? (c.ano as number) : undefined;
@@ -124,7 +128,26 @@ Deno.serve(async (req) => {
     ? consulta.or("publicado.eq.true,exibicao_teste.eq.true")
     : consulta.eq("publicado", true);
   consulta = consulta.order("nome").range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1);
-  if (busca) consulta = consulta.or(`nome.ilike.%${busca}%,sku.ilike.%${busca}%`);
+  // Espelho de códigos: apenas vínculos realmente aprovados podem levar a um
+  // produto; candidato ou pendente não serve como atalho de correspondência.
+  let idsPorReferencia: string[] = [];
+  if (busca && loja.slug === "mobis") {
+    const { data: codigos, error: erroCodigo } = await sb.from("produto_codigos")
+      .select("produto_id").eq("loja_id", loja.id).eq("status", "aprovado")
+      .in("tipo", ["oem", "fabricante", "sku", "ean", "similar", "substituto", "antigo"])
+      .ilike("valor", busca).limit(100);
+    if (erroCodigo) console.warn("loja-publica codigo-aprovado indisponivel", erroCodigo.code);
+    const publicados = new Set(idsPublicados);
+    idsPorReferencia = [...new Set((codigos ?? [])
+      .map((c: { produto_id: string }) => c.produto_id)
+      .filter((id: string) => publicados.has(id) && /^[a-f0-9-]{36}$/i.test(id)))];
+  }
+  if (busca) {
+    const trechoIds = idsPorReferencia.length ? `,id.in.(${idsPorReferencia.join(",")})` : "";
+    consulta = referenciaExata
+      ? consulta.or(`sku.ilike.${buscaOr}${trechoIds}`)
+      : consulta.or(`nome.ilike.%${buscaOr}%,sku.ilike.%${buscaOr}%${trechoIds}`);
+  }
   if (modelo || motor || ano !== undefined) {
     const ids = [...produtosDoVeiculo(apls, { modelo, motor, ano })];
     consulta = consulta.in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
@@ -154,9 +177,23 @@ Deno.serve(async (req) => {
   // imagem principal aprovada de cada produto da página
   const skus = (linhas ?? []).map((l: { sku: string | null }) => l.sku).filter(Boolean) as string[];
   const imagens = new Map<string, string>();
+  const codigosAprovadosPorSku = new Map<string, { tipo: string; valor: string }[]>();
   if (skus.length) {
     const { data: ids } = await sb.from("produtos").select("id, sku").eq("loja_id", loja.id).in("sku", skus);
     const porId = new Map((ids ?? []).map((p: { id: string; sku: string }) => [p.id, p.sku]));
+    if (loja.slug === "mobis" && porId.size) {
+      const { data: referencias, error: errRef } = await sb.from("produto_codigos")
+        .select("produto_id,tipo,valor").eq("loja_id", loja.id).eq("status", "aprovado")
+        .in("produto_id", [...porId.keys()]).limit(200);
+      if (errRef) console.warn("loja-publica referencias-aprovadas indisponiveis", errRef.code);
+      for (const ref of referencias ?? []) {
+        const sku = porId.get(ref.produto_id);
+        if (!sku) continue;
+        const atual = codigosAprovadosPorSku.get(sku) ?? [];
+        if (atual.length < 12) atual.push({ tipo: ref.tipo, valor: ref.valor });
+        codigosAprovadosPorSku.set(sku, atual);
+      }
+    }
     // view da migração 20261019000005: só imagem aprovada, sem retirada e com direitos de uso confirmados (nunca url_original)
     const { data: imgs } = await sb.from("imagens_publicaveis").select("produto_id, url, principal, ordem").eq("loja_id", loja.id).in("produto_id", [...porId.keys()]).order("principal", { ascending: false }).order("ordem");
     for (const i of imgs ?? []) { const s = porId.get(i.produto_id); if (s && !imagens.has(s)) imagens.set(s, i.url); }
@@ -176,7 +213,11 @@ Deno.serve(async (req) => {
     estoque: skusConsulta.has(String(l.sku)) ? null : l.estoque,
     imagem: imagens.get(String(l.sku)) ?? null,
   }) as never), loja.whatsapp, urlDoProduto)
-    .map((produto) => ({ ...produto, consulta_previa: skusConsulta.has(produto.sku), categoria: categoriaPorSku.get(produto.sku) ?? null }));
+    .map((produto) => ({
+      ...produto, consulta_previa: skusConsulta.has(produto.sku),
+      categoria: categoriaPorSku.get(produto.sku) ?? null,
+      referencias_aprovadas: codigosAprovadosPorSku.get(produto.sku) ?? [],
+    }));
 
   const paginasPorSku: Record<string, { slug: string; titulo: string; modelo: string; status: string }[]> = {};
   if (loja.slug === "mobis" && idsPublicados.length) {

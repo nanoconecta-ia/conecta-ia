@@ -8,6 +8,7 @@ import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 import { modeloDoAtalho, podeExibirProdutoTeste } from "../lib/mobisVitrine.ts";
 import { ProdutoTesteMobis } from "../componentes/ProdutoTesteMobis.tsx";
 import { CarrosselVidroMobis } from "../componentes/CarrosselVidroMobis.tsx";
+import { BannersInstitucionaisMobis } from "../componentes/BannersInstitucionaisMobis.tsx";
 import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
 import "./loja-mobis-nova.css";
 import "./loja-mobis-branco.css";
@@ -16,7 +17,7 @@ import "./loja-mobis-branco.css";
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
  * publicado=true e aprovação. Nada é inferido de snapshots do Bling.
  */
-type Produto = {sku:string;nome:string;preco:number|null;marca:string|null;descricao:string|null;imagem:string|null;whatsapp:string|null;em_estoque:boolean|null;atualizado_em:string|null;consulta_previa?:boolean;categoria?:string|null};
+type Produto = {sku:string;nome:string;preco:number|null;marca:string|null;descricao:string|null;imagem:string|null;whatsapp:string|null;em_estoque:boolean|null;atualizado_em:string|null;consulta_previa?:boolean;categoria?:string|null;referencias_aprovadas?:{tipo:string;valor:string}[]};
 type Veiculo = {modelo:string;motor:string|null;de:number|null;ate:number|null};
 type Banner = {sku:string;nome:string;preco:number|null;chamada:string|null;flash:boolean;whatsapp:string|null};
 type PaginaAplicacao = {slug:string;titulo:string;modelo:string;status:string};
@@ -74,12 +75,13 @@ export function LojaMobisNova({slug}:{slug:string}) {
   const [slide,setSlide]=useState(0);
   const [pausa,setPausa]=useState(false);
   const [explorar,setExplorar]=useState<"veiculo"|"sistema">("veiculo");
+  const [abaBusca,setAbaBusca]=useState<"descricao"|"referencia">("descricao");
   const produtoTeste=podeExibirProdutoTeste(dados?.loja);
   useEffect(()=>{
     let ativo=true;setDados(null);setEstado("carregando");
     fetch(SUPABASE_URL+"/functions/v1/loja-publica",{
       method:"POST",headers:{"content-type":"application/json",apikey:SUPABASE_CHAVE_PUBLICAVEL},
-      body:JSON.stringify({slug,q:f.q||undefined,modelo:f.modelo||undefined,motor:f.motor||undefined,
+      body:JSON.stringify({slug,q:f.q||undefined,referencia_exata:abaBusca==="referencia" && !!f.q,modelo:f.modelo||undefined,motor:f.motor||undefined,
         ano:f.ano?Number(f.ano):undefined,categoria:f.categoria||undefined,pagina:f.pagina})
     }).then(async r=>{
       if(!ativo)return;
@@ -92,7 +94,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
       setDados(j);setEstado("ok");
     }).catch(()=>ativo&&setEstado("erro"));
     return ()=>{ativo=false};
-  },[slug,f,tentativa]);
+  },[slug,f,abaBusca,tentativa]);
   useEffect(()=>{
     try {
       const raw=sessionStorage.getItem("mobis:loja:lista");
@@ -133,12 +135,14 @@ export function LojaMobisNova({slug}:{slug:string}) {
     para("m2-catalogo");
   }
   function escolherVeiculo(valor:string){
+    setAbaBusca("descricao");
     const escolhido=modeloDoAtalho(valor,opcoes);
     setModelo(escolhido);setMotor("");setAno("");setCategoria("");setBusca("");
     setF({...VAZIO,modelo:escolhido});
     para("m2-busca");
   }
   function escolherSistema(valor:string){
+    setAbaBusca("descricao");
     const cat=dados?.categorias.find(c=>c.slug===valor||c.nome.toLowerCase()===valor);
     setModelo("");setMotor("");setAno("");setCategoria(cat?.slug??"");setBusca(cat?"":valor);
     setF({...VAZIO,categoria:cat?.slug??"",q:cat?"":valor});
@@ -195,6 +199,11 @@ export function LojaMobisNova({slug}:{slug:string}) {
       <div className="m2-progresso"><div className="m2-wrap"><span><b>01</b> Atendimento especializado</span>
         <span><b>02</b> Aplicação conferida com você</span><span><b>03</b> Consulta direta via WhatsApp</span></div></div>
       {produtoTeste&&<ProdutoTesteMobis/>}
+      <div className="m2-wrap"><BannersInstitucionaisMobis
+        abrirCatalogo={()=>para("m2-catalogo")}
+        abrirVeiculos={()=>{setExplorar("veiculo");para("m2-explorar")}}
+        abrirBuscaCodigos={()=>{setAbaBusca("referencia");setBusca("");setModelo("");setMotor("");setAno("");setCategoria("");setF(VAZIO);para("m2-busca");window.setTimeout(()=>document.getElementById("m2-pesquisar")?.focus({preventScroll:true}),100)}}
+      /></div>
       <div className="m2-wrap"><CarrosselVidroMobis aoSelecionar={escolherSistema}/></div>
       <section id="m2-destaques" className="m2-wrap m2-secao m2-destaques">
         <div className="m2-cab-secao"><div><span className="m2-kicker">LOJA ONLINE MOBIS</span><h2>Peças automotivas para a sua rotina</h2></div><button onClick={()=>para("m2-catalogo")}>Ver catálogo ↗</button></div>
@@ -229,8 +238,13 @@ export function LojaMobisNova({slug}:{slug:string}) {
       </div></section>
       <section id="m2-busca" className="m2-band m2-busca"><div className="m2-wrap m2-secao">
         <div className="m2-titulo"><div><span className="m2-kicker">CATÁLOGO ONLINE</span><h2>Encontre sua peça automotiva.</h2><p>Pesquise pelo veículo, sistema ou referência. Mostramos somente anúncios aprovados.</p></div><span>03 / 04</span></div>
+        <div className="m2-modos-busca" role="tablist" aria-label="Escolher modalidade de pesquisa">
+          <button role="tab" aria-selected={abaBusca==="descricao"} type="button" onClick={()=>setAbaBusca("descricao")}>Nome, peça ou sistema</button>
+          <button role="tab" aria-selected={abaBusca==="referencia"} type="button" onClick={()=>setAbaBusca("referencia")}>SKU, fabricante ou OEM</button>
+        </div>
+        <p className="m2-ajuda-referencias">{abaBusca==="referencia"?"Localize o SKU físico ou uma referência exata aprovada de fabricante/OEM. Códigos pendentes não aparecem como equivalências.":"Pesquise por nome ou peça e refine pelos filtros. Códigos aprovados também são localizados."}</p>
         <form className="m2-search" onSubmit={aplicar} role="search" aria-label="Busca detalhada de peças"><label className="sr" htmlFor="m2-pesquisar">Buscar peça, referência ou código SKU</label><span aria-hidden="true">⌕</span>
-          <input id="m2-pesquisar" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar peça, referência ou código SKU"/>
+          <input id="m2-pesquisar" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)} placeholder={abaBusca==="referencia"?"Ex.: 5074, CI000120 ou OEM homologado":"Buscar peça, referência ou código SKU"}/>
           <button type="submit">Buscar peças →</button></form>
         <form className="m2-filtros" onSubmit={aplicar}><div className="m2-filtros-topo"><div><strong>Filtre pelo seu veículo</strong><small>Use os dados do veículo para refinar a busca</small></div><button type="button" onClick={()=>{setF(VAZIO);setBusca("");setModelo("");setMotor("");setAno("");setCategoria("")}}>Limpar filtros ×</button></div>
           <div className="m2-filtros-grid">
@@ -259,7 +273,12 @@ export function LojaMobisNova({slug}:{slug:string}) {
               : p.imagem?<img src={p.imagem} alt={p.nome} loading="lazy"/>:
                 <div aria-label="Ilustração de categoria, não é foto da peça"><IconePeca nome={iconeDaCategoria(p.categoria)} tamanho={72}/></div>}
           </div>
-          <div><small>SKU {p.sku}{p.marca?" · "+p.marca:""}</small><h3>{dados.paginas_aplicacao?.[p.sku]?.length
+          <div><small>SKU {p.sku}{p.marca?" · "+p.marca:""}</small>
+            {p.referencias_aprovadas?.length ? <div className="m2-ref-aprovadas" aria-label={"Referências aprovadas do SKU "+p.sku}>
+              {p.referencias_aprovadas.map((r,i)=><span key={r.tipo+":"+r.valor+":"+i}>
+                <b>{r.tipo==="fabricante"?"FABRICANTE":r.tipo==="oem"?"OEM":r.tipo.toUpperCase()}</b> {r.valor}
+              </span>)}
+            </div>:null}<h3>{dados.paginas_aplicacao?.[p.sku]?.length
                 ? (p.sku==="CI002916"?"Motor parcial Trim Go — escolha o veículo":p.nome)
                 : p.nome}</h3>
             {dados.paginas_aplicacao?.[p.sku]?.length

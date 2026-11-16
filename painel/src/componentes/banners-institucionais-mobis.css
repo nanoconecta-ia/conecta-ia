@@ -1,0 +1,30 @@
+/* Banners institucionais da MOBIS, derivados das artes originais aprovadas. */
+.mobis-v2 .mbi{margin:28px auto 12px;max-width:1190px;min-width:0;color:#1f2327}
+.mobis-v2 .mbi *{box-sizing:border-box}
+.mobis-v2 .mbi-marca{display:flex;align-items:center;gap:9px;font-weight:850;color:#75402a;font-size:.71rem;letter-spacing:.12em;margin-bottom:12px}
+.mobis-v2 .mbi-marca-linha{display:block;background:#ff6a00;width:28px;height:4px;border-radius:8px}
+.mobis-v2 .mbi-painel{display:grid;grid-template-columns:1.03fr .97fr;gap:18px;min-height:330px;align-items:center;padding:26px clamp(18px,3vw,37px);border:1px solid #e5e9ed;border-radius:22px;background:linear-gradient(124deg,#fff 15%,#f5f5f5 75%);box-shadow:0 18px 45px #1f232718;position:relative;overflow:hidden}
+.mobis-v2 .mbi-painel::before{content:"";position:absolute;right:-90px;top:-150px;width:440px;height:440px;border-radius:50%;background:radial-gradient(circle,#ff6a0018,transparent 65%);pointer-events:none}
+.mobis-v2 .mbi-mensagem{position:relative;z-index:1;min-width:0}
+.mobis-v2 .mbi-chamada{display:block;font-weight:880;color:#8e410d;letter-spacing:.10em;font-size:.69rem}
+.mobis-v2 .mbi-mensagem h2{font-size:clamp(1.75rem,3.4vw,2.85rem);line-height:1.1;margin:13px 0;color:#1f2327;letter-spacing:-.035em}
+.mobis-v2 .mbi-mensagem h2 strong{color:#b34a00;display:block}
+.mobis-v2 .mbi-mensagem p{font-size:.89rem;line-height:1.75;color:#46525c;max-width:520px;margin:0 0 20px}
+.mobis-v2 .mbi-botao{display:inline-flex;align-items:center;gap:24px;justify-content:space-between;min-height:46px;background:#a74400;border:1px solid #863600;color:white;border-radius:9px;padding:10px 19px;font-weight:800}
+.mobis-v2 .mbi-botao:hover{background:#8e3900}
+.mobis-v2 .mbi-mensagem small{display:block;color:#53616b;font-size:.7rem;margin-top:12px}
+.mobis-v2 .mbi-artes{position:relative;z-index:1;display:grid;place-items:center;min-width:0;min-height:266px;border-radius:17px;border:1px solid #ffffffd7;background:#ffffffb8;box-shadow:inset 0 1px #fff,0 8px 22px #1f232715;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.mobis-v2 .mbi-artes img{display:block;object-fit:contain;max-width:100%;max-height:295px}
+.mobis-v2 .mbi-mascotes{width:100%;height:100%;object-fit:contain}
+.mobis-v2 .mbi-nano{height:270px}
+.mobis-v2 .mbi-motor{display:flex;flex-direction:column;align-items:center;gap:0;padding:5px}
+.mobis-v2 .mbi-motor .ico-peca{max-width:210px;max-height:205px;object-fit:contain}
+.mobis-v2 .mbi-motor img{max-width:230px;max-height:60px;object-fit:contain;border-radius:5px}
+.mobis-v2 .mbi-navegacao{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:12px}
+.mobis-v2 .mbi-navegacao button{min-width:42px;min-height:40px;border:1px solid #cdd6df;background:#fff;color:#1f2327;border-radius:10px;cursor:pointer;font-weight:850}
+.mobis-v2 .mbi-navegacao .mbi-seta{font-size:1.55rem;line-height:1}
+.mobis-v2 .mbi-ponto.mbi-selecionado{background:#fff0e6;border:2px solid #e6670c;color:#6b2c00}
+.mobis-v2 .mbi :is(button,.mbi-painel):focus-visible{outline:3px solid #d60000;outline-offset:3px}
+@media(max-width:720px){.mobis-v2 .mbi{margin-top:20px}.mobis-v2 .mbi-painel{grid-template-columns:1fr;padding:18px;gap:10px}.mobis-v2 .mbi-artes{min-height:170px}.mobis-v2 .mbi-artes img{max-height:195px}.mobis-v2 .mbi-nano{height:185px}.mobis-v2 .mbi-mensagem h2{font-size:clamp(1.6rem,6vw,2.2rem)}.mobis-v2 .mbi-motor .ico-peca{max-height:150px}.mobis-v2 .mbi-motor img{max-height:43px}}
+@media(prefers-reduced-motion:reduce){.mobis-v2 .mbi *{animation:none!important;transition:none!important}}
+@supports not (backdrop-filter:blur(1px)){.mobis-v2 .mbi-artes{background:#fff}}
