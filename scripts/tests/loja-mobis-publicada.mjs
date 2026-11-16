@@ -28,6 +28,9 @@ try{
   const consulta=page.waitForResponse(r=>r.url().endsWith("/functions/v1/loja-publica"),{timeout:45000});
   await page.goto(base+"?release="+esperado+"#/loja/mobis");
   await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor();
+  assert.equal(await page.locator('[data-mobis-palette="branco-gelo"]').count(),1,"publicação usa paleta branca");
+  assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho publicado é branco");
+  assert.equal(await page.locator('.mgv').evaluate(el=>getComputedStyle(el).color),'rgb(31, 35, 39)',"glassy publicado é claro");
   assert.equal(await page.locator(".v-hero").count(),0);
   const r=await consulta;assert.equal(r.status(),200,"catálogo público deve carregar");
   const dados=await r.json();assert.equal(dados.loja.slug,"mobis");
@@ -46,11 +49,11 @@ try{
   assert.equal(await glassy.locator(".mgv").count(),0,"não aninhar carrossel na própria raiz");
 
   const cores=await page.locator('.m2-veiculo').first().evaluate(el=>({fundo:getComputedStyle(el).backgroundColor,imagem:getComputedStyle(el).backgroundImage}));
-  assert.deepEqual(cores,{fundo:'rgb(238, 233, 223)',imagem:'none'},'CSS aprovado prevalece sobre o gradiente administrativo');
+  assert.deepEqual(cores,{fundo:'rgb(255, 255, 255)',imagem:'none'},'paleta branca prevalece sobre o tema administrativo');
   await page.getByRole("tab",{name:"O que ele precisa?",exact:true}).click(); // sistemas ficam na aba "O que ele precisa?" desde o #335
-  assert.equal(await page.locator('.m2-sistema-grade button').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(248, 245, 238)','sistemas preservam superfície aprovada');
+  assert.equal(await page.locator('.m2-sistema-grade button').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','sistemas exibem superfície branca');
   assert.equal(await page.locator('.m2-filtros').evaluate(el=>getComputedStyle(el).maxWidth),'none','filtros não herdam largura administrativa de 440px');
-  if(width===1280){await page.getByRole("tab",{name:"Qual é o seu veículo?",exact:true}).click();await page.locator('.m2-veiculo').first().hover();assert.equal(await page.locator('.m2-veiculo').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(238, 233, 223)','hover global antigo não interfere');}
+  if(width===1280){await page.getByRole("tab",{name:"Qual é o seu veículo?",exact:true}).click();await page.locator('.m2-veiculo').first().hover();assert.equal(await page.locator('.m2-veiculo').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','hover preserva fundo branco');}
 
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow "+width);
   assert.deepEqual(errors,[]);
