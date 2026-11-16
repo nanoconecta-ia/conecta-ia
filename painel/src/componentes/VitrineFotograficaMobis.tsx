@@ -12,6 +12,7 @@ type VeiculoFoto = {
   foto: string;
   alt: string;
   credito: string;
+  origem: string;
 };
 
 const veiculos: readonly VeiculoFoto[] = [
@@ -21,6 +22,7 @@ const veiculos: readonly VeiculoFoto[] = [
     foto: hyundai,
     alt: "Foto real de Hyundai Porter, família de utilitários relacionada ao Hyundai HR; ano e versão ilustrativos",
     credito: "Hyundai Porter · Benespit · CC BY-SA 4.0",
+    origem:"https://commons.wikimedia.org/wiki/File:00_hyundai_porter_1.jpg",
   },
   {
     nome: "Kia Bongo K2500",
@@ -28,6 +30,7 @@ const veiculos: readonly VeiculoFoto[] = [
     foto: kia,
     alt: "Foto real de Kia Bongo K2500, usada apenas como referência visual de modelo",
     credito: "Kia K2500 · Billcheng332 · CC BY-SA 4.0",
+    origem:"https://commons.wikimedia.org/wiki/File:KIA_K2500.jpg",
   },
   {
     nome: "Mitsubishi L200",
@@ -35,6 +38,7 @@ const veiculos: readonly VeiculoFoto[] = [
     foto: mitsubishi,
     alt: "Foto real de Mitsubishi L200; geração fotografada pode diferir da peça procurada",
     credito: "Mitsubishi L200 · crash71100 · CC0",
+    origem:"https://commons.wikimedia.org/wiki/File:Mitsubishi_L200_(48990376287).jpg",
   },
   {
     nome: "Mercedes Sprinter",
@@ -42,6 +46,7 @@ const veiculos: readonly VeiculoFoto[] = [
     foto: sprinter,
     alt: "Foto real de Mercedes-Benz Sprinter; consulte o ano e a configuração",
     credito: "Mercedes Sprinter · Oleg Yunakov · CC0",
+    origem:"https://commons.wikimedia.org/wiki/File:Mercedes-Benz_Sprinter.jpg",
   },
   {
     nome: "Iveco Daily",
@@ -49,6 +54,7 @@ const veiculos: readonly VeiculoFoto[] = [
     foto: iveco,
     alt: "Foto real de Iveco Daily; geração ilustrativa, confirme a aplicação",
     credito: "Iveco Daily · Martin P. · domínio público",
+    origem:"https://commons.wikimedia.org/wiki/File:Iveco_Daily_van.jpg",
   },
 ];
 
@@ -114,7 +120,7 @@ export function VitrineFotograficaMobis({
         </div>
       </section>
       <aside className="m3-creditos" id="m3-creditos" aria-label="Licenças das fotografias">
-        {veiculos.map((v)=><span key={v.nome}>{v.credito}</span>)}
+        {veiculos.map((v)=><a key={v.nome} href={v.origem} target="_blank" rel="noopener noreferrer">{v.credito}</a>)}
         <span>Fotografias: Wikimedia Commons. Arquivos redimensionados para carregamento rápido; CC BY-SA 4.0 nas fotos indicadas. <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">Licença</a>.</span>
       </aside>
     </>
