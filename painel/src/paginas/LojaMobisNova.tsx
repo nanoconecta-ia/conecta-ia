@@ -9,9 +9,11 @@ import { modeloDoAtalho, podeExibirProdutoTeste } from "../lib/mobisVitrine.ts";
 import { ProdutoTesteMobis } from "../componentes/ProdutoTesteMobis.tsx";
 import { CarrosselVidroMobis } from "../componentes/CarrosselVidroMobis.tsx";
 import { BannersInstitucionaisMobis } from "../componentes/BannersInstitucionaisMobis.tsx";
+import { VitrineFotograficaMobis } from "../componentes/VitrineFotograficaMobis.tsx";
 import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
 import "./loja-mobis-nova.css";
 import "./loja-mobis-branco.css";
+import "./loja-mobis-layout-vermelho.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -76,6 +78,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
   const [pausa,setPausa]=useState(false);
   const [explorar,setExplorar]=useState<"veiculo"|"sistema">("veiculo");
   const [abaBusca,setAbaBusca]=useState<"descricao"|"referencia">("descricao");
+  const [consultaModelo,setConsultaModelo]=useState<string|null>(null);
   const produtoTeste=podeExibirProdutoTeste(dados?.loja);
   useEffect(()=>{
     let ativo=true;setDados(null);setEstado("carregando");
@@ -159,8 +162,8 @@ export function LojaMobisNova({slug}:{slug:string}) {
     "peças para meu veículo")+". Favor confirmar aplicação, preço e disponibilidade. Esta é uma consulta, não um pedido.";
   const whatsapp=linkWhatsAppPublico(dados?.loja.whatsapp,msg);
   const paginas=Math.max(1,Math.ceil((dados?.total??0)/(dados?.por_pagina||24)));
-  return <div className="mobis-v2" id="m2-topo" data-mobis-layout="aprovado-v2" data-mobis-palette="branco-gelo">
-    <div className="m2-micro"><div className="m2-wrap"><span>Goiás, Brasil <b>/</b> Picapes · Vans · Utilitários diesel</span><span>Precisou de ajuda para escolher? <em>↗</em></span></div></div>
+  return <div className="mobis-v2" id="m2-topo" data-mobis-layout="aprovado-v2" data-mobis-palette="branco-gelo" data-mobis-visual="fotografico-v3">
+    <div className="m2-micro"><div className="m2-wrap"><span>Goiás, Brasil <b>/</b> Especialistas em picapes, vans e utilitários diesel</span><span>Aplicação conferida por veículo e chassi <em>✓</em></span></div></div>
     <header className="m2-header"><div className="m2-wrap">
       <a className="m2-brand" href="#/loja/mobis" aria-label="MOBIS Autopeças - início" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>
         <img src={logoMobis} width={720} height={128} alt="MOBIS Autopeças"/>
@@ -174,28 +177,27 @@ export function LojaMobisNova({slug}:{slug:string}) {
         {whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Fale com a Mobis <span>WhatsApp ↗</span></a>}
       </div>
     </div></header>
-    <div className="m2-busca-rapida"><form className="m2-wrap" role="search" aria-label="Busca rápida de peças" onSubmit={aplicar}>
-      <label htmlFor="m2-busca-rapida">Qual peça você procura?</label>
-      <input id="m2-busca-rapida" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Nome da peça, código ou referência"/>
-      <button type="submit">Buscar peças <span aria-hidden="true">→</span></button>
-    </form></div>
+    <div className="m2-busca-rapida"><div className="m2-wrap m3-nav">
+      <button className="m3-nav-categories" type="button" onClick={()=>para("m3-categorias")} aria-label="Ver todas as categorias">☰ <span>Todas as categorias</span></button>
+      <form role="search" aria-label="Busca rápida por peça, SKU, código OEM ou aplicação" onSubmit={aplicar}>
+        <label className="sr" htmlFor="m2-busca-rapida">Buscar por código, OEM, SKU, peça ou aplicação</label>
+        <input id="m2-busca-rapida" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)}
+          placeholder="Código OEM, SKU, peça ou aplicação…"/>
+        <button type="submit">Buscar ↗</button>
+      </form>
+      <button className="m3-nav-vehicles" type="button" onClick={()=>{setExplorar("veiculo");para("m2-explorar")}}>▰ Escolher meu veículo</button>
+      {whatsapp&&<a className="m3-nav-wa" href={whatsapp} target="_blank" rel="noopener noreferrer">WhatsApp <small>Consultar peças</small></a>}
+    </div></div>
     {dados?.loja.ambiente==="teste"&&<div className="m2-aviso-teste" role="status"><strong>LOJA TESTE</strong> · Catálogo em preparação. Consulte peças e aplicações pelo WhatsApp. Preços e disponibilidade a confirmar; não concluímos pedidos nem recebemos pagamentos neste site.</div>}
     <main>
-      <section className="m2-hero"><div className="m2-wrap m2-hero-grid">
-        <div className="m2-hero-texto"><span className="m2-kicker">▰▰▰ &nbsp; A PEÇA CERTA COMEÇA PELO SEU VEÍCULO</span>
-          <h1>Peças para quem trabalha <em>com o veículo.</em></h1>
-          <p>Conte com a Mobis para encontrar a peça do seu utilitário. Informe o modelo, o ano e o motor. Nossa equipe confere a aplicação com você.</p>
-          <div className="m2-hero-ctas"><button className="m2-laranja" onClick={()=>{setExplorar("veiculo");para("m2-explorar")}}>Escolher meu veículo ↗</button>
-            <button className="m2-underline" onClick={()=>{para("m2-busca");document.getElementById("m2-pesquisar")?.focus({preventScroll:true});}}>Já tenho o código →</button>
-            {produtoTeste&&<button className="m2-underline" onClick={()=>para("m2-produto-teste")}>Ver produto de teste →</button>}</div>
-          <small>✓ Atendimento para quem precisa acertar na peça.</small>
-        </div>
-        <div className="m2-hero-veiculos" aria-label="Ilustrações de picapes, vans e utilitários">
-          <div className="m2-foto m2-foto1"><IconeVeiculo tipo="picape" largura={220}/><small>01 / Picapes</small></div>
-          <div className="m2-foto m2-foto2"><IconeVeiculo tipo="furgao" largura={220}/><small>02 / Vans</small></div>
-          <div className="m2-foto m2-foto3"><IconeVeiculo tipo="caminhao" largura={220}/><small>03 / Utilitários diesel</small></div>
-        </div>
-      </div></section>
+      <VitrineFotograficaMobis
+        abrirEscolha={()=>{setExplorar("veiculo");para("m2-explorar");}}
+        escolherVeiculo={escolherVeiculo}
+        temAplicacao={valor=>Boolean(modeloDoAtalho(valor,opcoes))}
+        consultarVeiculo={valor=>{setConsultaModelo(valor);para("m2-atendimento")}}
+        escolherSistema={escolherSistema}
+        buscarCodigo={()=>{setAbaBusca("referencia");para("m2-busca");window.setTimeout(()=>document.getElementById("m2-pesquisar")?.focus({preventScroll:true}),80)}}
+      />
       <div className="m2-progresso"><div className="m2-wrap"><span><b>01</b> Atendimento especializado</span>
         <span><b>02</b> Aplicação conferida com você</span><span><b>03</b> Consulta direta via WhatsApp</span></div></div>
       {produtoTeste&&<ProdutoTesteMobis/>}
@@ -307,7 +309,9 @@ export function LojaMobisNova({slug}:{slug:string}) {
         <p className="m2-legenda">Preços, aplicação e disponibilidade devem ser confirmados antes da compra. A lista não reserva estoque nem cria pedido.</p>
       </section>
       <EmpresaMobis whatsapp={whatsapp}/>
-      <section id="m2-atendimento" className="m2-atendimento"><div className="m2-wrap m2-atendimento-grid">
+      <section id="m2-atendimento" className="m2-atendimento">
+        {consultaModelo&&<div className="m2-wrap"><p className="m3-consulta-aviso" role="status">Para {consultaModelo}, ainda não há aplicação homologada nesta lista. Nossa equipe pode consultar a referência e confirmar a peça pelo chassi.</p></div>}
+        <div className="m2-wrap m2-atendimento-grid">
         <div><span className="m2-kicker">CONVERSA DIGITAL · ESCOLHA COM CUIDADO</span><h2>Vamos encontrar a sua peça.</h2><p>Um mesmo modelo pode usar peças diferentes conforme motor, ano e versão. Envie essas informações para uma consulta mais precisa.</p><div className="m2-conselho">✓ A equipe confere os detalhes antes de você comprar.</div></div>
         <div className="m2-contato-form"><small>CONSULTA DE PEÇAS</small><h3>Conte o que você procura</h3><p>Use os filtros acima ou monte sua lista para compartilhar com o atendimento.</p><button onClick={()=>para("m2-lista")}>Minha lista de peças ({lista.length})</button>{whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Continuar no WhatsApp ↗</a>}<small>Você poderá revisar a mensagem antes de enviá-la.</small></div>
       </div></section>
