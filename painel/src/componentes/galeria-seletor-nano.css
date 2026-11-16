@@ -1,0 +1,42 @@
+.gs-nano{display:grid;gap:14px;min-width:0}
+.gs-nano h3,.gs-nano h4{margin:0}
+.gs-cabecalho{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:start}
+.gs-cabecalho>div{flex:1 1 330px}.gs-cabecalho h3{font-size:1.2rem}
+.gs-cabecalho p,.gs-ressalva,.gs-preparar p{color:var(--texto-suave,#61716d);font-size:.85rem;line-height:1.55;margin:7px 0 0}
+.gs-contador{font-variant-numeric:tabular-nums;border:1px solid #c7d7cf;border-radius:99px;padding:3px 9px;font-size:.8rem}
+.gs-controles{display:flex;align-items:end;flex-wrap:wrap;gap:12px;padding:12px;background:#f5f7f5;border:1px solid #dce3dd;border-radius:11px}
+.gs-controles label{display:grid;gap:5px;font-size:.82rem;font-weight:700;color:#253d34}
+.gs-controles select{background:white;color:#253d34;border:1px solid #afc1b7;border-radius:7px;padding:8px}
+.gs-controles .gs-branco-controle{display:flex;align-items:center;gap:7px;margin-bottom:8px;font-weight:600}
+.gs-contagem{font-size:.8rem;color:#53685f;margin:0 0 8px auto}
+.gs-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr));gap:13px;align-items:stretch}
+.gs-card{border:1px solid #d0dcd4;border-radius:12px;padding:10px;background:#fff;display:grid;gap:9px;align-content:start;min-width:0;transition:border-color .15s}
+.gs-card.gs-card-selecionado{border:2px solid #2a7257;background:#f7fcf9}
+.gs-card-topo{display:flex;justify-content:space-between;align-items:center;gap:7px;font-size:.82rem}
+.gs-marcar{display:inline-flex;align-items:center;gap:6px;font-weight:750;cursor:pointer}
+.gs-marcar input{width:17px;height:17px;accent-color:#207554}
+.gs-etiqueta{display:inline-block;border-radius:100px;padding:3px 7px;background:#fff2dd;color:#745522;font-size:.69rem;font-weight:700}
+.gs-etiqueta.gs-ok{background:#e4f5e9;color:#255839}
+.gs-imagem{display:flex;border:1px solid #e1e5e2;width:100%;height:190px;border-radius:9px;padding:8px;align-items:center;justify-content:center;cursor:zoom-in}
+.gs-imagem-branca{background:#fff}
+.gs-imagem-neutra{background:repeating-conic-gradient(#efefef 0% 25%,#fff 0% 50%) 50%/18px 18px}
+.gs-imagem img{width:100%;height:100%;object-fit:contain}
+.gs-selos{display:flex;flex-wrap:wrap;gap:4px;min-height:21px}
+.gs-meta{display:grid;gap:3px;margin:0;font-size:.76rem}
+.gs-meta>div{display:flex;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:1px solid #edf0ed}
+.gs-meta dt{color:#66786e}.gs-meta dd{margin:0;font-weight:700;max-width:62%;text-align:right;overflow-wrap:anywhere;color:#293f33}
+.gs-alertas{font-size:.76rem;color:#8b5027}.gs-alertas summary{cursor:pointer}.gs-alertas ul{padding-left:19px;margin:5px 0}
+.gs-acoes{display:grid;gap:6px;margin-top:auto}.gs-acoes button{width:100%;padding:9px 6px;font-size:.81rem}
+.gs-comparacao{padding:15px;border:1px solid #d2e2d8;border-radius:11px;background:#f8fbf9;display:grid;gap:12px}
+.gs-comparacao-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:9px}
+.gs-comparacao figure{min-width:0;margin:0;background:white;border-radius:8px;border:1px solid #e1e8e0;padding:9px}
+.gs-comparacao figure>div{height:185px;display:flex;align-items:center;justify-content:center}
+.gs-comparacao img{max-width:100%;max-height:100%;object-fit:contain}
+.gs-comparacao figcaption{font-size:.72rem;color:#556a60;margin-top:7px;overflow-wrap:anywhere}
+.gs-preprincipal{background:#f2f7fb;border-left:3px solid #487ba3;padding:13px;border-radius:8px;font-size:.83rem}
+.gs-preprincipal p{margin:6px 0;color:#3a5567}
+.gs-preparar{padding:15px;border:1px solid #d5ddd7;border-radius:12px;display:grid;gap:10px;background:#fbfcfa}
+.gs-arquivo{display:grid;gap:7px;font-size:.83rem;font-weight:700;max-width:440px}
+.gs-arquivo input{background:white;border:1px solid #cdd7d0;border-radius:8px;padding:10px;max-width:100%;font-size:.8rem}
+@media(max-width:620px){.gs-cabecalho>button{width:100%}.gs-controles{align-items:stretch}.gs-contagem{width:100%;margin:0}.gs-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.gs-card{padding:7px}.gs-imagem{height:137px;padding:4px}.gs-card-topo{flex-wrap:wrap}.gs-meta>div{flex-direction:column;gap:1px}.gs-meta dd{text-align:left;max-width:100%}.gs-acoes button{font-size:.7rem}}
+@media(max-width:350px){.gs-grade{grid-template-columns:1fr}.gs-imagem{height:200px}}
