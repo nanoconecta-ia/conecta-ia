@@ -92,6 +92,8 @@ Deno.serve(async (req) => {
   const pagina = Math.max(1, Math.min(Number.isInteger(c?.pagina) ? c.pagina : 1, 1000));
   const limpar = (v: unknown, n = 60) => (typeof v === "string" ? v.replace(/[%,()*\\]/g, " ").trim().slice(0, n) : "");
   const busca = limpar(c?.q);
+  // Diferencia pesquisa geral, SKU, código M e referência técnica. Só indexa códigos APROVADOS.
+  const buscaPor = ["geral", "sku", "codigo_m", "referencia"].includes(c?.busca_por) ? c.busca_por : "geral";
   const modelo = limpar(c?.modelo), motor = limpar(c?.motor), categoria = typeof c?.categoria === "string" && SLUG_RE.test(c.categoria) ? c.categoria : "";
   const tipo = typeof c?.tipo === "string" && Object.hasOwn(TIPOS_VEICULO, c.tipo) ? c.tipo : "";
   const ano = Number.isInteger(c?.ano) && c.ano >= 1950 && c.ano <= 2100 ? (c.ano as number) : undefined;
@@ -124,7 +126,31 @@ Deno.serve(async (req) => {
     ? consulta.or("publicado.eq.true,exibicao_teste.eq.true")
     : consulta.eq("publicado", true);
   consulta = consulta.order("nome").range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1);
-  if (busca) consulta = consulta.or(`nome.ilike.%${busca}%,sku.ilike.%${busca}%`);
+  if (busca) {
+    // Busca alternativa apenas códigos com aprovação e rastreabilidade.
+    // O prefixo "M" é tratado como consulta de código, nunca como prova de montadora/aplicação.
+    const porCodigo = buscaPor === "referencia" || buscaPor === "codigo_m" || buscaPor === "geral";
+    const { data: codigos } = porCodigo
+      ? await sb.from("produto_codigos").select("produto_id").eq("loja_id", loja.id)
+        .eq("status", "aprovado").ilike("valor", `%${busca}%`).limit(80)
+      : { data: [] as { produto_id: string }[] };
+    const aprovados = new Set(idsPublicados);
+    const idsCodigo = [...new Set((codigos ?? []).map((x: { produto_id: string }) => x.produto_id))]
+      .filter((id) => aprovados.has(id));
+    if (buscaPor === "sku") consulta = consulta.ilike("sku", `%${busca}%`);
+    else if (buscaPor === "referencia")
+      consulta = consulta.in("id", idsCodigo.length ? idsCodigo : ["00000000-0000-0000-0000-000000000000"]);
+    else if (buscaPor === "codigo_m") {
+      // Código M pode vir do SKU ou de um código aprovado vinculado ao mesmo produto.
+      const condicoes = [`sku.ilike.%${busca}%`];
+      if (idsCodigo.length) condicoes.push(`id.in.(${idsCodigo.join(",")})`);
+      consulta = consulta.or(condicoes.join(","));
+    } else {
+      const condicoes = [`nome.ilike.%${busca}%`, `sku.ilike.%${busca}%`];
+      if (idsCodigo.length) condicoes.push(`id.in.(${idsCodigo.join(",")})`);
+      consulta = consulta.or(condicoes.join(","));
+    }
+  }
   if (modelo || motor || ano !== undefined) {
     const ids = [...produtosDoVeiculo(apls, { modelo, motor, ano })];
     consulta = consulta.in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
@@ -161,6 +187,22 @@ Deno.serve(async (req) => {
     const { data: imgs } = await sb.from("imagens_publicaveis").select("produto_id, url, principal, ordem").eq("loja_id", loja.id).in("produto_id", [...porId.keys()]).order("principal", { ascending: false }).order("ordem");
     for (const i of imgs ?? []) { const s = porId.get(i.produto_id); if (s && !imagens.has(s)) imagens.set(s, i.url); }
   }
+  // Referências só são exibidas se a associação foi homologada (nunca propostas a_confirmar).
+  const referenciasAprovadas = new Map<string, { tipo: string; valor: string }[]>();
+  if (skus.length) {
+    const { data: ids } = await sb.from("produtos").select("id, sku").eq("loja_id", loja.id).in("sku", skus);
+    const porId = new Map((ids ?? []).map((p: { id: string; sku: string }) => [p.id, p.sku]));
+    if (porId.size) {
+      const { data: codigos } = await sb.from("produto_codigos").select("produto_id,tipo,valor")
+        .eq("loja_id", loja.id).eq("status", "aprovado").in("produto_id", [...porId.keys()]).limit(400);
+      for (const k of codigos ?? []) {
+        const sku = porId.get(k.produto_id);
+        if (sku && typeof k.valor === "string" && k.valor.length <= 100)
+          (referenciasAprovadas.get(sku) ?? (referenciasAprovadas.set(sku, []), referenciasAprovadas.get(sku)!))
+            .push({ tipo: k.tipo, valor: k.valor });
+      }
+    }
+  }
   // Itens só de consulta não mostram preço, estoque ou disponibilidade como
   // certeza. Continuam usando exclusivamente imagens com direitos liberados.
   const skusConsulta = new Set((linhas ?? [])
@@ -176,7 +218,11 @@ Deno.serve(async (req) => {
     estoque: skusConsulta.has(String(l.sku)) ? null : l.estoque,
     imagem: imagens.get(String(l.sku)) ?? null,
   }) as never), loja.whatsapp, urlDoProduto)
-    .map((produto) => ({ ...produto, consulta_previa: skusConsulta.has(produto.sku), categoria: categoriaPorSku.get(produto.sku) ?? null }));
+    .map((produto) => ({
+      ...produto, consulta_previa: skusConsulta.has(produto.sku),
+      categoria: categoriaPorSku.get(produto.sku) ?? null,
+      referencias: (referenciasAprovadas.get(produto.sku) ?? []).slice(0,8),
+    }));
 
   const paginasPorSku: Record<string, { slug: string; titulo: string; modelo: string; status: string }[]> = {};
   if (loja.slug === "mobis" && idsPublicados.length) {
