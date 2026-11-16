@@ -79,6 +79,25 @@ try {
     // status de identidade/direitos e aprovação humana POR IMAGEM.
     const galeria=modal.locator(".galeria-produto");await galeria.waitFor();
     assert.equal(await galeria.locator(".gs-card").count(),3,"as três imagens do produto aparecem na grade");
+    const carrossel=galeria.locator(".gv2");
+    assert.equal(await carrossel.count(),1,"carrossel vítreo está na galeria real");
+    assert.equal(await carrossel.locator(".gv2-miniatura").count(),3,"três miniaturas de fotos reais, sem criar imagens");
+    await carrossel.getByRole("button",{name:"Próxima fotografia"}).click();
+    assert.match(await carrossel.locator(".gv2-numero").innerText(),/2\s*\/\s*3/);
+    await carrossel.getByRole("button",{name:/Mostrar fotografia 3 de 3/}).click();
+    assert.match(await carrossel.locator(".gv2-numero").innerText(),/3\s*\/\s*3/);
+    await carrossel.locator(".gv2-superficie").focus();
+    await page.keyboard.press("ArrowLeft");
+    assert.match(await carrossel.locator(".gv2-numero").innerText(),/2\s*\/\s*3/,
+      "seta do teclado navega para imagem anterior");
+    await page.keyboard.press("ArrowRight");
+    assert.match(await carrossel.locator(".gv2-numero").innerText(),/3\s*\/\s*3/,
+      "seta do teclado retorna à imagem escolhida");
+    await carrossel.getByRole("button",{name:"Adicionar à comparação"}).click();
+    assert.equal(await galeria.locator(".gs-comparacao figure").count(),1,"carrossel seleciona para comparação, sem aprovar");
+    await carrossel.getByRole("button",{name:"Retirar da comparação"}).click();
+    assert.equal(await galeria.locator(".gs-comparacao figure").count(),0);
+
     const txtGaleria=await galeria.innerText();
     assert.ok(txtGaleria.includes("3/8"));
     assert.ok(txtGaleria.includes("fabricante.exemplo.com.br"));
