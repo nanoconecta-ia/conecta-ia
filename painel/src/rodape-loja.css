@@ -31,3 +31,19 @@
 .v-rodape-sociais span{display:inline-grid;place-items:center;width:20px;height:20px;font-size:1.1rem;font-weight:800}
 
 .v-rodape-sociais svg{height:20px;width:20px;flex:none}
+
+
+/* Identidade MOBIS — rodapé compacto: navegação e políticas em modais sem retirar o cliente da loja. */
+.v-rodape-mobis{padding-top:25px;margin-top:30px}
+.v-rodape-mobis .v-rodape-grade{grid-template-columns:minmax(200px,1.45fr) repeat(3,minmax(150px,1fr));gap:18px;padding-bottom:22px}
+.v-rodape-mobis .v-rodape-apresentacao p{margin:7px 0;font-size:.8rem}
+.v-rodape-mobis .v-rodape-apresentacao>p:nth-of-type(2){font-size:.73rem}
+.v-rodape-mobis .v-rodape-comercial nav,.v-rodape-mobis nav,.v-rodape-mobis .v-rodape-grupo{gap:6px}
+.v-rodape-mobis .v-rodape-grupo h2,.v-rodape-mobis nav h2{margin-bottom:6px}
+.v-rodape-mobis .v-rodape-logo-mobis{display:block;width:min(235px,100%);height:58px;object-fit:contain;object-position:left center;margin-bottom:4px}
+.v-rodape-mobis .v-rodape-sociais{gap:7px;margin:11px 0 7px}
+.v-rodape-mobis .v-rodape-sociais a{min-height:36px;padding:5px 10px}
+.v-rodape-mobis .v-rodape-grupo:last-child p{font-size:.79rem}
+.v-rodape-mobis .v-rodape-faixa{padding:12px 0}
+@media(max-width:980px){.v-rodape-mobis .v-rodape-grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.v-rodape-mobis .v-rodape-grade{grid-template-columns:minmax(0,1fr);gap:16px}.v-rodape-mobis .v-rodape-apresentacao,.v-rodape-mobis .v-rodape-grupo:last-child{grid-column:auto}.v-rodape-mobis nav,.v-rodape-mobis .v-rodape-grupo{padding-top:12px;border-top:1px solid #40504a}}
