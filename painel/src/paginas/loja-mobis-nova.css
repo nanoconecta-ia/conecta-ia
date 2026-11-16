@@ -314,3 +314,38 @@
 .m2-ficha-secoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:20px}
 .m2-ficha-disclaimer{margin-top:18px;border-left:4px solid #bd632b;background:#fff5e4;padding:14px 18px;font-weight:700}
 @media(max-width:740px){.m2-ficha-grid,.m2-ficha-secoes{grid-template-columns:minmax(0,1fr)}.m2-ficha-banner{min-height:270px}.m2-ficha-banner:before{background:linear-gradient(90deg,rgba(13,20,23,.97),rgba(13,20,23,.65))}.m2-ficha-foto{min-height:240px}}
+
+
+/* MOBIS showroom técnico: galeria interna, lightbox e informações por abas */
+.m2-galeria-palco{display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:stretch;min-height:330px;background:#f8f8f5;border:1px solid #e5e0d8;border-radius:12px;overflow:hidden}
+.m2-galeria-palco:has(> .m2-galeria-zoom:first-child){grid-template-columns:minmax(0,1fr)}
+.m2-galeria-seta{border:0;background:#1b272b;color:#fff;font-size:2.3rem;cursor:pointer;align-self:stretch}
+.m2-galeria-seta:hover,.m2-galeria-seta:focus-visible{background:#b95625}
+.m2-galeria-zoom{position:relative;min-width:0;min-height:310px;border:0;background:transparent;padding:18px;cursor:zoom-in;display:flex;align-items:center;justify-content:center}
+.m2-galeria-zoom img{display:block;width:100%;max-height:430px;object-fit:contain}
+.m2-galeria-zoom span{position:absolute;bottom:10px;right:10px;background:#152126e8;color:#fff;padding:7px 12px;border-radius:7px;font-weight:750;font-size:.8rem}
+.m2-galeria-contador{text-align:center;font-size:.8rem;color:#596169;margin:10px 0}
+.m2-ficha-conteudo{margin-top:20px}
+.m2-ficha-abas{display:flex;gap:6px;flex-wrap:wrap;border-bottom:2px solid #eee3d6;padding-bottom:9px;margin-bottom:18px}
+.m2-ficha-abas button{display:flex;align-items:center;gap:8px;background:#f5f2ec;color:#313c42;border:1px solid #ded6c9;border-radius:9px;padding:12px 15px;font:inherit;font-size:.9rem;font-weight:800;cursor:pointer}
+.m2-ficha-abas button[aria-selected="true"]{background:#1e2c32;color:#fff;border-color:#1e2c32;box-shadow:inset 0 -3px #e47c35}
+.m2-ficha-aba-corpo{line-height:1.7;max-width:100%;white-space:normal}
+.m2-ficha-aba-corpo h3{font-size:1.14rem;margin:12px 0}
+.m2-ficha-aba-corpo details,.m2-ficha-termos{border:1px solid #ddd5c8;border-radius:10px;margin:11px 0;background:#fbfaf7}
+.m2-ficha-aba-corpo details summary,.m2-ficha-termos summary{padding:14px 16px;cursor:pointer;font-weight:800;color:#243037}
+.m2-ficha-aba-corpo details p,.m2-ficha-termos p{padding:0 16px 14px;margin:0;white-space:pre-line}
+.m2-ficha-codigos{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:17px 0}
+.m2-ficha-codigos>div{border:1px solid #dfd8cd;border-radius:10px;padding:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.m2-ficha-codigos strong{flex:1}
+.m2-ficha-codigos code{font-weight:800;color:#b25425}
+.m2-ficha-codigos small{width:100%;color:#576168}
+.m2-galeria-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:#0b1114e8;padding:18px}
+.m2-galeria-dialogo{width:min(1050px,100%);height:min(92vh,850px);padding:13px;background:#fff;border-radius:15px;display:flex;flex-direction:column;gap:8px;box-shadow:0 18px 70px #0009}
+.m2-galeria-dialogo-topo{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.m2-galeria-dialogo-topo button{background:#1b282c;border:0;border-radius:8px;color:#fff;font:inherit;font-weight:800;padding:10px;cursor:pointer}
+.m2-galeria-dialogo-imagem{display:grid;grid-template-columns:45px minmax(0,1fr) 45px;min-height:0;flex:1;align-items:center;justify-items:center;background:#f7f7f5;border-radius:9px}
+.m2-galeria-dialogo-imagem:has(> img:first-child){grid-template-columns:minmax(0,1fr)}
+.m2-galeria-dialogo-imagem button{border:0;border-radius:7px;background:#1c2d33;color:#fff;font-size:2.4rem;height:60px;width:40px;cursor:pointer}
+.m2-galeria-dialogo-imagem img{min-width:0;max-width:100%;max-height:100%;height:100%;object-fit:contain}
+.m2-galeria-dialogo>small{text-align:center;color:#51595f}
+@media(max-width:550px){.m2-galeria-palco{grid-template-columns:34px minmax(0,1fr) 34px;min-height:230px}.m2-galeria-zoom{min-height:230px;padding:8px}.m2-ficha-abas button{font-size:.78rem;padding:9px}.m2-galeria-dialogo-imagem{grid-template-columns:34px minmax(0,1fr) 34px}.m2-galeria-dialogo-imagem button{width:32px}}
