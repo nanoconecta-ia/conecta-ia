@@ -31,11 +31,11 @@ export function CarrosselVidroNano({
         <span className="gv2-numero" aria-live="polite">{indice + 1} <span>/ {itens.length}</span></span>
       </div>
 
-      <div className="gv2-superficie" onKeyDown={e => {
-        if (e.target instanceof HTMLElement && e.target.closest("button")) return;
-        if (e.key === "ArrowLeft") { e.preventDefault(); navegar(-1); }
-        if (e.key === "ArrowRight") { e.preventDefault(); navegar(1); }
-      }}>
+      <div className="gv2-superficie" role="group" aria-label="Navegação de fotografias"
+        tabIndex={0} onKeyDown={e => {
+          if (e.key === "ArrowLeft") { e.preventDefault(); navegar(-1); }
+          if (e.key === "ArrowRight") { e.preventDefault(); navegar(1); }
+        }}>
         <div className="gv2-halo" aria-hidden="true" />
         <div className="gv2-espaco-foto">
           <button type="button" className="gv2-seta gv2-seta-esq" aria-label="Fotografia anterior"
