@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { galeriaDaFicha, hostDaOrigem, LIMITE_GALERIA, pedidoDeImagens, resumirImagem, type LinhaImagem } from "./galeriaProduto.ts";
+import { galeriaDaFicha, hostDaOrigem, LIMITE_GALERIA, pedidoDeImagens, pedidoDeImagensComPerfil, resumirImagem, type LinhaImagem } from "./galeriaProduto.ts";
 
 const base = (n: number, p: Partial<LinhaImagem> = {}): LinhaImagem => ({
   id: `i${n}`, url: `https://cdn.exemplo.com/${n}.jpg`, tipo: "real", origem: "busca_web", url_original: `https://www.fabricante.exemplo.com.br/pagina/${n}`, licenca_tipo: "fabricante",
@@ -52,4 +52,28 @@ test("a origem mostra só o host (a URL de terceiros não vira link)", () => {
 test("o pedido ao Nano exige código escrito na página, descarta marca d'água e deixa a aprovação para o lojista", () => {
   const p = pedidoDeImagens("CI000016");
   for (const t of ["CI000016", "até 8", "código aparece escrito", "marca d'água", "a aprovação é minha"]) assert.ok(p.includes(t), t);
+});
+
+test("pesquisa de fotos recebe identidade e SÓ OEM e aplicações aprovadas, não dados privados",()=>{
+  const prompt=pedidoDeImagensComPerfil({
+    produtoId:"d6000000-0000-0000-0000-000000000001",blingId:"16275882008",
+    sku:null,nome:"FILTRO OLEO OC1224",marca:"MAHLE",gtin:"7894766669907",
+    noTaxonomia:"Filtro do óleo",codigosAprovados:[{tipo:"oem",valor:"26300-42040"}],
+    aplicacoesAprovadas:[{modelo:"HR",motorizacao:"2.5 8V",ano_inicial:2006,ano_final:2012,codigo_oem:null}],
+  });
+  for(const s of ["16275882008","26300-42040","7894766669907","HR","taxonomia","licença","até 8"])
+    assert.ok(prompt.toLowerCase().includes(s.toLowerCase()),s);
+  for(const v of ["fornecedor","preço de compra","NCM","nota fiscal"])
+    assert.ok(!prompt.includes(v),"não deve vazar "+v);
+  assert.match(prompt,/a aprovação é minha/i);
+});
+test("sem SKU, GTIN nem OEM aprovado o Nano não sai buscando fotos aleatórias",()=>{
+  const prompt=pedidoDeImagensComPerfil({
+    produtoId:"d6000000-0000-0000-0000-000000000001",blingId:"16275882008",
+    sku:null,nome:"Produto a identificar",marca:null,gtin:null,noTaxonomia:null,
+    codigosAprovados:[],aplicacoesAprovadas:[],
+  });
+  assert.match(prompt,/BLOQUEIO: não há SKU/);
+  assert.match(prompt,/NÃO pesquise foto aleatória/);
+  assert.match(prompt,/Nenhuma aplicação homologada/);
 });
