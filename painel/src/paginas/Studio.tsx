@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { GaleriaProduto } from "../componentes/GaleriaProduto.tsx";
+import { pedidoImagensPorFicha } from "../lib/contextoEnriquecimentoNano.ts";
+import { pedirAoNanoNaConversa } from "../lib/contextoPagina.ts";
 import type { DadosStudio, ProdutoResumo } from "../lib/conectorDados.ts";
 import type { Loja } from "../lib/dados.ts";
 import { ir } from "../lib/rota.ts";
@@ -79,7 +81,9 @@ export function Studio({ loja, query }: { loja: Loja; query: URLSearchParams }) 
             <>
               <div className="cartao">
                 <h2 style={{ marginTop: 0 }}>{s.produto.nome}</h2>
-                <p className="suave" style={{ margin: 0 }}><span className="mono">{s.produto.sku ?? "sem SKU"}</span> · {s.produto.publicado ? <span className="selo ok">publicado</span> : <span className="selo atencao">não publicado</span>} · <a href={`#/conector?produto=${s.produto.id}`}>conversar sobre este produto</a></p>
+                <p className="suave" style={{ margin: 0 }}><span className="mono">{s.produto.sku ?? "sem SKU"}</span> · {s.produto.publicado ? <span className="selo ok">publicado</span> : <span className="selo atencao">não publicado</span>} · <button type="button" className="sec" onClick={() => pedirAoNanoNaConversa(pedidoImagensPorFicha(s))}>
+                    Consultar Nano com este produto
+                  </button></p>
                 <h3>Prontidão para publicar</h3>
                 <ul className="checks">{prot.map((c) => <li key={c.chave} className={c.ok ? "ok" : "falta"}><span aria-hidden="true">{c.ok ? "✓" : "✗"}</span> {c.rotulo}<span className="sr">{c.ok ? " — ok" : " — falta"}</span></li>)}</ul>
               </div>
@@ -118,11 +122,26 @@ export function Studio({ loja, query }: { loja: Loja; query: URLSearchParams }) 
                 </div>
               </div>
 
-              <div className="cartao">
-                <h2>Filtro de fotos · Studio do Nano</h2>
-                <p className="suave">O Nano reúne até oito candidatas por produto. Filtre, amplie, compare e aprove cada fotografia pela Fila existente. A prévia da principal e o preparo branco não salvam nem publicam imagens.</p>
-                <GaleriaProduto loja={loja} produtoId={s.produto.id} sku={s.produto.sku} />
-              </div>
+              <section className="cartao studio-imagens-espacoso" aria-label="Fotos e DNA técnico do produto">
+                <div className="studio-imagens-cabecalho">
+                  <div>
+                    <h2>Imagem é mais um nó do cadastro</h2>
+                    <p>O Nano pesquisa a peça exata, usando ID Bling, marca, GTIN, taxonomia, OEM e aplicações já conhecidos. Referências pendentes permanecem como hipóteses; aprovação técnica e direitos de imagem continuam separados.</p>
+                  </div>
+                  <button type="button" onClick={()=>pedirAoNanoNaConversa(pedidoImagensPorFicha(s))}>
+                    Pesquisar fotos com o Nano
+                  </button>
+                </div>
+                <div className="studio-dna-resumo" aria-label="Referências que orientarão a pesquisa de imagens">
+                  <div><span>Códigos técnicos</span><strong>{s.codigos.length}</strong><small>{s.codigos.filter(c=>c.status==="aprovado").length} aprovado(s)</small></div>
+                  <div><span>Aplicações</span><strong>{s.aplicacoes.length}</strong><small>{s.aplicacoes.filter(a=>a.status==="aprovado").length} aprovada(s)</small></div>
+                  <div><span>Taxonomia</span><strong>{s.taxonomia ? "Vinculada" : "Pendente"}</strong><small>{s.taxonomia ?? "Sem nó definido"}</small></div>
+                  <div><span>Imagens</span><strong>{s.imagens.length}/8</strong><small>{s.imagens.filter(i=>i.aprovada).length} aprovada(s)</small></div>
+                </div>
+                <p className="suave">O botão preenche o pedido no chat; a execução depende de um agente ativo e do seu envio. A seleção final é feita pelo lojista, imagem por imagem.</p>
+                <GaleriaProduto loja={loja} produtoId={s.produto.id} sku={s.produto.sku}
+                  contextoDePesquisa={pedidoImagensPorFicha(s)} />
+              </section>
 
               <div className="grade dois">
                 <div className="cartao"><h2>Banner de fabricante</h2>
