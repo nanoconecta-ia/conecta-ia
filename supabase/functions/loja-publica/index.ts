@@ -341,6 +341,23 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Banner institucional por marca, independente de alteração de SKU/estoque/preço.
+  const agora=new Date().toISOString();
+  const { data: campanhasAprovadas }=loja.slug==="mobis"
+    ? await sb.from("marca_campanhas")
+      .select("marca_id,titulo,chamada,banner_imagem_url,ordem")
+      .eq("loja_id",loja.id).eq("status","aprovado")
+      .lte("inicio",agora).or("fim.is.null,fim.gt."+agora)
+      .order("ordem",{ascending:true}).limit(12)
+    : {data:[]};
+  const chavePorIdMarca=new Map([...porIdMarca.entries()].map(([chave,id])=>[id,chave]));
+  const bannersMarca=(campanhasAprovadas??[]).flatMap(c=>{
+    const chave=chavePorIdMarca.get(c.marca_id);
+    if(!chave||!porMarca.has(chave))return [];
+    return [{marca_chave:chave,nome:c.titulo,chamada:c.chamada??null,
+      imagem:c.banner_imagem_url??null}];
+  });
+
   // banners de oferta no ar (loja_banners): só produto publicado e dentro do período; falha aqui não derruba a vitrine
   const { data: bn } = await sb.rpc("banners_da_vitrine", { p_loja: loja.id });
   const banners = montarBanners(Array.isArray(bn) ? bn : [], loja.whatsapp, urlDoProduto);
@@ -354,5 +371,5 @@ Deno.serve(async (req) => {
   const { data: politicasAprovadas } = await sb.from("loja_politicas")
     .select("razao_social, cnpj, endereco, telefone, email_contato, privacidade_texto, troca_devolucao_texto, entrega_texto, garantia_texto, termos_texto")
     .eq("loja_id", loja.id).eq("status", "aprovada").maybeSingle();
-  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, midias_veiculo: midiasVeiculoCatalogo, marcas:marcasVitrine, marca_historia:historiaMarcaCatalogo, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
+  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, midias_veiculo: midiasVeiculoCatalogo, marcas:marcasVitrine, marca_historia:historiaMarcaCatalogo, banners_marca:bannersMarca, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
 });
