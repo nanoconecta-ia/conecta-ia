@@ -17,7 +17,9 @@ import "./loja-mobis-nova.css";
 type Produto = {sku:string;nome:string;preco:number|null;marca:string|null;descricao:string|null;imagem:string|null;whatsapp:string|null;em_estoque:boolean|null;atualizado_em:string|null;consulta_previa?:boolean;categoria?:string|null};
 type Veiculo = {modelo:string;motor:string|null;de:number|null;ate:number|null};
 type Banner = {sku:string;nome:string;preco:number|null;chamada:string|null;flash:boolean;whatsapp:string|null};
+type PaginaAplicacao = {slug:string;titulo:string;modelo:string;status:string};
 type Resposta = {
+  paginas_aplicacao?:Record<string,PaginaAplicacao[]>;
   loja:{nome:string;slug:string;ambiente?:"teste"|"producao";whatsapp?:string|null;venda_habilitada?:boolean};
   produtos:Produto[];banners?:Banner[];veiculos:Veiculo[];
   categorias:{nome:string;slug:string;total:number}[];
@@ -238,15 +240,37 @@ export function LojaMobisNova({slug}:{slug:string}) {
         </form>
       </div></section>
       <section className="m2-wrap m2-secao m2-catalogo" id="m2-catalogo" aria-live="polite">
-        <div className="m2-cab-secao"><div><span className="m2-kicker">PEÇAS E COMPONENTES</span><h2>Produtos no catálogo</h2><small>{estado==="carregando"?"Consultando…":String(dados?.total??0)+" produto(s) encontrado(s)"}</small></div><button onClick={()=>para("m2-lista")}>Minha lista <b>{lista.length}</b></button></div>
+        <div className="m2-cab-secao"><div><span className="m2-kicker">PEÇAS E COMPONENTES</span><h2>Produtos no catálogo</h2><small>{estado==="carregando"?"Consultando…":String(dados?.total??0)+" produto(s) físico(s) · escolha uma aplicação para consultar"}</small></div><button onClick={()=>para("m2-lista")}>Minha lista <b>{lista.length}</b></button></div>
         {estado==="carregando"&&<div className="m2-vazio">Consultando catálogo público autorizado…</div>}
         {(estado==="erro"||estado==="limite")&&<div className="m2-vazio"><strong>Não foi possível carregar o catálogo.</strong><p>{estado==="limite"?"Limite de consultas atingido.":"Tente novamente."}</p><button onClick={()=>setTentativa(x=>x+1)}>Tentar novamente</button></div>}
         {estado==="naoachada"&&<div className="m2-vazio">Loja não encontrada.</div>}
         {estado==="ok"&&dados?.produtos.length===0&&<div className="m2-vazio"><div><span className="m2-kicker">ATENDIMENTO MOBIS</span><h3>{Object.entries(f).some(([k,v])=>k!=="pagina"&&Boolean(v))?"Nenhuma peça encontrada com esses filtros.":"Catálogo de peças em preparação."}</h3><p>Nenhum anúncio aprovado foi encontrado. Consulte a equipe com o veículo e a referência; isso não significa falta de estoque na loja física.</p><button onClick={()=>para("m2-atendimento")}>Consultar a equipe ↗</button></div></div>}
         {dados&&dados.produtos.length>0&&<div className="m2-produto-grade">{dados.produtos.map(p=><article key={p.sku} className="m2-produto">
-          <div className="m2-foto-produto">{p.imagem?<img src={p.imagem} alt={p.nome} loading="lazy"/>:<div aria-label="Ilustração de categoria, não é foto da peça"><IconePeca nome={iconeDaCategoria(p.categoria)} tamanho={72}/></div>}</div>
-          <div><small>SKU {p.sku}{p.marca?" · "+p.marca:""}</small><h3>{p.nome}</h3>
-            {p.descricao&&<p>{p.descricao.slice(0,220)}</p>}
+          <div className="m2-foto-produto">
+            {dados.paginas_aplicacao?.[p.sku]?.length
+              ? <a href={"#/a/"+dados.paginas_aplicacao[p.sku][0].slug} aria-label={"Ver aplicações e fotografia do produto "+p.sku}
+                  style={{display:"block",width:"100%"}}>
+                  {p.imagem?<img src={p.imagem} alt={"Fotografia do produto físico "+p.sku} loading="lazy"/>:
+                   <div aria-label="Ilustração de categoria, não é foto da peça"><IconePeca nome={iconeDaCategoria(p.categoria)} tamanho={72}/></div>}
+                </a>
+              : p.imagem?<img src={p.imagem} alt={p.nome} loading="lazy"/>:
+                <div aria-label="Ilustração de categoria, não é foto da peça"><IconePeca nome={iconeDaCategoria(p.categoria)} tamanho={72}/></div>}
+          </div>
+          <div><small>SKU {p.sku}{p.marca?" · "+p.marca:""}</small><h3>{dados.paginas_aplicacao?.[p.sku]?.length
+                ? (p.sku==="CI002916"?"Motor parcial Trim Go — escolha o veículo":p.nome)
+                : p.nome}</h3>
+            {dados.paginas_aplicacao?.[p.sku]?.length
+              ? <div style={{margin:"12px 0",borderTop:"1px solid #e0d9ce",paddingTop:12}}>
+                  <p style={{fontWeight:700}}>Páginas por veículo — aplicação em revisão</p>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {dados.paginas_aplicacao[p.sku].map(ap=>
+                      <a key={ap.slug} href={"#/a/"+ap.slug}
+                        style={{display:"inline-block",padding:"8px 11px",border:"1px solid #c25a1b",borderRadius:6,color:"#914a27",fontWeight:700,fontSize:13,textDecoration:"none"}}>
+                        {ap.modelo} · ver ficha ↗
+                      </a>)}
+                  </div>
+                </div>
+              : p.descricao&&<p>{p.descricao.slice(0,220)}</p>}
             <strong>{p.consulta_previa?"Preço sob consulta":p.preco==null?"Consulte o preço":brl(p.preco)}</strong>
             <p>{p.consulta_previa?"Prévia de catálogo · aplicação e disponibilidade precisam ser confirmadas.":"Disponibilidade a confirmar"}</p>
             <div>{p.consulta_previa
