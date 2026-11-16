@@ -349,3 +349,56 @@
 .m2-galeria-dialogo-imagem img{min-width:0;max-width:100%;max-height:100%;height:100%;object-fit:contain}
 .m2-galeria-dialogo>small{text-align:center;color:#51595f}
 @media(max-width:550px){.m2-galeria-palco{grid-template-columns:34px minmax(0,1fr) 34px;min-height:230px}.m2-galeria-zoom{min-height:230px;padding:8px}.m2-ficha-abas button{font-size:.78rem;padding:9px}.m2-galeria-dialogo-imagem{grid-template-columns:34px minmax(0,1fr) 34px}.m2-galeria-dialogo-imagem button{width:32px}}
+
+
+/* Veículos reais em PNG, vinculados a modelo/geração. Sem geometria 3D fictícia. */
+.m2-veiculo-real{display:flex;position:relative;flex-direction:column;align-items:center;justify-content:center;gap:7px;width:100%;color:inherit}
+.m2-veiculo-real-foto{width:100%;min-height:105px;display:flex;align-items:center;justify-content:center}
+.m2-veiculo-real-foto>img{max-width:100%;width:100%;height:142px;object-fit:contain;background:transparent;filter:drop-shadow(0 12px 15px #10202629)}
+.m2-veiculo-real--banner .m2-veiculo-real-foto>img{height:174px}
+.m2-veiculo-real--mini{max-width:145px}
+.m2-veiculo-real--mini .m2-veiculo-real-foto{min-height:70px}
+.m2-veiculo-real--mini .m2-veiculo-real-foto>img{height:78px}
+.m2-veiculo-real-falta{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;width:100%;min-height:105px;border:1px dashed #9baba9;border-radius:11px;padding:9px;text-align:center;line-height:1.4}
+.m2-veiculo-real-falta strong{font-size:1rem;letter-spacing:.03em}
+.m2-veiculo-real-falta span{font-size:.67rem;color:#8e9f9c;font-weight:600}
+.m2-veiculo-real-marca{display:flex;justify-content:center;align-items:center;min-height:26px}
+.m2-veiculo-real-marca img{max-width:115px;max-height:36px;object-fit:contain}
+.m2-veiculo-real-marca strong{font-size:.72rem;letter-spacing:.075em;text-transform:uppercase}
+.m2-veiculo-real-credito{font-size:.7rem;text-align:center;max-width:100%}
+.m2-veiculo-real-credito summary{cursor:pointer}
+.m2-veiculo-real-credito small{overflow-wrap:anywhere}
+.m2-ficha-identidade .m2-veiculo-real{min-width:115px}
+.m2-ficha-miniatura{display:flex;align-items:center;justify-content:center}
+.m2-ficha-miniatura .m2-veiculo-real-falta{min-height:70px}
+.m2-menu-marcas{border:1px solid #cbd2cb;background:#fffefa;color:#1c2528;border-radius:0 0 14px 14px;box-shadow:0 20px 35px #1a28252e;position:relative;z-index:10;padding:20px 24px}
+.m2-menu-marcas-topo{display:flex;justify-content:space-between;align-items:start;gap:16px;margin-bottom:15px}
+.m2-menu-marcas-topo strong{font-size:1.22rem;color:#17292e}
+.m2-menu-marcas-topo p{margin:5px 0;color:#5a6667;font-size:.89rem}
+.m2-menu-marcas-topo>button{border:0;background:#f4e9dd;border-radius:8px;padding:8px 12px;font-weight:800;cursor:pointer}
+.m2-menu-marcas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:9px;max-height:360px;overflow:auto}
+.m2-menu-marcas-grid button{border:1px solid #e2dbd0;background:#fff;border-radius:10px;text-align:left;padding:11px;display:flex;align-items:center;gap:10px;cursor:pointer;color:#1d292e}
+.m2-menu-marcas-grid button:hover,.m2-menu-marcas-grid button:focus-visible{border-color:#c35e30;box-shadow:0 0 0 2px #c35e3022}
+.m2-menu-marcas-grid button>span:nth-child(2){display:flex;flex-direction:column;flex:1;gap:3px}
+.m2-menu-marcas-grid button small{font-size:.73rem;color:#607074}
+.m2-menu-marcas-grid button>span:last-child{font-size:1.5rem;color:#c05b2c}
+.m2-menu-marcas-logo{width:54px;height:46px;display:grid;place-items:center;border-radius:9px;background:#f3f1ec;flex:none}
+.m2-menu-marcas-logo img{max-width:90%;max-height:90%;object-fit:contain}
+.m2-marca-perfil{background:linear-gradient(110deg,#17272d,#2d4145);color:white;border-radius:13px;padding:22px;margin-bottom:21px;display:grid;grid-template-columns:minmax(230px,1fr) 1.4fr;gap:20px}
+.m2-marca-perfil h2{font-size:clamp(1.4rem,2.6vw,2.2rem);margin:6px 0}
+.m2-marca-perfil p{font-size:.9rem;line-height:1.6}
+.m2-marca-perfil button{border-radius:7px;border:1px solid #a3aaa8;background:transparent;color:white;padding:10px 13px;cursor:pointer}
+.m2-marca-historia{border:1px solid #56686c;border-radius:10px;padding:14px}
+.m2-marca-historia summary{cursor:pointer;font-weight:800}
+.m2-marca-historia h3{font-size:1.12rem;margin:14px 0 5px}
+.m2-marca-historia ol{margin:10px 0 15px;padding-left:22px}
+.m2-marca-historia li{margin-bottom:7px}
+.m2-marca-historia a{color:#ffd6a6}
+.m2-ficha-historia>p{font-size:.95rem;line-height:1.75}
+.m2-ficha-historia-pendente{background:#f6efdd;border-left:4px solid #c28e2b;padding:12px;border-radius:7px}
+.m2-ficha-linha-do-tempo{border-left:3px solid #c56532;list-style:none;padding:6px 0 6px 19px;margin:18px 0}
+.m2-ficha-linha-do-tempo li{position:relative;margin:0 0 20px}
+.m2-ficha-linha-do-tempo li:before{content:"";position:absolute;left:-26px;top:9px;width:11px;height:11px;background:#c56532;border-radius:50%}
+.m2-ficha-linha-do-tempo p{margin:4px 0}
+@media(max-width:700px){.m2-menu-marcas{padding:16px}.m2-menu-marcas-grid{grid-template-columns:1fr 1fr}.m2-marca-perfil{grid-template-columns:1fr}.m2-ficha-identidade .m2-veiculo-real{max-width:116px}}
+@media(max-width:420px){.m2-menu-marcas-grid{grid-template-columns:1fr}}
