@@ -1,0 +1,204 @@
+/* MOBIS AUTOPEÇAS | modelo claro v4 da loja pública.
+   Última camada da vitrine: superfícies brancas, texto grafite e um único acento,
+   o laranja do "M" do logotipo oficial (o arquivo do logo não é alterado).
+   Layout fluido: as mesmas regras servem do smartphone ao monitor largo; os poucos
+   @media só reorganizam colunas. Escopo: apenas .mobis-v2.m4 (a página da loja). */
+.mobis-v2.m4{
+  --m4-acento:#bf4300;--m4-acento-forte:#983500;--m4-acento-suave:#fff3ea;
+  --m4-tinta:#1f2327;--m4-texto:#3d464f;--m4-linha:#e3e6ea;--m4-gelo:#f6f7f8;--m4-branco:#fff;
+  --m4-raio:12px;--m4-espaco:clamp(28px,4.5vw,56px);
+  background:var(--m4-branco);color:var(--m4-tinta);font-size:16px;line-height:1.55;
+}
+/* O <main> da loja não herda a coluna de 1100px nem o espaçamento do painel administrativo. */
+.mobis-v2.m4 main{max-width:none;margin:0;padding:0;display:block}
+.mobis-v2.m4 :is(h1,h2,h3){color:var(--m4-tinta);letter-spacing:-.02em}
+.mobis-v2.m4 :is(a,button,input,select):focus-visible{outline:3px solid var(--m4-acento);outline-offset:2px}
+.mobis-v2.m4 .m2-wrap{width:min(1180px,calc(100% - clamp(28px,6vw,72px)))}
+.mobis-v2.m4 .m2-kicker{color:var(--m4-acento);font-size:.75rem;letter-spacing:.08em;font-weight:800;margin-bottom:8px}
+
+/* Botões: um primário (acento) e um claro (contorno). Alvo de toque de 46px. */
+.mobis-v2.m4 .m4-botao{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:46px;padding:10px 20px;border-radius:10px;border:1px solid var(--m4-acento);background:var(--m4-acento);color:#fff;font-weight:750;font-size:1rem;line-height:1.2;text-decoration:none;white-space:nowrap}
+.mobis-v2.m4 .m4-botao:hover{background:var(--m4-acento-forte);border-color:var(--m4-acento-forte)}
+.mobis-v2.m4 .m4-botao-claro{background:#fff;color:var(--m4-tinta);border-color:#c5ccd3}
+.mobis-v2.m4 .m4-botao-claro:hover{background:var(--m4-gelo);border-color:var(--m4-tinta)}
+
+/* Faixa fina e cabeçalho */
+.mobis-v2.m4 .m2-micro{background:var(--m4-gelo);border-bottom:1px solid var(--m4-linha);color:var(--m4-texto);font-size:.8125rem;letter-spacing:0;padding:6px 0}
+.mobis-v2.m4 .m2-micro b{color:var(--m4-acento)}
+.mobis-v2.m4 .m2-micro em{color:var(--m4-acento)}
+.mobis-v2.m4 .m2-header{background:#fff;border-bottom:1px solid var(--m4-linha);box-shadow:none}
+.mobis-v2.m4 .m2-header>.m2-wrap{width:min(1180px,calc(100% - clamp(28px,6vw,72px)));max-width:none;min-height:0;padding:12px 0;gap:12px 20px;flex-wrap:wrap}
+.mobis-v2.m4 .m2-header .m2-brand{min-width:0}
+.mobis-v2.m4 .m2-header .m2-brand img{width:clamp(150px,20vw,230px)}
+.mobis-v2.m4 .m2-header nav{gap:4px;flex-wrap:nowrap}
+.mobis-v2.m4 .m2-header nav button{color:var(--m4-tinta);font-size:.9375rem;font-weight:650;padding:10px 12px;border-radius:8px;min-height:44px}
+.mobis-v2.m4 .m2-header nav button:hover{color:var(--m4-acento);background:var(--m4-acento-suave)}
+.mobis-v2.m4 .m2-header-acoes{gap:10px}
+.mobis-v2.m4 .m2-header-acoes button{min-height:44px;padding:8px 14px;border:1px solid #c5ccd3;border-radius:10px;background:#fff;color:var(--m4-tinta);font-size:.9375rem;font-weight:700}
+.mobis-v2.m4 .m2-header-acoes button span{background:var(--m4-acento);color:#fff;width:22px;height:22px;font-size:.75rem}
+.mobis-v2.m4 .m2-header-acoes>a{display:inline-flex;flex-direction:row;align-items:center;gap:6px;min-height:44px;padding:8px 14px;border-radius:10px;background:var(--m4-tinta);color:#fff;font-size:.9375rem;font-weight:700}
+.mobis-v2.m4 .m2-header-acoes>a span{color:#fff;font-size:.9375rem;font-weight:700}
+
+/* Busca rápida: uma linha, branca */
+.mobis-v2.m4 .m2-busca-rapida{background:#fff;border-bottom:1px solid var(--m4-linha);padding:12px 0;box-shadow:none}
+.mobis-v2.m4 .m4-busca{display:flex;gap:8px;max-width:none}
+.mobis-v2.m4 .m4-busca input{flex:1;min-width:0;min-height:48px;border:1px solid #c5ccd3;border-radius:10px;background:var(--m4-gelo);padding:10px 16px;color:var(--m4-tinta);font-size:1rem}
+.mobis-v2.m4 .m4-busca input::placeholder{color:#5c6670}
+.mobis-v2.m4 .m4-busca button{min-height:48px;padding:10px 22px;border-radius:10px;border:1px solid var(--m4-acento);background:var(--m4-acento);color:#fff;font-weight:750;font-size:1rem;white-space:nowrap}
+.mobis-v2.m4 .m4-busca button:hover{background:var(--m4-acento-forte)}
+.mobis-v2.m4 .m2-aviso-teste{background:var(--m4-acento-suave);border:0;border-bottom:1px solid #f1d9c6;color:#5a2a08;font-size:.875rem;padding:10px clamp(14px,5vw,48px)}
+
+/* Banner principal: fluido, sem alturas fixas. Texto e ilustrações lado a lado quando
+   cabem (grade auto-fit) e empilhados quando não cabem. */
+.mobis-v2.m4 .m4-banner{background:linear-gradient(180deg,#fff 0%,var(--m4-gelo) 100%);color:var(--m4-tinta);border-bottom:1px solid var(--m4-linha);padding:clamp(24px,5vw,64px) 0 clamp(16px,2.5vw,28px);overflow:hidden}
+.mobis-v2.m4 .m4-banner::after{content:none}
+.mobis-v2.m4 .m4-banner-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:clamp(20px,4vw,56px);align-items:center}
+.mobis-v2.m4 .m4-banner-texto{min-width:0}
+.mobis-v2.m4 .m4-etiqueta{display:inline-block;color:var(--m4-acento);font-size:.8125rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+.mobis-v2.m4 .m4-banner h1{font-size:clamp(1.75rem,1.1rem + 3.1vw,3.25rem);line-height:1.08;font-weight:850;font-style:normal;letter-spacing:-.03em;color:var(--m4-tinta);margin:0 0 14px;max-width:16ch;text-wrap:balance}
+.mobis-v2.m4 .m4-banner h1 strong{display:inline;background:none;padding:0;margin:0;color:var(--m4-acento);font-weight:inherit}
+.mobis-v2.m4 .m4-banner-texto>p{font-size:clamp(1rem,.95rem + .3vw,1.125rem);line-height:1.6;color:var(--m4-texto);max-width:46ch;margin:0 0 20px}
+.mobis-v2.m4 .m4-banner-acoes{display:flex;flex-wrap:wrap;gap:10px}
+.mobis-v2.m4 .m4-banner-garantias{list-style:none;display:flex;flex-wrap:wrap;gap:6px 18px;padding:0;margin:20px 0 0;font-size:.875rem;color:var(--m4-texto)}
+.mobis-v2.m4 .m4-banner-garantias li{display:flex;align-items:center;gap:7px}
+.mobis-v2.m4 .m4-banner-garantias li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--m4-acento);flex:none}
+.mobis-v2.m4 .m4-banner-arte{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(8px,1.6vw,16px);min-width:0;align-items:end}
+.mobis-v2.m4 .m4-banner-arte figure{margin:0;min-width:0;background:#fff;border:1px solid var(--m4-linha);border-radius:var(--m4-raio);padding:clamp(6px,1vw,10px);box-shadow:0 10px 28px #1f232712;text-align:center}
+.mobis-v2.m4 .m4-banner-arte figure:nth-child(2){transform:translateY(clamp(-22px,-2.2vw,-10px))}
+.mobis-v2.m4 .m4-banner-arte .ico-veiculo{display:block;width:100%;height:auto;aspect-ratio:1/.82;object-fit:cover;border-radius:8px}
+.mobis-v2.m4 .m4-banner-arte figcaption{font-size:clamp(.8125rem,.75rem + .3vw,.9375rem);font-weight:750;color:var(--m4-tinta);padding:8px 2px 2px;line-height:1.2}
+.mobis-v2.m4 .m4-banner-nota{font-size:.8125rem;color:#56606a;margin:clamp(16px,2.5vw,26px) auto 0}
+
+/* Seções: ritmo único e títulos contidos */
+.mobis-v2.m4 .m2-secao{padding-top:var(--m4-espaco);padding-bottom:var(--m4-espaco)}
+.mobis-v2.m4 .m2-band{background:#fff;border-top:0}
+.mobis-v2.m4 :is(.m2-veiculos,.m2-catalogo,.m2-sistemas){background:#fff}
+.mobis-v2.m4 .m2-busca{background:var(--m4-gelo);border-block:1px solid var(--m4-linha)}
+.mobis-v2.m4 .m2-titulo{margin-bottom:18px}
+.mobis-v2.m4 :is(.m2-titulo h2,.m2-cab-secao h2,.m2-empresa-painel h2){font-size:clamp(1.375rem,1.1rem + 1.2vw,1.875rem);line-height:1.15;margin:0 0 6px;color:var(--m4-tinta)}
+.mobis-v2.m4 .m2-titulo p{font-size:1rem;color:var(--m4-texto)}
+.mobis-v2.m4 .m2-cab-secao{margin-bottom:16px;align-items:center}
+.mobis-v2.m4 .m2-cab-secao small{font-size:.875rem;color:var(--m4-texto)}
+.mobis-v2.m4 .m2-cab-secao>button{min-height:44px;border:1px solid #c5ccd3;border-radius:10px;background:#fff;color:var(--m4-tinta);font-size:.9375rem;font-weight:700;padding:8px 14px}
+.mobis-v2.m4 .m2-cab-secao>button b{display:inline-grid;place-items:center;min-width:22px;height:22px;margin-left:6px;border-radius:99px;background:var(--m4-acento);color:#fff;font-size:.75rem}
+.mobis-v2.m4 .m2-legenda{font-size:.8125rem;color:#56606a;margin-top:14px;display:block}
+
+/* Abas (veículo/sistema, busca, empresa) */
+.mobis-v2.m4 .m2-empresa-abas{gap:4px;border-bottom:1px solid var(--m4-linha);margin-bottom:16px}
+.mobis-v2.m4 .m2-empresa-abas button{min-height:46px;padding:10px 12px;font-size:clamp(.9375rem,.9rem + .3vw,1rem);color:var(--m4-texto);border-bottom:3px solid transparent}
+.mobis-v2.m4 .m2-empresa-abas button[aria-selected="true"]{color:var(--m4-acento);border-bottom-color:var(--m4-acento)}
+
+/* Veículos: cartões brancos compactos, grade automática */
+.mobis-v2.m4 .m2-veiculo-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:12px}
+.mobis-v2.m4 .m2-veiculo{background:#fff;background-image:none;border:1px solid var(--m4-linha);border-radius:var(--m4-raio);padding:10px;min-height:0;color:var(--m4-tinta);box-shadow:none}
+.mobis-v2.m4 .m2-veiculo:hover{background:#fff;border-color:var(--m4-acento);transform:translateY(-2px)}
+.mobis-v2.m4 .m2-veiculo>div{background:none;min-height:0;margin-bottom:10px;border-radius:8px}
+.mobis-v2.m4 .m2-veiculo .ico-veiculo{width:100%;max-width:none;height:auto;aspect-ratio:1/.62;object-fit:cover;border-radius:8px}
+.mobis-v2.m4 .m2-veiculo strong{font-size:1rem;line-height:1.25}
+.mobis-v2.m4 .m2-veiculo small{font-size:.8125rem;color:var(--m4-texto);margin:4px 0 10px}
+.mobis-v2.m4 .m2-veiculo>span{border-top:1px solid var(--m4-linha);padding-top:8px;font-size:.875rem;color:var(--m4-acento);font-weight:750}
+
+/* Sistemas: oito cartões alinhados, ícone 3D aprovado em tamanho contido */
+.mobis-v2.m4 .m2-sistema-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,128px),1fr));gap:12px}
+.mobis-v2.m4 .m2-sistema-grade button{background:#fff;border:1px solid var(--m4-linha);border-radius:var(--m4-raio);min-height:0;padding:12px 8px;gap:8px;color:var(--m4-tinta)}
+.mobis-v2.m4 .m2-sistema-grade button:hover{border-color:var(--m4-acento)}
+.mobis-v2.m4 .m2-sistema-grade .ico-peca{width:72px;height:72px}
+.mobis-v2.m4 .m2-sistema-grade span{font-size:.9375rem;font-weight:650}
+.mobis-v2.m4 .m2-sistema-grade i{display:none}
+
+/* Destaque de consulta e ofertas: faixa clara em vez de bloco escuro */
+.mobis-v2.m4 .m4-destaque{display:flex;flex-wrap:wrap;align-items:center;gap:14px 20px;padding:16px clamp(14px,2.5vw,24px);margin-bottom:var(--m4-espaco);border:1px solid #f1d9c6;border-radius:var(--m4-raio);background:var(--m4-acento-suave)}
+.mobis-v2.m4 .m4-destaque .ico-peca{width:84px;height:84px;flex:none}
+.mobis-v2.m4 .m4-destaque>div{flex:1 1 260px;min-width:0}
+.mobis-v2.m4 .m4-destaque h2{font-size:1.25rem;margin:0 0 4px}
+.mobis-v2.m4 .m4-destaque p{font-size:.9375rem;color:var(--m4-texto);margin:0}
+.mobis-v2.m4 .m2-destaques{padding-top:0}
+.mobis-v2.m4 .m2-flash{margin-top:0;background:#fff;border:1px solid var(--m4-linha);border-left:4px solid var(--m4-acento);border-radius:var(--m4-raio);color:var(--m4-tinta);padding:18px}
+.mobis-v2.m4 .m2-flash h3{color:var(--m4-tinta);font-size:1.25rem}
+.mobis-v2.m4 .m2-flash p{color:var(--m4-texto)}
+.mobis-v2.m4 .m2-flash>a{background:var(--m4-acento);color:#fff;border-radius:10px;padding:12px 18px}
+.mobis-v2.m4 .m2-flash-controles button{background:#fff;color:var(--m4-tinta);border:1px solid #c5ccd3;border-radius:8px;min-width:44px;min-height:44px}
+
+/* Busca detalhada e filtros */
+.mobis-v2.m4 .m2-modos-busca button{min-height:44px;font-size:.9375rem;border-radius:10px}
+.mobis-v2.m4 .m2-modos-busca button[aria-selected="true"]{background:var(--m4-tinta);color:#fff;border-color:var(--m4-tinta)}
+.mobis-v2.m4 .m2-ajuda-referencias{font-size:.875rem;color:var(--m4-texto)}
+.mobis-v2.m4 .m2-search{border:1px solid #c5ccd3;border-radius:10px;box-shadow:none;margin-bottom:12px}
+.mobis-v2.m4 .m2-search>span{color:var(--m4-acento);font-size:1.4rem;padding:0 10px}
+.mobis-v2.m4 .m2-search input{font-size:1rem;min-height:44px}
+.mobis-v2.m4 .m2-search button{background:var(--m4-acento);border-radius:8px;min-height:44px;font-size:1rem;font-weight:750}
+.mobis-v2.m4 .m2-filtros{background:#fff;border:1px solid var(--m4-linha);border-radius:var(--m4-raio);padding:16px;box-shadow:none}
+.mobis-v2.m4 .m2-filtros-topo{margin-bottom:12px}
+.mobis-v2.m4 .m2-filtros-topo strong{font-size:1rem}
+.mobis-v2.m4 .m2-filtros-topo small{font-size:.875rem;color:var(--m4-texto)}
+.mobis-v2.m4 .m2-filtros-topo button{color:var(--m4-acento);font-size:.875rem;min-height:44px}
+.mobis-v2.m4 .m2-filtros-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,128px),1fr));gap:10px}
+.mobis-v2.m4 .m2-filtros-grid label{font-size:.875rem}
+.mobis-v2.m4 .m2-filtros-grid :is(select,input){height:46px;font-size:1rem;border:1px solid #c5ccd3;border-radius:8px;background:#fff}
+.mobis-v2.m4 .m2-filtros-rodape{flex-wrap:wrap}
+.mobis-v2.m4 .m2-filtros-rodape p{font-size:.875rem;color:var(--m4-texto);flex:1 1 240px}
+.mobis-v2.m4 .m2-filtros-rodape button{background:var(--m4-tinta);border-radius:10px;min-height:46px;font-size:1rem;padding:10px 20px}
+
+/* Catálogo */
+.mobis-v2.m4 .m2-catalogo .m2-cab-secao{border-bottom:1px solid var(--m4-linha);padding-bottom:14px}
+.mobis-v2.m4 .m2-vazio{border:1px dashed #c5ccd3;border-radius:var(--m4-raio);background:var(--m4-gelo);padding:24px 16px;min-height:0}
+.mobis-v2.m4 .m2-vazio h3{font-size:1.125rem}
+.mobis-v2.m4 .m2-vazio p{font-size:.9375rem;color:var(--m4-texto)}
+.mobis-v2.m4 .m2-vazio button{color:var(--m4-acento);border-bottom-color:var(--m4-acento);font-size:1rem;min-height:44px}
+.mobis-v2.m4 .m2-produto-grade{grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:14px}
+.mobis-v2.m4 .m2-produto{border:1px solid var(--m4-linha);border-radius:var(--m4-raio)}
+.mobis-v2.m4 .m2-foto-produto{background:var(--m4-gelo)}
+.mobis-v2.m4 .m2-produto small{font-size:.8125rem;color:var(--m4-texto)}
+.mobis-v2.m4 .m2-produto p{font-size:.875rem;color:var(--m4-texto)}
+.mobis-v2.m4 .m2-produto :is(a,button){border-color:var(--m4-acento);color:var(--m4-acento);border-radius:8px;font-size:.875rem;min-height:44px;display:inline-flex;align-items:center}
+
+/* A Mobis */
+.mobis-v2.m4 .m2-empresa-painel :is(p,li,address){font-size:1rem;color:var(--m4-texto);max-width:75ch}
+.mobis-v2.m4 :is(.m2-empresa-cta,.m2-empresa-acoes a){background:var(--m4-acento);border-color:var(--m4-acento);border-radius:10px;min-height:46px;display:inline-flex;align-items:center}
+.mobis-v2.m4 .m2-empresa-acoes button{color:var(--m4-acento);border-color:var(--m4-acento);border-radius:10px;min-height:46px}
+
+/* Atendimento: faixa clara e compacta */
+.mobis-v2.m4 .m2-atendimento{background:var(--m4-gelo);color:var(--m4-tinta);border-block:1px solid var(--m4-linha)}
+.mobis-v2.m4 .m2-atendimento-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:clamp(18px,4vw,48px);padding-top:var(--m4-espaco);padding-bottom:var(--m4-espaco)}
+.mobis-v2.m4 .m2-atendimento-grid>div:first-child h2{font-size:clamp(1.375rem,1.1rem + 1.2vw,1.875rem);color:var(--m4-tinta);max-width:none}
+.mobis-v2.m4 .m2-atendimento-grid>div:first-child p{color:var(--m4-texto);font-size:1rem;line-height:1.6;max-width:48ch}
+.mobis-v2.m4 .m2-conselho{border-top:1px solid var(--m4-linha);color:var(--m4-texto);font-size:.9375rem;padding-top:12px;margin-top:14px}
+.mobis-v2.m4 .m2-contato-form{background:#fff;border:1px solid var(--m4-linha);border-radius:var(--m4-raio);padding:18px;box-shadow:none}
+.mobis-v2.m4 .m2-contato-form>small{font-size:.8125rem;color:var(--m4-texto);letter-spacing:.04em}
+.mobis-v2.m4 .m2-contato-form p{font-size:.9375rem;color:var(--m4-texto)}
+.mobis-v2.m4 .m2-contato-form :is(button,a){min-height:46px;border-radius:10px;font-size:1rem}
+.mobis-v2.m4 .m2-contato-form a{background:var(--m4-acento);color:#fff}
+.mobis-v2.m4 .m4-consulta-aviso{margin:0;padding:14px 16px;border:1px solid #f1d9c6;border-radius:var(--m4-raio);background:var(--m4-acento-suave);color:#5a2a08;font-size:.9375rem;margin-top:var(--m4-espaco);margin-bottom:calc(var(--m4-espaco) * -1 + 16px)}
+
+/* Lista de consulta */
+.mobis-v2.m4 .m2-lista{padding-top:var(--m4-espaco);padding-bottom:var(--m4-espaco)}
+.mobis-v2.m4 .m2-lista>p{font-size:.9375rem;color:var(--m4-texto)}
+.mobis-v2.m4 .m2-lista li{border:1px solid var(--m4-linha);border-radius:10px}
+.mobis-v2.m4 .m2-lista :is(button,a){border-color:var(--m4-acento);color:var(--m4-acento);border-radius:10px;min-height:44px}
+.mobis-v2.m4 .m2-lista :is(button,a):hover{background:var(--m4-acento-suave)}
+
+/* Telas estreitas: só reorganização de colunas, nenhum conteúdo diferente */
+@media(max-width:960px){
+  .mobis-v2.m4 .m2-header nav{order:3;flex:1 1 100%;overflow-x:auto;scrollbar-width:none;margin:0 -4px;padding:0;border-top:0;justify-content:flex-start}
+  .mobis-v2.m4 .m2-header nav::-webkit-scrollbar{display:none}
+  .mobis-v2.m4 .m2-header nav button{border:1px solid var(--m4-linha);border-radius:99px;padding:8px 14px;flex:none;font-size:.9375rem}
+  .mobis-v2.m4 .m2-header-acoes>a{display:inline-flex}
+}
+@media(max-width:560px){
+  .mobis-v2.m4 .m2-micro{display:none}
+  .mobis-v2.m4 .m2-header-acoes>a{font-size:0;gap:0}
+  .mobis-v2.m4 .m2-header-acoes>a span{font-size:.9375rem}
+  .mobis-v2.m4 .m2-header-acoes button{padding:8px 10px}
+  .mobis-v2.m4 .m4-busca button{padding:10px 16px}
+  .mobis-v2.m4 .m4-banner-acoes .m4-botao{flex:1 1 100%}
+  .mobis-v2.m4 .m2-veiculo-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .mobis-v2.m4 .m2-veiculo small{display:none}
+  .mobis-v2.m4 .m2-veiculo strong{margin-bottom:8px}
+  .mobis-v2.m4 .m2-empresa-abas button{flex:1;padding:10px 6px}
+  .mobis-v2.m4 .m2-sistema-grade{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mobis-v2.m4 .m2-modos-busca button{flex:1}
+  .mobis-v2.m4 .m2-search button{padding:10px 14px}
+  .mobis-v2.m4 .m2-filtros-rodape button{width:100%}
+  .mobis-v2.m4 .m4-destaque .m4-botao{flex:1 1 100%}
+}
+@media(prefers-reduced-motion:reduce){.mobis-v2.m4 .m2-veiculo:hover{transform:none}}

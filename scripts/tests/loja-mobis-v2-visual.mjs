@@ -17,7 +17,7 @@ try{
  for(let i=0;i<100;i++){try{if((await fetch(base+"/")).ok)break}catch{}await new Promise(r=>setTimeout(r,110))}
  browser=await chromium.launch({headless:true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH} : {})});
  await mkdir(root+"evidencias-chat",{recursive:true});
- for(const width of [360,390,412,1280]){
+ for(const width of [360,390,412,768,1280,1920]){
   const context=await browser.newContext({viewport:{width,height:844}});
   const page=await context.newPage(),errors=[],requests=[];
   page.on("pageerror",err=>errors.push(err.message));
@@ -34,30 +34,24 @@ try{
   await page.goto(base+"/#/loja/mobis");
   await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor({state:"visible",timeout:20000});
   assert.equal(await page.locator('[data-mobis-palette="branco-gelo"]').count(),1,"tema oficial branco-gelo ativo");
-  // Modelo MOBIS v3: veículos em fotografias reais com fontes e ícones 3D intactos.
-  assert.equal(await page.locator('[data-mobis-visual="fotografico-v3"]').count(),1,"layout fotográfico aplicado");
-  const hero=page.locator('.m3-hero');
+  // Modelo claro v4: banner fluido com ilustrações 3D aprovadas; nenhuma fotografia de terceiros nem mascote.
+  assert.equal(await page.locator('[data-mobis-visual="claro-v4"]').count(),1,"layout claro aplicado");
+  const hero=page.locator('.m4-banner');
   await hero.waitFor();
-  assert.equal(await hero.locator('.m3-hero-foto img').count(),5,"cinco fotografias de veículos por modelo");
-  const primeiraFoto=hero.locator('.m3-hero-foto img').first();
-  await primeiraFoto.waitFor({state:"visible"});
-  await primeiraFoto.evaluate(async img=>{if(!img.complete)await new Promise((resolve,reject)=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',reject,{once:true});});});
-  assert.equal(await primeiraFoto.evaluate(img=>img.naturalWidth>0),true,"foto real local acessível");
-  assert.equal(await page.locator('.m3-faixa-lista button').count(),8,"oito categorias funcionais com ícones Mobis");
-  assert.match(await page.locator('.m2-busca-rapida').evaluate(el=>getComputedStyle(el).backgroundImage),/linear-gradient/,"menu de busca em vermelho");
-  assert.ok(await page.locator('#m3-creditos').count()===1,"créditos de licença acessíveis");
+  assert.equal(await hero.locator('.m4-banner-arte .ico-veiculo.ico-3d').count(),3,"três ilustrações 3D aprovadas no banner");
+  assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem fotos de terceiros nem mascotes na loja");
+  assert.equal(await page.locator('.mbi,.mgv,.m3-hero,.m3-faixa-sistemas').count(),0,"blocos duplicados removidos");
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.mobis-v2')).backgroundColor),'rgb(255, 255, 255)',"fundo branco");
+  assert.equal(await page.locator('.m2-busca-rapida').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"busca rápida branca");
+  const caixa=await hero.boundingBox();
+  assert.ok(caixa&&caixa.width>=width-1,"banner ocupa a largura da tela em "+width+"px");
+  assert.equal(await hero.evaluate(el=>el.scrollWidth<=el.clientWidth+1),true,"banner sem estouro lateral em "+width+"px");
 
   assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho branco");
-  assert.equal(await page.locator('.mgv').evaluate(el=>getComputedStyle(el).color),'rgb(31, 35, 39)',"glassy com texto grafite sobre vidro claro");
-  await page.locator(".m3-hero h1").getByText(/PICAPES, VANS E UTILITÁRIOS DIESEL/).waitFor();
+  await page.locator(".m4-banner h1").getByText(/picapes, vans e utilitários diesel/i).waitFor();
   await page.getByText(/Catálogo de peças em preparação/).waitFor({timeout:10000});
-  const banners=page.locator('.mbi');
-  await banners.waitFor();
-  assert.equal(await banners.locator('.mbi-ponto').count(),3,'três banners institucionais oficiais');
-  await banners.getByRole('button',{name:'Próximo banner'}).click();
-  assert.match(await banners.locator('h2').innerText(),/código é a chave/);
-  await banners.getByRole('button',{name:'Pesquisar referência'}).click();
-  assert.equal(await page.getByRole('tab',{name:'SKU, fabricante ou OEM'}).getAttribute('aria-selected'),'true','CTA habilita modo código');
+  await hero.getByRole('button',{name:'Já tenho o código'}).click();
+  assert.equal(await page.getByRole('tab',{name:'SKU, fabricante ou OEM'}).getAttribute('aria-selected'),'true','CTA do banner habilita modo código');
   await page.locator('#m2-pesquisar').fill('CI000120');
   const respostaCodigo=page.waitForResponse(resp=>resp.url().includes('/loja-publica')&&(resp.request().postData()||'').includes('"q":"CI000120"')&&(resp.request().postData()||'').includes('"referencia_exata":true'));
   await page.locator('.m2-search button').click();
@@ -75,8 +69,8 @@ try{
   if(width===1280){await page.locator('.m2-veiculo').first().hover();assert.equal(await page.locator('.m2-veiculo').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','hover preserva fundo branco');}
 
   assert.equal(await page.locator(".v-hero").count(),0,"layout antigo não pode ser renderizado");
-  assert.equal(await page.locator(".m2-veiculo").count(),6,"cinco modelos com fotos reais e consulta a outros modelos");
-  assert.equal(await page.locator(".m3-veiculo-card img").count(),5,"fotos reais também na escolha por modelo");
+  assert.equal(await page.locator(".m2-veiculo").count(),6,"cinco modelos e consulta a outros modelos");
+  assert.equal(await page.locator(".m2-veiculo .ico-veiculo.ico-3d").count(),6,"cartões de veículo usam as ilustrações 3D aprovadas");
   await page.getByRole('tab',{name:'O que ele precisa?',exact:true}).click();
   assert.equal(await page.locator(".m2-sistema-grade button").count(),8,"8 módulos de peças");
   assert.equal(await page.locator(".m2-aviso-teste").isVisible(),true,"loja continua em teste");
