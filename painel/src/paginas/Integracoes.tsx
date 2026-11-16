@@ -1,3 +1,5 @@
+import { GuiaProvedorFaixa } from "../componentes/GuiaProvedor.tsx";
+import { GUIAS } from "../lib/guiaProvedores.ts";
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
@@ -120,6 +122,7 @@ export function Integracoes({ loja }: { loja: Loja }) {
           <div key={pv.id} className="cartao" style={{ margin: "8px 0" }}>
             <p><strong>{pv.nome}</strong> {k ? (k.ativa ? <span className="selo ok">{pv.id === "openrouter_free" && k.failover ? "Automático" : "Ativa"}</span> : <span className="selo atencao">Desligado</span>) : <span className="selo atencao">Sem chave</span>} {k?.principal && <span className="selo">principal</span>}</p>
             <p className="suave">{pv.aviso}</p>
+            {GUIAS[pv.id] && <GuiaProvedorFaixa guia={GUIAS[pv.id]} />}
             {k && !aberto && (
               <>
                 <p className="suave">Chave terminada em <code>{k.final_chave}</code> · modelo <code>{k.modelo}</code>{k.base_url ? <> · <code>{k.base_url}</code></> : null}</p>
@@ -155,6 +158,7 @@ export function Integracoes({ loja }: { loja: Loja }) {
 
       <h2>Busca na web (Firecrawl)</h2>
       <p className="suave">Permite o Nano pesquisar páginas técnicas e fotos candidatas da peça. Tudo volta como pista a conferir: não prova aplicação, código nem direito de uso da imagem. Crie a chave em firecrawl.dev (API Keys) e cole aqui; o sistema testa a chave antes de guardar. Cada busca gasta crédito da sua conta Firecrawl, por isso há um limite mensal.</p>
+      <GuiaProvedorFaixa guia={GUIAS.firecrawl} />
       {fc && !editandoFc ? (
         <div>
           <p className="suave">Chave terminada em <code>{fc.final_chave}</code> · {fc.buscas_mes} de {fc.limite_mensal ?? "sem limite"} buscas usadas neste mês</p>
