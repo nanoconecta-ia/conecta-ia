@@ -29,6 +29,7 @@ import { Videos } from "./paginas/Videos.tsx";
 import { VitrineDemo } from "./paginas/VitrineDemo.tsx";
 import { Loja } from "./paginas/Loja.tsx";
 import { LojaMobisNova } from "./paginas/LojaMobisNova.tsx";
+import { PaginaAplicacaoMobis } from "./paginas/PaginaAplicacaoMobis.tsx";
 import { entradaAdministrativa, lojaMobisPorHost } from "./lib/lojaHost.ts";
 import { Aparencia } from "./paginas/Aparencia.tsx";
 import { PublicacaoLoja } from "./paginas/PublicacaoLoja.tsx";
@@ -126,6 +127,8 @@ export function App() {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
+  const filhoMobis = caminho.match(/^\/a\/([a-z0-9-]{4,110})$/);
+  if (filhoMobis) return <PaginaAplicacaoMobis slug={filhoMobis[1]} />;
   const lojaSlug = caminho.match(/^\/loja\/([a-z0-9-]{2,63})$/);
   if (lojaSlug) return lojaSlug[1] === "mobis" ? <LojaMobisNova slug="mobis" /> : <Loja slug={lojaSlug[1]} />;
   if (hostCliente && !caminho.startsWith("/p/")) return lojaMobisPorHost(hostCliente) ? <LojaMobisNova slug="mobis" /> : <Loja host={hostCliente} />;
