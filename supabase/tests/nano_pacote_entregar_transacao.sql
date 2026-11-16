@@ -162,7 +162,22 @@ select public.n16b_deve_falhar(
     from n16b_entrada where id=1))$$,
  'IA não aprova imagem nem direitos','22023');
 select public.n16b_deve_falhar(
- $$select public.pacote_entregar('b6000000-0000-0000-0000-000000000001',
+ $select public.pacote_entregar('b6000000-0000-0000-0000-000000000001',
+   'c6000000-0000-0000-0000-000000000001',
+   (select jsonb_set(jsonb_set(payload,'{idempotency_key}','"n16b-gtin-err-001"'::jsonb),
+    '{identidade,gtin}','"7894766669900"'::jsonb)
+    from n16b_entrada where id=1))$,
+ 'GTIN com dígito verificador errado é rejeitado no próprio banco','22023');
+select public.n16b_deve_falhar(
+ $select public.pacote_entregar('b6000000-0000-0000-0000-000000000001',
+   'c6000000-0000-0000-0000-000000000001',
+   (select jsonb_set(jsonb_set(payload,'{idempotency_key}','"n16b-logistica-001"'::jsonb),
+    '{logistica}','{"estimado":true,"peso_kg":0.68,"margem_percentual":15}'::jsonb)
+    from n16b_entrada where id=1))$,
+ 'peso estimado sem base documental identificada é rejeitado','22023');
+
+select public.n16b_deve_falhar(
+ $select public.pacote_entregar('b6000000-0000-0000-0000-000000000001',
    'c6000000-0000-0000-0000-000000000001',
    (select jsonb_set(jsonb_set(payload,'{idempotency_key}','"n16b-sku-err-001"'::jsonb),
     '{sku}','"OC1224"'::jsonb)
