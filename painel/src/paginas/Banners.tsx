@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
+import "./banners-flash.css";
 import { ehFlash, erroBanner, isoDeLocal, LIMITE_ATIVOS, linkEnvioWhatsapp, mensagemParaCliente, nosDoMotor, ROTULO_SITUACAO, situacao, validarFormulario, type Banner, type Estilo, type Situacao } from "../lib/banners.ts";
 
 type Produto = { id: string; sku: string | null; nome: string | null; preco: number | null; taxonomia_no_id: string | null };
