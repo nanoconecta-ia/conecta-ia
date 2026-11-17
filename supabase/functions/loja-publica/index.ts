@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
 
 
   // Página filha comercial por veículo: a aplicação aponta para o MESMO produto
-  // físico do Bling. Em teste, rascunhos ficam noindex e sem preço/estoque.
+  // físico do Bling. Só status aprovado E visibilidade explícita são públicos.
   const slugAplicacao = typeof c?.aplicacao_slug === "string" && /^[a-z0-9-]{4,110}$/.test(c.aplicacao_slug) ? c.aplicacao_slug : null;
   if (slugAplicacao && loja.slug === "mobis") {
     const { data: app } = await sb.from("produto_aplicacoes")
