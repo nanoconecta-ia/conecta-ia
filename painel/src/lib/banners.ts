@@ -53,6 +53,6 @@ export function erroBanner(codigo: string | undefined, mensagem: string | undefi
 
 /** Mensagem pronta do vendedor para o cliente (abre o WhatsApp para escolher o contato). Sem preço digitado: o valor vale o do Bling na hora. */
 export function mensagemParaCliente(nome: string, sku: string, flash: boolean): string {
-  return `${flash ? "Oferta relâmpago" : "Separei esta oferta para você"}: ${nome} (cód. ${sku}). Me chame aqui para fechar.`;
+  return `${flash ? "Destaque da Mobis" : "Peça da Mobis"}: ${nome} (cód. ${sku}). Me chame aqui para fechar.`;
 }
 export function linkEnvioWhatsapp(texto: string): string { return `https://wa.me/?text=${encodeURIComponent(texto)}`; }
