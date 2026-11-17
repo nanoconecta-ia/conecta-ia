@@ -55,7 +55,7 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
         {slug:"kia-bongo-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Kia Bongo",modelo:"Kia Bongo K2500",status:"aprovado"},
         {slug:"pendente-nao-publicado",titulo:"Aplicação em estudo",modelo:"Outro",status:"a_confirmar"}]} : {},
       veiculos:[{modelo:"Hyundai HR",motor:"2.5 16V",de:2013,ate:2022},{modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022}],
-      categorias:[{nome:"Motor",slug:"motor",total:0}], total:0, pagina:1, por_pagina:24
+      categorias:flags.categoriaSimulada ? [{nome:"Motor",slug:"motor",total:1}] : [], total:0, pagina:1, por_pagina:24
     })});
   });
   await page.goto(base + "#/loja/mobis");
@@ -74,20 +74,22 @@ try {
     assert.equal(await page.locator("#m2-produto-teste").count(),0,"a página comercial não mostra produto fictício");
     assert.equal(await page.locator(".m2-produto").count(),0,"um catálogo vazio não inventa itens");
     assert.equal(await page.locator(".m4-banner-campanha").count(),0,"sem campanha publicada não existe banner de oferta fictício");
-    assert.equal(await page.locator(".m4-linha-card").count(),4,"linhas complementares visíveis sem duplicar os modelos principais");
-    await page.getByRole("button",{name:"Consultar peças para Iveco Daily"}).click();
+    assert.equal(await page.locator(".m4-montadora-item").count(),9,"nove montadoras como caminho de consulta");
+    assert.equal(await page.locator(".m4-taxonomia-item").count(),6,"seis sistemas de consulta sem produto publicado");
+    await page.locator(".m4-montadora-item").filter({hasText:"Iveco"}).click();
+    await page.locator(".m4-montadora-opcoes button").filter({hasText:"Consultar a equipe"}).click();
     const link=await page.locator("#m2-atendimento .m2-contato-form a").getAttribute("href");
-    assert.match(decodeURIComponent(link||""),/Iveco Daily/,"consulta inclui a linha selecionada na mensagem");
+    assert.match(decodeURIComponent(link||""),/Iveco/,"consulta inclui a linha selecionada na mensagem");
     assert.equal(consultas.length,1,"a seleção comercial não consulta nem grava produto");
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow");
     assert.equal(await page.locator(".m2-aviso-teste").evaluate(el=>el.getBoundingClientRect().top < document.querySelector(".m2-hero").getBoundingClientRect().top),true);
     assert.deepEqual(erros,[]);
     if (width===1280 || width===390) {
-      await page.locator(".m4-linhas").screenshot({path:dir+`linhas-CONSULTA-SIMULADO-${width}.png`});
+      await page.locator(".m4-bloco-montadoras").screenshot({path:dir+`montadoras-CONSULTA-SIMULADO-${width}.png`});
       await page.evaluate(()=>scrollTo(0,0));
       await page.screenshot({path:dir+`inicio-SIMULADO-${width}.png`});
     }
-    resultados.push({width,amostra:false,linhasConsulta:4,produtosPublicados:0,erros});
+    resultados.push({width,amostra:false,montadoras:9,nosComConsulta:6,produtosPublicados:0,erros});
     await context.close();
   }
   for (const flags of [{ambiente:"producao",venda_habilitada:false},{ambiente:"teste",venda_habilitada:true},{ambiente:"teste"},{}]) {
@@ -101,16 +103,16 @@ try {
     await context.close();
   }
   {
-    const {context,page,consultas} = await abrir({ambiente:"teste",venda_habilitada:false});
+    const {context,page,consultas} = await abrir({ambiente:"teste",venda_habilitada:false,categoriaSimulada:true});
     await page.getByLabel("Ano",{exact:true}).fill("2019");
     await consultar(page, () => page.getByRole("button",{name:"Aplicar filtros",exact:true}).click(), q => q.ano === 2019);
-    await consultar(page, () => page.locator(".m2-veiculo").filter({hasText:"Hyundai HR"}).click(), q => q.modelo === "Hyundai HR");
+    await page.locator(".m4-montadora-item").filter({hasText:"Hyundai"}).click();
+    await consultar(page, () => page.locator(".m4-montadora-opcoes button").filter({hasText:"Hyundai HR"}).click(), q => q.modelo === "Hyundai HR");
     assert.equal(consultas.at(-1).modelo,"Hyundai HR");
     assert.equal(consultas.at(-1).q,undefined);
     assert.equal(consultas.at(-1).ano,undefined);
     assert.equal(await page.getByLabel("Ano",{exact:true}).inputValue(),"");
-    await page.getByRole("tab",{name:"O que ele precisa?",exact:true}).click();
-    await consultar(page, () => page.locator(".m2-sistema-grade button").filter({hasText:/^Motor/}).click(), q => q.categoria === "motor");
+    await consultar(page, () => page.locator(".m4-taxonomia-item[data-taxonomia-no='motor']").click(), q => q.categoria === "motor");
     assert.equal(consultas.at(-1).categoria,"motor");
     assert.equal(consultas.at(-1).modelo,undefined);
     assert.equal(await page.getByLabel("Modelo",{exact:true}).inputValue(),"");
