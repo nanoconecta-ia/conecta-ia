@@ -4,6 +4,7 @@ import { AtivoAprovado } from "./AtivoAprovado.tsx";
 import { Icone } from "./Icone.tsx";
 import { VERSAO_LOCAL, rotuloVersao } from "../lib/versao.ts";
 import "../workspace-aprovado.css";
+import "../painel-paleta-legivel.css";
 import marcaMobis from "../assets/mobis-identidade-aprovada.jpg";
 
 const PRINCIPAIS=[
