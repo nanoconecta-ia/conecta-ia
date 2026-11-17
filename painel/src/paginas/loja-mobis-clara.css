@@ -5,7 +5,7 @@
    Layout fluido: as mesmas regras servem do smartphone ao monitor largo; os poucos
    @media só reorganizam colunas. Escopo: apenas .mobis-v2.m4 (a página da loja). */
 .mobis-v2.m4{
-  --m4-acento:#bf4300;--m4-acento-forte:#983500;--m4-acento-suave:#fff3ea;
+  --m4-acento:#a84916;--m4-acento-forte:#87390f;--m4-acento-suave:#fff5ef;
   --m4-tinta:#1f2327;--m4-texto:#3d464f;--m4-linha:#e3e6ea;--m4-gelo:#f6f7f8;--m4-branco:#fff;
   --m4-raio:12px;--m4-espaco:clamp(28px,4.5vw,56px);
   background:var(--m4-branco);color:var(--m4-tinta);font-size:16px;line-height:1.55;
@@ -203,3 +203,37 @@
   .mobis-v2.m4 .m4-destaque .m4-botao{flex:1 1 100%}
 }
 @media(prefers-reduced-motion:reduce){.mobis-v2.m4 .m2-veiculo:hover{transform:none}}
+
+/* MOBIS | vitrine comercial de consulta: componentes reais, sem catálogo fictício.
+   Respeita logotipo e tipografia existentes; as campanhas vêm da API pública Conecta.IA. */
+.mobis-v2.m4 .m4-banner-campanha{display:flex;align-items:center;gap:12px;max-width:570px;margin:0 0 18px;padding:12px 14px;border:1px solid #e8d2c1;border-radius:14px;background:linear-gradient(115deg,#fff,#fff8f3);color:var(--m4-tinta);text-decoration:none;box-shadow:0 6px 20px #1f23270a}
+.mobis-v2.m4 .m4-banner-campanha:hover{border-color:var(--m4-acento);box-shadow:0 9px 24px #1f232713}
+.mobis-v2.m4 .m4-banner-campanha-marca{display:grid;place-items:center;width:46px;height:46px;flex:none;border-radius:12px;background:#fbe7da;color:var(--m4-acento);font-weight:900;font-size:1.4rem}
+.mobis-v2.m4 .m4-banner-campanha>span:nth-child(2){display:grid;gap:3px;flex:1;min-width:0}
+.mobis-v2.m4 .m4-banner-campanha small{font-size:.67rem;font-weight:800;letter-spacing:.065em;color:var(--m4-acento)}
+.mobis-v2.m4 .m4-banner-campanha strong{font-size:.9rem;line-height:1.3;overflow-wrap:anywhere}
+.mobis-v2.m4 .m4-banner-campanha em{font-style:normal;font-size:.76rem;color:var(--m4-texto)}
+.mobis-v2.m4 .m4-banner-campanha>b{font-size:1.15rem;color:var(--m4-acento)}
+.mobis-v2.m4 .m4-linhas{padding-top:clamp(22px,3vw,40px);padding-bottom:clamp(22px,3vw,40px)}
+.mobis-v2.m4 .m4-linhas-cabecalho{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:18px}
+.mobis-v2.m4 .m4-linhas-cabecalho h2{font-size:clamp(1.35rem,1.1rem + 1vw,1.85rem);margin:0 0 6px;line-height:1.15}
+.mobis-v2.m4 .m4-linhas-cabecalho p{color:var(--m4-texto);font-size:.88rem;max-width:65ch;margin:0}
+.mobis-v2.m4 .m4-linhas-cabecalho>button{background:#fff;border:1px solid #d3d8dd;border-radius:10px;min-height:44px;padding:8px 13px;font-weight:750;color:var(--m4-tinta);white-space:nowrap}
+.mobis-v2.m4 .m4-linhas-cabecalho>button:hover{border-color:var(--m4-acento);color:var(--m4-acento)}
+.mobis-v2.m4 .m4-linhas-grade{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.mobis-v2.m4 .m4-linha-card{display:flex;flex-direction:column;gap:10px;min-width:0;text-align:left;background:#fff;border:1px solid var(--m4-linha);border-radius:14px;padding:10px;box-shadow:0 4px 18px #1f232709;transition:transform .18s,border-color .18s}
+.mobis-v2.m4 .m4-linha-card:hover{transform:translateY(-2px);border-color:var(--m4-acento)}
+.mobis-v2.m4 .m4-linha-retrato{display:grid;place-items:center;gap:3px;min-height:102px;background:linear-gradient(155deg,#fff9f5,#f5f6f7);border-radius:11px}
+.mobis-v2.m4 .m4-linha-retrato .ico-peca{width:58px;height:58px;object-fit:contain}
+.mobis-v2.m4 .m4-linha-retrato em{font-size:.66rem;line-height:1.3;letter-spacing:.07em;font-style:normal;font-weight:800;color:var(--m4-acento)}
+.mobis-v2.m4 .m4-linha-info{display:grid;gap:4px;flex:1;align-content:start}
+.mobis-v2.m4 .m4-linha-info small{color:var(--m4-texto);font-size:.7rem}
+.mobis-v2.m4 .m4-linha-info strong{font-size:.93rem;line-height:1.25;color:var(--m4-tinta)}
+.mobis-v2.m4 .m4-linha-info>span{font-size:.74rem;line-height:1.3;color:var(--m4-texto)}
+.mobis-v2.m4 .m4-linha-info b{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:10px;border-top:1px solid var(--m4-linha);color:var(--m4-acento);font-size:.78rem}
+.mobis-v2.m4 .m4-linhas-nota{font-size:.78rem;color:var(--m4-texto);margin:12px 0 0}
+.mobis-v2.m4 .m2-produto h3{line-height:1.35;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}
+.mobis-v2.m4 .m2-produto p{line-height:1.45;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+@media(max-width:1000px){.mobis-v2.m4 .m4-linhas-grade{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:620px){.mobis-v2.m4 .m4-linhas-cabecalho{align-items:stretch;flex-direction:column}.mobis-v2.m4 .m4-linhas-cabecalho>button{align-self:flex-start;white-space:normal}.mobis-v2.m4 .m4-linhas-grade{grid-template-columns:repeat(2,minmax(0,1fr))}.mobis-v2.m4 .m4-linha-card{padding:8px}.mobis-v2.m4 .m4-linha-retrato{min-height:88px}.mobis-v2.m4 .m4-linha-info strong{font-size:.87rem}.mobis-v2.m4 .m4-linha-info>span{font-size:.71rem}}
+@media(prefers-reduced-motion:reduce){.mobis-v2.m4 .m4-linha-card:hover{transform:none}}
