@@ -203,7 +203,7 @@ try {
     assert.equal(await page.locator(".gcv3-titulo-link").getAttribute("href"),"#/p/mobis/CI003000",
       "título da campanha abre diretamente a página SKU");
     assert.equal(await page.getByRole("dialog").count(),0,"não exibe janela intermediária");
-    await page.locator(".m4-flash-acao").click();
+    await page.locator(".gcv3-cta").click();
     await page.locator(".produto-publico-mobis-aplicacoes").waitFor();
     assert.equal(new URL(page.url()).hash,"#/p/mobis/CI003000","navegação direta à página canônica");
     assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a").count(),2,
@@ -217,9 +217,9 @@ try {
   {
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,multiplosBanners:true},390,false,true);
     assert.equal(await page.getByRole("button",{name:"Próximo destaque"}).count(),1,"carrossel com duas campanhas");
-    assert.equal(await page.locator(".m4-flash-acao").getAttribute("href"),"#/p/mobis/CI003000");
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/p/mobis/CI003000");
     await page.getByRole("button",{name:"Próximo destaque"}).click();
-    assert.equal(await page.locator(".m4-flash-acao").getAttribute("href"),"#/p/mobis/EXEMPLO-2",
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/p/mobis/EXEMPLO-2",
       "cada campanha na mesma faixa aponta ao seu próprio SKU");
     assert.match(await page.locator(".gcv3-topo > span").last().textContent()||"",/02\s*\/\s*02/);
     assert.deepEqual(erros,[]);
