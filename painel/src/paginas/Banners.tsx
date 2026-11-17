@@ -123,7 +123,7 @@ export function Banners({ loja }: { loja: Loja }) {
             <select value={f.estilo} onChange={(e) => setF({ ...f, estilo: e.target.value as Estilo })}>
               <option value="auto">Automático (flash para Motor)</option>
               <option value="padrao">Padrão</option>
-              <option value="flash">Flash (oferta relâmpago)</option>
+              <option value="flash">Flash (destaque animado)</option>
             </select>
           </label>
           <label>3 · Início<input type="datetime-local" value={f.inicio} onChange={(e) => setF({ ...f, inicio: e.target.value })} /></label>
