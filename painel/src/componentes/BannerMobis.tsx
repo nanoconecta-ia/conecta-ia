@@ -22,6 +22,18 @@ export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra, campa
           <span className="m4-etiqueta">Mobis Autopeças · Loja independente</span>
           <h1>Peças para <strong>utilitários diesel</strong></h1>
           <p>Motor, suspensão, transmissão e elétrica para picapes e vans.</p>
+          <div className="m4-marcas-banner" aria-label="Montadoras atendidas sob consulta">
+            <span className="m4-marcas-titulo">MONTADORAS E LINHAS DIESEL</span>
+            <div className="m4-marcas-grade">
+              {["Hyundai","Kia","Mitsubishi","Mercedes-Benz","Iveco","Fiat","Ford","Peugeot","Citroën"].map(marca=>
+                <span className="m4-marca-nome" key={marca}>{marca}</span>)}
+            </div>
+            <div className="m4-vans-banner" aria-label="Modelos de vans e utilitários diesel">
+              <span>HR</span><span>Bongo K2500</span><span>L200</span><span>Sprinter</span>
+              <span>Daily</span><span>Ducato</span><span>Boxer</span><span>Jumper</span><span>Transit</span>
+            </div>
+            <small>Marcas e modelos são referências de atendimento; não indicam vínculo com as montadoras nem estoque confirmado.</small>
+          </div>
           {campanha&&<button type="button" className="m4-banner-campanha" onClick={()=>aoAbrirCampanha?.(campanha.sku)}
             aria-label={"Abrir ficha do produto "+campanha.sku+" na própria loja"}>
             {campanha.imagem
