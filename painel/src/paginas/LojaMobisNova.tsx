@@ -15,6 +15,7 @@ import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
 import "./loja-mobis-nova.css";
 import "./loja-mobis-branco.css";
 import "./loja-mobis-clara.css";
+import "./blocos-catalogo-mobis.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
