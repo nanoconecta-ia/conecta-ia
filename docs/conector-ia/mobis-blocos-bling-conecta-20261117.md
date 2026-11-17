@@ -6,6 +6,7 @@ Data: 17/11/2026 · Proposta implementada em branch para testes e aprovação vi
 - **Espelho Conecta.IA:** a sincronização já existente lê o Bling e atualiza a cópia técnica no Conecta.IA. **Um produto físico = um SKU/bling_id**, sem clonar o registro quando aplicável a vários veículos.
 - **Nós Conecta.IA:** taxonomia (`taxonomia_nos`), aplicações (`produto_aplicacoes`), códigos (`produto_codigos`), imagens (`produto_imagens`), banners (`loja_banners`), políticas (`loja_politicas`). Sugestões da IA precisam de origem, data, versão e aprovação humana.
 - **Publicação pública:** só após o proprietário aprovar e marcar visível. Blocos usam a Edge Function `loja-publica` que filtra os registros liberados; nenhuma integração da vitrine com o Bling ou com tabela bruta é usada.
+- **Bloqueio reforçado nesta etapa:** a API pública deixa de retornar `exibicao_teste` sem `publicado=true` e deixa de retornar páginas por aplicação sem `status='aprovado'` **e** `pagina_indexavel=true`, inclusive em ambiente de teste. Prévia de rascunho fica apenas no painel autenticado.
 - **Pausa:** `produto_automacao` / `automacao_pausar` preservam o controle por produto e lote; propostas pausadas não são liberadas automaticamente.
 - A associação textual de nome de montadora e modelo é apenas um **atalho de busca**, não prova homologação, código OEM ou compatibilidade.
 
