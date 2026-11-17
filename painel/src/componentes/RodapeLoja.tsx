@@ -41,8 +41,10 @@ export function RodapeLoja({
   const linkSecao = (secao: "catalogo" | "veiculo" | "categoria", ancora: string) => ({
     href: secoes ? "#/loja/" + encodeURIComponent(slug ?? "") : ancora,
     onClick: secoes ? (e: MouseEvent<HTMLAnchorElement>) => {
+      const alvo = document.getElementById(secoes[secao]);
+      if (!alvo) return; // Em subpágina, seguir href de volta à vitrine.
       e.preventDefault();
-      document.getElementById(secoes[secao])?.scrollIntoView({ behavior: "smooth", block: "start" });
+      alvo.scrollIntoView({ behavior: "smooth", block: "start" });
     } : undefined,
   });
 
