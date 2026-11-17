@@ -40,6 +40,9 @@ jobs:
           VITE_PAIR_ATIVO: '1'
           # Backup do cadastro do Bling (migração bling_snapshots e função bling-backup já em produção). Sem a flag a tela /backup fica oculta.
           VITE_BACKUP_ATIVO: '1'
+          # Editor de banners Flash: migração de imagem_id e RPC validada no Supabase em 16/11/2026.
+          # O editor só publica campanhas com produto aprovado; não cria estoque ou anúncios automaticamente.
+          VITE_BANNERS_ATIVO: '1'
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
