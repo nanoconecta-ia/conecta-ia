@@ -39,7 +39,7 @@ async function abrir(flags, width = 1280, erro = false) {
     consultas.push(route.request().postDataJSON());
     if (erro) return route.fulfill({status:503, headers, contentType:"application/json", body:'{"erro":"simulado"}'});
     return route.fulfill({status:200, headers, contentType:"application/json", body:JSON.stringify({
-      loja:{nome:"Mobis Autopeças",slug:"mobis",...flags}, produtos:[], banners:[],
+      loja:{nome:"Mobis Autopeças",slug:"mobis",whatsapp:"5562991654515",...flags}, produtos:[], banners:[],
       veiculos:[{modelo:"Hyundai HR",motor:"2.5 16V",de:2013,ate:2022},{modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022}],
       categorias:[{nome:"Motor",slug:"motor",total:0}], total:0, pagina:1, por_pagina:24
     })});
