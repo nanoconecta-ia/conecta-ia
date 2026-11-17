@@ -5,8 +5,7 @@ import { IconePeca } from "../componentes/IconePeca.tsx";
 import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import { ChatClienteLoja } from "../componentes/ChatClienteLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
-import { modeloDoAtalho, podeExibirProdutoTeste } from "../lib/mobisVitrine.ts";
-import { ProdutoTesteMobis } from "../componentes/ProdutoTesteMobis.tsx";
+import { modeloDoAtalho } from "../lib/mobisVitrine.ts";
 import { BannerMobis } from "../componentes/BannerMobis.tsx";
 import fotoHR from "../assets/veiculos-mobis/hyundai-hr.webp";
 import fotoBongo from "../assets/veiculos-mobis/kia-bongo-k2500.webp";
@@ -43,6 +42,14 @@ const VEICULOS=[
   {nome:"Mitsubishi L200",valor:"L200",foto:fotoL200},
 ];
 /** Modelos sempre oferecidos no filtro; os demais só entram quando há aplicação aprovada. */
+/** Linhas atendidas pela loja, sem inferir equivalência técnica ou disponibilidade. */
+const LINHAS_CONSULTA = [
+  {nome:"HR e Bongo K2500",familia:"Hyundai · Kia",detalhe:"Peças diesel 8V e 16V",sigla:"HR"},
+  {nome:"L200 e Pajero",familia:"Mitsubishi",detalhe:"Motores e componentes diesel",sigla:"L200"},
+  {nome:"Ranger e Transit",familia:"Ford",detalhe:"Motores e peças sob consulta",sigla:"FORD"},
+  {nome:"Iveco Daily",familia:"Iveco",detalhe:"Linha diesel 3.0 sob consulta",sigla:"DAILY"},
+  {nome:"Ducato, Boxer e Jumper",familia:"Fiat · Peugeot · Citroën",detalhe:"Linha diesel 2.3 sob consulta",sigla:"VANS"},
+] as const;
 const MODELOS_FILTRO=["HR","Bongo","L200"];
 const SISTEMAS=[
   {nome:"Motor",id:"motor",busca:"motor"},
@@ -84,7 +91,6 @@ export function LojaMobisNova({slug}:{slug:string}) {
   const [explorar,setExplorar]=useState<"veiculo"|"sistema">("veiculo");
   const [abaBusca,setAbaBusca]=useState<"descricao"|"referencia">("descricao");
   const [consultaModelo,setConsultaModelo]=useState<string|null>(null);
-  const produtoTeste=podeExibirProdutoTeste(dados?.loja);
   useEffect(()=>{
     let ativo=true;setDados(null);setEstado("carregando");
     fetch(SUPABASE_URL+"/functions/v1/loja-publica",{
@@ -142,6 +148,10 @@ export function LojaMobisNova({slug}:{slug:string}) {
     setF({q:busca.trim(),modelo,motor,ano,categoria,pagina:1});
     para("m2-catalogo");
   }
+  function consultarLinha(nome:string){
+    setConsultaModelo(nome);
+    para("m2-atendimento");
+  }
   function escolherVeiculo(valor:string){
     setAbaBusca("descricao");
     const escolhido=modeloDoAtalho(valor,opcoes);
@@ -164,7 +174,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
   }
   const msg="Olá! Vim pela loja Mobis e gostaria de consultar: "+(lista.length?
     lista.map((x,i)=>String(i+1)+". "+x.nome.slice(0,90)+" SKU "+x.sku).join("; "):
-    "peças para meu veículo")+". Favor confirmar aplicação, preço e disponibilidade. Esta é uma consulta, não um pedido.";
+    (consultaModelo?"peças para "+consultaModelo:"peças para meu veículo"))+". Favor confirmar aplicação, preço e disponibilidade. Esta é uma consulta, não um pedido.";
   const whatsapp=linkWhatsAppPublico(dados?.loja.whatsapp,msg);
   const destaqueMotor=dados?.produtos.find(p=>p.sku==="CI003696")??null;
   const abrirDestaque=()=>{setAbaBusca("referencia");setBusca("CI003696");setModelo("");setMotor("");setAno("");setCategoria("");setF({...VAZIO,q:"CI003696"});para("m2-catalogo");};
@@ -195,9 +205,23 @@ export function LojaMobisNova({slug}:{slug:string}) {
         veiculos={VEICULOS}
         abrirEscolha={()=>{setExplorar("veiculo");para("m2-explorar");}}
         buscarCodigo={()=>{setAbaBusca("referencia");para("m2-busca");document.getElementById("m2-pesquisar")?.focus({preventScroll:true});}}
-        extra={produtoTeste&&<button type="button" className="m4-botao m4-botao-claro" onClick={()=>para("m2-produto-teste")}>Ver produto de teste →</button>}
+        campanha={banners.length?{sku:banners[0].sku,nome:banners[0].nome,chamada:banners[0].chamada}:undefined}
       />
-      {produtoTeste&&<ProdutoTesteMobis/>}
+      <section className="m2-wrap m4-linhas m2-secao" id="m2-linhas" aria-label="Linhas diesel atendidas">
+        <div className="m4-linhas-cabecalho">
+          <div><span className="m2-kicker">MOBIS · ESPECIALIDADES</span>
+            <h2>Encontre peças para sua linha diesel</h2>
+            <p>Escolha o veículo e fale com nossa equipe. A consulta não indica disponibilidade nem compatibilidade confirmada.</p>
+          </div>
+          <button type="button" onClick={()=>{setExplorar("sistema");para("m2-explorar")}}>Ver sistemas de peças <span aria-hidden="true">→</span></button>
+        </div>
+        <div className="m4-linhas-grade">{LINHAS_CONSULTA.map(l=>
+          <button type="button" className="m4-linha-card" key={l.nome} onClick={()=>consultarLinha(l.nome)} aria-label={"Consultar peças para "+l.nome}>
+            <span className="m4-linha-retrato" aria-hidden="true"><IconePeca nome="motor" tamanho={64}/><em>{l.sigla}</em></span>
+            <span className="m4-linha-info"><small>{l.familia}</small><strong>{l.nome}</strong><span>{l.detalhe}</span><b>Consultar peças <span aria-hidden="true">→</span></b></span>
+          </button>)}</div>
+        <p className="m4-linhas-nota">Referências de veículos para atendimento. Antes de qualquer venda, conferir chassi, motorização, ano, código da peça e disponibilidade.</p>
+      </section>
       <section id="m2-explorar" className="m2-band m2-veiculos"><div className="m2-wrap m2-secao">
         <div className="m2-titulo"><div><span className="m2-kicker">ENCONTRE PELO CAMINHO MAIS FÁCIL</span><h2>Comece pelo veículo ou pelo sistema</h2><p>Escolha uma das opções e veja as peças disponíveis na loja.</p></div></div>
         <div className="m2-empresa-abas" role="tablist" aria-label="Como explorar o catálogo">
@@ -296,7 +320,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
                       </a>)}
                   </div>
                 </div>
-              : p.descricao&&<p>{p.descricao.slice(0,220)}</p>}
+              : p.descricao&&<p>{p.descricao.slice(0,105)}</p>}
             <strong>{p.consulta_previa?"Preço sob consulta":p.preco==null?"Consulte o preço":brl(p.preco)}</strong>
             <p>{p.consulta_previa?"Prévia de catálogo · aplicação e disponibilidade precisam ser confirmadas.":"Disponibilidade a confirmar"}</p>
             <div>{p.consulta_previa
