@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import { BLOCOS_MOBIS, MONTADORAS_MOBIS, modelosAprovadosDaMontadora, nosPublicaveis, permiteExibirProposta } from "./blocosCatalogoMobis.ts";
+import { BLOCOS_MOBIS, MONTADORAS_MOBIS, modelosAprovadosDaMontadora, nosPublicaveis, permiteExibirProposta, type PropostaNoCatalogo } from "./blocosCatalogoMobis.ts";
 
 test("6 blocos independentes e vinculados à fonte real, não ao Bling para escrita",()=>{
   assert.deepEqual(BLOCOS_MOBIS.map(b=>b.id),["cabecalho","banner","montadoras","taxonomia","produtos","privacidade"]);
@@ -20,7 +20,7 @@ test("taxonomia exibe somente nós com produtos reais publicados",()=>{
   assert.deepEqual(c.map(x=>x.slug),["motor","suspensao"]);
 });
 test("propostas precisam de aprovação humana, fonte, visibilidade e ausência de pausa",()=>{
-  const p={skuFisico:"CI002916",especie:"aplicacao_veicular",fontes:[{referencia:"catálogo técnico homologado",data:"2026-11-17"}],
+  const p:PropostaNoCatalogo={skuFisico:"CI002916",especie:"aplicacao_veicular",fontes:[{referencia:"catálogo técnico homologado",data:"2026-11-17"}],
     status:"aprovado",visivel:true,automacaoPausada:false};
   assert.equal(permiteExibirProposta(p),true);
   assert.equal(permiteExibirProposta({...p,visivel:false}),false);
