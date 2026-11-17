@@ -4,7 +4,7 @@ import type { Loja } from "../lib/dados.ts";
 import "./banners-flash.css";
 import { ehFlash, erroBanner, isoDeLocal, LIMITE_ATIVOS, linkEnvioWhatsapp, mensagemParaCliente, nosDoMotor, ROTULO_SITUACAO, situacao, validarFormulario, type Banner, type Estilo, type Situacao } from "../lib/banners.ts";
 
-type Produto = { id: string; sku: string | null; nome: string | null; preco: number | null; estoque: number | null; taxonomia_no_id: string | null };
+type Produto = { id: string; sku: string | null; nome: string | null; preco: number | null; estoque: number | null; taxonomia_no_id: string | null; publicado: boolean };
 type Foto = { id: string; produto_id: string; url: string; alt_texto: string | null; principal: boolean; licenca_tipo: string | null; direitos_confirmados_em: string | null };
 function localDeIso(iso: string | null): string {
   if (!iso) return "";
@@ -33,7 +33,7 @@ export function Banners({ loja }: { loja: Loja }) {
     setBanners((data ?? []) as Banner[]);
     const ids = [...new Set((data ?? []).map(b => String(b.produto_id)))];
     if (ids.length) {
-      const {data:ligados} = await supabase.from("produtos").select("id,sku,nome,preco,estoque,taxonomia_no_id")
+      const {data:ligados} = await supabase.from("produtos").select("id,sku,nome,preco,estoque,taxonomia_no_id,publicado")
         .eq("loja_id",loja.id).in("id",ids);
       setProdutos(atuais => {
         const todos = new Map(atuais.map(p=>[p.id,p]));
@@ -45,7 +45,7 @@ export function Banners({ loja }: { loja: Loja }) {
   useEffect(() => {
     void carregar();
     void (async () => {
-      const { data } = await supabase.from("produtos").select("id, sku, nome, preco, estoque, taxonomia_no_id").eq("loja_id", loja.id).eq("publicado", true).order("nome").limit(100);
+      const { data } = await supabase.from("produtos").select("id, sku, nome, preco, estoque, taxonomia_no_id, publicado").eq("loja_id", loja.id).eq("publicado", true).order("nome").limit(100);
       setProdutos(atuais=>{
         const todos=new Map(atuais.map(p=>[p.id,p]));
         for(const p of (data??[]) as Produto[]) todos.set(p.id,p);
@@ -76,10 +76,10 @@ export function Banners({ loja }: { loja: Loja }) {
     if(termo.length < 2)return;
     let vivo=true;
     const t=window.setTimeout(()=>{void(async()=>{
-      const campos="id,sku,nome,preco,estoque,taxonomia_no_id";
+      const campos="id,sku,nome,preco,estoque,taxonomia_no_id,publicado";
       const [rSku,rNome]=await Promise.all([
-        supabase.from("produtos").select(campos).eq("loja_id",loja.id).eq("publicado",true).ilike("sku","%"+termo+"%").limit(30),
-        supabase.from("produtos").select(campos).eq("loja_id",loja.id).eq("publicado",true).ilike("nome","%"+termo+"%").limit(30)
+        supabase.from("produtos").select(campos).eq("loja_id",loja.id).ilike("sku","%"+termo+"%").limit(30),
+        supabase.from("produtos").select(campos).eq("loja_id",loja.id).ilike("nome","%"+termo+"%").limit(30)
       ]);
       if(!vivo)return;
       setProdutos(atuais=>{
@@ -93,7 +93,7 @@ export function Banners({ loja }: { loja: Loja }) {
   useEffect(()=>{
     if(!f.produto||produtos.some(p=>p.id===f.produto))return;
     let vivo=true;
-    void supabase.from("produtos").select("id,sku,nome,preco,estoque,taxonomia_no_id")
+    void supabase.from("produtos").select("id,sku,nome,preco,estoque,taxonomia_no_id,publicado")
       .eq("loja_id",loja.id).eq("id",f.produto).maybeSingle().then(({data})=>{
         if(vivo&&data)setProdutos(atuais=>[...atuais.filter(p=>p.id!==data.id),data as Produto]);
       });
@@ -101,6 +101,7 @@ export function Banners({ loja }: { loja: Loja }) {
   },[f.produto,loja.id,produtos]);
   const porId = useMemo(() => new Map(produtos.map((p) => [p.id, p])), [produtos]);
   const escolhido = porId.get(f.produto);
+  const produtoPublicavel = escolhido?.publicado === true;
   const flashPrevia = escolhido ? ehFlash(f.estilo, escolhido.taxonomia_no_id, motor) : false;
   const fotoPrevia = fotos.find(i => i.id === f.imagem_id) ?? fotos[0] ?? null;
   const noArOuAgendado = (banners ?? []).filter((b) => b.ativo).length;
@@ -108,6 +109,7 @@ export function Banners({ loja }: { loja: Loja }) {
   async function salvar(publicar: boolean) {
     const erro = validarFormulario(f);
     if (erro) { setMsg({ ok: false, texto: erro }); return; }
+    if (publicar && !produtoPublicavel) { setMsg({ ok: false, texto: "Este produto ainda não está publicado no catálogo. Salve a campanha como rascunho; depois aprove o produto para colocá-la no ar." }); return; }
     setOcupado(true); setMsg(null);
     if (f.imagem_id && !fotos.some(i => i.id === f.imagem_id)) {
       setOcupado(false); setMsg({ ok: false, texto: "A imagem escolhida não está mais autorizada. Selecione outra." }); return;
@@ -139,6 +141,10 @@ export function Banners({ loja }: { loja: Loja }) {
   function cancelarEdicao() { setEditando(null); setF(VAZIO); setMsg(null); }
   async function alternar(b: Banner) {
     setMsg(null);
+    if (!b.ativo && porId.get(b.produto_id)?.publicado !== true) {
+      setMsg({ ok: false, texto: "Este produto está oculto no catálogo. Aprove e publique a ficha do produto antes de ativar o banner." });
+      return;
+    }
     const { error } = await supabase.from("loja_banners").update({ ativo: !b.ativo }).eq("id", b.id);
     if (error) setMsg({ ok: false, texto: erroBanner(error.code, error.message) }); else void carregar();
   }
@@ -159,7 +165,7 @@ export function Banners({ loja }: { loja: Loja }) {
         <div className="grade-form">
           <label>1 · Buscar por SKU ou nome
              <input type="search" maxLength={60} value={buscaProduto} onChange={e=>setBuscaProduto(e.target.value)}
-               placeholder="Pesquise nos produtos publicados, ex.: CI003696" />
+               placeholder="Busque um produto pelo SKU ou nome, ex.: CI003696" />
            </label>
            <label>Produto físico (SKU único)
              <select value={f.produto} onChange={(e) => setF({ ...f, produto: e.target.value, imagem_id: "" })}>
@@ -167,6 +173,7 @@ export function Banners({ loja }: { loja: Loja }) {
               {produtos.map((p) => <option key={p.id} value={p.id}>{p.sku} · {p.nome}</option>)}
             </select>
           </label>
+          <p className="suave" role="note">Produtos ainda não publicados podem ter campanhas salvas como rascunho. Para ativar a campanha, primeiro conclua a homologação no <a href="#/catalogo">Catálogo</a>.</p>
           <label>2 · Estilo
             <select value={f.estilo} onChange={(e) => setF({ ...f, estilo: e.target.value as Estilo })}>
               <option value="auto">Automático (flash para Motor)</option>
@@ -185,6 +192,7 @@ export function Banners({ loja }: { loja: Loja }) {
           </label>
           <label>6 · Posição na vitrine<input type="number" min={0} max={99} value={f.ordem} onChange={e=>setF({...f,ordem:Math.max(0,Math.min(99,Number(e.target.value)||0))})}/></label>
         </div>
+        {escolhido && !produtoPublicavel && <p className="msg-erro" role="status">Produto ainda não publicado: salve como rascunho e conclua a revisão da ficha antes de ativar.</p>}
         {escolhido && <div className="flash-editor-previa" aria-label="Prévia do banner">
           <div className="flash-editor-foto">{fotoPrevia ? <img src={fotoPrevia.url} alt={fotoPrevia.alt_texto || escolhido.nome || "Foto do produto"} /> : <span>Foto ainda não autorizada; o banner será exibido apenas com texto até a liberação da imagem.</span>}</div>
           <div><small>{flashPrevia?"FLASH · DESTAQUE":"BANNER · PADRÃO"}</small>
@@ -194,7 +202,7 @@ export function Banners({ loja }: { loja: Loja }) {
           </div>
         </div>}
         <div className="linha">
-          <button disabled={ocupado} onClick={() => void salvar(true)}>{editando?"Salvar e publicar":"Publicar"}</button>
+          <button disabled={ocupado || !produtoPublicavel} onClick={() => void salvar(true)}>{editando?"Salvar e publicar":"Publicar"}</button>
           <button className="sec" disabled={ocupado} onClick={() => void salvar(false)}>{editando?"Salvar como rascunho":"Salvar rascunho"}</button>
           {editando && <button type="button" className="sec" onClick={cancelarEdicao}>Cancelar edição</button>}
         </div>
