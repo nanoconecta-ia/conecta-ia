@@ -1,0 +1,49 @@
+/* A vitrine Mobis só recebe estes tokens depois de aprovação + publicação no banco.
+   Não mexer em fontes, logo, mascotes, imagens, dados de produto, aplicações ou privacidade.
+   Sem data-paleta-publicada=sim o CSS institucional da loja permanece intacto. */
+.mobis-v2.m4[data-paleta-publicada="sim"]{
+ --m4-branco:var(--mobis-fundo);
+ --m4-gelo:var(--mobis-superficie);
+ --m4-tinta:var(--mobis-texto);
+ --m4-texto:var(--mobis-texto);
+ --m4-acento:var(--mobis-acento);
+ --m4-acento-forte:var(--mobis-acento);
+ background:var(--mobis-fundo);
+ color:var(--mobis-texto);
+}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m2-micro{background:var(--mobis-botao);color:#fff}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m2-micro :is(b,em){color:#fff}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m2-header{background:var(--mobis-fundo);border-bottom-color:var(--mobis-acento)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m2-busca-rapida{background:var(--mobis-fundo)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-banner{
+ background:linear-gradient(125deg,var(--mobis-fundo),var(--mobis-superficie));color:var(--mobis-texto)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-banner-arte figure{background:var(--mobis-fundo)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-banner h1,
+.mobis-v2.m4[data-paleta-publicada="sim"] :is(h1,h2,h3){color:var(--mobis-texto)}
+.mobis-v2.m4[data-paleta-publicada="sim"] :is(.m4-etiqueta,.m2-kicker){color:var(--mobis-acento)}
+.mobis-v2.m4[data-paleta-publicada="sim"] :is(.m4-botao,.m4-busca button,.m4-flash-acao){
+ background:var(--mobis-botao);border-color:var(--mobis-botao);color:#fff}
+.mobis-v2.m4[data-paleta-publicada="sim"] :is(.m4-botao,.m4-busca button,.m4-flash-acao):hover{
+ background:var(--mobis-botao);filter:brightness(.91)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-botao-claro{
+ background:var(--mobis-fundo);border-color:#c7d1d9;color:var(--mobis-texto)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-bloco-taxonomia{
+ background:var(--mobis-superficie)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m2-busca{
+ background:var(--mobis-superficie)}
+.mobis-v2.m4[data-paleta-publicada="sim"] :is(.m4-montadora-item,.m4-taxonomia-item,.m2-produto,.m2-catalogo){
+ background:var(--mobis-fundo);color:var(--mobis-texto)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-montadora-item.selecionada{
+ border-color:var(--mobis-botao);box-shadow:inset 0 3px var(--mobis-acento)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-montadora-modelos{background:var(--mobis-superficie)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-montadora-opcoes button{
+ background:var(--mobis-botao);color:#fff;border-color:var(--mobis-botao)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-taxonomia-item>span{color:var(--mobis-acento)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-flash-campanha{
+ background:var(--mobis-superficie);color:var(--mobis-texto)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-flash-titulo-link{color:var(--mobis-texto)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m2-header-acoes>a{
+ background:var(--mobis-botao);color:#fff}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m2-aviso-teste{
+ background:var(--mobis-superficie);color:var(--mobis-texto);
+ border-bottom:1px solid var(--m4-linha)}
