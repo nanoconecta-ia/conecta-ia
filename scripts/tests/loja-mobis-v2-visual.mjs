@@ -53,7 +53,8 @@ try{
   assert.equal(await hero.evaluate(el=>el.scrollWidth<=el.clientWidth+1),true,"banner sem estouro lateral em "+width+"px");
 
   assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho branco");
-  await page.locator(".m4-banner h1").getByText(/picapes, vans e utilitários diesel/i).waitFor();
+  await page.locator(".m4-banner h1").getByText(/Peças para utilitários diesel/i).waitFor();
+  assert.ok((await page.locator(".m4-banner-texto>p").innerText()).length<100,"título e descrição curtos para o banner compacto");
   await page.getByText(/Catálogo de peças em preparação/).waitFor({timeout:10000});
   await hero.getByRole('button',{name:'Já tenho o código'}).click();
   assert.equal(await page.getByRole('tab',{name:'SKU, fabricante ou OEM'}).getAttribute('aria-selected'),'true','CTA do banner habilita modo código');

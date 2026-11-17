@@ -5,29 +5,33 @@ import type { ReactNode } from "react";
  * Mostra a imagem do veículo correto de cada modelo (recebidas da página); a imagem identifica
  * o modelo, não o ano, a versão nem a aplicação da peça.
  */
-export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra, campanha }: {
+export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra, campanha, aoAbrirCampanha }: {
   veiculos: readonly { nome: string; foto: string }[];
   abrirEscolha: () => void;
   buscarCodigo: () => void;
   /** Ação opcional do ambiente de teste (ex.: atalho do produto de teste). */
   extra?: ReactNode;
   /** Destaque real gerenciado pelo lojista em Banners, nunca produto sintético. */
-  campanha?: {sku:string;nome:string;chamada:string|null};
+  campanha?: {sku:string;nome:string;chamada:string|null;imagem?:string|null;flash?:boolean};
+  aoAbrirCampanha?: (sku:string) => void;
 }) {
   return (
     <section className="m4-banner m2-hero" aria-label="Peças para picapes, vans e utilitários diesel">
       <div className="m2-wrap m4-banner-grade">
         <div className="m4-banner-texto">
           <span className="m4-etiqueta">Mobis Autopeças · Loja independente</span>
-          <h1>Peças para <strong>picapes, vans e utilitários diesel</strong></h1>
-          <p>Motor, suspensão, transmissão, elétrica e muito mais. Procure pelo seu veículo ou pelo código da peça.</p>
-          {campanha&&<a className="m4-banner-campanha" href={"#/p/mobis/"+encodeURIComponent(campanha.sku)}>
-            <span className="m4-banner-campanha-marca" aria-hidden="true">M</span>
-            <span><small>CAMPANHA ATIVA · CONECTA.IA</small>
+          <h1>Peças para <strong>utilitários diesel</strong></h1>
+          <p>Motor, suspensão, transmissão e elétrica para picapes e vans.</p>
+          {campanha&&<button type="button" className="m4-banner-campanha" onClick={()=>aoAbrirCampanha?.(campanha.sku)}
+            aria-label={"Abrir ficha do produto "+campanha.sku+" na própria loja"}>
+            {campanha.imagem
+              ? <img className="m4-banner-campanha-foto" src={campanha.imagem} alt="" loading="lazy"/>
+              : <span className="m4-banner-campanha-marca" aria-hidden="true">M</span>}
+            <span><small>{campanha.flash?"DESTAQUE FLASH":"CAMPANHA CONECTA.IA"}</small>
               <strong>{campanha.chamada||campanha.nome}</strong>
-              <em>Ver ficha e consultar disponibilidade · SKU {campanha.sku}</em>
+              <em>Ver ficha e aplicações por veículo · SKU {campanha.sku}</em>
             </span><b aria-hidden="true">→</b>
-          </a>}
+          </button>}
           <div className="m4-banner-acoes">
             <button type="button" className="m4-botao" onClick={abrirEscolha}>Escolher meu veículo <span aria-hidden="true">→</span></button>
             <button type="button" className="m4-botao m4-botao-claro" onClick={buscarCodigo}>Já tenho o código</button>
