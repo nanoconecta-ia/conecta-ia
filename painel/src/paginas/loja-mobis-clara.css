@@ -349,7 +349,7 @@
 .mobis-v2.m4 .m2-header nav button{border-bottom:2px solid transparent;border-radius:6px}
 .mobis-v2.m4 .m2-header nav button:hover,
 .mobis-v2.m4 .m2-header nav button:focus-visible{border-bottom-color:#a84916;background:#fff5ef}
-.mobis-v2.m4 .m2-busca-rapida{background:#f5f2eb;border-bottom:1px solid #ddd8d0}
+.mobis-v2.m4 .m2-busca-rapida{background:#fff;border-bottom:1px solid #dfe4e8}
 .mobis-v2.m4 .m4-banner{background:linear-gradient(125deg,#fff 0%,#faf7f2 65%,#f2f4f6 100%)}
 .mobis-v2.m4 .m4-marcas-banner{margin:0 0 20px;padding:14px;border:1px solid #e3e6ea;border-left:4px solid #a84916;border-radius:12px;background:#fff}
 .mobis-v2.m4 .m4-marcas-titulo{display:block;margin-bottom:10px;color:#7b3a18;font-size:.72rem;font-weight:800;letter-spacing:.075em}
