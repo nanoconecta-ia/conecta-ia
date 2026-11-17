@@ -52,3 +52,30 @@
 .mobis-v2.m4 .gcv3-titulo-link{color:inherit;text-decoration:none}
 .mobis-v2.m4 .gcv3-titulo-link:hover{text-decoration:underline;text-underline-offset:4px}
 .mobis-v2.m4 .m4-logo-montadora{display:block;max-width:90px;max-height:34px;width:auto;height:auto;object-fit:contain;margin-bottom:4px}
+
+/* Edição real pelo Dashboard > Cores: respeitar sempre os cinco tokens publicados. */
+.mobis-v2.m4[data-paleta-publicada="sim"] .gcv3{
+ background:linear-gradient(120deg,var(--mobis-superficie),var(--mobis-fundo),var(--mobis-superficie));
+ color:var(--mobis-texto);
+}
+.mobis-v2.m4[data-paleta-publicada="sim"] .gcv3-painel{
+ background:var(--mobis-fundo);border-color:var(--mobis-superficie);
+}
+.mobis-v2.m4[data-paleta-publicada="sim"] .gcv3-copy :is(h1,h1 a,.gcv3-preco){color:var(--mobis-texto)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .gcv3-cta{background:var(--mobis-botao);color:#fff!important}
+.mobis-v2.m4[data-paleta-publicada="sim"] .gcv3-painel:before{
+ background:linear-gradient(90deg,var(--mobis-botao) 0 70%,var(--mobis-acento) 70%);
+}
+.mobis-v2.m4[data-paleta-publicada="sim"] .gcv3-paginacao .gcv3-ponto.ativo{background:var(--mobis-acento);border-color:var(--mobis-acento)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-bloco-montadoras,
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-bloco-taxonomia{background:var(--mobis-superficie)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-montadora-item,
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-taxonomia-item,
+.mobis-v2.m4[data-paleta-publicada="sim"] .m2-produto{background:var(--mobis-fundo);color:var(--mobis-texto)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-montadora-item.selecionada{border-top-color:var(--mobis-acento)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-taxonomia-item:nth-child(3n+2){border-bottom-color:var(--mobis-acento)}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m2-atendimento{background:var(--mobis-botao)!important}
+.mobis-v2.m4[data-paleta-publicada="sim"] .v-rodape-comercial{
+ background:var(--mobis-botao);border-top-color:var(--mobis-acento);color:#fff
+}
+.mobis-v2.m4[data-paleta-publicada="sim"] .m4-menu-empresa:hover{color:var(--mobis-acento)}
