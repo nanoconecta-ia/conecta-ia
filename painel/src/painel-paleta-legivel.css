@@ -52,3 +52,61 @@
  .conecta-aprovado-root .cartao{padding:16px}
  .conecta-aprovado-root h1{font-size:28px}
 }
+
+
+/* Preferências visíveis V3 · somente na interface interna (não alcança a vitrine). */
+.conecta-aprovado-root .ap-preferencias{position:relative;flex:none;z-index:30}
+.conecta-aprovado-root .ap-preferencias>summary{cursor:pointer;display:flex;gap:8px;align-items:center;min-height:44px;padding:7px 13px;background:var(--realce);color:var(--texto);border:1px solid var(--borda-forte);border-radius:11px;font-size:14px;font-weight:750;white-space:nowrap;list-style:none}
+.conecta-aprovado-root .ap-preferencias>summary::-webkit-details-marker{display:none}
+.conecta-aprovado-root .ap-preferencias[open]>summary,.conecta-aprovado-root .ap-preferencias>summary:hover{border-color:var(--marca);box-shadow:0 0 0 2px color-mix(in srgb,var(--marca) 16%,transparent)}
+.conecta-aprovado-root .ap-preferencias-painel{position:absolute;top:calc(100% + 10px);right:0;z-index:100;display:grid;gap:13px;width:min(340px,calc(100vw - 24px));padding:20px;background:var(--cartao);color:var(--texto);border:1px solid var(--borda-forte);border-radius:16px;box-shadow:0 16px 42px #1424332e}
+.conecta-aprovado-root .ap-preferencias-painel strong{font-size:18px}
+.conecta-aprovado-root .ap-preferencias-painel label{display:grid;gap:6px;font-size:14px;font-weight:750;color:var(--texto)}
+.conecta-aprovado-root .ap-preferencias-painel select{width:100%;min-height:46px;font:600 15px/1.35 Inter,system-ui,sans-serif;background:var(--cartao);color:var(--texto);border:1.5px solid var(--borda-forte);border-radius:10px;padding:8px}
+.conecta-aprovado-root .ap-preferencias-painel small{color:var(--suave);font-size:13px;line-height:1.5}
+.conecta-aprovado-root .ap-primary{background:var(--marca)!important;border-color:var(--marca)!important;color:var(--marca-texto)!important}
+.conecta-aprovado-root .ap-primary:hover{background:var(--marca-forte)!important}
+.conecta-aprovado-root .ap-modulos nav a{font-size:14px}
+.conecta-aprovado-root .ap-tablewrap table{font-size:14px}
+.conecta-aprovado-root .ap-tablewrap :is(th,td){font-size:13px;line-height:1.5}
+.conecta-aprovado-root .ap-tablewrap td{font-size:14px}
+.conecta-aprovado-root .ap-niveis :is(p,small),.conecta-aprovado-root .ap-origem-regras p{font-size:14px}
+.conecta-aprovado-root .ap-metricas article span,.conecta-aprovado-root .ap-metricas article small{font-size:13px}
+.conecta-aprovado-root .ap-search input,.conecta-aprovado-root .ap-filter-row :is(input,select){font-size:15px}
+.conecta-aprovado-root .ap-work-tabs button,.conecta-aprovado-root .ap-tabs button{font-size:13px;min-height:40px;padding:8px 11px}
+.conecta-aprovado-root .ap-chat-panel :is(.msg,.msg p){font-size:14px;line-height:1.6}
+.conecta-aprovado-root .ap-chat-panel .compositor-grade textarea{font-size:15px}
+.conecta-aprovado-root .ap-chat-panel .estado,.conecta-aprovado-root .ap-chat-panel .nano-motor-status{font-size:12px}
+.conecta-aprovado-root[data-leitura="ampliada"]{font-size:18px;line-height:1.65}
+.conecta-aprovado-root[data-leitura="ampliada"] :is(p,label,small,button,.botao,.suave,.ap-sidebar nav a,.ap-loja-link,.ap-caminho,.ap-tablewrap td,.ap-tablewrap th,.ap-chat-panel .msg){font-size:16px;line-height:1.58}
+.conecta-aprovado-root[data-leitura="ampliada"] :is(input,textarea,select){font-size:17px}
+.conecta-aprovado-root[data-leitura="ampliada"] h1{font-size:clamp(32px,3vw,44px)}
+.conecta-aprovado-root[data-leitura="ampliada"] h2{font-size:clamp(24px,2vw,31px)}
+/* O tema do usuário também atua no painel aprovado; antes este ficava sempre claro. */
+html[data-tema="escuro"] .conecta-aprovado-root,html[data-tema="noturno"] .conecta-aprovado-root{
+ --fundo:#141f2d;--cartao:#1d2d3d;--texto:#f3f7fc;--suave:#c3d3e2;
+ --borda:#455a6e;--borda-forte:#92aabe;--realce:#293d51;--marca-texto:#fff;
+ background:var(--fundo);color:var(--texto);color-scheme:dark;
+}
+html[data-tema="escuro"] .conecta-aprovado-root :is(.ap-topbar,.cartao,.v-cartao,.indicador,.janela,.ap-preferencias-painel),
+html[data-tema="noturno"] .conecta-aprovado-root :is(.ap-topbar,.cartao,.v-cartao,.indicador,.janela,.ap-preferencias-painel){background:var(--cartao);color:var(--texto)}
+html[data-tema="escuro"] .conecta-aprovado-root :is(input,select,textarea),
+html[data-tema="noturno"] .conecta-aprovado-root :is(input,select,textarea){background:var(--realce);color:var(--texto);border-color:var(--borda-forte)}
+html[data-tema="escuro"] .conecta-aprovado-root .ap-caminho b,html[data-tema="noturno"] .conecta-aprovado-root .ap-caminho b{color:var(--texto)}
+html[data-tema="contraste"] .conecta-aprovado-root{
+ --fundo:#000;--cartao:#0a0a0a;--texto:#fff;--suave:#fff;--borda:#fff;
+ --borda-forte:#fff;--realce:#1b1b1b;--marca:#ffd23f;--marca-forte:#ffe27a;
+ --marca-texto:#000;--grafite:#000;background:#000;color:#fff;color-scheme:dark;
+}
+html[data-tema="contraste"] .conecta-aprovado-root :is(.ap-topbar,.cartao,.v-cartao,.indicador,.janela,.ap-preferencias-painel){background:#0a0a0a;color:#fff;border-color:#fff}
+html[data-tema="contraste"] .conecta-aprovado-root :is(input,select,textarea){background:#111;color:#fff;border-color:#fff}
+html[data-tema="contraste"] .conecta-aprovado-root .ap-caminho b{color:#fff}
+@media(max-width:1050px){
+ .conecta-aprovado-root .ap-topbar{flex-wrap:wrap;gap:8px 12px}
+ .conecta-aprovado-root .ap-preferencias{margin-left:auto}
+}
+@media(max-width:760px){
+ .conecta-aprovado-root .ap-preferencias>summary{padding:7px 10px;font-size:14px}
+ .conecta-aprovado-root .ap-preferencias>summary span{display:none}
+ .conecta-aprovado-root .ap-preferencias-painel{right:-75px;max-width:calc(100vw - 20px)}
+}
