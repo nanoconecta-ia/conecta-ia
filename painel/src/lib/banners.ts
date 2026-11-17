@@ -1,6 +1,6 @@
 // Banners de oferta: regras de exibição no painel. A decisão final (publicado, período, limite) é do banco; aqui só traduzimos para o lojista.
 export type Estilo = "auto" | "padrao" | "flash";
-export interface Banner { id: string; produto_id: string; chamada: string | null; estilo: Estilo; inicio: string; fim: string | null; ativo: boolean }
+export interface Banner { id: string; produto_id: string; chamada: string | null; estilo: Estilo; inicio: string; fim: string | null; ativo: boolean; imagem_id?: string | null; ordem?: number }
 export type Situacao = "rascunho" | "agendado" | "no-ar" | "encerrado";
 export const LIMITE_ATIVOS = 5;
 
@@ -47,6 +47,7 @@ export function erroBanner(codigo: string | undefined, mensagem: string | undefi
   if (codigo === "42501") return "Só o lojista da loja pode gerenciar banners.";
   if (mensagem?.includes("máximo de 5")) return `Já existem ${LIMITE_ATIVOS} banners no ar ou agendados. Desative um antes.`;
   if (mensagem?.includes("publicado")) return "Só produto publicado pode ter banner ativo. Mostre o produto no site primeiro.";
+  if (mensagem?.includes("imagem do banner")) return "Use uma fotografia aprovada e com direitos confirmados, vinculada ao mesmo produto.";
   return "Não foi possível salvar o banner.";
 }
 
