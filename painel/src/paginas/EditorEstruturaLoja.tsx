@@ -6,6 +6,7 @@ import "./EditorEstruturaLoja.css";
 
 type Versao={id:string;numero:number;blocos:string[];intervalo_segundos:number;criado_em:string;criado_por:string;aprovado_em:string|null;aprovado_por:string|null};
 type Publicada={versao_id:string;publicado_por:string;publicado_em:string};
+type Evento={id:number;quando:string;user_id:string|null;acao:string;tabela:string;antes:Record<string,unknown>|null;depois:Record<string,unknown>|null};
 const MODELOS=[
  {nome:"Comercial",blocos:["banner","montadoras","taxonomia","catalogo","empresa"]},
  {nome:"Busca primeiro",blocos:["catalogo","banner","montadoras","taxonomia","empresa"]},
@@ -20,6 +21,7 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
  const [segundos,setSegundos]=useState(6);
  const [versoes,setVersoes]=useState<Versao[]>([]);
  const [publicada,setPublicada]=useState<Publicada|null>(null);
+ const [eventos,setEventos]=useState<Evento[]>([]);
  const [selecionada,setSelecionada]=useState<string|null>(null);
  const [arrastando,setArrastando]=useState<number|null>(null);
  const [ocupado,setOcupado]=useState(false);
@@ -31,9 +33,10 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
  const temMudancas=!!versao && (ordem.join("|")!==ordemPublica(versao.blocos).join("|")||segundos!==versao.intervalo_segundos);
  const recarregar=useCallback(async()=>{
    setCarregando(true);
-   const [hist,atual]=await Promise.all([
+   const [hist,atual,audit]=await Promise.all([
     supabase.from("loja_layout_versoes").select("id,numero,blocos,intervalo_segundos,criado_em,criado_por,aprovado_em,aprovado_por").eq("loja_id",loja.id).order("numero",{ascending:false}).limit(50),
     supabase.from("loja_layout_publicado").select("versao_id,publicado_por,publicado_em").eq("loja_id",loja.id).maybeSingle(),
+    supabase.from("auditoria").select("id,quando,user_id,acao,tabela,antes,depois").eq("loja_id",loja.id).in("tabela",["loja_layout_versoes","loja_layout_publicado"]).order("quando",{ascending:false}).limit(40),
    ]);
    setCarregando(false);
    if(hist.error||atual.error){
@@ -42,6 +45,7 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
    }
    const lista=(hist.data??[]) as Versao[];
    setVersoes(lista);setPublicada((atual.data??null) as Publicada|null);
+   setEventos((audit.data??[]) as Evento[]);
    return lista;
  },[loja.id]);
  useEffect(()=>{void recarregar()},[recarregar]);
@@ -141,11 +145,21 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
    {!versoes.length&&<p>Nenhuma versão criada. A vitrine usa a ordem padrão.</p>}
    {versoes.map(v=><div key={v.id} className="layout-editor-versao">
     <div><strong>Versão {v.numero}</strong><small>Criada em {new Date(v.criado_em).toLocaleString("pt-BR")} · autor {v.criado_por.slice(0,8)}…</small>
-      <small>{v.aprovado_em?"Aprovada em "+new Date(v.aprovado_em).toLocaleString("pt-BR"):"Aguardando aprovação"} · {publicada?.versao_id===v.id?"PUBLICADA": "não publicada"}</small>
+      <small>Ordem: {ordemPublica(v.blocos).map(id=>NOMES_BLOCOS[id]).join(" → ")}</small>
+      <small>{v.aprovado_em?"Aprovada por "+(v.aprovado_por?.slice(0,8)??"lojista")+"… em "+new Date(v.aprovado_em).toLocaleString("pt-BR"):"Aguardando aprovação"} · {publicada?.versao_id===v.id?"PUBLICADA": "não publicada"}</small>
     </div>
     <button type="button" onClick={()=>editar(v.id)}>Inspecionar / carregar</button>
    </div>)}
    <p className="layout-editor-nota">Reverter significa publicar novamente uma versão antiga já aprovada. O registro de publicação anterior nunca é apagado.</p>
+   <h3>Registro de ações (auditoria imutável)</h3>
+   <p className="layout-editor-nota">As ações são gravadas automaticamente no banco com identidade, data, valores anteriores e novos.</p>
+   {eventos.length===0&&<p>Nenhum evento de alteração de layout registrado nesta loja.</p>}
+   <ol className="layout-editor-eventos">{eventos.map(ev=><li key={ev.id}>
+     <strong>{ev.tabela==="loja_layout_publicado"?"Publicação de layout":ev.acao==="insert"?"Nova versão salva":"Versão aprovada"}</strong>
+     <small>{new Date(ev.quando).toLocaleString("pt-BR")} · usuário {ev.user_id??"processo autorizado"}</small>
+     {ev.tabela==="loja_layout_versoes"&&Array.isArray(ev.depois?.blocos)&&<small>Ordem: {(ev.depois.blocos as string[]).join(" → ")}</small>}
+     {ev.tabela==="loja_layout_publicado"&&<small>Versão: {String(ev.antes?.versao_id??"nenhuma").slice(0,8)} → {String(ev.depois?.versao_id??"nenhuma").slice(0,8)}</small>}
+   </li>)}</ol>
   </section>
  </div>;
 }
