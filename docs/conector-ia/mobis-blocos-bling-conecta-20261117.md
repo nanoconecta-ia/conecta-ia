@@ -3,6 +3,7 @@ Data: 17/11/2026 · Proposta implementada em branch para testes e aprovação vi
 
 ## Fonte de verdade e proibições
 - **Bling:** exclusivamente leitura de cadastro físico, SKU, GTIN, preço, saldo, NFs e atributos fiscais. Os originais e vínculos de NF não são modificados, excluídos ou substituídos.
+- **Portão do executor:** o backend `acoes.ts` recusa antecipadamente propostas com operação `bling.*` para o tenant Mobis. `executor.ts` aplica defesa adicional por item; nem a aprovação humana nem flags futuras podem autorizar gravação no ERP por esse agente. O UUID de loja foi confirmado por consulta somente leitura ao banco em 17/11/2026.
 - **Espelho Conecta.IA:** a sincronização já existente lê o Bling e atualiza a cópia técnica no Conecta.IA. **Um produto físico = um SKU/bling_id**, sem clonar o registro quando aplicável a vários veículos.
 - **Nós Conecta.IA:** taxonomia (`taxonomia_nos`), aplicações (`produto_aplicacoes`), códigos (`produto_codigos`), imagens (`produto_imagens`), banners (`loja_banners`), políticas (`loja_politicas`). Sugestões da IA precisam de origem, data, versão e aprovação humana.
 - **Publicação pública:** só após o proprietário aprovar e marcar visível. Blocos usam a Edge Function `loja-publica` que filtra os registros liberados; nenhuma integração da vitrine com o Bling ou com tabela bruta é usada.
