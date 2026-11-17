@@ -221,7 +221,7 @@ try {
     await page.getByRole("button",{name:"Próximo destaque"}).click();
     assert.equal(await page.locator(".m4-flash-acao").getAttribute("href"),"#/p/mobis/EXEMPLO-2",
       "cada campanha na mesma faixa aponta ao seu próprio SKU");
-    assert.equal(await page.locator(".gcv3-topo > span").last().getByText(/02\s*\/\s*02/).count(),1);
+    assert.match(await page.locator(".gcv3-topo > span").last().textContent()||"",/02\s*\/\s*02/);
     assert.deepEqual(erros,[]);
     await context.close();
   }
