@@ -107,6 +107,7 @@ export function RodapeLoja({
         </div>
         <div className="v-rodape-grupo">
           <h2>Identificação da loja</h2>
+          {mobis&&<a href="#/loja/mobis/empresa">Sobre a Mobis · página institucional ↗</a>}
           {razao || cnpj || endereco ? (
             <>
               {razao && <p><strong>{razao}</strong></p>}
@@ -119,7 +120,7 @@ export function RodapeLoja({
             </>
           ) : <>
             <p>Conheça a empresa, o endereço da loja física e como falar com a equipe.</p>
-            {secoes?.empresa && <a href={"#/loja/" + encodeURIComponent(slug ?? "")} onClick={(e) => { e.preventDefault(); document.getElementById(secoes.empresa!)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>A Mobis e onde estamos</a>}
+            
             {wa && <a href={wa} target="_blank" rel="noopener noreferrer">Falar no WhatsApp ↗</a>}
           </>}
         </div>
