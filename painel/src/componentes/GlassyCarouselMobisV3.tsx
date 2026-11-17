@@ -54,7 +54,7 @@ export function GlassyCarouselMobisV3({
   },[slides.length,pausado,intervaloSeguro]);
   if(!slide)return null;
   const mover=(passo:number)=>setAtual(n=>(n+passo+slides.length)%slides.length);
-  return <section className="gcv3" data-glassy-carousel="v3" aria-label="Vitrine Mobis em carrossel dinâmico"
+  return <section id="m2-destaques" className="gcv3" data-glassy-carousel="v3" aria-label="Vitrine Mobis em carrossel dinâmico"
     onMouseEnter={()=>setPausado(true)} onMouseLeave={()=>setPausado(false)}
     onFocusCapture={()=>setPausado(true)} onBlurCapture={()=>setPausado(false)}>
     <div className="m2-wrap">
