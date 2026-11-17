@@ -29,7 +29,7 @@ test("formulário: produto obrigatório, chamada até 80, fim depois do início"
   assert.equal(isoDeLocal("lixo"), null);
 });
 test("erros do banco viram texto claro", () => {
-  assert.match(erroBanner("23514", "máximo de 5 banners ativos por loja"), /5 banners/);
+  assert.match(erroBanner("23514", "máximo de 24 banners ativos por loja"), /24 banners/);
   assert.match(erroBanner("23514", "só produto publicado pode ter banner ativo"), /publicado/);
   assert.match(erroBanner("42501", ""), /lojista/);
   assert.match(erroBanner(undefined, "?"), /Não foi possível/);

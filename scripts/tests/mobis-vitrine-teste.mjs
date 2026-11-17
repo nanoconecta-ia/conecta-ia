@@ -41,6 +41,7 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
     if (erro) return route.fulfill({status:503, headers, contentType:"application/json", body:'{"erro":"simulado"}'});
     return route.fulfill({status:200, headers, contentType:"application/json", body:JSON.stringify({
       loja:{nome:"Mobis Autopeças",slug:"mobis",whatsapp:"5562991654515",...flags},
+      layout:{blocos:flags.layoutOrdem??["banner","montadoras","taxonomia","catalogo","empresa"],intervalo_segundos:flags.layoutIntervalo??6},
       produtos:cenarioFlash && pedido.sku==="CI003000"
         ? [{sku:"CI003000",nome:"Motor parcial D4CB",marca:"TRIM-GO",preco:null,em_estoque:false,
             imagem:null,descricao:null,whatsapp:null}] : [],
@@ -90,6 +91,18 @@ try {
       await page.screenshot({path:dir+`inicio-SIMULADO-${width}.png`});
     }
     resultados.push({width,amostra:false,montadoras:9,nosComConsulta:6,produtosPublicados:0,erros});
+    await context.close();
+  }
+  {
+    // A ordem da homepage é definida pelo ponteiro publicado (simulado),
+    // não pelo JSX fixo ou por uma prévia não aprovada do lojista.
+    const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,
+      layoutOrdem:["catalogo","banner","montadoras","taxonomia","empresa"]},390);
+    const ordem=await page.locator("main [data-bloco]").evaluateAll(els=>
+      els.map(el=>el.getAttribute("data-bloco")).filter(x=>["banner","montadoras","taxonomia","filtros","produtos"].includes(x)));
+    assert.deepEqual(ordem,["filtros","produtos","banner","montadoras","taxonomia"],
+      "ordem do layout aprovado controla a sequência real no DOM");
+    assert.deepEqual(erros,[],"sem exceções JS ao montar a ordem personalizada");
     await context.close();
   }
   for (const flags of [{ambiente:"producao",venda_habilitada:false},{ambiente:"teste",venda_habilitada:true},{ambiente:"teste"},{}]) {

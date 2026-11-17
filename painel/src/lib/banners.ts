@@ -2,7 +2,7 @@
 export type Estilo = "auto" | "padrao" | "flash";
 export interface Banner { id: string; produto_id: string; chamada: string | null; estilo: Estilo; inicio: string; fim: string | null; ativo: boolean; imagem_id?: string | null; ordem?: number }
 export type Situacao = "rascunho" | "agendado" | "no-ar" | "encerrado";
-export const LIMITE_ATIVOS = 5;
+export const LIMITE_ATIVOS = 24;
 
 export function situacao(b: Pick<Banner, "ativo" | "inicio" | "fim">, agora: Date = new Date()): Situacao {
   if (!b.ativo) return "rascunho";
@@ -45,7 +45,7 @@ export function validarFormulario(f: { produto: string; chamada: string; inicio:
 /** Tradução do erro do banco para o lojista. */
 export function erroBanner(codigo: string | undefined, mensagem: string | undefined): string {
   if (codigo === "42501") return "Só o lojista da loja pode gerenciar banners.";
-  if (mensagem?.includes("máximo de 5")) return `Já existem ${LIMITE_ATIVOS} banners no ar ou agendados. Desative um antes.`;
+  if (mensagem?.includes("máximo de 24")) return `Já existem ${LIMITE_ATIVOS} banners no ar ou agendados. Desative um antes.`;
   if (mensagem?.includes("publicado")) return "Só produto publicado pode ter banner ativo. Mostre o produto no site primeiro.";
   if (mensagem?.includes("imagem do banner")) return "Use uma fotografia aprovada e com direitos confirmados, vinculada ao mesmo produto.";
   return "Não foi possível salvar o banner.";
