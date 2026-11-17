@@ -1,0 +1,50 @@
+/* MOBIS V3 · hierarquia comercial de blocos, preservando logo, fontes e ícones aprovados. */
+.mobis-v2.m4 {--mobis-v3-grafite:#263644;--mobis-v3-vinho:#873b45;--mobis-v3-azul:#38566d;--mobis-v3-gelo:#eff3f7}
+.mobis-v2.m4 .m4-menu-empresa{display:inline-flex;align-items:center;padding:10px 12px;min-height:44px;text-decoration:none;border-radius:9px;color:#2c3947;font-size:.94rem;font-weight:700}
+.mobis-v2.m4 .m4-menu-empresa:hover{background:#e9edf2;color:#873b45}
+.mobis-v2.m4 .m4-bloco-montadoras{margin-block:22px 0;padding:clamp(22px,3vw,38px);border:1px solid #d7e0e9;border-radius:20px;background:linear-gradient(135deg,#f2f6fa,#fff 72%);box-shadow:0 14px 35px #2135480c}
+.mobis-v2.m4 .m4-bloco-montadoras .m4-bloco-nos-titulo h2{font-size:clamp(1.5rem,2vw,2rem);color:#243445}
+.mobis-v2.m4 .m4-montadora-item{min-height:110px;gap:8px;border:1px solid #ccd7e2;border-top:3px solid #607f96;background:#fff;border-radius:14px;box-shadow:0 7px 17px #1b36540b;transition:transform .18s,box-shadow .18s,border-color .18s}
+.mobis-v2.m4 .m4-montadora-item strong{font-size:clamp(.91rem,.8rem + .2vw,1rem);font-weight:800;color:#223446}
+.mobis-v2.m4 .m4-montadora-item small{font-size:.75rem;line-height:1.28;color:#4f6578}
+.mobis-v2.m4 .m4-montadora-item:hover,.mobis-v2.m4 .m4-montadora-item.selecionada{border-color:#873b45;background:#fff;box-shadow:0 12px 23px #273f581b;transform:translateY(-2px)}
+.mobis-v2.m4 .m4-montadora-item.selecionada{border-top-color:#873b45}
+.mobis-v2.m4 .m4-montadora-modelos{padding:17px;background:#e9f0f6;border:1px solid #c9d9e6;border-radius:14px}
+.mobis-v2.m4 .m4-bloco-taxonomia{background:linear-gradient(125deg,#e8eef5,#f7f9fb 58%,#ecf0f4);border-top:1px solid #d3dde7;border-bottom:1px solid #d3dde7;margin-block:clamp(16px,3vw,34px)}
+.mobis-v2.m4 .m4-bloco-taxonomia .m4-bloco-nos-titulo h2{font-size:clamp(1.5rem,2vw,2rem);color:#263747}
+.mobis-v2.m4 .m4-taxonomia-item{border:1px solid #cad6e0;border-bottom:4px solid #57758a;min-height:154px;padding:15px 8px;background:#fff;border-radius:15px;box-shadow:0 10px 22px #273f5810}
+.mobis-v2.m4 .m4-taxonomia-item:nth-child(3n+2){border-bottom-color:#873b45}
+.mobis-v2.m4 .m4-taxonomia-item:nth-child(3n+3){border-bottom-color:#456e64}
+.mobis-v2.m4 .m4-taxonomia-item strong{font-size:1rem;color:#253647}
+.mobis-v2.m4 .m4-taxonomia-item small{font-size:.78rem;color:#4b6377}
+.mobis-v2.m4 .m4-taxonomia-item>span{font-size:.83rem;color:#455d72}
+.mobis-v2.m4 .m4-taxonomia-item:hover{transform:translateY(-2px);box-shadow:0 14px 26px #1f3b5524}
+.mobis-v2.m4 .m2-catalogo[data-bloco="produtos"]{padding-top:clamp(18px,2vw,28px)}
+.mobis-v2.m4 .m2-catalogo[data-bloco="produtos"] h2{font-size:clamp(1.55rem,2vw,2.15rem)}
+.mobis-v2.m4 .m2-produto{border:1px solid #cdd8e2;border-radius:15px;box-shadow:0 11px 26px #21354913;background:#fff;overflow:hidden}
+.mobis-v2.m4 .m2-foto-produto{background:linear-gradient(#fff,#f3f6fa)}
+.mobis-v2.m4 .m2-busca{background:#f1f5f9;border-bottom:1px solid #d6dfe7}
+.mobis-v2.m4 .m2-atendimento{background:linear-gradient(115deg,#273e53,#314d63)!important;color:#eef4fa}
+.mobis-v2.m4 .m2-atendimento :is(h2,h3){color:#fff}
+.mobis-v2.m4 .m2-atendimento :is(p,small){color:#e0eaf2}
+.mobis-v2.m4 .m2-atendimento .m2-contato-form{background:#fff;color:#263747}
+.mobis-v2.m4 .m2-atendimento .m2-contato-form :is(p,small,h3){color:#263747}
+.mobis-v2.m4 .v-rodape-comercial{background:linear-gradient(145deg,#1b2c3e,#22384b);color:#e5edf3;border-top:4px solid #873b45}
+.mobis-v2.m4 .v-rodape-comercial :is(h2,.v-rodape-apresentacao>strong){color:#fff}
+.mobis-v2.m4 .v-rodape-comercial :is(p,small,.v-rodape-grupo button,.v-rodape-grupo>a,.v-rodape-comercial nav a){color:#d7e3ee}
+.mobis-v2.m4 .v-rodape-comercial a{color:#e7ecf5}
+.mobis-v2.m4 .v-rodape-comercial a:hover{color:#fff}
+.mobis-v2.m4 .v-rodape-site,.mobis-v2.m4 .v-rodape-faixa a{color:#fff;text-decoration:underline;text-underline-offset:3px}
+.mobis-v2.m4 .v-rodape-privacidade-bloco{background:#2b4559;border:1px solid #5a758a}
+.mobis-v2.m4 .v-rodape-privacidade-bloco button{color:#fff}
+.mobis-v2.m4 .v-rodape-sociais a{background:#304b61;color:#fff;border-color:#637c90}
+.mobis-v2.m4 .v-rodape-faixa{color:#dae5ed;border-top-color:#587086}
+.mobis-v2.m4 .m4-empresa-dedicada{min-height:54vh;margin-block:clamp(18px,4vw,50px);padding:clamp(18px,4vw,48px);border-radius:20px;background:linear-gradient(130deg,#f1f5f8,#fff);border:1px solid #d6e0e9;box-shadow:0 18px 40px #20364a12}
+.mobis-v2.m4 .m4-empresa-dedicada h1{font-size:clamp(1.75rem,3vw,2.8rem);margin:10px 0}
+.mobis-v2.m4 .m4-empresa-dedicada>p{font-size:1.05rem;color:#425265;max-width:66ch}
+.mobis-v2.m4 .m4-empresa-dedicada .m2-empresa-painel{max-width:72ch;padding:20px;background:#fff;border:1px solid #d8e0e9;border-radius:13px}
+.mobis-v2.m4 .m4-voltar-catalogo{display:inline-flex;margin-bottom:20px;color:#263747;text-decoration:none;font-weight:800}
+.mobis-v2.m4 .m4-hero-veiculo-link{display:block;color:#273747;text-decoration:none}
+.mobis-v2.m4 .m4-hero-veiculo-link:hover figcaption{text-decoration:underline}
+@media(max-width:760px){.mobis-v2.m4 .m4-bloco-montadoras{padding:15px}.mobis-v2.m4 .m4-montadora-item{min-height:88px}.mobis-v2.m4 .m4-taxonomia-item{min-height:130px}.mobis-v2.m4 .m2-atendimento{padding-block:22px}}
+@media(prefers-reduced-motion:reduce){.mobis-v2.m4 .m4-montadora-item,.mobis-v2.m4 .m4-taxonomia-item{transition:none;transform:none!important}}
