@@ -44,8 +44,7 @@ const VEICULOS=[
 /** Modelos sempre oferecidos no filtro; os demais só entram quando há aplicação aprovada. */
 /** Linhas atendidas pela loja, sem inferir equivalência técnica ou disponibilidade. */
 const LINHAS_CONSULTA = [
-  {nome:"HR e Bongo K2500",familia:"Hyundai · Kia",detalhe:"Peças diesel 8V e 16V",sigla:"HR"},
-  {nome:"L200 e Pajero",familia:"Mitsubishi",detalhe:"Motores e componentes diesel",sigla:"L200"},
+  {nome:"Pajero Sport",familia:"Mitsubishi",detalhe:"Peças diesel sob consulta",sigla:"PAJERO"},
   {nome:"Ranger e Transit",familia:"Ford",detalhe:"Motores e peças sob consulta",sigla:"FORD"},
   {nome:"Iveco Daily",familia:"Iveco",detalhe:"Linha diesel 3.0 sob consulta",sigla:"DAILY"},
   {nome:"Ducato, Boxer e Jumper",familia:"Fiat · Peugeot · Citroën",detalhe:"Linha diesel 2.3 sob consulta",sigla:"VANS"},
@@ -210,8 +209,8 @@ export function LojaMobisNova({slug}:{slug:string}) {
       <section className="m2-wrap m4-linhas m2-secao" id="m2-linhas" aria-label="Linhas diesel atendidas">
         <div className="m4-linhas-cabecalho">
           <div><span className="m2-kicker">MOBIS · ESPECIALIDADES</span>
-            <h2>Encontre peças para sua linha diesel</h2>
-            <p>Escolha o veículo e fale com nossa equipe. A consulta não indica disponibilidade nem compatibilidade confirmada.</p>
+            <h2>Mais linhas diesel que atendemos</h2>
+            <p>Além de HR, Bongo e L200, atendemos consultas por outras linhas. A aplicação e o fornecimento precisam ser confirmados.</p>
           </div>
           <button type="button" onClick={()=>{setExplorar("sistema");para("m2-explorar")}}>Ver sistemas de peças <span aria-hidden="true">→</span></button>
         </div>
