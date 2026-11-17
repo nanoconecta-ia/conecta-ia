@@ -151,3 +151,16 @@
 .catalogo-enriquecer-previa>button{justify-self:start;min-height:44px}
 @media(max-width:850px){.catalogo-enriquecer-numeros{grid-template-columns:repeat(2,minmax(0,1fr))}.catalogo-barra .catalogo-modos{flex:1 1 210px}}
 @media(max-width:520px){.catalogo-enriquecer-opcoes{display:grid;align-items:start}.catalogo-enriquecer-corpo>button,.catalogo-enriquecer-previa>button{width:100%}.catalogo-enriquecer-numeros{gap:6px}.catalogo-foto-abrir{width:54px;height:54px}}
+
+
+/* Trilha de dados da loja: nenhuma ação de escrita no ERP. */
+.catalogo-nos-blocos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:15px 0;
+  padding:12px;border:1px solid #dce2e7;border-radius:14px;background:#f6f8fa}
+.catalogo-nos-blocos>div{display:grid;gap:5px;align-content:start;min-width:0;border:1px solid #e0e5e9;border-radius:11px;background:#fff;padding:12px}
+.catalogo-nos-blocos strong{font-size:.86rem;line-height:1.3;color:#2d343c}
+.catalogo-nos-blocos span,.catalogo-nos-blocos small{font-size:.73rem;line-height:1.4;color:#5d6870}
+.catalogo-nos-acoes a{font-weight:750;font-size:.75rem;color:#36424d;text-decoration:underline}
+.catalogo-nos-acoes a:focus-visible{outline:2px solid #617384}
+@media(max-width:1000px){.catalogo-nos-blocos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.catalogo-nos-blocos{grid-template-columns:1fr 1fr;padding:8px;gap:7px}.catalogo-nos-blocos>div{padding:9px}
+  .catalogo-nos-blocos strong{font-size:.78rem}.catalogo-nos-blocos span,.catalogo-nos-blocos small{font-size:.69rem}}
