@@ -312,3 +312,32 @@
   .mobis-v2.m4 .m4-flash-modal{max-height:calc(100dvh - 12px)}
 }
 @media(prefers-reduced-motion:reduce){.mobis-v2.m4 .m4-flash-animado{animation:none}}
+
+
+/* Ajuste de densidade comercial: veículo e peça em primeiro plano, menos rolagem.
+   Mantém exatamente as fotos reais e a tipografia institucional existentes. */
+.mobis-v2.m4{--m4-espaco:clamp(20px,3vw,36px)}
+.mobis-v2.m4 .m4-banner{padding:clamp(16px,2.5vw,32px) 0 clamp(10px,1.6vw,18px);
+  background:radial-gradient(ellipse at 80% 42%,#e8eef2 0%,transparent 50%),linear-gradient(145deg,#fff 15%,#f6f8fa 100%)}
+.mobis-v2.m4 .m4-banner-grade{gap:clamp(14px,2.2vw,28px)}
+.mobis-v2.m4 .m4-banner h1{font-size:clamp(1.65rem,1.18rem + 2.05vw,2.65rem);max-width:23ch;line-height:1.12;margin-bottom:8px}
+.mobis-v2.m4 .m4-banner-texto>p{font-size:clamp(.91rem,.84rem + .2vw,1rem);line-height:1.42;margin-bottom:12px}
+.mobis-v2.m4 .m4-etiqueta{margin-bottom:5px}
+.mobis-v2.m4 .m4-banner-garantias{margin-top:12px;font-size:.77rem;gap:6px 12px}
+.mobis-v2.m4 .m4-banner-arte figure{padding:5px;border-color:#dbe1e5;box-shadow:0 7px 18px #172a380c}
+.mobis-v2.m4 .m4-banner-arte figure:nth-child(2){transform:translateY(-8px)}
+.mobis-v2.m4 .m4-banner-arte .m4-foto-veiculo{height:clamp(88px,10.3vw,136px);aspect-ratio:auto;object-fit:contain;background:transparent}
+.mobis-v2.m4 .m4-banner-arte figcaption{padding:5px 2px 2px;font-size:.78rem}
+.mobis-v2.m4 .m4-banner-nota{margin:7px auto 0;font-size:.73rem;line-height:1.35}
+.mobis-v2.m4 .m4-linhas{padding-top:20px;padding-bottom:20px}
+.mobis-v2.m4 .m4-linha-retrato{min-height:82px}
+.mobis-v2.m4 .m4-linha-retrato .ico-peca{width:48px;height:48px}
+.mobis-v2.m4 .m4-linhas-cabecalho{margin-bottom:12px}
+@media(max-width:620px){
+  .mobis-v2.m4 .m4-banner{padding-top:14px}
+  .mobis-v2.m4 .m4-banner-grade{gap:12px}
+  .mobis-v2.m4 .m4-banner .m4-foto-veiculo{height:clamp(68px,22vw,98px)}
+  .mobis-v2.m4 .m4-banner-garantias{display:none}
+  .mobis-v2.m4 .m4-linhas{padding-block:14px}
+  .mobis-v2.m4 .m4-linha-retrato{min-height:72px}
+}
