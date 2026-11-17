@@ -18,6 +18,7 @@ import "./loja-mobis-branco.css";
 import "./loja-mobis-clara.css";
 import "./blocos-catalogo-mobis.css";
 import "./mobis-paleta-dinamica.css";
+import "./mobis-premium-v3.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -200,7 +201,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
         {estado==="ok"&&dados?.produtos.length===0&&<div className="m2-vazio"><div><span className="m2-kicker">ATENDIMENTO MOBIS</span><h3>{Object.entries(f).some(([k,v])=>k!=="pagina"&&Boolean(v))?"Nenhuma peça encontrada com esses filtros.":"Catálogo de peças em preparação."}</h3><p>Nenhum anúncio aprovado foi encontrado. Consulte a equipe com o veículo e a referência; isso não significa falta de estoque na loja física.</p><button onClick={()=>para("m2-atendimento")}>Consultar a equipe ↗</button></div></div>}
         {dados&&dados.produtos.length>0&&<div className="m2-produto-grade">{dados.produtos.map(p=><article key={p.sku} data-sku-fisico={p.sku} className="m2-produto">
           <div className="m2-foto-produto">
-            <a href={"#/p/mobis/"+encodeURIComponent(p.sku)} aria-label={"Ver página do produto "+p.sku} style={{display:"block",width:"100%"}}>
+            <a href={p.consulta_previa?(p.whatsapp||"#/loja/mobis"):"#/p/mobis/"+encodeURIComponent(p.sku)} aria-label={(p.consulta_previa?"Consultar peça ":"Ver página do produto ")+p.sku} style={{display:"block",width:"100%"}}>
               {p.imagem?<img src={p.imagem} alt={"Fotografia autorizada do produto físico "+p.sku} loading="lazy"/>:
                 <div aria-label="Ilustração de categoria, não é foto da peça"><IconePeca nome={iconeDaCategoria(p.categoria)} tamanho={72}/></div>}
             </a>
@@ -246,9 +247,9 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
       <a className="m2-brand" href="#/loja/mobis" aria-label="MOBIS Autopeças - início" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>
         <img src={logoMobis} width={720} height={128} alt="MOBIS Autopeças"/>
       </a>
-      <nav aria-label="Menu da loja"><button onClick={()=>para("m2-montadoras")}>Montadoras</button>
-        <button onClick={()=>para("m2-taxonomia")}>Peças por sistema</button>
-        <button onClick={()=>para("m2-catalogo")}>Catálogo</button>
+      <nav aria-label="Menu da loja"><button onClick={()=>contexto?.tipo==="empresa"?window.location.hash="#/loja/mobis":para("m2-montadoras")}>Montadoras</button>
+        <button onClick={()=>contexto?.tipo==="empresa"?window.location.hash="#/loja/mobis":para("m2-taxonomia")}>Peças por sistema</button>
+        <button onClick={()=>contexto?.tipo==="empresa"?window.location.hash="#/loja/mobis":para("m2-catalogo")}>Catálogo</button>
         {banners.length>0&&<button onClick={()=>para("m2-destaques")}>Destaques</button>}
         <a className="m4-menu-empresa" href="#/loja/mobis/empresa" aria-label="Sobre a Mobis e informações da empresa">Sobre a Mobis ↗</a></nav>
       <div className="m2-header-acoes"><button onClick={()=>para("m2-lista")}>Minha lista <span>{lista.length}</span></button>
