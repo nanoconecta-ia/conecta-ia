@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { CartaoProduto } from "@/components/CartaoProduto";
+import { BuscaCatalogo } from "@/components/BuscaCatalogo";
 import { Vazio } from "@/components/ui";
 import { BannerOferta } from "@/components/BannerOferta";
 import { ChatLojaWeb } from "@/components/ChatLojaWeb";
@@ -27,13 +27,7 @@ export default async function Vitrine({ params }: Props) {
       {itens.length === 0 ? (
         <Vazio titulo="Catálogo em preparação" />
       ) : (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
-          {itens.map(({ produto, imagens }) => (
-            <li key={produto.id}>
-              <CartaoProduto produto={produto} imagens={imagens} href={`/loja/${loja.slug}/produto/${produto.id}`} />
-            </li>
-          ))}
-        </ul>
+        <BuscaCatalogo itens={itens} slug={loja.slug} />
       )}
       {loja.slug === "mobis" && <footer className="mobis-web-rodape" aria-label="Contato da loja">
         <div><strong>Mobis Autopeças</strong><p>Mobis Distribuidora de Peças e Acessórios Ltda. · CNPJ 19.903.967/0001-01</p><p>Av. T-9, 3492 — Jardim América, Goiânia/GO · Endereço cadastral</p></div>
