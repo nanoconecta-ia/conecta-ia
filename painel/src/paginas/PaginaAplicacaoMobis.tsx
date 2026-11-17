@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
-import logoMobis from "../assets/marcas/mobis-oficial-fundo-escuro.png";
+import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
 import "./loja-mobis-nova.css";
 
 type Aplicacao = {
@@ -43,10 +43,10 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
   const veiculo=identidadeVeiculo(p?.modelo??"");
   const categoria=(p?.categoria??"").toLowerCase();
   const icone=/bandeja|suspens/.test(categoria)?"suspensao":/filtro/.test(categoria)?"filtros":"motor";
-  return <main className="mobis-v2" style={{minHeight:"100vh",background:"#f5f2eb",color:"#1f2327",paddingBottom:45}}>
-    <header style={{background:"#1f2327",padding:"14px max(16px, calc((100vw - 1200px)/2))",display:"flex",alignItems:"center",flexWrap:"wrap",gap:20,justifyContent:"space-between"}}>
+  return <main className="mobis-v2" style={{minHeight:"100vh",background:"#f7f8fa",color:"#1f2327",paddingBottom:45}}>
+    <header style={{background:"#fff",borderBottom:"1px solid #dfe4e8",padding:"14px max(16px, calc((100vw - 1200px)/2))",display:"flex",alignItems:"center",flexWrap:"wrap",gap:20,justifyContent:"space-between"}}>
       <img src={logoMobis} alt="MOBIS AUTOPEÇAS" style={{height:58,maxWidth:"min(260px, 70vw)",objectFit:"contain"}} />
-      <a href="#/loja/mobis" style={{color:"#fff",fontWeight:700,textDecoration:"none"}}>← Voltar ao catálogo</a>
+      <a href="#/loja/mobis" style={{color:"#4a5159",fontWeight:700,textDecoration:"none"}}>← Voltar ao catálogo</a>
     </header>
     <div style={{maxWidth:1120,margin:"30px auto",padding:"0 18px"}}>
       {estado==="carregando"&&<p role="status">Buscando a ficha da aplicação…</p>}
@@ -91,8 +91,13 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
             <h2 style={{fontSize:"1.1rem",marginTop:28}}>Informações desta aplicação</h2>
             <p style={{fontSize:15,lineHeight:1.65}}>{p.descricao}</p>
             <p style={{fontSize:21,fontWeight:800}}>Preço sob consulta</p>
+            <a href={"#/p/mobis/"+encodeURIComponent(p.sku_pai)}
+              style={{display:"block",textAlign:"center",background:"#fff",border:"1px solid #4a5159",padding:"13px",borderRadius:9,
+                fontWeight:800,color:"#38414a",textDecoration:"none",marginBottom:10}}>
+              Ver página do produto físico · SKU {p.sku_pai} →
+            </a>
             {p.whatsapp&&<a href={p.whatsapp} target="_blank" rel="noopener noreferrer"
-              style={{display:"block",textAlign:"center",background:"#b65321",padding:"15px",borderRadius:8,fontWeight:800,color:"#fff",textDecoration:"none"}}>
+              style={{display:"block",textAlign:"center",background:"#4a5159",padding:"15px",borderRadius:8,fontWeight:800,color:"#fff",textDecoration:"none"}}>
               Consultar aplicação no WhatsApp ↗
             </a>}
             <p style={{fontSize:13,color:"#565656",lineHeight:1.55}}>Um único produto físico com saldo compartilhado entre as aplicações. As páginas por veículo não representam peças ou estoques diferentes. A MOBIS AUTOPEÇAS é revendedora independente, sem vínculo oficial com as montadoras.</p>
