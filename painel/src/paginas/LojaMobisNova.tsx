@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { EmpresaMobis } from "../componentes/EmpresaMobis.tsx";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { IconePeca } from "../componentes/IconePeca.tsx";
@@ -8,6 +8,7 @@ import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 import { BlocoMontadorasMobis, BlocoTaxonomiaMobis } from "../componentes/BlocosCatalogoMobis.tsx";
 import { BannerMobis } from "../componentes/BannerMobis.tsx";
 import {intervaloPublico,ordemPublica,type BlocoComercial} from "../lib/layoutMobis.ts";
+import {paletaPublicada,variaveisPaletaMobis} from "../lib/paletaMobis.ts";
 import fotoHR from "../assets/veiculos-mobis/hyundai-hr.webp";
 import fotoBongo from "../assets/veiculos-mobis/kia-bongo-k2500.webp";
 import fotoL200 from "../assets/veiculos-mobis/mitsubishi-l200.webp";
@@ -16,6 +17,7 @@ import "./loja-mobis-nova.css";
 import "./loja-mobis-branco.css";
 import "./loja-mobis-clara.css";
 import "./blocos-catalogo-mobis.css";
+import "./mobis-paleta-dinamica.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -32,7 +34,8 @@ type Resposta = {
   categorias:{nome:string;slug:string;total:number}[];
   politicas?:PoliticasLojaPublicas|null;
   total:number;pagina:number;por_pagina:number;
-  layout?:{blocos:string[];intervalo_segundos:number}
+  layout?:{blocos:string[];intervalo_segundos:number};
+  paleta?:unknown
 };
 type Filtros={q:string;modelo:string;motor:string;ano:string;categoria:string;pagina:number};
 const VAZIO:Filtros={q:"",modelo:"",motor:"",ano:"",categoria:"",pagina:1};
@@ -164,6 +167,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
   // O DOM segue a ordem publicada, inclusive para navegação por teclado e leitores de tela.
   // Header e privacidade ficam fora do editor; nenhum bloco recebe HTML arbitrário.
   const ordemLayout=ordemPublica(dados?.layout?.blocos);
+  const coresPublicas=paletaPublicada(dados?.paleta);
   const blocosSite:Record<BlocoComercial,ReactNode>={
     banner: bannerAtual ? <div data-bloco="banner">
       {bannerAtual&&<section id="m2-destaques" className="m2-wrap m2-secao m2-destaques" aria-label="Campanhas de produtos da Mobis">
@@ -271,7 +275,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
       <EmpresaMobis whatsapp={whatsapp}/>
     </>,
   };
-  return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="aprovado-v2" data-layout-versionado="true" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4">
+  return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="aprovado-v2" data-layout-versionado="true" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4" data-paleta-publicada={coresPublicas?"sim":"nao"} style={coresPublicas?variaveisPaletaMobis(coresPublicas) as CSSProperties:undefined}>
     <div data-bloco="cabecalho">
     <div className="m2-micro"><div className="m2-wrap"><span>Goiás, Brasil <b>/</b> Especialistas em picapes, vans e utilitários diesel</span><span>Aplicação conferida por veículo e chassi <em>✓</em></span></div></div>
     <header className="m2-header"><div className="m2-wrap">
