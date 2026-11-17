@@ -182,7 +182,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
       <button type="submit">Buscar peças <span aria-hidden="true">→</span></button>
     </form></div>
     {dados?.loja.ambiente==="teste"&&<div className="m2-aviso-teste" role="status">
-      LOJA TESTE · Catálogo em preparação. Consulte peças e aplicações por WhatsApp. Preço e disponibilidade a confirmar; não concluímos pedidos nem recebemos pagamentos neste site.
+      AMBIENTE DE TESTE · Catálogo em preparação. Consulte peças e aplicações por WhatsApp. Preço e disponibilidade a confirmar; não concluímos pedidos nem recebemos pagamentos neste site.
     </div>}
     </div>
     <main>
