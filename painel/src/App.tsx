@@ -74,7 +74,7 @@ const ITENS: [string, string][] = [
   ["/fila", "Fila de aprovação"],
   ["/taxonomia", "Taxonomia"],
   ["/aparencia", "Aparência da loja"],
-  ["/estrutura-loja", "Estrutura da loja · blocos"],
+  ["/estrutura-loja", "Loja · organizar blocos"],
   ["/publicacao", "Publicação da loja"],
   ["/condicoes", "Pagamento e entrega"],
   ["/integracoes", "Integrações de IA"],
