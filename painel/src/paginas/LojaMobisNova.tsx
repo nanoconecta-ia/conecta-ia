@@ -324,7 +324,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
               ? <div style={{margin:"12px 0",borderTop:"1px solid #e0d9ce",paddingTop:12}}>
                   <p style={{fontWeight:700}}>Páginas por veículo — aplicações aprovadas</p>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {aplicacoesPublicas(dados.paginas_aplicacao[p.sku]).map(ap=>
+                    {aplicacoesPublicas(dados.paginas_aplicacao?.[p.sku]).map(ap=>
                       <a key={ap.slug} href={"#/a/"+ap.slug}
                         style={{display:"inline-block",padding:"8px 11px",border:"1px solid #c25a1b",borderRadius:6,color:"#914a27",fontWeight:700,fontSize:13,textDecoration:"none"}}>
                         {ap.modelo} · ver ficha ↗
