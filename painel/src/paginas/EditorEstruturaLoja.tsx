@@ -93,7 +93,7 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
    setInfo("Layout publicado no banco. A vitrine utilizará esta ordem após atualizar a página. Nenhum produto foi publicado.");
  }
  return <div className="layout-editor">
-  <header className="layout-editor-titulo"><div><span>LOJA · ORGANIZAÇÃO DE BLOCOS</span>
+  <header className="layout-editor-titulo"><div><span>DASHBOARD · LOJA / ESTRUTURA E BLOCOS</span>
     <h1>Editor auditável da vitrine</h1><p>Arraste os blocos ou use as setas no celular. Cabeçalho e privacidade permanecem protegidos. Cada salvamento cria uma versão recuperável.</p>
    </div><a href={"#/loja/"+loja.slug} target="_blank" rel="noopener noreferrer">Ver vitrine ↗</a></header>
   {erro&&<p className="msg-erro" role="alert">{erro}</p>}
