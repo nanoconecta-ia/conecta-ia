@@ -258,6 +258,26 @@ Deno.serve(async (req) => {
   const fonteTema = (FONTES as readonly string[]).includes(tm?.fonte) ? (tm!.fonte as Fonte) : "inter";
   const cores = tm ? { primaria: tm.cor_primaria, destaque: tm.cor_destaque, bloco: tm.cor_bloco } : PERFIS.azul_conecta;
   const tema = { variaveis: variaveisCss(cores, fonteTema), logo_url: tm?.logo_url ?? null, icone_url: tm?.icone_url ?? null };
+  // Logotipos de montadoras: nunca substituir por marcas artificiais.
+  // Só expor imagem liberada individualmente e com origem/direito registrados.
+  const logos_montadoras:Record<string,string>={};
+  if(loja.slug==="mobis"){
+    const {data:midias}=await sb.from("veiculo_midias")
+      .select("montadora_id,logo_png_url,logo_direito_uso")
+      .eq("loja_id",loja.id).eq("logo_aprovado",true).eq("status","aprovado")
+      .not("logo_png_url","is",null).not("logo_direito_uso","is",null).limit(40);
+    const aprovadas=(midias??[]).filter(x=>typeof x.logo_direito_uso==="string"&&x.logo_direito_uso.trim().length>3
+      &&typeof x.logo_png_url==="string"&&/^https:\/\//.test(x.logo_png_url));
+    const ids=[...new Set(aprovadas.map(x=>x.montadora_id).filter(Boolean))];
+    if(ids.length){
+      const {data:nomes}=await sb.from("montadoras").select("id,nome").in("id",ids);
+      const porId=new Map((nomes??[]).map(x=>[x.id,x.nome]));
+      for(const imagem of aprovadas){
+        const nome=porId.get(imagem.montadora_id);
+        if(nome&&!logos_montadoras[nome])logos_montadoras[nome]=imagem.logo_png_url;
+      }
+    }
+  }
   // Rodapé público: somente informações institucionais e políticas formalmente aprovadas.
   // Ausência, erro ou rascunho => null; jamais divulgar contatos ou textos não revisados.
   const { data: politicasAprovadas } = await sb.from("loja_politicas")
@@ -299,5 +319,5 @@ Deno.serve(async (req) => {
         paleta=Object.fromEntries(campos.map(c=>[c,publicavel[c]]));
     }
   }
-  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, layout, paleta, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
+  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, layout, paleta, logos_montadoras, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
 });
