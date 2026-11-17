@@ -36,7 +36,7 @@ language sql stable security definer set search_path = '' as $$
   )
   select coalesce(jsonb_agg(jsonb_build_object(
     'id', b.id, 'produto_id', p.id, 'sku', p.sku, 'nome', p.nome,
-    'preco', p.preco, 'chamada', b.chamada, 'fim', b.fim,
+    'preco', (case when coalesce(p.estoque, 0) > 0 then p.preco else null end), 'chamada', b.chamada, 'fim', b.fim,
     'imagem', (
       select i.url from public.imagens_publicaveis i
       where i.loja_id = b.loja_id and i.produto_id = p.id
