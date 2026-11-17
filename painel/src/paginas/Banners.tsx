@@ -4,7 +4,7 @@ import type { Loja } from "../lib/dados.ts";
 import "./banners-flash.css";
 import { ehFlash, erroBanner, isoDeLocal, LIMITE_ATIVOS, linkEnvioWhatsapp, mensagemParaCliente, nosDoMotor, ROTULO_SITUACAO, situacao, validarFormulario, type Banner, type Estilo, type Situacao } from "../lib/banners.ts";
 
-type Produto = { id: string; sku: string | null; nome: string | null; preco: number | null; taxonomia_no_id: string | null };
+type Produto = { id: string; sku: string | null; nome: string | null; preco: number | null; estoque: number | null; taxonomia_no_id: string | null };
 type Foto = { id: string; produto_id: string; url: string; alt_texto: string | null; principal: boolean; licenca_tipo: string | null; direitos_confirmados_em: string | null };
 function localDeIso(iso: string | null): string {
   if (!iso) return "";
@@ -20,6 +20,7 @@ const VAZIO = { produto: "", estilo: "auto" as Estilo, chamada: "", inicio: "", 
 export function Banners({ loja }: { loja: Loja }) {
   const [banners, setBanners] = useState<Banner[] | null>(null);
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [buscaProduto,setBuscaProduto] = useState("");
   const [motor, setMotor] = useState<Set<string>>(new Set());
   const [f, setF] = useState(VAZIO);
   const [editando, setEditando] = useState<string | null>(null);
@@ -30,12 +31,26 @@ export function Banners({ loja }: { loja: Loja }) {
   const carregar = useCallback(async () => {
     const { data } = await supabase.from("loja_banners").select("id, produto_id, chamada, estilo, inicio, fim, ativo, imagem_id, ordem").eq("loja_id", loja.id).order("ordem", { ascending: true }).order("criado_em", { ascending: false });
     setBanners((data ?? []) as Banner[]);
+    const ids = [...new Set((data ?? []).map(b => String(b.produto_id)))];
+    if (ids.length) {
+      const {data:ligados} = await supabase.from("produtos").select("id,sku,nome,preco,estoque,taxonomia_no_id")
+        .eq("loja_id",loja.id).in("id",ids);
+      setProdutos(atuais => {
+        const todos = new Map(atuais.map(p=>[p.id,p]));
+        for(const p of (ligados??[]) as Produto[]) todos.set(p.id,p);
+        return [...todos.values()];
+      });
+    }
   }, [loja.id]);
   useEffect(() => {
     void carregar();
     void (async () => {
-      const { data } = await supabase.from("produtos").select("id, sku, nome, preco, taxonomia_no_id").eq("loja_id", loja.id).eq("publicado", true).order("nome").limit(300);
-      setProdutos((data ?? []) as Produto[]);
+      const { data } = await supabase.from("produtos").select("id, sku, nome, preco, estoque, taxonomia_no_id").eq("loja_id", loja.id).eq("publicado", true).order("nome").limit(100);
+      setProdutos(atuais=>{
+        const todos=new Map(atuais.map(p=>[p.id,p]));
+        for(const p of (data??[]) as Produto[]) todos.set(p.id,p);
+        return [...todos.values()];
+      });
       const { data: nos } = await supabase.from("taxonomia_nos").select("id, pai_id, slug");
       setMotor(nosDoMotor((nos ?? []) as { id: string; pai_id: string | null; slug: string }[]));
     })();
@@ -56,6 +71,34 @@ export function Banners({ loja }: { loja: Loja }) {
     })();
     return () => { vivo = false; };
   }, [f.produto, loja.id]);
+  useEffect(()=>{
+    const termo = buscaProduto.trim().replace(/[%_]/g,"").slice(0,60);
+    if(termo.length < 2)return;
+    let vivo=true;
+    const t=window.setTimeout(()=>{void(async()=>{
+      const campos="id,sku,nome,preco,estoque,taxonomia_no_id";
+      const [rSku,rNome]=await Promise.all([
+        supabase.from("produtos").select(campos).eq("loja_id",loja.id).eq("publicado",true).ilike("sku","%"+termo+"%").limit(30),
+        supabase.from("produtos").select(campos).eq("loja_id",loja.id).eq("publicado",true).ilike("nome","%"+termo+"%").limit(30)
+      ]);
+      if(!vivo)return;
+      setProdutos(atuais=>{
+        const todos=new Map(atuais.map(p=>[p.id,p]));
+        for(const p of ([...(rSku.data??[]),...(rNome.data??[])] as Produto[]))todos.set(p.id,p);
+        return [...todos.values()];
+      });
+    })()},250);
+    return ()=>{vivo=false;window.clearTimeout(t)};
+  },[buscaProduto,loja.id]);
+  useEffect(()=>{
+    if(!f.produto||produtos.some(p=>p.id===f.produto))return;
+    let vivo=true;
+    void supabase.from("produtos").select("id,sku,nome,preco,estoque,taxonomia_no_id")
+      .eq("loja_id",loja.id).eq("id",f.produto).maybeSingle().then(({data})=>{
+        if(vivo&&data)setProdutos(atuais=>[...atuais.filter(p=>p.id!==data.id),data as Produto]);
+      });
+    return ()=>{vivo=false};
+  },[f.produto,loja.id,produtos]);
   const porId = useMemo(() => new Map(produtos.map((p) => [p.id, p])), [produtos]);
   const escolhido = porId.get(f.produto);
   const flashPrevia = escolhido ? ehFlash(f.estilo, escolhido.taxonomia_no_id, motor) : false;
@@ -87,6 +130,7 @@ export function Banners({ loja }: { loja: Loja }) {
   }
   function editar(b: Banner) {
     setEditando(b.id);
+    setBuscaProduto(porId.get(b.produto_id)?.sku??"");
     setF({produto:b.produto_id,estilo:b.estilo,chamada:b.chamada ?? "",
       inicio:localDeIso(b.inicio),fim:localDeIso(b.fim),imagem_id:b.imagem_id ?? "",ordem:b.ordem ?? 0});
     setMsg(null);
@@ -113,8 +157,12 @@ export function Banners({ loja }: { loja: Loja }) {
       <section id="conecta-editor-flash" aria-label="Editor de banners Flash">
         <h2>{editando ? "Editar campanha" : "Novo banner Flash"}</h2>
         <div className="grade-form">
-          <label>1 · Produto
-            <select value={f.produto} onChange={(e) => setF({ ...f, produto: e.target.value, imagem_id: "" })}>
+          <label>1 · Buscar por SKU ou nome
+             <input type="search" maxLength={60} value={buscaProduto} onChange={e=>setBuscaProduto(e.target.value)}
+               placeholder="Pesquise nos produtos publicados, ex.: CI003696" />
+           </label>
+           <label>Produto físico (SKU único)
+             <select value={f.produto} onChange={(e) => setF({ ...f, produto: e.target.value, imagem_id: "" })}>
               <option value="">Escolha…</option>
               {produtos.map((p) => <option key={p.id} value={p.id}>{p.sku} · {p.nome}</option>)}
             </select>
@@ -138,10 +186,10 @@ export function Banners({ loja }: { loja: Loja }) {
           <label>6 · Posição na vitrine<input type="number" min={0} max={99} value={f.ordem} onChange={e=>setF({...f,ordem:Math.max(0,Math.min(99,Number(e.target.value)||0))})}/></label>
         </div>
         {escolhido && <div className="flash-editor-previa" aria-label="Prévia do banner">
-          <div className="flash-editor-foto">{fotoPrevia ? <img src={fotoPrevia.url} alt={fotoPrevia.alt_texto || escolhido.nome || "Foto do produto"} /> : <span>Sem fotografia autorizada para campanha. A publicação deve aguardar a confirmação dos direitos.</span>}</div>
+          <div className="flash-editor-foto">{fotoPrevia ? <img src={fotoPrevia.url} alt={fotoPrevia.alt_texto || escolhido.nome || "Foto do produto"} /> : <span>Foto ainda não autorizada; o banner será exibido apenas com texto até a liberação da imagem.</span>}</div>
           <div><small>{flashPrevia?"FLASH · DESTAQUE":"BANNER · PADRÃO"}</small>
             <strong>{f.chamada.trim() || escolhido.nome}</strong>
-            <span>SKU {escolhido.sku} · {brl(escolhido.preco)} (valor do Bling)</span>
+            <span>SKU {escolhido.sku} · {escolhido.estoque != null && Number(escolhido.estoque)>0 ? brl(escolhido.preco) : "Preço sob consulta"}</span>
             <small>O cliente abrirá a ficha nesta loja e poderá acessar as páginas individuais dos veículos com aplicação aprovada.</small>
           </div>
         </div>}
