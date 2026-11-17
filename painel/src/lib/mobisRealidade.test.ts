@@ -29,7 +29,7 @@ test("Mobis: consulta publica limpa respostas anteriores e nao inventa catalogo"
   assert.match(loja, /setDados\(null\);setEstado\("carregando"\)/);
   assert.match(loja, /setEstado\("erro"\)/);
   assert.match(loja, /dados\?\.produtos\.length===0/);
-  assert.match(loja, /LOJA TESTE/);
+  assert.doesNotMatch(loja, /LOJA TESTE/);
 });
 
 test("Demonstra\u00e7\u00e3o de produtos fica isolada do build de produ\u00e7\u00e3o", () => {
