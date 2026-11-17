@@ -32,6 +32,7 @@ import { LojaMobisNova } from "./paginas/LojaMobisNova.tsx";
 import { PaginaAplicacaoMobis } from "./paginas/PaginaAplicacaoMobis.tsx";
 import { entradaAdministrativa, lojaMobisPorHost } from "./lib/lojaHost.ts";
 import { Aparencia } from "./paginas/Aparencia.tsx";
+import { AparenciaMobis } from "./paginas/AparenciaMobis.tsx";
 import { PublicacaoLoja } from "./paginas/PublicacaoLoja.tsx";
 import { EditorEstruturaLoja } from "./paginas/EditorEstruturaLoja.tsx";
 import { Condicoes } from "./paginas/Condicoes.tsx";
@@ -73,7 +74,7 @@ const ITENS: [string, string][] = [
   ["/catalogo", "Catálogo"],
   ["/fila", "Fila de aprovação"],
   ["/taxonomia", "Taxonomia"],
-  ["/aparencia", "Aparência da loja"],
+  ["/aparencia", "Loja · cores e identidade"],
   ["/estrutura-loja", "Loja · organizar blocos"],
   ["/publicacao", "Publicação da loja"],
   ["/condicoes", "Pagamento e entrega"],
@@ -182,7 +183,7 @@ export function App() {
           : caminho === "/studio" ? <Studio loja={loja} query={query} />
           : caminho === "/gateway" ? <GatewayMCP loja={loja} />
           : caminho === "/assistente" ? <NanoWorkspace key={loja.id} loja={loja} menu={MENU} aoNavegar={ir} />
-          : caminho === "/aparencia" ? <Aparencia loja={loja} />
+          : caminho === "/aparencia" ? (loja.slug==="mobis" ? <AparenciaMobis loja={loja} /> : <Aparencia loja={loja} />)
           : caminho === "/estrutura-loja" ? <EditorEstruturaLoja loja={loja} />
           : caminho === "/publicacao" ? <PublicacaoLoja loja={loja} />
           : BANNERS_ATIVO && caminho === "/banners" ? <Banners loja={loja} />
