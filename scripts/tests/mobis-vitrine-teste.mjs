@@ -57,23 +57,23 @@ async function consultar(page, acao, criterio) {
 try {
   for (const width of [360,390,720,1280]) {
     const {context,page,consultas,erros} = await abrir({ambiente:"teste",venda_habilitada:false}, width);
-    await page.getByRole("button",{name:"Ver produto de teste",exact:false}).click();
-    await page.locator("#m2-produto-teste").waitFor();
-    assert.equal(await page.locator(".m2-produto").count(),0,"amostra não é produto publicado");
-    assert.equal(await page.locator(".m2-amostra a").count(),0,"amostra não possui link comercial");
-    await page.getByRole("button",{name:"Abrir ficha de teste",exact:false}).click();
-    assert.equal(await page.getByRole("button",{name:"Recolher ficha de teste",exact:false}).getAttribute("aria-expanded"),"true");
-    await page.getByText("Ficha demonstrativa",{exact:true}).waitFor();
-    assert.equal(consultas.length,1,"abrir amostra não consulta nem grava produto");
+    assert.equal(await page.locator("#m2-produto-teste").count(),0,"a página comercial não mostra produto fictício");
+    assert.equal(await page.locator(".m2-produto").count(),0,"um catálogo vazio não inventa itens");
+    assert.equal(await page.locator(".m4-banner-campanha").count(),0,"sem campanha publicada não existe banner de oferta fictício");
+    assert.equal(await page.locator(".m4-linha-card").count(),4,"linhas complementares visíveis sem duplicar os modelos principais");
+    await page.getByRole("button",{name:"Consultar peças para Iveco Daily"}).click();
+    const link=await page.locator("#m2-atendimento .m2-contato-form a").getAttribute("href");
+    assert.match(decodeURIComponent(link||""),/Iveco Daily/,"consulta inclui a linha selecionada na mensagem");
+    assert.equal(consultas.length,1,"a seleção comercial não consulta nem grava produto");
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow");
     assert.equal(await page.locator(".m2-aviso-teste").evaluate(el=>el.getBoundingClientRect().top < document.querySelector(".m2-hero").getBoundingClientRect().top),true);
     assert.deepEqual(erros,[]);
     if (width===1280 || width===390) {
-      await page.locator("#m2-produto-teste").screenshot({path:dir+`produto-SIMULADO-${width}.png`});
+      await page.locator(".m4-linhas").screenshot({path:dir+`linhas-CONSULTA-SIMULADO-${width}.png`});
       await page.evaluate(()=>scrollTo(0,0));
       await page.screenshot({path:dir+`inicio-SIMULADO-${width}.png`});
     }
-    resultados.push({width,amostra:true,produtosPublicados:0,erros});
+    resultados.push({width,amostra:false,linhasConsulta:4,produtosPublicados:0,erros});
     await context.close();
   }
   for (const flags of [{ambiente:"producao",venda_habilitada:false},{ambiente:"teste",venda_habilitada:true},{ambiente:"teste"},{}]) {
@@ -134,7 +134,7 @@ try {
     await context.close();
     resultados.push({separacao:"raiz pública = loja; conecta.html exige sessão em início, Nano e catálogo"});
   }
-  resultados.push({guardas:"producao, venda ativa, flags ausentes e erro de API: amostra ausente",filtros:"modelo canônico, ano/categoria limpos, busca rápida e foco por código aprovados"});
+  resultados.push({guardas:"produto sintético ausente em todos os ambientes, inclusive em falha de API",filtros:"modelo canônico, ano/categoria limpos, busca rápida e foco por código aprovados"});
   console.log(JSON.stringify(resultados,null,2));
 } catch (erro) {
   resultados.push({erro:String(erro),stack:erro.stack});
