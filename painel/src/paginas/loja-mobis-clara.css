@@ -262,6 +262,9 @@
 .mobis-v2.m4 .m4-flash-midia img{width:100%;height:100%;object-fit:contain}
 .mobis-v2.m4 .m4-flash-copy{min-width:0;display:grid;gap:7px;align-content:center}
 .mobis-v2.m4 .m4-flash-copy h3{color:#262d34;font-size:clamp(1.1rem,1rem + .65vw,1.45rem);line-height:1.23;margin:0}
+.mobis-v2.m4 .m4-flash-titulo-link{color:inherit;text-decoration:none}
+.mobis-v2.m4 .m4-flash-titulo-link:hover{text-decoration:underline}
+.mobis-v2.m4 .m4-flash-titulo-link:focus-visible,.mobis-v2.m4 .m4-flash-midia:focus-visible,.mobis-v2.m4 .m4-flash-acao:focus-visible{outline:3px solid #687c8d;outline-offset:3px}
 .mobis-v2.m4 .m4-flash-copy p{margin:0;line-height:1.35;font-size:.9rem;color:#59636d}
 .mobis-v2.m4 .m4-flash-copy>small{font-size:.76rem;color:#66717b}
 .mobis-v2.m4 .m4-flash-copy>strong{font-size:1.1rem;color:#262d34}

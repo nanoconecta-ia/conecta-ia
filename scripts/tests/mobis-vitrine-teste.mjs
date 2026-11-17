@@ -46,7 +46,8 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
         ? [{sku:"CI003000",nome:"Motor parcial D4CB",marca:"TRIM-GO",preco:null,em_estoque:false,
             imagem:null,descricao:null,whatsapp:null}] : [],
       banners:cenarioFlash ? [{sku:"CI003000",nome:"Motor parcial D4CB",preco:null,chamada:"Motor HR / Bongo 2.5 16V",
-        flash:true,imagem:null,whatsapp:null,fim:null}] : [],
+        flash:true,imagem:"data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=",whatsapp:null,fim:null},
+         ...(flags.multiplosBanners?[{sku:"EXEMPLO-2",nome:"Peça de teste 2",preco:null,chamada:"Segunda campanha de teste",flash:true,imagem:null,whatsapp:null,fim:null}]:[])] : [],
       ficha:cenarioFlash && pedido.sku==="CI003000" ? {veiculos:[
         {modelo:"Hyundai HR",motor:"2.5 16V",de:2013,ate:2022,tipo:"caminhao"},
         {modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022,tipo:"caminhao"},
@@ -166,22 +167,33 @@ try {
   {
     const {context,page,erros} = await abrir({ambiente:"teste",venda_habilitada:false},390,false,true);
     assert.equal(await page.locator(".m4-flash-campanha").count(),1,"banner Flash gerado apenas a partir da API");
-    await page.getByRole("button",{name:"Ver ficha da peça"}).click();
-    await page.getByRole("dialog").getByText("Motor parcial D4CB",{exact:false}).first().waitFor();
-    const dialog=page.getByRole("dialog");
-    assert.equal(await dialog.locator('a[href="#/p/mobis/CI003000"]').count(),1,"link individual do produto físico");
-    assert.equal(await dialog.locator('a[href="#/a/hyundai-hr-motor-d4cb"]').count(),1,"página individual HR");
-    assert.equal(await dialog.locator('a[href="#/a/kia-bongo-motor-d4cb"]').count(),1,"página individual Bongo");
-    assert.equal(await dialog.locator('a[href="#/a/pendente-nao-publicado"]').count(),0,"aplicação pendente não recebe página pública");
-    await dialog.getByRole("button",{name:"Fechar detalhes e voltar à vitrine"}).click();
-    assert.equal(await page.getByRole("dialog").count(),0,"fechar mantém cliente na homepage");
+    assert.equal(await page.locator(".m4-flash-midia").getAttribute("href"),"#/p/mobis/CI003000",
+      "imagem da campanha abre diretamente a página SKU");
+    assert.equal(await page.locator(".m4-flash-acao").getAttribute("href"),"#/p/mobis/CI003000",
+      "CTA do carrossel abre diretamente a página SKU");
+    assert.equal(await page.locator(".m4-flash-titulo-link").getAttribute("href"),"#/p/mobis/CI003000",
+      "título da campanha abre diretamente a página SKU");
+    assert.equal(await page.getByRole("dialog").count(),0,"não exibe janela intermediária");
     await page.locator(".m4-flash-acao").click();
-    await page.getByRole("dialog").getByRole("link",{name:"Abrir página completa do produto"}).click();
     await page.locator(".produto-publico-mobis-aplicacoes").waitFor();
-    assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a").count(),2,"página SKU tem os dois destinos por veículo");
-    assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a[href*=pendente]").count(),0);
+    assert.equal(new URL(page.url()).hash,"#/p/mobis/CI003000","navegação direta à página canônica");
+    assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a").count(),2,
+      "página física tem os destinos individuais por veículo aprovados");
+    assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a[href*=pendente]").count(),0,
+      "aplicação pendente nunca vira link público");
     assert.deepEqual(erros,[]);
-    resultados.push({flash:"botão abre ficha interna; SKU único; duas páginas de veículos aprovadas; pendente oculto"});
+    resultados.push({flash:"foto, título e CTA navegam direto ao SKU; páginas por veículo só aprovadas"});
+    await context.close();
+  }
+  {
+    const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,multiplosBanners:true},390,false,true);
+    assert.equal(await page.getByRole("button",{name:"Próximo banner"}).count(),1,"carrossel com duas campanhas");
+    assert.equal(await page.locator(".m4-flash-acao").getAttribute("href"),"#/p/mobis/CI003000");
+    await page.getByRole("button",{name:"Próximo banner"}).click();
+    assert.equal(await page.locator(".m4-flash-acao").getAttribute("href"),"#/p/mobis/EXEMPLO-2",
+      "cada campanha na mesma faixa aponta ao seu próprio SKU");
+    assert.equal(await page.locator(".m2-flash-controles").getByText("2/2").count(),1);
+    assert.deepEqual(erros,[]);
     await context.close();
   }
   resultados.push({guardas:"produto sintético ausente em todos os ambientes, inclusive em falha de API",filtros:"modelo canônico, ano/categoria limpos, busca rápida e foco por código aprovados"});

@@ -1,5 +1,5 @@
 # MOBIS / Conecta.IA — Banners Flash ↔ produto físico ↔ páginas por veículo
-Data: 17/11/2026. Implementação em branch separada. **Não é deploy de produção.**
+Atualização: 17/11/2026. O percurso principal do banner foi alterado para link direto ao SKU, mantendo as aprovações.
 
 ## Modelo de identidade de estoque (obrigatório)
 1. Um produto do Bling com **SKU físico único** é espelhado em `produtos`.
@@ -15,14 +15,14 @@ Menu **Banners de oferta / Campanhas Flash** (atrás de `VITE_BANNERS_ATIVO=1`, 
 - Selecionar **apenas imagem do mesmo produto que já está aprovada e licenciada** (ou usar automaticamente a foto principal autorizada).
 - Definir período de início/fim e prioridade/ordem 0..99.
 - Salvar rascunho, publicar, editar, pausar ou excluir.
-- RLS do lojista por `loja_id`, gatilho valida produto e imagem no mesmo tenant, limite existente de 5 banners ativos, trilha de auditoria existente.
+- RLS do lojista por `loja_id`, gatilho valida produto e imagem no mesmo tenant, limite atual de 24 banners ativos, trilha de auditoria existente.
 
-## Site Mobis — navegação sem saída
+## Site Mobis — clique direto na página do produto
 - Página principal: `#/loja/mobis`. Destaque Flash usa dados de `loja-publica` e foto autorizada.
-- Clique em foto/CTA Flash abre a ficha em **modal sobre a mesma página**. Fechar retorna à vitrine.
+- Clique na fotografia, no título ou no CTA do Flash navega diretamente à **página canônica do SKU**: `#/p/mobis/<SKU>`. Não há modal intermediário no caminho promocional.
 - Ficha do produto físico: `#/p/mobis/<SKU>`. É a única página de produto canônico do SKU.
 - Páginas por aplicação: `#/a/<pagina_slug>`. São endereços independentes por veículo/motor/ano **somente quando homologados**.
-- Modal e página canônica listam os links de aplicações aprovadas; a página de aplicação oferece retorno ao SKU principal.
+- A página canônica lista os links de aplicações aprovadas; cada página de aplicação oferece retorno ao mesmo SKU físico.
 - A foto da peça no catálogo abre a página do SKU, não escolhe arbitrariamente a primeira aplicação.
 - Botões cinza, detalhe laranja da marca, fundos branco/gelo, sem substituir tipografia ou logo.
 
@@ -34,7 +34,7 @@ Menu **Banners de oferta / Campanhas Flash** (atrás de `VITE_BANNERS_ATIVO=1`, 
 - Zero estoque no espelho => preço não aparece na chamada da campanha, e a interface pede confirmação.
 
 ## Dependências e aprovação
-- Este PR deve ser integrado **após o PR #419** e com a migração SQL aplicada antes de habilitar o menu de banners em produção.
+- PRs #419, #420, #422 e #423 foram integrados; a navegação direta é uma correção isolada de frontend, sem migração SQL ou permissão adicional.
 - Revisar em ambiente isolado com `npm test`, `npm run build`, testes Playwright da vitrine e teste SQL da função `banners_da_vitrine`.
 - Revisar endpoints públicos, RLS e provas de direitos antes de publicar uma campanha real.
 - Somente após aceite visual e comercial: merge/deploy explícito, validação em domínio oficial e publicação individual de produtos autorizados.

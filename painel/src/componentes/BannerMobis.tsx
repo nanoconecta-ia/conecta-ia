@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
  * Mostra a imagem do veículo correto de cada modelo (recebidas da página); a imagem identifica
  * o modelo, não o ano, a versão nem a aplicação da peça.
  */
-export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra, campanha, aoAbrirCampanha }: {
+export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra, campanha }: {
   veiculos: readonly { nome: string; foto: string }[];
   abrirEscolha: () => void;
   buscarCodigo: () => void;
@@ -13,7 +13,6 @@ export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra, campa
   extra?: ReactNode;
   /** Destaque real gerenciado pelo lojista em Banners, nunca produto sintético. */
   campanha?: {sku:string;nome:string;chamada:string|null;imagem?:string|null;flash?:boolean};
-  aoAbrirCampanha?: (sku:string) => void;
 }) {
   return (
     <section className="m4-banner m2-hero" aria-label="Peças para picapes, vans e utilitários diesel">
@@ -22,8 +21,8 @@ export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra, campa
           <span className="m4-etiqueta">Mobis Autopeças · Loja independente</span>
           <h1>Peças para <strong>utilitários diesel</strong></h1>
           <p>Motor, suspensão, transmissão e elétrica para picapes e vans.</p>
-          {campanha&&<button type="button" className="m4-banner-campanha" onClick={()=>aoAbrirCampanha?.(campanha.sku)}
-            aria-label={"Abrir ficha do produto "+campanha.sku+" na própria loja"}>
+          {campanha&&<a className="m4-banner-campanha" href={"#/p/mobis/"+encodeURIComponent(campanha.sku)}
+            aria-label={"Abrir página individual do produto "+campanha.sku+" na própria loja"}>
             {campanha.imagem
               ? <img className="m4-banner-campanha-foto" src={campanha.imagem} alt="" loading="lazy"/>
               : <span className="m4-banner-campanha-marca" aria-hidden="true">M</span>}
@@ -31,7 +30,7 @@ export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra, campa
               <strong>{campanha.chamada||campanha.nome}</strong>
               <em>Ver ficha e aplicações por veículo · SKU {campanha.sku}</em>
             </span><b aria-hidden="true">→</b>
-          </button>}
+          </a>}
           <div className="m4-banner-acoes">
             <button type="button" className="m4-botao" onClick={abrirEscolha}>Escolher meu veículo <span aria-hidden="true">→</span></button>
             <button type="button" className="m4-botao m4-botao-claro" onClick={buscarCodigo}>Já tenho o código</button>
