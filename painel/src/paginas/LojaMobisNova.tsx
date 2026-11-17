@@ -7,7 +7,6 @@ import { ChatClienteLoja } from "../componentes/ChatClienteLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 import { BlocoMontadorasMobis, BlocoTaxonomiaMobis } from "../componentes/BlocosCatalogoMobis.tsx";
 import { BannerMobis } from "../componentes/BannerMobis.tsx";
-import { ProdutoFlashModal } from "../componentes/ProdutoFlashModal.tsx";
 import {intervaloPublico,ordemPublica,type BlocoComercial} from "../lib/layoutMobis.ts";
 import fotoHR from "../assets/veiculos-mobis/hyundai-hr.webp";
 import fotoBongo from "../assets/veiculos-mobis/kia-bongo-k2500.webp";
@@ -78,7 +77,6 @@ export function LojaMobisNova({slug}:{slug:string}) {
   const [pausa,setPausa]=useState(false);
   const [abaBusca,setAbaBusca]=useState<"descricao"|"referencia">("descricao");
   const [consultaModelo,setConsultaModelo]=useState<string|null>(null);
-  const [flashSku,setFlashSku]=useState<string|null>(null);
   useEffect(()=>{
     let ativo=true;setDados(null);setEstado("carregando");
     fetch(SUPABASE_URL+"/functions/v1/loja-publica",{
@@ -170,11 +168,11 @@ export function LojaMobisNova({slug}:{slug:string}) {
     banner: bannerAtual ? <div data-bloco="banner">
       {bannerAtual&&<section id="m2-destaques" className="m2-wrap m2-secao m2-destaques" aria-label="Campanhas de produtos da Mobis">
         <div className={"m2-flash m4-flash-campanha"+(bannerAtual.flash?" m4-flash-animado":"")} onMouseEnter={()=>setPausa(true)} onMouseLeave={()=>setPausa(false)} onFocusCapture={()=>setPausa(true)} onBlurCapture={()=>setPausa(false)}>
-          {bannerAtual.imagem&&<button type="button" className="m4-flash-midia" onClick={()=>setFlashSku(bannerAtual.sku)} aria-label={"Abrir ficha do motor "+bannerAtual.sku}>
+          {bannerAtual.imagem&&<a className="m4-flash-midia" href={"#/p/mobis/"+encodeURIComponent(bannerAtual.sku)} aria-label={"Abrir página individual do produto "+bannerAtual.sku}>
             <img src={bannerAtual.imagem} alt={"Fotografia autorizada do produto "+bannerAtual.sku} loading="lazy" decoding="async"/>
-          </button>}
+          </a>}
           <div className="m4-flash-copy"><span className="m2-kicker">{dados?.loja.ambiente==="teste"?"CAMPANHA EM TESTE":bannerAtual.flash?"MOBIS · FLASH":"MOBIS · DESTAQUE"}</span>
-            <h3>{bannerAtual.chamada||bannerAtual.nome}</h3>
+            <h3><a className="m4-flash-titulo-link" href={"#/p/mobis/"+encodeURIComponent(bannerAtual.sku)}>{bannerAtual.chamada||bannerAtual.nome}</a></h3>
             <p>{bannerAtual.nome}</p>
             <small>SKU {bannerAtual.sku} · Confirme aplicação e disponibilidade pelo chassi.</small>
             {bannerAtual.preco!=null&&<strong>{brl(bannerAtual.preco)}</strong>}
@@ -183,7 +181,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
                 <a key={ap.slug} href={"#/a/"+encodeURIComponent(ap.slug)}>{ap.modelo} · ver aplicação →</a>)}
             </nav>}
           </div>
-          <button type="button" className="m4-flash-acao" onClick={()=>setFlashSku(bannerAtual.sku)}>Ver ficha da peça <span aria-hidden="true">→</span></button>
+          <a className="m4-flash-acao" href={"#/p/mobis/"+encodeURIComponent(bannerAtual.sku)}>Ver página do produto <span aria-hidden="true">→</span></a>
           {banners.length>1&&<div className="m2-flash-controles"><button aria-label="Banner anterior" onClick={()=>setSlide((slide+banners.length-1)%banners.length)}>‹</button>
             <span>{slide+1}/{banners.length}</span><button aria-label="Próximo banner" onClick={()=>setSlide((slide+1)%banners.length)}>›</button>
             <button onClick={()=>setPausa(!pausa)}>{pausa?"Reativar":"Pausar"}</button></div>}
@@ -195,7 +193,6 @@ export function LojaMobisNova({slug}:{slug:string}) {
         abrirEscolha={()=>para("m2-montadoras")}
         buscarCodigo={()=>{setAbaBusca("referencia");para("m2-busca");document.getElementById("m2-pesquisar")?.focus({preventScroll:true});}}
         campanha={banners.length?{sku:banners[0].sku,nome:banners[0].nome,chamada:banners[0].chamada,imagem:banners[0].imagem,flash:banners[0].flash}:undefined}
-        aoAbrirCampanha={setFlashSku}
       /></div>
     </>,
     montadoras: <>
@@ -315,7 +312,6 @@ export function LojaMobisNova({slug}:{slug:string}) {
         <p>Não informe CPF, chassi completo, senha ou dados bancários no chat. A lista é só consulta e não conclui compra.</p>
       </section>
     </main>
-    {flashSku&&<ProdutoFlashModal key={flashSku} slug="mobis" sku={flashSku} fechar={()=>setFlashSku(null)}/>}
     <RodapeLoja nome={dados?.loja.nome??"Mobis Autopeças"} slug="mobis" whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas} ultima={dados?.produtos.map(x=>x.atualizado_em).filter(Boolean).sort().at(-1)} secoes={{catalogo:"m2-catalogo",veiculo:"m2-montadoras",categoria:"m2-taxonomia",empresa:"m2-empresa"}}/>
     <ChatClienteLoja nome={dados?.loja.nome??"Mobis Autopeças"} whatsapp={dados?.loja.whatsapp}/>
   </div>;
