@@ -280,5 +280,21 @@ Deno.serve(async (req) => {
       }
     }
   }
-  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, layout, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
+  // Exposição mínima: somente os cinco tokens da paleta APROVADA e PUBLICADA.
+  // Sem ponteiro publicado, a vitrine continua com a identidade institucional do CSS,
+  // mesmo que exista um tema legado, rascunho ou proposta de IA no Dashboard.
+  let paleta:Record<string,string>|null=null;
+  if(loja.slug==="mobis"){
+    const {data: atual}=await sb.from("loja_paleta_publicada")
+      .select("versao_id").eq("loja_id",loja.id).maybeSingle();
+    if(atual?.versao_id){
+      const {data: publicavel}=await sb.from("loja_paleta_versoes")
+        .select("cor_fundo,cor_superficie,cor_texto,cor_botao,cor_acento,aprovado_em")
+        .eq("loja_id",loja.id).eq("id",atual.versao_id).not("aprovado_em","is",null).maybeSingle();
+      const campos=["cor_fundo","cor_superficie","cor_texto","cor_botao","cor_acento"] as const;
+      if(publicavel&&campos.every(c=>typeof publicavel[c]==="string"&&/^#[0-9a-f]{6}$/.test(publicavel[c])))
+        paleta=Object.fromEntries(campos.map(c=>[c,publicavel[c]]));
+    }
+  }
+  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, layout, paleta, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
 });

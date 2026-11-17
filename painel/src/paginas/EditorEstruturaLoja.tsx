@@ -95,7 +95,7 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
  return <div className="layout-editor">
   <header className="layout-editor-titulo"><div><span>DASHBOARD · LOJA / ESTRUTURA E BLOCOS</span>
     <h1>Editor auditável da vitrine</h1><p>Arraste os blocos ou use as setas no celular. Cabeçalho e privacidade permanecem protegidos. Cada salvamento cria uma versão recuperável.</p>
-   </div><a href={"#/loja/"+loja.slug} target="_blank" rel="noopener noreferrer">Ver vitrine ↗</a></header>
+   </div><a href="#/aparencia">Cores da loja →</a><a href={"#/loja/"+loja.slug} target="_blank" rel="noopener noreferrer">Ver vitrine ↗</a></header>
   {erro&&<p className="msg-erro" role="alert">{erro}</p>}
   {info&&<p className="msg-ok" role="status">{info}</p>}
   {carregando&&<p role="status">Conferindo versões e permissões…</p>}

@@ -42,6 +42,7 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
     return route.fulfill({status:200, headers, contentType:"application/json", body:JSON.stringify({
       loja:{nome:"Mobis Autopeças",slug:"mobis",whatsapp:"5562991654515",...flags},
       layout:{blocos:flags.layoutOrdem??["banner","montadoras","taxonomia","catalogo","empresa"],intervalo_segundos:flags.layoutIntervalo??6},
+      paleta:flags.paleta??null,
       produtos:cenarioFlash && pedido.sku==="CI003000"
         ? [{sku:"CI003000",nome:"Motor parcial D4CB",marca:"TRIM-GO",preco:null,em_estoque:false,
             imagem:null,descricao:null,whatsapp:null}] : [],
@@ -104,6 +105,30 @@ try {
     assert.deepEqual(ordem,["filtros","produtos","banner","montadoras","taxonomia"],
       "ordem do layout aprovado controla a sequência real no DOM");
     assert.deepEqual(erros,[],"sem exceções JS ao montar a ordem personalizada");
+    await context.close();
+  }
+  {
+    const cores={cor_fundo:"#f6f7f8",cor_superficie:"#ffffff",cor_texto:"#252a31",
+      cor_botao:"#444c54",cor_acento:"#8d3c35"};
+    const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,paleta:cores},390);
+    const root=page.locator(".mobis-v2.m4");
+    assert.equal(await root.getAttribute("data-paleta-publicada"),"sim",
+      "somente paleta publicada pela API é aplicada à Mobis");
+    assert.equal(await root.evaluate(el=>getComputedStyle(el).getPropertyValue("--mobis-botao").trim()),"#444c54");
+    assert.equal(await page.locator(".m4-busca button").first().evaluate(el=>getComputedStyle(el).backgroundColor),
+      "rgb(68, 76, 84)","botões seguem o token cinza aprovado");
+    assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
+      "rgb(141, 60, 53)","cabeçalho usa acento discreto publicado");
+    assert.deepEqual(erros,[]);
+    await context.close();
+  }
+  {
+    const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false},390);
+    assert.equal(await page.locator(".mobis-v2.m4").getAttribute("data-paleta-publicada"),"nao",
+      "rascunho ou ausência de paleta não muda site");
+    assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
+      "rgb(168, 73, 22)","identidade Mobis existente permanece sem publicação");
+    assert.deepEqual(erros,[]);
     await context.close();
   }
   for (const flags of [{ambiente:"producao",venda_habilitada:false},{ambiente:"teste",venda_habilitada:true},{ambiente:"teste"},{}]) {
