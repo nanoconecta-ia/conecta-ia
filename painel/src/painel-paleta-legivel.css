@@ -1,0 +1,54 @@
+/* Conecta.IA · refinamento de leitura 2026/27.
+   Ajuste apenas no painel; mantém logo, ícones e famílias tipográficas existentes. */
+.conecta-aprovado-root{
+ --fundo:#edf2f7;--cartao:#ffffff;--texto:#172737;--suave:#415365;
+ --borda:#ccd7e1;--borda-forte:#687d90;--realce:#f1f5f9;
+ --marca:#8d3442;--marca-forte:#752635;--marca-texto:#fff;
+ --grafite:#142433;--verde:#14684c;--ok:#14684c;--erro:#ae2839;--atencao:#855100;
+ --ciano:#166c83;--raio:13px;--alvo:46px;
+ background:var(--fundo);color:var(--texto);font:16px/1.56 "Inter Variable",Inter,system-ui,sans-serif;
+}
+.conecta-aprovado-root .ap-sidebar{background:linear-gradient(160deg,#101e2e,#192c3e 62%,#122133);border-right:1px solid #405368;box-shadow:7px 0 30px #10263a18}
+.conecta-aprovado-root .ap-sidebar nav a,.conecta-aprovado-root .ap-loja-link{
+  font-size:14px;line-height:1.32;min-height:47px;color:#e7ecf1!important;border-radius:10px;padding:10px 11px
+}
+.conecta-aprovado-root .ap-sidebar nav a[aria-current=page]{background:#304d60;color:#fff!important;box-shadow:inset 4px 0 #bd6672}
+.conecta-aprovado-root .ap-sidebar nav a:hover,.conecta-aprovado-root .ap-loja-link:hover{background:#283e53;color:#fff!important}
+.conecta-aprovado-root .ap-nav-label,.conecta-aprovado-root .ap-modulos summary{font-size:12px;color:#b6c8d5}
+.conecta-aprovado-root .ap-protecao{font-size:12px;background:#1e3748;border-color:#3e5665;color:#d0dde6}
+.conecta-aprovado-root .ap-protecao strong,.conecta-aprovado-root .ap-perfil strong{font-size:13px}
+.conecta-aprovado-root .ap-perfil small,.conecta-aprovado-root .ap-loja-marca small{font-size:11px}
+.conecta-aprovado-root .ap-identidade small{font-size:10px}
+.conecta-aprovado-root .ap-topbar{background:#fff;min-height:72px;height:auto;padding-top:10px;padding-bottom:10px;border-bottom:1px solid #c9d6e1;box-shadow:0 7px 18px #1e334b0c}
+.conecta-aprovado-root .ap-caminho,.conecta-aprovado-root .ap-ambiente{font-size:13px}
+.conecta-aprovado-root .ap-caminho b{font-weight:750}
+.conecta-aprovado-root button.ap-busca,.conecta-aprovado-root button.ap-estudio-abrir{font-size:13px;color:var(--texto)}
+.conecta-aprovado-root .ap-busca kbd{font-size:11px}
+.conecta-aprovado-root .ap-content{background:transparent;padding-top:clamp(18px,3vw,34px)}
+.conecta-aprovado-root h1{font-size:clamp(29px,2.5vw,40px);line-height:1.17;font-weight:780}
+.conecta-aprovado-root h2{font-size:clamp(21px,1.6vw,27px);font-weight:750}
+.conecta-aprovado-root h3{font-size:18px;font-weight:720}
+.conecta-aprovado-root .ap-heading p,.conecta-aprovado-root .suave{font-size:15px;line-height:1.6}
+.conecta-aprovado-root .ap-eyebrow{font-size:12px}
+.conecta-aprovado-root .ap-caminho,.conecta-aprovado-root label,.conecta-aprovado-root .rotulo{font-size:14px}
+.conecta-aprovado-root small{font-size:13px}
+.conecta-aprovado-root button,.conecta-aprovado-root .botao{font:650 14px/1.3 "Inter Variable",Inter,system-ui,sans-serif;min-height:46px;padding:10px 15px;border-radius:10px}
+.conecta-aprovado-root :is(button,a,input,select,textarea):focus-visible{outline:3px solid #8d3442;outline-offset:3px}
+.conecta-aprovado-root .ap-primary{background:#8d3442!important;border-color:#8d3442;color:white!important;font-weight:770}
+.conecta-aprovado-root :is(.cartao,.v-cartao,.indicador,.janela){border:1px solid var(--borda);border-radius:14px;background:#fff;box-shadow:0 8px 28px #162c4410}
+.conecta-aprovado-root .cartao{padding:clamp(18px,2vw,28px)}
+.conecta-aprovado-root .ap-ledger{font-size:12px;color:#516477}
+.conecta-aprovado-root input,.conecta-aprovado-root textarea,.conecta-aprovado-root select{background:#fff;color:#172737;border:1.5px solid #8497a9;border-radius:10px;font-size:15px;min-height:46px}
+.conecta-aprovado-root .numero{font-size:clamp(30px,2.9vw,44px);color:#193346}
+.conecta-aprovado-root table{font-size:14px}
+.conecta-aprovado-root th{font-size:13px;font-weight:800;color:#293f52}
+.conecta-aprovado-root .ap-ambiente{background:#e7f2ee;color:#1d604b;border-color:#abcec0}
+@media(max-width:760px){
+ .conecta-aprovado-root{font-size:15px}
+ .conecta-aprovado-root .ap-topbar{min-height:62px;gap:8px;padding-inline:12px}
+ .conecta-aprovado-root .ap-content{padding:16px 13px 28px}
+ .conecta-aprovado-root .ap-sidebar nav a{font-size:15px}
+ .conecta-aprovado-root .ap-heading{gap:10px;flex-wrap:wrap}
+ .conecta-aprovado-root .cartao{padding:16px}
+ .conecta-aprovado-root h1{font-size:28px}
+}
