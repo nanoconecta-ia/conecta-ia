@@ -2,7 +2,7 @@
 // A Edge Function só autentica o usuário (JWT), confere que ele é membro da loja e chama estas funções com o userId VERIFICADO.
 // Chave MCP e agente nunca chegam aqui: aprovar é ato de pessoa autenticada.
 import { reconciliar, simularProposta, executarProposta, type ItemExecucao, type Rpc } from "./executor.ts";
-import { blingEscritaNegadaPorPolitica, MENSAGEM_MOBIS_BLING_SOMENTE_LEITURA } from "./mobis_politica.ts";
+import { MOBIS_LOJA_ID, blingEscritaNegadaPorPolitica, MENSAGEM_MOBIS_BLING_SOMENTE_LEITURA } from "./mobis_politica.ts";
 import { BlingMock } from "./bling_mock.ts";
 import type { PortaBling } from "./porta_bling.ts";
 import { gerarToken, sha256Hex } from "./cripto.ts";
@@ -91,7 +91,7 @@ export async function acaoAprovacoes(c: Record<string, any>, h: Humano, d: DepsA
         if (!uuid(c.proposta_id)) return erro(400, "Informe proposta_id.");
         // Política da Mobis: nem uma aprovação humana ou flag futura habilita escrita no Bling.
         // A consulta abaixo é somente leitura e acontece ANTES de consumir a tentativa.
-        const previstosMobis = h.lojaId.toLowerCase() === "cd9d7570-f095-44f2-be28-b9b9cba6578e"
+        const previstosMobis = h.lojaId.toLowerCase() === MOBIS_LOJA_ID
           ? await rpcOu(d, "agente_proposta_validar", { p_loja: h.lojaId, p_proposta: c.proposta_id }) as ItemExecucao[]
           : [];
         if (previstosMobis.some(i => blingEscritaNegadaPorPolitica(h.lojaId, i.operacao)))
