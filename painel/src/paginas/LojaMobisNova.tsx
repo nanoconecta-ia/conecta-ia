@@ -274,7 +274,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
       <EmpresaMobis whatsapp={whatsapp}/>
     </>,
   };
-  return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="versionado-auditavel" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4">
+  return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="aprovado-v2" data-layout-versionado="true" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4">
     <div data-bloco="cabecalho">
     <div className="m2-micro"><div className="m2-wrap"><span>Goiás, Brasil <b>/</b> Especialistas em picapes, vans e utilitários diesel</span><span>Aplicação conferida por veículo e chassi <em>✓</em></span></div></div>
     <header className="m2-header"><div className="m2-wrap">
