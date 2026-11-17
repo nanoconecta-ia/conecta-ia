@@ -36,7 +36,8 @@ type Resposta = {
   politicas?:PoliticasLojaPublicas|null;
   total:number;pagina:number;por_pagina:number;
   layout?:{blocos:string[];intervalo_segundos:number};
-  paleta?:unknown
+  paleta?:unknown;
+  logos_montadoras?:Record<string,string>
 };
 type Filtros={q:string;modelo:string;motor:string;ano:string;categoria:string;pagina:number};
 const VAZIO:Filtros={q:"",modelo:"",motor:"",ano:"",categoria:"",pagina:1};
@@ -167,7 +168,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
       intervalo={intervaloPublico(dados?.layout?.intervalo_segundos)}
       emTeste={dados?.loja.ambiente!=="producao"}/></div>,
     montadoras: <>
-      <BlocoMontadorasMobis modelos={opcoes} aoSelecionarModelo={escolherVeiculoAprovado} aoConsultar={consultarLinha}/>
+      <BlocoMontadorasMobis modelos={opcoes} logos={dados?.logos_montadoras} aoSelecionarModelo={escolherVeiculoAprovado} aoConsultar={consultarLinha}/>
     </>,
     taxonomia: <>
       <BlocoTaxonomiaMobis categorias={dados?.categorias??[]} aoSelecionarCategoria={escolherNoTaxonomia} aoConsultar={consultarLinha}/>
