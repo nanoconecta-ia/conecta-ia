@@ -3,10 +3,10 @@ import { IconePeca } from "./IconePeca.tsx";
 import "./glassy-carousel-mobis-v3.css";
 
 type Banner = { sku:string; nome:string; preco:number|null; chamada:string|null; flash:boolean; imagem?:string|null; fim?:string|null };
-type Produto = { sku:string; nome:string; preco:number|null; imagem:string|null; marca:string|null };
+type Produto = { sku:string; nome:string; preco:number|null; imagem:string|null; marca:string|null; consulta_previa?:boolean; whatsapp?:string|null };
 type Veiculo = { nome:string; foto:string; valor:string };
 type Slide = {
-  id:string; tipo:"campanha"|"produto"|"veiculo"; titulo:string; subtitulo:string;
+  id:string; tipo:"campanha"|"produto"|"consulta"|"veiculo"; titulo:string; subtitulo:string;
   etiqueta:string; imagem:string|null; url:string; preco:number|null; sku:string|null; flash:boolean;
 };
 
@@ -31,9 +31,11 @@ export function GlassyCarouselMobisV3({
     }))
     : produtos.length>0
     ? produtos.slice(0,6).map(p=>({
-      id:"produto-"+p.sku,tipo:"produto",titulo:p.nome,subtitulo:p.marca||"Peça do catálogo",
-      etiqueta:"PRODUTO DO CATÁLOGO",imagem:p.imagem||null,
-      url:"#/p/mobis/"+encodeURIComponent(p.sku),preco:p.preco,sku:p.sku,flash:false,
+      id:"produto-"+p.sku,tipo:p.consulta_previa?"consulta":"produto",
+      titulo:p.nome,subtitulo:p.consulta_previa?"Prévia de catálogo · aplicação a confirmar":p.marca||"Peça do catálogo",
+      etiqueta:p.consulta_previa?"CONSULTA PRÉVIA · SEM VENDA":"PRODUTO DO CATÁLOGO",imagem:p.imagem||null,
+      url:p.consulta_previa?(p.whatsapp||"#/loja/mobis"):"#/p/mobis/"+encodeURIComponent(p.sku),
+      preco:p.consulta_previa?null:p.preco,sku:p.sku,flash:false,
     }))
     : veiculos.map(v=>({
       id:"veiculo-"+v.valor,tipo:"veiculo",titulo:v.nome,
@@ -67,8 +69,8 @@ export function GlassyCarouselMobisV3({
           {slide.subtitulo!==slide.titulo&&<p>{slide.subtitulo}</p>}
           {slide.sku&&<small className="gcv3-sku">SKU {slide.sku}</small>}
           {slide.preco!=null&&slide.preco>0&&<strong className="gcv3-preco">{moeda(slide.preco)}</strong>}
-          <a className="gcv3-cta" href={slide.url}>{slide.tipo==="veiculo"?"Ver linha de veículos":"Ver ficha e aplicações"} <span aria-hidden="true">→</span></a>
-          {slide.tipo!=="veiculo"&&<small className="gcv3-nota">Compatibilidade, preço e disponibilidade sujeitos à confirmação no atendimento.</small>}
+          <a className="gcv3-cta" href={slide.url}>{slide.tipo==="veiculo"?"Ver linha de veículos":slide.tipo==="consulta"?"Consultar peça no atendimento":"Ver ficha e aplicações"} <span aria-hidden="true">→</span></a>
+          {slide.tipo!=="veiculo"&&<small className="gcv3-nota">Compatibilidade, preço e disponibilidade sujeitos à confirmação no atendimento. A prévia não é um anúncio homologado.</small>}
         </div>
         <a key={"foto-"+slide.id} className={"gcv3-midia"+(slide.imagem?"":" gcv3-sem-foto")} href={slide.url}
           aria-label={"Abrir "+slide.titulo}>
