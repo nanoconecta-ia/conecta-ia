@@ -237,3 +237,78 @@
 @media(max-width:1000px){.mobis-v2.m4 .m4-linhas-grade{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:620px){.mobis-v2.m4 .m4-linhas-cabecalho{align-items:stretch;flex-direction:column}.mobis-v2.m4 .m4-linhas-cabecalho>button{align-self:flex-start;white-space:normal}.mobis-v2.m4 .m4-linhas-grade{grid-template-columns:repeat(2,minmax(0,1fr))}.mobis-v2.m4 .m4-linha-card{padding:8px}.mobis-v2.m4 .m4-linha-retrato{min-height:88px}.mobis-v2.m4 .m4-linha-info strong{font-size:.87rem}.mobis-v2.m4 .m4-linha-info>span{font-size:.71rem}}
 @media(prefers-reduced-motion:reduce){.mobis-v2.m4 .m4-linha-card:hover{transform:none}}
+
+
+/* MOBIS 2027 · Flash ligado a SKU real e aplicações individuais aprovadas.
+   O cinza é a cor dos botões; laranja oficial apenas como detalhe institucional. */
+.mobis-v2.m4 .m4-botao,.mobis-v2.m4 .m4-busca button,.mobis-v2.m4 .m2-search button,
+.mobis-v2.m4 .m2-contato-form a,.mobis-v2.m4 .m2-filtros-rodape button{
+  background:#4a5159;border-color:#4a5159;color:#fff;
+}
+.mobis-v2.m4 .m4-botao:hover,.mobis-v2.m4 .m4-busca button:hover,
+.mobis-v2.m4 .m2-search button:hover{background:#30363c;border-color:#30363c}
+.mobis-v2.m4 .m4-botao-claro{background:#fff;border-color:#c4cbd1;color:#343b42}
+.mobis-v2.m4 .m4-banner-campanha{width:100%;font:inherit;cursor:pointer;text-align:left;border-color:#d8dde1;background:linear-gradient(125deg,#fff,#f6f7f8)}
+.mobis-v2.m4 .m4-banner-campanha:hover{border-color:#66717b}
+.mobis-v2.m4 .m4-banner-campanha-foto{width:75px;height:72px;flex:none;border-radius:10px;object-fit:contain;background:#fff}
+.mobis-v2.m4 .m4-banner-campanha small{color:#5a6269}
+.mobis-v2.m4 .m4-banner-campanha>b{color:#4a5159}
+.mobis-v2.m4 .m4-flash-campanha{position:relative;display:grid;grid-template-columns:minmax(150px,225px) minmax(0,1fr) auto;
+  align-items:center;gap:clamp(12px,2vw,24px);min-height:210px;padding:clamp(14px,2vw,24px);
+  border:1px solid #d9dee2;border-left:4px solid #a84916;background:linear-gradient(120deg,#fff,#f6f8fa);
+  border-radius:16px;box-shadow:0 10px 26px #1e293b0e;overflow:hidden}
+.mobis-v2.m4 .m4-flash-campanha::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:#a84916;opacity:.8}
+.mobis-v2.m4 .m4-flash-midia{display:block;width:100%;height:190px;border:0;border-radius:12px;background:#fff;cursor:pointer;padding:10px}
+.mobis-v2.m4 .m4-flash-midia img{width:100%;height:100%;object-fit:contain}
+.mobis-v2.m4 .m4-flash-copy{min-width:0;display:grid;gap:7px;align-content:center}
+.mobis-v2.m4 .m4-flash-copy h3{color:#262d34;font-size:clamp(1.1rem,1rem + .65vw,1.45rem);line-height:1.23;margin:0}
+.mobis-v2.m4 .m4-flash-copy p{margin:0;line-height:1.35;font-size:.9rem;color:#59636d}
+.mobis-v2.m4 .m4-flash-copy>small{font-size:.76rem;color:#66717b}
+.mobis-v2.m4 .m4-flash-copy>strong{font-size:1.1rem;color:#262d34}
+.mobis-v2.m4 .m4-flash-acao,.mobis-v2.m4 .m4-flash-botao{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid #4a5159;border-radius:11px;background:#4a5159;color:#fff;padding:11px 16px;min-height:44px;
+  font:inherit;font-size:.91rem;font-weight:750;text-decoration:none;cursor:pointer;white-space:nowrap}
+.mobis-v2.m4 .m4-flash-acao:hover,.mobis-v2.m4 .m4-flash-botao:hover{background:#30363c;color:#fff}
+.mobis-v2.m4 .m4-flash-veiculos{display:flex;flex-wrap:wrap;gap:6px}
+.mobis-v2.m4 .m4-flash-veiculos a{border:1px solid #d5dce2;border-radius:9px;padding:6px 9px;color:#36414a;background:#fff;font-size:.78rem;text-decoration:none}
+.mobis-v2.m4 .m4-flash-veiculos a:hover{border-color:#68737e}
+.mobis-v2.m4 .m4-flash-campanha .m2-flash-controles{grid-column:1/-1;justify-content:end;margin-top:-3px}
+.mobis-v2.m4 .m4-flash-animado{animation:mobisFlashEntrada .4s ease-out}
+@keyframes mobisFlashEntrada{from{opacity:.65;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.mobis-v2.m4 .m4-flash-overlay{position:fixed;inset:0;z-index:10000;background:#101820a8;padding:clamp(8px,2vw,24px);
+  display:grid;place-items:center}
+.mobis-v2.m4 .m4-flash-modal{width:min(100%,1000px);max-height:calc(100dvh - 24px);overflow:auto;
+  border:1px solid #cbd1d6;border-radius:18px;background:#f8f9fa;box-shadow:0 26px 75px #0004}
+.mobis-v2.m4 .m4-flash-modal-cab{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:12px clamp(12px,2vw,22px);background:#fff;border-bottom:1px solid #e1e5e9}
+.mobis-v2.m4 .m4-flash-modal-cab h2{font-size:clamp(1rem,1rem + .5vw,1.3rem);line-height:1.25;margin:2px 0;color:#252d34}
+.mobis-v2.m4 .m4-flash-modal-cab small{font-size:.68rem;color:#a84916;font-weight:750}
+.mobis-v2.m4 .m4-flash-modal-cab button{padding:9px 14px;min-height:44px;background:#444c54;color:#fff;border:0;border-radius:9px;cursor:pointer}
+.mobis-v2.m4 .m4-flash-modal-conteudo{padding:clamp(12px,2vw,22px);display:grid;gap:14px}
+.mobis-v2.m4 .m4-flash-modal .ficha{background:#fff;border:1px solid #e0e4e8;border-radius:12px;margin:0}
+.mobis-v2.m4 .m4-flash-modal-rodape{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:13px 15px;background:#fff;border:1px solid #e0e4e8;border-radius:12px}
+.mobis-v2.m4 .m4-flash-modal-rodape p{font-size:.8rem;color:#5b646e;flex:1;min-width:180px;margin:0}
+.mobis-v2.m4 .m4-flash-aplicacoes{background:#fff;padding:16px;border:1px solid #e0e4e8;border-radius:12px}
+.mobis-v2.m4 .m4-flash-aplicacoes h3{font-size:1.05rem;margin:0 0 12px}
+.mobis-v2.m4 .m4-flash-aplicacoes p{font-size:.85rem;color:#5b646e}
+.mobis-v2.m4 .m4-flash-aplicacoes-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:9px}
+.mobis-v2.m4 .m4-flash-aplicacoes-grade a{display:grid;gap:5px;padding:12px;background:#f6f7f8;border:1px solid #dce2e6;
+  border-radius:10px;color:#303941;text-decoration:none}
+.mobis-v2.m4 .m4-flash-aplicacoes-grade a:hover{border-color:#6c7780}
+.mobis-v2.m4 .m4-flash-aplicacoes-grade small{font-size:.78rem;color:#6a747c}
+.mobis-v2.m4 .m4-flash-aplicacoes-grade span{font-size:.8rem;font-weight:750}
+@media(max-width:780px){
+  .mobis-v2.m4 .m4-flash-campanha{grid-template-columns:minmax(100px,145px) minmax(0,1fr)}
+  .mobis-v2.m4 .m4-flash-acao{grid-column:1/-1}
+  .mobis-v2.m4 .m4-flash-midia{height:145px}
+}
+@media(max-width:480px){
+  .mobis-v2.m4 .m4-flash-campanha{grid-template-columns:104px minmax(0,1fr);gap:12px;min-height:0}
+  .mobis-v2.m4 .m4-flash-midia{height:132px;padding:4px}
+  .mobis-v2.m4 .m4-flash-copy h3{font-size:.99rem}
+  .mobis-v2.m4 .m4-flash-copy p{font-size:.79rem}
+  .mobis-v2.m4 .m4-flash-acao{width:100%}
+  .mobis-v2.m4 .m4-flash-modal{max-height:calc(100dvh - 12px)}
+}
+@media(prefers-reduced-motion:reduce){.mobis-v2.m4 .m4-flash-animado{animation:none}}
