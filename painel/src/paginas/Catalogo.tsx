@@ -277,6 +277,19 @@ export function Catalogo({ loja }: { loja: Loja }) {
         </div>
         <a className="catalogo-abrir-bling" href="#/bling"><Icone nome="erp" tamanho={19} /> Conexão Bling</a>
       </header>
+      <section className="catalogo-nos-blocos" aria-label="Bling, Conecta.IA e blocos da loja" data-contrato="bling-leitura-conecta-aprovacao">
+        <div><strong>Espelho Bling · somente leitura</strong>
+          <span>Um SKU físico, preço e saldo de origem preservados</span></div>
+        <div><strong>Nós Conecta.IA</strong>
+          <span>Taxonomia, OEM, aplicações, imagens e banners com evidência</span></div>
+        <div><strong>Blocos da vitrine</strong>
+          <span>Montadoras → sistemas → produtos aprovados → páginas por veículo</span></div>
+        <div className="catalogo-nos-acoes">
+          <a href="#/estudio">Propor ficha a partir de documentação →</a>
+          <a href="#/catalogo-aplicacao">Revisar aplicações por veículo →</a>
+          <small>O Nano prepara propostas para sua aprovação. Nenhuma operação deste bloco grava no Bling ou publica automaticamente.</small>
+        </div>
+      </section>
       <section className="catalogo-resumo" aria-label="Indicadores do lote carregado">
         <div><Icone nome="catalogo" tamanho={22}/><strong>{itens === null ? "…" : resumo.carregados.toLocaleString("pt-BR")}</strong><span>Produtos carregados</span></div>
         <div><Icone nome="loja" tamanho={22}/><strong>{itens === null ? "…" : resumo.publicados.toLocaleString("pt-BR")}</strong><span>Na vitrine</span></div>

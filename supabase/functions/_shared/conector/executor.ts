@@ -2,6 +2,7 @@
 // agente_proposta_iniciar_execucao). Para cada item: abre a tentativa, passa pelo Policy Engine, escreve pela porta,
 // LÊ DE VOLTA e só então confirma. Timeout/5xx em escrita => "desconhecida" (nunca "falhou" e nunca repetir às cegas).
 import { buscarDefinicao } from "./registro.ts";
+import { blingEscritaNegadaPorPolitica, MENSAGEM_MOBIS_BLING_SOMENTE_LEITURA } from "./mobis_politica.ts";
 import { decidir } from "./policy.ts";
 import { antesIntacto, CAMPOS_ESCRITA_LIBERADOS, camposNaoLiberados, divergencias, montarCorpoCriacao, montarCorpoProduto } from "./bling_campos.ts";
 import { TimeoutBling, type PortaBling } from "./porta_bling.ts";
@@ -112,6 +113,13 @@ export async function executarProposta(o: OpcoesExecucao): Promise<RelatorioExec
   const achar = o.definicao ?? buscarDefinicao;
 
   for (const item of itens) {
+    // Última barreira: o tenant Mobis permanece leitura no ERP
+    // mesmo se flags ou campos forem futuramente habilitados.
+    if (blingEscritaNegadaPorPolitica(o.lojaId, item.operacao)) {
+      rel.itens.push({item_id:item.item_id,operacao:item.operacao,estado:"falhou",
+        motivo:MENSAGEM_MOBIS_BLING_SOMENTE_LEITURA});
+      continue;
+    }
     const def = achar(item.operacao);
     let opId: string | null = null;
     try {

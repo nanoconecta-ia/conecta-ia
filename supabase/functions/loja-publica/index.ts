@@ -43,25 +43,24 @@ Deno.serve(async (req) => {
   if (host && loja.ambiente !== "producao") return json({ erro: "Loja ainda em preparação." }, 404);
   const fase = loja.ambiente === "producao" ? "producao" : "teste";
   const faseCliente = modoCliente(fase, loja.modo_venda);
-  // Catálogo consultivo limitado à Mobis em teste: NÃO altera a publicação
-  // definitiva, não informa preço/estoque e não autoriza anúncios ou checkout.
-  const previaConsultaMobis = loja.slug === "mobis" && fase === "teste";
+  // Política Mobis: rascunhos, aplicações a confirmar e exibicao_teste
+  // são somente do PAINEL autenticado. A API pública não os devolve.
+  // Isso vale também quando a loja permanece em ambiente de teste.
 
 
   // Página filha comercial por veículo: a aplicação aponta para o MESMO produto
-  // físico do Bling. Em teste, rascunhos ficam noindex e sem preço/estoque.
+  // físico do Bling. Só status aprovado E visibilidade explícita são públicos.
   const slugAplicacao = typeof c?.aplicacao_slug === "string" && /^[a-z0-9-]{4,110}$/.test(c.aplicacao_slug) ? c.aplicacao_slug : null;
   if (slugAplicacao && loja.slug === "mobis") {
     const { data: app } = await sb.from("produto_aplicacoes")
       .select("produto_id,modelo,motorizacao,ano_inicial,ano_final,status,pagina_slug,pagina_titulo,pagina_descricao,pagina_indexavel")
       .eq("loja_id", loja.id).eq("pagina_slug", slugAplicacao).maybeSingle();
-    if (!app || (!previaConsultaMobis && !(app.status === "aprovado" && app.pagina_indexavel)))
+    if (!app || app.status !== "aprovado" || app.pagina_indexavel !== true)
       return json({ erro: "Aplicação indisponível." }, 404);
     const { data: p } = await sb.from("produtos")
       .select("id,sku,marca,publicado,exibicao_teste,taxonomia_no_id")
       .eq("loja_id", loja.id).eq("id", app.produto_id).maybeSingle();
-    if (!p || (!p.publicado && !(previaConsultaMobis && p.exibicao_teste)))
-      return json({ erro: "Produto indisponível." }, 404);
+    if (!p?.publicado) return json({ erro: "Produto indisponível." }, 404);
     // Só imagens com direitos confirmados são herdadas pelo filho. Fotos
     // candidatas da internet e recortes de fornecedores nunca saem desta view.
     const { data: imgs } = await sb.from("imagens_publicaveis")
@@ -101,10 +100,8 @@ Deno.serve(async (req) => {
   const ano = Number.isInteger(c?.ano) && c.ano >= 1950 && c.ano <= 2100 ? (c.ano as number) : undefined;
 
   // Publicados (id + categoria) e as aplicações APROVADAS deles: alimentam as opções de busca e os filtros.
-  let consultaPublicados = sb.from("produtos").select("id, sku, taxonomia_no_id").eq("loja_id", loja.id);
-  consultaPublicados = previaConsultaMobis
-    ? consultaPublicados.or("publicado.eq.true,exibicao_teste.eq.true")
-    : consultaPublicados.eq("publicado", true);
+  const consultaPublicados = sb.from("produtos").select("id, sku, taxonomia_no_id")
+    .eq("loja_id", loja.id).eq("publicado", true);
   const { data: pub } = await consultaPublicados.limit(5000);
   const idsPublicados = (pub ?? []).map((p: { id: string }) => p.id);
   let apls: Aplicacao[] = [];
@@ -124,9 +121,7 @@ Deno.serve(async (req) => {
 
   let consulta = sb.from("produtos").select("nome, sku, preco, estoque, marca, descricao_curta, sincronizado_em, publicado, exibicao_teste, taxonomia_no_id", { count: "exact" })
     .eq("loja_id", loja.id);
-  consulta = previaConsultaMobis
-    ? consulta.or("publicado.eq.true,exibicao_teste.eq.true")
-    : consulta.eq("publicado", true);
+  consulta = consulta.eq("publicado", true);
   consulta = consulta.order("nome").range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1);
   // Espelho de códigos: apenas vínculos realmente aprovados podem levar a um
   // produto; candidato ou pendente não serve como atalho de correspondência.
@@ -187,9 +182,7 @@ Deno.serve(async (req) => {
   let ficha: { veiculos: ReturnType<typeof veiculosDaFicha> } | null = null;
   if (skuFicha) {
     let consultaFicha = sb.from("produtos").select("id").eq("loja_id", loja.id).eq("sku", skuFicha);
-    consultaFicha = previaConsultaMobis
-      ? consultaFicha.or("publicado.eq.true,exibicao_teste.eq.true")
-      : consultaFicha.eq("publicado", true);
+    consultaFicha = consultaFicha.eq("publicado", true);
     const { data: alvo } = await consultaFicha.maybeSingle();
     if (alvo) ficha = { veiculos: veiculosDaFicha(apls, alvo.id as string) };
   }
@@ -218,23 +211,17 @@ Deno.serve(async (req) => {
     const { data: imgs } = await sb.from("imagens_publicaveis").select("produto_id, url, principal, ordem").eq("loja_id", loja.id).in("produto_id", [...porId.keys()]).order("principal", { ascending: false }).order("ordem");
     for (const i of imgs ?? []) { const s = porId.get(i.produto_id); if (s && !imagens.has(s)) imagens.set(s, i.url); }
   }
-  // Itens só de consulta não mostram preço, estoque ou disponibilidade como
-  // certeza. Continuam usando exclusivamente imagens com direitos liberados.
-  const skusConsulta = new Set((linhas ?? [])
-    .filter((l: { sku: string | null; publicado: boolean; exibicao_teste: boolean }) =>
-      previaConsultaMobis && l.exibicao_teste && !l.publicado)
-    .map((l: { sku: string | null }) => l.sku).filter(Boolean) as string[]);
   const categoriaPorNo = new Map((nos ?? []).map((n: { id: string; nome: string }) => [n.id, n.nome]));
   const categoriaPorSku = new Map((linhas ?? []).map((l: { sku: string | null; taxonomia_no_id: string | null }) =>
     [l.sku, categoriaPorNo.get(l.taxonomia_no_id ?? "") ?? null]));
   const produtos = montarVitrine((linhas ?? []).map((l: Record<string, unknown>) => ({
     ...l,
-    preco: skusConsulta.has(String(l.sku)) ? null : l.preco,
-    estoque: skusConsulta.has(String(l.sku)) ? null : l.estoque,
+    preco: l.preco,
+    estoque: l.estoque,
     imagem: imagens.get(String(l.sku)) ?? null,
   }) as never), loja.whatsapp, urlDoProduto)
     .map((produto) => ({
-      ...produto, consulta_previa: skusConsulta.has(produto.sku),
+      ...produto, consulta_previa: false,
       categoria: categoriaPorSku.get(produto.sku) ?? null,
       referencias_aprovadas: codigosAprovadosPorSku.get(produto.sku) ?? [],
     }));
@@ -244,9 +231,7 @@ Deno.serve(async (req) => {
     let aq = sb.from("produto_aplicacoes")
       .select("produto_id,pagina_slug,pagina_titulo,modelo,status,pagina_indexavel")
       .eq("loja_id", loja.id).in("produto_id", idsPublicados).not("pagina_slug", "is", null);
-    aq = previaConsultaMobis
-      ? aq.in("status", ["aprovado", "a_confirmar"])
-      : aq.eq("status", "aprovado").eq("pagina_indexavel", true);
+    aq = aq.eq("status", "aprovado").eq("pagina_indexavel", true);
     const { data: aps } = await aq.limit(1500);
     const skusDosIds = new Map((pub ?? []).map((p: { id: string; sku?: string | null }) => [p.id, p.sku]));
     for (const a of aps ?? []) {

@@ -66,26 +66,25 @@ try{
   await page.getByRole('tab',{name:'Nome, peça ou sistema'}).click();
   await page.locator('#m2-pesquisar').fill('');
 
-  const cores=await page.locator('.m2-veiculo').first().evaluate(el=>({fundo:getComputedStyle(el).backgroundColor,imagem:getComputedStyle(el).backgroundImage}));
-  assert.deepEqual(cores,{fundo:'rgb(255, 255, 255)',imagem:'none'},'paleta branca prevalece sobre o tema administrativo');
-  await page.getByRole('tab',{name:'O que ele precisa?',exact:true}).click();
-  assert.equal(await page.locator('.m2-sistema-grade button').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','sistemas exibem superfície branca');
-  await page.getByRole('tab',{name:'Qual é o seu veículo?',exact:true}).click();
-  assert.equal(await page.locator('.m2-filtros').evaluate(el=>getComputedStyle(el).maxWidth),'none','filtros não herdam largura administrativa de 440px');
-  if(width===1280){await page.locator('.m2-veiculo').first().hover();assert.equal(await page.locator('.m2-veiculo').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','hover preserva fundo branco');}
-
-  assert.equal(await page.locator(".v-hero").count(),0,"layout antigo não pode ser renderizado");
-  const linhas=page.locator(".m4-linha-card");
-  assert.equal(await linhas.count(),4,"quatro linhas adicionais sob consulta, sem duplicar HR/Bongo/L200");
-  await page.getByRole("button",{name:"Consultar peças para Iveco Daily"}).click();
-  const consultaLinha=await page.locator("#m2-atendimento .m2-contato-form a").getAttribute("href");
-  assert.match(decodeURIComponent(consultaLinha||""),/Iveco Daily/,"consulta comercial inclui a linha escolhida");
-  assert.equal(await page.locator(".m4-banner-campanha").count(),0,"sem campanha ativa não existe oferta simulada no banner");
-  assert.equal(await page.locator(".m2-veiculo").count(),4,"três modelos e consulta a outros modelos");
-  assert.equal(await page.locator(".m2-veiculo img.m4-foto-veiculo").count(),3,"cada modelo com a imagem do veículo correto");
-  assert.equal(new Set(await page.locator(".m2-veiculo img").evaluateAll(l=>l.map(i=>i.currentSrc||i.src))).size,3,"nenhuma imagem repetida nos cartões");
-  await page.getByRole('tab',{name:'O que ele precisa?',exact:true}).click();
-  assert.equal(await page.locator(".m2-sistema-grade button").count(),8,"8 módulos de peças");
+  // NOVO layout em blocos ligados ao Conecta.IA: um só seletor de marcas e um só de sistemas.
+  for(const bloco of ["cabecalho","banner","montadoras","taxonomia","filtros","produtos","privacidade"]){
+    assert.equal(await page.locator('[data-bloco="'+bloco+'"]').count(),1,"bloco "+bloco+" montado uma vez");
+  }
+  assert.equal(await page.locator(".m4-montadora-item").count(),9,"nove montadoras para consulta, sem inventar aplicações");
+  assert.equal(await page.locator(".m4-taxonomia-item").count(),6,"sistemas em consulta quando não há produtos aprovados");
+  assert.equal(await page.locator(".m4-montadora-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(255, 255, 255)","seletor de montadoras branco");
+  assert.equal(await page.locator(".m4-taxonomia-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(255, 255, 255)","nós exibem superfície branca");
+  assert.equal(await page.locator(".m2-filtros").evaluate(el=>getComputedStyle(el).maxWidth),"none","filtros não herdam largura administrativa de 440px");
+  assert.equal(await page.locator(".m4-linha-card,.m2-veiculo-grade").count(),0,"navegação duplicada foi retirada");
+  await page.locator(".m4-montadora-item").filter({hasText:"Iveco"}).click();
+  await page.locator(".m4-montadora-opcoes button").filter({hasText:"Consultar a equipe"}).click();
+  const linkConsulta=await page.locator("#m2-atendimento .m2-contato-form a").getAttribute("href");
+  assert.match(decodeURIComponent(linkConsulta||""),/Iveco/,"consulta contextual registra a montadora selecionada");
+  assert.equal(await page.locator(".m4-banner-campanha").count(),0,"sem campanha ativa não há anúncio fictício");
+  assert.equal(await page.locator(".v-rodape-privacidade-bloco").count(),1,"política de privacidade é bloco do rodapé");
+  assert.equal(await page.locator(".v-rodape-privacidade-bloco button").count(),0,"sem política aprovada não publica texto inventado");
+  assert.equal(await page.locator(".m4-banner-arte img.m4-foto-veiculo").count(),3,"fotos reais dos três modelos permanecem");
+  assert.equal(await page.locator(".v-hero").count(),0,"layout antigo não é renderizado");
   assert.equal(await page.locator(".m2-aviso-teste").isVisible(),true,"loja continua em teste");
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),true,
     "sem rolagem horizontal para "+width+"px");
@@ -97,7 +96,7 @@ try{
   await respostaBusca;
   assert.ok(requests.some(x=>x.q==="D4CB"&&x.slug==="mobis"),"busca conecta à API da loja");
   assert.equal(await page.getByRole("heading",{name:"Indexar e enriquecer"}).count(),0,"não expor painel privado");
-  for(const [nome,id] of [["Catálogo de produtos","m2-catalogo"],["Buscar por veículo","m2-busca"],["Categorias de peças","m2-explorar"],["Voltar aos produtos ↑","m2-catalogo"]]){
+  for(const [nome,id] of [["Catálogo de produtos","m2-catalogo"],["Buscar por veículo","m2-montadoras"],["Categorias de peças","m2-taxonomia"],["Voltar aos produtos ↑","m2-catalogo"]]){
    const link=page.getByRole("link",{name:nome,exact:true});
    assert.equal(await link.getAttribute("href"),"#/loja/mobis","abrir em outra aba também mantém a loja");
    await link.click();

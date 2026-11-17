@@ -1,0 +1,51 @@
+/* MOBIS · composição por blocos. Nós do catálogo vêm da API Conecta.IA.
+   A identidade oficial, tipografia e fotografias dos veículos são preservadas. */
+.mobis-v2.m4 .m4-bloco-nos{padding-top:clamp(14px,2.6vw,25px);padding-bottom:clamp(15px,2.4vw,25px)}
+.mobis-v2.m4 .m4-bloco-nos-titulo{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px}
+.mobis-v2.m4 .m4-bloco-nos-titulo h2{margin:0 0 5px;font-size:clamp(1.25rem,1.08rem + .8vw,1.65rem);
+  line-height:1.17;color:#222a31;font-weight:800}
+.mobis-v2.m4 .m4-bloco-nos-titulo p{margin:0;color:#59646c;font-size:.85rem;line-height:1.4}
+.mobis-v2.m4 .m4-montadoras-grade{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:7px}
+.mobis-v2.m4 .m4-montadora-item{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;
+  text-align:center;min-width:0;min-height:72px;padding:9px 5px;border-radius:11px;cursor:pointer;
+  border:1px solid #dfe3e7;background:#fff;color:#2b343b;box-shadow:0 3px 9px #1f293707;font:inherit}
+.mobis-v2.m4 .m4-montadora-item strong{font-size:clamp(.74rem,.64rem + .2vw,.91rem);line-height:1.2;overflow-wrap:anywhere}
+.mobis-v2.m4 .m4-montadora-item small{font-size:.63rem;line-height:1.18;color:#64717a}
+.mobis-v2.m4 .m4-montadora-item:hover,.mobis-v2.m4 .m4-montadora-item.selecionada{border-color:#727e88;background:#f2f4f6}
+.mobis-v2.m4 .m4-montadora-item.selecionada{box-shadow:inset 0 3px #a84916}
+.mobis-v2.m4 .m4-montadora-modelos{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;
+  padding:12px;border:1px solid #d5dbe0;border-radius:12px;background:#f5f7f8}
+.mobis-v2.m4 .m4-montadora-modelos strong{font-size:.91rem}
+.mobis-v2.m4 .m4-montadora-modelos p{margin:3px 0 0;font-size:.78rem;color:#68727b}
+.mobis-v2.m4 .m4-montadora-opcoes{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}
+.mobis-v2.m4 .m4-montadora-opcoes button{background:#4a5159;color:#fff;border:1px solid #4a5159;border-radius:9px;
+  padding:9px 12px;min-height:44px;font:inherit;font-weight:700;font-size:.81rem;cursor:pointer}
+.mobis-v2.m4 .m4-montadora-opcoes button:hover{background:#30373f}
+.mobis-v2.m4 .m4-bloco-nos-nota{display:block;margin-top:10px;color:#67727a;font-size:.7rem;line-height:1.4}
+.mobis-v2.m4 .m4-bloco-taxonomia{background:linear-gradient(145deg,#f5f7f9,#fff);border-top:1px solid #e4e9ed;border-bottom:1px solid #e4e9ed}
+.mobis-v2.m4 .m4-taxonomia-grade{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+.mobis-v2.m4 .m4-taxonomia-item{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;min-width:0;min-height:120px;padding:9px 6px;gap:5px;border:1px solid #dfe4e8;
+  border-radius:12px;background:#fff;color:#263038;font:inherit;cursor:pointer}
+.mobis-v2.m4 .m4-taxonomia-item:hover{border-color:#65707b;background:#f7f9fa}
+.mobis-v2.m4 .m4-taxonomia-item .ico-peca{width:50px;height:50px;object-fit:contain}
+.mobis-v2.m4 .m4-taxonomia-item strong{font-size:.88rem;line-height:1.2;overflow-wrap:anywhere}
+.mobis-v2.m4 .m4-taxonomia-item small{font-size:.68rem;color:#62707a;line-height:1.2}
+.mobis-v2.m4 .m4-taxonomia-item>span{font-size:.72rem;font-weight:800;color:#424a54}
+.mobis-v2.m4 [data-bloco="produtos"]{scroll-margin-top:90px}
+.mobis-v2.m4 [data-bloco="banner"]{background:linear-gradient(130deg,#fff,#f5f8fa)}
+.mobis-v2.m4 .m2-search button,.mobis-v2.m4 .m4-busca button{background:#4a5159;color:#fff;border-color:#4a5159}
+@media(max-width:1150px){.mobis-v2.m4 .m4-montadoras-grade{grid-template-columns:repeat(5,minmax(0,1fr))}.mobis-v2.m4 .m4-taxonomia-grade{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.mobis-v2.m4 .m4-montadoras-grade{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .mobis-v2.m4 .m4-montadora-item{min-height:61px;padding:6px 3px}
+  .mobis-v2.m4 .m4-montadora-item strong{font-size:.77rem}
+  .mobis-v2.m4 .m4-montadora-modelos{display:block}
+  .mobis-v2.m4 .m4-montadora-opcoes{justify-content:flex-start;margin-top:10px}
+  .mobis-v2.m4 .m4-taxonomia-grade{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .mobis-v2.m4 .m4-taxonomia-item{min-height:105px;padding:7px 4px}
+  .mobis-v2.m4 .m4-taxonomia-item .ico-peca{width:42px;height:42px}
+  .mobis-v2.m4 .m4-taxonomia-item strong{font-size:.78rem}
+}
+@media(max-width:360px){.mobis-v2.m4 .m4-montadoras-grade{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .mobis-v2.m4 .m4-taxonomia-grade{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
