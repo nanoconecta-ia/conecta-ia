@@ -42,15 +42,15 @@ export function linkWhatsapp(numero: string | null | undefined, nome: string, sk
   return `https://wa.me/${d}?text=${encodeURIComponent(mensagemWhatsapp(nome, sku, opcoes))}`;
 }
 
-export interface LinhaBanner { sku: string | null; nome: string | null; preco: number | string | null; chamada: string | null; fim: string | null; flash: boolean | null }
-export interface BannerVitrine { sku: string; nome: string; preco: number | null; chamada: string | null; fim: string | null; flash: boolean; whatsapp: string | null; url: string | null }
+export interface LinhaBanner { sku: string | null; nome: string | null; preco: number | string | null; chamada: string | null; fim: string | null; flash: boolean | null; imagem?: string | null }
+export interface BannerVitrine { sku: string; nome: string; preco: number | null; chamada: string | null; fim: string | null; flash: boolean; imagem: string | null; whatsapp: string | null; url: string | null }
 /** Banners no ar para a vitrine. Preço é o do espelho do Bling (nunca digitado). Sem nome ou SKU o banner não sai. */
 export function montarBanners(linhas: LinhaBanner[], whatsapp: string | null, urlDoProduto: (sku: string) => string | null): BannerVitrine[] {
   const out: BannerVitrine[] = [];
   for (const l of linhas) {
     if (!l.nome || !l.sku) continue;
     const url = urlDoProduto(l.sku);
-    out.push({ sku: l.sku, nome: l.nome, preco: num(l.preco), chamada: l.chamada?.trim() || null, fim: l.fim, flash: l.flash === true, url,
+    out.push({ sku: l.sku, nome: l.nome, preco: num(l.preco), chamada: l.chamada?.trim() || null, fim: l.fim, flash: l.flash === true, imagem: l.imagem ?? null, url,
       whatsapp: linkWhatsapp(whatsapp, l.nome, l.sku, { url, origem: l.flash ? "banner-flash" : "banner" }) });
   }
   return out;
