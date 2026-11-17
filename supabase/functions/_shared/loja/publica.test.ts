@@ -67,12 +67,14 @@ test("mensagemWhatsapp: nome, código, link do produto e marca de origem opciona
 
 test("montarBanners: preço do espelho, flash só se marcado, sem nome/SKU não sai, link com origem", () => {
   const b = montarBanners([
-    { sku: "CI1", nome: "Motor parcial", preco: "18900.000000", chamada: " Só hoje ", fim: "2026-10-30T00:00:00Z", flash: true },
+    { sku: "CI1", nome: "Motor parcial", preco: "18900.000000", chamada: " Consulte a peça ", fim: "2026-10-30T00:00:00Z", flash: true, imagem:"https://cdn.example.com/peca-licenciada.webp" },
     { sku: "CI2", nome: "Filtro", preco: 20, chamada: null, fim: null, flash: false },
     { sku: null, nome: "Sem SKU", preco: 1, chamada: null, fim: null, flash: false },
   ], "11912345678", (sku) => `https://loja.com.br/produto/${sku}`);
   assert.deepEqual(b.map((x) => x.sku), ["CI1", "CI2"]);
-  assert.equal(b[0].preco, 18900); assert.equal(b[0].chamada, "Só hoje"); assert.ok(b[0].flash && !b[1].flash);
+  assert.equal(b[0].preco, 18900); assert.equal(b[0].chamada, "Consulte a peça"); assert.ok(b[0].flash && !b[1].flash);
+  assert.equal(b[0].imagem,"https://cdn.example.com/peca-licenciada.webp");
+  assert.equal(b[1].imagem,null);
   assert.ok(decodeURIComponent(b[0].whatsapp!).includes("ref: banner-flash") && decodeURIComponent(b[1].whatsapp!).includes("ref: banner"));
   assert.equal(montarBanners([{ sku: "A", nome: "B", preco: 1, chamada: null, fim: null, flash: false }], null, () => null)[0].whatsapp, null);
 });
