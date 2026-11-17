@@ -24,16 +24,16 @@ select public.afirma(true, 'produto de outra loja é recusado');
 do $$ begin begin insert into public.loja_banners (loja_id, produto_id, inicio, fim) values ('aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000001', now(), now() - interval '1 day'); raise exception 'passou';
   exception when check_violation then null; end; end $$;
 select public.afirma(true, 'fim antes do início é recusado');
--- limite de 5 ativos
-insert into public.loja_banners (loja_id, produto_id, ativo) select 'aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000001',true from generate_series(1,3);
+-- limite de 24 campanhas ativas, todas com produto publicado e auditoria
+insert into public.loja_banners (loja_id, produto_id, ativo) select 'aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000001',true from generate_series(1,22);
 do $$ begin begin insert into public.loja_banners (loja_id, produto_id, ativo) values ('aaaaaaaa-0000-0000-0000-000000000001','dddddddd-0000-0000-0000-000000000001',true); raise exception 'passou';
   exception when check_violation then null; end; end $$;
-select public.afirma(true, 'o sexto banner ativo é recusado');
+select public.afirma(true, 'o 25º banner ativo é recusado');
 
 -- vitrine: flash automático só para Motor
 select public.afirma((select (j->0->>'flash')::boolean from public.banners_da_vitrine('aaaaaaaa-0000-0000-0000-000000000001') j limit 1) is not null, 'vitrine devolve banners');
-select public.afirma((select count(*) from jsonb_array_elements(public.banners_da_vitrine('aaaaaaaa-0000-0000-0000-000000000001'))) = 5, 'vitrine devolve só os ativos');
-select public.afirma((select count(*) from jsonb_array_elements(public.banners_da_vitrine('aaaaaaaa-0000-0000-0000-000000000001')) e where (e->>'flash')::boolean and e->>'sku'='CI1') = 4, 'produto de Motor vira flash no modo automático');
+select public.afirma((select count(*) from jsonb_array_elements(public.banners_da_vitrine('aaaaaaaa-0000-0000-0000-000000000001'))) = 24, 'vitrine devolve só os ativos');
+select public.afirma((select count(*) from jsonb_array_elements(public.banners_da_vitrine('aaaaaaaa-0000-0000-0000-000000000001')) e where (e->>'flash')::boolean and e->>'sku'='CI1') = 23, 'produto de Motor vira flash no modo automático');
 select public.afirma((select count(*) from jsonb_array_elements(public.banners_da_vitrine('aaaaaaaa-0000-0000-0000-000000000001')) e where (e->>'flash')::boolean and e->>'sku'='CI2') = 0, 'produto fora de Motor não vira flash sozinho');
 update public.loja_banners set estilo='flash' where produto_id='dddddddd-0000-0000-0000-000000000002';
 select public.afirma((select count(*) from jsonb_array_elements(public.banners_da_vitrine('aaaaaaaa-0000-0000-0000-000000000001')) e where (e->>'flash')::boolean and e->>'sku'='CI2') = 1, 'estilo flash manual vale em qualquer área');
