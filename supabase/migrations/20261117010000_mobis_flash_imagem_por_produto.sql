@@ -15,8 +15,17 @@ begin
       and i.loja_id = new.loja_id
       and i.produto_id = new.produto_id
   ) then
-    raise exception 'imagem do banner precisa pertencer ao produto e estar autorizada para publicação'
-      using errcode = '23514';
+    -- Uma imagem cuja licença foi revogada deve sair imediatamente da RPC.
+    -- O lojista também precisa poder PAUSAR o banner antigo para corrigir a foto.
+    -- Nunca permite ativar, criar ou selecionar uma foto sem autorização.
+    if new.ativo or tg_op = 'INSERT' then
+      raise exception 'imagem do banner precisa pertencer ao produto e estar autorizada para publicação'
+        using errcode = '23514';
+    end if;
+    if tg_op = 'UPDATE' and new.imagem_id is distinct from old.imagem_id then
+      raise exception 'imagem do banner precisa pertencer ao produto e estar autorizada para publicação'
+        using errcode = '23514';
+    end if;
   end if;
   return new;
 end $$;
