@@ -204,7 +204,6 @@ export function LojaMobisNova({slug}:{slug:string}) {
       <input id="m2-busca-rapida" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Peça, código SKU ou OEM"/>
       <button type="submit">Buscar peças <span aria-hidden="true">→</span></button>
     </form></div>
-    {dados?.loja.ambiente==="teste"&&<div className="m2-aviso-teste" role="status"><strong>LOJA TESTE</strong> · Catálogo em preparação. Consulte peças e aplicações pelo WhatsApp. Preços e disponibilidade a confirmar; não concluímos pedidos nem recebemos pagamentos neste site.</div>}
     <main>
       <BannerMobis
         veiculos={VEICULOS}
