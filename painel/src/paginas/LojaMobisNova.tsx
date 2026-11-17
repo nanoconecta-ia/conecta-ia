@@ -6,7 +6,7 @@ import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoj
 import { ChatClienteLoja } from "../componentes/ChatClienteLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 import { BlocoMontadorasMobis, BlocoTaxonomiaMobis } from "../componentes/BlocosCatalogoMobis.tsx";
-import { BannerMobis } from "../componentes/BannerMobis.tsx";
+import { GlassyCarouselMobisV3 } from "../componentes/GlassyCarouselMobisV3.tsx";
 import {intervaloPublico,ordemPublica,type BlocoComercial} from "../lib/layoutMobis.ts";
 import {paletaPublicada,variaveisPaletaMobis} from "../lib/paletaMobis.ts";
 import fotoHR from "../assets/veiculos-mobis/hyundai-hr.webp";
@@ -64,20 +64,18 @@ const para=(id:string)=>document.getElementById(id)?.scrollIntoView({behavior:wi
 const aplicacoesPublicas = (paginas: PaginaAplicacao[] | undefined) =>
   (paginas ?? []).filter(p => p.status === "aprovado");
 
-export function LojaMobisNova({slug}:{slug:string}) {
+export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veiculo"|"sistema"|"empresa";valor:string}}) {
   const [dados,setDados]=useState<Resposta|null>(null);
   const [estado,setEstado]=useState<"carregando"|"ok"|"erro"|"limite"|"naoachada">("carregando");
-  const [f,setF]=useState<Filtros>(VAZIO);
+  const [f,setF]=useState<Filtros>(()=>contexto?.tipo==="veiculo"?{...VAZIO,modelo:contexto.valor}:contexto?.tipo==="sistema"?{...VAZIO,categoria:contexto.valor}:VAZIO);
   const [busca,setBusca]=useState("");
-  const [modelo,setModelo]=useState("");
+  const [modelo,setModelo]=useState(contexto?.tipo==="veiculo"?contexto.valor:"");
   const [motor,setMotor]=useState("");
   const [ano,setAno]=useState("");
-  const [categoria,setCategoria]=useState("");
+  const [categoria,setCategoria]=useState(contexto?.tipo==="sistema"?contexto.valor:"");
   const [tentativa,setTentativa]=useState(0);
   const [lista,setLista]=useState<{sku:string;nome:string}[]>([]);
   const [aviso,setAviso]=useState("");
-  const [slide,setSlide]=useState(0);
-  const [pausa,setPausa]=useState(false);
   const [abaBusca,setAbaBusca]=useState<"descricao"|"referencia">("descricao");
   const [consultaModelo,setConsultaModelo]=useState<string|null>(null);
   useEffect(()=>{
@@ -117,13 +115,6 @@ export function LojaMobisNova({slug}:{slug:string}) {
     return()=>{if(criada)tag?.remove();else if(tag&&anterior!==null)tag.content=anterior;};
   },[dados?.loja.ambiente]);
   const banners=dados?.banners??[];
-  const bannerAtual=banners[Math.min(slide,banners.length-1)] ?? null;
-  useEffect(()=>setSlide(0),[banners[0]?.sku]);
-  useEffect(()=>{
-    if(banners.length<2||pausa||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
-    const t=window.setInterval(()=>{if(!document.hidden)setSlide(i=>(i+1)%banners.length);},intervaloPublico(dados?.layout?.intervalo_segundos)*1000);
-    return()=>window.clearInterval(t);
-  },[banners.length,pausa,dados?.layout?.intervalo_segundos]);
   const opcoes=useMemo(()=>[...new Set((dados?.veiculos??[]).map(x=>x.modelo))].sort(),[dados?.veiculos]);
   const motores=useMemo(()=>[...new Set((dados?.veiculos??[]).filter(x=>!modelo||x.modelo===modelo)
     .map(x=>x.motor).filter((x):x is string=>!!x))].sort(),[dados?.veiculos,modelo]);
@@ -145,12 +136,12 @@ export function LojaMobisNova({slug}:{slug:string}) {
   function escolherVeiculoAprovado(valor:string){
     // O rótulo vem dos modelos de aplicações aprovadas entregues pela API.
     setAbaBusca("descricao");setModelo(valor);setMotor("");setAno("");setCategoria("");setBusca("");
-    setF({...VAZIO,modelo:valor});para("m2-catalogo");
+    setF({...VAZIO,modelo:valor});window.location.hash="#/loja/mobis/veiculo/"+encodeURIComponent(valor);
   }
   function escolherNoTaxonomia(slugNo:string){
     if(!dados?.categorias.some(c=>c.slug===slugNo&&c.total>0))return;
     setAbaBusca("descricao");setModelo("");setMotor("");setAno("");setCategoria(slugNo);setBusca("");
-    setF({...VAZIO,categoria:slugNo});para("m2-catalogo");
+    setF({...VAZIO,categoria:slugNo});window.location.hash="#/loja/mobis/sistema/"+encodeURIComponent(slugNo);
   }
   function adicionar(p:Produto){
     if(lista.some(x=>x.sku===p.sku)){setAviso("Essa peça já consta na lista.");return;}
@@ -167,38 +158,13 @@ export function LojaMobisNova({slug}:{slug:string}) {
   // O DOM segue a ordem publicada, inclusive para navegação por teclado e leitores de tela.
   // Header e privacidade ficam fora do editor; nenhum bloco recebe HTML arbitrário.
   const ordemLayout=ordemPublica(dados?.layout?.blocos);
+  const ordemVitrine:BlocoComercial[]=["banner","catalogo",...ordemLayout.filter(id=>id!=="banner"&&id!=="catalogo"&&id!=="empresa")];
   const coresPublicas=paletaPublicada(dados?.paleta);
   const blocosSite:Record<BlocoComercial,ReactNode>={
-    banner: bannerAtual ? <div data-bloco="banner">
-      {bannerAtual&&<section id="m2-destaques" className="m2-wrap m2-secao m2-destaques" aria-label="Campanhas de produtos da Mobis">
-        <div className={"m2-flash m4-flash-campanha"+(bannerAtual.flash?" m4-flash-animado":"")} onMouseEnter={()=>setPausa(true)} onMouseLeave={()=>setPausa(false)} onFocusCapture={()=>setPausa(true)} onBlurCapture={()=>setPausa(false)}>
-          {bannerAtual.imagem&&<a className="m4-flash-midia" href={"#/p/mobis/"+encodeURIComponent(bannerAtual.sku)} aria-label={"Abrir página individual do produto "+bannerAtual.sku}>
-            <img src={bannerAtual.imagem} alt={"Fotografia autorizada do produto "+bannerAtual.sku} loading="lazy" decoding="async"/>
-          </a>}
-          <div className="m4-flash-copy"><span className="m2-kicker">{dados?.loja.ambiente==="teste"?"CAMPANHA EM TESTE":bannerAtual.flash?"MOBIS · FLASH":"MOBIS · DESTAQUE"}</span>
-            <h3><a className="m4-flash-titulo-link" href={"#/p/mobis/"+encodeURIComponent(bannerAtual.sku)}>{bannerAtual.chamada||bannerAtual.nome}</a></h3>
-            <p>{bannerAtual.nome}</p>
-            <small>SKU {bannerAtual.sku} · Confirme aplicação e disponibilidade pelo chassi.</small>
-            {bannerAtual.preco!=null&&<strong>{brl(bannerAtual.preco)}</strong>}
-            {aplicacoesPublicas(dados?.paginas_aplicacao?.[bannerAtual.sku]).length>0&&<nav className="m4-flash-veiculos" aria-label="Páginas específicas por veículo">
-              {aplicacoesPublicas(dados?.paginas_aplicacao?.[bannerAtual.sku]).map(ap=>
-                <a key={ap.slug} href={"#/a/"+encodeURIComponent(ap.slug)}>{ap.modelo} · ver aplicação →</a>)}
-            </nav>}
-          </div>
-          <a className="m4-flash-acao" href={"#/p/mobis/"+encodeURIComponent(bannerAtual.sku)}>Ver página do produto <span aria-hidden="true">→</span></a>
-          {banners.length>1&&<div className="m2-flash-controles"><button aria-label="Banner anterior" onClick={()=>setSlide((slide+banners.length-1)%banners.length)}>‹</button>
-            <span>{slide+1}/{banners.length}</span><button aria-label="Próximo banner" onClick={()=>setSlide((slide+1)%banners.length)}>›</button>
-            <button onClick={()=>setPausa(!pausa)}>{pausa?"Reativar":"Pausar"}</button></div>}
-        </div>
-      </section>}
-    </div> : <>
-      <div data-bloco="banner"><BannerMobis
-        veiculos={VEICULOS}
-        abrirEscolha={()=>para("m2-montadoras")}
-        buscarCodigo={()=>{setAbaBusca("referencia");para("m2-busca");document.getElementById("m2-pesquisar")?.focus({preventScroll:true});}}
-        campanha={banners.length?{sku:banners[0].sku,nome:banners[0].nome,chamada:banners[0].chamada,imagem:banners[0].imagem,flash:banners[0].flash}:undefined}
-      /></div>
-    </>,
+    banner: <div data-bloco="banner"><GlassyCarouselMobisV3
+      banners={banners} produtos={dados?.produtos??[]} veiculos={VEICULOS}
+      intervalo={intervaloPublico(dados?.layout?.intervalo_segundos)}
+      emTeste={dados?.loja.ambiente!=="producao"}/></div>,
     montadoras: <>
       <BlocoMontadorasMobis modelos={opcoes} aoSelecionarModelo={escolherVeiculoAprovado} aoConsultar={consultarLinha}/>
     </>,
@@ -271,9 +237,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
         <p className="m2-legenda">Preços, aplicação e disponibilidade devem ser confirmados antes da compra. A lista não reserva estoque nem cria pedido.</p>
       </section>
     </>,
-    empresa: <>
-      <EmpresaMobis whatsapp={whatsapp}/>
-    </>,
+    empresa: null,
   };
   return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="aprovado-v2" data-layout-versionado="true" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4" data-paleta-publicada={coresPublicas?"sim":"nao"} style={coresPublicas?variaveisPaletaMobis(coresPublicas) as CSSProperties:undefined}>
     <div data-bloco="cabecalho">
@@ -286,7 +250,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
         <button onClick={()=>para("m2-taxonomia")}>Peças por sistema</button>
         <button onClick={()=>para("m2-catalogo")}>Catálogo</button>
         {banners.length>0&&<button onClick={()=>para("m2-destaques")}>Destaques</button>}
-        <button onClick={()=>para("m2-empresa")}>A Mobis</button></nav>
+        <a className="m4-menu-empresa" href="#/loja/mobis/empresa" aria-label="Sobre a Mobis e informações da empresa">Sobre a Mobis ↗</a></nav>
       <div className="m2-header-acoes"><button onClick={()=>para("m2-lista")}>Minha lista <span>{lista.length}</span></button>
         {whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Fale com a Mobis <span>WhatsApp ↗</span></a>}
       </div>
@@ -301,7 +265,7 @@ export function LojaMobisNova({slug}:{slug:string}) {
     </div>}
     </div>
     <main>
-      {ordemLayout.map(id=><Fragment key={id}>{blocosSite[id]}</Fragment>)}
+      {contexto?.tipo==="empresa" ? <EmpresaMobis whatsapp={whatsapp}/> : <>{ordemVitrine.map(id=><Fragment key={id}>{blocosSite[id]}</Fragment>)}
       <section id="m2-atendimento" className="m2-atendimento">
         {consultaModelo&&<div className="m2-wrap"><p className="m4-consulta-aviso" role="status">Para {consultaModelo}, ainda não há aplicação homologada nesta lista. Nossa equipe pode consultar a referência e confirmar a peça pelo chassi.</p></div>}
         <div className="m2-wrap m2-atendimento-grid">
@@ -315,8 +279,9 @@ export function LojaMobisNova({slug}:{slug:string}) {
         {lista.length>0&&<div>{whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>}<button onClick={()=>{setLista([]);setAviso("")}}>Limpar lista</button></div>}
         <p>Não informe CPF, chassi completo, senha ou dados bancários no chat. A lista é só consulta e não conclui compra.</p>
       </section>
+      </>}
     </main>
-    <RodapeLoja nome={dados?.loja.nome??"Mobis Autopeças"} slug="mobis" whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas} ultima={dados?.produtos.map(x=>x.atualizado_em).filter(Boolean).sort().at(-1)} secoes={{catalogo:"m2-catalogo",veiculo:"m2-montadoras",categoria:"m2-taxonomia",empresa:"m2-empresa"}}/>
+    <RodapeLoja nome={dados?.loja.nome??"Mobis Autopeças"} slug="mobis" whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas} ultima={dados?.produtos.map(x=>x.atualizado_em).filter(Boolean).sort().at(-1)} secoes={{catalogo:"m2-catalogo",veiculo:"m2-montadoras",categoria:"m2-taxonomia"}}/>
     <ChatClienteLoja nome={dados?.loja.nome??"Mobis Autopeças"} whatsapp={dados?.loja.whatsapp}/>
   </div>;
 }
