@@ -220,7 +220,7 @@
 .mobis-v2.m4 .m4-linhas-cabecalho p{color:var(--m4-texto);font-size:.88rem;max-width:65ch;margin:0}
 .mobis-v2.m4 .m4-linhas-cabecalho>button{background:#fff;border:1px solid #d3d8dd;border-radius:10px;min-height:44px;padding:8px 13px;font-weight:750;color:var(--m4-tinta);white-space:nowrap}
 .mobis-v2.m4 .m4-linhas-cabecalho>button:hover{border-color:var(--m4-acento);color:var(--m4-acento)}
-.mobis-v2.m4 .m4-linhas-grade{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.mobis-v2.m4 .m4-linhas-grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .mobis-v2.m4 .m4-linha-card{display:flex;flex-direction:column;gap:10px;min-width:0;text-align:left;background:#fff;border:1px solid var(--m4-linha);border-radius:14px;padding:10px;box-shadow:0 4px 18px #1f232709;transition:transform .18s,border-color .18s}
 .mobis-v2.m4 .m4-linha-card:hover{transform:translateY(-2px);border-color:var(--m4-acento)}
 .mobis-v2.m4 .m4-linha-retrato{display:grid;place-items:center;gap:3px;min-height:102px;background:linear-gradient(155deg,#fff9f5,#f5f6f7);border-radius:11px}
