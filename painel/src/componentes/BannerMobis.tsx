@@ -5,12 +5,14 @@ import type { ReactNode } from "react";
  * Mostra a imagem do veículo correto de cada modelo (recebidas da página); a imagem identifica
  * o modelo, não o ano, a versão nem a aplicação da peça.
  */
-export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra }: {
+export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra, campanha }: {
   veiculos: readonly { nome: string; foto: string }[];
   abrirEscolha: () => void;
   buscarCodigo: () => void;
   /** Ação opcional do ambiente de teste (ex.: atalho do produto de teste). */
   extra?: ReactNode;
+  /** Destaque real gerenciado pelo lojista em Banners, nunca produto sintético. */
+  campanha?: {sku:string;nome:string;chamada:string|null};
 }) {
   return (
     <section className="m4-banner m2-hero" aria-label="Peças para picapes, vans e utilitários diesel">
@@ -19,6 +21,13 @@ export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra }: {
           <span className="m4-etiqueta">Mobis Autopeças · Loja independente</span>
           <h1>Peças para <strong>picapes, vans e utilitários diesel</strong></h1>
           <p>Motor, suspensão, transmissão, elétrica e muito mais. Procure pelo seu veículo ou pelo código da peça.</p>
+          {campanha&&<a className="m4-banner-campanha" href={"#/p/mobis/"+encodeURIComponent(campanha.sku)}>
+            <span className="m4-banner-campanha-marca" aria-hidden="true">M</span>
+            <span><small>CAMPANHA ATIVA · CONECTA.IA</small>
+              <strong>{campanha.chamada||campanha.nome}</strong>
+              <em>Ver ficha e consultar disponibilidade · SKU {campanha.sku}</em>
+            </span><b aria-hidden="true">→</b>
+          </a>}
           <div className="m4-banner-acoes">
             <button type="button" className="m4-botao" onClick={abrirEscolha}>Escolher meu veículo <span aria-hidden="true">→</span></button>
             <button type="button" className="m4-botao m4-botao-claro" onClick={buscarCodigo}>Já tenho o código</button>
