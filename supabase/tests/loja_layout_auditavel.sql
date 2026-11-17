@@ -27,7 +27,7 @@ begin
    update public.loja_layout_versoes set blocos=array['catalogo','banner','montadoras','taxonomia','empresa']::text[]
    where id=v1;
    raise exception 'FALHOU: versão aprovada foi alterada';
- exception when check_violation then null; end;
+ exception when insufficient_privilege or check_violation then null; end;
  begin
    delete from public.loja_layout_versoes where id=v1;
    raise exception 'FALHOU: versão histórica foi apagada';
