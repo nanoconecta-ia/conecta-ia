@@ -2,6 +2,7 @@
 // A Edge Function só autentica o usuário (JWT), confere que ele é membro da loja e chama estas funções com o userId VERIFICADO.
 // Chave MCP e agente nunca chegam aqui: aprovar é ato de pessoa autenticada.
 import { reconciliar, simularProposta, executarProposta, type ItemExecucao, type Rpc } from "./executor.ts";
+import { blingEscritaNegadaPorPolitica, MENSAGEM_MOBIS_BLING_SOMENTE_LEITURA } from "./mobis_politica.ts";
 import { BlingMock } from "./bling_mock.ts";
 import type { PortaBling } from "./porta_bling.ts";
 import { gerarToken, sha256Hex } from "./cripto.ts";
@@ -88,6 +89,13 @@ export async function acaoAprovacoes(c: Record<string, any>, h: Humano, d: DepsA
         // Executa o que foi APROVADO. Travas em camadas para escrever no Bling: segredo BLING_ESCRITA_REAL, ferramenta ativa no registro,
         // liberação da loja no banco (por ferramenta), aprovação da versão exata, campos da lista fechada e leitura de confirmação.
         if (!uuid(c.proposta_id)) return erro(400, "Informe proposta_id.");
+        // Política da Mobis: nem uma aprovação humana ou flag futura habilita escrita no Bling.
+        // A consulta abaixo é somente leitura e acontece ANTES de consumir a tentativa.
+        const previstosMobis = h.lojaId.toLowerCase() === "cd9d7570-f095-44f2-be28-b9b9cba6578e"
+          ? await rpcOu(d, "agente_proposta_validar", { p_loja: h.lojaId, p_proposta: c.proposta_id }) as ItemExecucao[]
+          : [];
+        if (previstosMobis.some(i => blingEscritaNegadaPorPolitica(h.lojaId, i.operacao)))
+          return erro(403, MENSAGEM_MOBIS_BLING_SOMENTE_LEITURA, "bling_somente_leitura");
         const porta = d.blingEscrita ?? d.blingLeitura;
         if (!porta) return erro(503, "Leitura do Bling indisponível para confirmar a execução.");
         if (porta.escritaLigada === false) {
