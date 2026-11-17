@@ -265,7 +265,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     </div>}
     </div>
     <main>
-      {contexto?.tipo==="empresa" ? <EmpresaMobis whatsapp={whatsapp}/> : <>{ordemVitrine.map(id=><Fragment key={id}>{blocosSite[id]}</Fragment>)}
+      {contexto?.tipo==="empresa" ? <EmpresaMobis whatsapp={whatsapp} politicas={dados?.politicas}/> : <>{ordemVitrine.map(id=><Fragment key={id}>{blocosSite[id]}</Fragment>)}
       <section id="m2-atendimento" className="m2-atendimento">
         {consultaModelo&&<div className="m2-wrap"><p className="m4-consulta-aviso" role="status">Para {consultaModelo}, ainda não há aplicação homologada nesta lista. Nossa equipe pode consultar a referência e confirmar a peça pelo chassi.</p></div>}
         <div className="m2-wrap m2-atendimento-grid">
