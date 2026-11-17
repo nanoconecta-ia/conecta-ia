@@ -108,5 +108,18 @@ html[data-tema="contraste"] .conecta-aprovado-root .ap-caminho b{color:#fff}
 @media(max-width:760px){
  .conecta-aprovado-root .ap-preferencias>summary{padding:7px 10px;font-size:14px}
  .conecta-aprovado-root .ap-preferencias>summary span{display:none}
- .conecta-aprovado-root .ap-preferencias-painel{right:-75px;max-width:calc(100vw - 20px)}
+ .conecta-aprovado-root .ap-preferencias-painel{right:0;max-width:calc(100vw - 20px)}
 }
+
+/* Cartões respiram no notebook e não esmagam dados no celular. */
+@media(min-width:761px) and (max-width:1200px){
+ .conecta-aprovado-root .ap-metricas{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .conecta-aprovado-root .ap-niveis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ .conecta-aprovado-root .ap-metricas{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .conecta-aprovado-root .ap-niveis,.conecta-aprovado-root .ap-origem-regras{grid-template-columns:1fr}
+ .conecta-aprovado-root .ap-tablewrap{overflow-x:auto}
+ .conecta-aprovado-root .ap-preferencias>summary{min-width:44px;justify-content:center}
+}
+@media(max-width:380px){.conecta-aprovado-root .ap-metricas{grid-template-columns:1fr}}
