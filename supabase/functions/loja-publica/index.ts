@@ -260,5 +260,25 @@ Deno.serve(async (req) => {
   const { data: politicasAprovadas } = await sb.from("loja_politicas")
     .select("razao_social, cnpj, endereco, telefone, email_contato, privacidade_texto, troca_devolucao_texto, entrega_texto, garantia_texto, termos_texto")
     .eq("loja_id", loja.id).eq("status", "aprovada").maybeSingle();
-  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
+  // Layout público: somente ponteiro publicado + cinco IDs conhecidos.
+  // Nunca enviar versões, editores, autores, auditoria ou campos do Bling.
+  const padrao = ["banner","montadoras","taxonomia","catalogo","empresa"];
+  let layout = { blocos: padrao, intervalo_segundos: 6 };
+  if (loja.slug === "mobis") {
+    const {data: atual} = await sb.from("loja_layout_publicado")
+      .select("versao_id").eq("loja_id",loja.id).maybeSingle();
+    if (atual?.versao_id) {
+      const {data: versao} = await sb.from("loja_layout_versoes")
+        .select("blocos,intervalo_segundos").eq("loja_id",loja.id).eq("id",atual.versao_id).maybeSingle();
+      const ids = versao?.blocos;
+      if(Array.isArray(ids) && ids.length === 5 &&
+        ids.every((x:unknown)=>typeof x==="string" && padrao.includes(x)) &&
+        new Set(ids).size===5) {
+        layout = {blocos:ids,intervalo_segundos:
+          Number.isInteger(versao?.intervalo_segundos)&&versao.intervalo_segundos>=4&&versao.intervalo_segundos<=15
+            ?versao.intervalo_segundos:6};
+      }
+    }
+  }
+  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, layout, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
 });
