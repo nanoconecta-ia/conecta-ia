@@ -1,6 +1,6 @@
 // Vitrine pública da loja (verify_jwt = false). POST { slug } ou { host } (domínio do cliente) e opcionais { q, pagina }.
 // A loja é resolvida NO SERVIDOR: por domínio verificado (DNS e SSL) ou pelo slug. Loja desconhecida/inativa => 404 genérico.
-// Só devolve produtos PUBLICADOS e campos públicos (sem custo, fornecedor ou id do ERP).
+// Devolve produtos publicados; somente no piloto Mobis em teste admite prévia explicitamente marcada, sem preço nem venda.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.ts";
 import { modoCliente } from "../_shared/loja/publicacao.ts";
@@ -43,9 +43,9 @@ Deno.serve(async (req) => {
   if (host && loja.ambiente !== "producao") return json({ erro: "Loja ainda em preparação." }, 404);
   const fase = loja.ambiente === "producao" ? "producao" : "teste";
   const faseCliente = modoCliente(fase, loja.modo_venda);
-  // Política Mobis: rascunhos, aplicações a confirmar e exibicao_teste
-  // são somente do PAINEL autenticado. A API pública não os devolve.
-  // Isso vale também quando a loja permanece em ambiente de teste.
+  // Prévia controlada: somente Mobis no link de teste por slug (nunca por domínio)
+  // e somente SKUs selecionados pelo lojista com exibicao_teste=true.
+  // A prévia não é indexável, não anuncia preço/estoque nem homologa aplicações.
 
 
   // Página filha comercial por veículo: a aplicação aponta para o MESMO produto
@@ -104,6 +104,7 @@ Deno.serve(async (req) => {
     .eq("loja_id", loja.id).eq("publicado", true);
   const { data: pub } = await consultaPublicados.limit(5000);
   const idsPublicados = (pub ?? []).map((p: { id: string }) => p.id);
+  const modoPreviaCatalogo = loja.slug === "mobis" && fase === "teste" && !host && idsPublicados.length === 0;
   let apls: Aplicacao[] = [];
   if (idsPublicados.length) {
     let { data, error: eApl } = await sb.from("produto_aplicacoes").select("produto_id, modelo, motorizacao, ano_inicial, ano_final, modelos(categoria)").eq("loja_id", loja.id).eq("status", "aprovado").limit(5000);
@@ -121,7 +122,9 @@ Deno.serve(async (req) => {
 
   let consulta = sb.from("produtos").select("nome, sku, preco, estoque, marca, descricao_curta, sincronizado_em, publicado, exibicao_teste, taxonomia_no_id", { count: "exact" })
     .eq("loja_id", loja.id);
-  consulta = consulta.eq("publicado", true);
+  consulta = modoPreviaCatalogo
+    ? consulta.eq("exibicao_teste", true).eq("situacao", "A")
+    : consulta.eq("publicado", true);
   consulta = consulta.order("nome").range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1);
   // Espelho de códigos: apenas vínculos realmente aprovados podem levar a um
   // produto; candidato ou pendente não serve como atalho de correspondência.
@@ -216,12 +219,12 @@ Deno.serve(async (req) => {
     [l.sku, categoriaPorNo.get(l.taxonomia_no_id ?? "") ?? null]));
   const produtos = montarVitrine((linhas ?? []).map((l: Record<string, unknown>) => ({
     ...l,
-    preco: l.preco,
-    estoque: l.estoque,
+    preco: modoPreviaCatalogo ? null : l.preco,
+    estoque: modoPreviaCatalogo ? null : l.estoque,
     imagem: imagens.get(String(l.sku)) ?? null,
   }) as never), loja.whatsapp, urlDoProduto)
     .map((produto) => ({
-      ...produto, consulta_previa: false,
+      ...produto, consulta_previa: modoPreviaCatalogo,
       categoria: categoriaPorSku.get(produto.sku) ?? null,
       referencias_aprovadas: codigosAprovadosPorSku.get(produto.sku) ?? [],
     }));
