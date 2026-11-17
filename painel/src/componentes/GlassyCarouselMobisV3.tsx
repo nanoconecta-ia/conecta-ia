@@ -65,7 +65,7 @@ export function GlassyCarouselMobisV3({
         onKeyDown={e=>{if(e.key==="ArrowRight"){e.preventDefault();mover(1);}if(e.key==="ArrowLeft"){e.preventDefault();mover(-1);}}}>
         <div className="gcv3-copy" key={"copy-"+slide.id}>
           <span className={"gcv3-etiqueta"+(slide.flash?" gcv3-etiqueta-flash":"")}>{slide.etiqueta}</span>
-          <h1>{slide.titulo}</h1>
+          <h1><a className="gcv3-titulo-link" href={slide.url}>{slide.titulo}</a></h1>
           {slide.subtitulo!==slide.titulo&&<p>{slide.subtitulo}</p>}
           {slide.sku&&<small className="gcv3-sku">SKU {slide.sku}</small>}
           {slide.preco!=null&&slide.preco>0&&<strong className="gcv3-preco">{moeda(slide.preco)}</strong>}
