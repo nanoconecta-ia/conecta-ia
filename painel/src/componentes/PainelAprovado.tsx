@@ -5,6 +5,7 @@ import { Icone } from "./Icone.tsx";
 import { VERSAO_LOCAL, rotuloVersao } from "../lib/versao.ts";
 import "../workspace-aprovado.css";
 import "../painel-paleta-legivel.css";
+import "../contraste-wcag-pr427.css";
 import { PERFIS, lerPerfil, gravarPerfil, aplicarPerfil } from "../lib/perfilCor.ts";
 import { PREFERENCIAS, lerPreferencia, armazemLocal, aplicarTema, gravarPreferencia, type Preferencia } from "../lib/tema.ts";
 import marcaMobis from "../assets/mobis-identidade-aprovada.jpg";
