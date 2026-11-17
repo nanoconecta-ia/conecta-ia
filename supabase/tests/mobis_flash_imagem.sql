@@ -15,7 +15,7 @@ insert into public.produto_imagens (id,loja_id,produto_id,url,tipo,origem,licenc
  ('dddddddd-2222-4444-8888-000000000001','aaaaaaaa-2222-4444-8888-000000000001','cccccccc-2222-4444-8888-000000000001','https://cdn.exemplo/motor-licenciado.jpg','real','loja','propria',true,true,null,null),
  ('dddddddd-2222-4444-8888-000000000002','aaaaaaaa-2222-4444-8888-000000000001','cccccccc-2222-4444-8888-000000000001','https://cdn.exemplo/motor-sem-direito.jpg','ilustrativa','fornecedor','publica_web',true,false,'sku','MOTOR1'),
  ('dddddddd-2222-4444-8888-000000000003','aaaaaaaa-2222-4444-8888-000000000001','cccccccc-2222-4444-8888-000000000002','https://cdn.exemplo/motor-outro-produto.jpg','real','loja','propria',true,true,null,null),
- ('dddddddd-2222-4444-8888-000000000004','bbbbbbbb-2222-4444-8888-000000000002','cccccccc-2222-4444-8888-000000000003','https://cdn.exemplo/motor-outra-loja.jpg','real','loja','propria',true,true);
+ ('dddddddd-2222-4444-8888-000000000004','bbbbbbbb-2222-4444-8888-000000000002','cccccccc-2222-4444-8888-000000000003','https://cdn.exemplo/motor-outra-loja.jpg','real','loja','propria',true,true,null,null);
 
 insert into public.loja_banners(id,loja_id,produto_id,imagem_id,ativo,estilo,chamada) values
 ('eeeeeeee-2222-4444-8888-000000000001','aaaaaaaa-2222-4444-8888-000000000001',
