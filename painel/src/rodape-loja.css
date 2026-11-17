@@ -31,3 +31,11 @@
 .v-rodape-sociais span{display:inline-grid;place-items:center;width:20px;height:20px;font-size:1.1rem;font-weight:800}
 
 .v-rodape-sociais svg{height:20px;width:20px;flex:none}
+
+
+/* Bloco de privacidade alimentado exclusivamente por loja_politicas aprovada. */
+.v-rodape-privacidade-bloco{padding:12px;border:1px solid #40504e;border-radius:10px;background:#1a2628}
+.v-rodape-privacidade-bloco h2{margin-bottom:6px}
+.v-rodape-privacidade-bloco button{display:inline-flex;min-height:40px;align-items:center;text-decoration:underline;font-weight:750;color:#eef1f2}
+.v-rodape-privacidade-bloco small{max-width:36ch;font-size:.72rem;color:#c4d3d0}
+.v-rodape-comercial[data-bloco="privacidade"]{scroll-margin-top:72px}
