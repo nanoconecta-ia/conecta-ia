@@ -28,7 +28,7 @@ const dir = root + "evidencias-vitrine-teste/";
 await mkdir(dir, { recursive: true });
 const browser = await chromium.launch({headless:true, executablePath:process.env.CHROMIUM_EXECUTABLE || undefined, args:["--no-sandbox"]});
 const resultados = [];
-async function abrir(flags, width = 1280, erro = false) {
+async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
   const context = await browser.newContext({viewport:{width,height:900}, serviceWorkers:"block", reducedMotion:"reduce"});
   const page = await context.newPage(), consultas = [], erros = [];
   page.on("pageerror", e => erros.push(e.message));
@@ -36,10 +36,24 @@ async function abrir(flags, width = 1280, erro = false) {
     if (!route.request().url().endsWith("/functions/v1/loja-publica")) return route.abort();
     const headers = {"access-control-allow-origin":"*", "access-control-allow-methods":"POST, OPTIONS", "access-control-allow-headers":"apikey, content-type, authorization, x-client-info"};
     if (route.request().method() === "OPTIONS") return route.fulfill({status:204,headers});
-    consultas.push(route.request().postDataJSON());
+    const pedido = route.request().postDataJSON();
+    consultas.push(pedido);
     if (erro) return route.fulfill({status:503, headers, contentType:"application/json", body:'{"erro":"simulado"}'});
     return route.fulfill({status:200, headers, contentType:"application/json", body:JSON.stringify({
-      loja:{nome:"Mobis Autopeças",slug:"mobis",whatsapp:"5562991654515",...flags}, produtos:[], banners:[],
+      loja:{nome:"Mobis Autopeças",slug:"mobis",whatsapp:"5562991654515",...flags},
+      produtos:cenarioFlash && pedido.sku==="CI003000"
+        ? [{sku:"CI003000",nome:"Motor parcial D4CB",marca:"TRIM-GO",preco:null,em_estoque:false,
+            imagem:null,descricao:null,whatsapp:null}] : [],
+      banners:cenarioFlash ? [{sku:"CI003000",nome:"Motor parcial D4CB",preco:null,chamada:"Motor HR / Bongo 2.5 16V",
+        flash:true,imagem:null,whatsapp:null,fim:null}] : [],
+      ficha:cenarioFlash && pedido.sku==="CI003000" ? {veiculos:[
+        {modelo:"Hyundai HR",motor:"2.5 16V",de:2013,ate:2022,tipo:"caminhao"},
+        {modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022,tipo:"caminhao"},
+      ]} : null,
+      paginas_aplicacao:cenarioFlash ? {CI003000:[
+        {slug:"hyundai-hr-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Hyundai HR",modelo:"Hyundai HR",status:"aprovado"},
+        {slug:"kia-bongo-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Kia Bongo",modelo:"Kia Bongo K2500",status:"aprovado"},
+        {slug:"pendente-nao-publicado",titulo:"Aplicação em estudo",modelo:"Outro",status:"a_confirmar"}]} : {},
       veiculos:[{modelo:"Hyundai HR",motor:"2.5 16V",de:2013,ate:2022},{modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022}],
       categorias:[{nome:"Motor",slug:"motor",total:0}], total:0, pagina:1, por_pagina:24
     })});
@@ -133,6 +147,27 @@ try {
     await context.unrouteAll({behavior:"ignoreErrors"});
     await context.close();
     resultados.push({separacao:"raiz pública = loja; conecta.html exige sessão em início, Nano e catálogo"});
+  }
+  {
+    const {context,page,erros} = await abrir({ambiente:"teste",venda_habilitada:false},390,false,true);
+    assert.equal(await page.locator(".m4-flash-campanha").count(),1,"banner Flash gerado apenas a partir da API");
+    await page.getByRole("button",{name:"Ver ficha da peça"}).click();
+    await page.getByRole("dialog").getByText("Motor parcial D4CB",{exact:false}).first().waitFor();
+    const dialog=page.getByRole("dialog");
+    assert.equal(await dialog.locator('a[href="#/p/mobis/CI003000"]').count(),1,"link individual do produto físico");
+    assert.equal(await dialog.locator('a[href="#/a/hyundai-hr-motor-d4cb"]').count(),1,"página individual HR");
+    assert.equal(await dialog.locator('a[href="#/a/kia-bongo-motor-d4cb"]').count(),1,"página individual Bongo");
+    assert.equal(await dialog.locator('a[href="#/a/pendente-nao-publicado"]').count(),0,"aplicação pendente não recebe página pública");
+    await dialog.getByRole("button",{name:"Fechar detalhes e voltar à vitrine"}).click();
+    assert.equal(await page.getByRole("dialog").count(),0,"fechar mantém cliente na homepage");
+    await page.locator(".m4-flash-acao").click();
+    await page.getByRole("dialog").getByRole("link",{name:"Abrir página completa do produto"}).click();
+    await page.locator(".produto-publico-mobis-aplicacoes").waitFor();
+    assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a").count(),2,"página SKU tem os dois destinos por veículo");
+    assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a[href*=pendente]").count(),0);
+    assert.deepEqual(erros,[]);
+    resultados.push({flash:"botão abre ficha interna; SKU único; duas páginas de veículos aprovadas; pendente oculto"});
+    await context.close();
   }
   resultados.push({guardas:"produto sintético ausente em todos os ambientes, inclusive em falha de API",filtros:"modelo canônico, ano/categoria limpos, busca rápida e foco por código aprovados"});
   console.log(JSON.stringify(resultados,null,2));
