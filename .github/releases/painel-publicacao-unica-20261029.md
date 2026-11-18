@@ -158,3 +158,11 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Loja segue `ambiente=teste` com noindex, sem vendas ou checkout.
 - **Não inclui**: Edge Functions, migrações SQL, escrita no Bling, alteração de categorias, DNS ou domínio.
 - Conferir o resultado de build/deploy e o SHA publicado. Sem status verde, não declarar o site atualizado.
+
+## Publicação autorizada — vitrine Mobis: textos sem chassi, sem prévia e com independência (18-11-2026, 3ª rodada)
+- Autorização do proprietário nesta conversa: "Pode faz sobe isso deixa rolar parecer e pode seguir". Para este release, a autorização vale somente para o **site (painel estático)** e não cobre parecer jurídico (INPI, classe 12), que segue em aberto.
+- PRs integrados na `main`: #436 (remoção de menções a chassi), #437 (remoção de observações de teste e prévia dos textos ao cliente, mergeado em `0cb63e4`) e #438 (texto de independência conforme o manual de identidade).
+- Escopo do diff desde o último marcador (`81e845b`): 5 arquivos em `painel/`, somente textos e rótulos (`BlocosCatalogoMobis.tsx`, `EmpresaMobis.tsx`, `GlassyCarouselMobisV3.tsx`, `LojaMobisNova.tsx`, `PaginaAplicacaoMobis.tsx`).
+- Publicar **somente frontend estático** da `main`, com as flags existentes `VITE_PAIR_ATIVO=1`, `VITE_BACKUP_ATIVO=1` e `VITE_BANNERS_ATIVO=1`.
+- **Não inclui**: Edge Functions, migrações SQL, escrita no Bling, alteração de preços, estoque ou produtos publicados, DNS ou domínio. A loja segue `ambiente=teste` com noindex, sem vendas ou checkout.
+- Conferir o resultado de build/deploy, o `version.json` e o SHA publicado. Sem status verde, não declarar o site atualizado.
