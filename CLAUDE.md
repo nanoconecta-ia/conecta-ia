@@ -58,3 +58,8 @@ Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no ch
 - Custo de IA é por cliente: medir e limitar o uso do enriquecimento de cada loja.
 
 Detalhes e decisões em aberto: `docs/ARQUITETURA.md`.
+
+## Mapa de impacto de codigo (Graphify, 17/11/2026)
+- Antes de editar codigo, executar o procedimento em `AGENTS.md` e ler `docs/conector-ia/graphify-mapeamento-agente-senior-20261117.md`. O grafo e instrumento auxiliar, nunca fonte de homologacao de peca ou autorizacao de escrita.
+- Geracao automatizada de mapa local em PR: `.github/workflows/graphify-mapa-readonly.yml`, somente AST de codigo/SQL, sem IA externa, deploy, Bling ou banco. A existencia do workflow **nao** comprova que graph.json ja foi gerado/consultado.
+- Nao conectar Graphify MCP ao gateway de lojas nem misturar com funcoes ERP; se houver um MCP Graphify configurado separadamente, usar suas ferramentas declaradas. Sem grafos, inspecionar codigo e registrar lacunas em vez de inventar resultados.

@@ -1,0 +1,75 @@
+name: Graphify - mapa do codigo (somente leitura)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "supabase/**"
+      - "painel/**"
+      - "web/**"
+      - "extensao/**"
+      - "scripts/**"
+      - ".github/workflows/**"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - ".graphifyignore"
+      - ".gitignore"
+      - "docs/conector-ia/graphify-mapeamento-agente-senior-20261117.md"
+
+permissions:
+  contents: read
+
+jobs:
+  mapear:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GRAPHIFY_QUERY_LOG_DISABLE: "1"
+    steps:
+      - name: Checkout sem credenciais persistidas
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Python isolado
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar CLI oficial com versao fixa, incluindo SQL local
+        run: python -m pip install "graphifyy[sql]==0.9.112"
+
+      - name: Mapear codigo TS JS SQL e configuracoes sem backend de IA
+        run: graphify extract . --code-only
+
+      - name: Gerar relatorio de comunidades sem LLM ou HTML publico
+        run: graphify cluster-only . --no-viz --no-label
+
+      - name: Verificar integridade e cobertura minima
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("graphify-out/graph.json")
+          assert p.is_file(), "Graphify nao produziu graph.json"
+          assert Path("graphify-out/GRAPH_REPORT.md").is_file(), "Relatorio de comunidades ausente"
+          data = json.loads(p.read_text(encoding="utf-8"))
+          nodes = data.get("nodes", [])
+          edges = data.get("links", data.get("edges", []))
+          assert len(nodes) > 0 and len(edges) > 0, "Grafo sem nos ou ligacoes"
+          text = p.read_text(encoding="utf-8")
+          for name in (".env.local", ".env.production", "service-account.json"):
+              assert name not in text, "Possivel arquivo confidencial indexado: " + name
+          print(f"Grafo de codigo gerado: {len(nodes)} nos; {len(edges)} ligacoes")
+          print("AVISO: --code-only nao extrai semantica de documentos/PDF ou comprova homologacao.")
+          PY
+
+      - name: Publicar artefato temporario de CI (sem deploy)
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphify-mapa-codigo-readonly
+          path: |
+            graphify-out/graph.json
+            graphify-out/GRAPH_REPORT.md
+          if-no-files-found: error
+          retention-days: 3
