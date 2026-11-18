@@ -64,7 +64,7 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
         </div>
         <h1 style={{fontSize:"clamp(1.6rem, 4vw, 2.3rem)",lineHeight:1.25,margin:"8px 0 16px"}}>{p.titulo}</h1>
         <p role="status" style={{padding:"12px 15px",background:"#fff3dd",borderLeft:"5px solid #c25a1b",fontWeight:600}}>
-          {p.status==="aprovado"?"Consulte preço e disponibilidade com nossa equipe.":"Prévia de aplicação em validação técnica. Não é confirmação de compatibilidade. Confirme os dados com a equipe antes da compra."}
+          {p.status==="aprovado"?"Consulte preço e disponibilidade com nossa equipe.":"Aplicação em validação técnica. Não é confirmação de compatibilidade. Confirme os dados com a equipe antes da compra."}
         </p>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,310px),1fr))",gap:26,alignItems:"start"}}>
           <section style={{background:"#fff",border:"1px solid #dfd8ca",borderRadius:12,padding:16}}>
