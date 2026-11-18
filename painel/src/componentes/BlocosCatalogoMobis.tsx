@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { IconePeca } from "./IconePeca.tsx";
 import { EmblemaVeiculoMobis } from "./EmblemaVeiculoMobis.tsx";
-import { MONTADORAS_MOBIS, modelosAprovadosDaMontadora, nosPublicaveis, type CategoriaPublica, type MontadoraMobis } from "../lib/blocosCatalogoMobis.ts";
+import { MONTADORAS_MOBIS, modelosAprovadosDaMontadora, nosPublicaveis, type CategoriaPublica, type CategoriaArvorePublica, type MontadoraMobis } from "../lib/blocosCatalogoMobis.ts";
 
 /** Bloco 03: montadoras → modelos retornados pela API Conecta.IA (aplicações aprovadas).
  * Nomes de montadoras são caminhos de consulta, não homologação, vínculo ou disponibilidade.
@@ -122,24 +122,54 @@ function temEmblemaMobis(chave:string):boolean{
  * Nenhuma categoria pendente no Conecta.IA é mostrada como produto disponível.
  */
 export function BlocoTaxonomiaMobis({
-  categorias, aoSelecionarCategoria, aoConsultar,
+  categorias, arvore=[], aoSelecionarCategoria, aoConsultar,
 }:{
   categorias:readonly CategoriaPublica[];
+  arvore?:readonly CategoriaArvorePublica[];
   aoSelecionarCategoria:(slug:string)=>void;
   aoConsultar:(sistema:string)=>void;
 }){
-  const nos=nosPublicaveis(categorias);
-  return <section id="m2-taxonomia" data-bloco="taxonomia" className="m4-bloco-nos m4-bloco-taxonomia" aria-label="Escolha o sistema da peça">
+  const [trilha,setTrilha]=useState<string[]>([]);
+  const emArvore=arvore.length>0;
+  const nos=nosPublicaveis(emArvore?arvore:categorias);
+  const atual=nos.find(n=>n.slug===trilha[trilha.length-1]);
+  const visiveis=emArvore
+    ? nos.filter(n=>atual?n.pai_slug===atual.slug:!n.pai_slug||!nos.some(p=>p.slug===n.pai_slug))
+    : nos;
+  function selecionar(n:CategoriaPublica){
+    if(emArvore && nos.some(f=>f.pai_slug===n.slug)){setTrilha(t=>[...t,n.slug]);return;}
+    aoSelecionarCategoria(n.slug);
+  }
+  return <section id="m2-taxonomia" data-bloco="taxonomia" className="m4-bloco-nos m4-bloco-taxonomia"
+    aria-label="Escolha o sistema e a categoria da peça">
     <div className="m2-wrap">
-      <div className="m4-bloco-nos-titulo"><div><span className="m2-kicker">02 · SISTEMAS DO VEÍCULO</span>
-        <h2>Encontre pelo sistema da peça</h2><p>Taxonomia ligada ao cadastro do Conecta.IA. Só itens liberados entram na listagem de produtos.</p>
+      <div className="m4-bloco-nos-titulo"><div>
+        <span className="m2-kicker">02 · SISTEMA → CATEGORIA → PEÇA</span>
+        <h2>Encontre pelo sistema da peça</h2>
+        <p>Escolha a categoria pai e depois a filha. Somente ramos com produtos publicados aparecem na navegação.</p>
       </div></div>
+      {emArvore&&<nav className="m4-taxonomia-caminho" aria-label="Caminho das categorias">
+        <button type="button" onClick={()=>setTrilha([])}>Sistemas</button>
+        {trilha.map((slug,i)=>{
+          const no=nos.find(n=>n.slug===slug);
+          return <span key={slug}><span aria-hidden="true">›</span>
+            <button type="button" onClick={()=>setTrilha(t=>t.slice(0,i+1))}>{no?.nome??slug}</button>
+          </span>;
+        })}
+      </nav>}
+      {emArvore&&atual&&<div className="m4-taxonomia-subgrupo">
+        <span>Categoria selecionada: <strong>{atual.nome}</strong></span>
+        <button type="button" onClick={()=>aoSelecionarCategoria(atual.slug)}>
+          Ver todas as peças deste grupo →
+        </button>
+      </div>}
       <div className="m4-taxonomia-grade">
-        {nos.length?nos.map(n=><button type="button" key={n.slug} className="m4-taxonomia-item"
-          onClick={()=>aoSelecionarCategoria(n.slug)} data-taxonomia-no={n.slug}
+        {nos.length?visiveis.map(n=><button type="button" key={n.slug} className="m4-taxonomia-item"
+          onClick={()=>selecionar(n)} data-taxonomia-no={n.slug}
           data-mobis-emblema={temEmblemaMobis(iconeDaTaxonomia(n.nome,n.slug))?"sim":"nao"}>
           <IconeSistemaMobis nome={iconeDaTaxonomia(n.nome,n.slug)}/>
-          <strong>{n.nome}</strong><small>{n.total} produto(s) no catálogo</small><span>Ver peças →</span>
+          <strong>{n.nome}</strong><small>{n.total} produto(s) no ramo</small>
+          <span>{emArvore&&nos.some(f=>f.pai_slug===n.slug)?"Ver subcategorias →":"Ver peças →"}</span>
         </button>):
         SISTEMAS_CONSULTA.map(s=><button type="button" key={s.nome} className="m4-taxonomia-item"
           onClick={()=>aoConsultar(s.nome)} title={"Consultar peças de "+s.nome}
@@ -148,9 +178,11 @@ export function BlocoTaxonomiaMobis({
           <strong>{s.nome}</strong><small>Aguardando itens liberados</small><span>Consultar →</span>
         </button>)}
       </div>
-      <small className="m4-bloco-nos-nota">{nos.length
-        ?"As categorias vêm dos nós dos produtos apresentados pelo Conecta.IA. A aplicação por veículo depende de aprovação técnica."
-        :"Os ícones representam sistemas de peças, não produtos cadastrados, marcas ou compatibilidade aprovada."}</small>
+      <small className="m4-bloco-nos-nota">{emArvore
+        ?"O vínculo pai e filho é o cadastrado no Conecta.IA; a aplicação da peça ainda depende de confirmação técnica."
+        :nos.length
+          ?"Categorias do catálogo publicado. A navegação pai/filho aparecerá quando a API hierárquica for liberada."
+          :"Os ícones representam sistemas de peças, não produtos cadastrados ou compatibilidade aprovada."}</small>
     </div>
   </section>;
 }
