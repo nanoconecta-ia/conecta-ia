@@ -5,7 +5,8 @@ import { FichaProduto } from "../componentes/FichaProduto.tsx";
 
 import "./produto-publico-mobis.css";
 import "./mobis-identidade-2026.css";
-import type { FichaProduto as Produto, FichaVeiculo } from "../lib/ficha.ts";
+import { periodo, type FichaProduto as Produto, type FichaVeiculo } from "../lib/ficha.ts";
+type ProdutoMobis=Produto & {categoria_caminho?:{nome:string;slug:string}[];referencias_aprovadas?:{tipo:string;valor:string}[]};
 const logoMobis = "/marcas/mobis-logo-metalico-2026.webp";
 
 /** QR enviado pelo próprio WhatsApp Business MOBIS em 18/11/2026.
@@ -30,14 +31,15 @@ const REDES_SOCIAIS: { nome: string; url: string }[] = [];
 
 /** Página pública do produto (#/p/<loja>/<sku>): ficha técnica, aplicações aprovadas, WhatsApp e redes. Só lê dado aprovado e publicado. */
 export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
-  const [ficha, setFicha] = useState<{ produto: Produto; veiculos: FichaVeiculo[] } | null>(null);
+  const [ficha, setFicha] = useState<{ produto: ProdutoMobis; veiculos: FichaVeiculo[] } | null>(null);
+  const [abaDetalhe,setAbaDetalhe]=useState<"descricao"|"especificacoes"|"aplicacoes">("descricao");
   const [paginasVeiculos, setPaginasVeiculos] = useState<PaginaVeiculo[]>([]);
   useEffect(() => {
     let vivo = true;
     fetch(`${SUPABASE_URL}/functions/v1/loja-publica`, {
       method: "POST", headers: { "Content-Type": "application/json", apikey: SUPABASE_CHAVE_PUBLICAVEL }, body: JSON.stringify({ slug, sku, q: sku }),
     }).then((r) => r.json()).then((j) => {
-      const produto = (j?.produtos ?? []).find((p: Produto) => p.sku === sku);
+      const produto = (j?.produtos ?? []).find((p: ProdutoMobis) => p.sku === sku);
       if (!vivo) return;
       if (produto && j?.ficha) {
         const consulta = (produto as Produto & { em_estoque?:boolean|null;consulta_previa?:boolean }).em_estoque;
@@ -60,6 +62,9 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
       </header>}
       {slug === MOBIS.slug && ficha && <div className="produto-publico-mobis-navegacao" aria-label="Caminho do produto">
         <a href="#/loja/mobis">Catálogo</a><span aria-hidden="true">/</span>
+        {(ficha.produto.categoria_caminho??[]).map(n=><span key={n.slug} className="produto-publico-mobis-pai">
+          <a href={"#/loja/mobis/sistema/"+encodeURIComponent(n.slug)}>{n.nome}</a><span aria-hidden="true">/</span>
+        </span>)}
         <span>Ficha do produto</span><span aria-hidden="true">/</span>
         <strong>SKU {ficha.produto.sku}</strong>
       </div>}
@@ -84,6 +89,55 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
           </aside>
         </div>
       : <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} />)}
+      {slug === MOBIS.slug && ficha && <section className="produto-publico-mobis-detalhes" aria-label="Informações técnicas do produto">
+        <div className="produto-publico-mobis-detalhes-titulo">
+          <span>CATÁLOGO TÉCNICO</span>
+          <h2>Descrição e especificações</h2>
+        </div>
+        <div className="produto-publico-mobis-abas" role="tablist" aria-label="Informações do SKU">
+          <button type="button" role="tab" aria-selected={abaDetalhe==="descricao"}
+            onClick={()=>setAbaDetalhe("descricao")}>Descrição</button>
+          <button type="button" role="tab" aria-selected={abaDetalhe==="especificacoes"}
+            onClick={()=>setAbaDetalhe("especificacoes")}>Especificações técnicas</button>
+          <button type="button" role="tab" aria-selected={abaDetalhe==="aplicacoes"}
+            onClick={()=>setAbaDetalhe("aplicacoes")}>Utilização em veículos</button>
+        </div>
+        <div className="produto-publico-mobis-conteudo-abas" role="tabpanel">
+          {abaDetalhe==="descricao"&&<div>
+            <h3>Descrição do produto</h3>
+            {ficha.produto.descricao
+              ? <p>{ficha.produto.descricao}</p>
+              : <p>Descrição complementar a confirmar com a equipe MOBIS. Consulte o código SKU antes da compra.</p>}
+          </div>}
+          {abaDetalhe==="especificacoes"&&<div>
+            <h3>Dados técnicos e referências aprovadas</h3>
+            <dl className="produto-publico-mobis-especificacoes">
+              <div><dt>Código SKU</dt><dd>{ficha.produto.sku}</dd></div>
+              <div><dt>Marca</dt><dd>{ficha.produto.marca??"A confirmar"}</dd></div>
+              {(ficha.produto.categoria_caminho??[]).length>0&&<div>
+                <dt>Classificação</dt>
+                <dd>{ficha.produto.categoria_caminho?.map(x=>x.nome).join(" → ")}</dd>
+              </div>}
+              {(ficha.produto.referencias_aprovadas??[]).map((r,i)=><div key={r.tipo+":"+r.valor+":"+i}>
+                <dt>{r.tipo.toUpperCase()} aprovado</dt><dd>{r.valor}</dd>
+              </div>)}
+            </dl>
+            <p>Dimensões, composição, OEM e outros dados só aparecem após validação documental no cadastro.</p>
+          </div>}
+          {abaDetalhe==="aplicacoes"&&<div>
+            <h3>Aplicações confirmadas do produto</h3>
+            {ficha.veiculos.length
+              ? <ul className="produto-publico-mobis-aplicacoes-lista">
+                  {ficha.veiculos.map((v,i)=><li key={v.modelo+"-"+i}>
+                    <strong>{v.modelo}</strong>
+                    <span>{[v.motor,periodo(v.de,v.ate)].filter(Boolean).join(" · ")||"Dados técnicos a confirmar"}</span>
+                  </li>)}
+                </ul>
+              : <p>Nenhuma aplicação técnica aprovada para publicação. Informe o modelo, motor, ano e chassi à equipe MOBIS.</p>}
+            <p>O mesmo SKU físico pode atender modelos diferentes somente após aprovação técnica.</p>
+          </div>}
+        </div>
+      </section>}
       {slug === MOBIS.slug && ficha && <section className="produto-publico-mobis-sistemas" aria-label="Sistemas de peças da MOBIS">
         <div className="produto-publico-mobis-sistemas-titulo">
           <div><span>SISTEMAS DO CATÁLOGO</span><h2>Encontre outras peças</h2></div>
