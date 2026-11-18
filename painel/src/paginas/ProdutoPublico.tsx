@@ -6,7 +6,7 @@ import { FichaProduto } from "../componentes/FichaProduto.tsx";
 import "./produto-publico-mobis.css";
 import "./mobis-identidade-2026.css";
 import { periodo, type FichaProduto as Produto, type FichaVeiculo } from "../lib/ficha.ts";
-type ProdutoMobis=Produto & {categoria_caminho?:{nome:string;slug:string}[];referencias_aprovadas?:{tipo:string;valor:string}[]};
+type ProdutoMobis=Produto & {categoria_caminho?:{nome:string;slug:string}[];referencias_aprovadas?:{tipo:string;valor:string}[];galeria_aprovada?:string[]};
 const logoMobis = "/marcas/mobis-logo-metalico-2026.webp";
 
 /** QR enviado pelo próprio WhatsApp Business MOBIS em 18/11/2026.
@@ -33,6 +33,8 @@ const REDES_SOCIAIS: { nome: string; url: string }[] = [];
 export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
   const [ficha, setFicha] = useState<{ produto: ProdutoMobis; veiculos: FichaVeiculo[] } | null>(null);
   const [abaDetalhe,setAbaDetalhe]=useState<"descricao"|"especificacoes"|"aplicacoes">("descricao");
+  const [fotoSelecionada,setFotoSelecionada]=useState<string|null>(null);
+  useEffect(()=>{setFotoSelecionada(null)},[sku]);
   const [paginasVeiculos, setPaginasVeiculos] = useState<PaginaVeiculo[]>([]);
   useEffect(() => {
     let vivo = true;
@@ -70,7 +72,20 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
       </div>}
       {ficha && (slug === MOBIS.slug ?
         <div className="produto-publico-mobis-layout">
-          <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} />
+          <div className="produto-publico-mobis-ficha-coluna">
+            <FichaProduto produto={fotoSelecionada?{...ficha.produto,imagem:fotoSelecionada}:ficha.produto}
+              veiculos={ficha.veiculos} />
+            {(ficha.produto.galeria_aprovada?.length??0)>1&&<div className="produto-publico-mobis-galeria"
+              role="group" aria-label="Fotografias aprovadas da peça">
+              {ficha.produto.galeria_aprovada?.map((url,i)=><button type="button" key={url}
+                aria-pressed={(fotoSelecionada??ficha.produto.imagem)===url}
+                aria-label={"Visualizar foto "+(i+1)+" da peça "+ficha.produto.sku}
+                onClick={()=>setFotoSelecionada(url)}>
+                <img src={url} width={82} height={82} loading="lazy"
+                  alt={"Vista "+(i+1)+" da peça "+ficha.produto.sku}/>
+              </button>)}
+            </div>}
+          </div>
           <aside className="produto-publico-mobis-contato" aria-label="Atendimento pelo WhatsApp da MOBIS">
             <span className="produto-publico-mobis-marcador">ATENDIMENTO MOBIS</span>
             <h2>Consulte sua peça</h2>
