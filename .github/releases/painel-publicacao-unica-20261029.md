@@ -150,3 +150,11 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Preservar `VITE_PAIR_ATIVO=1` e `VITE_BACKUP_ATIVO=1`. Loja segue `ambiente=teste` com noindex, sem vendas ou checkout.
 - **Não inclui**: Edge Functions, migrações SQL, escrita no Bling, alteração de DNS/domínio, nem mudança no conecta.html ou no Conecta.IA.
 - Conferir o resultado de build/deploy e o SHA publicado; sem status verde não declarar o site atualizado.
+
+## Publicação autorizada — vitrine Mobis: banners de sistema, sem chat flutuante (18-11-2026, 2ª rodada)
+- Autorização do proprietário nesta conversa, em resposta à pergunta de publicação: "Merge #433 e #434, publicar".
+- PR #433 (remoção do botão flutuante de chat da vitrine Mobis) e PR #434 (banners de sistema interativos com página de destino da taxonomia) integrados em `main`. CI dos dois verde no head antes do merge.
+- Publicar **somente frontend estático** da `main`, com as flags existentes `VITE_PAIR_ATIVO=1` e `VITE_BACKUP_ATIVO=1`.
+- Loja segue `ambiente=teste` com noindex, sem vendas ou checkout.
+- **Não inclui**: Edge Functions, migrações SQL, escrita no Bling, alteração de categorias, DNS ou domínio.
+- Conferir o resultado de build/deploy e o SHA publicado. Sem status verde, não declarar o site atualizado.
