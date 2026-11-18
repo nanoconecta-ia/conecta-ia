@@ -95,12 +95,12 @@ function gerarICO(pngs){
 }
 await mkdir(resolve(destino,"icones"),{recursive:true});
 const arquivos=[
- ["icones/mobis-favicon-32.png",gerarPNG(32)],
- ["icones/mobis-apple-touch-180.png",gerarPNG(180)],
- ["icones/mobis-app-192.png",gerarPNG(192)],
- ["icones/mobis-app-512.png",gerarPNG(512)],
+ ["icones/mobis-ma-favicon-32.png",gerarPNG(32)],
+ ["icones/mobis-ma-apple-180.png",gerarPNG(180)],
+ ["icones/mobis-ma-app-192.png",gerarPNG(192)],
+ ["icones/mobis-ma-app-512.png",gerarPNG(512)],
  ["icones/mobis-ma-maskable-512.png",gerarPNG(512,true)],
- ["favicon.ico",gerarICO([[32,gerarPNG(32)],[48,gerarPNG(48)]])],
+ ["mobis-ma-favicon.ico",gerarICO([[32,gerarPNG(32)],[48,gerarPNG(48)]])],
 ];
 for(const [p,data] of arquivos)await writeFile(resolve(destino,p),data);
 console.log("MOBIS MA: "+arquivos.map(([p,b])=>p+" ("+b.length+" B)").join(", "));
