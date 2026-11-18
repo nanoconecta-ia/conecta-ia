@@ -121,9 +121,9 @@ try {
       "somente paleta publicada pela API é aplicada à Mobis");
     assert.equal(await root.evaluate(el=>getComputedStyle(el).getPropertyValue("--mobis-botao").trim()),"#444c54");
     assert.equal(await page.locator(".m4-busca button").first().evaluate(el=>getComputedStyle(el).backgroundColor),
-      "rgb(68, 76, 84)","botões seguem o token cinza aprovado");
+      "rgb(226, 24, 26)","ação comercial usa o vermelho oficial MA");
     assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
-      "rgb(141, 60, 53)","cabeçalho usa acento discreto publicado");
+      "rgb(226, 24, 26)","cabeçalho usa a assinatura vermelha oficial MA");
     assert.deepEqual(erros,[]);
     await context.close();
   }
@@ -132,7 +132,7 @@ try {
     assert.equal(await page.locator(".mobis-v2.m4").getAttribute("data-paleta-publicada"),"nao",
       "rascunho ou ausência de paleta não muda site");
     assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
-      "rgb(168, 73, 22)","identidade Mobis existente permanece sem publicação");
+      "rgb(226, 24, 26)","assinatura vermelha oficial MA permanece sem publicação de paleta");
     assert.deepEqual(erros,[]);
     await context.close();
   }
