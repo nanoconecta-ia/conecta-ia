@@ -18,4 +18,4 @@ oferece. Proposta:
 - GitHub Pages em repositório **privado** exige plano pago do GitHub; em repositório público o código fica visível (sem segredos).
 - Domínio da Mobis só depois de DNS e SSL verificados e com plano de volta; o site atual continua no ar.
 - Edge Functions têm limite de tempo por execução; sincronização grande roda em lotes.
-- Reaproveita a lógica de `web/src/lib/bling/*` (cifra, OAuth, cliente, assinatura) portada para as Edge Functions.
+- A lógica de Bling (cifra, OAuth, cliente, assinatura) vive nas Edge Functions e nos utilitários compartilhados em `supabase/functions/_shared/`.
