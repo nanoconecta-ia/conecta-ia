@@ -1,0 +1,227 @@
+/* MOBIS AUTOPEÇAS — vitrine comercial completa M-STYLE CROMO V3.0
+   Referência: kit oficial MOBIS-MSTYLE-V3-2026 no Drive, arte enviada pelo responsável.
+   Escopo: SOMENTE a vitrine Mobis, sem afetar o SaaS Conecta.IA e sem criar anúncios.
+   Conteúdo dependente da API pública continua autorizado / sujeito à revisão técnica. */
+.mobis-v2.m4[data-mobis-layout="v3-site"] {
+  --ms-carbono:#1F2327;--ms-grafite:#0b0f12;--ms-vermelho:#E2181A;
+  --ms-gelo:#EAF2F6;--ms-aco:#A6A6A6;--ms-cinza:#BFC3C7;
+  --m4-acento:#E2181A;--m4-acento-forte:#b10e14;--m4-acento-suave:#fff0f0;
+  --m4-gelo:#EAF2F6;--m4-tinta:#1F2327;--m4-texto:#34434e;--m4-linha:#ced5db;
+  --m2-orange:#E2181A;--m2-orange2:#f94a4d;
+  background:#EAF2F6;color:#1F2327;font-family:Montserrat,Inter,system-ui,sans-serif;
+  color-scheme:light;font-size:16px;line-height:1.5;
+}
+.mobis-v2.m4[data-mobis-layout="v3-site"] .ms-container {
+  width:min(1512px,calc(100% - clamp(24px,4.2vw,80px)));margin-inline:auto;
+}
+.mobis-v2.m4[data-mobis-layout="v3-site"] .ms-visualmente-oculto{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.mobis-v2.m4[data-mobis-layout="v3-site"] :is(button,input,select){font-family:inherit}
+.mobis-v2.m4[data-mobis-layout="v3-site"] :is(button,a,input,select):focus-visible{outline:3px solid #E2181A;outline-offset:3px}
+.mobis-v2.m4[data-mobis-layout="v3-site"] .ms-cabecalho{background:#0b0f12;color:#fff;position:relative;z-index:5;box-shadow:0 8px 22px #08090b30}
+.mobis-v2.m4 .ms-faixa-superior{background:linear-gradient(110deg,#232a30,#0d1014 70%,#272d32);border-bottom:1px solid #697077;color:#e2e7eb;font-size:clamp(.7rem,.63rem + .22vw,.86rem)}
+.mobis-v2.m4 .ms-faixa-interna{min-height:37px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding-block:5px}
+.mobis-v2.m4 .ms-faixa-interna>span:first-child{font-weight:750}
+.mobis-v2.m4 .ms-faixa-interna>span:first-child b{color:#E2181A;margin-right:8px}
+.mobis-v2.m4 .ms-faixa-razao{font-size:.74rem;letter-spacing:.02em;color:#e4e7e9}
+.mobis-v2.m4 .ms-faixa-interna a{color:#fff;background:#bd1117;padding:7px 15px;text-decoration:none;font-weight:850;border-radius:6px}
+.mobis-v2.m4 .ms-principal{background:linear-gradient(115deg,#0c1014,#1d2227 56%,#090b0e);border-bottom:2px solid #C2CAD0}
+.mobis-v2.m4 .ms-principal-grid{display:grid;grid-template-columns:minmax(212px,290px) minmax(140px,195px) minmax(210px,1fr) auto;gap:clamp(10px,1.7vw,28px);align-items:center;min-height:116px;padding-block:11px}
+.mobis-v2.m4 .ms-logo{display:flex;align-items:center;min-width:0;max-width:320px}
+.mobis-v2.m4 .ms-logo img{display:block;width:100%;height:auto;max-height:100px;object-fit:contain;filter:drop-shadow(0 4px 6px #0004)}
+.mobis-v2.m4 .ms-especialidade{min-width:0;padding:0 0 0 16px;border-left:2px solid #e8edf2;font-size:clamp(.83rem,.72rem + .4vw,1rem);font-style:italic;font-weight:800;line-height:1.35;color:#F7F9FA;margin:0}
+.mobis-v2.m4 .ms-especialidade strong{color:#fff;display:block;font-weight:850}
+.mobis-v2.m4 .ms-especialidade small{display:block;color:#e9575c;font-size:.74rem;margin-top:5px}
+.mobis-v2.m4 .ms-pesquisa{display:flex;position:relative;min-width:0;border:1px solid #949a9d;border-radius:12px;overflow:hidden;box-shadow:0 5px 13px #0008}
+.mobis-v2.m4 .ms-pesquisa input{height:53px;min-width:0;flex:1;appearance:none;background:#fff;border:0;padding:0 15px;color:#1F2327;font-size:.9rem;font-weight:600}
+.mobis-v2.m4 .ms-pesquisa input::placeholder{color:#525a61;font-weight:500}
+.mobis-v2.m4 .ms-pesquisa button{background:linear-gradient(#fb2427,#B50005);color:white;border:0;display:flex;gap:5px;align-items:center;justify-content:center;min-width:90px;padding:0 15px;font-size:.85rem;font-weight:900;cursor:pointer}
+.mobis-v2.m4 .ms-pesquisa button span:first-child{font-size:2rem;line-height:1;transform:translateY(-2px)}
+.mobis-v2.m4 .ms-acoes{display:flex;align-items:center;gap:14px}
+.mobis-v2.m4 .ms-acoes :is(button,a){min-height:50px;min-width:62px;padding:6px;border:0;color:#fff;text-decoration:none;background:transparent;display:grid;grid-template-columns:1fr auto;align-content:center;justify-items:center;gap:0;font-weight:800}
+.mobis-v2.m4 .ms-acoes :is(button,a)>span{font-size:1.6rem;grid-column:1 / -1;line-height:1.2}
+.mobis-v2.m4 .ms-acoes :is(button,a)>small{font-size:.68rem;grid-column:1;white-space:nowrap}
+.mobis-v2.m4 .ms-acoes button b{display:inline-grid;place-items:center;min-width:18px;height:18px;background:#E2181A;border-radius:50%;font-size:.68rem;margin-left:4px}
+.mobis-v2.m4 .ms-navegacao{background:linear-gradient(#e92428,#a70009 86%,#790009);border-top:1px solid #ff797f;border-bottom:1px solid #ff7474}
+.mobis-v2.m4 .ms-menu{display:flex;justify-content:space-between;gap:5px;align-items:stretch;min-height:46px}
+.mobis-v2.m4 .ms-menu :is(button,a){display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 14px;border:0;background:transparent;color:#fff;text-decoration:none;font-size:.85rem;font-weight:800;text-align:center;white-space:nowrap}
+.mobis-v2.m4 .ms-menu :is(button,a):hover{background:#1f23274d}
+.mobis-v2.m4 .ms-menu .ms-departamentos{background:linear-gradient(130deg,#d71a1f,#770008);padding-inline:23px;margin-left:-1px;min-width:232px;justify-content:flex-start}
+.mobis-v2.m4 .ms-departamentos span{font-size:1.35rem;line-height:1}
+.mobis-v2.m4 .ms-departamentos-faixa{background:linear-gradient(#1D2227,#080a0d);border-bottom:3px solid #8f0005}
+.mobis-v2.m4 .ms-departamentos-lista{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:clamp(5px,.7vw,13px);padding:10px 0}
+.mobis-v2.m4 .ms-departamentos-lista button{min-width:0;min-height:128px;border:1px solid #50595f;border-bottom:4px solid #E2181A;background:linear-gradient(145deg,#2d3337,#090a0d 82%);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:13px;padding:7px 3px 5px;transition:transform .18s,border-color .18s}
+.mobis-v2.m4 .ms-departamentos-lista button:hover{transform:translateY(-3px);border-color:#E2181A}
+.mobis-v2.m4 .ms-departamentos-lista img{display:block;width:clamp(54px,5.4vw,80px);height:clamp(54px,5.4vw,80px);object-fit:contain}
+.mobis-v2.m4 .ms-departamentos-lista button span{font-size:clamp(.71rem,.6rem + .25vw,.93rem);font-weight:900;line-height:1.1}
+.mobis-v2.m4 .ms-departamentos-lista button small{font-size:.62rem;color:#BFC3C7}
+.mobis-v2.m4 .ms-abertura{background:radial-gradient(ellipse at 71% 65%,#575d60 0,#1c2429 37%,#06090d 75%);position:relative;overflow:hidden;color:#fff;border-bottom:5px solid #E2181A}
+.mobis-v2.m4 .ms-abertura:before{content:"";position:absolute;top:-60px;left:39%;width:105px;height:140%;background:linear-gradient(95deg,#ff1b21,#7d0004);transform:skew(-22deg);opacity:.87;pointer-events:none}
+.mobis-v2.m4 .ms-abertura:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,transparent 0 70px,#ffffff08 71px 73px,transparent 74px 170px);pointer-events:none}
+.mobis-v2.m4 .ms-abertura-conteudo{position:relative;z-index:1;min-height:350px;display:grid;grid-template-columns:minmax(315px,39%) 1fr;gap:clamp(16px,4vw,60px);align-items:center;padding-top:30px;padding-bottom:30px}
+.mobis-v2.m4 .ms-abertura-texto{max-width:580px;min-width:0;background:linear-gradient(90deg,#0b0e13ed,#0b0e13dc 75%,#0b0e1300);padding:clamp(16px,2vw,30px) 20px clamp(16px,2vw,30px) 0}
+.mobis-v2.m4 .ms-categoria-label{font-size:.75rem;font-weight:800;letter-spacing:.13em;color:#fff;display:inline-flex;gap:6px;border-left:5px solid #E2181A;padding-left:12px}
+.mobis-v2.m4 .ms-abertura h1{color:#fff!important;font-size:clamp(1.65rem,1.05rem + 1.8vw,2.9rem);line-height:1.11;font-weight:950;font-style:italic;letter-spacing:-.025em;margin:13px 0 16px;text-shadow:0 4px 10px #0007}
+.mobis-v2.m4 .ms-abertura h1 em{color:#FF3F44;font-style:inherit}
+.mobis-v2.m4 .ms-abertura-texto>p{color:#e7ecf0;font-weight:600;font-size:clamp(.86rem,.73rem + .27vw,1.02rem);line-height:1.55}
+.mobis-v2.m4 .ms-cta-hero{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:16px}
+.mobis-v2.m4 .ms-cta-hero :is(button,a){display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:44px;padding:9px 16px;border:2px solid #E2181A;border-radius:7px;color:#fff;background:linear-gradient(#F52429,#AA0009);text-decoration:none;font-size:.83rem;font-weight:900}
+.mobis-v2.m4 .ms-cta-hero a{background:transparent;border-color:#d9d9d9}
+.mobis-v2.m4 .ms-hero-nota{margin-top:16px;color:#c8cfd4;font-size:.68rem;line-height:1.35}
+.mobis-v2.m4 .ms-vitrine-veiculos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;gap:clamp(6px,1vw,16px);min-width:0}
+.mobis-v2.m4 .ms-vitrine-veiculos>div{position:relative;min-width:0;display:grid;place-items:center;aspect-ratio:3/3.7;align-content:end;filter:drop-shadow(0 14px 13px #0008)}
+.mobis-v2.m4 .ms-vitrine-veiculos img{display:block;max-width:100%;width:120%;max-height:285px;height:auto;object-fit:contain}
+.mobis-v2.m4 .ms-vitrine-veiculos>div:nth-child(2){transform:translateY(-12px) scale(1.1);z-index:1}
+.mobis-v2.m4 .ms-beneficios{position:relative;z-index:2;background:linear-gradient(90deg,#11181d,#252d32 55%,#11161b);border-top:1px solid #555b61}
+.mobis-v2.m4 .ms-beneficios-grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:center;min-height:62px}
+.mobis-v2.m4 .ms-beneficios-grade span{display:flex;align-items:center;gap:12px;font-size:.76rem;line-height:1.22;font-weight:850;text-transform:uppercase;padding-inline:10px;border-right:1px solid #E2181A;color:#f7f9f9}
+.mobis-v2.m4 .ms-beneficios-grade span:last-child{border-right:0}
+.mobis-v2.m4 .ms-beneficios-grade b{font-size:1.6rem;color:#fff}
+.mobis-v2.m4 .ms-aplicacoes{background:linear-gradient(#f6f9fb,#EAF2F6);border-bottom:1px solid #bbc4ca;padding:clamp(24px,3vw,45px) 0}
+.mobis-v2.m4 .ms-titulo-bloco{display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:10px;margin-bottom:15px}
+.mobis-v2.m4 .ms-titulo-bloco>div{display:flex;align-items:center;gap:10px}
+.mobis-v2.m4 .ms-tracos{font-size:2rem;font-weight:900;font-style:italic;letter-spacing:-.14em;color:#E2181A;margin-right:6px}
+.mobis-v2.m4 .ms-titulo-bloco h2{font-family:"Arial Black",Montserrat,Inter,sans-serif;letter-spacing:-.02em;font-size:clamp(1.35rem,1rem + 1vw,2.1rem);font-style:italic;font-weight:950;margin:0;color:#1F2327}
+.mobis-v2.m4 .ms-titulo-bloco p{font-size:.8rem;margin:0;color:#52616b}
+.mobis-v2.m4 .ms-aplicacoes-grid{display:grid;grid-template-columns:minmax(236px,276px) minmax(0,1fr);align-items:start;gap:14px}
+.mobis-v2.m4 .ms-encontrar{color:#fff;border-radius:16px;background:linear-gradient(155deg,#263139,#090c0f 80%);padding:17px 14px 21px;border:1px solid #4d5b66;box-shadow:0 8px 23px #0003}
+.mobis-v2.m4 .ms-encontrar h3{font-size:1.15rem;letter-spacing:-.01em;color:#fff!important;margin:0 0 3px}
+.mobis-v2.m4 .ms-encontrar p{font-size:.79rem;color:#d4dce0;margin:0 0 14px}
+.mobis-v2.m4 .ms-encontrar form{display:flex;flex-direction:column;gap:10px}
+.mobis-v2.m4 .ms-encontrar label{display:flex;flex-direction:column;gap:4px;font-size:.73rem;font-weight:800}
+.mobis-v2.m4 .ms-encontrar :is(select,input){background:#fff;color:#1F2327;border:1px solid #8e999e;min-height:43px;border-radius:7px;padding:8px 11px;font-size:.84rem;min-width:0;width:100%}
+.mobis-v2.m4 .ms-encontrar button{min-height:47px;color:#fff;background:linear-gradient(#F72A2E,#AC0005);border:1px solid #fc5a61;border-radius:8px;font-weight:900;font-size:.95rem;margin-top:2px}
+.mobis-v2.m4 .ms-encontrar button span{margin-left:9px}
+.mobis-v2.m4 .ms-encontrar>small{display:block;font-size:.68rem;margin-top:14px;line-height:1.5;color:#c6ced4}
+.mobis-v2.m4 .ms-aplicacoes-vitrine{min-width:0;display:flex;flex-direction:column;gap:12px}
+.mobis-v2.m4 .ms-linhas-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mobis-v2.m4 .ms-linha{display:flex;flex-direction:column;overflow:hidden;padding:0;border:2px solid #E2181A;border-radius:11px;background:linear-gradient(160deg,#1b2429,#f6f9fb 70%);text-align:left;min-width:0;min-height:157px;box-shadow:0 5px 12px #1f23271e;transition:transform .18s}
+.mobis-v2.m4 .ms-linha:hover{transform:translateY(-3px);box-shadow:0 10px 19px #1f23272b}
+.mobis-v2.m4 .ms-linha-imagem{display:grid;place-items:center;min-height:118px;max-height:128px;overflow:hidden;background:linear-gradient(#24303a,#eef5f7)}
+.mobis-v2.m4 .ms-linha img{display:block;width:100%;height:120px;object-fit:contain;filter:drop-shadow(0 7px 5px #0005)}
+.mobis-v2.m4 .ms-silhueta{font-size:4.4rem;font-weight:900;color:#E2181A;transform:skew(-20deg);line-height:1}
+.mobis-v2.m4 .ms-linha-texto{padding:8px 10px;background:linear-gradient(125deg,#13191e,#2e3338)}
+.mobis-v2.m4 .ms-linha strong{font-size:clamp(.82rem,.7rem + .34vw,1.07rem);font-style:italic;text-transform:uppercase;color:#fff;line-height:1.12;display:block}
+.mobis-v2.m4 .ms-linha small{display:block;color:#e1e7eb;font-size:.69rem;line-height:1.25;margin-top:3px}
+.mobis-v2.m4 .ms-linha-promo{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:15px;padding:18px 22px;min-height:138px;overflow:hidden;color:#fff;border:1px solid #4c5157;border-radius:13px;background:linear-gradient(105deg,#0c1115 0%,#252e34 67%,#970008 68%,#EA171D 73%,#EAF2F6 74%,#e1eaf0 100%)}
+.mobis-v2.m4 .ms-linha-promo div{max-width:75ch}
+.mobis-v2.m4 .ms-linha-promo div>span{font-size:.68rem;font-weight:850;color:#e8ebef;letter-spacing:.12em}
+.mobis-v2.m4 .ms-linha-promo h3{font-size:clamp(1.06rem,.87rem + .55vw,1.6rem);font-weight:950;font-style:italic;color:#fff;margin:2px 0 6px;line-height:1.12}
+.mobis-v2.m4 .ms-linha-promo h3 em{font-style:inherit;color:#ff5358}
+.mobis-v2.m4 .ms-linha-promo p{margin:0;color:#edf2f5;font-size:.73rem;max-width:68ch;line-height:1.5}
+.mobis-v2.m4 .ms-linha-promo button{color:#1f2327;border:0;background:transparent;font-size:.93rem;font-weight:950;font-style:italic;max-width:140px}
+.mobis-v2.m4 .ms-linha-promo button span{display:inline-grid;place-items:center;background:#E2181A;color:#fff;border-radius:50%;width:38px;height:38px;margin-left:7px;font-size:1.6rem;font-style:normal}
+.mobis-v2.m4 .ms-consulta-rodape{background:linear-gradient(90deg,#1F2327,#0b0f12);color:#fff;padding:14px 0;border-top:3px solid #E2181A}
+.mobis-v2.m4 .ms-consulta-rodape>.ms-container{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.mobis-v2.m4 .ms-consulta-rodape span{font-weight:800;font-size:.78rem;color:#d6dde2}
+.mobis-v2.m4 .ms-consulta-rodape a{font-weight:800;color:#fff;text-decoration:none;font-size:.81rem}
+.mobis-v2.m4 .ms-consulta-rodape a:first-of-type{border-left:3px solid #E2181A;padding-left:13px}
+.mobis-v2.m4 .m2-catalogo{background:#EAF2F6}
+.mobis-v2.m4 .m2-busca{background:linear-gradient(#f5f9fc,#EAF2F6);border-color:#c6cfd5}
+.mobis-v2.m4 .m2-kicker{color:#b60c13}
+.mobis-v2.m4 .m2-catalogo .m2-search button,
+.mobis-v2.m4 .m2-filtros-rodape button,
+.mobis-v2.m4 .m4-busca button{background:#E2181A;border-color:#E2181A;color:white}
+.mobis-v2.m4 .m2-produto{border:1px solid #bfc7d0;box-shadow:0 9px 20px #080d1018;border-radius:13px;overflow:hidden}
+.mobis-v2.m4 .m2-foto-produto{background:#f9fbfc}
+.mobis-v2.m4 .m2-produto :is(button,a){border-color:#E2181A;color:#a60912}
+.mobis-v2.m4 .m2-produto :is(button,a):hover{background:#fff1f1}
+.mobis-v2.m4 .m4-bloco-montadoras{border-color:#c7cfd5;border-top:3px solid #E2181A;background:#f6f9fc}
+.mobis-v2.m4 .m4-montadora-item{border-color:#c9cfd5;border-top:3px solid #E2181A}
+.mobis-v2.m4 .m4-montadora-item:hover,.mobis-v2.m4 .m4-montadora-item.selecionada{border-color:#E2181A}
+.mobis-v2.m4 .m4-bloco-taxonomia{background:#e8f0f5;border-color:#c6ced4}
+.mobis-v2.m4 .m4-taxonomia-item{border-color:#c6cdd4;border-bottom:4px solid #E2181A}
+.mobis-v2.m4 .m4-taxonomia-item:nth-child(n){border-bottom-color:#E2181A}
+.mobis-v2.m4 .m2-atendimento{background:linear-gradient(110deg,#11181d,#2b3339)!important;color:#fff;border-top:4px solid #E2181A}
+.mobis-v2.m4 .m2-atendimento :is(h2,h3){color:#fff}
+.mobis-v2.m4 .m2-atendimento :is(p,small){color:#dce4e9}
+.mobis-v2.m4 .m2-atendimento .m2-contato-form{background:#f7fafc}
+.mobis-v2.m4 .m2-atendimento .m2-contato-form :is(h3,p,small){color:#1F2327}
+.mobis-v2.m4 .m2-contato-form a{background:#E2181A;color:#fff;border-color:#E2181A}
+.mobis-v2.m4 .m4-rodape-enxuto{background:#0c1115!important;color:#eaf2f6;border-top:3px solid #E2181A}
+.mobis-v2.m4 .m4-rodape-enxuto a{color:#fff}
+.mobis-v2.m4 .gcv3{background:linear-gradient(#f3f8fb,#e9f2f7);border-color:#c6cfd4}
+.mobis-v2.m4 .gcv3-painel{border:1px solid #c9d2d9;background:linear-gradient(130deg,#fff,#ecf4f8)}
+.mobis-v2.m4 .gcv3-painel:before{background:linear-gradient(90deg,#E2181A 0 80%,#1F2327 80%)}
+.mobis-v2.m4 .gcv3-cta{background:#E2181A;color:#fff!important}
+.mobis-v2.m4 .gcv3-paginacao .gcv3-ponto.ativo{background:#E2181A;border-color:#E2181A}
+.mobis-v2.m4 .m2-aviso-teste{background:#fff0f0;color:#8b1319;border-bottom:1px solid #f5c7ca}
+@media(max-width:1200px){
+ .mobis-v2.m4 .ms-principal-grid{grid-template-columns:minmax(190px,245px) minmax(0,1fr) auto}
+ .mobis-v2.m4 .ms-especialidade{display:none}
+ .mobis-v2.m4 .ms-menu .ms-departamentos{min-width:0;padding-inline:14px}
+ .mobis-v2.m4 .ms-menu :is(a,button){padding-inline:9px;font-size:.79rem}
+ .mobis-v2.m4 .ms-linhas-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:920px){
+ .mobis-v2.m4 .ms-faixa-razao{display:none}
+ .mobis-v2.m4 .ms-principal-grid{grid-template-columns:minmax(165px,220px) 1fr auto;gap:12px;min-height:88px}
+ .mobis-v2.m4 .ms-pesquisa input{height:46px}
+ .mobis-v2.m4 .ms-acoes{gap:4px}
+ .mobis-v2.m4 .ms-acoes :is(button,a){min-width:50px}
+ .mobis-v2.m4 .ms-menu{overflow-x:auto;scrollbar-width:thin}
+ .mobis-v2.m4 .ms-menu :is(button,a){flex-shrink:0}
+ .mobis-v2.m4 .ms-departamentos-lista button{min-height:106px}
+ .mobis-v2.m4 .ms-abertura-conteudo{grid-template-columns:1fr 1fr;gap:12px}
+ .mobis-v2.m4 .ms-vitrine-veiculos{gap:0}
+ .mobis-v2.m4 .ms-beneficios-grade{grid-template-columns:repeat(2,minmax(0,1fr));padding-block:9px}
+ .mobis-v2.m4 .ms-beneficios-grade span:nth-child(2){border-right:0}
+ .mobis-v2.m4 .ms-aplicacoes-grid{grid-template-columns:minmax(190px,240px) minmax(0,1fr)}
+ .mobis-v2.m4 .ms-linhas-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mobis-v2.m4 .ms-linha-promo{grid-template-columns:1fr;background:linear-gradient(110deg,#0c1115,#2b3339 92%,#E2181A 93%)}
+ .mobis-v2.m4 .ms-linha-promo button{background:#E2181A;color:white;padding:10px 13px;border-radius:7px;max-width:200px}
+}
+@media(max-width:670px){
+ .mobis-v2.m4 .ms-container{width:calc(100% - 26px)!important}
+ .mobis-v2.m4 .ms-faixa-interna{justify-content:center;gap:7px;font-size:.69rem;min-height:31px}
+ .mobis-v2.m4 .ms-faixa-interna a{padding:4px 8px}
+ .mobis-v2.m4 .ms-principal-grid{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding-block:9px}
+ .mobis-v2.m4 .ms-logo{width:min(56vw,220px)}
+ .mobis-v2.m4 .ms-logo img{max-height:74px}
+ .mobis-v2.m4 .ms-acoes{justify-self:end}
+ .mobis-v2.m4 .ms-acoes :is(button,a){min-width:40px}
+ .mobis-v2.m4 .ms-acoes :is(button,a)>span{font-size:1.35rem}
+ .mobis-v2.m4 .ms-acoes :is(button,a)>small{font-size:.61rem}
+ .mobis-v2.m4 .ms-pesquisa{grid-column:1 / -1;grid-row:2}
+ .mobis-v2.m4 .ms-pesquisa input{height:44px;font-size:.82rem;padding-inline:10px}
+ .mobis-v2.m4 .ms-pesquisa button{min-width:76px;font-size:.72rem}
+ .mobis-v2.m4 .ms-menu{min-height:43px}
+ .mobis-v2.m4 .ms-menu :is(button,a){padding-inline:12px;min-height:43px;font-size:.75rem}
+ .mobis-v2.m4 .ms-departamentos-lista{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;padding:8px 0;scrollbar-width:thin}
+ .mobis-v2.m4 .ms-departamentos-lista button{flex:0 0 87px;min-height:101px;scroll-snap-align:start}
+ .mobis-v2.m4 .ms-departamentos-lista img{width:55px;height:55px}
+ .mobis-v2.m4 .ms-departamentos-lista button span{font-size:.72rem}
+ .mobis-v2.m4 .ms-abertura-conteudo{grid-template-columns:1fr;min-height:auto;padding-block:20px}
+ .mobis-v2.m4 .ms-abertura:before{left:84%;width:70px}
+ .mobis-v2.m4 .ms-abertura-texto{padding:3px;max-width:100%}
+ .mobis-v2.m4 .ms-abertura h1{font-size:clamp(1.65rem,7vw,2.2rem);max-width:24ch}
+ .mobis-v2.m4 .ms-abertura-texto>p{font-size:.85rem}
+ .mobis-v2.m4 .ms-vitrine-veiculos{max-height:148px;align-items:end;margin-top:-5px;gap:7px}
+ .mobis-v2.m4 .ms-vitrine-veiculos>div{max-height:160px}
+ .mobis-v2.m4 .ms-vitrine-veiculos img{max-height:154px}
+ .mobis-v2.m4 .ms-beneficios-grade{gap:7px}
+ .mobis-v2.m4 .ms-beneficios-grade span{font-size:.68rem;padding:7px 2px;gap:7px}
+ .mobis-v2.m4 .ms-beneficios-grade b{font-size:1.25rem}
+ .mobis-v2.m4 .ms-titulo-bloco h2{font-size:1.29rem}
+ .mobis-v2.m4 .ms-aplicacoes-grid{grid-template-columns:1fr;gap:13px}
+ .mobis-v2.m4 .ms-encontrar{padding:16px}
+ .mobis-v2.m4 .ms-encontrar form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .mobis-v2.m4 .ms-encontrar form button{grid-column:1/-1}
+ .mobis-v2.m4 .ms-linhas-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .mobis-v2.m4 .ms-linha-imagem{min-height:90px;max-height:106px}
+ .mobis-v2.m4 .ms-linha img{height:104px}
+ .mobis-v2.m4 .ms-linha{min-height:0}
+ .mobis-v2.m4 .ms-linha-promo{padding:18px 16px}
+ .mobis-v2.m4 .ms-linha-promo h3{font-size:1.1rem}
+ .mobis-v2.m4 .ms-consulta-rodape>.ms-container{justify-content:center;text-align:center;gap:10px}
+}
+@media(max-width:370px){
+ .mobis-v2.m4 .ms-acoes a{display:none}
+ .mobis-v2.m4 .ms-encontrar form{grid-template-columns:1fr}
+ .mobis-v2.m4 .ms-linhas-grid{grid-template-columns:1fr 1fr}
+ .mobis-v2.m4 .ms-linha-texto{padding:6px}
+ .mobis-v2.m4 .ms-linha strong{font-size:.78rem}
+}
+@media(prefers-reduced-motion:reduce){
+ .mobis-v2.m4 .ms-departamentos-lista button,
+ .mobis-v2.m4 .ms-linha{transition:none;transform:none!important}
+}
