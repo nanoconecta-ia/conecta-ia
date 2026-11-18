@@ -166,3 +166,11 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Publicar **somente frontend estático** da `main`, com as flags existentes `VITE_PAIR_ATIVO=1`, `VITE_BACKUP_ATIVO=1` e `VITE_BANNERS_ATIVO=1`.
 - **Não inclui**: Edge Functions, migrações SQL, escrita no Bling, alteração de preços, estoque ou produtos publicados, DNS ou domínio. A loja segue `ambiente=teste` com noindex, sem vendas ou checkout.
 - Conferir o resultado de build/deploy, o `version.json` e o SHA publicado. Sem status verde, não declarar o site atualizado.
+
+## Publicação autorizada — página do produto sem atendimento por chat (18-11-2026, 4ª rodada)
+- Autorização do proprietário nesta conversa: "Pode publicar", após "Pode merge" para o PR #440.
+- PR #440 integrado em `main` (`79444a5`), com checks do head `06d9590` verdes (demonstracao-390px re-executado após cancelamento de infraestrutura).
+- Escopo desde o último marcador (`81e845b`): 6 arquivos em `painel/`. Remove o bloco de atendimento por chat da página do produto (`ProdutoPublico.tsx`), mantendo ficha técnica, aplicações aprovadas, WhatsApp e link do site; e reúne os textos de independência, chassi e prévia já integrados.
+- Publicar **somente frontend estático** da `main`, com as flags existentes `VITE_PAIR_ATIVO=1`, `VITE_BACKUP_ATIVO=1` e `VITE_BANNERS_ATIVO=1`.
+- **Não inclui**: Edge Functions (inclusive `vitrine-assistente`), migrações SQL, escrita no Bling, preços, estoque ou produtos publicados, DNS ou domínio. A loja segue `ambiente=teste` com noindex, sem vendas ou checkout.
+- Conferir build, deploy, `version.json` e SHA publicado. Sem status verde, não declarar o site atualizado.
