@@ -43,7 +43,7 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
       loja:{nome:"Mobis Autopeças",slug:"mobis",whatsapp:"5562991654515",...flags},
       layout:{blocos:flags.layoutOrdem??["banner","montadoras","taxonomia","catalogo","empresa"],intervalo_segundos:flags.layoutIntervalo??6},
       paleta:flags.paleta??null,
-      produtos:flags.previaSimulada
+      produtos:flags.previaSimulada && !(pedido.montadora||pedido.modelo)
         ? [{sku:"CI003696",nome:"Motor parcial D4CB",marca:"TRIM-GO",preco:null,em_estoque:null,
             imagem:null,descricao:null,consulta_previa:true,whatsapp:"https://wa.me/5562991654515"}]
         : cenarioFlash && pedido.sku==="CI003000"
@@ -68,7 +68,7 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
         {slug:"kia-bongo-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Kia Bongo",modelo:"Kia Bongo K2500",status:"aprovado"},
         {slug:"pendente-nao-publicado",titulo:"Aplicação em estudo",modelo:"Outro",status:"a_confirmar"}]} : {},
       veiculos:[{modelo:"Hyundai HR",motor:"2.5 16V",de:2013,ate:2022},{modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022}],
-      categorias:flags.categoriaSimulada ? [{nome:"Motor",slug:"motor",total:1}] : [], total:flags.previaSimulada?1:0, pagina:1, por_pagina:24
+      categorias:flags.categoriaSimulada ? [{nome:"Motor",slug:"motor",total:1}] : [], total:flags.previaSimulada&&!(pedido.montadora||pedido.modelo)?1:0, pagina:1, por_pagina:24
     })});
   });
   await page.goto(base + "#/loja/mobis");
@@ -247,6 +247,22 @@ try {
       "até prévia do carrossel abre a ficha, nunca o WhatsApp");
     assert.equal(await page.locator(".gcv3-preco").count(),0,"prévia não mostra preço");
     assert.equal(await page.locator("#m2-empresa").count(),0,"institucional não ocupa home");
+    // Foto e botões comerciais nunca saltam diretamente ao atendimento.
+    await page.locator(".m2-produto-abrir").click();
+    await page.locator(".mf-painel").waitFor();
+    assert.equal(await page.locator(".mf-barra .mf-whatsapp").count(),1,
+      "WhatsApp só aparece depois de abrir a ficha");
+    assert.equal(await page.locator(".mf-barra").getByRole("button",{name:"Compartilhar"}).count(),1);
+    assert.equal(await page.locator(".mf-barra").getByRole("link",{name:"Facebook"}).count(),1);
+    assert.equal(await page.locator(".mf-painel").getByText("Preço sob consulta").count(),1);
+    await page.locator(".mf-cabecalho button").click();
+    assert.equal(await page.locator(".mf-painel").count(),0,"fechar ficha preserva a vitrine");
+    // Montadora Mitsubishi e modelo L200 não herdam o motor Hyundai/Kia por título.
+    await page.locator(".m4-montadora-item").filter({hasText:"Mitsubishi"}).click();
+    await consultar(page, () => page.locator(".m4-montadora-opcoes button").filter({hasText:"L200"}).click(),
+      q=>q.montadora==="Mitsubishi"&&q.modelo==="L200");
+    assert.equal(await page.locator(".m2-produto").count(),0,
+      "sem vínculo técnico homologado a seleção L200 não mostra produto não relacionado");
     assert.deepEqual(erros,[]);
     await context.close();
   }
