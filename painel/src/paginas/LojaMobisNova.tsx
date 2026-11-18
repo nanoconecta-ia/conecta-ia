@@ -202,7 +202,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
         {estado==="ok"&&dados?.produtos.length===0&&<div className="m2-vazio"><div><span className="m2-kicker">ATENDIMENTO MOBIS</span><h3>{Object.entries(f).some(([k,v])=>k!=="pagina"&&Boolean(v))?"Nenhuma peça encontrada com esses filtros.":"Catálogo de peças em preparação."}</h3><p>Nenhum anúncio aprovado foi encontrado. Consulte a equipe com o veículo e a referência; isso não significa falta de estoque na loja física.</p><button onClick={()=>para("m2-atendimento")}>Consultar a equipe ↗</button></div></div>}
         {dados&&dados.produtos.length>0&&<div className="m2-produto-grade">{dados.produtos.map(p=><article key={p.sku} data-sku-fisico={p.sku} className="m2-produto">
           <div className="m2-foto-produto">
-            <a href={p.consulta_previa?(p.whatsapp||"#/loja/mobis"):"#/p/mobis/"+encodeURIComponent(p.sku)} aria-label={(p.consulta_previa?"Consultar peça ":"Ver página do produto ")+p.sku} style={{display:"block",width:"100%"}}>
+            <a href={p.consulta_previa?(p.whatsapp||"#/loja/mobis"):"#/p/mobis/"+encodeURIComponent(p.sku)} target={p.consulta_previa?undefined:"_blank"} rel={p.consulta_previa?undefined:"noopener noreferrer"} aria-label={(p.consulta_previa?"Consultar peça ":"Abrir ficha em nova aba ")+p.sku} style={{display:"block",width:"100%"}}>
               {p.imagem?<img src={p.imagem} alt={"Fotografia autorizada do produto físico "+p.sku} loading="lazy"/>:
                 <div aria-label="Ilustração de categoria, não é foto da peça"><IconePeca nome={iconeDaCategoria(p.categoria)} tamanho={72}/></div>}
             </a>
@@ -227,11 +227,10 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
                   </div>
                 </div>
               : p.descricao&&<p>{p.descricao.slice(0,105)}</p>}
-            <strong>{p.consulta_previa?"Preço sob consulta":p.preco==null?"Consulte o preço":brl(p.preco)}</strong>
-            <p>{p.consulta_previa?"Prévia de catálogo · aplicação e disponibilidade precisam ser confirmadas.":"Disponibilidade a confirmar"}</p>
-            <div>{p.consulta_previa
-                ? p.whatsapp&&<a href={p.whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>
-                : <a href={"#/p/mobis/"+encodeURIComponent(p.sku)}>Ver ficha da peça</a>}
+            <strong>Preço sob consulta</strong>
+            <p>Catálogo · aplicação, preço e disponibilidade confirmados pela equipe.</p>
+            <div>{p.whatsapp&&<a href={p.whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>}
+              {!p.consulta_previa&&<a href={"#/p/mobis/"+encodeURIComponent(p.sku)} target="_blank" rel="noopener noreferrer">Abrir ficha em nova aba ↗</a>}
               <button disabled={lista.some(x=>x.sku===p.sku)} onClick={()=>adicionar(p)}>{lista.some(x=>x.sku===p.sku)?"Na lista":"Adicionar à lista +"}</button></div>
           </div>
         </article>)}</div>}
@@ -262,9 +261,6 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
       <input id="m2-busca-rapida" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Peça, código SKU ou OEM"/>
       <button type="submit">Buscar peças <span aria-hidden="true">→</span></button>
     </form></div>
-    {dados?.loja.ambiente==="teste"&&<div className="m2-aviso-teste" role="status">
-      AMBIENTE DE TESTE · Catálogo em preparação. Consulte peças e aplicações por WhatsApp. Preço e disponibilidade a confirmar; não concluímos pedidos nem recebemos pagamentos neste site.
-    </div>}
     </div>
     <main>
       {contexto?.tipo==="empresa" ? <EmpresaMobis whatsapp={whatsapp} politicas={dados?.politicas}/> : <>{ordemVitrine.map(id=><Fragment key={id}>{blocosSite[id]}</Fragment>)}

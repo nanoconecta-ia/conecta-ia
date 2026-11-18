@@ -90,7 +90,6 @@ export function GlassyCarouselMobisV3({
           {pausado?"Reiniciar rotação":"Pausar rotação"}
         </button>
       </div>}
-      {emTeste&&<p className="gcv3-modo-teste">Prévia da loja — sem compra ou pagamento online.</p>}
     </div>
   </section>;
 }
