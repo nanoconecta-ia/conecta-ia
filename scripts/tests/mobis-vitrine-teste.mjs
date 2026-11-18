@@ -82,7 +82,13 @@ try {
     assert.equal(await page.locator(".m2-produto").count(),0,"um catálogo vazio não inventa itens");
     assert.equal(await page.locator(".m4-banner-campanha").count(),0,"sem campanha publicada não existe banner de oferta fictício");
     assert.equal(await page.locator(".m4-montadora-item").count(),9,"nove montadoras como caminho de consulta");
-    assert.equal(await page.locator(".m4-taxonomia-item").count(),6,"seis sistemas de consulta sem produto publicado");
+    assert.equal(await page.locator(".m4-taxonomia-item").count(),9,"nove sistemas de consulta sem produto publicado");
+    assert.equal(await page.locator('.m4-taxonomia-item[data-mobis-emblema="sim"]').count(),7,
+      "sete emblemas metálicos oficiais da MOBIS, sem alterar Freios/Arrefecimento");
+    assert.equal(await page.locator(".m4-sistema-emblema").count(),7,
+      "emblemas do catálogo usam imagens locais em WebP");
+    assert.equal(await page.locator('.m4-taxonomia-item[data-mobis-emblema="nao"]').count(),2,
+      "sistemas sem arte aprovada preservam seus ícones técnicos");
     await page.locator(".m4-montadora-item").filter({hasText:"Iveco"}).click();
     await page.locator(".m4-montadora-opcoes button").filter({hasText:"Consultar a equipe"}).click();
     const link=await page.locator("#m2-atendimento .m2-contato-form a").getAttribute("href");
@@ -97,7 +103,7 @@ try {
       await page.evaluate(()=>scrollTo(0,0));
       await page.screenshot({path:dir+`inicio-SIMULADO-${width}.png`});
     }
-    resultados.push({width,amostra:false,montadoras:9,nosComConsulta:6,produtosPublicados:0,erros});
+    resultados.push({width,amostra:false,montadoras:9,nosComConsulta:9,produtosPublicados:0,erros});
     await context.close();
   }
   {
@@ -113,17 +119,17 @@ try {
     await context.close();
   }
   {
-    const cores={cor_fundo:"#f6f7f8",cor_superficie:"#ffffff",cor_texto:"#252a31",
-      cor_botao:"#444c54",cor_acento:"#8d3c35"};
+    const cores={cor_fundo:"#ffffff",cor_superficie:"#eaf2f6",cor_texto:"#1f2327",
+      cor_botao:"#1f2327",cor_acento:"#e2181a"};
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,paleta:cores},390);
     const root=page.locator(".mobis-v2.m4");
     assert.equal(await root.getAttribute("data-paleta-publicada"),"sim",
       "somente paleta publicada pela API é aplicada à Mobis");
-    assert.equal(await root.evaluate(el=>getComputedStyle(el).getPropertyValue("--mobis-botao").trim()),"#444c54");
+    assert.equal(await root.evaluate(el=>getComputedStyle(el).getPropertyValue("--mobis-botao").trim()),"#1f2327");
     assert.equal(await page.locator(".m4-busca button").first().evaluate(el=>getComputedStyle(el).backgroundColor),
-      "rgb(68, 76, 84)","botões seguem o token cinza aprovado");
+      "rgb(31, 35, 39)","botões seguem o token grafite da paleta oficial");
     assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
-      "rgb(141, 60, 53)","cabeçalho usa acento discreto publicado");
+      "rgb(226, 24, 26)","cabeçalho usa o vermelho oficial publicado");
     assert.deepEqual(erros,[]);
     await context.close();
   }
@@ -132,7 +138,7 @@ try {
     assert.equal(await page.locator(".mobis-v2.m4").getAttribute("data-paleta-publicada"),"nao",
       "rascunho ou ausência de paleta não muda site");
     assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
-      "rgb(168, 73, 22)","identidade Mobis existente permanece sem publicação");
+      "rgb(191, 195, 199)","identidade Mobis gelo e aço permanece sem publicação");
     assert.deepEqual(erros,[]);
     await context.close();
   }
