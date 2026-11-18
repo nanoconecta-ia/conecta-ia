@@ -132,3 +132,13 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - **Não** alterar Supabase, Edge Functions, migrações SQL, domínio/DNS/SSL, Bling, produtos, anúncios, preço, estoque, notas, checkout, pagamentos ou `lojas.ambiente`. Loja permanece em TESTE.
 - Verificação obrigatória pós-deploy: build, job de deploy, `version.json` com commit do release, Playwright da vitrine e do Conecta.IA, além de acesso real ao host oficial quando tecnicamente verificável.
 - Domínio principal e www seguem com `dns_verificado_em` e `ssl_verificado_em` nulos na tabela `loja_dominios`: frontend publicado NÃO equivale a homologação de DNS/SSL ou liberação comercial.
+
+
+## Homologação corretiva — MOBIS catálogo em prévia e paleta publicada (18/11/2026)
+
+- Autorização do proprietário: "homologação completa do domínio e do catálogo ainda não está concluída. PODE FAZ".
+- O workflow de publicação anterior (`44210497158`) implantou o frontend com êxito, mas falhou no teste visual: cartão com fundo `rgb(246,247,248)` de paleta publicada era comparado incorretamente com branco `rgb(255,255,255)`.
+- `scripts/tests/loja-mobis-publicada.mjs`: teste corrigido para verificar a cor COMPUTADA da paleta aprovada na própria vitrine, preservando as verificações de catálogo real, responsividade e ausência de vendas.
+- Função `loja-publica` atualizada separadamente no Supabase usando os seis arquivos versionados do repositório (deploy v17), sem alteração de esquema ou JWT, para exibir os 20 SKUs `exibicao_teste=true` SOMENTE em prévia Mobis por slug quando não há produtos publicados. Mantém preços/estoques ocultos, sem aplicações não homologadas, sem checkout, indexação ou pedidos.
+- Republicar somente o frontend da `main` com as flags de segurança já existentes. Verificar `version.json` e o teste real de 360/390/412/1280 px, além do painel em sessão simulada.
+- DNS/HTTPS do domínio precisam de comprovação por verificações independentes; NÃO alterar `loja_dominios` com carimbos de verificação baseados em suposições e NÃO mudar `lojas.ambiente` nem publicar produtos.
