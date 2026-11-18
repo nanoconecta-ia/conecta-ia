@@ -142,3 +142,11 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Função `loja-publica` atualizada separadamente no Supabase usando os seis arquivos versionados do repositório (deploy v17), sem alteração de esquema ou JWT, para exibir os 20 SKUs `exibicao_teste=true` SOMENTE em prévia Mobis por slug quando não há produtos publicados. Mantém preços/estoques ocultos, sem aplicações não homologadas, sem checkout, indexação ou pedidos.
 - Republicar somente o frontend da `main` com as flags de segurança já existentes. Verificar `version.json` e o teste real de 360/390/412/1280 px, além do painel em sessão simulada.
 - DNS/HTTPS do domínio precisam de comprovação por verificações independentes; NÃO alterar `loja_dominios` com carimbos de verificação baseados em suposições e NÃO mudar `lojas.ambiente` nem publicar produtos.
+
+## Publicação autorizada — vitrine Mobis: carrossel, rodapé enxuto e avisos de teste removidos (18-11-2026)
+- Autorização do proprietário nesta conversa: "Siga a duração do Google Drive ok mas pode liberar as edições do site e no Bling e conecta" e, depois, "Sim pode merge". Para este release, a autorização vale somente para o **site (painel estático)**.
+- PR #430 integrado em `25e93af` (merge em `main`), com o commit `1c3bce6` como origem; checks do head aprovados (11 com sucesso e 1 pulado, `publicar-homologacao`).
+- Publicar **somente frontend estático** da `main`: carrossel Glassy V3 sem avisos de teste, cartões em modo catálogo (preço sob consulta, WhatsApp, ficha em nova aba), rodapé Mobis enxuto e aba "Como consultar" na página institucional.
+- Preservar `VITE_PAIR_ATIVO=1` e `VITE_BACKUP_ATIVO=1`. Loja segue `ambiente=teste` com noindex, sem vendas ou checkout.
+- **Não inclui**: Edge Functions, migrações SQL, escrita no Bling, alteração de DNS/domínio, nem mudança no conecta.html ou no Conecta.IA.
+- Conferir o resultado de build/deploy e o SHA publicado; sem status verde não declarar o site atualizado.
