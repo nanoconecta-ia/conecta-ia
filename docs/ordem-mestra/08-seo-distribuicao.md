@@ -37,4 +37,4 @@ Feed `gerar_feed_merchant`: `id`=SKU estável, `title`, `description` (texto sim
 `propor_campanha` produz rascunhos (campanhas, grupos, criativos, textos, landing pages, segmentação, orçamento). **Publicar, ativar ou mudar orçamento = HIGH, aprovação específica por ação, idempotency_key, auditoria.** Conectores separados: SEO ≠ Merchant ≠ Ads. Nenhuma credencial de Ads no repositório; OAuth por loja como o Bling.
 
 ## 8.7 Domínio piloto
-`www.mobisautoparts.com.br`: **nenhuma alteração de DNS/Locaweb sem autorização explícita**. Validar o site novo em endereço de teste; corte em passo separado, com TTL reduzido antes e plano de volta (site atual permanece).
+`www.mobisautopecas.com.br`: **nenhuma alteração de DNS/Locaweb sem autorização explícita**. Validar o site novo em endereço de teste; corte em passo separado, com TTL reduzido antes e plano de volta (site atual permanece).
