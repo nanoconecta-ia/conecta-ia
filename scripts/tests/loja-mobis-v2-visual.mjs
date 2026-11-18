@@ -75,9 +75,9 @@ try{
     assert.equal(await page.locator('[data-bloco="'+bloco+'"]').count(),1,"bloco "+bloco+" montado uma vez");
   }
   assert.equal(await page.locator(".m4-montadora-item").count(),9,"nove montadoras para consulta, sem inventar aplicações");
-  assert.equal(await page.locator(".m4-taxonomia-item").count(),6,"sistemas em consulta quando não há produtos aprovados");
+  assert.equal(await page.locator(".m4-taxonomia-item").count(),9,"nove sistemas em consulta quando não há produtos aprovados");
   assert.equal(await page.locator(".m4-montadora-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(255, 255, 255)","seletor de montadoras branco");
-  assert.equal(await page.locator(".m4-taxonomia-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(255, 255, 255)","nós exibem superfície branca");
+  assert.equal(await page.locator(".m4-taxonomia-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(234, 242, 246)","emblemas aprovados usam superfície branco-gelo");
   assert.equal(await page.locator(".m2-filtros").evaluate(el=>getComputedStyle(el).maxWidth),"none","filtros não herdam largura administrativa de 440px");
   assert.equal(await page.locator(".m4-linha-card,.m2-veiculo-grade").count(),0,"navegação duplicada foi retirada");
   await page.locator(".m4-montadora-item").filter({hasText:"Iveco"}).click();
@@ -137,11 +137,11 @@ try{
    await page.locator(".m2-produto h3").getByText("Peça sintética para teste").waitFor();
    assert.equal(await page.locator('[data-mobis-layout="aprovado-v2"]').count(),1);
    assert.equal(await page.locator(".v-hero").count(),0);
-   await page.locator(".m2-filtros-grid select").nth(0).selectOption("HR");
-   await page.locator(".m2-filtros-grid select").nth(1).selectOption("D4CB");
-   assert.equal(await page.locator(".m2-filtros-grid select").nth(1).locator("option").filter({hasText:"D4BH"}).count(),0,"motores respeitam modelo");
+   await page.getByLabel("Modelo",{exact:true}).selectOption("HR");
+   await page.getByLabel("Motorização",{exact:true}).selectOption("D4CB");
+   assert.equal(await page.getByLabel("Motorização",{exact:true}).locator("option").filter({hasText:"D4BH"}).count(),0,"motores respeitam modelo");
    await page.locator(".m2-filtros-grid input").fill("2019");
-   await page.locator(".m2-filtros-grid select").nth(2).selectOption("motor");
+   await page.getByLabel("Sistema / categoria",{exact:true}).selectOption("motor");
    const resposta=page.waitForResponse(r=>r.url().endsWith("/loja-publica")&&(r.request().postData()||"").includes('"motor":"D4CB"'));
    await page.getByRole("button",{name:"Aplicar filtros",exact:true}).click();await resposta;
    assert.ok(requests.some(x=>x.slug==="mobis"&&x.modelo==="HR"&&x.motor==="D4CB"&&x.ano===2019&&x.categoria==="motor"));
