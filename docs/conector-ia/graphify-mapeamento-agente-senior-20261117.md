@@ -109,10 +109,20 @@ O comando de CI existente em conector-testes.yml, painel-ci.yml e chat-operacion
 - CLAUDE.md ainda menciona dominio antigo de exemplo; docs/conector-ia/loja-fases-teste-online.md identifica mobisautopecas.com.br como dominio oficial. **Nao mudar DNS nem resolver diferenca por palpite.**
 - Existem documentos historicos de arquitetura em rascunho que afirmam nao existir codigo; conferir a implementacao atual antes de confiar neles.
 - O fluxo Flash da PR #424 e o pedido novo de ficha flutuante precisam de reconciliacao explicita com testes.
-- Nenhum Graphify MCP foi habilitado dentro do Conecta.IA, nenhum scan real foi executado por esta documentacao e nenhuma API de produto, estoque, NF ou site foi modificada.
+- Nenhum Graphify MCP foi habilitado dentro do Conecta.IA e nenhuma API de produto, estoque, NF ou site foi modificada. O scan AST foi executado pelo workflow do PR #429; conferir evidencia e cobertura abaixo.
 
 ## 7. Regra de saida do agente senior
 
 Em cada entrega tecnica registrar: (a) branch e commit, (b) versao/commit do mapa consultado, (c) perguntas e caminhos Graphify, (d) evidencia em codigo com arquivo/funcao, (e) risco/efeito em Bling, SKU/aplicacao, publicacao e seguranca, (f) testes executados e testes nao executados, (g) autorizacoes pendentes, (h) observacoes de integridade. Sem essa trilha, sinalizar **revisao incompleta**, nunca 'homologado'.
 
 Referencias internas: CLAUDE.md; docs/conector-ia/ADR-2026-11-13-governanca-espelho-homologacao-ferramentas.md; docs/conector-ia/mobis-paginas-aplicacao-20261115.md; docs/conector-ia/fluxo-flash-mobis-sku-veiculo-20261117.md; docs/conector-ia/loja-fases-teste-online.md; docs/conector-ia/multiagente-arquitetura.md.
+
+## 8. Evidencia do primeiro mapeamento de codigo (PR #429)
+
+Execucao GitHub Actions: https://github.com/nanoconecta-ia/conecta-ia/actions/runs/44219356858. Resultado inicial: **sucesso tecnico da extracao**, com **965 arquivos de codigo detectados, 6.955 nos, 15.419 arestas e 319 comunidades**. O artefato graphify-mapa-codigo-readonly foi gerado e tem retencao limitada. A etapa de geracao de GRAPH_REPORT.md foi adicionada depois dessa primeira execucao e precisa ser revalidada no commit novo.
+
+**Lacunas declaradas pelo proprio extrator:** um arquivo teve erro de parse em painel/src/lib/demoMotor.test.ts, regiao proxima da linha 20 (o arquivo usa sintaxe TypeScript que requer revisao do parser; nao supor erro real no app). Outros 93 arquivos de codigo nao produziram simbolos; alguns sao SQL de reversao/dados, outros exigem auditoria. 63 caminhos de extensoes nao classificadas foram ignorados, incluindo CSS; seis entradas foram excluidas por regras de ignore. Portanto, nao equivale a uma varredura semantica integral de todo o conteudo do repositorio.
+
+**Critério de qualidade:** tratar a cobertura como `parcial com ressalvas` ate resolver ou justificar as lacunas por tipo de arquivo. Para alterar trecho critico nao mapeado, inspecionar o codigo e os testes reais manualmente, sem inferir 'nao ha dependencias' de uma consulta vazia. A simples geracao do grafo nao instala MCP Graphify nem concede acesso ao Nano.IA de runtime.
+
+A execucao da CI de Graphify **nao executa** a suite de testes do produto; manter os workflows e testes especificos das mudancas.
