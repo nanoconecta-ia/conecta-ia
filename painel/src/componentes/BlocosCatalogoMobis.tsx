@@ -44,22 +44,51 @@ export function BlocoMontadorasMobis({
   </section>;
 }
 
+/** Emblemas MOBIS aprovados em 18/11/2026, exclusivos da vitrine da MOBIS.
+ * São símbolos de categoria, não fotografia de peça, marca ou prova de compatibilidade.
+ * PNG originais e manifesto: Google Drive /08_ICONES_CATALOGO_APROVADOS_2026-11-18.
+ */
+const EMBLEMAS_MOBIS:Readonly<Record<string,string>>={
+  motor:"/icones-catalogo-mobis/mobis-sistema-motor-512.webp",
+  cabecote:"/icones-catalogo-mobis/mobis-sistema-cabecote-512.webp",
+  suspensao:"/icones-catalogo-mobis/mobis-sistema-suspensao-512.webp",
+  transmissao:"/icones-catalogo-mobis/mobis-sistema-transmissao-512.webp",
+  eletrica:"/icones-catalogo-mobis/mobis-sistema-eletrica-512.webp",
+  carroceria:"/icones-catalogo-mobis/mobis-sistema-carroceria-512.webp",
+  acessorios:"/icones-catalogo-mobis/mobis-sistema-acessorios-512.webp",
+};
 const SISTEMAS_CONSULTA=[
   {nome:"Motor",icone:"motor"},
+  {nome:"Cabeçote",icone:"cabecote"},
   {nome:"Suspensão",icone:"suspensao"},
   {nome:"Transmissão",icone:"transmissao"},
+  {nome:"Elétrica",icone:"eletrica"},
+  {nome:"Carroceria",icone:"carroceria"},
+  {nome:"Acessórios",icone:"acessorios"},
   {nome:"Freios",icone:"freios"},
   {nome:"Arrefecimento",icone:"arrefecimento"},
-  {nome:"Elétrica",icone:"eletrica"},
 ] as const;
 function iconeDaTaxonomia(nome:string,slug:string):string{
   const x=(nome+" "+slug).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  if(/cabecot|culassa|cylinder.?head/.test(x))return "cabecote";
   if(/suspens|bandeja|amortec/.test(x))return "suspensao";
-  if(/freio/.test(x))return "freios";
-  if(/transmiss|embreagem|cambio/.test(x))return "transmissao";
-  if(/arrefec|radiador/.test(x))return "arrefecimento";
-  if(/eletric|alternador|sensor/.test(x))return "eletrica";
+  if(/freio|pastilha/.test(x))return "freios";
+  if(/transmiss|embreagem|cambio|caixa.?de.?marcha/.test(x))return "transmissao";
+  if(/arrefec|radiador|termostat/.test(x))return "arrefecimento";
+  if(/eletric|alternador|sensor|bateria/.test(x))return "eletrica";
+  if(/carroceria|funilaria|lataria|parachoque|paralama/.test(x))return "carroceria";
+  if(/acessor|equipamento.?adicional/.test(x))return "acessorios";
   return "motor";
+}
+function IconeSistemaMobis({nome}:{nome:string}){
+  const src=EMBLEMAS_MOBIS[nome];
+  return src
+    ? <img className="m4-sistema-emblema" src={src} width={140} height={140}
+       loading="lazy" decoding="async" alt="" aria-hidden="true"/>
+    : <IconePeca nome={nome} tamanho={54}/>;
+}
+function temEmblemaMobis(chave:string):boolean{
+  return Object.prototype.hasOwnProperty.call(EMBLEMAS_MOBIS,chave);
 }
 /** Bloco 04: taxonomia = nós com contagem retornada pela API pública.
  * Nenhuma categoria pendente no Conecta.IA é mostrada como produto disponível.
@@ -79,13 +108,15 @@ export function BlocoTaxonomiaMobis({
       </div></div>
       <div className="m4-taxonomia-grade">
         {nos.length?nos.map(n=><button type="button" key={n.slug} className="m4-taxonomia-item"
-          onClick={()=>aoSelecionarCategoria(n.slug)} data-taxonomia-no={n.slug}>
-          <IconePeca nome={iconeDaTaxonomia(n.nome,n.slug)} tamanho={54}/>
+          onClick={()=>aoSelecionarCategoria(n.slug)} data-taxonomia-no={n.slug}
+          data-mobis-emblema={temEmblemaMobis(iconeDaTaxonomia(n.nome,n.slug))?"sim":"nao"}>
+          <IconeSistemaMobis nome={iconeDaTaxonomia(n.nome,n.slug)}/>
           <strong>{n.nome}</strong><small>{n.total} produto(s) no catálogo</small><span>Ver peças →</span>
         </button>):
         SISTEMAS_CONSULTA.map(s=><button type="button" key={s.nome} className="m4-taxonomia-item"
-          onClick={()=>aoConsultar(s.nome)} title={"Consultar peças de "+s.nome}>
-          <IconePeca nome={s.icone} tamanho={54}/>
+          onClick={()=>aoConsultar(s.nome)} title={"Consultar peças de "+s.nome}
+          data-mobis-emblema={temEmblemaMobis(s.icone)?"sim":"nao"}>
+          <IconeSistemaMobis nome={s.icone}/>
           <strong>{s.nome}</strong><small>Aguardando itens liberados</small><span>Consultar →</span>
         </button>)}
       </div>

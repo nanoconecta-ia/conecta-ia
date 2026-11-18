@@ -134,3 +134,34 @@
 .mobis-v2 :is(.m2-modos-busca button,.m2-filtros-grid input,.m2-filtros-grid select):focus-visible{
  outline:3px solid #E2181A;outline-offset:2px;
 }
+
+/* ÍCONES DE CATEGORIAS MOBIS · 7 emblemas metálicos aprovados pelo responsável.
+   A identidade e os componentes de outras lojas/Conecta.IA NÃO são alterados. */
+.mobis-v2.m4 .m4-taxonomia-grade{
+  grid-template-columns:repeat(auto-fit,minmax(146px,1fr));
+  gap:clamp(8px,1vw,13px);
+}
+.mobis-v2.m4 .m4-taxonomia-item[data-mobis-emblema="sim"]{
+  background:#EAF2F6;border:1px solid #BFC3C7;
+  min-height:208px;padding:9px 6px 12px;
+  box-shadow:0 3px 12px #1F232711;
+}
+.mobis-v2.m4 .m4-taxonomia-item[data-mobis-emblema="sim"]:hover{
+  background:#fff;border-color:#E2181A;box-shadow:0 5px 16px #1F23271b;
+}
+.mobis-v2.m4 .m4-taxonomia-item .m4-sistema-emblema{
+  display:block;width:clamp(104px,11vw,148px);height:auto;aspect-ratio:1;
+  max-width:100%;object-fit:contain;flex:none;filter:none;border:0;
+  border-radius:0;background:transparent;box-shadow:none;
+}
+.mobis-v2.m4 .m4-taxonomia-item[data-mobis-emblema="sim"] strong{
+  color:#1F2327;font-size:.81rem;line-height:1.1;
+}
+.mobis-v2.m4 .m4-taxonomia-item[data-mobis-emblema="sim"]>span{
+  color:#B01218;
+}
+@media (max-width:600px){
+  .mobis-v2.m4 .m4-taxonomia-grade{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mobis-v2.m4 .m4-taxonomia-item[data-mobis-emblema="sim"]{min-height:192px}
+  .mobis-v2.m4 .m4-taxonomia-item .m4-sistema-emblema{width:min(128px,96%)}
+}
