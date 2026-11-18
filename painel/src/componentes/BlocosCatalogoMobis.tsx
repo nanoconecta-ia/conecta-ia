@@ -40,7 +40,7 @@ export function BlocoMontadorasMobis({
         <button type="button" onClick={()=>aoConsultar(ativa)}>Consultar a equipe <span aria-hidden="true">→</span></button>
       </div>
     </div>}
-    <small className="m4-bloco-nos-nota">Referências de atendimento. Não representam associação oficial com as montadoras. Confirme cada aplicação por chassi, motorização e ano.</small>
+    <small className="m4-bloco-nos-nota">Referências de atendimento. Não representam associação oficial com as montadoras. Confirme cada aplicação por modelo, motorização e ano.</small>
   </section>;
 }
 

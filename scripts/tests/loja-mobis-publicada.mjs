@@ -55,8 +55,8 @@ try{
   const dados=await r.json();assert.equal(dados.loja.slug,"mobis");
   assert.equal(dados.loja.ambiente,"teste","loja deve permanecer em teste");
   assert.notEqual(dados.loja.venda_habilitada,true,"vendas não podem estar habilitadas");
-  await page.locator(".m2-aviso-teste").waitFor();
-  for(const bloco of ["cabecalho","banner","montadoras","taxonomia","filtros","produtos","privacidade"]){
+  assert.equal(await page.locator(".m2-aviso-teste").count(),0,"aviso de ambiente de teste removido da vitrine (pedido do dono)");
+  for(const bloco of ["cabecalho","banner","montadoras","taxonomia","filtros","produtos","rodape"]){
     assert.equal(await page.locator('[data-bloco="'+bloco+'"]').count(),1,"bloco real "+bloco);
   }
   assert.equal(await page.locator(".m4-montadora-item").count(),9,"nove montadoras de atendimento");
