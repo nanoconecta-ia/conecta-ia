@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useState,type CSSProperties} from "react";
 import {supabase} from "../supabase.ts";
 import type {Loja} from "../lib/dados.ts";
-import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
+import logoMobis from "../assets/marcas/mobis-ma-horizontal.svg";
 import {MODELOS_PALETA_MOBIS,PALETA_MOBIS_PADRAO,validarPaletaMobis,variaveisPaletaMobis,
  type PaletaMobis} from "../lib/paletaMobis.ts";
 import "./AparenciaMobis.css";
