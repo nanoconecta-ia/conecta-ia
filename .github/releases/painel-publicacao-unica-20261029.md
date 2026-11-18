@@ -174,3 +174,13 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Publicar **somente frontend estático** da `main`, com as flags existentes `VITE_PAIR_ATIVO=1`, `VITE_BACKUP_ATIVO=1` e `VITE_BANNERS_ATIVO=1`.
 - **Não inclui**: Edge Functions (inclusive `vitrine-assistente`), migrações SQL, escrita no Bling, preços, estoque ou produtos publicados, DNS ou domínio. A loja segue `ambiente=teste` com noindex, sem vendas ou checkout.
 - Conferir build, deploy, `version.json` e SHA publicado. Sem status verde, não declarar o site atualizado.
+
+
+## Publicação autorizada — MOBIS M-STYLE CROMO V3, vitrine completa (18/11/2026)
+- Autorização expressa do proprietário nesta conversa: **“Pode merge e publicar e homologar”** para a reconstrução visual integral da loja.
+- PR #447 já integrada na `main` em `753fcacca3f6397ddc19c3eab7d6b8b338b76bab` (merge de 18/11/2026), oito workflows do PR com conclusão `success`. Diff `753fcac...main` idêntico no momento da autorização.
+- Disparar o workflow existente `Painel (GitHub Pages)` **somente** pelo gatilho controlado de alteração deste marcador na `main`. Publicar frontend estático V3 com logo M-STYLE oficial, departamentos circulares, hero, seções de aplicação, busca por SKU/OEM, catálogo público, contato e layout responsivo.
+- Preservar flags de build `VITE_PAIR_ATIVO=1`, `VITE_BACKUP_ATIVO=1` e `VITE_BANNERS_ATIVO=1`. Sem mudança em workflows, tokens, DNS, Supabase, Bling ou emissão de NF.
+- **Não** alterar `lojas.ambiente` (permanece `teste`), `venda_habilitada`, RLS, preços, estoque, GTIN, OEM, compatibilidades, anúncios, checkout ou dados fiscais. Não publicar oferta não aprovada.
+- Homologar após deploy: status `build/deploy`, `version.json` e commit publicado, requisição real à Edge Function `loja-publica`, navegação em desktop e celular, links e filtros, política de noindex e não exibição de dados não aprovados. Se falhar, registrar o motivo sem declarar homologação integral.
+- Homologação visual do GitHub Pages **não comprova** DNS/SSL do domínio próprio, nem constitui liberação comercial. Esses controles exigem verificação independente.
