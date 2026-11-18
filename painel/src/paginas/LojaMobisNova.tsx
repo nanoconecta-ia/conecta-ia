@@ -12,13 +12,14 @@ import {paletaPublicada,variaveisPaletaMobis} from "../lib/paletaMobis.ts";
 import fotoHR from "../assets/veiculos-mobis/hyundai-hr.webp";
 import fotoBongo from "../assets/veiculos-mobis/kia-bongo-k2500.webp";
 import fotoL200 from "../assets/veiculos-mobis/mitsubishi-l200.webp";
-import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
+import logoMobis from "../assets/marcas/mobis-mstyle-v3-logo.png";
 import "./loja-mobis-nova.css";
 import "./loja-mobis-branco.css";
 import "./loja-mobis-clara.css";
 import "./blocos-catalogo-mobis.css";
 import "./mobis-paleta-dinamica.css";
 import "./mobis-premium-v3.css";
+import "./mobis-ma-identidade.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -162,6 +163,12 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
   const ordemLayout=ordemPublica(dados?.layout?.blocos);
   const ordemVitrine:BlocoComercial[]=["banner","catalogo",...ordemLayout.filter(id=>id!=="banner"&&id!=="catalogo"&&id!=="empresa")];
   const coresPublicas=paletaPublicada(dados?.paleta);
+  // V3 visual somente quando a paleta oficial foi aprovada/publicada pela rotina da loja.
+  // A logo e o favicon V3 já são os arquivos originais; cores antigas publicadas não são sobrepostas.
+  const v3Publicada=!!coresPublicas &&
+    coresPublicas.cor_fundo==="#eaf2f6" &&
+    coresPublicas.cor_botao==="#e2181a" &&
+    coresPublicas.cor_acento==="#e2181a";
   const blocosSite:Record<BlocoComercial,ReactNode>={
     banner: <div data-bloco="banner"><GlassyCarouselMobisV3
       banners={banners} produtos={dados?.produtos??[]} veiculos={VEICULOS} sistemas={dados?.categorias??[]}
@@ -239,11 +246,11 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     </>,
     empresa: null,
   };
-  return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="aprovado-v2" data-layout-versionado="true" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4" data-paleta-publicada={coresPublicas?"sim":"nao"} style={coresPublicas?variaveisPaletaMobis(coresPublicas) as CSSProperties:undefined}>
+  return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="aprovado-v2" data-layout-versionado="true" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4" data-paleta-publicada={coresPublicas?"sim":"nao"} data-mobis-v3-publicada={v3Publicada?"sim":"nao"} style={coresPublicas?variaveisPaletaMobis(coresPublicas) as CSSProperties:undefined}>
     <div data-bloco="cabecalho">
     <header className="m2-header"><div className="m2-wrap">
       <a className="m2-brand" href="#/loja/mobis" aria-label="MOBIS Autopeças - início" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>
-        <img src={logoMobis} width={720} height={128} alt="MOBIS Autopeças"/>
+        <img src={logoMobis} width={1000} height={330} alt="MOBIS Autopeças — logo MA oficial"/>
       </a>
       <nav aria-label="Menu da loja"><button onClick={()=>contexto?.tipo==="empresa"?window.location.hash="#/loja/mobis":para("m2-montadoras")}>Montadoras</button>
         <button onClick={()=>contexto?.tipo==="empresa"?window.location.hash="#/loja/mobis":para("m2-taxonomia")}>Peças por sistema</button>

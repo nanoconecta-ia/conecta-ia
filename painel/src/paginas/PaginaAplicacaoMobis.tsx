@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
-import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
+import logoMobis from "../assets/marcas/mobis-mstyle-v3-logo.png";
 import "./loja-mobis-nova.css";
 
 type Aplicacao = {

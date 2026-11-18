@@ -121,9 +121,9 @@ try {
       "somente paleta publicada pela API é aplicada à Mobis");
     assert.equal(await root.evaluate(el=>getComputedStyle(el).getPropertyValue("--mobis-botao").trim()),"#444c54");
     assert.equal(await page.locator(".m4-busca button").first().evaluate(el=>getComputedStyle(el).backgroundColor),
-      "rgb(68, 76, 84)","botões seguem o token cinza aprovado");
+      "rgb(68, 76, 84)","botão respeita a paleta antiga publicada");
     assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
-      "rgb(141, 60, 53)","cabeçalho usa acento discreto publicado");
+      "rgb(141, 60, 53)","paleta antiga publicada segue intacta");
     assert.deepEqual(erros,[]);
     await context.close();
   }
@@ -132,7 +132,23 @@ try {
     assert.equal(await page.locator(".mobis-v2.m4").getAttribute("data-paleta-publicada"),"nao",
       "rascunho ou ausência de paleta não muda site");
     assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
-      "rgb(168, 73, 22)","identidade Mobis existente permanece sem publicação");
+      "rgb(168, 73, 22)","ausência de paleta não muda a identidade já implantada");
+    assert.deepEqual(erros,[]);
+    await context.close();
+  }
+  {
+    const padraoV3={cor_fundo:"#eaf2f6",cor_superficie:"#ffffff",cor_texto:"#1f2327",
+      cor_botao:"#e2181a",cor_acento:"#e2181a"};
+    const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,paleta:padraoV3},390);
+    const root=page.locator(".mobis-v2.m4");
+    assert.equal(await root.getAttribute("data-mobis-v3-publicada"),"sim",
+      "V3 só ativa com a paleta oficial entregue pela API");
+    assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
+      "rgb(226, 24, 26)","a assinatura da V3 usa vermelho MOBIS");
+    assert.equal(await page.locator(".m2-busca-rapida").evaluate(el=>getComputedStyle(el).backgroundColor),
+      "rgb(31, 35, 39)","fundo grafite da busca V3");
+    assert.ok((await page.locator(".m2-brand img").getAttribute("src")||"").includes("mobis-mstyle-v3-logo"),
+      "logo horizontal usa o PNG original V3");
     assert.deepEqual(erros,[]);
     await context.close();
   }

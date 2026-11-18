@@ -51,12 +51,12 @@ try{
   assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem as fotos do Wikimedia nem mascotes na loja");
   assert.equal(await page.locator('.mbi,.mgv,.m3-hero,.m3-faixa-sistemas').count(),0,"blocos duplicados removidos");
   assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.mobis-v2')).backgroundColor),'rgb(255, 255, 255)',"fundo branco");
-  assert.equal(await page.locator('.m2-busca-rapida').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"busca rápida branca");
+  assert.equal(await page.locator('.m2-busca-rapida').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"faixa de busca rápida branca antes de publicar V3");
   const caixa=await hero.boundingBox();
   assert.ok(caixa&&caixa.width>=width-1,"banner ocupa a largura da tela em "+width+"px");
   assert.equal(await hero.evaluate(el=>el.scrollWidth<=el.clientWidth+1),true,"banner sem estouro lateral em "+width+"px");
 
-  assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho branco");
+  assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho branco antes de publicar V3");
   assert.ok((await hero.locator("h1").innerText()).length>5,"carrossel tem chamada real");
   assert.ok((await hero.locator(".gcv3-copy p").innerText()).length<150,"texto comercial curto");
   await page.getByText(/Catálogo de peças em preparação/).waitFor({timeout:10000});
