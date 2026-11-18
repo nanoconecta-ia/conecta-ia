@@ -34,7 +34,7 @@ export function GlassyCarouselMobisV3({
       id:"produto-"+p.sku,tipo:p.consulta_previa?"consulta":"produto",
       titulo:p.nome,subtitulo:p.consulta_previa?"Prévia de catálogo · aplicação a confirmar":p.marca||"Peça do catálogo",
       etiqueta:p.consulta_previa?"CONSULTA PRÉVIA · SEM VENDA":"PRODUTO DO CATÁLOGO",imagem:p.imagem||null,
-      url:p.consulta_previa?(p.whatsapp||"#/loja/mobis"):"#/p/mobis/"+encodeURIComponent(p.sku),
+      url:"#/p/mobis/"+encodeURIComponent(p.sku),
       preco:p.consulta_previa?null:p.preco,sku:p.sku,flash:false,
     }))
     : veiculos.map(v=>({
@@ -69,7 +69,7 @@ export function GlassyCarouselMobisV3({
           {slide.subtitulo!==slide.titulo&&<p>{slide.subtitulo}</p>}
           {slide.sku&&<small className="gcv3-sku">SKU {slide.sku}</small>}
           {slide.preco!=null&&slide.preco>0&&<strong className="gcv3-preco">{moeda(slide.preco)}</strong>}
-          <a className="gcv3-cta" href={slide.url}>{slide.tipo==="veiculo"?"Ver linha de veículos":slide.tipo==="consulta"?"Consultar peça no atendimento":"Ver ficha e aplicações"} <span aria-hidden="true">→</span></a>
+          <a className="gcv3-cta" href={slide.url}>{slide.tipo==="veiculo"?"Ver linha de veículos":slide.tipo==="consulta"?"Examinar ficha da peça":"Ver ficha e aplicações"} <span aria-hidden="true">→</span></a>
           {slide.tipo!=="veiculo"&&<small className="gcv3-nota">Compatibilidade, preço e disponibilidade sujeitos à confirmação no atendimento. A prévia não é um anúncio homologado.</small>}
         </div>
         <a key={"foto-"+slide.id} className={"gcv3-midia"+(slide.imagem?"":" gcv3-sem-foto")} href={slide.url}

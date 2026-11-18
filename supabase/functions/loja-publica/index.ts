@@ -6,7 +6,7 @@ import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.t
 import { modoCliente } from "../_shared/loja/publicacao.ts";
 import { urlProduto } from "../_shared/seo/url.ts";
 import { cabecalhoIpConfigurado, guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
-import { montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
+import { montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, textoSimples, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" } });
@@ -95,28 +95,79 @@ Deno.serve(async (req) => {
   // O texto de busca nunca é interpretado como SQL, filtro ou id arbitrário.
   const referenciaExata = loja.slug === "mobis" && c?.referencia_exata === true;
   const buscaOr = busca.replace(/[.:"']/g, " ");
-  const modelo = limpar(c?.modelo), motor = limpar(c?.motor), categoria = typeof c?.categoria === "string" && SLUG_RE.test(c.categoria) ? c.categoria : "";
+  const modelo = limpar(c?.modelo), motor = limpar(c?.motor), montadora = limpar(c?.montadora), categoria = typeof c?.categoria === "string" && SLUG_RE.test(c.categoria) ? c.categoria : "";
   const tipo = typeof c?.tipo === "string" && Object.hasOwn(TIPOS_VEICULO, c.tipo) ? c.tipo : "";
   const ano = Number.isInteger(c?.ano) && c.ano >= 1950 && c.ano <= 2100 ? (c.ano as number) : undefined;
+  const anoInicio = Number.isInteger(c?.ano_inicial) && c.ano_inicial >= 1950 && c.ano_inicial <= 2100 ? c.ano_inicial as number : undefined;
+  const anoFinal = Number.isInteger(c?.ano_final) && c.ano_final >= 1950 && c.ano_final <= 2100 ? c.ano_final as number : undefined;
 
-  // Publicados (id + categoria) e as aplicações APROVADAS deles: alimentam as opções de busca e os filtros.
-  const consultaPublicados = sb.from("produtos").select("id, sku, taxonomia_no_id")
+  // Um SKU físico pode ter várias aplicações. Todos os vínculos visíveis
+  // são homologados e associados a modelos/montadoras do cadastro relacional.
+  // Em TESTE, a prévia mostra só produtos explicitamente marcados e ativos.
+  const consultaPublicados = sb.from("produtos").select("id,sku,taxonomia_no_id")
     .eq("loja_id", loja.id).eq("publicado", true);
-  const { data: pub } = await consultaPublicados.limit(5000);
+  const { data: pub, error: erroPublicados } = await consultaPublicados.limit(5000);
+  if (erroPublicados) return json({ erro: "Catálogo indisponível." }, 503);
   const idsPublicados = (pub ?? []).map((p: { id: string }) => p.id);
   const modoPreviaCatalogo = loja.slug === "mobis" && fase === "teste" && !host && idsPublicados.length === 0;
-  let apls: Aplicacao[] = [];
-  if (idsPublicados.length) {
-    let { data, error: eApl } = await sb.from("produto_aplicacoes").select("produto_id, modelo, motorizacao, ano_inicial, ano_final, modelos(categoria)").eq("loja_id", loja.id).eq("status", "aprovado").limit(5000);
-    // antes da migração do tipo de veículo o embed não existe: cai para a leitura simples (sem tipos) em vez de derrubar a busca por veículo
-    if (eApl) ({ data } = await sb.from("produto_aplicacoes").select("produto_id, modelo, motorizacao, ano_inicial, ano_final").eq("loja_id", loja.id).eq("status", "aprovado").limit(5000));
-    const publicados = new Set(idsPublicados); // filtra em memória: lista grande de ids estoura o tamanho da URL
-    apls = ((data ?? []) as unknown as (Aplicacao & { modelos: { categoria: string } | null })[]).filter((a) => publicados.has(a.produto_id)).map(({ modelos: m, ...a }) => ({ ...a, categoria: m?.categoria ?? null }));
+  const { data: previas, error: erroPrevias } = modoPreviaCatalogo
+    ? await sb.from("produtos").select("id,sku,taxonomia_no_id")
+        .eq("loja_id",loja.id).eq("exibicao_teste",true).eq("situacao","A").limit(100)
+    : {data: [] as {id:string;sku:string;taxonomia_no_id:string|null}[],error:null};
+  if(erroPrevias)return json({erro:"Prévia indisponível."},503);
+  const elegiveis = modoPreviaCatalogo ? (previas ?? []) : (pub ?? []);
+  const idsElegiveis = elegiveis.map((p:{id:string})=>p.id);
+  const conjuntoElegiveis = new Set(idsElegiveis);
+  type AplicacaoAprovada = Aplicacao & {
+    montadora:string|null; restricao:string|null;
+    pagina_slug:string|null;pagina_titulo:string|null;pagina_indexavel:boolean;
+  };
+  let apls:AplicacaoAprovada[]=[];
+  if(idsElegiveis.length){
+    const {data:rows,error:erroApl}=await sb.from("produto_aplicacoes")
+      .select("produto_id,modelo,motorizacao,ano_inicial,ano_final,modelo_id,marca_veiculo_id,restricao,pagina_slug,pagina_titulo,pagina_indexavel")
+      .eq("loja_id",loja.id).eq("status","aprovado").limit(5000);
+    if(erroApl) return json({erro:"Aplicações indisponíveis."},503);
+    const aprovadas=(rows??[]).filter(a=>conjuntoElegiveis.has(a.produto_id));
+    const modelosIds=[...new Set(aprovadas.map(a=>a.modelo_id).filter((id):id is string=>!!id))];
+    const {data:modelos} = modelosIds.length
+      ? await sb.from("modelos").select("id,categoria,montadora_id").in("id",modelosIds)
+      : {data:[] as {id:string;categoria:string|null;montadora_id:string|null}[]};
+    const modeloPorId=new Map((modelos??[]).map(m=>[m.id,m]));
+    const montadorasIds=[...new Set(aprovadas.flatMap(a=>[
+      a.marca_veiculo_id,modeloPorId.get(a.modelo_id??"")?.montadora_id
+    ]).filter((id):id is string=>!!id))];
+    const {data:montadorasRegistradas}=montadorasIds.length
+      ? await sb.from("montadoras").select("id,nome").in("id",montadorasIds)
+      : {data:[] as {id:string;nome:string}[]};
+    const montadoraPorId=new Map((montadorasRegistradas??[]).map(m=>[m.id,m.nome]));
+    apls=aprovadas.map(a=>{
+      const m=modeloPorId.get(a.modelo_id??"");
+      return {
+        produto_id:a.produto_id,modelo:a.modelo,motorizacao:a.motorizacao,
+        ano_inicial:a.ano_inicial,ano_final:a.ano_final,
+        categoria:m?.categoria??null,
+        montadora:montadoraPorId.get(a.marca_veiculo_id??m?.montadora_id??"")??null,
+        restricao:a.restricao??null,pagina_slug:a.pagina_slug??null,
+        pagina_titulo:a.pagina_titulo??null,pagina_indexavel:a.pagina_indexavel===true,
+      };
+    });
   }
-  const nosIds = [...new Set((pub ?? []).map((p: { taxonomia_no_id: string | null }) => p.taxonomia_no_id).filter(Boolean))] as string[];
-  const { data: nos } = nosIds.length ? await sb.from("taxonomia_nos").select("id, nome, slug").in("id", nosIds) : { data: [] as { id: string; nome: string; slug: string }[] };
-  const categorias = (nos ?? []).map((n: { id: string; nome: string; slug: string }) => ({ nome: n.nome, slug: n.slug, total: (pub ?? []).filter((p: { taxonomia_no_id: string | null }) => p.taxonomia_no_id === n.id).length }));
-
+  const montadorasMap=new Map<string,Set<string>>();
+  for(const a of apls)if(a.montadora){
+    if(!montadorasMap.has(a.montadora))montadorasMap.set(a.montadora,new Set());
+    montadorasMap.get(a.montadora)!.add(a.modelo);
+  }
+  const montadoras_aprovadas=[...montadorasMap].map(([nome,modelos])=>({
+    nome,modelos:[...modelos].sort((a,b)=>a.localeCompare(b,"pt-BR")),
+  })).sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
+  const nosIds=[...new Set(elegiveis.map((p:{taxonomia_no_id:string|null})=>p.taxonomia_no_id).filter(Boolean))] as string[];
+  const {data:nos}=nosIds.length
+    ? await sb.from("taxonomia_nos").select("id,nome,slug,status").in("id",nosIds)
+    : {data:[] as {id:string;nome:string;slug:string;status:string}[]};
+  const categorias=(nos??[]).filter(n=>n.status==="aprovado").map(n=>({
+    nome:n.nome,slug:n.slug,total:elegiveis.filter((p:{taxonomia_no_id:string|null})=>p.taxonomia_no_id===n.id).length,
+  }));
   // filtros calculados do dado aprovado (categorias com ícone, montadoras, fabricantes); falha aqui não derruba a vitrine
   const { data: filtros } = await sb.rpc("filtros_da_vitrine", { p_loja: loja.id });
 
@@ -166,9 +217,26 @@ Deno.serve(async (req) => {
       ? consulta.or(`sku.ilike.${buscaOr}${trechoIds}`)
       : consulta.or(`nome.ilike.%${buscaOr}%,sku.ilike.%${buscaOr}%${trechoIds}`);
   }
-  if (modelo || motor || ano !== undefined) {
-    const ids = [...produtosDoVeiculo(apls, { modelo, motor, ano })];
-    consulta = consulta.in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+  if (modelo || montadora || motor || ano !== undefined || anoInicio !== undefined || anoFinal !== undefined) {
+    // Filtro cumulativo: sem vínculo aprovado não existe resultado por veículo.
+    // Não derivar montadora, ano ou motor de palavras contidas no nome do produto.
+    const normal=(v:string)=>v.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+    const combinaModelo=(valor:string,escolha:string)=>{
+      const v=normal(valor),q=normal(escolha);
+      return v===q||v.startsWith(q+" ")||v.endsWith(" "+q)||v.includes(" "+q+" ");
+    };
+    const cobreAno=(a:AplicacaoAprovada,valor:number)=>
+      a.ano_inicial!==null&&a.ano_final!==null&&a.ano_inicial<=valor&&a.ano_final>=valor;
+    const ids=[...new Set(apls.filter(a=>
+      (!montadora||(a.montadora!==null&&normal(a.montadora)===normal(montadora))) &&
+      (!modelo||combinaModelo(a.modelo,modelo)) &&
+      (!motor||(a.motorizacao!==null&&normal(a.motorizacao)===normal(motor))) &&
+      (ano===undefined||cobreAno(a,ano)) &&
+      (anoInicio===undefined||cobreAno(a,anoInicio)) &&
+      (anoFinal===undefined||cobreAno(a,anoFinal)) &&
+      (anoInicio===undefined||anoFinal===undefined||anoInicio<=anoFinal)
+    ).map(a=>a.produto_id))];
+    consulta=consulta.in("id",ids.length?ids:["00000000-0000-0000-0000-000000000000"]);
   }
   if (tipo) {
     const ids = [...produtosDoTipo(apls, tipo)];
@@ -180,14 +248,58 @@ Deno.serve(async (req) => {
   }
   const { data: linhas, count } = await consulta;
 
-  // Ficha do produto (página do produto): pedido com { sku } devolve as aplicações aprovadas daquele produto publicado
-  const skuFicha = typeof c?.sku === "string" && c.sku.length <= 80 && !/[\u0000-\u001F\u007F]/.test(c.sku) ? c.sku : "";
-  let ficha: { veiculos: ReturnType<typeof veiculosDaFicha> } | null = null;
-  if (skuFicha) {
-    let consultaFicha = sb.from("produtos").select("id").eq("loja_id", loja.id).eq("sku", skuFicha);
-    consultaFicha = consultaFicha.eq("publicado", true);
-    const { data: alvo } = await consultaFicha.maybeSingle();
-    if (alvo) ficha = { veiculos: veiculosDaFicha(apls, alvo.id as string) };
+  // Ficha por SKU: a matriz pode ser consultada em TESTE sem marcar o produto
+  // como publicado. Fotos, boletins, referências e páginas-filhas continuam
+  // submetidos aos próprios controles de aprovação.
+  const skuFicha=typeof c?.sku==="string"&&c.sku.length<=80&&!/[\u0000-\u001F\u007F]/.test(c.sku)?c.sku:"";
+  let ficha: {
+    veiculos:ReturnType<typeof veiculosDaFicha>;
+    detalhes:{
+      descricao_cadastro:string|null;condicao:string|null;categoria:string|null;categoria_status:string|null;
+      peso_kg:number|null;largura_cm:number|null;altura_cm:number|null;profundidade_cm:number|null;
+      fotos:string[];texto_tecnico_aprovado:string|null;
+      aplicacoes:{modelo:string;montadora:string|null;motorizacao:string|null;ano_inicial:number|null;ano_final:number|null;pagina_slug:string|null;titulo:string|null;restricao:string|null}[];
+    };
+  }|null=null;
+  if(skuFicha){
+    let consultaFicha=sb.from("produtos")
+      .select("id,descricao_curta,descricao_complementar,condicao,peso_kg,largura_cm,altura_cm,profundidade_cm,taxonomia_no_id")
+      .eq("loja_id",loja.id).eq("sku",skuFicha);
+    consultaFicha=modoPreviaCatalogo
+      ? consultaFicha.eq("exibicao_teste",true).eq("situacao","A")
+      : consultaFicha.eq("publicado",true);
+    const {data:alvo}=await consultaFicha.maybeSingle();
+    if(alvo&&conjuntoElegiveis.has(alvo.id)){
+      const [i,n,b]=await Promise.all([
+        sb.from("imagens_publicaveis").select("url,principal,ordem")
+          .eq("loja_id",loja.id).eq("produto_id",alvo.id)
+          .order("principal",{ascending:false}).order("ordem").limit(10),
+        alvo.taxonomia_no_id
+          ? sb.from("taxonomia_nos").select("nome,status").eq("id",alvo.taxonomia_no_id).maybeSingle()
+          : Promise.resolve({data:null}),
+        sb.from("produto_bula").select("texto_md").eq("loja_id",loja.id)
+          .eq("produto_id",alvo.id).eq("status","aprovado").maybeSingle(),
+      ]);
+      const numOuNulo=(v:unknown)=>v===null||v===undefined||!Number.isFinite(Number(v))?null:Number(v);
+      ficha={
+        veiculos:veiculosDaFicha(apls,alvo.id),
+        detalhes:{
+          descricao_cadastro:textoSimples(alvo.descricao_complementar||alvo.descricao_curta,1400),
+          condicao:alvo.condicao??null,categoria:n.data?.nome??null,
+          categoria_status:n.data?.status??null,
+          peso_kg:numOuNulo(alvo.peso_kg),largura_cm:numOuNulo(alvo.largura_cm),
+          altura_cm:numOuNulo(alvo.altura_cm),profundidade_cm:numOuNulo(alvo.profundidade_cm),
+          fotos:(i.data??[]).map(x=>x.url).filter((url:string)=>/^https:\/\//.test(url)),
+          texto_tecnico_aprovado:textoSimples(b.data?.texto_md,3000),
+          aplicacoes:apls.filter(a=>a.produto_id===alvo.id).map(a=>({
+            modelo:a.modelo,montadora:a.montadora,motorizacao:a.motorizacao,
+            ano_inicial:a.ano_inicial,ano_final:a.ano_final,
+            pagina_slug:!modoPreviaCatalogo&&a.pagina_indexavel?a.pagina_slug:null,
+            titulo:a.pagina_titulo,restricao:a.restricao,
+          })),
+        },
+      };
+    }
   }
 
   // imagem principal aprovada de cada produto da página
@@ -319,5 +431,5 @@ Deno.serve(async (req) => {
         paleta=Object.fromEntries(campos.map(c=>[c,publicavel[c]]));
     }
   }
-  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, layout, paleta, logos_montadoras, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
+  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, layout, paleta, logos_montadoras, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), montadoras_aprovadas, tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
 });

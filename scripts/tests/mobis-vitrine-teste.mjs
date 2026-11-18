@@ -43,25 +43,32 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
       loja:{nome:"Mobis Autopeças",slug:"mobis",whatsapp:"5562991654515",...flags},
       layout:{blocos:flags.layoutOrdem??["banner","montadoras","taxonomia","catalogo","empresa"],intervalo_segundos:flags.layoutIntervalo??6},
       paleta:flags.paleta??null,
-      produtos:flags.previaSimulada
+      produtos:flags.previaSimulada && !(pedido.montadora||pedido.modelo)
         ? [{sku:"CI003696",nome:"Motor parcial D4CB",marca:"TRIM-GO",preco:null,em_estoque:null,
-            imagem:null,descricao:null,consulta_previa:true,whatsapp:"https://wa.me/5562991654515"}]
+            imagem:null,descricao:null,consulta_previa:true,whatsapp:"https://wa.me/5562991654515?text=Consulta%20CI003696"}]
         : cenarioFlash && pedido.sku==="CI003000"
         ? [{sku:"CI003000",nome:"Motor parcial D4CB",marca:"TRIM-GO",preco:null,em_estoque:false,
             imagem:null,descricao:null,whatsapp:null}] : [],
       banners:cenarioFlash ? [{sku:"CI003000",nome:"Motor parcial D4CB",preco:null,chamada:"Motor HR / Bongo 2.5 16V",
         flash:true,imagem:"data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=",whatsapp:null,fim:null},
          ...(flags.multiplosBanners?[{sku:"EXEMPLO-2",nome:"Peça de teste 2",preco:null,chamada:"Segunda campanha de teste",flash:true,imagem:null,whatsapp:null,fim:null}]:[])] : [],
-      ficha:cenarioFlash && pedido.sku==="CI003000" ? {veiculos:[
-        {modelo:"Hyundai HR",motor:"2.5 16V",de:2013,ate:2022,tipo:"caminhao"},
-        {modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022,tipo:"caminhao"},
-      ]} : null,
+      ficha:(cenarioFlash && pedido.sku==="CI003000") || (flags.previaSimulada && pedido.sku==="CI003696")
+        ? {veiculos:[],detalhes:{
+          descricao_cadastro:"Motor de consulta sintético, aplicações sob revisão",
+          condicao:"Novo",categoria:"Motor",categoria_status:"proposto",
+          peso_kg:null,largura_cm:null,altura_cm:null,profundidade_cm:null,
+          fotos:[],texto_tecnico_aprovado:null,
+          aplicacoes:cenarioFlash?[
+            {modelo:"Hyundai HR",montadora:"Hyundai",motorizacao:"D4CB",ano_inicial:2013,ano_final:2022,pagina_slug:"hyundai-hr-motor-d4cb",titulo:"Motor HR",restricao:null},
+            {modelo:"Kia Bongo K2500",montadora:"Kia",motorizacao:"D4CB",ano_inicial:2013,ano_final:2022,pagina_slug:"kia-bongo-motor-d4cb",titulo:"Motor Bongo",restricao:null}
+          ]:[],
+        }} : null,
       paginas_aplicacao:cenarioFlash ? {CI003000:[
         {slug:"hyundai-hr-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Hyundai HR",modelo:"Hyundai HR",status:"aprovado"},
         {slug:"kia-bongo-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Kia Bongo",modelo:"Kia Bongo K2500",status:"aprovado"},
         {slug:"pendente-nao-publicado",titulo:"Aplicação em estudo",modelo:"Outro",status:"a_confirmar"}]} : {},
       veiculos:[{modelo:"Hyundai HR",motor:"2.5 16V",de:2013,ate:2022},{modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022}],
-      categorias:flags.categoriaSimulada ? [{nome:"Motor",slug:"motor",total:1}] : [], total:flags.previaSimulada?1:0, pagina:1, por_pagina:24
+      categorias:flags.categoriaSimulada ? [{nome:"Motor",slug:"motor",total:1}] : [], total:flags.previaSimulada&&!(pedido.montadora||pedido.modelo)?1:0, pagina:1, por_pagina:24
     })});
   });
   await page.goto(base + "#/loja/mobis");
@@ -87,7 +94,7 @@ try {
     await page.locator(".m4-montadora-opcoes button").filter({hasText:"Consultar a equipe"}).click();
     const link=await page.locator("#m2-atendimento .m2-contato-form a").getAttribute("href");
     assert.match(decodeURIComponent(link||""),/Iveco/,"consulta inclui a linha selecionada na mensagem");
-    assert.equal(consultas.length,1,"a seleção comercial não consulta nem grava produto");
+    assert.ok(consultas.some(x=>x.montadora==="Iveco"),"a montadora filtra o catálogo imediatamente, sem gravar produto");
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow");
     assert.equal(await page.locator(".m2-aviso-teste").evaluate(el=>el.getBoundingClientRect().top < document.querySelector(".gcv3").getBoundingClientRect().top),true);
     assert.deepEqual(erros,[]);
@@ -147,14 +154,18 @@ try {
   }
   {
     const {context,page,consultas} = await abrir({ambiente:"teste",venda_habilitada:false,categoriaSimulada:true});
-    await page.getByLabel("Ano",{exact:true}).fill("2019");
-    await consultar(page, () => page.getByRole("button",{name:"Aplicar filtros",exact:true}).click(), q => q.ano === 2019);
+    await page.getByLabel("Ano inicial",{exact:true}).fill("2013");
+    await page.getByLabel("Ano final",{exact:true}).fill("2019");
+    await consultar(page, () => page.getByRole("button",{name:"Aplicar filtros",exact:true}).click(),
+      q => q.ano_inicial === 2013 && q.ano_final === 2019);
     await page.locator(".m4-montadora-item").filter({hasText:"Hyundai"}).click();
     await consultar(page, () => page.locator(".m4-montadora-opcoes button").filter({hasText:"Hyundai HR"}).click(), q => q.modelo === "Hyundai HR");
     assert.equal(consultas.at(-1).modelo,"Hyundai HR");
     assert.equal(consultas.at(-1).q,undefined);
-    assert.equal(consultas.at(-1).ano,undefined);
-    assert.equal(await page.getByLabel("Ano",{exact:true}).inputValue(),"");
+    assert.equal(consultas.at(-1).ano_inicial,undefined);
+    assert.equal(consultas.at(-1).ano_final,undefined);
+    assert.equal(await page.getByLabel("Ano inicial",{exact:true}).inputValue(),"");
+    assert.equal(await page.getByLabel("Ano final",{exact:true}).inputValue(),"");
     await consultar(page, () => page.locator(".m4-taxonomia-item[data-taxonomia-no='motor']").click(), q => q.categoria === "motor");
     assert.equal(consultas.at(-1).categoria,"motor");
     assert.equal(consultas.at(-1).modelo,undefined);
@@ -202,16 +213,20 @@ try {
       "CTA do carrossel abre diretamente a página SKU");
     assert.equal(await page.locator(".gcv3-titulo-link").getAttribute("href"),"#/p/mobis/CI003000",
       "título da campanha abre diretamente a página SKU");
-    assert.equal(await page.getByRole("dialog").count(),0,"não exibe janela intermediária");
+    assert.equal(await page.locator(".mf-painel").count(),0,"antes do clique a ficha não cobre a loja");
     await page.locator(".gcv3-cta").click();
-    await page.locator(".produto-publico-mobis-aplicacoes").waitFor();
-    assert.equal(new URL(page.url()).hash,"#/p/mobis/CI003000","navegação direta à página canônica");
-    assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a").count(),2,
-      "página física tem os destinos individuais por veículo aprovados");
-    assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a[href*=pendente]").count(),0,
-      "aplicação pendente nunca vira link público");
+    await page.locator(".mf-painel").waitFor();
+    assert.equal(new URL(page.url()).hash,"#/p/mobis/CI003000","deep link canônico abre a ficha flutuante");
+    await page.getByRole("heading",{name:"Veículos e páginas por aplicação"}).waitFor();
+    assert.equal(await page.locator(".mf-abas button").count(),3,
+      "a mesma peça física recebe ficha matriz e duas filhas aprovadas");
+    await page.locator(".mf-abas button").nth(1).click();
+    assert.equal(await page.locator(".mf-aplicacao a[href*=hyundai-hr-motor-d4cb]").count(),1,
+      "link individual liberado apenas para filha aprovada");
+    assert.equal(await page.locator(".mf-aplicacao a[href*=pendente]").count(),0,
+      "aplicação pendente não é divulgada");
     assert.deepEqual(erros,[]);
-    resultados.push({flash:"foto, título e CTA navegam direto ao SKU; páginas por veículo só aprovadas"});
+    resultados.push({flash:"foto, título e CTA abrem ficha matriz flutuante, com filhas somente aprovadas"});
     await context.close();
   }
   {
@@ -228,9 +243,26 @@ try {
   {
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,previaSimulada:true},390);
     assert.equal(await page.locator(".m2-produto").count(),1,"prévia sinalizada mostra produto de consulta");
-    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"https://wa.me/5562991654515");
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/p/mobis/CI003696",
+      "até prévia do carrossel abre a ficha, nunca o WhatsApp");
     assert.equal(await page.locator(".gcv3-preco").count(),0,"prévia não mostra preço");
     assert.equal(await page.locator("#m2-empresa").count(),0,"institucional não ocupa home");
+    // Foto e botões comerciais nunca saltam diretamente ao atendimento.
+    await page.locator(".m2-produto-abrir").click();
+    await page.locator(".mf-painel").waitFor();
+    assert.equal(await page.locator(".mf-barra .mf-whatsapp").count(),1,
+      "WhatsApp só aparece depois de abrir a ficha");
+    assert.equal(await page.locator(".mf-barra").getByRole("button",{name:"Compartilhar"}).count(),1);
+    assert.equal(await page.locator(".mf-barra").getByRole("link",{name:"Facebook"}).count(),1);
+    assert.equal(await page.locator(".mf-painel").getByText("Preço sob consulta").count(),1);
+    await page.locator(".mf-cabecalho button").click();
+    assert.equal(await page.locator(".mf-painel").count(),0,"fechar ficha preserva a vitrine");
+    // Montadora Mitsubishi e modelo L200 não herdam o motor Hyundai/Kia por título.
+    await page.locator(".m4-montadora-item").filter({hasText:"Mitsubishi"}).click();
+    await consultar(page, () => page.locator(".m4-montadora-opcoes button").filter({hasText:"L200"}).click(),
+      q=>q.montadora==="Mitsubishi"&&q.modelo==="L200");
+    assert.equal(await page.locator(".m2-produto").count(),0,
+      "sem vínculo técnico homologado a seleção L200 não mostra produto não relacionado");
     assert.deepEqual(erros,[]);
     await context.close();
   }
