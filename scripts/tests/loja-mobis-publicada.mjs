@@ -61,8 +61,15 @@ try{
   }
   assert.equal(await page.locator(".m4-montadora-item").count(),9,"nove montadoras de atendimento");
   assert.ok(await page.locator(".m4-taxonomia-item").count()>0,"taxonomia e consultas carregam");
-  assert.equal(await page.locator(".m4-montadora-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(255, 255, 255)","bloco de montadoras branco");
-  assert.equal(await page.locator(".m4-taxonomia-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(255, 255, 255)","bloco de taxonomia branco");
+  // A paleta aprovada e publicada pode usar fundo branco ou branco-gelo. Os cartões
+  // devem acompanhar exatamente o token de fundo aplicado na raiz da vitrine,
+  // sem obrigar #fff quando o cliente publicou #f6f7f8.
+  const fundoAprovado=await page.locator(".mobis-v2.m4").evaluate(el=>
+    el.getAttribute("data-paleta-publicada")==="sim"
+      ?getComputedStyle(el).backgroundColor
+      :"rgb(255, 255, 255)");
+  assert.equal(await page.locator(".m4-montadora-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),fundoAprovado,"bloco de montadoras respeita a paleta publicada");
+  assert.equal(await page.locator(".m4-taxonomia-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),fundoAprovado,"bloco de taxonomia respeita a paleta publicada");
   assert.equal(await page.locator(".m2-filtros").evaluate(el=>getComputedStyle(el).maxWidth),"none","filtros sem largura administrativa de 440px");
   assert.equal(await page.locator(".gcv3").count(),1,"uma única vitrine dinâmica sem hero duplicado");
   assert.equal(await page.locator(".m4-linha-card,.m2-veiculo-grade").count(),0,"seções repetidas não aparecem");
