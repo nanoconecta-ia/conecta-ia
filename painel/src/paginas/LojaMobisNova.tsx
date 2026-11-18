@@ -205,6 +205,7 @@ export function LojaMobisNova({slug,contexto,produtoInicial}:{slug:string;contex
     montadoras: <>
       <BlocoMontadorasMobis modelos={opcoes} logos={dados?.logos_montadoras}
         modelosPorMontadora={dados?.montadoras_aprovadas}
+        modelosDeConsulta={MODELOS_NAVEGACAO}
         montadoraSelecionada={montadora} aoSelecionarMontadora={escolherMontadora}
         aoSelecionarModelo={escolherVeiculoAprovado} aoConsultar={consultarLinha}/>
     </>,
