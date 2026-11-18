@@ -21,6 +21,7 @@ import "./loja-mobis-clara.css";
 import "./blocos-catalogo-mobis.css";
 import "./mobis-paleta-dinamica.css";
 import "./mobis-premium-v3.css";
+import "./mobis-ficha-e-filtros-v4.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -71,10 +72,6 @@ function iconeDaCategoria(categoria:string|null|undefined):string {
   return "motor";
 }
 const para=(id:string)=>document.getElementById(id)?.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
-/** Links por veículo somente para aplicações tecnicamente aprovadas. */
-const aplicacoesPublicas = (paginas: PaginaAplicacao[] | undefined) =>
-  (paginas ?? []).filter(p => p.status === "aprovado");
-
 export function LojaMobisNova({slug,contexto,produtoInicial}:{slug:string;contexto?:{tipo:"veiculo"|"sistema"|"empresa";valor:string};produtoInicial?:string}) {
   const [dados,setDados]=useState<Resposta|null>(null);
   const [estado,setEstado]=useState<"carregando"|"ok"|"erro"|"limite"|"naoachada">("carregando");
