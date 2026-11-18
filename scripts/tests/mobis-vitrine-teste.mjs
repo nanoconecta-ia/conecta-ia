@@ -177,7 +177,7 @@ try {
     assert.equal(consultas.at(-1).modelo,undefined);
     assert.equal(await page.getByLabel("Modelo",{exact:true}).inputValue(),"");
     await page.getByLabel("Buscar peça, SKU, OEM ou aplicação",{exact:true}).fill("bomba");
-    await consultar(page, () => page.getByRole("search",{name:"Buscar peça e referência"}).getByRole("button",{name:"Buscar peças",exact:false}).click(), q => q.q === "bomba");
+    await consultar(page, () => page.getByRole("search",{name:"Buscar peça e referência"}).getByRole("button",{name:"Pesquisar peças",exact:true}).click(), q => q.q === "bomba");
     assert.equal(consultas.at(-1).q,"bomba");
     assert.equal(consultas.at(-1).categoria,"motor");
     await page.getByRole("tab",{name:"SKU, fabricante ou OEM"}).click();
