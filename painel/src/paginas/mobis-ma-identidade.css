@@ -1,0 +1,47 @@
+/* MOBIS 18/11/2026 — identidade MA; aplica-se somente à vitrine pública Mobis.
+   Camadas de negócio, filtros, estoque, integrações e dados fiscais intactos.
+   Header institucional grafite/vermelho; superfícies gelo e texto grafite. */
+.mobis-v2.m4 {
+  --m2-dark:#1F2327;
+  --m2-dark2:#1F2327;
+  --m2-orange:#E2181A;
+  --m2-orange2:#f13b3d;
+  --m2-cream:#EAF2F6;
+  --m2-ivory:#BFC3C7;
+  --m2-ink:#1F2327;
+  --m2-line:#BFC3C7;
+}
+.mobis-v2.m4[data-paleta-publicada] .m2-header {
+  background:linear-gradient(145deg,#1F2327 10%,#08090a 100%);
+  border-bottom:3px solid #E2181A;
+  color:#FFF;
+}
+.mobis-v2.m4 .m2-header>.m2-wrap {min-height:94px;}
+.mobis-v2.m4 .m2-brand {flex-shrink:0;min-width:170px;}
+.mobis-v2.m4 .m2-brand img {width:clamp(180px,26vw,305px);height:auto;object-fit:contain;}
+.mobis-v2.m4 .m2-header nav :is(button,a) {color:#FFF;}
+.mobis-v2.m4 .m2-header nav :is(button,a):hover {color:#ff696a;}
+.mobis-v2.m4[data-paleta-publicada] .m2-busca-rapida {
+  background:#1F2327;
+  border-bottom:2px solid #E2181A;
+}
+.mobis-v2.m4 .m4-busca input {background:#FFF;color:#1F2327;border-color:#BFC3C7;}
+.mobis-v2.m4 .m4-busca input::placeholder {color:#626a72;}
+.mobis-v2.m4 .m4-busca button,
+.mobis-v2.m4 .m2-search button,
+.mobis-v2.m4 .m2-filtros-rodape button {background:#E2181A;border-color:#E2181A;color:#FFF;}
+.mobis-v2.m4 .m2-header-acoes>a {color:#FFF;}
+.mobis-v2.m4 .m2-header-acoes>a span {color:#ff696a;}
+.mobis-v2.m4 .m2-header-acoes button span {background:#E2181A;color:#FFF;}
+.mobis-v2.m4 .m2-kicker {color:#be171a;}
+.mobis-v2.m4 .m2-filtros {background:#FFF;border-color:#BFC3C7;}
+.mobis-v2.m4 .m2-produto {background:#FFF;border-color:#BFC3C7;}
+.mobis-v2.m4 .m2-produto :is(a,button) {border-color:#E2181A;color:#a70e11;}
+.mobis-v2.m4 .m2-produto :is(a,button):hover {background:#fff1f1;}
+.mobis-v2.m4 .m2-busca {background:#EAF2F6;}
+.mobis-v2.m4 .m2-header :is(a,button,input):focus-visible,
+.mobis-v2.m4 .m4-busca :is(button,input):focus-visible {outline:3px solid #FFF;outline-offset:3px;}
+@media(max-width:720px){
+ .mobis-v2.m4 .m2-header>.m2-wrap {min-height:74px;}
+ .mobis-v2.m4 .m2-brand img {width:min(240px,58vw);}
+}
