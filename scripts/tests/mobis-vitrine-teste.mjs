@@ -138,7 +138,7 @@ try {
     assert.equal(await page.locator(".mobis-v2.m4").getAttribute("data-paleta-publicada"),"nao",
       "rascunho ou ausência de paleta não muda site");
     assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
-      "rgb(191, 195, 199)","identidade Mobis gelo e aço permanece sem publicação");
+      "rgb(176, 18, 24)","identidade MOBIS mantém vermelho escuro institucional mesmo sem paleta publicada");
     assert.deepEqual(erros,[]);
     await context.close();
   }
