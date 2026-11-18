@@ -140,6 +140,10 @@ export function App() {
   const lojaSlug = caminho.match(/^\/loja\/([a-z0-9-]{2,63})$/);
   if (lojaSlug) return lojaSlug[1] === "mobis" ? <LojaMobisNova slug="mobis" /> : <Loja slug={lojaSlug[1]} />;
   if (hostCliente && !caminho.startsWith("/p/")) return lojaMobisPorHost(hostCliente) ? <LojaMobisNova slug="mobis" /> : <Loja host={hostCliente} />;
+  // Na loja Mobis até a ficha de prévia abre como sobreposição da vitrine.
+  // Para outros lojistas, preservar a página pública tradicional.
+  const produtoMobis = caminho.match(/^\/p\/mobis\/([^/?#]{1,80})$/);
+  if (produtoMobis) return <LojaMobisNova slug="mobis" produtoInicial={decodeURIComponent(produtoMobis[1])}/>;
   const pub = caminho.match(/^\/p\/([a-z0-9-]+)\/(.+)$/);
   if (caminho === "/demo/vitrine" && import.meta.env.DEV && DEMO) return <VitrineDemo />;
   if (pub) return <ProdutoPublico slug={pub[1]} sku={decodeURIComponent(pub[2])} />;
