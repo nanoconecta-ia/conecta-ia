@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
-import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
+import { IconePeca } from "../componentes/IconePeca.tsx";
+import { EmblemaVeiculoMobis } from "../componentes/EmblemaVeiculoMobis.tsx";
 
 import "./loja-mobis-nova.css";
 import "./mobis-identidade-2026.css";
@@ -56,7 +57,7 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
       {p&&<>
         <p style={{color:"#B01218",fontWeight:800,letterSpacing:"0.06em"}}>MOBIS AUTOPEÇAS · CONSULTA POR VEÍCULO</p>
         <div className="m2-aplicacao-identidade" aria-label={"Veículo de referência: "+p.modelo+". Ilustração sem placa."}>
-          <div className="m2-aplicacao-veiculo"><IconeVeiculo tipo={veiculo.tipo} largura={105}/></div>
+          <div className="m2-aplicacao-veiculo"><EmblemaVeiculoMobis tipo={veiculo.tipo} tamanho={105}/></div>
           <div className="m2-aplicacao-identidade-texto">
             <span className="m2-aplicacao-montadora">{veiculo.montadora}</span>
             <strong>{p.modelo}</strong>

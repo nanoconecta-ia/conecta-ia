@@ -82,6 +82,13 @@ try {
     assert.equal(await page.locator(".m2-produto").count(),0,"um catálogo vazio não inventa itens");
     assert.equal(await page.locator(".m4-banner-campanha").count(),0,"sem campanha publicada não existe banner de oferta fictício");
     assert.equal(await page.locator(".m4-montadora-item").count(),9,"nove montadoras como caminho de consulta");
+    assert.equal(await page.locator(".m4-tipo-veiculo").count(),4,
+      "tipos de veículo: picapes, vans, utilitários e passeio");
+    assert.equal(await page.locator(".m4-tipo-veiculo img.m4-emblema-veiculo").count(),4,
+      "quatro arquivos com o M MOBIS e moldura metálica");
+    assert.equal(await page.locator(".m4-tipo-veiculo img[src*='passeio']").count(),1,
+      "veículo de passeio é uma categoria própria na navegação");
+
     assert.equal(await page.locator(".m4-taxonomia-item").count(),9,"nove sistemas de consulta sem produto publicado");
     assert.equal(await page.locator('.m4-taxonomia-item[data-mobis-emblema="sim"]').count(),7,
       "sete emblemas metálicos oficiais da MOBIS, sem alterar Freios/Arrefecimento");

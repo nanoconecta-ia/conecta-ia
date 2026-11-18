@@ -165,3 +165,55 @@
   .mobis-v2.m4 .m4-taxonomia-item[data-mobis-emblema="sim"]{min-height:192px}
   .mobis-v2.m4 .m4-taxonomia-item .m4-sistema-emblema{width:min(128px,96%)}
 }
+
+
+/* 4 tipos de veículo MOBIS — mesma chapa grafite, aço escovado e vermelho
+   dos sete emblemas de sistema. Não afeta o tema geral do Conecta.IA. */
+.mobis-v2.m4 .m4-veiculos-tipos{
+  padding:clamp(10px,1.2vw,18px);
+  background:#EAF2F6;
+  border:1px solid #BFC3C7;
+  border-radius:16px;
+  margin-bottom:18px;
+}
+.mobis-v2.m4 .m4-veiculos-tipos-cab{
+  display:flex;align-items:baseline;flex-wrap:wrap;
+  justify-content:space-between;gap:6px 14px;margin:0 0 12px;
+}
+.mobis-v2.m4 .m4-veiculos-tipos-cab h3{
+  margin:0;font:800 clamp(.95rem,1.4vw,1.18rem)/1.2 "Eurostile Next Heavy",Montserrat,system-ui,sans-serif;color:#1F2327;
+}
+.mobis-v2.m4 .m4-veiculos-tipos-cab p{
+  font-size:.78rem;line-height:1.4;color:#47525C;margin:0;
+}
+.mobis-v2.m4 .m4-veiculos-tipos-grade{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.3vw,16px);
+}
+.mobis-v2.m4 .m4-tipo-veiculo{
+  display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;
+  background:#FFFFFF;border:1px solid #BFC3C7;border-radius:14px;
+  padding:8px;cursor:pointer;min-width:0;min-height:190px;
+  font-family:Montserrat,system-ui,sans-serif;
+  color:#AD1017;box-shadow:0 3px 12px #1F232710;
+}
+.mobis-v2.m4 .m4-tipo-veiculo:hover{
+  background:#FFFFFF;border-color:#E2181A;box-shadow:0 5px 15px #1F232720;
+}
+.mobis-v2.m4 .m4-tipo-veiculo .m4-emblema-veiculo{
+  display:block;width:min(156px,100%);height:auto;aspect-ratio:1;object-fit:contain;
+  box-shadow:none;background:transparent;border:0;
+}
+.mobis-v2.m4 .m4-tipo-veiculo span{
+  font-size:.74rem;font-weight:800;line-height:1.2;
+}
+.mobis-v2.m4 .m4-tipo-veiculo:focus-visible{
+  outline:3px solid #E2181A;outline-offset:3px;
+}
+.mobis-v2 .m2-aplicacao-veiculo .m4-emblema-veiculo{
+  width:105px;height:auto;max-width:100%;object-fit:contain;border-radius:8px;
+}
+@media (max-width:650px){
+  .mobis-v2.m4 .m4-veiculos-tipos-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .mobis-v2.m4 .m4-tipo-veiculo{min-height:145px;padding:7px 4px}
+  .mobis-v2.m4 .m4-tipo-veiculo .m4-emblema-veiculo{width:min(133px,100%)}
+}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { IconePeca } from "./IconePeca.tsx";
+import { EmblemaVeiculoMobis } from "./EmblemaVeiculoMobis.tsx";
 import { MONTADORAS_MOBIS, modelosAprovadosDaMontadora, nosPublicaveis, type CategoriaPublica, type MontadoraMobis } from "../lib/blocosCatalogoMobis.ts";
 
 /** Bloco 03: montadoras → modelos retornados pela API Conecta.IA (aplicações aprovadas).
@@ -19,6 +20,21 @@ export function BlocoMontadorasMobis({
     <div className="m4-bloco-nos-titulo">
       <div><span className="m2-kicker">01 · MONTADORAS</span><h2>Escolha a montadora</h2>
         <p>Consulte as linhas diesel atendidas. Só modelos com aplicação liberada aparecem como filtro de produtos.</p>
+      </div>
+    </div>
+    <div className="m4-veiculos-tipos">
+      <div className="m4-veiculos-tipos-cab">
+        <h3>Tipos de veículo</h3>
+        <p>Escolha um perfil para consultar a equipe. Confirme modelo, ano, motor e aplicação da peça.</p>
+      </div>
+      <div className="m4-veiculos-tipos-grade" role="group" aria-label="Tipos de veículo atendidos pela MOBIS">
+        {GRUPOS_VEICULOS_MOBIS.map(grupo=><button
+          type="button" key={grupo.chave} className="m4-tipo-veiculo"
+          aria-label={"Consultar peças para "+grupo.consulta}
+          onClick={()=>aoConsultar(grupo.consulta)}>
+            <EmblemaVeiculoMobis tipo={grupo.chave} tamanho={156}/>
+            <span>Consultar peças</span>
+          </button>)}
       </div>
     </div>
     <div className="m4-montadoras-grade">
@@ -57,6 +73,18 @@ const EMBLEMAS_MOBIS:Readonly<Record<string,string>>={
   carroceria:"/icones-catalogo-mobis/mobis-sistema-carroceria-512.webp",
   acessorios:"/icones-catalogo-mobis/mobis-sistema-acessorios-512.webp",
 };
+
+/** Tipos de veículo da vitrine MOBIS, não equivalem a aplicações de SKU já homologadas.
+ * Utilitário = caminhão leve de carga nesta arte; SUV continua categoria técnica separada.
+ * Os botões abrem a consulta à equipe, sem fingir filtro por tipo na API.
+ */
+const GRUPOS_VEICULOS_MOBIS=[
+  {chave:"picape",consulta:"picapes",rotulo:"Picapes"},
+  {chave:"furgao",consulta:"vans",rotulo:"Vans"},
+  {chave:"caminhao",consulta:"utilitários leves de carga",rotulo:"Utilitários"},
+  {chave:"passeio",consulta:"veículos de passeio",rotulo:"Passeio"},
+] as const;
+
 const SISTEMAS_CONSULTA=[
   {nome:"Motor",icone:"motor"},
   {nome:"Cabeçote",icone:"cabecote"},

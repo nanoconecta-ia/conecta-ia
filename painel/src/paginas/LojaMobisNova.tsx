@@ -265,7 +265,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     <main>
       {contexto?.tipo==="empresa" ? <EmpresaMobis whatsapp={whatsapp} politicas={dados?.politicas}/> : <>{ordemVitrine.map(id=><Fragment key={id}>{blocosSite[id]}</Fragment>)}
       <section id="m2-atendimento" className="m2-atendimento">
-        {consultaModelo&&<div className="m2-wrap"><p className="m4-consulta-aviso" role="status">Para {consultaModelo}, ainda não há aplicação homologada nesta lista. Nossa equipe pode consultar a referência e confirmar a peça com você.</p></div>}
+        {consultaModelo&&<div className="m2-wrap"><p className="m4-consulta-aviso" role="status">Para {consultaModelo}, informe modelo, motorização e ano. Nossa equipe confirmará a aplicação da peça; selecionar um tipo de veículo não é confirmação de compatibilidade.</p></div>}
         <div className="m2-wrap m2-atendimento-grid">
         <div><span className="m2-kicker">ATENDIMENTO</span><h2>Vamos encontrar a sua peça.</h2><p>Um mesmo modelo pode usar peças diferentes conforme motor, ano e versão.</p><a href="#/loja/mobis/empresa">Como consultar ↗</a></div>
         <div className="m2-contato-form"><small>CONSULTA DE PEÇAS</small><h3>Conte o que você procura</h3><p>Use os filtros acima ou monte sua lista para compartilhar com o atendimento.</p><button onClick={()=>para("m2-lista")}>Minha lista de peças ({lista.length})</button>{whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Continuar no WhatsApp ↗</a>}<small>Você poderá revisar a mensagem antes de enviá-la.</small></div>
