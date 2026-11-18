@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { IconePeca } from "./IconePeca.tsx";
 import { MONTADORAS_MOBIS, modelosAprovadosDaMontadora, nosPublicaveis, type CategoriaPublica, type MontadoraMobis } from "../lib/blocosCatalogoMobis.ts";
 
@@ -6,26 +5,31 @@ import { MONTADORAS_MOBIS, modelosAprovadosDaMontadora, nosPublicaveis, type Cat
  * Nomes de montadoras são caminhos de consulta, não homologação, vínculo ou disponibilidade.
  */
 export function BlocoMontadorasMobis({
-  modelos, logos, aoSelecionarModelo, aoConsultar,
+  modelos, logos, montadoraSelecionada, modelosPorMontadora, aoSelecionarMontadora, aoSelecionarModelo, aoConsultar,
 }:{
   modelos:readonly string[];
   logos?:Readonly<Record<string,string>>;
+  montadoraSelecionada?:string|null;
+  modelosPorMontadora?:readonly {nome:string;modelos:string[]}[];
+  aoSelecionarMontadora:(montadora:string|null)=>void;
   aoSelecionarModelo:(modelo:string)=>void;
   aoConsultar:(montadora:string)=>void;
 }){
-  const [ativa,setAtiva]=useState<MontadoraMobis|null>(null);
-  const encontrados=ativa?modelosAprovadosDaMontadora(ativa,modelos):[];
+  const ativa=(montadoraSelecionada??null) as MontadoraMobis|null;
+  const encontrados=ativa
+    ? (modelosPorMontadora?.find(m=>m.nome===ativa)?.modelos??modelosAprovadosDaMontadora(ativa,modelos))
+    : [];
   return <section id="m2-montadoras" data-bloco="montadoras" className="m2-wrap m4-bloco-nos m4-bloco-montadoras" aria-label="Escolha uma montadora">
     <div className="m4-bloco-nos-titulo">
       <div><span className="m2-kicker">01 · MONTADORAS</span><h2>Escolha a montadora</h2>
-        <p>Consulte as linhas diesel atendidas. Só modelos com aplicação liberada aparecem como filtro de produtos.</p>
+        <p>Selecione uma montadora para filtrar. A vitrine só mostrará produtos com aplicação aprovada para ela; nenhuma peça será presumida como compatível.</p>
       </div>
     </div>
     <div className="m4-montadoras-grade">
       {MONTADORAS_MOBIS.map(m=>{
-        const total=modelosAprovadosDaMontadora(m.nome,modelos).length;
+        const total=modelosPorMontadora?.find(x=>x.nome===m.nome)?.modelos.length??modelosAprovadosDaMontadora(m.nome,modelos).length;
         return <button type="button" key={m.nome} aria-pressed={ativa===m.nome}
-          className={"m4-montadora-item"+(ativa===m.nome?" selecionada":"")} onClick={()=>setAtiva(a=>a===m.nome?null:m.nome)}>
+          className={"m4-montadora-item"+(ativa===m.nome?" selecionada":"")} onClick={()=>aoSelecionarMontadora(ativa===m.nome?null:m.nome)}>
           {logos?.[m.nome]&&<img className="m4-logo-montadora" src={logos[m.nome]} alt={"Logotipo de "+m.nome} loading="lazy"/>}
           <strong>{m.nome}</strong><small>{total?total+" modelo(s) no catálogo":"Atendimento sob consulta"}</small>
         </button>;
@@ -33,7 +37,7 @@ export function BlocoMontadorasMobis({
     </div>
     {ativa&&<div className="m4-montadora-modelos" aria-live="polite">
       <div><strong>{ativa} · escolha o veículo</strong>
-        <p>{encontrados.length?"Selecione um modelo com aplicação cadastrada:":"Ainda não há modelos desta montadora liberados para consulta por filtro."}</p>
+        <p>{encontrados.length?"Selecione um modelo com aplicação cadastrada:":"Ainda não há aplicações homologadas desta montadora; o catálogo filtrado ficará vazio até a aprovação técnica."}</p>
       </div>
       <div className="m4-montadora-opcoes">
         {encontrados.map(m=><button type="button" key={m} onClick={()=>aoSelecionarModelo(m)}>{m} <span aria-hidden="true">→</span></button>)}
