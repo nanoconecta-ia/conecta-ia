@@ -137,15 +137,22 @@ try{
    await page.locator(".m2-produto h3").getByText("Peça sintética para teste").waitFor();
    assert.equal(await page.locator('[data-mobis-layout="aprovado-v2"]').count(),1);
    assert.equal(await page.locator(".v-hero").count(),0);
-   await page.locator(".m2-filtros-grid select").nth(0).selectOption("HR");
-   await page.locator(".m2-filtros-grid select").nth(1).selectOption("D4CB");
-   assert.equal(await page.locator(".m2-filtros-grid select").nth(1).locator("option").filter({hasText:"D4BH"}).count(),0,"motores respeitam modelo");
-   await page.locator(".m2-filtros-grid input").fill("2019");
-   await page.locator(".m2-filtros-grid select").nth(2).selectOption("motor");
-   const resposta=page.waitForResponse(r=>r.url().endsWith("/loja-publica")&&(r.request().postData()||"").includes('"motor":"D4CB"'));
+   await page.getByLabel("Modelo",{exact:true}).selectOption("HR");
+   await page.getByLabel("Motorização",{exact:true}).selectOption("D4CB");
+   assert.equal(await page.getByLabel("Motorização",{exact:true}).locator("option").filter({hasText:"D4BH"}).count(),0,
+     "motores respeitam modelo");
+   await page.getByLabel("Ano inicial",{exact:true}).fill("2013");
+   await page.getByLabel("Ano final",{exact:true}).fill("2019");
+   await page.getByLabel("Sistema / categoria",{exact:true}).selectOption("motor");
+   const resposta=page.waitForResponse(r=>r.url().endsWith("/loja-publica")&&(r.request().postData()||"").includes('"ano_final":2019'));
    await page.getByRole("button",{name:"Aplicar filtros",exact:true}).click();await resposta;
-   assert.ok(requests.some(x=>x.slug==="mobis"&&x.modelo==="HR"&&x.motor==="D4CB"&&x.ano===2019&&x.categoria==="motor"));
-   await page.getByRole("button",{name:"Adicionar à lista +",exact:true}).click();
+   assert.ok(requests.some(x=>x.slug==="mobis"&&x.modelo==="HR"&&x.motor==="D4CB"&&x.ano_inicial===2013&&x.ano_final===2019&&x.categoria==="motor"),
+     "filtros cumulativos preservam modelo, motor, período e categoria");
+   await page.getByRole("button",{name:"Ver fotos e ficha completa",exact:false}).click();
+   await page.locator(".mf-painel").waitFor();
+   assert.equal(await page.locator(".mf-barra .mf-whatsapp").count(),0,
+     "o contato ausente da peça não ganha um número fictício");
+   await page.locator(".mf-barra").getByRole("button",{name:"Adicionar à lista +"}).click();
    const link=page.getByRole("link",{name:"Consultar no WhatsApp",exact:false});
    assert.match(await link.getAttribute("href"),/TESTE-SINTETICO/);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow no domínio "+width);
