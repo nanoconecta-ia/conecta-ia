@@ -5,7 +5,7 @@ import type { PoliticasLojaPublicas } from "./RodapeLoja.tsx";
 export function EmpresaMobis({whatsapp,politicas}:{
   whatsapp:string|null;politicas?:PoliticasLojaPublicas|null;
 }) {
-  const [aba,setAba]=useState<"sobre"|"onde">("sobre");
+  const [aba,setAba]=useState<"sobre"|"onde"|"consulta">("sobre");
   const [mapa,setMapa]=useState(false);
   const endereco=politicas?.endereco?.trim()||"";
   const mapaUrl=endereco?"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(endereco):null;
@@ -17,12 +17,24 @@ export function EmpresaMobis({whatsapp,politicas}:{
     <div className="m2-empresa-abas" role="tablist" aria-label="Informações da empresa">
       <button type="button" role="tab" id="m2-aba-sobre" aria-selected={aba==="sobre"} aria-controls="m2-painel-sobre" onClick={()=>setAba("sobre")}>Nossa atuação</button>
       <button type="button" role="tab" id="m2-aba-onde" aria-selected={aba==="onde"} aria-controls="m2-painel-onde" onClick={()=>setAba("onde")}>Contato e localização</button>
+      <button type="button" role="tab" id="m2-aba-consulta" aria-selected={aba==="consulta"} aria-controls="m2-painel-consulta" onClick={()=>setAba("consulta")}>Como consultar</button>
     </div>
     {aba==="sobre"&&<div role="tabpanel" id="m2-painel-sobre" aria-labelledby="m2-aba-sobre" className="m2-empresa-painel">
       <h2>Autopeças para quem trabalha com utilitários</h2>
       <p>Atendimento especializado para localizar a peça pelo modelo, motorização e referência. A compatibilidade é conferida antes da venda.</p>
       <p>A MOBIS AUTOPEÇAS é independente e não integra montadoras ou concessionárias. As marcas de veículos são usadas para identificar aplicações, sem representar vínculo ou endosso.</p>
       {whatsapp&&<a className="m2-empresa-cta" href={whatsapp} target="_blank" rel="noopener noreferrer">Falar com a Mobis no WhatsApp ↗</a>}
+    </div>}
+    {aba==="consulta"&&<div role="tabpanel" id="m2-painel-consulta" aria-labelledby="m2-aba-consulta" className="m2-empresa-painel">
+      <h2>Como consultar uma peça</h2>
+      <ul>
+        <li>Informe montadora, modelo, ano, motor e o código da peça, se tiver.</li>
+        <li>A compatibilidade é confirmada por chassi e versão antes da venda.</li>
+        <li>Preço, disponibilidade e prazo são confirmados pela equipe.</li>
+        <li>A lista de peças é só uma consulta: não reserva estoque e não cria pedido.</li>
+        <li>Não envie CPF, chassi completo, senha ou dados bancários.</li>
+      </ul>
+      {whatsapp&&<a className="m2-empresa-cta" href={whatsapp} target="_blank" rel="noopener noreferrer">Consultar a equipe no WhatsApp ↗</a>}
     </div>}
     {aba==="onde"&&<div role="tabpanel" id="m2-painel-onde" aria-labelledby="m2-aba-onde" className="m2-empresa-painel">
       <h2>Dados de atendimento e localização</h2>

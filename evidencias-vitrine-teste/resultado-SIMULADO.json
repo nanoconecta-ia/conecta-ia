@@ -1,0 +1,47 @@
+{
+  "simulado": true,
+  "resultados": [
+    {
+      "width": 360,
+      "amostra": false,
+      "montadoras": 9,
+      "nosComConsulta": 6,
+      "produtosPublicados": 0,
+      "erros": []
+    },
+    {
+      "width": 390,
+      "amostra": false,
+      "montadoras": 9,
+      "nosComConsulta": 6,
+      "produtosPublicados": 0,
+      "erros": []
+    },
+    {
+      "width": 720,
+      "amostra": false,
+      "montadoras": 9,
+      "nosComConsulta": 6,
+      "produtosPublicados": 0,
+      "erros": []
+    },
+    {
+      "width": 1280,
+      "amostra": false,
+      "montadoras": 9,
+      "nosComConsulta": 6,
+      "produtosPublicados": 0,
+      "erros": []
+    },
+    {
+      "separacao": "raiz pública = loja; conecta.html exige sessão em início, Nano e catálogo"
+    },
+    {
+      "flash": "foto, título e CTA navegam direto ao SKU; páginas por veículo só aprovadas"
+    },
+    {
+      "guardas": "produto sintético ausente em todos os ambientes, inclusive em falha de API",
+      "filtros": "modelo canônico, ano/categoria limpos, busca rápida e foco por código aprovados"
+    }
+  ]
+}

@@ -89,7 +89,8 @@ try {
     assert.match(decodeURIComponent(link||""),/Iveco/,"consulta inclui a linha selecionada na mensagem");
     assert.equal(consultas.length,1,"a seleção comercial não consulta nem grava produto");
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow");
-    assert.equal(await page.locator(".m2-aviso-teste").evaluate(el=>el.getBoundingClientRect().top < document.querySelector(".gcv3").getBoundingClientRect().top),true);
+    assert.equal(await page.locator(".m2-aviso-teste").count(),0,"aviso de ambiente de teste removido da vitrine (pedido do dono)");
+    assert.equal(await page.getByText("Prévia da loja", {exact:false}).count(),0,"legenda de prévia removida do carrossel (pedido do dono)");
     assert.deepEqual(erros,[]);
     if (width===1280 || width===390) {
       await page.locator(".m4-bloco-montadoras").screenshot({path:dir+`montadoras-CONSULTA-SIMULADO-${width}.png`});
