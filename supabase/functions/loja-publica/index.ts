@@ -117,6 +117,36 @@ Deno.serve(async (req) => {
   const { data: nos } = nosIds.length ? await sb.from("taxonomia_nos").select("id, nome, slug").in("id", nosIds) : { data: [] as { id: string; nome: string; slug: string }[] };
   const categorias = (nos ?? []).map((n: { id: string; nome: string; slug: string }) => ({ nome: n.nome, slug: n.slug, total: (pub ?? []).filter((p: { taxonomia_no_id: string | null }) => p.taxonomia_no_id === n.id).length }));
 
+  // Arvore pai/filho do Conecta.IA, somente para o tenant Mobis e os SKUs publicados.
+  type NoTax = { id: string; pai_id: string | null; nome: string; slug: string };
+  const { data: estrutura, error: erroEstrutura } = loja.slug === "mobis" && nosIds.length
+    ? await sb.from("taxonomia_nos").select("id,pai_id,nome,slug").eq("perfil_ramo","autopecas").limit(2000)
+    : { data: [] as NoTax[], error: null };
+  if (erroEstrutura) console.warn("loja-publica hierarquia indisponivel", erroEstrutura.code);
+  const porId = new Map((!erroEstrutura && (estrutura?.length ?? 0) < 2000 ? (estrutura ?? []) : [] as NoTax[])
+    .map((no:NoTax) => [no.id,no] as const));
+  function trilhaTaxonomia(id:string|null|undefined):NoTax[] {
+    const caminho:NoTax[]=[], vistos=new Set<string>();
+    let atual=id??null;
+    while(atual && caminho.length<12 && !vistos.has(atual)){
+      vistos.add(atual);
+      const no=porId.get(atual);
+      if(!no)return []; // falha fechada se faltar parentesco
+      caminho.unshift(no); atual=no.pai_id;
+    }
+    return atual?[]:caminho; // ciclos e profundidade excessiva
+  }
+  const contagensHierarquia=new Map<string,number>();
+  for(const produto of pub??[]){
+    for(const no of trilhaTaxonomia(produto.taxonomia_no_id))
+      contagensHierarquia.set(no.id,(contagensHierarquia.get(no.id)??0)+1);
+  }
+  const arvore_categorias=[...contagensHierarquia.entries()].map(([id,total])=>{
+    const no=porId.get(id)!;
+    return {id:no.id,nome:no.nome,slug:no.slug,pai_slug:no.pai_id?(porId.get(no.pai_id)?.slug??null):null,
+      nivel:trilhaTaxonomia(no.id).length-1,total};
+  }).sort((a,b)=>a.nivel-b.nivel||a.nome.localeCompare(b.nome,"pt-BR"));
+
   // filtros calculados do dado aprovado (categorias com ícone, montadoras, fabricantes); falha aqui não derruba a vitrine
   const { data: filtros } = await sb.rpc("filtros_da_vitrine", { p_loja: loja.id });
 
@@ -175,8 +205,15 @@ Deno.serve(async (req) => {
     consulta = consulta.in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
   }
   if (categoria) {
-    const no = (nos ?? []).find((n: { slug: string }) => n.slug === categoria);
-    consulta = consulta.eq("taxonomia_no_id", no?.id ?? "00000000-0000-0000-0000-000000000000");
+    const grupo=arvore_categorias.find(n=>n.slug===categoria);
+    if(loja.slug==="mobis" && grupo){
+      const ids=[...new Set((pub??[]).filter(p=>trilhaTaxonomia(p.taxonomia_no_id)
+        .some(n=>n.id===grupo.id)).map(p=>p.taxonomia_no_id).filter(Boolean))] as string[];
+      consulta=consulta.in("taxonomia_no_id",ids.length?ids:["00000000-0000-0000-0000-000000000000"]);
+    }else{
+      const no=(nos??[]).find((n:{slug:string})=>n.slug===categoria);
+      consulta=consulta.eq("taxonomia_no_id",no?.id??"00000000-0000-0000-0000-000000000000");
+    }
   }
   const { data: linhas, count } = await consulta;
 
@@ -226,6 +263,9 @@ Deno.serve(async (req) => {
     .map((produto) => ({
       ...produto, consulta_previa: modoPreviaCatalogo,
       categoria: categoriaPorSku.get(produto.sku) ?? null,
+      categoria_caminho: loja.slug==="mobis"
+        ? trilhaTaxonomia((linhas??[]).find((l:{sku:string|null})=>l.sku===produto.sku)?.taxonomia_no_id)
+          .map(n=>({nome:n.nome,slug:n.slug})) : [],
       referencias_aprovadas: codigosAprovadosPorSku.get(produto.sku) ?? [],
     }));
 
@@ -319,5 +359,5 @@ Deno.serve(async (req) => {
         paleta=Object.fromEntries(campos.map(c=>[c,publicavel[c]]));
     }
   }
-  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, layout, paleta, logos_montadoras, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
+  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, layout, paleta, logos_montadoras, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, arvore_categorias, filtros: filtros ?? null });
 });
