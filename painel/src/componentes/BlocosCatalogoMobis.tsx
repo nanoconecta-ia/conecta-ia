@@ -5,12 +5,13 @@ import { MONTADORAS_MOBIS, modelosAprovadosDaMontadora, nosPublicaveis, type Cat
  * Nomes de montadoras são caminhos de consulta, não homologação, vínculo ou disponibilidade.
  */
 export function BlocoMontadorasMobis({
-  modelos, logos, montadoraSelecionada, modelosPorMontadora, aoSelecionarMontadora, aoSelecionarModelo, aoConsultar,
+  modelos, logos, montadoraSelecionada, modelosPorMontadora, modelosDeConsulta, aoSelecionarMontadora, aoSelecionarModelo, aoConsultar,
 }:{
   modelos:readonly string[];
   logos?:Readonly<Record<string,string>>;
   montadoraSelecionada?:string|null;
   modelosPorMontadora?:readonly {nome:string;modelos:string[]}[];
+  modelosDeConsulta?:Readonly<Record<string,readonly string[]>>;
   aoSelecionarMontadora:(montadora:string|null)=>void;
   aoSelecionarModelo:(modelo:string)=>void;
   aoConsultar:(montadora:string)=>void;
@@ -19,6 +20,8 @@ export function BlocoMontadorasMobis({
   const encontrados=ativa
     ? (modelosPorMontadora?.find(m=>m.nome===ativa)?.modelos??modelosAprovadosDaMontadora(ativa,modelos))
     : [];
+  const navegaveis=ativa?(modelosDeConsulta?.[ativa]??[]):[];
+  const opcoes=[...new Set([...encontrados,...navegaveis])];
   return <section id="m2-montadoras" data-bloco="montadoras" className="m2-wrap m4-bloco-nos m4-bloco-montadoras" aria-label="Escolha uma montadora">
     <div className="m4-bloco-nos-titulo">
       <div><span className="m2-kicker">01 · MONTADORAS</span><h2>Escolha a montadora</h2>
@@ -37,10 +40,12 @@ export function BlocoMontadorasMobis({
     </div>
     {ativa&&<div className="m4-montadora-modelos" aria-live="polite">
       <div><strong>{ativa} · escolha o veículo</strong>
-        <p>{encontrados.length?"Selecione um modelo com aplicação cadastrada:":"Ainda não há aplicações homologadas desta montadora; o catálogo filtrado ficará vazio até a aprovação técnica."}</p>
+        <p>{encontrados.length?"Selecione um modelo com aplicação homologada ou uma linha para consulta:":"Ainda não há aplicações homologadas desta montadora. Os modelos são somente opções de pesquisa; resultados aparecerão após aprovação técnica."}</p>
       </div>
       <div className="m4-montadora-opcoes">
-        {encontrados.map(m=><button type="button" key={m} onClick={()=>aoSelecionarModelo(m)}>{m} <span aria-hidden="true">→</span></button>)}
+        {opcoes.map(m=><button type="button" key={m} onClick={()=>aoSelecionarModelo(m)}
+          title={encontrados.includes(m)?"Filtrar aplicação homologada":"Modelo para consulta; não há compatibilidade aprovada"}
+          >{m}{encontrados.includes(m)?"":" · a confirmar"} <span aria-hidden="true">→</span></button>)}
         <button type="button" onClick={()=>aoConsultar(ativa)}>Consultar a equipe <span aria-hidden="true">→</span></button>
       </div>
     </div>}
