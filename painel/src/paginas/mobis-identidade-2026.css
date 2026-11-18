@@ -35,6 +35,7 @@
 .mobis-v2.m4 .m4-bloco-taxonomia,
 .mobis-v2.m4 .m2-veiculos{background:#EAF2F6}
 .mobis-v2.m4 .m4-banner{
+ position:relative;
  background:linear-gradient(120deg,#fff 5%,#EAF2F6 100%);
  border-bottom:1px solid #BFC3C7;
 }
@@ -119,4 +120,17 @@
 }
 @media(prefers-reduced-motion:reduce){
  .mobis-v2.m4 .m2-sistema-grade button .ico-peca{transition:none}
+}
+/* Aplicações e dados institucionais: corrigir as cores históricas da folha legada. */
+.mobis-v2 .m2-aplicacao-identidade{border-color:#BFC3C7}
+.mobis-v2 .m2-aplicacao-veiculo{background:#EAF2F6}
+.mobis-v2 .m2-aplicacao-montadora{color:#B01218}
+.mobis-v2 .m2-empresa-abas button[aria-selected="true"]{
+ border-bottom-color:#E2181A;color:#B01218
+}
+.mobis-v2 .m2-empresa-acoes a,
+.mobis-v2 .m2-empresa-cta{background:#E2181A;border-color:#E2181A;color:#fff}
+.mobis-v2 .m2-empresa-acoes button{border-color:#E2181A;color:#B01218}
+.mobis-v2 :is(.m2-modos-busca button,.m2-filtros-grid input,.m2-filtros-grid select):focus-visible{
+ outline:3px solid #E2181A;outline-offset:2px;
 }
