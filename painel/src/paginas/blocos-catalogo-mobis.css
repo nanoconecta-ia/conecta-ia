@@ -12,7 +12,7 @@
 .mobis-v2.m4 .m4-montadora-item strong{font-size:clamp(.74rem,.64rem + .2vw,.91rem);line-height:1.2;overflow-wrap:anywhere}
 .mobis-v2.m4 .m4-montadora-item small{font-size:.63rem;line-height:1.18;color:#64717a}
 .mobis-v2.m4 .m4-montadora-item:hover,.mobis-v2.m4 .m4-montadora-item.selecionada{border-color:#727e88;background:#f2f4f6}
-.mobis-v2.m4 .m4-montadora-item.selecionada{box-shadow:inset 0 3px #a84916}
+.mobis-v2.m4 .m4-montadora-item.selecionada{box-shadow:inset 0 3px #B01218}
 .mobis-v2.m4 .m4-montadora-modelos{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;
   padding:12px;border:1px solid #d5dbe0;border-radius:12px;background:#f5f7f8}
 .mobis-v2.m4 .m4-montadora-modelos strong{font-size:.91rem}

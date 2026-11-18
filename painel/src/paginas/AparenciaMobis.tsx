@@ -1,10 +1,12 @@
 import {useCallback,useEffect,useState,type CSSProperties} from "react";
 import {supabase} from "../supabase.ts";
 import type {Loja} from "../lib/dados.ts";
-import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
+
 import {MODELOS_PALETA_MOBIS,PALETA_MOBIS_PADRAO,validarPaletaMobis,variaveisPaletaMobis,
  type PaletaMobis} from "../lib/paletaMobis.ts";
 import "./AparenciaMobis.css";
+import "./mobis-identidade-2026.css";
+const logoMobis = "/marcas/mobis-logo-metalico-2026.webp";
 
 type Versao=PaletaMobis & {id:string;numero:number;criado_em:string;criado_por:string;aprovado_em:string|null;aprovado_por:string|null};
 type Publicacao={versao_id:string;publicado_em:string;publicado_por:string};

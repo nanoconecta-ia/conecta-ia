@@ -61,7 +61,14 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
         {slug:"kia-bongo-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Kia Bongo",modelo:"Kia Bongo K2500",status:"aprovado"},
         {slug:"pendente-nao-publicado",titulo:"Aplicação em estudo",modelo:"Outro",status:"a_confirmar"}]} : {},
       veiculos:[{modelo:"Hyundai HR",motor:"2.5 16V",de:2013,ate:2022},{modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022}],
-      categorias:flags.categoriaSimulada ? [{nome:"Motor",slug:"motor",total:1}] : [], total:flags.previaSimulada?1:0, pagina:1, por_pagina:24
+      categorias:flags.arvoreSimulada ? [{nome:"Motor parcial",slug:"tec-blocos-motores-motor-parcial",total:1}]
+        : flags.categoriaSimulada ? [{nome:"Motor",slug:"motor",total:1}] : [],
+      arvore_categorias:flags.arvoreSimulada ? [
+        {nome:"Motor",slug:"motor",pai_slug:null,nivel:0,total:1},
+        {nome:"Blocos e motores completos",slug:"blocos-motores",pai_slug:"motor",nivel:1,total:1},
+        {nome:"Motor parcial",slug:"tec-blocos-motores-motor-parcial",pai_slug:"blocos-motores",nivel:2,total:1},
+      ] : [],
+      total:flags.previaSimulada?1:0, pagina:1, por_pagina:24
     })});
   });
   await page.goto(base + "#/loja/mobis");
@@ -82,7 +89,20 @@ try {
     assert.equal(await page.locator(".m2-produto").count(),0,"um catálogo vazio não inventa itens");
     assert.equal(await page.locator(".m4-banner-campanha").count(),0,"sem campanha publicada não existe banner de oferta fictício");
     assert.equal(await page.locator(".m4-montadora-item").count(),9,"nove montadoras como caminho de consulta");
-    assert.equal(await page.locator(".m4-taxonomia-item").count(),6,"seis sistemas de consulta sem produto publicado");
+    assert.equal(await page.locator(".m4-tipo-veiculo").count(),4,
+      "tipos de veículo: picapes, vans, utilitários e passeio");
+    assert.equal(await page.locator(".m4-tipo-veiculo img.m4-emblema-veiculo").count(),4,
+      "quatro arquivos com o M MOBIS e moldura metálica");
+    assert.equal(await page.locator(".m4-tipo-veiculo img[src*='passeio']").count(),1,
+      "veículo de passeio é uma categoria própria na navegação");
+
+    assert.equal(await page.locator(".m4-taxonomia-item").count(),9,"nove sistemas de consulta sem produto publicado");
+    assert.equal(await page.locator('.m4-taxonomia-item[data-mobis-emblema="sim"]').count(),7,
+      "sete emblemas metálicos oficiais da MOBIS, sem alterar Freios/Arrefecimento");
+    assert.equal(await page.locator(".m4-sistema-emblema").count(),7,
+      "emblemas do catálogo usam imagens locais em WebP");
+    assert.equal(await page.locator('.m4-taxonomia-item[data-mobis-emblema="nao"]').count(),2,
+      "sistemas sem arte aprovada preservam seus ícones técnicos");
     await page.locator(".m4-montadora-item").filter({hasText:"Iveco"}).click();
     await page.locator(".m4-montadora-opcoes button").filter({hasText:"Consultar a equipe"}).click();
     const link=await page.locator("#m2-atendimento .m2-contato-form a").getAttribute("href");
@@ -97,7 +117,7 @@ try {
       await page.evaluate(()=>scrollTo(0,0));
       await page.screenshot({path:dir+`inicio-SIMULADO-${width}.png`});
     }
-    resultados.push({width,amostra:false,montadoras:9,nosComConsulta:6,produtosPublicados:0,erros});
+    resultados.push({width,amostra:false,montadoras:9,nosComConsulta:9,produtosPublicados:0,erros});
     await context.close();
   }
   {
@@ -113,17 +133,17 @@ try {
     await context.close();
   }
   {
-    const cores={cor_fundo:"#f6f7f8",cor_superficie:"#ffffff",cor_texto:"#252a31",
-      cor_botao:"#444c54",cor_acento:"#8d3c35"};
+    const cores={cor_fundo:"#ffffff",cor_superficie:"#eaf2f6",cor_texto:"#1f2327",
+      cor_botao:"#1f2327",cor_acento:"#e2181a"};
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,paleta:cores},390);
     const root=page.locator(".mobis-v2.m4");
     assert.equal(await root.getAttribute("data-paleta-publicada"),"sim",
       "somente paleta publicada pela API é aplicada à Mobis");
-    assert.equal(await root.evaluate(el=>getComputedStyle(el).getPropertyValue("--mobis-botao").trim()),"#444c54");
+    assert.equal(await root.evaluate(el=>getComputedStyle(el).getPropertyValue("--mobis-botao").trim()),"#1f2327");
     assert.equal(await page.locator(".m4-busca button").first().evaluate(el=>getComputedStyle(el).backgroundColor),
-      "rgb(68, 76, 84)","botões seguem o token cinza aprovado");
+      "rgb(31, 35, 39)","botões seguem o token grafite da paleta oficial");
     assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
-      "rgb(141, 60, 53)","cabeçalho usa acento discreto publicado");
+      "rgb(226, 24, 26)","cabeçalho usa o vermelho oficial publicado");
     assert.deepEqual(erros,[]);
     await context.close();
   }
@@ -132,7 +152,7 @@ try {
     assert.equal(await page.locator(".mobis-v2.m4").getAttribute("data-paleta-publicada"),"nao",
       "rascunho ou ausência de paleta não muda site");
     assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
-      "rgb(168, 73, 22)","identidade Mobis existente permanece sem publicação");
+      "rgb(176, 18, 24)","identidade MOBIS mantém vermelho escuro institucional mesmo sem paleta publicada");
     assert.deepEqual(erros,[]);
     await context.close();
   }
@@ -195,6 +215,30 @@ try {
     resultados.push({separacao:"raiz pública = loja; conecta.html exige sessão em início, Nano e catálogo"});
   }
   {
+    const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,arvoreSimulada:true},390);
+    assert.equal(await page.getByRole("tab",{name:"Pesquisa de veículos"}).getAttribute("aria-selected"),"true");
+    await page.getByRole("tab",{name:"Pesquisa de produtos"}).click();
+    assert.equal(await page.getByLabel("Montadora",{exact:true}).count(),0,
+      "modo produto oculta filtros de veículo");
+    await page.getByRole("tab",{name:"Pesquisa de veículos"}).click();
+    assert.equal(await page.getByLabel("Montadora",{exact:true}).count(),1,
+      "modo veículo exibe a cascata montadora/modelo/motor/ano");
+    const raiz=page.locator(".m4-taxonomia-item[data-taxonomia-no='motor']");
+    assert.equal(await raiz.count(),1,"somente categorias pai com filhos publicados");
+    await raiz.click();
+    assert.equal(await page.locator(".m4-taxonomia-item[data-taxonomia-no='blocos-motores']").count(),1,
+      "filho real Blocos e motores completos");
+    assert.equal(await page.getByRole("button",{name:"Ver todas as peças deste grupo"}).count(),1,
+      "grupo pai pode consultar todos os produtos descendentes");
+    await page.locator(".m4-taxonomia-item[data-taxonomia-no='blocos-motores']").click();
+    assert.equal(await page.locator(".m4-taxonomia-item[data-taxonomia-no='tec-blocos-motores-motor-parcial']").count(),1,
+      "terceiro nível da árvore é Motor parcial");
+    await consultar(page,()=>page.locator(".m4-taxonomia-item[data-taxonomia-no='tec-blocos-motores-motor-parcial']").click(),
+      q=>q.categoria==="tec-blocos-motores-motor-parcial");
+    assert.deepEqual(erros,[],"hierarquia não produz erros na interface");
+    await context.close();
+  }
+  {
     const {context,page,erros} = await abrir({ambiente:"teste",venda_habilitada:false},390,false,true);
     assert.equal(await page.locator(".gcv3").count(),1,"banner Flash gerado apenas a partir da API");
     assert.equal(await page.locator(".gcv3-midia").getAttribute("href"),"#/p/mobis/CI003000",
@@ -206,6 +250,26 @@ try {
     assert.equal(await page.getByRole("dialog").count(),0,"não exibe janela intermediária");
     await page.locator(".gcv3-cta").click();
     await page.locator(".produto-publico-mobis-aplicacoes").waitFor();
+    assert.equal(await page.locator(".produto-publico-mobis-layout").count(),1,
+      "ficha do SKU usa layout MOBIS em gelo com QR separado");
+    assert.equal(await page.locator(".produto-publico-mobis-qr-area img").count(),1,
+      "página contém o QR do WhatsApp Business oficial");
+    assert.equal(await page.locator(".produto-publico-mobis-qr-area img").evaluate(img=>img.complete && img.naturalWidth>0),true,
+      "arquivo do QR oficial abre sem erro");
+    assert.equal(await page.getByRole("tab",{name:"Descrição",exact:true}).count(),1,
+      "ficha MOBIS dispõe das três abas funcionais da descrição");
+    await page.getByRole("tab",{name:"Especificações técnicas",exact:true}).click();
+    assert.equal(await page.locator(".produto-publico-mobis-especificacoes dd").first().textContent(),"CI003000");
+    await page.getByRole("tab",{name:"Utilização em veículos",exact:true}).click();
+    assert.equal(await page.locator(".produto-publico-mobis-aplicacoes-lista li").count(),2,
+      "aba utiliza apenas duas aplicações aprovadas, sem inventar veículos");
+    await page.getByRole("tab",{name:"Descrição",exact:true}).click();
+    assert.equal(await page.locator(".produto-publico-mobis-conteudo-abas").getByText("Descrição complementar a confirmar",{exact:false}).count(),1);
+    assert.equal(await page.locator(".produto-publico-mobis-sistema").count(),7,
+      "sete sistemas visuais da MOBIS, sem implicar compatibilidade");
+    assert.equal(await page.locator(".produto-publico-mobis-acessar").getAttribute("href"),
+      "https://wa.me/mobisautopecas?src=qr","contato institucional quando não há link específico do produto");
+
     assert.equal(new URL(page.url()).hash,"#/p/mobis/CI003000","navegação direta à página canônica");
     assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a").count(),2,
       "página física tem os destinos individuais por veículo aprovados");

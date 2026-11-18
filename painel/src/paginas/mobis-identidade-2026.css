@@ -1,0 +1,322 @@
+/* MOBIS AUTOPEÇAS · Identidade oficial de 18/11/2026.
+   Arquivo isolado por .mobis-v2, .produto-publico-mobis e .mobis-cores-dashboard.
+   NUNCA alterar a marca do painel geral Conecta.IA ou de outras lojas.
+   Originais imutáveis no Google Drive:
+   https://drive.google.com/drive/folders/1erX6xhGuIenFWtrjRIRHV7EpnT_yrxS3 */
+.mobis-v2{
+ --mobis-grafite:#1F2327;--mobis-vermelho:#E2181A;
+ --mobis-prata:#A6A6A6;--mobis-cinza:#BFC3C7;--mobis-gelo:#EAF2F6;
+ --m2-orange:#E2181A;--m2-orange2:#E2181A;--m2-red:#E2181A;
+ --m2-ice:#EAF2F6;--m2-cream:#EAF2F6;
+ font-family:Montserrat,Inter,system-ui,sans-serif;
+}
+.mobis-v2.m4{
+ --m4-acento:#E2181A;--m4-acento-forte:#B01218;
+ --m4-acento-suave:#FFF0F1;--m4-gelo:#EAF2F6;--m4-branco:#FFFFFF;
+ --m4-texto:#38434C;--m4-linha:#DAE3E8;
+ --mobis-fundo:#FFFFFF;--mobis-superficie:#EAF2F6;
+ --mobis-texto:#1F2327;--mobis-botao:#1F2327;--mobis-acento:#E2181A;
+ background:#FFFFFF;color:#1F2327;
+}
+.mobis-v2.m4 :is(h1,h2,h3,.m4-banner h1){
+ font-family:"Eurostile Next Heavy",Microgramma,Montserrat,Inter,system-ui,sans-serif;
+}
+.mobis-v2.m4 .m2-header{
+ background:#FFFFFF;border-bottom:2px solid #BFC3C7;
+ box-shadow:0 4px 20px #1F232711;
+}
+.mobis-v2.m4 .m2-header .m2-brand img{
+ width:clamp(195px,24vw,285px);height:auto;max-height:100px;object-fit:contain;
+}
+.mobis-v2.m4 .m2-micro{background:#EAF2F6;color:#1F2327;border-bottom-color:#BFC3C7}
+.mobis-v2.m4 .m2-micro :is(b,em){color:#AE0E16}
+.mobis-v2.m4 .m2-busca-rapida,
+.mobis-v2.m4 .m2-busca,
+.mobis-v2.m4 .m4-bloco-taxonomia,
+.mobis-v2.m4 .m2-veiculos{background:#EAF2F6}
+.mobis-v2.m4 .m4-banner{
+ position:relative;
+ background:linear-gradient(120deg,#fff 5%,#EAF2F6 100%);
+ border-bottom:1px solid #BFC3C7;
+}
+.mobis-v2.m4 .m4-banner:before{
+ content:"";position:absolute;inset:0 auto auto 0;width:5px;height:100%;
+ background:#E2181A;pointer-events:none;
+}
+.mobis-v2.m4 .m4-banner h1 strong,
+.mobis-v2.m4 .m4-etiqueta,
+.mobis-v2.m4 .m2-kicker,
+.mobis-v2.m4 .m2-micro em,
+.mobis-v2.m4 .m4-bloco-nos-titulo>span{color:#AE0E16}
+.mobis-v2.m4 .m4-botao,
+.mobis-v2.m4 .m4-busca button,
+.mobis-v2.m4 .m4-flash-acao,
+.mobis-v2.m4 .m2-search button,
+.mobis-v2.m4 .m2-filtros-rodape button{
+ background:#E2181A;border-color:#E2181A;color:#fff;
+}
+.mobis-v2.m4 :is(.m4-botao,.m4-busca button,.m4-flash-acao,.m2-search button,.m2-filtros-rodape button):hover{
+ background:#B01218;border-color:#B01218;
+}
+.mobis-v2.m4 .m4-botao-claro{background:#fff;color:#1F2327;border-color:#BFC3C7}
+.mobis-v2.m4 .m2-foto-produto,
+.mobis-v2.m4 .m2-vazio,
+.mobis-v2.m4 .m4-banner-arte figure,
+.mobis-v2.m4 .m4-foto-veiculo,
+.mobis-v2.m4 .mgv-imagem,
+.mobis-v2.m4 .m4-flash-foto{
+ background:#EAF2F6;
+}
+.mobis-v2.m4 .m2-foto-produto img,
+.mobis-v2.m4 .m4-banner-arte img{object-fit:contain}
+.mobis-v2.m4 :is(.m2-veiculo,.m4-montadora-item,.m4-taxonomia-item,.m2-produto){
+ background:#FFFFFF;border-color:#DAE3E8;
+}
+.mobis-v2.m4 :is(.m2-veiculo,.m4-montadora-item,.m4-taxonomia-item,.m2-produto):hover{
+ border-color:#E2181A;
+}
+.mobis-v2.m4 .m4-taxonomia-item:nth-child(n){border-bottom-color:#E2181A}
+.mobis-v2.m4 .m2-sistema-grade button{background:#fff;border-color:#BFC3C7}
+.mobis-v2.m4 .m2-sistema-grade button .ico-peca{
+ border-radius:50%;background:#1F2327;border:2px solid #A6A6A6;
+ box-shadow:0 3px 0 #E2181A;padding:6px;
+}
+.mobis-v2.m4 .m2-produto :is(a,button){border-color:#E2181A;color:#AD1017}
+.mobis-v2.m4 .m2-empresa-acoes a,
+.mobis-v2.m4 .m2-empresa-cta{background:#E2181A;border-color:#E2181A}
+.mobis-v2.m4 .v-rodape-comercial{
+ background:linear-gradient(135deg,#1F2327,#252B30)!important;
+ border-top:4px solid #E2181A;
+}
+.mobis-v2.m4 .v-rodape-comercial a:hover{color:#fff}
+.mobis-v2.m4 .m2-modos-busca button[aria-selected="true"]{
+ border-bottom:3px solid #E2181A;box-shadow:none;
+}
+.mobis-v2.m4 :is(button,a,input,select):focus-visible,
+.produto-publico-mobis :is(button,a,input,select):focus-visible{
+ outline:3px solid #E2181A;outline-offset:3px;
+}
+/* O editor de cores do tenant MOBIS é temático; todo o resto do Conecta.IA permanece como estava. */
+.mobis-cores-dashboard .mobis-cores-titulo span{color:#B01218}
+.mobis-cores-dashboard .mobis-cores-acoes button{background:#1F2327;border-color:#1F2327}
+.mobis-cores-dashboard .mobis-cores-amostra-hero{background:var(--mobis-superficie,#EAF2F6)}
+.mobis-cores-dashboard .mobis-cores-amostra-cab img{height:auto;max-height:58px;width:clamp(132px,32%,220px)}
+/* Página individual do SKU — valor comercial e aplicações permanecem da API de leitura. */
+.produto-publico-mobis,
+.produto-publico-mobis-cab{background:#EAF2F6}
+.produto-publico-mobis-cab{border-bottom:2px solid #A6A6A6}
+.produto-publico-mobis-cab img{width:clamp(180px,24vw,270px);height:auto;max-height:95px}
+.produto-publico-mobis-cab>a:last-child,
+.produto-publico-mobis .ficha-wa,
+.produto-publico-mobis .linha-voz button{background:#E2181A;border-color:#E2181A;color:#fff}
+.produto-publico-mobis>.ficha,
+.produto-publico-mobis>.cartao,
+.produto-publico-mobis-aplicacoes{background:#fff;border-color:#BFC3C7}
+.produto-publico-mobis-grade a{background:#EAF2F6}
+.produto-publico-mobis-grade a:hover{border-color:#E2181A}
+@media(max-width:600px){
+ .mobis-v2.m4 .m2-header .m2-brand img{width:min(245px,65vw)}
+ .mobis-v2.m4 .m2-sistema-grade button .ico-peca{padding:4px}
+}
+@media(prefers-reduced-motion:reduce){
+ .mobis-v2.m4 .m2-sistema-grade button .ico-peca{transition:none}
+}
+/* Aplicações e dados institucionais: corrigir as cores históricas da folha legada. */
+.mobis-v2 .m2-aplicacao-identidade{border-color:#BFC3C7}
+.mobis-v2 .m2-aplicacao-veiculo{background:#EAF2F6}
+.mobis-v2 .m2-aplicacao-montadora{color:#B01218}
+.mobis-v2 .m2-empresa-abas button[aria-selected="true"]{
+ border-bottom-color:#E2181A;color:#B01218
+}
+.mobis-v2 .m2-empresa-acoes a,
+.mobis-v2 .m2-empresa-cta{background:#E2181A;border-color:#E2181A;color:#fff}
+.mobis-v2 .m2-empresa-acoes button{border-color:#E2181A;color:#B01218}
+.mobis-v2 :is(.m2-modos-busca button,.m2-filtros-grid input,.m2-filtros-grid select):focus-visible{
+ outline:3px solid #E2181A;outline-offset:2px;
+}
+
+/* ÍCONES DE CATEGORIAS MOBIS · 7 emblemas metálicos aprovados pelo responsável.
+   A identidade e os componentes de outras lojas/Conecta.IA NÃO são alterados. */
+.mobis-v2.m4 .m4-taxonomia-grade{
+  grid-template-columns:repeat(auto-fit,minmax(146px,1fr));
+  gap:clamp(8px,1vw,13px);
+}
+.mobis-v2.m4 .m4-taxonomia-item[data-mobis-emblema="sim"]{
+  background:#EAF2F6;border:1px solid #BFC3C7;
+  min-height:208px;padding:9px 6px 12px;
+  box-shadow:0 3px 12px #1F232711;
+}
+.mobis-v2.m4 .m4-taxonomia-item[data-mobis-emblema="sim"]:hover{
+  background:#fff;border-color:#E2181A;box-shadow:0 5px 16px #1F23271b;
+}
+.mobis-v2.m4 .m4-taxonomia-item .m4-sistema-emblema{
+  display:block;width:clamp(104px,11vw,148px);height:auto;aspect-ratio:1;
+  max-width:100%;object-fit:contain;flex:none;filter:none;border:0;
+  border-radius:0;background:transparent;box-shadow:none;
+}
+.mobis-v2.m4 .m4-taxonomia-item[data-mobis-emblema="sim"] strong{
+  color:#1F2327;font-size:.81rem;line-height:1.1;
+}
+.mobis-v2.m4 .m4-taxonomia-item[data-mobis-emblema="sim"]>span{
+  color:#B01218;
+}
+@media (max-width:600px){
+  .mobis-v2.m4 .m4-taxonomia-grade{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mobis-v2.m4 .m4-taxonomia-item[data-mobis-emblema="sim"]{min-height:192px}
+  .mobis-v2.m4 .m4-taxonomia-item .m4-sistema-emblema{width:min(128px,96%)}
+}
+
+
+/* 4 tipos de veículo MOBIS — mesma chapa grafite, aço escovado e vermelho
+   dos sete emblemas de sistema. Não afeta o tema geral do Conecta.IA. */
+.mobis-v2.m4 .m4-veiculos-tipos{
+  padding:clamp(10px,1.2vw,18px);
+  background:#EAF2F6;
+  border:1px solid #BFC3C7;
+  border-radius:16px;
+  margin-bottom:18px;
+}
+.mobis-v2.m4 .m4-veiculos-tipos-cab{
+  display:flex;align-items:baseline;flex-wrap:wrap;
+  justify-content:space-between;gap:6px 14px;margin:0 0 12px;
+}
+.mobis-v2.m4 .m4-veiculos-tipos-cab h3{
+  margin:0;font:800 clamp(.95rem,1.4vw,1.18rem)/1.2 "Eurostile Next Heavy",Montserrat,system-ui,sans-serif;color:#1F2327;
+}
+.mobis-v2.m4 .m4-veiculos-tipos-cab p{
+  font-size:.78rem;line-height:1.4;color:#47525C;margin:0;
+}
+.mobis-v2.m4 .m4-veiculos-tipos-grade{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.3vw,16px);
+}
+.mobis-v2.m4 .m4-tipo-veiculo{
+  display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;
+  background:#FFFFFF;border:1px solid #BFC3C7;border-radius:14px;
+  padding:8px;cursor:pointer;min-width:0;min-height:190px;
+  font-family:Montserrat,system-ui,sans-serif;
+  color:#AD1017;box-shadow:0 3px 12px #1F232710;
+}
+.mobis-v2.m4 .m4-tipo-veiculo:hover{
+  background:#FFFFFF;border-color:#E2181A;box-shadow:0 5px 15px #1F232720;
+}
+.mobis-v2.m4 .m4-tipo-veiculo .m4-emblema-veiculo{
+  display:block;width:min(156px,100%);height:auto;aspect-ratio:1;object-fit:contain;
+  box-shadow:none;background:transparent;border:0;
+}
+.mobis-v2.m4 .m4-tipo-veiculo span{
+  font-size:.74rem;font-weight:800;line-height:1.2;
+}
+.mobis-v2.m4 .m4-tipo-veiculo:focus-visible{
+  outline:3px solid #E2181A;outline-offset:3px;
+}
+.mobis-v2 .m2-aplicacao-veiculo .m4-emblema-veiculo{
+  width:105px;height:auto;max-width:100%;object-fit:contain;border-radius:8px;
+}
+@media (max-width:650px){
+  .mobis-v2.m4 .m4-veiculos-tipos-grade{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .mobis-v2.m4 .m4-tipo-veiculo{min-height:145px;padding:7px 4px}
+  .mobis-v2.m4 .m4-tipo-veiculo .m4-emblema-veiculo{width:min(133px,100%)}
+}
+
+
+/* Catálogo MOBIS com navegação de veículo/produto, pai/filho real.
+   Inspiração funcional em catálogos automotivos, sem copiar identidade Bosch. */
+.mobis-v2.m4 .m4-catalogo-formas{
+  display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;
+  border-bottom:1px solid #BFC3C7;margin:12px 0 8px;
+}
+.mobis-v2.m4 .m4-catalogo-formas button{
+  flex:1 1 185px;background:#fff;color:#1F2327;
+  font-family:Montserrat,Inter,system-ui,sans-serif;
+  border:1px solid #BFC3C7;border-bottom:4px solid transparent;
+  padding:13px 16px;font-weight:850;cursor:pointer;
+  border-radius:10px 10px 0 0;
+}
+.mobis-v2.m4 .m4-catalogo-formas button[aria-selected="true"]{
+  color:#B01218;border-color:#BFC3C7;border-bottom-color:#E2181A;
+  background:#EAF2F6;
+}
+.mobis-v2.m4 .m4-catalogo-instrucao{font-size:.86rem;color:#41505A;margin:8px 0 13px}
+.mobis-v2.m4 .m4-taxonomia-caminho{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 14px;
+}
+.mobis-v2.m4 .m4-taxonomia-caminho>span{display:inline-flex;align-items:center;gap:8px}
+.mobis-v2.m4 .m4-taxonomia-caminho button{
+  color:#B01218;border:1px solid #BFC3C7;border-radius:8px;
+  background:#fff;padding:8px 11px;cursor:pointer;font-weight:750;
+}
+.mobis-v2.m4 .m4-taxonomia-subgrupo{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:8px;background:#fff;border:1px solid #D6E0E6;border-radius:10px;
+  padding:12px;margin-bottom:16px;color:#1F2327;
+}
+.mobis-v2.m4 .m4-taxonomia-subgrupo button{
+  background:#E2181A;color:#fff;border:1px solid #E2181A;border-radius:9px;
+  padding:10px 13px;font-weight:800;cursor:pointer;
+}
+.mobis-v2.m4 .m4-taxonomia-subgrupo button:hover{background:#B01218}
+.mobis-v2.m4 .m4-taxonomia-caminho button:focus-visible,
+.mobis-v2.m4 .m4-taxonomia-subgrupo button:focus-visible{
+  outline:3px solid #E2181A;outline-offset:2px;
+}
+/* Ficha Bosch-like somente em organização, identidade estritamente MOBIS. */
+.produto-publico-mobis .produto-publico-mobis-pai{
+  display:inline-flex;gap:8px;align-items:center;
+}
+.produto-publico-mobis .produto-publico-mobis-pai a{
+  color:#B01218;text-decoration:none;font-weight:700;
+}
+.produto-publico-mobis-detalhes{
+  max-width:1330px;margin:0 auto 22px;background:#fff;
+  border:1px solid #BFC3C7;border-radius:18px;
+  padding:clamp(14px,2vw,24px);
+}
+.produto-publico-mobis-detalhes-titulo>span{
+  color:#B01218;font-size:.76rem;letter-spacing:.06em;font-weight:900;
+}
+.produto-publico-mobis-detalhes-titulo h2{
+  color:#1F2327;margin:5px 0 18px;font-size:clamp(1.25rem,2.2vw,1.8rem);
+  font-family:"Eurostile Next Heavy",Montserrat,system-ui,sans-serif;
+}
+.produto-publico-mobis-abas{
+  display:flex;flex-wrap:wrap;gap:5px;
+  border-bottom:1px solid #BFC3C7;margin-bottom:14px;
+}
+.produto-publico-mobis-abas button{
+  flex:1 1 155px;min-height:47px;background:#fff;
+  color:#1F2327;border:0;border-bottom:3px solid transparent;
+  font-weight:800;font-family:Montserrat,system-ui,sans-serif;
+  cursor:pointer;padding:11px 12px;
+}
+.produto-publico-mobis-abas button[aria-selected="true"]{
+  color:#B01218;border-bottom-color:#E2181A;
+}
+.produto-publico-mobis-abas button:focus-visible{
+  outline:3px solid #E2181A;outline-offset:-3px;
+}
+.produto-publico-mobis-conteudo-abas{
+  color:#34404B;font-size:.94rem;line-height:1.6;overflow-wrap:anywhere;
+}
+.produto-publico-mobis-conteudo-abas h3{
+  font-size:1.07rem;margin:4px 0 12px;color:#1F2327;
+}
+.produto-publico-mobis-especificacoes{margin:0;display:grid;gap:0}
+.produto-publico-mobis-especificacoes>div{
+  display:grid;grid-template-columns:minmax(110px,1fr) minmax(0,2fr);
+  border-bottom:1px solid #DCE3E7;gap:14px;padding:11px 7px;
+}
+.produto-publico-mobis-especificacoes>div:nth-child(odd){background:#EAF2F6}
+.produto-publico-mobis-especificacoes dt{font-weight:800}
+.produto-publico-mobis-especificacoes dd{margin:0;overflow-wrap:anywhere}
+.produto-publico-mobis-aplicacoes-lista{list-style:none;margin:0;padding:0}
+.produto-publico-mobis-aplicacoes-lista li{
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  border-bottom:1px solid #DCE3E7;padding:10px 7px;
+}
+.produto-publico-mobis-aplicacoes-lista li:nth-child(odd){background:#EAF2F6}
+@media(max-width:600px){
+  .mobis-v2.m4 .m4-catalogo-formas{gap:5px}
+  .mobis-v2.m4 .m4-catalogo-formas button{flex:1 1 135px;padding:11px 6px;font-size:.77rem}
+  .produto-publico-mobis-especificacoes>div{grid-template-columns:1fr;gap:2px}
+  .produto-publico-mobis-abas button{flex:1 1 100%;text-align:left;min-height:40px}
+}
