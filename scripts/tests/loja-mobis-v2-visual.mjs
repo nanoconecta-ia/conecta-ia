@@ -50,13 +50,14 @@ try{
   assert.equal(new Set(origens).size,3,"três veículos diferentes passam pelo carrossel");
   assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem as fotos do Wikimedia nem mascotes na loja");
   assert.equal(await page.locator('.mbi,.mgv,.m3-hero,.m3-faixa-sistemas').count(),0,"blocos duplicados removidos");
-  assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.mobis-v2')).backgroundColor),'rgb(255, 255, 255)',"fundo branco");
-  assert.equal(await page.locator('.m2-busca-rapida').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"faixa de busca rápida branca antes de publicar V3");
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.mobis-v2')).backgroundColor),'rgb(234, 242, 246)',"fundo gelo oficial V3");
+  assert.equal(await page.locator('.ms-cabecalho').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(11, 15, 18)',"masthead grafite da V3");
   const caixa=await hero.boundingBox();
   assert.ok(caixa&&caixa.width>=width-1,"banner ocupa a largura da tela em "+width+"px");
   assert.equal(await hero.evaluate(el=>el.scrollWidth<=el.clientWidth+1),true,"banner sem estouro lateral em "+width+"px");
 
-  assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho branco antes de publicar V3");
+  assert.equal(await page.locator('.ms-departamentos-lista button').count(),7,"sete departamentos com ícones oficiais V3");
+   assert.equal(await page.locator('.ms-aplicacoes .ms-linha').count(),6,"seis linhas comerciais: publicadas ou sob consulta");
   assert.ok((await hero.locator("h1").innerText()).length>5,"carrossel tem chamada real");
   assert.ok((await hero.locator(".gcv3-copy p").innerText()).length<150,"texto comercial curto");
   await page.getByText(/Catálogo de peças em preparação/).waitFor({timeout:10000});
@@ -107,6 +108,7 @@ try{
    assert.equal(new URL(page.url()).hash,"#/loja/mobis","rodapé não pode sair da vitrine");
    await page.waitForFunction(id=>{const y=document.getElementById(id)?.getBoundingClientRect().top;return y!==undefined&&y>=-1&&y<innerHeight;},id,{timeout:8000}).catch(async e=>{throw new Error('rolagem falhou para '+nome+' ('+id+') top='+await page.evaluate(i=>document.getElementById(i)?.getBoundingClientRect().top,id)+' w='+width)});
    assert.equal(await page.locator('[data-mobis-layout="aprovado-v2"]').count(),1);
+    assert.equal(await page.locator('[data-mobis-site="v3"]').count(),1,"layout completo V3 carregado");
   }
   await context.close();
   console.log("MOBIS NOVO LAYOUT "+width+"px OK: rota pública, filtros, não publicado, responsivo");
@@ -136,6 +138,7 @@ try{
    await page.goto("https://"+host+"/");
    await page.locator(".m2-produto h3").getByText("Peça sintética para teste").waitFor();
    assert.equal(await page.locator('[data-mobis-layout="aprovado-v2"]').count(),1);
+    assert.equal(await page.locator('[data-mobis-site="v3"]').count(),1,"layout completo V3 carregado");
    assert.equal(await page.locator(".v-hero").count(),0);
    await page.locator(".m2-filtros-grid select").nth(0).selectOption("HR");
    await page.locator(".m2-filtros-grid select").nth(1).selectOption("D4CB");
@@ -146,7 +149,7 @@ try{
    await page.getByRole("button",{name:"Aplicar filtros",exact:true}).click();await resposta;
    assert.ok(requests.some(x=>x.slug==="mobis"&&x.modelo==="HR"&&x.motor==="D4CB"&&x.ano===2019&&x.categoria==="motor"));
    await page.getByRole("button",{name:"Adicionar à lista +",exact:true}).click();
-   const link=page.getByRole("link",{name:"Consultar no WhatsApp",exact:false});
+   const link=page.locator(".m2-lista").getByRole("link",{name:"Consultar no WhatsApp",exact:false});
    assert.match(await link.getAttribute("href"),/TESTE-SINTETICO/);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow no domínio "+width);
    assert.deepEqual(errors,[]);

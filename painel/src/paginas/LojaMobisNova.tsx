@@ -7,6 +7,7 @@ import type { PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 import { BlocoMontadorasMobis, BlocoTaxonomiaMobis } from "../componentes/BlocosCatalogoMobis.tsx";
 import { GlassyCarouselMobisV3 } from "../componentes/GlassyCarouselMobisV3.tsx";
+import {CabecalhoMobisV3,AberturaMobisV3,AplicacoesMobisV3,BarraConsultaMobisV3} from "../componentes/LojaMobisInstitucionalV3.tsx";
 import {intervaloPublico,ordemPublica,type BlocoComercial} from "../lib/layoutMobis.ts";
 import {paletaPublicada,variaveisPaletaMobis} from "../lib/paletaMobis.ts";
 import fotoHR from "../assets/veiculos-mobis/hyundai-hr.webp";
@@ -20,6 +21,7 @@ import "./blocos-catalogo-mobis.css";
 import "./mobis-paleta-dinamica.css";
 import "./mobis-premium-v3.css";
 import "./mobis-ma-identidade.css";
+import "./mobis-vitrine-completa-v3.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -156,6 +158,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     lista.map((x,i)=>String(i+1)+". "+x.nome.slice(0,90)+" SKU "+x.sku).join("; "):
     (consultaModelo?"peças para "+consultaModelo:"peças para meu veículo"))+". Favor confirmar aplicação, preço e disponibilidade. Esta é uma consulta, não um pedido.";
   const whatsapp=linkWhatsAppPublico(dados?.loja.whatsapp,msg);
+  const irVitrine=(id:string)=>contexto?.tipo==="empresa"?(window.location.hash="#/loja/mobis"):para(id);
   const paginas=Math.max(1,Math.ceil((dados?.total??0)/(dados?.por_pagina||24)));
 
   // O DOM segue a ordem publicada, inclusive para navegação por teclado e leitores de tela.
@@ -246,29 +249,19 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     </>,
     empresa: null,
   };
-  return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="aprovado-v2" data-layout-versionado="true" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4" data-paleta-publicada={coresPublicas?"sim":"nao"} data-mobis-v3-publicada={v3Publicada?"sim":"nao"} style={coresPublicas?variaveisPaletaMobis(coresPublicas) as CSSProperties:undefined}>
-    <div data-bloco="cabecalho">
-    <header className="m2-header"><div className="m2-wrap">
-      <a className="m2-brand" href="#/loja/mobis" aria-label="MOBIS Autopeças - início" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>
-        <img src={logoMobis} width={1000} height={330} alt="MOBIS Autopeças — logo MA oficial"/>
-      </a>
-      <nav aria-label="Menu da loja"><button onClick={()=>contexto?.tipo==="empresa"?window.location.hash="#/loja/mobis":para("m2-montadoras")}>Montadoras</button>
-        <button onClick={()=>contexto?.tipo==="empresa"?window.location.hash="#/loja/mobis":para("m2-taxonomia")}>Peças por sistema</button>
-        <button onClick={()=>contexto?.tipo==="empresa"?window.location.hash="#/loja/mobis":para("m2-catalogo")}>Catálogo</button>
-        {banners.length>0&&<button onClick={()=>para("m2-destaques")}>Destaques</button>}
-        <a className="m4-menu-empresa" href="#/loja/mobis/empresa" aria-label="Sobre a Mobis e informações da empresa">Sobre a Mobis ↗</a></nav>
-      <div className="m2-header-acoes"><button onClick={()=>para("m2-lista")}>Minha lista <span>{lista.length}</span></button>
-        {whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Fale com a Mobis <span>WhatsApp ↗</span></a>}
-      </div>
-    </div></header>
-    <div className="m2-busca-rapida"><form className="m2-wrap m4-busca" role="search" aria-label="Busca rápida de peças" onSubmit={aplicar}>
-      <label className="sr" htmlFor="m2-busca-rapida">Qual peça você procura?</label>
-      <input id="m2-busca-rapida" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Peça, código SKU ou OEM"/>
-      <button type="submit">Buscar peças <span aria-hidden="true">→</span></button>
-    </form></div>
-    </div>
+  return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="aprovado-v2" data-mobis-site="v3" data-layout-versionado="true" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4" data-paleta-publicada={coresPublicas?"sim":"nao"} data-mobis-v3-publicada={v3Publicada?"sim":"nao"} style={coresPublicas?variaveisPaletaMobis(coresPublicas) as CSSProperties:undefined}>
+    <CabecalhoMobisV3
+       busca={busca} onBusca={setBusca} onEnviar={aplicar} lista={lista.length} whatsapp={whatsapp}
+       ir={irVitrine} categorias={dados?.categorias??[]} selecionarCategoria={escolherNoTaxonomia}
+       consultar={consultarLinha} bannersPresentes={banners.length>0}/>
     <main>
-      {contexto?.tipo==="empresa" ? <EmpresaMobis whatsapp={whatsapp} politicas={dados?.politicas}/> : <>{ordemVitrine.map(id=><Fragment key={id}>{blocosSite[id]}</Fragment>)}
+      {contexto?.tipo==="empresa" ? <EmpresaMobis whatsapp={whatsapp} politicas={dados?.politicas}/> : <>
+       <AberturaMobisV3 whatsapp={whatsapp} ir={irVitrine}/>
+       <AplicacoesMobisV3 categorias={dados?.categorias??[]} opcoes={opcoes} motores={motores}
+         f={{modelo,motor,ano,categoria}} onModelo={v=>{setModelo(v);setMotor("");}} onMotor={setMotor}
+         onAno={setAno} onCategoria={setCategoria} onAplicar={aplicar}
+         onAprovado={escolherVeiculoAprovado} onConsultar={consultarLinha} ir={irVitrine}/>
+       {ordemVitrine.map(id=><Fragment key={id}>{blocosSite[id]}</Fragment>)}
       <section id="m2-atendimento" className="m2-atendimento">
         {consultaModelo&&<div className="m2-wrap"><p className="m4-consulta-aviso" role="status">Para {consultaModelo}, ainda não há aplicação homologada nesta lista. Nossa equipe pode consultar a referência e confirmar a peça com você.</p></div>}
         <div className="m2-wrap m2-atendimento-grid">
@@ -284,6 +277,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
       </section>
       </>}
     </main>
+    <BarraConsultaMobisV3 whatsapp={whatsapp} politicas={dados?.politicas}/>
     <RodapeMobisEnxuto nome={dados?.loja.nome??"Mobis Autopeças"} whatsapp={dados?.loja.whatsapp}/>
   </div>;
 }

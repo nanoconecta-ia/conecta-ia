@@ -49,7 +49,8 @@ try{
   assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem as fotos do Wikimedia nem mascotes na loja");
   assert.equal(await page.locator('.mbi,.mgv,.m3-hero,.m3-faixa-sistemas').count(),0,"blocos duplicados removidos");
 
-  assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho publicado é branco");
+  assert.equal(await page.locator('.ms-cabecalho').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(11, 15, 18)',"cabeçalho da loja M-STYLE V3 é grafite");
+   assert.equal(await page.locator('.ms-departamentos-lista button').count(),7,"sete ícones de sistema na vitrine V3");
   assert.equal(await page.locator(".v-hero").count(),0);
   const r=await consulta;assert.equal(r.status(),200,"catálogo público deve carregar");
   const dados=await r.json();assert.equal(dados.loja.slug,"mobis");
@@ -71,11 +72,12 @@ try{
   assert.equal(await page.locator(".m4-montadora-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),fundoAprovado,"bloco de montadoras respeita a paleta publicada");
   assert.equal(await page.locator(".m4-taxonomia-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),fundoAprovado,"bloco de taxonomia respeita a paleta publicada");
   assert.equal(await page.locator(".m2-filtros").evaluate(el=>getComputedStyle(el).maxWidth),"none","filtros sem largura administrativa de 440px");
-  assert.equal(await page.locator(".gcv3").count(),1,"uma única vitrine dinâmica sem hero duplicado");
+  assert.equal(await page.locator(".gcv3").count(),1,"um único carrossel de produtos e veículos");
+   assert.equal(await page.locator(".ms-abertura").count(),1,"um único banner institucional V3");
   assert.equal(await page.locator(".m4-linha-card,.m2-veiculo-grade").count(),0,"seções repetidas não aparecem");
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow "+width);
   assert.deepEqual(errors,[]);
-  resultados.push({width,layout:"aprovado-v2",catalogo:r.status(),produtos:dados.total,erros:errors});
+  resultados.push({width,layout:"mobis-v3-site",catalogo:r.status(),produtos:dados.total,erros:errors});
   console.log("PUBLICADA "+width+"px OK "+esperado);
   }catch(e){resultados.push({width,erro:String(e),erros:errors,rede});throw e;}
   finally{await page.screenshot({path:dir+"mobis-publicada-"+width+".png",fullPage:true}).catch(()=>{});await context.close();}
