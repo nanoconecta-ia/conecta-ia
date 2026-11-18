@@ -6,7 +6,7 @@ import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.t
 import { modoCliente } from "../_shared/loja/publicacao.ts";
 import { urlProduto } from "../_shared/seo/url.ts";
 import { cabecalhoIpConfigurado, guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
-import { montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, textoSimples, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
+import { montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, textoSimples, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" } });
@@ -135,14 +135,14 @@ Deno.serve(async (req) => {
       : {data:[] as {id:string;categoria:string|null;montadora_id:string|null}[]};
     const modeloPorId=new Map((modelos??[]).map(m=>[m.id,m]));
     const montadorasIds=[...new Set(aprovadas.flatMap(a=>[
-      a.marca_veiculo_id,modeloPorId.get(a.modelo_id)?.montadora_id
+      a.marca_veiculo_id,modeloPorId.get(a.modelo_id??"")?.montadora_id
     ]).filter((id):id is string=>!!id))];
     const {data:montadorasRegistradas}=montadorasIds.length
       ? await sb.from("montadoras").select("id,nome").in("id",montadorasIds)
       : {data:[] as {id:string;nome:string}[]};
     const montadoraPorId=new Map((montadorasRegistradas??[]).map(m=>[m.id,m.nome]));
     apls=aprovadas.map(a=>{
-      const m=modeloPorId.get(a.modelo_id);
+      const m=modeloPorId.get(a.modelo_id??"");
       return {
         produto_id:a.produto_id,modelo:a.modelo,motorizacao:a.motorizacao,
         ano_inicial:a.ano_inicial,ano_final:a.ano_final,
@@ -294,7 +294,7 @@ Deno.serve(async (req) => {
           aplicacoes:apls.filter(a=>a.produto_id===alvo.id).map(a=>({
             modelo:a.modelo,montadora:a.montadora,motorizacao:a.motorizacao,
             ano_inicial:a.ano_inicial,ano_final:a.ano_final,
-            pagina_slug:a.pagina_indexavel?a.pagina_slug:null,
+            pagina_slug:!modoPreviaCatalogo&&a.pagina_indexavel?a.pagina_slug:null,
             titulo:a.pagina_titulo,restricao:a.restricao,
           })),
         },
