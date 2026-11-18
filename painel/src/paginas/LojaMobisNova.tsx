@@ -250,7 +250,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     <div data-bloco="cabecalho">
     <header className="m2-header"><div className="m2-wrap">
       <a className="m2-brand" href="#/loja/mobis" aria-label="MOBIS Autopeças - início" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>
-        <img src={logoMobis} width={940} height={230} alt="MOBIS Autopeças — logo MA oficial"/>
+        <img src={logoMobis} width={1000} height={330} alt="MOBIS Autopeças — logo MA oficial"/>
       </a>
       <nav aria-label="Menu da loja"><button onClick={()=>contexto?.tipo==="empresa"?window.location.hash="#/loja/mobis":para("m2-montadoras")}>Montadoras</button>
         <button onClick={()=>contexto?.tipo==="empresa"?window.location.hash="#/loja/mobis":para("m2-taxonomia")}>Peças por sistema</button>
