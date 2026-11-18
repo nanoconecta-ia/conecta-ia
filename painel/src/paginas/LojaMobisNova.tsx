@@ -12,13 +12,15 @@ import {paletaPublicada,variaveisPaletaMobis} from "../lib/paletaMobis.ts";
 import fotoHR from "../assets/veiculos-mobis/hyundai-hr.webp";
 import fotoBongo from "../assets/veiculos-mobis/kia-bongo-k2500.webp";
 import fotoL200 from "../assets/veiculos-mobis/mitsubishi-l200.webp";
-import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
+
 import "./loja-mobis-nova.css";
 import "./loja-mobis-branco.css";
 import "./loja-mobis-clara.css";
 import "./blocos-catalogo-mobis.css";
 import "./mobis-paleta-dinamica.css";
 import "./mobis-premium-v3.css";
+import "./mobis-identidade-2026.css";
+const logoMobis = "/marcas/mobis-logo-metalico-2026.webp";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -221,7 +223,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                     {aplicacoesPublicas(dados.paginas_aplicacao?.[p.sku]).map(ap=>
                       <a key={ap.slug} href={"#/a/"+ap.slug}
-                        style={{display:"inline-block",padding:"8px 11px",border:"1px solid #c25a1b",borderRadius:6,color:"#914a27",fontWeight:700,fontSize:13,textDecoration:"none"}}>
+                        style={{display:"inline-block",padding:"8px 11px",border:"1px solid #E2181A",borderRadius:6,color:"#B01218",fontWeight:700,fontSize:13,textDecoration:"none"}}>
                         {ap.modelo} · ver ficha ↗
                       </a>)}
                   </div>
@@ -243,7 +245,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     <div data-bloco="cabecalho">
     <header className="m2-header"><div className="m2-wrap">
       <a className="m2-brand" href="#/loja/mobis" aria-label="MOBIS Autopeças - início" onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>
-        <img src={logoMobis} width={720} height={128} alt="MOBIS Autopeças"/>
+        <img src={logoMobis} width={720} height={205} alt="MOBIS Autopeças"/>
       </a>
       <nav aria-label="Menu da loja"><button onClick={()=>contexto?.tipo==="empresa"?window.location.hash="#/loja/mobis":para("m2-montadoras")}>Montadoras</button>
         <button onClick={()=>contexto?.tipo==="empresa"?window.location.hash="#/loja/mobis":para("m2-taxonomia")}>Peças por sistema</button>

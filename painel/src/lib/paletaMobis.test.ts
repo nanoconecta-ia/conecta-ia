@@ -2,8 +2,11 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {MODELOS_PALETA_MOBIS,PALETA_MOBIS_PADRAO,validarPaletaMobis,
  paletaPublicada,variaveisPaletaMobis,contraste} from "./paletaMobis.ts";
-test("três combinações claras com contraste AA e cor institucional discreta",()=>{
+test("três combinações oficiais da MOBIS com contraste AA",()=>{
   assert.equal(MODELOS_PALETA_MOBIS.length,3);
+  assert.equal(PALETA_MOBIS_PADRAO.cor_superficie,"#eaf2f6");
+  assert.equal(PALETA_MOBIS_PADRAO.cor_acento,"#e2181a");
+  assert.equal(PALETA_MOBIS_PADRAO.cor_texto,"#1f2327");
   for(const modelo of MODELOS_PALETA_MOBIS){
     assert.deepEqual(validarPaletaMobis(modelo.cores),{ok:true,cores:modelo.cores});
     assert.ok(contraste(modelo.cores.cor_botao,"#ffffff")>=4.5);

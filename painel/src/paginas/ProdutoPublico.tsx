@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { MOBIS } from "../lib/publicoLoja.ts";
 import { FichaProduto } from "../componentes/FichaProduto.tsx";
-import logoMobis from "../assets/marcas/mobis-oficial-fundo-claro.png";
+
 import "./produto-publico-mobis.css";
+import "./mobis-identidade-2026.css";
 import type { FichaProduto as Produto, FichaVeiculo } from "../lib/ficha.ts";
+const logoMobis = "/marcas/mobis-logo-metalico-2026.webp";
 type PaginaVeiculo = { slug:string;titulo:string;modelo:string;status:string };
 
 /** Redes sociais oficiais da loja. Preencher somente com links confirmados pela loja; vazio = não aparece. */

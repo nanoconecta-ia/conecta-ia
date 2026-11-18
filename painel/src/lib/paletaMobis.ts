@@ -8,20 +8,21 @@ export type PaletaMobis={
   cor_botao:string;
   cor_acento:string;
 };
+/** Tokens exclusivos da loja MOBIS; o Conecta.IA mantém sua própria marca. */
 export const PALETA_MOBIS_PADRAO:PaletaMobis={
   cor_fundo:"#ffffff",
-  cor_superficie:"#f6f7f8",
+  cor_superficie:"#eaf2f6",
   cor_texto:"#1f2327",
-  cor_botao:"#444c54",
-  cor_acento:"#a84916",
+  cor_botao:"#1f2327",
+  cor_acento:"#e2181a",
 };
 export const MODELOS_PALETA_MOBIS=[
- {id:"neve",nome:"Neve e grafite",descricao:"Base clara da Mobis, botões cinza e acento cobre",cores:PALETA_MOBIS_PADRAO},
- {id:"gelo",nome:"Gelo e vinho discreto",descricao:"Branco gelo, grafite e detalhe vermelho só nos acentos",cores:{
-   cor_fundo:"#f6f7f8",cor_superficie:"#ffffff",cor_texto:"#252a31",cor_botao:"#444c54",cor_acento:"#8d3c35",
+ {id:"gelo",nome:"Branco-gelo oficial",descricao:"Produtos em gelo; grafite e vermelho MOBIS",cores:PALETA_MOBIS_PADRAO},
+ {id:"neve",nome:"Branco institucional",descricao:"Branco com cartões gelo, botão vermelho e tipografia grafite",cores:{
+   cor_fundo:"#ffffff",cor_superficie:"#eaf2f6",cor_texto:"#1f2327",cor_botao:"#e2181a",cor_acento:"#e2181a",
  }},
- {id:"grafite",nome:"Neve com grafite intenso",descricao:"Botões escuros e cobre institucional em detalhes",cores:{
-   cor_fundo:"#ffffff",cor_superficie:"#f1f4f6",cor_texto:"#1f2327",cor_botao:"#333b44",cor_acento:"#87390f",
+ {id:"reverso",nome:"Gelo predominante",descricao:"Fundo branco-gelo e cartão branco, mantendo o vermelho e o grafite",cores:{
+   cor_fundo:"#eaf2f6",cor_superficie:"#ffffff",cor_texto:"#1f2327",cor_botao:"#1f2327",cor_acento:"#e2181a",
  }},
 ] as const;
 const hex=/^#[0-9a-f]{6}$/;
@@ -39,6 +40,11 @@ export function validarPaletaMobis(v:unknown):{ok:true;cores:PaletaMobis}|{ok:fa
  const keys=["cor_fundo","cor_superficie","cor_texto","cor_botao","cor_acento"] as const;
  for(const key of keys)if(typeof obj[key]!=="string"||!hex.test(obj[key]))return {ok:false,erro:"Cada cor precisa estar no formato #rrggbb."};
  const cores=Object.fromEntries(keys.map(k=>[k,obj[k]])) as PaletaMobis;
+ // A loja Mobis não aceita mais temas históricos com laranja/cobre.
+ if(cores.cor_acento!=="#e2181a")
+  return {ok:false,erro:"O destaque institucional da MOBIS deve ser vermelho #E2181A."};
+ if(!["#ffffff","#eaf2f6"].includes(cores.cor_fundo) || !["#ffffff","#eaf2f6"].includes(cores.cor_superficie))
+  return {ok:false,erro:"Use branco ou branco-gelo nas superfícies da MOBIS."};
  if(luminancia(cores.cor_fundo)<.75||luminancia(cores.cor_superficie)<.75)
   return {ok:false,erro:"Escolha branco neve ou gelo como superfícies da vitrine."};
  if(contraste(cores.cor_texto,cores.cor_fundo)<4.5||contraste(cores.cor_texto,cores.cor_superficie)<4.5)
