@@ -120,10 +120,10 @@ try {
     assert.equal(await root.getAttribute("data-paleta-publicada"),"sim",
       "somente paleta publicada pela API é aplicada à Mobis");
     assert.equal(await root.evaluate(el=>getComputedStyle(el).getPropertyValue("--mobis-botao").trim()),"#444c54");
-    assert.equal(await page.locator(".m4-busca button").first().evaluate(el=>getComputedStyle(el).backgroundColor),
-      "rgb(68, 76, 84)","botão respeita a paleta antiga publicada");
-    assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
-      "rgb(141, 60, 53)","paleta antiga publicada segue intacta");
+    assert.equal(await page.locator(".ms-pesquisa button").first().evaluate(el=>getComputedStyle(el).backgroundImage.includes("linear-gradient")),
+      true,"a busca usa a faixa comercial vermelha da marca V3");
+    assert.equal(await page.locator(".ms-cabecalho").evaluate(el=>getComputedStyle(el).backgroundColor),
+      "rgb(11, 15, 18)","identidade do cabeçalho V3 não altera o ponteiro da paleta antiga");
     assert.deepEqual(erros,[]);
     await context.close();
   }
@@ -131,8 +131,8 @@ try {
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false},390);
     assert.equal(await page.locator(".mobis-v2.m4").getAttribute("data-paleta-publicada"),"nao",
       "rascunho ou ausência de paleta não muda site");
-    assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
-      "rgb(168, 73, 22)","ausência de paleta não muda a identidade já implantada");
+    assert.equal(await page.locator(".ms-cabecalho").evaluate(el=>getComputedStyle(el).backgroundColor),
+      "rgb(11, 15, 18)","na ausência de paleta, a marca institucional continua grafite");
     assert.deepEqual(erros,[]);
     await context.close();
   }
@@ -143,11 +143,11 @@ try {
     const root=page.locator(".mobis-v2.m4");
     assert.equal(await root.getAttribute("data-mobis-v3-publicada"),"sim",
       "V3 só ativa com a paleta oficial entregue pela API");
-    assert.equal(await page.locator(".m2-header").evaluate(el=>getComputedStyle(el).borderBottomColor),
-      "rgb(226, 24, 26)","a assinatura da V3 usa vermelho MOBIS");
-    assert.equal(await page.locator(".m2-busca-rapida").evaluate(el=>getComputedStyle(el).backgroundColor),
-      "rgb(31, 35, 39)","fundo grafite da busca V3");
-    assert.ok((await page.locator(".m2-brand img").getAttribute("src")||"").includes("mobis-mstyle-v3-logo"),
+    assert.equal(await page.locator(".ms-navegacao").evaluate(el=>getComputedStyle(el).backgroundImage.includes("linear-gradient")),
+      true,"o menu completo da V3 apresenta o degradê vermelho Mobis");
+    assert.equal(await page.locator(".ms-cabecalho").evaluate(el=>getComputedStyle(el).backgroundColor),
+      "rgb(11, 15, 18)","a busca do cabeçalho está na faixa de grafite da V3");
+    assert.ok((await page.locator(".ms-logo img").getAttribute("src")||"").includes("mobis-mstyle-v3-logo"),
       "logo horizontal usa o PNG original V3");
     assert.deepEqual(erros,[]);
     await context.close();
