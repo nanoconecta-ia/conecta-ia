@@ -1,106 +1,98 @@
-/** Gerador offline dos ícones MA para favicon, iOS e PWA.
- * Sem serviços, fontes, libs ou fotos externas. Executado antes do build Vite.
- * A geometria é uma reconstrução vetorial do guia da marca; conferir com arquivo-mestre.
+/** Derivados digitais MOBIS M-STYLE CROMO V3 (18/11/2026).
+ * Nunca redesenha a marca: valida os PNGs oficiais preservados byte a byte
+ * do kit V3 do Google Drive e apenas gera ICO e versão maskable com margem segura.
+ * Sem bibliotecas externas, login, dados de clientes ou rede.
  */
-import { deflateSync } from "node:zlib";
-import { mkdir, writeFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-import { resolve, dirname } from "node:path";
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {inflateSync,deflateSync} from 'node:zlib';
+import {fileURLToPath} from 'node:url';
+import {resolve,dirname} from 'node:path';
 
-const destino=resolve(dirname(fileURLToPath(import.meta.url)),"../../painel/public");
-const polyBranco=[[16,72],[30,28],[38,20],[51,20],[61,33],[49,47],[43,35],[40,34],[29,72]];
-const polyVermelho=[[39,72],[62,19],[81,19],[67,72],[54,72],[65,42],[51,72]];
-const limitar=(n,a,b)=>Math.max(a,Math.min(b,n));
-function pontoPoligono(x,y,p){
- let dentro=false;
- for(let i=0,j=p.length-1;i<p.length;j=i++){
-  const [xi,yi]=p[i],[xj,yj]=p[j];
-  if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)dentro=!dentro;
- }
- return dentro;
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'../..');
+const arquivos=[
+ ['painel/src/assets/marcas/mobis-mstyle-v3-logo.png','5c051693453af9bc44382f4b02bf22749d400e4abe735ce36556fa433deab554'],
+ ['painel/public/icones/mobis-ma-favicon-32.png','313e9c950f89490162bba8fd0a3b47c3ad77ba969b9726fbb387f8a9df36aef6'],
+ ['painel/public/icones/mobis-ma-apple-180.png','17e19696cf4f4bf63d2537264e57f8c590a3fa42e3703adc5ff439b09c2664fa'],
+ ['painel/public/icones/mobis-ma-app-192.png','ff63ab1f6bc6d9e5532f3c18b58c5297d4c7cf21d2b354f4ae89b13fab85d3d2'],
+ ['painel/public/icones/mobis-ma-app-512.png','ea87dcf2b3db62ad4868e8e9f6bf53f7d8ba37d2bd9751c74b3a8893f10f2fd9']
+];
+const fonte=[];
+for(const [path,sha] of arquivos){
+ const dados=await readFile(resolve(root,path));
+ if(createHash('sha256').update(dados).digest('hex')!==sha)throw Error('Identidade V3 inválida: '+path);
+ fonte.push(dados);
 }
-function arredondado(x,y,x0,y0,x1,y1,r){
- if(x<x0||x>=x1||y<y0||y>=y1)return false;
- const cx=limitar(x,x0+r,x1-r),cy=limitar(y,y0+r,y1-r);
- return (x-cx)**2+(y-cy)**2<=r*r;
+const destino=resolve(root,'painel/public');
+await mkdir(resolve(destino,'icones'),{recursive:true});
+
+// .ico verdadeiro: incorpora o PNG original 32x32 sem o modificar.
+function ico(png){
+ const header=Buffer.alloc(22);
+ header.writeUInt16LE(1,2);header.writeUInt16LE(1,4);
+ header[6]=32;header[7]=32;
+ header.writeUInt16LE(1,10);header.writeUInt16LE(32,12);
+ header.writeUInt32LE(png.length,14);header.writeUInt32LE(22,18);
+ return Buffer.concat([header,png]);
 }
-function cor(u,v,mascara=false){
- let x=u,y=v;
- if(mascara){
-  // Fundo sangrado e símbolo dentro da zona segura (~80%).
-  x=(u-48)/0.79+48;y=(v-48)/0.79+48;
- }
- let rgba=[0,0,0,0];
- if(mascara)rgba=[31,35,39,255];
- if(!arredondado(x,y,1,1,95,95,20))return rgba;
- rgba=[180+Math.round(55*(1-y/96)),183+Math.round(51*(1-y/96)),187+Math.round(50*(1-y/96)),255];
- if(arredondado(x,y,5,5,91,91,17))rgba=[13,15,18,255];
- if(arredondado(x,y,8,8,88,88,15)&&!arredondado(x,y,9.7,9.7,86.3,86.3,13.3))rgba=[194,199,203,255];
- if(pontoPoligono(x,y,polyBranco)){
-  const t=limitar((y-20)/52,0,1);
-  rgba=[Math.round(255-45*t),Math.round(255-39*t),Math.round(255-35*t),255];
- }
- if(pontoPoligono(x,y,polyVermelho)){
-  const t=limitar((x+y-60)/80,0,1);
-  rgba=[Math.round(255-29*t),Math.round(52-28*t),Math.round(55-29*t),255];
- }
- return rgba;
-}
-const tabela=Array.from({length:256},(_,n)=>{
- let v=n;for(let i=0;i<8;i++)v=v&1?0xedb88320^(v>>>1):v>>>1;return v>>>0;
+await writeFile(resolve(destino,'mobis-ma-favicon.ico'),ico(fonte[1]));
+
+const crcTable=Uint32Array.from({length:256},(_,i)=>{
+ let c=i;for(let j=0;j<8;j++)c=c&1?(0xEDB88320^(c>>>1)):(c>>>1);return c>>>0;
 });
-function bloco(tipo,data){
- const head=Buffer.from(tipo,"ascii"),len=Buffer.alloc(4),crc=Buffer.alloc(4);
- len.writeUInt32BE(data.length);let v=0xffffffff;
- for(const c of Buffer.concat([head,data]))v=tabela[(v^c)&255]^(v>>>8);
- crc.writeUInt32BE((v^0xffffffff)>>>0);
- return Buffer.concat([len,head,data,crc]);
+function crc32(bytes){let c=0xffffffff;for(const b of bytes)c=crcTable[(c^b)&255]^(c>>>8);return (c^0xffffffff)>>>0;}
+function chunk(name,data){
+ const h=Buffer.from(name,'ascii'),len=Buffer.alloc(4),crc=Buffer.alloc(4);
+ len.writeUInt32BE(data.length,0);crc.writeUInt32BE(crc32(Buffer.concat([h,data])),0);
+ return Buffer.concat([len,h,data,crc]);
 }
-function gerarPNG(tamanho,mascara=false){
- const lado=tamanho*4+1,raw=Buffer.alloc(lado*tamanho);
- for(let y=0;y<tamanho;y++){
-  const base=y*lado;raw[base]=0;
-  for(let x=0;x<tamanho;x++){
-   let a=0,r=0,g=0,b=0;
-   // Antisserrilhado por supersampling 2x2.
-   for(let sy=0;sy<2;sy++)for(let sx=0;sx<2;sx++){
-    const u=(x+(sx+0.5)/2)*96/tamanho,v=(y+(sy+0.5)/2)*96/tamanho;
-    const c=cor(u,v,mascara),peso=c[3]/255;a+=c[3];r+=c[0]*peso;g+=c[1]*peso;b+=c[2]*peso;
-   }
-   const pos=base+1+x*4,op=a/4;
-   raw[pos]=op?Math.round(r/(a/255)):0;
-   raw[pos+1]=op?Math.round(g/(a/255)):0;
-   raw[pos+2]=op?Math.round(b/(a/255)):0;
-   raw[pos+3]=Math.round(op);
+function lerRGBA(bytes){
+ const sig=Buffer.from('89504e470d0a1a0a','hex');
+ if(!bytes.subarray(0,8).equals(sig))throw Error('PNG V3 inválido');
+ let p=8,w=0,h=0,parts=[];
+ while(p<bytes.length){
+  const n=bytes.readUInt32BE(p),id=bytes.toString('ascii',p+4,p+8),data=bytes.subarray(p+8,p+8+n);p+=12+n;
+  if(id==='IHDR'){
+   w=data.readUInt32BE(0);h=data.readUInt32BE(4);
+   if(data[8]!==8||data[9]!==6||data[12]!==0)throw Error('PNG oficial precisa ser RGBA 8-bit não entrelaçado');
+  } else if(id==='IDAT')parts.push(data);
+  else if(id==='IEND')break;
+ }
+ const raw=inflateSync(Buffer.concat(parts)),stride=w*4,out=Buffer.alloc(h*stride);
+ let offset=0;
+ for(let y=0;y<h;y++){
+  const filter=raw[offset++],base=y*stride,prior=(y-1)*stride;
+  for(let x=0;x<stride;x++){
+   const v=raw[offset++],a=x>=4?out[base+x-4]:0,b=y>0?out[prior+x]:0,c=y>0&&x>=4?out[prior+x-4]:0;
+   let pred=0;
+   if(filter===1)pred=a;
+   else if(filter===2)pred=b;
+   else if(filter===3)pred=(a+b)>>1;
+   else if(filter===4){const p=a+b-c,da=Math.abs(p-a),db=Math.abs(p-b),dc=Math.abs(p-c);pred=da<=db&&da<=dc?a:db<=dc?b:c;}
+   else if(filter!==0)throw Error('Filtro PNG desconhecido: '+filter);
+   out[base+x]=(v+pred)&255;
   }
  }
- const ihdr=Buffer.alloc(13);
- ihdr.writeUInt32BE(tamanho,0);ihdr.writeUInt32BE(tamanho,4);
- ihdr[8]=8;ihdr[9]=6;
- return Buffer.concat([Buffer.from("89504e470d0a1a0a","hex"),bloco("IHDR",ihdr),
-   bloco("IDAT",deflateSync(raw,{level:9})),bloco("IEND",Buffer.alloc(0))]);
+ return {w,h,pixels:out};
 }
-function gerarICO(pngs){
- const header=Buffer.alloc(6+pngs.length*16),partes=[header];
- header.writeUInt16LE(1,2);header.writeUInt16LE(pngs.length,4);
- let offset=header.length;
- pngs.forEach(([tam,png],i)=>{
-  const o=6+i*16;
-  header[o]=tam===256?0:tam;header[o+1]=tam===256?0:tam;header[o+2]=0;header[o+3]=0;
-  header.writeUInt16LE(1,o+4);header.writeUInt16LE(32,o+6);
-  header.writeUInt32LE(png.length,o+8);header.writeUInt32LE(offset,o+12);
-  offset+=png.length;partes.push(png);
- });
- return Buffer.concat(partes);
+function salvarRGBA(w,h,pixels){
+ const stride=w*4,raw=Buffer.alloc(h*(stride+1));
+ for(let y=0;y<h;y++){const start=y*(stride+1);raw[start]=0;pixels.copy(raw,start+1,y*stride,(y+1)*stride);}
+ const ih=Buffer.alloc(13);ih.writeUInt32BE(w,0);ih.writeUInt32BE(h,4);ih[8]=8;ih[9]=6;
+ return Buffer.concat([Buffer.from('89504e470d0a1a0a','hex'),chunk('IHDR',ih),chunk('IDAT',deflateSync(raw,{level:9})),chunk('IEND',Buffer.alloc(0))]);
 }
-await mkdir(resolve(destino,"icones"),{recursive:true});
-const arquivos=[
- ["icones/mobis-ma-favicon-32.png",gerarPNG(32)],
- ["icones/mobis-ma-apple-180.png",gerarPNG(180)],
- ["icones/mobis-ma-app-192.png",gerarPNG(192)],
- ["icones/mobis-ma-app-512.png",gerarPNG(512)],
- ["icones/mobis-ma-maskable-512.png",gerarPNG(512,true)],
- ["mobis-ma-favicon.ico",gerarICO([[32,gerarPNG(32)],[48,gerarPNG(48)]])],
-];
-for(const [p,data] of arquivos)await writeFile(resolve(destino,p),data);
-console.log("MOBIS MA: "+arquivos.map(([p,b])=>p+" ("+b.length+" B)").join(", "));
+
+// Safe zone do Android: placa inteira ocupa 72% do quadrado, mantendo a moldura.
+const {w,h,pixels:src}=lerRGBA(fonte[4]);
+if(w!==512||h!==512)throw Error('Icone fonte V3 precisa ser 512x512');
+const size=512,side=368,margin=(size-side)/2;
+const out=Buffer.alloc(size*size*4);
+for(let i=0;i<size*size;i++){out[i*4]=31;out[i*4+1]=35;out[i*4+2]=39;out[i*4+3]=255;}
+for(let y=0;y<side;y++)for(let x=0;x<side;x++){
+ const sx=Math.max(0,Math.min(511,Math.floor((x+.5)*512/side))),sy=Math.max(0,Math.min(511,Math.floor((y+.5)*512/side)));
+ const si=(sy*512+sx)*4,di=((y+margin)*512+x+margin)*4,a=src[si+3]/255;
+ for(let c=0;c<3;c++)out[di+c]=Math.round(src[si+c]*a+out[di+c]*(1-a));
+}
+const maskable=salvarRGBA(512,512,out);
+await writeFile(resolve(destino,'icones/mobis-ma-maskable-512.png'),maskable);
+console.log('MOBIS M-STYLE V3: PNGs originais validados, favicon e maskable gerados sem redesenho');
