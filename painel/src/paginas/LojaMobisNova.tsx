@@ -165,7 +165,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
   const coresPublicas=paletaPublicada(dados?.paleta);
   const blocosSite:Record<BlocoComercial,ReactNode>={
     banner: <div data-bloco="banner"><GlassyCarouselMobisV3
-      banners={banners} produtos={dados?.produtos??[]} veiculos={VEICULOS}
+      banners={banners} produtos={dados?.produtos??[]} veiculos={VEICULOS} sistemas={dados?.categorias??[]}
       intervalo={intervaloPublico(dados?.layout?.intervalo_segundos)}
       emTeste={dados?.loja.ambiente!=="producao"}/></div>,
     montadoras: <>
