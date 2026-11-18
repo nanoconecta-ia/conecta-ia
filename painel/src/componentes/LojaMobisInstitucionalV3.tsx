@@ -5,6 +5,7 @@ import hr from "../assets/veiculos-mobis/hyundai-hr.webp";
 import bongo from "../assets/veiculos-mobis/kia-bongo-k2500.webp";
 import l200 from "../assets/veiculos-mobis/mitsubishi-l200.webp";
 import {linkWhatsAppPublico} from "../lib/publicoLoja.ts";
+import type {PoliticasLojaPublicas} from "./RodapeLoja.tsx";
 
 /** Vitrine comercial Mobis 2026. Imagens de veículos são referências de LINHA,
  * não evidência de aplicação de uma peça. O catálogo permanece 100% na API pública.
@@ -180,11 +181,17 @@ export function AplicacoesMobisV3({categorias,opcoes,motores,f,onModelo,onMotor,
   </section>;
 }
 
-export function BarraConsultaMobisV3({whatsapp}: {whatsapp:string|null}){
+export function BarraConsultaMobisV3({whatsapp,politicas}: {whatsapp:string|null;politicas?:PoliticasLojaPublicas|null}){
   const url=whatsapp || linkWhatsAppPublico(null,"Olá, quero consultar uma peça na MOBIS Autopeças.");
+  // Estes contatos são exibidos somente quando entregues pela API na política APROVADA.
+  const endereco=politicas?.endereco?.trim()||"Goiás · MOBIS AUTOPEÇAS";
+  const telefone=politicas?.telefone?.trim()||null;
+  const numero=telefone?.replace(/[^0-9+]/g,"")||"";
   return <div className="ms-consulta-rodape"><div className="ms-container">
-    <span>GOIÁS · MOBIS AUTOPEÇAS</span><span>Peças para picapes, vans e utilitários diesel</span>
+    <span>{endereco}</span>
+    {politicas?.cnpj?.trim()&&<span>CNPJ: {politicas.cnpj}</span>}
+    {telefone&&<a href={numero?"tel:"+numero:"#/loja/mobis/empresa"}>Telefone: {telefone}</a>}
     {url&&<a href={url} target="_blank" rel="noopener noreferrer">Atendimento WhatsApp ↗</a>}
-    <a href="#/loja/mobis/empresa">Contato e informações da loja</a>
+    <a href="#/loja/mobis/empresa">Informações da loja</a>
   </div></div>;
 }
