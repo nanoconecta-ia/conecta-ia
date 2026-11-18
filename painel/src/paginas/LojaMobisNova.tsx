@@ -277,7 +277,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
       </section>
       </>}
     </main>
-    <BarraConsultaMobisV3 whatsapp={whatsapp}/>
+    <BarraConsultaMobisV3 whatsapp={whatsapp} politicas={dados?.politicas}/>
     <RodapeMobisEnxuto nome={dados?.loja.nome??"Mobis Autopeças"} whatsapp={dados?.loja.whatsapp}/>
   </div>;
 }
