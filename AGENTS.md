@@ -4,8 +4,8 @@ Este projeto e isolado de NanoShell IA. Este arquivo complementa CLAUDE.md e as 
 
 ## Antes de QUALQUER alteracao tecnica
 1. Ler CLAUDE.md e docs/conector-ia/graphify-mapeamento-agente-senior-20261117.md. Confirmar o repositorio, tenant e objetivo exato.
-2. Se graphify-out/graph.json existir, verificar se representa a revisao atual; atualizar o grafo apos alteracoes de codigo com graphify update . . Nao afirmar cobertura quando o grafo estiver ausente, parcial ou desatualizado.
-3. Se nao houver grafo e a CLI estiver autorizada/disponivel, gerar localmente com graphify extract . --code-only . Nao enviar codigo, documentos, PDF ou credenciais a servicos externos. Nao habilitar backend sem autorizacao.
+2. Se graphify-out/graph.json existir, verificar se representa a revisao atual; atualizar o grafo apos alteracoes de codigo com graphify update . Nao afirmar cobertura quando o grafo estiver ausente, parcial ou desatualizado.
+3. Se nao houver grafo e a CLI estiver autorizada/disponivel, gerar localmente com graphify extract . --code-only Nao enviar codigo, documentos, PDF ou credenciais a servicos externos. Nao habilitar backend sem autorizacao.
 4. Antes de editar, consultar grafo com graphify query "<pergunta de impacto>", graphify explain "<simbolo>" e graphify path "<origem>" "<destino>" quando aplicavel. Se houver MCP Graphify real conectado, usar as ferramentas que esse servidor anuncia em lugar de fingir que o CLI local e o MCP sao a mesma coisa.
 5. Para cada aresta, distinguir EXTRACTED de INFERRED. Nenhum desses marcadores atesta que uma aplicacao automotiva esta homologada. Abrir os arquivos citados e conferir a semantica real, testes, contratos, validacao em banco e efeitos colaterais.
 6. Listar impacto em API, banco/migracoes, auth/RLS, produtos, estoque, aplicacoes, frontend, SEO e testes. Mudanca de comportamento exige teste positivo, negativo e de isolamento por loja.
