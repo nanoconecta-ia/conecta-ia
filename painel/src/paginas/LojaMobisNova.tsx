@@ -1,9 +1,11 @@
-import { Fragment, useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { EmpresaMobis } from "../componentes/EmpresaMobis.tsx";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { IconePeca } from "../componentes/IconePeca.tsx";
 import { RodapeLoja, type PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import { ChatClienteLoja } from "../componentes/ChatClienteLoja.tsx";
+import { FichaFlutuanteMobis } from "../componentes/FichaFlutuanteMobis.tsx";
+import { MONTADORAS_MOBIS } from "../lib/blocosCatalogoMobis.ts";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 import { BlocoMontadorasMobis, BlocoTaxonomiaMobis } from "../componentes/BlocosCatalogoMobis.tsx";
 import { GlassyCarouselMobisV3 } from "../componentes/GlassyCarouselMobisV3.tsx";
@@ -37,10 +39,17 @@ type Resposta = {
   total:number;pagina:number;por_pagina:number;
   layout?:{blocos:string[];intervalo_segundos:number};
   paleta?:unknown;
-  logos_montadoras?:Record<string,string>
+  logos_montadoras?:Record<string,string>;
+  montadoras_aprovadas?:{nome:string;modelos:string[]}[];
 };
-type Filtros={q:string;modelo:string;motor:string;ano:string;categoria:string;pagina:number};
-const VAZIO:Filtros={q:"",modelo:"",motor:"",ano:"",categoria:"",pagina:1};
+type Filtros={q:string;montadora:string;modelo:string;motor:string;anoInicial:string;anoFinal:string;categoria:string;pagina:number};
+const VAZIO:Filtros={q:"",montadora:"",modelo:"",motor:"",anoInicial:"",anoFinal:"",categoria:"",pagina:1};
+const MODELOS_NAVEGACAO:Record<string,string[]>={
+  Hyundai:["HR"],Kia:["Bongo","K2500","K2700"],
+  Mitsubishi:["L200","Pajero"],Ford:["Ranger","Transit"],
+  "Mercedes-Benz":["Sprinter"],Iveco:["Daily"],Fiat:["Ducato"],
+  Peugeot:["Boxer"],"Citroën":["Jumper"],
+};
 /** Atalhos por veículo. Cada modelo usa a imagem do veículo correto, enviada pelo proprietário;
  * a imagem identifica o modelo, não o ano, a versão nem a aplicação. Modelo sem imagem própria
  * não entra aqui (fica em "Outros modelos"): nunca repetir a imagem de um veículo em outro. */
@@ -66,26 +75,37 @@ const para=(id:string)=>document.getElementById(id)?.scrollIntoView({behavior:wi
 const aplicacoesPublicas = (paginas: PaginaAplicacao[] | undefined) =>
   (paginas ?? []).filter(p => p.status === "aprovado");
 
-export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veiculo"|"sistema"|"empresa";valor:string}}) {
+export function LojaMobisNova({slug,contexto,produtoInicial}:{slug:string;contexto?:{tipo:"veiculo"|"sistema"|"empresa";valor:string};produtoInicial?:string}) {
   const [dados,setDados]=useState<Resposta|null>(null);
   const [estado,setEstado]=useState<"carregando"|"ok"|"erro"|"limite"|"naoachada">("carregando");
   const [f,setF]=useState<Filtros>(()=>contexto?.tipo==="veiculo"?{...VAZIO,modelo:contexto.valor}:contexto?.tipo==="sistema"?{...VAZIO,categoria:contexto.valor}:VAZIO);
   const [busca,setBusca]=useState("");
+  const [montadora,setMontadora]=useState("");
   const [modelo,setModelo]=useState(contexto?.tipo==="veiculo"?contexto.valor:"");
   const [motor,setMotor]=useState("");
-  const [ano,setAno]=useState("");
+  const [anoInicial,setAnoInicial]=useState("");
+  const [anoFinal,setAnoFinal]=useState("");
   const [categoria,setCategoria]=useState(contexto?.tipo==="sistema"?contexto.valor:"");
   const [tentativa,setTentativa]=useState(0);
   const [lista,setLista]=useState<{sku:string;nome:string}[]>([]);
   const [aviso,setAviso]=useState("");
   const [abaBusca,setAbaBusca]=useState<"descricao"|"referencia">("descricao");
   const [consultaModelo,setConsultaModelo]=useState<string|null>(null);
+  const [produtoAberto,setProdutoAberto]=useState<string|null>(produtoInicial??null);
+  useEffect(()=>setProdutoAberto(produtoInicial??null),[produtoInicial]);
+  const fecharFicha=useCallback(()=>{
+    setProdutoAberto(null);
+    if(window.location.hash.startsWith("#/p/mobis/"))window.location.hash="#/loja/mobis";
+  },[]);
   useEffect(()=>{
     let ativo=true;setDados(null);setEstado("carregando");
     fetch(SUPABASE_URL+"/functions/v1/loja-publica",{
       method:"POST",headers:{"content-type":"application/json",apikey:SUPABASE_CHAVE_PUBLICAVEL},
-      body:JSON.stringify({slug,q:f.q||undefined,referencia_exata:abaBusca==="referencia" && !!f.q,modelo:f.modelo||undefined,motor:f.motor||undefined,
-        ano:f.ano?Number(f.ano):undefined,categoria:f.categoria||undefined,pagina:f.pagina})
+      body:JSON.stringify({slug,q:f.q||undefined,referencia_exata:abaBusca==="referencia" && !!f.q,
+        montadora:f.montadora||undefined,modelo:f.modelo||undefined,motor:f.motor||undefined,
+        ano_inicial:f.anoInicial?Number(f.anoInicial):undefined,
+        ano_final:f.anoFinal?Number(f.anoFinal):undefined,
+        categoria:f.categoria||undefined,pagina:f.pagina})
     }).then(async r=>{
       if(!ativo)return;
       if(r.status===404){setEstado("naoachada");return;}
@@ -118,7 +138,12 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
   },[dados?.loja.ambiente]);
   const banners=dados?.banners??[];
   const opcoes=useMemo(()=>[...new Set((dados?.veiculos??[]).map(x=>x.modelo))].sort(),[dados?.veiculos]);
-  const motores=useMemo(()=>[...new Set((dados?.veiculos??[]).filter(x=>!modelo||x.modelo===modelo)
+  const modelosDeMontadora=useMemo(()=>{
+    if(!montadora)return [...new Set([...MODELOS_FILTRO,...opcoes])];
+    const aprovados=dados?.montadoras_aprovadas?.find(x=>x.nome===montadora)?.modelos??[];
+    return [...new Set([...(MODELOS_NAVEGACAO[montadora]??[]),...aprovados])].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  },[montadora,opcoes,dados?.montadoras_aprovadas]);
+  const motores=useMemo(()=>[...new Set((dados?.veiculos??[]).filter(x=>!modelo||x.modelo===modelo||x.modelo.toLowerCase().includes(modelo.toLowerCase()))
     .map(x=>x.motor).filter((x):x is string=>!!x))].sort(),[dados?.veiculos,modelo]);
   useEffect(()=>{
     const t=busca.trim();
@@ -128,21 +153,34 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
   },[busca]);
   function aplicar(e?:FormEvent){
     e?.preventDefault();
-    setF({q:busca.trim(),modelo,motor,ano,categoria,pagina:1});
+    if(anoInicial&&anoFinal&&Number(anoInicial)>Number(anoFinal)){
+      setAviso("O ano inicial não pode ser maior que o ano final.");return;
+    }
+    setF({q:busca.trim(),montadora,modelo,motor,anoInicial,anoFinal,categoria,pagina:1});
     para("m2-catalogo");
   }
   function consultarLinha(nome:string){
     setConsultaModelo(nome);
     para("m2-atendimento");
   }
+  function escolherMontadora(nome:string|null){
+    const proxima=nome??"";
+    setAbaBusca("descricao");setMontadora(proxima);setModelo("");setMotor("");
+    setAnoInicial("");setAnoFinal("");setCategoria("");setBusca("");
+    setF({...VAZIO,montadora:proxima});
+    window.setTimeout(()=>para("m2-catalogo"),0);
+  }
   function escolherVeiculoAprovado(valor:string){
-    // O rótulo vem dos modelos de aplicações aprovadas entregues pela API.
-    setAbaBusca("descricao");setModelo(valor);setMotor("");setAno("");setCategoria("");setBusca("");
-    setF({...VAZIO,modelo:valor});window.location.hash="#/loja/mobis/veiculo/"+encodeURIComponent(valor);
+    // Rótulo de navegação não autoriza aplicações. O servidor só filtra vínculos aprovados.
+    const fabricante=dados?.montadoras_aprovadas?.find(x=>x.modelos.includes(valor))?.nome??montadora;
+    setAbaBusca("descricao");setMontadora(fabricante);setModelo(valor);setMotor("");
+    setAnoInicial("");setAnoFinal("");setCategoria("");setBusca("");
+    setF({...VAZIO,montadora:fabricante,modelo:valor});
+    window.setTimeout(()=>para("m2-catalogo"),0);
   }
   function escolherNoTaxonomia(slugNo:string){
     if(!dados?.categorias.some(c=>c.slug===slugNo&&c.total>0))return;
-    setAbaBusca("descricao");setModelo("");setMotor("");setAno("");setCategoria(slugNo);setBusca("");
+    setAbaBusca("descricao");setMontadora("");setModelo("");setMotor("");setAnoInicial("");setAnoFinal("");setCategoria(slugNo);setBusca("");
     setF({...VAZIO,categoria:slugNo});window.location.hash="#/loja/mobis/sistema/"+encodeURIComponent(slugNo);
   }
   function adicionar(p:Produto){
@@ -168,14 +206,17 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
       intervalo={intervaloPublico(dados?.layout?.intervalo_segundos)}
       emTeste={dados?.loja.ambiente!=="producao"}/></div>,
     montadoras: <>
-      <BlocoMontadorasMobis modelos={opcoes} logos={dados?.logos_montadoras} aoSelecionarModelo={escolherVeiculoAprovado} aoConsultar={consultarLinha}/>
+      <BlocoMontadorasMobis modelos={opcoes} logos={dados?.logos_montadoras}
+        modelosPorMontadora={dados?.montadoras_aprovadas}
+        montadoraSelecionada={montadora} aoSelecionarMontadora={escolherMontadora}
+        aoSelecionarModelo={escolherVeiculoAprovado} aoConsultar={consultarLinha}/>
     </>,
     taxonomia: <>
       <BlocoTaxonomiaMobis categorias={dados?.categorias??[]} aoSelecionarCategoria={escolherNoTaxonomia} aoConsultar={consultarLinha}/>
     </>,
     catalogo: <>
       <section id="m2-busca" data-bloco="filtros" className="m2-band m2-busca"><div className="m2-wrap m2-secao">
-        <div className="m2-titulo"><div><span className="m2-kicker">CATÁLOGO ONLINE</span><h2>Encontre sua peça automotiva.</h2><p>Pesquise pelo veículo, sistema ou referência. Mostramos somente anúncios aprovados.</p></div></div>
+        <div className="m2-titulo"><div><span className="m2-kicker">CATÁLOGO ONLINE</span><h2>Encontre sua peça automotiva.</h2><p>Pesquise pelo veículo, sistema ou referência. As fichas de teste são consultas preliminares; aplicações dependem de homologação.</p></div></div>
         <div className="m2-modos-busca" role="tablist" aria-label="Escolher modalidade de pesquisa">
           <button role="tab" aria-selected={abaBusca==="descricao"} type="button" onClick={()=>setAbaBusca("descricao")}>Nome, peça ou sistema</button>
           <button role="tab" aria-selected={abaBusca==="referencia"} type="button" onClick={()=>setAbaBusca("referencia")}>SKU, fabricante ou OEM</button>
@@ -184,13 +225,35 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
         <form className="m2-search" onSubmit={aplicar} role="search" aria-label="Busca detalhada de peças"><label className="sr" htmlFor="m2-pesquisar">Buscar peça, referência ou código SKU</label><span aria-hidden="true">⌕</span>
           <input id="m2-pesquisar" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)} placeholder={abaBusca==="referencia"?"Ex.: 5074, CI000120 ou OEM homologado":"Buscar peça, referência ou código SKU"}/>
           <button type="submit">Buscar peças →</button></form>
-        <form className="m2-filtros" onSubmit={aplicar}><div className="m2-filtros-topo"><div><strong>Filtre pelo seu veículo</strong><small>Use os dados do veículo para refinar a busca</small></div><button type="button" onClick={()=>{setF(VAZIO);setBusca("");setModelo("");setMotor("");setAno("");setCategoria("")}}>Limpar filtros ×</button></div>
+        <form className="m2-filtros" onSubmit={aplicar}><div className="m2-filtros-topo"><div><strong>Filtre pelo seu veículo</strong><small>Use os dados do veículo para refinar a busca</small></div><button type="button" onClick={()=>{setF(VAZIO);setBusca("");setMontadora("");setModelo("");setMotor("");setAnoInicial("");setAnoFinal("");setCategoria("")}}>Limpar filtros ×</button></div>
           <div className="m2-filtros-grid">
-            <label>Modelo<select aria-label="Modelo" value={modelo} onChange={e=>{setModelo(e.target.value);setMotor("")}}>
-              <option value="">Todos os modelos</option>{[...new Set([...MODELOS_FILTRO,...opcoes])].map(x=><option value={x} key={x}>{x}</option>)}</select></label>
-            <label>Motorização<select aria-label="Motorização" value={motor} onChange={e=>setMotor(e.target.value)}><option value="">Todos os motores</option>{motores.map(x=><option key={x}>{x}</option>)}</select></label>
-            <label>Ano<input type="number" min={1980} max={new Date().getFullYear()+1} value={ano} inputMode="numeric" placeholder="Ex.: 2019" onChange={e=>setAno(e.target.value.slice(0,4))}/></label>
-            <label>Sistema / categoria<select aria-label="Sistema / categoria" value={categoria} onChange={e=>setCategoria(e.target.value)}><option value="">Todas as categorias</option>{dados?.categorias.map(x=><option key={x.slug} value={x.slug}>{x.nome}</option>)}</select></label>
+            <label>Montadora<select aria-label="Montadora" value={montadora} onChange={e=>{
+              const valor=e.target.value;setMontadora(valor);setModelo("");setMotor("");
+              setF(a=>({...a,montadora:valor,modelo:"",motor:"",anoInicial:"",anoFinal:"",pagina:1}));
+              setAnoInicial("");setAnoFinal("");
+            }}>
+              <option value="">Todas as montadoras</option>
+              {MONTADORAS_MOBIS.map(x=><option value={x.nome} key={x.nome}>{x.nome}</option>)}
+            </select></label>
+            <label>Modelo<select aria-label="Modelo" value={modelo} onChange={e=>{
+              const valor=e.target.value;setModelo(valor);setMotor("");
+              setF(a=>({...a,montadora,modelo:valor,motor:"",pagina:1}));
+            }}>
+              <option value="">Todos os modelos</option>
+              {modelosDeMontadora.map(x=><option value={x} key={x}>{x}</option>)}
+            </select></label>
+            <label>Motorização<select aria-label="Motorização" value={motor} onChange={e=>{
+              const valor=e.target.value;setMotor(valor);setF(a=>({...a,montadora,modelo,motor:valor,pagina:1}));
+            }}><option value="">Todos os motores</option>{motores.map(x=><option key={x}>{x}</option>)}</select></label>
+            <label>Ano inicial<input aria-label="Ano inicial" type="number" min={1950} max={new Date().getFullYear()+1}
+              value={anoInicial} inputMode="numeric" placeholder="Ex.: 2013"
+              onChange={e=>setAnoInicial(e.target.value.slice(0,4))}/></label>
+            <label>Ano final<input aria-label="Ano final" type="number" min={1950} max={new Date().getFullYear()+1}
+              value={anoFinal} inputMode="numeric" placeholder="Ex.: 2022"
+              onChange={e=>setAnoFinal(e.target.value.slice(0,4))}/></label>
+            <label>Sistema / categoria<select aria-label="Sistema / categoria" value={categoria} onChange={e=>setCategoria(e.target.value)}>
+              <option value="">Todas as categorias</option>{dados?.categorias.map(x=><option key={x.slug} value={x.slug}>{x.nome}</option>)}
+            </select></label>
           </div><div className="m2-filtros-rodape"><p>Não encontrou a peça? Nossa equipe confirma a compatibilidade por modelo e versão.</p><button type="submit">Aplicar filtros</button></div>
         </form>
       </div></section>
@@ -202,37 +265,25 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
         {estado==="ok"&&dados?.produtos.length===0&&<div className="m2-vazio"><div><span className="m2-kicker">ATENDIMENTO MOBIS</span><h3>{Object.entries(f).some(([k,v])=>k!=="pagina"&&Boolean(v))?"Nenhuma peça encontrada com esses filtros.":"Catálogo de peças em preparação."}</h3><p>Nenhum anúncio aprovado foi encontrado. Consulte a equipe com o veículo e a referência; isso não significa falta de estoque na loja física.</p><button onClick={()=>para("m2-atendimento")}>Consultar a equipe ↗</button></div></div>}
         {dados&&dados.produtos.length>0&&<div className="m2-produto-grade">{dados.produtos.map(p=><article key={p.sku} data-sku-fisico={p.sku} className="m2-produto">
           <div className="m2-foto-produto">
-            <a href={p.consulta_previa?(p.whatsapp||"#/loja/mobis"):"#/p/mobis/"+encodeURIComponent(p.sku)} aria-label={(p.consulta_previa?"Consultar peça ":"Ver página do produto ")+p.sku} style={{display:"block",width:"100%"}}>
+            <button type="button" className="m2-produto-abrir" aria-label={"Ver fotos, ficha técnica e aplicações da peça "+p.sku}
+              onClick={()=>setProdutoAberto(p.sku)}>
               {p.imagem?<img src={p.imagem} alt={"Fotografia autorizada do produto físico "+p.sku} loading="lazy"/>:
                 <div aria-label="Ilustração de categoria, não é foto da peça"><IconePeca nome={iconeDaCategoria(p.categoria)} tamanho={72}/></div>}
-            </a>
+            </button>
           </div>
           <div><small>SKU {p.sku}{p.marca?" · "+p.marca:""}</small>
-            {p.referencias_aprovadas?.length ? <div className="m2-ref-aprovadas" aria-label={"Referências aprovadas do SKU "+p.sku}>
+            {p.referencias_aprovadas?.length?<div className="m2-ref-aprovadas" aria-label={"Referências aprovadas do SKU "+p.sku}>
               {p.referencias_aprovadas.map((r,i)=><span key={r.tipo+":"+r.valor+":"+i}>
                 <b>{r.tipo==="fabricante"?"FABRICANTE":r.tipo==="oem"?"OEM":r.tipo.toUpperCase()}</b> {r.valor}
               </span>)}
-            </div>:null}<h3>{aplicacoesPublicas(dados.paginas_aplicacao?.[p.sku]).length
-                ? p.nome
-                : p.nome}</h3>
-            {aplicacoesPublicas(dados.paginas_aplicacao?.[p.sku]).length
-              ? <div style={{margin:"12px 0",borderTop:"1px solid #e0d9ce",paddingTop:12}}>
-                  <p style={{fontWeight:700}}>Páginas por veículo — aplicações aprovadas</p>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {aplicacoesPublicas(dados.paginas_aplicacao?.[p.sku]).map(ap=>
-                      <a key={ap.slug} href={"#/a/"+ap.slug}
-                        style={{display:"inline-block",padding:"8px 11px",border:"1px solid #c25a1b",borderRadius:6,color:"#914a27",fontWeight:700,fontSize:13,textDecoration:"none"}}>
-                        {ap.modelo} · ver ficha ↗
-                      </a>)}
-                  </div>
-                </div>
-              : p.descricao&&<p>{p.descricao.slice(0,105)}</p>}
+            </div>:null}
+            <h3>{p.nome}</h3>
+            {p.descricao&&<p>{p.descricao.slice(0,110)}</p>}
             <strong>{p.consulta_previa?"Preço sob consulta":p.preco==null?"Consulte o preço":brl(p.preco)}</strong>
-            <p>{p.consulta_previa?"Prévia de catálogo · aplicação e disponibilidade precisam ser confirmadas.":"Disponibilidade a confirmar"}</p>
-            <div>{p.consulta_previa
-                ? p.whatsapp&&<a href={p.whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>
-                : <a href={"#/p/mobis/"+encodeURIComponent(p.sku)}>Ver ficha da peça</a>}
-              <button disabled={lista.some(x=>x.sku===p.sku)} onClick={()=>adicionar(p)}>{lista.some(x=>x.sku===p.sku)?"Na lista":"Adicionar à lista +"}</button></div>
+            <p>{p.consulta_previa?"Prévia · aplicações e disponibilidade aguardam confirmação.":"Disponibilidade a confirmar"}</p>
+            <div className="m2-produto-acoes">
+              <button type="button" onClick={()=>setProdutoAberto(p.sku)}>Ver fotos e ficha completa →</button>
+            </div>
           </div>
         </article>)}</div>}
         {dados&&paginas>1&&<nav className="m2-paginas" aria-label="Páginas de produtos"><button disabled={f.pagina<=1} onClick={()=>setF({...f,pagina:f.pagina-1})}>Anterior</button><span>{f.pagina} / {paginas}</span><button disabled={f.pagina>=paginas} onClick={()=>setF({...f,pagina:f.pagina+1})}>Próxima</button></nav>}
@@ -285,5 +336,9 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     </main>
     <RodapeLoja nome={dados?.loja.nome??"Mobis Autopeças"} slug="mobis" whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas} ultima={dados?.produtos.map(x=>x.atualizado_em).filter(Boolean).sort().at(-1)} secoes={{catalogo:"m2-catalogo",veiculo:"m2-montadoras",categoria:"m2-taxonomia"}}/>
     <ChatClienteLoja nome={dados?.loja.nome??"Mobis Autopeças"} whatsapp={dados?.loja.whatsapp}/>
+    {produtoAberto&&<FichaFlutuanteMobis key={produtoAberto} sku={produtoAberto}
+      inicial={dados?.produtos.find(x=>x.sku===produtoAberto)??null}
+      aoFechar={fecharFicha} aoAdicionar={adicionar}
+      jaNaLista={lista.some(x=>x.sku===produtoAberto)}/>}
   </div>;
 }
