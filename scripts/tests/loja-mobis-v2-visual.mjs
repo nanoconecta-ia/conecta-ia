@@ -71,7 +71,7 @@ try{
   await page.locator('#m2-pesquisar').fill('');
 
   // NOVO layout em blocos ligados ao Conecta.IA: um só seletor de marcas e um só de sistemas.
-  for(const bloco of ["cabecalho","banner","montadoras","taxonomia","filtros","produtos","privacidade"]){
+  for(const bloco of ["cabecalho","banner","montadoras","taxonomia","filtros","produtos","rodape"]){
     assert.equal(await page.locator('[data-bloco="'+bloco+'"]').count(),1,"bloco "+bloco+" montado uma vez");
   }
   assert.equal(await page.locator(".m4-montadora-item").count(),9,"nove montadoras para consulta, sem inventar aplicações");
@@ -85,11 +85,11 @@ try{
   const linkConsulta=await page.locator("#m2-atendimento .m2-contato-form a").getAttribute("href");
   assert.match(decodeURIComponent(linkConsulta||""),/Iveco/,"consulta contextual registra a montadora selecionada");
   assert.equal(await page.locator(".gcv3-etiqueta-flash").count(),0,"sem campanha ativa não há oferta Flash fictícia");
-  assert.equal(await page.locator(".v-rodape-privacidade-bloco").count(),1,"política de privacidade é bloco do rodapé");
+  assert.equal(await page.locator(".v-rodape-privacidade-bloco").count(),0,"rodapé enxuto: políticas ficam na página institucional, não no rodapé");
   assert.equal(await page.locator(".v-rodape-privacidade-bloco button").count(),0,"sem política aprovada não publica texto inventado");
   assert.equal(new Set(origens).size,3,"rotacao exibe fotografias distintas por modelo");
   assert.equal(await page.locator(".v-hero").count(),0,"layout antigo não é renderizado");
-  assert.equal(await page.locator(".m2-aviso-teste").isVisible(),true,"loja continua em teste");
+  assert.equal(await page.locator(".m2-aviso-teste").count(),0,"aviso de teste removido da vitrine (pedido do dono)");
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),true,
     "sem rolagem horizontal para "+width+"px");
   assert.deepEqual(errors,[],"sem erros JS de layout");
@@ -100,7 +100,7 @@ try{
   await respostaBusca;
   assert.ok(requests.some(x=>x.q==="D4CB"&&x.slug==="mobis"),"busca conecta à API da loja");
   assert.equal(await page.getByRole("heading",{name:"Indexar e enriquecer"}).count(),0,"não expor painel privado");
-  for(const [nome,id] of [["Catálogo de produtos","m2-catalogo"],["Buscar por veículo","m2-montadoras"],["Categorias de peças","m2-taxonomia"],["Voltar aos produtos ↑","m2-catalogo"]]){
+  for(const [nome,id] of [["Catálogo","m2-catalogo"],["Buscar por veículo","m2-montadoras"],["Peças por sistema","m2-taxonomia"]]){
    const link=page.getByRole("link",{name:nome,exact:true});
    assert.equal(await link.getAttribute("href"),"#/loja/mobis","abrir em outra aba também mantém a loja");
    await link.click();
