@@ -9,19 +9,19 @@ export type PaletaMobis={
   cor_acento:string;
 };
 export const PALETA_MOBIS_PADRAO:PaletaMobis={
-  cor_fundo:"#ffffff",
-  cor_superficie:"#f6f7f8",
+  cor_fundo:"#eaf2f6",
+  cor_superficie:"#ffffff",
   cor_texto:"#1f2327",
-  cor_botao:"#444c54",
-  cor_acento:"#a84916",
+  cor_botao:"#e2181a",
+  cor_acento:"#e2181a",
 };
 export const MODELOS_PALETA_MOBIS=[
- {id:"neve",nome:"Neve e grafite",descricao:"Base clara da Mobis, botões cinza e acento cobre",cores:PALETA_MOBIS_PADRAO},
- {id:"gelo",nome:"Gelo e vinho discreto",descricao:"Branco gelo, grafite e detalhe vermelho só nos acentos",cores:{
-   cor_fundo:"#f6f7f8",cor_superficie:"#ffffff",cor_texto:"#252a31",cor_botao:"#444c54",cor_acento:"#8d3c35",
+ {id:"oficial-ma",nome:"Oficial MA · gelo, grafite e vermelho",descricao:"Padrão de marca 18/11/2026 — vermelho Mobis, fundo gelo e grafite",cores:PALETA_MOBIS_PADRAO},
+ {id:"institucional",nome:"Institucional · aço e grafite",descricao:"Cabeçalho grafite, superfícies aço/gelo, vermelho para detalhes",cores:{
+   cor_fundo:"#ffffff",cor_superficie:"#eaf2f6",cor_texto:"#1f2327",cor_botao:"#1f2327",cor_acento:"#b81013",
  }},
- {id:"grafite",nome:"Neve com grafite intenso",descricao:"Botões escuros e cobre institucional em detalhes",cores:{
-   cor_fundo:"#ffffff",cor_superficie:"#f1f4f6",cor_texto:"#1f2327",cor_botao:"#333b44",cor_acento:"#87390f",
+ {id:"anuncios",nome:"Produtos · branco e vermelho Mobis",descricao:"Cartões claros, textos grafite, ação comercial em vermelho",cores:{
+   cor_fundo:"#ffffff",cor_superficie:"#f6f7f8",cor_texto:"#1f2327",cor_botao:"#e2181a",cor_acento:"#e2181a",
  }},
 ] as const;
 const hex=/^#[0-9a-f]{6}$/;
