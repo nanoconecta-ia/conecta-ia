@@ -61,7 +61,14 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
         {slug:"kia-bongo-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Kia Bongo",modelo:"Kia Bongo K2500",status:"aprovado"},
         {slug:"pendente-nao-publicado",titulo:"Aplicação em estudo",modelo:"Outro",status:"a_confirmar"}]} : {},
       veiculos:[{modelo:"Hyundai HR",motor:"2.5 16V",de:2013,ate:2022},{modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022}],
-      categorias:flags.categoriaSimulada ? [{nome:"Motor",slug:"motor",total:1}] : [], total:flags.previaSimulada?1:0, pagina:1, por_pagina:24
+      categorias:flags.arvoreSimulada ? [{nome:"Motor parcial",slug:"tec-blocos-motores-motor-parcial",total:1}]
+        : flags.categoriaSimulada ? [{nome:"Motor",slug:"motor",total:1}] : [],
+      arvore_categorias:flags.arvoreSimulada ? [
+        {nome:"Motor",slug:"motor",pai_slug:null,nivel:0,total:1},
+        {nome:"Blocos e motores completos",slug:"blocos-motores",pai_slug:"motor",nivel:1,total:1},
+        {nome:"Motor parcial",slug:"tec-blocos-motores-motor-parcial",pai_slug:"blocos-motores",nivel:2,total:1},
+      ] : [],
+      total:flags.previaSimulada?1:0, pagina:1, por_pagina:24
     })});
   });
   await page.goto(base + "#/loja/mobis");
@@ -208,6 +215,30 @@ try {
     resultados.push({separacao:"raiz pública = loja; conecta.html exige sessão em início, Nano e catálogo"});
   }
   {
+    const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,arvoreSimulada:true},390);
+    assert.equal(await page.getByRole("tab",{name:"Pesquisa de veículos"}).getAttribute("aria-selected"),"true");
+    await page.getByRole("tab",{name:"Pesquisa de produtos"}).click();
+    assert.equal(await page.getByLabel("Montadora",{exact:true}).count(),0,
+      "modo produto oculta filtros de veículo");
+    await page.getByRole("tab",{name:"Pesquisa de veículos"}).click();
+    assert.equal(await page.getByLabel("Montadora",{exact:true}).count(),1,
+      "modo veículo exibe a cascata montadora/modelo/motor/ano");
+    const raiz=page.locator(".m4-taxonomia-item[data-taxonomia-no='motor']");
+    assert.equal(await raiz.count(),1,"somente categorias pai com filhos publicados");
+    await raiz.click();
+    assert.equal(await page.locator(".m4-taxonomia-item[data-taxonomia-no='blocos-motores']").count(),1,
+      "filho real Blocos e motores completos");
+    await consultar(page,()=>page.getByRole("button",{name:"Ver todas as peças deste grupo"}).click(),
+      q=>q.categoria==="motor");
+    await page.locator(".m4-taxonomia-item[data-taxonomia-no='blocos-motores']").click();
+    assert.equal(await page.locator(".m4-taxonomia-item[data-taxonomia-no='tec-blocos-motores-motor-parcial']").count(),1,
+      "terceiro nível da árvore é Motor parcial");
+    await consultar(page,()=>page.locator(".m4-taxonomia-item[data-taxonomia-no='tec-blocos-motores-motor-parcial']").click(),
+      q=>q.categoria==="tec-blocos-motores-motor-parcial");
+    assert.deepEqual(erros,[],"hierarquia não produz erros na interface");
+    await context.close();
+  }
+  {
     const {context,page,erros} = await abrir({ambiente:"teste",venda_habilitada:false},390,false,true);
     assert.equal(await page.locator(".gcv3").count(),1,"banner Flash gerado apenas a partir da API");
     assert.equal(await page.locator(".gcv3-midia").getAttribute("href"),"#/p/mobis/CI003000",
@@ -225,6 +256,15 @@ try {
       "página contém o QR do WhatsApp Business oficial");
     assert.equal(await page.locator(".produto-publico-mobis-qr-area img").evaluate(img=>img.complete && img.naturalWidth>0),true,
       "arquivo do QR oficial abre sem erro");
+    assert.equal(await page.getByRole("tab",{name:"Descrição",exact:true}).count(),1,
+      "ficha MOBIS dispõe das três abas funcionais da descrição");
+    await page.getByRole("tab",{name:"Especificações técnicas",exact:true}).click();
+    assert.equal(await page.locator(".produto-publico-mobis-especificacoes dd").first().textContent(),"CI003000");
+    await page.getByRole("tab",{name:"Utilização em veículos",exact:true}).click();
+    assert.equal(await page.locator(".produto-publico-mobis-aplicacoes-lista li").count(),2,
+      "aba utiliza apenas duas aplicações aprovadas, sem inventar veículos");
+    await page.getByRole("tab",{name:"Descrição",exact:true}).click();
+    assert.equal(await page.locator(".produto-publico-mobis-conteudo-abas").getByText("Descrição complementar a confirmar",{exact:false}).count(),1);
     assert.equal(await page.locator(".produto-publico-mobis-sistema").count(),7,
       "sete sistemas visuais da MOBIS, sem implicar compatibilidade");
     assert.equal(await page.locator(".produto-publico-mobis-acessar").getAttribute("href"),
