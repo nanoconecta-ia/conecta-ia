@@ -29,10 +29,10 @@ export function EmpresaMobis({whatsapp,politicas}:{
       <h2>Como consultar uma peça</h2>
       <ul>
         <li>Informe montadora, modelo, ano, motor e o código da peça, se tiver.</li>
-        <li>A compatibilidade é confirmada por chassi e versão antes da venda.</li>
+        <li>A compatibilidade é confirmada pela equipe, com modelo, ano e versão, antes da venda.</li>
         <li>Preço, disponibilidade e prazo são confirmados pela equipe.</li>
         <li>A lista de peças é só uma consulta: não reserva estoque e não cria pedido.</li>
-        <li>Não envie CPF, chassi completo, senha ou dados bancários.</li>
+        <li>Não envie CPF, senha ou dados bancários.</li>
       </ul>
       {whatsapp&&<a className="m2-empresa-cta" href={whatsapp} target="_blank" rel="noopener noreferrer">Consultar a equipe no WhatsApp ↗</a>}
     </div>}
