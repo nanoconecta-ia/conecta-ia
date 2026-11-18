@@ -21,7 +21,7 @@ import "./blocos-catalogo-mobis.css";
 import "./mobis-paleta-dinamica.css";
 import "./mobis-premium-v3.css";
 import "./mobis-identidade-2026.css";
-const logoMobis = "/marcas/mobis-logo-metalico-2026.webp";
+const logoMobis = "/marcas/mobis-logo-metalico-2026.webp?v=20261118-m2";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra

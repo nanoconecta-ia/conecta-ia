@@ -7,7 +7,7 @@ import "./produto-publico-mobis.css";
 import "./mobis-identidade-2026.css";
 import { periodo, type FichaProduto as Produto, type FichaVeiculo } from "../lib/ficha.ts";
 type ProdutoMobis=Produto & {categoria_caminho?:{nome:string;slug:string}[];referencias_aprovadas?:{tipo:string;valor:string}[];galeria_aprovada?:string[]};
-const logoMobis = "/marcas/mobis-logo-metalico-2026.webp";
+const logoMobis = "/marcas/mobis-logo-metalico-2026.webp?v=20261118-m2";
 
 /** QR enviado pelo próprio WhatsApp Business MOBIS em 18/11/2026.
  * O botão usa o link de produto validado pela API quando existir; caso contrário, a URL institucional.
