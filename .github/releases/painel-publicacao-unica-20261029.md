@@ -121,3 +121,14 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Seleção por modelos sem aplicação homologada dirige a atendimento; nunca inventa equivalência nem produto físico. Não atualiza preços, estoque, promoções, Bling, Supabase, fiscal, DNS ou anúncios pagos.
 - Manter `ambiente=teste`, `venda_habilitada=false`, `noindex`, atendimento WhatsApp sem checkout. A publicação não aprova automaticamente imagens de produtos ou ofertas.
 - Verificar GitHub Pages pelo `version.json`, Playwright em larguras 360/390/412/1280 e navegador real no domínio oficial antes de declarar conclusão.
+
+
+## Release autorizado — MOBIS Glassy V3 e painel WCAG (17/11/2026)
+
+- Autorização explícita do proprietário nesta conversa, após o merge do PR #427: "SIM PODE", em resposta à oferta de publicar a nova versão no domínio MOBIS.
+- PR #427 integrado na `main` em `e6d0b1c3d6af27a908e19862aa178be2dfa24f2f`; os 10 workflows do PR concluídos com sucesso no head `b5f29b6cc8d98c155d1c997818c21eb7f02a9595`; os testes de push da `main` também foram aprovados.
+- Escopo: republicar **somente o frontend estático** de `painel/` via workflow existente `Painel (GitHub Pages)`, com `VITE_PAIR_ATIVO=1`, `VITE_BACKUP_ATIVO=1` e `VITE_BANNERS_ATIVO=1`, mantendo todas as políticas e controles existentes.
+- Inclui vitrine Glassy Carousel V3, navegação e layouts da MOBIS, painel legível e contrastes WCAG; integra tratamento de Flash Banner em rascunho, sem ativação comercial automática.
+- **Não** alterar Supabase, Edge Functions, migrações SQL, domínio/DNS/SSL, Bling, produtos, anúncios, preço, estoque, notas, checkout, pagamentos ou `lojas.ambiente`. Loja permanece em TESTE.
+- Verificação obrigatória pós-deploy: build, job de deploy, `version.json` com commit do release, Playwright da vitrine e do Conecta.IA, além de acesso real ao host oficial quando tecnicamente verificável.
+- Domínio principal e www seguem com `dns_verificado_em` e `ssl_verificado_em` nulos na tabela `loja_dominios`: frontend publicado NÃO equivale a homologação de DNS/SSL ou liberação comercial.
