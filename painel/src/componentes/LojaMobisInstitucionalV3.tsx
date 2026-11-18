@@ -1,4 +1,5 @@
-import type { FormEvent, ReactNode } from "react";
+import {useState, type FormEvent, type ReactNode} from "react";
+import {MONTADORAS_MOBIS, modelosAprovadosDaMontadora, type MontadoraMobis} from "../lib/blocosCatalogoMobis.ts";
 import logo from "../assets/marcas/mobis-mstyle-v3-logo.png";
 import hr from "../assets/veiculos-mobis/hyundai-hr.webp";
 import bongo from "../assets/veiculos-mobis/kia-bongo-k2500.webp";
@@ -133,6 +134,10 @@ type AplicacoesProps={
   extra?:ReactNode;
 };
 export function AplicacoesMobisV3({categorias,opcoes,motores,f,onModelo,onMotor,onAno,onCategoria,onAplicar,onAprovado,onConsultar,ir,extra}:AplicacoesProps){
+  const [montadora,setMontadora]=useState<MontadoraMobis|""|"Toyota">("");
+  const modelosDaMontadora=montadora==="Toyota"
+    ? opcoes.filter(x=>/hilux|toyota/i.test(x))
+    : montadora?modelosAprovadosDaMontadora(montadora,opcoes):opcoes;
   const verificacao=(nome:string)=>opcoes.find(op=>normalizar(op)===normalizar(nome)||
    normalizar(op).includes(normalizar(nome))||normalizar(nome).includes(normalizar(op)));
   return <section id="ms-aplicacoes" className="ms-aplicacoes">
@@ -142,8 +147,13 @@ export function AplicacoesMobisV3({categorias,opcoes,motores,f,onModelo,onMotor,
         <aside className="ms-encontrar" aria-label="Encontrar a peça certa">
           <h3>⌕ Encontre a peça certa</h3>
           <p>Selecione o veículo para pesquisar peças aprovadas.</p>
-          <form onSubmit={onAplicar}>
-            <label>Modelo<select value={f.modelo} onChange={e=>onModelo(e.target.value)}><option value="">Selecione o modelo</option>{[...new Set(opcoes)].sort().map(x=><option key={x}>{x}</option>)}</select></label>
+          <form onSubmit={e=>{if(montadora&&!f.modelo){e.preventDefault();onConsultar(montadora);return;}onAplicar(e);}}>
+            <label>Montadora<select value={montadora} onChange={e=>{setMontadora(e.target.value as MontadoraMobis|""|"Toyota");onModelo("");}}>
+              <option value="">Selecione a montadora</option>
+              {MONTADORAS_MOBIS.map(m=><option value={m.nome} key={m.nome}>{m.nome}</option>)}
+              <option value="Toyota">Toyota (sob consulta)</option>
+            </select></label>
+            <label>Modelo<select value={f.modelo} onChange={e=>onModelo(e.target.value)}><option value="">Selecione o modelo</option>{[...new Set(modelosDaMontadora)].sort().map(x=><option key={x}>{x}</option>)}</select></label>
             <label>Motorização<select value={f.motor} onChange={e=>onMotor(e.target.value)}><option value="">Selecione o motor</option>{motores.map(x=><option key={x}>{x}</option>)}</select></label>
             <label>Ano / geração<input type="number" min={1980} max={new Date().getFullYear()+1} value={f.ano} placeholder="Ex.: 2019" onChange={e=>onAno(e.target.value.slice(0,4))}/></label>
             <label>Sistema / categoria<select value={f.categoria} onChange={e=>onCategoria(e.target.value)}><option value="">Todos os sistemas</option>{categorias.filter(x=>x.total>0).map(x=><option key={x.slug} value={x.slug}>{x.nome}</option>)}</select></label>
