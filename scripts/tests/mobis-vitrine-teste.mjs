@@ -45,7 +45,7 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
       paleta:flags.paleta??null,
       produtos:flags.previaSimulada && !(pedido.montadora||pedido.modelo)
         ? [{sku:"CI003696",nome:"Motor parcial D4CB",marca:"TRIM-GO",preco:null,em_estoque:null,
-            imagem:null,descricao:null,consulta_previa:true,whatsapp:"https://wa.me/5562991654515"}]
+            imagem:null,descricao:null,consulta_previa:true,whatsapp:"https://wa.me/5562991654515?text=Consulta%20CI003696"}]
         : cenarioFlash && pedido.sku==="CI003000"
         ? [{sku:"CI003000",nome:"Motor parcial D4CB",marca:"TRIM-GO",preco:null,em_estoque:false,
             imagem:null,descricao:null,whatsapp:null}] : [],
