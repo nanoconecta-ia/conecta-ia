@@ -228,8 +228,8 @@ try {
     await raiz.click();
     assert.equal(await page.locator(".m4-taxonomia-item[data-taxonomia-no='blocos-motores']").count(),1,
       "filho real Blocos e motores completos");
-    await consultar(page,()=>page.getByRole("button",{name:"Ver todas as peças deste grupo"}).click(),
-      q=>q.categoria==="motor");
+    assert.equal(await page.getByRole("button",{name:"Ver todas as peças deste grupo"}).count(),1,
+      "grupo pai pode consultar todos os produtos descendentes");
     await page.locator(".m4-taxonomia-item[data-taxonomia-no='blocos-motores']").click();
     assert.equal(await page.locator(".m4-taxonomia-item[data-taxonomia-no='tec-blocos-motores-motor-parcial']").count(),1,
       "terceiro nível da árvore é Motor parcial");
