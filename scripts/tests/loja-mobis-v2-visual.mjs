@@ -149,7 +149,7 @@ try{
    await page.getByRole("button",{name:"Aplicar filtros",exact:true}).click();await resposta;
    assert.ok(requests.some(x=>x.slug==="mobis"&&x.modelo==="HR"&&x.motor==="D4CB"&&x.ano===2019&&x.categoria==="motor"));
    await page.getByRole("button",{name:"Adicionar à lista +",exact:true}).click();
-   const link=page.getByRole("link",{name:"Consultar no WhatsApp",exact:false});
+   const link=page.locator(".m2-catalogo").getByRole("link",{name:"Consultar no WhatsApp",exact:false});
    assert.match(await link.getAttribute("href"),/TESTE-SINTETICO/);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow no domínio "+width);
    assert.deepEqual(errors,[]);
