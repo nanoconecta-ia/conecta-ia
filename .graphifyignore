@@ -1,0 +1,26 @@
+# Graphify: excluir segredos, dados de operador e artefatos gerados.
+# Manter fontes em painel/, supabase/, scripts/, web/, extensao/ e .github/.
+.env
+.env.*
+**/.env
+**/.env.*
+**/*.pem
+**/*.p12
+**/*.pfx
+**/*.key
+**/credentials.json
+**/service-account.json
+**/service-account-*.json
+node_modules/
+**/node_modules/
+dist/
+build/
+.next/
+coverage/
+dist-funcoes/
+graphify-out/
+artifacts/
+evidencias-agente/
+evidencias-chat/
+evidencias-issue-166/
+evidencias-temas/
