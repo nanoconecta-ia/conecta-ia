@@ -219,6 +219,17 @@ try {
     assert.equal(await page.getByRole("dialog").count(),0,"não exibe janela intermediária");
     await page.locator(".gcv3-cta").click();
     await page.locator(".produto-publico-mobis-aplicacoes").waitFor();
+    assert.equal(await page.locator(".produto-publico-mobis-layout").count(),1,
+      "ficha do SKU usa layout MOBIS em gelo com QR separado");
+    assert.equal(await page.locator(".produto-publico-mobis-qr-area img").count(),1,
+      "página contém o QR do WhatsApp Business oficial");
+    assert.equal(await page.locator(".produto-publico-mobis-qr-area img").evaluate(img=>img.complete && img.naturalWidth>0),true,
+      "arquivo do QR oficial abre sem erro");
+    assert.equal(await page.locator(".produto-publico-mobis-sistema").count(),7,
+      "sete sistemas visuais da MOBIS, sem implicar compatibilidade");
+    assert.equal(await page.locator(".produto-publico-mobis-acessar").getAttribute("href"),
+      "https://wa.me/mobisautopecas?src=qr","contato institucional quando não há link específico do produto");
+
     assert.equal(new URL(page.url()).hash,"#/p/mobis/CI003000","navegação direta à página canônica");
     assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a").count(),2,
       "página física tem os destinos individuais por veículo aprovados");
