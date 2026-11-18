@@ -253,7 +253,7 @@ try {
   }
   {
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false},390);
-    await page.locator(".m4-menu-empresa").click();
+    await page.locator(".ms-navegacao a[href=\"#/loja/mobis/empresa\"]").click();
     await page.locator("#m2-empresa").waitFor();
     assert.equal(new URL(page.url()).hash,"#/loja/mobis/empresa","empresa tem página dedicada");
     assert.equal(await page.locator(".m2-catalogo").count(),0,"empresa não duplica catálogo");
