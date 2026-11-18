@@ -22,7 +22,7 @@ export function EmpresaMobis({whatsapp,politicas}:{
     {aba==="sobre"&&<div role="tabpanel" id="m2-painel-sobre" aria-labelledby="m2-aba-sobre" className="m2-empresa-painel">
       <h2>Autopeças para quem trabalha com utilitários</h2>
       <p>Atendimento especializado para localizar a peça pelo modelo, motorização e referência. A compatibilidade é conferida antes da venda.</p>
-      <p>A MOBIS AUTOPEÇAS é independente e não integra montadoras ou concessionárias. As marcas de veículos são usadas para identificar aplicações, sem representar vínculo ou endosso.</p>
+      <p>MOBIS AUTOPEÇAS é uma loja brasileira independente de autopeças. As marcas e modelos de veículos mencionados indicam aplicações das peças, não vínculo oficial, participação societária, endosso ou credenciamento por montadoras.</p>
       {whatsapp&&<a className="m2-empresa-cta" href={whatsapp} target="_blank" rel="noopener noreferrer">Falar com a Mobis no WhatsApp ↗</a>}
     </div>}
     {aba==="consulta"&&<div role="tabpanel" id="m2-painel-consulta" aria-labelledby="m2-aba-consulta" className="m2-empresa-painel">
