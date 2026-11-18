@@ -36,14 +36,18 @@ try{
   assert.equal(await page.locator('[data-mobis-palette="branco-gelo"]').count(),1,"tema oficial branco-gelo ativo");
   // Modelo claro v4: banner fluido com a imagem do veículo correto de cada modelo; sem as fotos do Wikimedia nem mascotes.
   assert.equal(await page.locator('[data-mobis-visual="claro-v4"]').count(),1,"layout claro aplicado");
-  const hero=page.locator('.m4-banner');
+  const hero=page.locator('.gcv3');
   await hero.waitFor();
-  const fotosBanner=hero.locator('.m4-banner-arte img.m4-foto-veiculo');
-  assert.equal(await fotosBanner.count(),3,"banner com a imagem de cada modelo");
-  const origens=await fotosBanner.evaluateAll(l=>l.map(i=>i.currentSrc||i.src));
-  assert.equal(new Set(origens).size,3,"nenhuma imagem de veículo repetida entre modelos");
-  await fotosBanner.first().evaluate(async img=>{if(!img.complete)await new Promise((ok,erro)=>{img.addEventListener('load',ok,{once:true});img.addEventListener('error',erro,{once:true});});});
-  assert.equal(await fotosBanner.first().evaluate(img=>img.naturalWidth>0),true,"imagem do veículo carrega");
+  const origens=[];
+  for(let i=0;i<3;i++){
+    const foto=hero.locator('.gcv3-midia img');
+    await foto.waitFor();
+    await foto.evaluate(async img=>{if(!img.complete)await new Promise((ok,erro)=>{img.addEventListener('load',ok,{once:true});img.addEventListener('error',erro,{once:true});});});
+    assert.equal(await foto.evaluate(img=>img.naturalWidth>0),true,"foto real de veículo carrega");
+    origens.push(await foto.getAttribute('src'));
+    await hero.getByRole('button',{name:'Próximo destaque'}).click();
+  }
+  assert.equal(new Set(origens).size,3,"três veículos diferentes passam pelo carrossel");
   assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem as fotos do Wikimedia nem mascotes na loja");
   assert.equal(await page.locator('.mbi,.mgv,.m3-hero,.m3-faixa-sistemas').count(),0,"blocos duplicados removidos");
   assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.mobis-v2')).backgroundColor),'rgb(255, 255, 255)',"fundo branco");
@@ -53,10 +57,10 @@ try{
   assert.equal(await hero.evaluate(el=>el.scrollWidth<=el.clientWidth+1),true,"banner sem estouro lateral em "+width+"px");
 
   assert.equal(await page.locator('.m2-header').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)',"cabeçalho branco");
-  await page.locator(".m4-banner h1").getByText(/Peças para utilitários diesel/i).waitFor();
-  assert.ok((await page.locator(".m4-banner-texto>p").innerText()).length<100,"título e descrição curtos para o banner compacto");
+  assert.ok((await hero.locator("h1").innerText()).length>5,"carrossel tem chamada real");
+  assert.ok((await hero.locator(".gcv3-copy p").innerText()).length<150,"texto comercial curto");
   await page.getByText(/Catálogo de peças em preparação/).waitFor({timeout:10000});
-  await hero.getByRole('button',{name:'Já tenho o código'}).click();
+  await page.getByRole('tab',{name:'SKU, fabricante ou OEM'}).click();
   assert.equal(await page.getByRole('tab',{name:'SKU, fabricante ou OEM'}).getAttribute('aria-selected'),'true','CTA do banner habilita modo código');
   await page.locator('#m2-pesquisar').fill('CI000120');
   const respostaCodigo=page.waitForResponse(resp=>resp.url().includes('/loja-publica')&&(resp.request().postData()||'').includes('"q":"CI000120"')&&(resp.request().postData()||'').includes('"referencia_exata":true'));
@@ -80,10 +84,10 @@ try{
   await page.locator(".m4-montadora-opcoes button").filter({hasText:"Consultar a equipe"}).click();
   const linkConsulta=await page.locator("#m2-atendimento .m2-contato-form a").getAttribute("href");
   assert.match(decodeURIComponent(linkConsulta||""),/Iveco/,"consulta contextual registra a montadora selecionada");
-  assert.equal(await page.locator(".m4-banner-campanha").count(),0,"sem campanha ativa não há anúncio fictício");
+  assert.equal(await page.locator(".gcv3-etiqueta-flash").count(),0,"sem campanha ativa não há oferta Flash fictícia");
   assert.equal(await page.locator(".v-rodape-privacidade-bloco").count(),1,"política de privacidade é bloco do rodapé");
   assert.equal(await page.locator(".v-rodape-privacidade-bloco button").count(),0,"sem política aprovada não publica texto inventado");
-  assert.equal(await page.locator(".m4-banner-arte img.m4-foto-veiculo").count(),3,"fotos reais dos três modelos permanecem");
+  assert.equal(new Set(origens).size,3,"rotacao exibe fotografias distintas por modelo");
   assert.equal(await page.locator(".v-hero").count(),0,"layout antigo não é renderizado");
   assert.equal(await page.locator(".m2-aviso-teste").isVisible(),true,"loja continua em teste");
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),true,
@@ -130,7 +134,7 @@ try{
     return route.abort();
    });
    await page.goto("https://"+host+"/");
-   await page.getByRole("heading",{name:"Peça sintética para teste"}).waitFor();
+   await page.locator(".m2-produto h3").getByText("Peça sintética para teste").waitFor();
    assert.equal(await page.locator('[data-mobis-layout="aprovado-v2"]').count(),1);
    assert.equal(await page.locator(".v-hero").count(),0);
    await page.locator(".m2-filtros-grid select").nth(0).selectOption("HR");

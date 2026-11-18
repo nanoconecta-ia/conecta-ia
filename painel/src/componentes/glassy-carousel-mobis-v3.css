@@ -1,0 +1,30 @@
+/* Glassy Carousel V3 · MOBIS. Leve, responsivo, com paleta de neve/grafite/vinho discreto. */
+.mobis-v2.m4 .gcv3{background:linear-gradient(120deg,#f1f4f8,#fff 55%,#f7f2f3);padding:clamp(15px,3vw,32px) 0;border-bottom:1px solid #d6dce3;color:#273340}
+.mobis-v2.m4 .gcv3 *{box-sizing:border-box}
+.mobis-v2.m4 .gcv3-topo{display:flex;justify-content:space-between;gap:12px;font-size:.79rem;font-weight:800;letter-spacing:.06em;color:#4a5360;margin-bottom:11px}
+.mobis-v2.m4 .gcv3-topo b{color:#8d3c45;padding:0 5px}
+.mobis-v2.m4 .gcv3-painel{position:relative;display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);align-items:center;gap:clamp(18px,3vw,45px);min-height:340px;padding:clamp(20px,3.4vw,44px);border-radius:24px;border:1px solid #fff;background:linear-gradient(135deg,#ffffffed,#f9fafce0);box-shadow:0 18px 52px #2733401b,inset 0 1px #fff;backdrop-filter:blur(15px);overflow:hidden}
+.mobis-v2.m4 .gcv3-painel:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,#303e4e 0 62%,#8d3c45 62% 86%,#d1d5da 86%)}
+.mobis-v2.m4 .gcv3-copy{align-self:center;display:flex;flex-direction:column;align-items:flex-start;gap:11px;min-width:0;animation:gcv3-entrar .28s ease both}
+.mobis-v2.m4 .gcv3-etiqueta{display:inline-flex;max-width:100%;padding:7px 11px;border-radius:99px;background:#e9edf1;color:#313f4d;font-size:.76rem;font-weight:850;letter-spacing:.06em}
+.mobis-v2.m4 .gcv3-etiqueta-flash{background:#f2e6e8;color:#7f3340}
+.mobis-v2.m4 .gcv3-copy h1{font-size:clamp(1.65rem,1.2rem + 2vw,2.9rem);line-height:1.13;letter-spacing:-.025em;font-weight:850;margin:0;color:#202c37;max-width:21ch;overflow-wrap:anywhere}
+.mobis-v2.m4 .gcv3-copy p{font-size:clamp(.94rem,.88rem + .2vw,1.06rem);line-height:1.52;color:#4e5864;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mobis-v2.m4 .gcv3-sku,.mobis-v2.m4 .gcv3-nota{font-size:.81rem;color:#4e5864}
+.mobis-v2.m4 .gcv3-preco{font-size:clamp(1.2rem,1.1rem + 1vw,1.7rem);font-weight:850;color:#202c37}
+.mobis-v2.m4 .gcv3-cta{display:inline-flex;align-items:center;justify-content:center;gap:15px;min-height:48px;padding:12px 19px;background:#303c49;color:white!important;border-radius:11px;text-decoration:none;font-weight:800}
+.mobis-v2.m4 .gcv3-cta:hover{background:#222d38}
+.mobis-v2.m4 .gcv3-midia{display:flex;align-items:center;justify-content:center;position:relative;min-width:0;min-height:240px;height:100%;max-height:370px;padding:14px;border-radius:20px;background:radial-gradient(ellipse at 50% 44%,#fff 10%,#e5e9ee 100%);border:1px solid #d9e1e8;box-shadow:inset 0 1px #fff;overflow:hidden}
+.mobis-v2.m4 .gcv3-midia img{max-height:310px;width:100%;object-fit:contain;filter:drop-shadow(0 12px 14px #27334024)}
+.mobis-v2.m4 .gcv3-placeholder{display:grid;place-items:center;gap:10px;color:#66727e;text-align:center}
+.mobis-v2.m4 .gcv3-placeholder span{font-size:.86rem}
+.mobis-v2.m4 .gcv3-navegacao{position:absolute;right:clamp(20px,3.4vw,44px);bottom:14px;display:flex;gap:8px}
+.mobis-v2.m4 .gcv3-navegacao button{width:42px;height:42px;min-height:42px;padding:0;border:1px solid #c1cbd4;border-radius:11px;background:#ffffffed;color:#283441;font-size:1.7rem;cursor:pointer}
+.mobis-v2.m4 .gcv3-paginacao{display:flex;justify-content:center;align-items:center;gap:9px;margin-top:12px}
+.mobis-v2.m4 .gcv3-paginacao .gcv3-ponto{width:12px;height:12px;min-height:12px;padding:0;border-radius:50%;border:1px solid #9caab8;background:#dce3ea;cursor:pointer}
+.mobis-v2.m4 .gcv3-paginacao .gcv3-ponto.ativo{background:#8d3c45;border-color:#8d3c45;width:27px;border-radius:9px}
+.mobis-v2.m4 .gcv3-pausa{min-height:36px;padding:6px 12px;border:1px solid #c6d0d9;background:#fff;border-radius:9px;color:#273340;font-size:.82rem}
+.mobis-v2.m4 .gcv3-modo-teste{font-size:.81rem;color:#56616b;margin:8px 0 0}
+@keyframes gcv3-entrar{from{opacity:.65;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:700px){.mobis-v2.m4 .gcv3-painel{grid-template-columns:1fr;min-height:0;padding:18px;gap:13px;border-radius:18px}.mobis-v2.m4 .gcv3-midia{min-height:180px;max-height:270px;order:-1}.mobis-v2.m4 .gcv3-midia img{max-height:210px}.mobis-v2.m4 .gcv3-copy h1{font-size:clamp(1.5rem,5vw,2rem)}.mobis-v2.m4 .gcv3-navegacao{right:14px;top:14px;bottom:auto}.mobis-v2.m4 .gcv3-navegacao button{width:38px;height:38px;min-height:38px}}
+@media(prefers-reduced-motion:reduce){.mobis-v2.m4 .gcv3 *{animation:none!important;transition:none!important}}

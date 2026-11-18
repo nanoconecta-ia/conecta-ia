@@ -1,9 +1,13 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import type { Loja } from "../lib/dados.ts";
 import { AtivoAprovado } from "./AtivoAprovado.tsx";
 import { Icone } from "./Icone.tsx";
 import { VERSAO_LOCAL, rotuloVersao } from "../lib/versao.ts";
 import "../workspace-aprovado.css";
+import "../painel-paleta-legivel.css";
+import "../contraste-wcag-pr427.css";
+import { PERFIS, lerPerfil, gravarPerfil, aplicarPerfil } from "../lib/perfilCor.ts";
+import { PREFERENCIAS, lerPreferencia, armazemLocal, aplicarTema, gravarPreferencia, type Preferencia } from "../lib/tema.ts";
 import marcaMobis from "../assets/mobis-identidade-aprovada.jpg";
 
 const PRINCIPAIS=[
@@ -18,7 +22,15 @@ export function PainelAprovado({loja,caminho,menu,children,menuMovel,recolhido,a
 }){
  const titulo=caminho==="/"?"Início":caminho==="/estudio"||caminho==="/assistente"?"Estúdio do Nano":caminho==="/demonstracao-cadastro"?"Demonstração do cadastro":menu.find(x=>x[0]===caminho)?.[1]??"Área de trabalho";
  const nano=caminho==="/estudio"||caminho==="/assistente";
- return <div className={`conecta-aprovado ${menuMovel?"ap-menu-aberto":""} ${recolhido?"ap-recolhido":""}`} data-conecta-layout="aprovado-v2" data-area={nano?"nano":"painel"} style={{"--res-esq":res.esq+"px","--res-dir":res.dir+"px"} as CSSProperties}>
+ const [perfil,setPerfil]=useState(()=>lerPerfil(armazemLocal()));
+ const [tema,setTema]=useState<Preferencia>(()=>lerPreferencia(armazemLocal()));
+ const [leitura,setLeitura]=useState<"confortavel"|"ampliada">(()=>{
+  try{return localStorage.getItem("conecta:leitura")==="ampliada"?"ampliada":"confortavel";}catch{return "confortavel";}
+ });
+ const mudarPerfil=(id:string)=>{setPerfil(id);gravarPerfil(armazemLocal(),id);aplicarPerfil(id);};
+ const mudarTema=(id:Preferencia)=>{setTema(id);gravarPreferencia(armazemLocal(),id);aplicarTema(id);};
+ const mudarLeitura=(id:"confortavel"|"ampliada")=>{setLeitura(id);try{localStorage.setItem("conecta:leitura",id);}catch{/* preferência local facultativa */}};
+ return <div className={`conecta-aprovado ${menuMovel?"ap-menu-aberto":""} ${recolhido?"ap-recolhido":""}`} data-conecta-layout="aprovado-v2" data-area={nano?"nano":"painel"} data-leitura={leitura} style={{"--res-esq":res.esq+"px","--res-dir":res.dir+"px"} as CSSProperties}>
   {menuMovel&&<button className="ap-menu-fundo" aria-label="Fechar menu de navegação" onClick={aoMenu}/>}
   <aside className="ap-sidebar" id="menu-principal" aria-label="Menu principal">
    <a className="ap-identidade" href="#/"><strong>Conecta<span>.IA</span></strong><small>ENRIQUECIMENTO DE CATÁLOGOS</small></a>
@@ -30,7 +42,22 @@ export function PainelAprovado({loja,caminho,menu,children,menuMovel,recolhido,a
    <div className="ap-sidebar-fim"><div className="ap-protecao"><strong>Origem física preservada</strong><span>Bling · estoque e dados fiscais<br/>Conecta.IA · aplicações e revisão</span></div><button onClick={aoSair} className="ap-perfil"><span className="ap-avatar">{loja?.nome.slice(0,2).toUpperCase()??"IA"}</span><span><strong>{loja?.nome??"Minha conta"}</strong><small>Sair da conta</small></span></button><button className="ap-recolher" onClick={aoRecolher} aria-label={recolhido?"Expandir menu":"Recolher menu"}><Icone nome="recolher" tamanho={16}/></button></div>
   </aside>
   <div className="ap-corpo">
-   <header className="ap-topbar"><button className="ap-menu-abrir" aria-label={menuMovel?"Fechar navegação":"Abrir navegação"} aria-expanded={menuMovel} onClick={aoMenu}><Icone nome="menu" tamanho={20}/></button><div className="ap-caminho">Conecta.IA <span>/</span> <b>{titulo}</b></div><button className="ap-busca" onClick={aoBusca} aria-label="Abrir paleta de comandos"><Icone nome="busca" tamanho={16}/><span>Buscar módulos e ações</span><kbd>Ctrl K</kbd></button><span className="ap-ambiente">{loja?.ambiente==="producao"?"Ambiente interno":"Ambiente de teste"}</span><button className="ap-estudio-abrir" onClick={aoAgente}><AtivoAprovado nome="nano" tamanho={28}/><span>{nano?"Nano.IA":"Estúdio Nano"}</span></button></header>
+   <header className="ap-topbar"><button className="ap-menu-abrir" aria-label={menuMovel?"Fechar navegação":"Abrir navegação"} aria-expanded={menuMovel} onClick={aoMenu}><Icone nome="menu" tamanho={20}/></button><div className="ap-caminho">Conecta.IA <span>/</span> <b>{titulo}</b></div><button className="ap-busca" onClick={aoBusca} aria-label="Abrir paleta de comandos"><Icone nome="busca" tamanho={16}/><span>Buscar módulos e ações</span><kbd>Ctrl K</kbd></button><details className="ap-preferencias">
+    <summary aria-label="Personalizar cores e tamanho de letra">◉ <span>Aparência</span></summary>
+    <div className="ap-preferencias-painel">
+     <strong>Personalizar painel</strong>
+     <label>Paleta de cores<select aria-label="Paleta do Conecta.IA" value={perfil} onChange={e=>mudarPerfil(e.target.value)}>
+      {PERFIS.map(p=><option value={p.id} key={p.id}>{p.rotulo}</option>)}
+     </select></label>
+     <label>Modo de contraste<select aria-label="Modo de contraste do Conecta.IA" value={tema} onChange={e=>mudarTema(e.target.value as Preferencia)}>
+      {PREFERENCIAS.map(p=><option value={p.valor} key={p.valor}>{p.rotulo}</option>)}
+     </select></label>
+     <label>Tamanho da leitura<select aria-label="Tamanho de leitura do painel" value={leitura} onChange={e=>mudarLeitura(e.target.value as "confortavel"|"ampliada")}>
+      <option value="confortavel">Confortável</option><option value="ampliada">Ampliado</option>
+     </select></label>
+     <small>As preferências ficam neste navegador e não modificam as cores da loja.</small>
+    </div>
+   </details><span className="ap-ambiente">{loja?.ambiente==="producao"?"Ambiente interno":"Ambiente de teste"}</span><button className="ap-estudio-abrir" onClick={aoAgente}><AtivoAprovado nome="nano" tamanho={28}/><span>{nano?"Nano.IA":"Estúdio Nano"}</span></button></header>
    <main className="ap-content">{children}</main>
    <footer className="ap-ledger" role="status" aria-label="Estado do painel"><span>CONECTA.IA · {loja?.nome??"Ambiente autenticado"}</span><span>Interface aprovada · v{rotuloVersao(VERSAO_LOCAL)}</span></footer>
   </div>

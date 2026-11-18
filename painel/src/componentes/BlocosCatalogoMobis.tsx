@@ -6,9 +6,10 @@ import { MONTADORAS_MOBIS, modelosAprovadosDaMontadora, nosPublicaveis, type Cat
  * Nomes de montadoras são caminhos de consulta, não homologação, vínculo ou disponibilidade.
  */
 export function BlocoMontadorasMobis({
-  modelos, aoSelecionarModelo, aoConsultar,
+  modelos, logos, aoSelecionarModelo, aoConsultar,
 }:{
   modelos:readonly string[];
+  logos?:Readonly<Record<string,string>>;
   aoSelecionarModelo:(modelo:string)=>void;
   aoConsultar:(montadora:string)=>void;
 }){
@@ -25,6 +26,7 @@ export function BlocoMontadorasMobis({
         const total=modelosAprovadosDaMontadora(m.nome,modelos).length;
         return <button type="button" key={m.nome} aria-pressed={ativa===m.nome}
           className={"m4-montadora-item"+(ativa===m.nome?" selecionada":"")} onClick={()=>setAtiva(a=>a===m.nome?null:m.nome)}>
+          {logos?.[m.nome]&&<img className="m4-logo-montadora" src={logos[m.nome]} alt={"Logotipo de "+m.nome} loading="lazy"/>}
           <strong>{m.nome}</strong><small>{total?total+" modelo(s) no catálogo":"Atendimento sob consulta"}</small>
         </button>;
       })}

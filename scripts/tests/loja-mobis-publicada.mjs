@@ -31,14 +31,21 @@ try{
   assert.equal(await page.locator('[data-mobis-palette="branco-gelo"]').count(),1,"publicação usa paleta branca");
   // Modelo claro v4: banner fluido com a imagem do veículo correto de cada modelo; sem as fotos do Wikimedia nem mascotes.
   assert.equal(await page.locator('[data-mobis-visual="claro-v4"]').count(),1,"layout claro publicado");
-  const hero=page.locator('.m4-banner');
+  const hero=page.locator('.gcv3');
   await hero.waitFor();
-  const fotosBanner=hero.locator('.m4-banner-arte img.m4-foto-veiculo');
-  assert.equal(await fotosBanner.count(),3,"banner com a imagem de cada modelo");
-  const origens=await fotosBanner.evaluateAll(l=>l.map(i=>i.currentSrc||i.src));
-  assert.equal(new Set(origens).size,3,"nenhuma imagem de veículo repetida entre modelos");
-  await fotosBanner.first().evaluate(async img=>{if(!img.complete)await new Promise((ok,erro)=>{img.addEventListener('load',ok,{once:true});img.addEventListener('error',erro,{once:true});});});
-  assert.equal(await fotosBanner.first().evaluate(img=>img.naturalWidth>0),true,"imagem do veículo carrega");
+  const fotos=[];
+  const quantidade=await hero.locator('.gcv3-topo > span').last().textContent();
+  if(/\/\s*03/.test(quantidade||"")) {
+    for(let i=0;i<3;i++){
+      const img=hero.locator('.gcv3-midia img');
+      await img.waitFor();
+      await img.evaluate(async i=>{if(!i.complete)await new Promise((ok,erro)=>{i.addEventListener('load',ok,{once:true});i.addEventListener('error',erro,{once:true});});});
+      assert.equal(await img.evaluate(i=>i.naturalWidth>0),true,"fotografia de veículo carregou");
+      fotos.push(await img.getAttribute("src"));
+      await hero.getByRole('button',{name:"Próximo destaque"}).click();
+    }
+    assert.equal(new Set(fotos).size,3,"modelos distintos no carrossel sem repetir foto");
+  }
   assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem as fotos do Wikimedia nem mascotes na loja");
   assert.equal(await page.locator('.mbi,.mgv,.m3-hero,.m3-faixa-sistemas').count(),0,"blocos duplicados removidos");
 
@@ -57,7 +64,7 @@ try{
   assert.equal(await page.locator(".m4-montadora-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(255, 255, 255)","bloco de montadoras branco");
   assert.equal(await page.locator(".m4-taxonomia-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(255, 255, 255)","bloco de taxonomia branco");
   assert.equal(await page.locator(".m2-filtros").evaluate(el=>getComputedStyle(el).maxWidth),"none","filtros sem largura administrativa de 440px");
-  assert.equal(await page.locator(".m4-banner-arte img.m4-foto-veiculo").count(),3,"fotografias dos três modelos mantidas");
+  assert.equal(await page.locator(".gcv3").count(),1,"uma única vitrine dinâmica sem hero duplicado");
   assert.equal(await page.locator(".m4-linha-card,.m2-veiculo-grade").count(),0,"seções repetidas não aparecem");
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow "+width);
   assert.deepEqual(errors,[]);

@@ -1,0 +1,241 @@
+/* PR #427 | Conecta.IA: WCAG 2.1 AA no painel administrativo.
+ * Escopo: Integracoes, Assistente, Design e componentes compartilhados.
+ * Este arquivo NAO altera a vitrine publica .mobis-v2.
+ * Contraste de texto normal >= 4.5:1 e bordas de campo >= 3:1.
+ * Importar APOS painel-paleta-legivel.css em PainelAprovado.tsx.
+ */
+
+html[data-tema="escuro"] .conecta-aprovado-root {
+  --fundo: #111d29;
+  --cartao: #1c2b3b;
+  --realce: #293e50;
+  --texto: #f5f9ff;
+  --suave: #d3e1ee;
+  --marca: #ffd1dc;
+  --marca-forte: #ffd1dc;
+  --marca-texto: #111d29;
+  --borda: #7892a7;
+  --borda-forte: #a8bece;
+  --grafite: #0b1623;
+  --grafite-2: #182737;
+  --verde: #86efac;
+  --verde-texto: #0b1826;
+  --ok: #86efac;
+  --atencao: #fde68a;
+  --erro: #fda4af;
+  --ciano: #bde8fa;
+  --roxo: #d8c5ff;
+  background: var(--fundo);
+  color: var(--texto);
+  color-scheme: dark;
+}
+
+html[data-tema="noturno"] .conecta-aprovado-root {
+  --fundo: #0b111b;
+  --cartao: #151f2c;
+  --realce: #213044;
+  --texto: #f3f6fc;
+  --suave: #dce4ee;
+  --marca: #ffc7a9;
+  --marca-forte: #ffc7a9;
+  --marca-texto: #0b111b;
+  --borda: #8198ac;
+  --borda-forte: #a8bdd0;
+  --grafite: #080d15;
+  --grafite-2: #141f2c;
+  --verde: #86efac;
+  --verde-texto: #0b111b;
+  --ok: #86efac;
+  --atencao: #fde68a;
+  --erro: #fda4af;
+  --ciano: #c2dbff;
+  --roxo: #dac8ff;
+  background: var(--fundo);
+  color: var(--texto);
+  color-scheme: dark;
+}
+
+html[data-tema="contraste"] .conecta-aprovado-root {
+  --fundo: #000000;
+  --cartao: #000000;
+  --realce: #101010;
+  --texto: #ffffff;
+  --suave: #ffffff;
+  --marca: #ffe066;
+  --marca-forte: #ffe066;
+  --marca-texto: #000000;
+  --borda: #ffffff;
+  --borda-forte: #ffffff;
+  --grafite: #000000;
+  --grafite-2: #000000;
+  --verde: #80ffa6;
+  --verde-texto: #000000;
+  --ok: #80ffa6;
+  --atencao: #ffe066;
+  --erro: #ffadad;
+  --ciano: #ffffff;
+  --roxo: #e0c8ff;
+  background: #000000;
+  color: #ffffff;
+  color-scheme: dark;
+}
+
+/* Tokens herdados e superfícies explícitas: sem texto claro sobre fundos creme.
+ * A maioria dos elementos herda --texto; classes semânticas herdam --suave.
+ */
+html[data-tema="escuro"] .conecta-aprovado-root,
+html[data-tema="noturno"] .conecta-aprovado-root,
+html[data-tema="contraste"] .conecta-aprovado-root {
+  & .ap-content,
+  & .ap-workspace,
+  & .ap-work-panel,
+  & .ap-chat-panel,
+  & .ap-chat-panel .chat-tela,
+  & .ap-chat-panel .agente,
+  & .ap-chat-panel .chat-compositor,
+  & .ap-nano-acoes,
+  & :is(.cartao, .v-cartao, .indicador, .janela) {
+    background: var(--cartao);
+    color: var(--texto);
+  }
+
+  & .ap-content { background: var(--fundo); }
+  & .ap-topbar {
+    background: var(--cartao);
+    color: var(--texto);
+    border-bottom-color: var(--borda-forte);
+  }
+  & .ap-ledger {
+    background: var(--fundo);
+    color: var(--suave);
+    font-size: 13px;
+  }
+  & .ap-ledger span { color: inherit; }
+  & .ap-caminho,
+  & .ap-caminho > span,
+  & .ap-caminho > b {
+    color: var(--texto);
+  }
+  & .ap-heading .ap-eyebrow,
+  & .ap-work-content .ap-eyebrow,
+  & .ap-identidade.ap-identidade-clara strong span {
+    color: var(--marca);
+  }
+
+  & :is(p, label, small, figcaption, .suave, .rotulo, .ap-heading p) {
+    color: var(--suave);
+  }
+  & :is(h1, h2, h3, h4, strong) { color: var(--texto); }
+  & .ap-topbar .ap-estudio-abrir,
+  & .ap-topbar .ap-busca {
+    color: var(--texto);
+  }
+  & a:not(.ap-identidade):not(.ap-loja-link) {
+    color: var(--marca-forte);
+  }
+
+  /* Busca, editoração e integração: bordas visíveis e texto legível. */
+  & :is(input, select, textarea) {
+    background: var(--realce);
+    color: var(--texto);
+    border-color: var(--borda-forte);
+    opacity: 1;
+  }
+  & :is(input, textarea)::placeholder { color: var(--suave); opacity: 1; }
+
+  & .guia-empresa-link,
+  & .guia-empresa-link--sec {
+    background: var(--cartao);
+    border-color: var(--borda-forte);
+    color: var(--texto);
+  }
+  & .guia-empresa-aviso { color: var(--suave); }
+
+  & .selo {
+    background: var(--realce);
+    color: var(--texto);
+    border-color: var(--borda-forte);
+    opacity: 1;
+  }
+  & .selo.ok { color: var(--ok); border-color: var(--ok); }
+  & .selo.atencao { color: var(--atencao); border-color: var(--atencao); }
+  & .selo.erro { color: var(--erro); border-color: var(--erro); }
+
+  /* Estúdio: abas e status tinham fundo creme hardcoded no modo escuro. */
+  & .ap-work-tabs,
+  & .ap-chat-caption,
+  & .ap-mobile-panes {
+    background: var(--realce);
+    color: var(--texto);
+    border-color: var(--borda-forte);
+  }
+  & .ap-work-tabs button,
+  & .ap-mobile-panes button {
+    background: var(--realce) !important;
+    color: var(--texto);
+    border-color: var(--borda-forte);
+  }
+  & .ap-work-tabs button[aria-pressed="true"],
+  & .ap-mobile-panes button[aria-pressed="true"] {
+    background: var(--cartao) !important;
+    color: var(--marca);
+    border-color: var(--marca);
+  }
+  & .ap-chat-caption > span,
+  & .ap-chat-panel .estado,
+  & .ap-work-header small { color: var(--suave); }
+
+  & .ap-chat-panel .nano-motor-status,
+  & .ap-studio-layout .nano-motor-status {
+    background: var(--realce);
+    color: var(--texto);
+    border-color: var(--borda-forte);
+  }
+  & .nano-motor-texto { color: var(--texto); }
+  & .ap-chat-panel :is(.msg, .bolha) {
+    background: var(--realce);
+    color: var(--texto);
+  }
+  & .ap-chat-panel :is(.msg.eu, .bolha.eu) {
+    background: var(--cartao);
+    color: var(--texto);
+    border: 1px solid var(--borda-forte);
+  }
+  & .ap-chat-panel .compositor-grade textarea {
+    background: var(--realce);
+    color: var(--texto);
+    border-color: var(--borda-forte);
+  }
+
+  /* Mensagens de estados e etiquetas legíveis no painel. */
+  & .ap-notice,
+  & .ap-tag,
+  & .ap-tag-ok {
+    background: var(--realce);
+    color: var(--texto);
+    border-color: var(--borda-forte);
+  }
+  & .ap-notice a { color: var(--marca); }
+  & .ap-cores code,
+  & .ap-estados figcaption { color: var(--suave); }
+  & .ap-preferencias-painel {
+    background: var(--cartao);
+    color: var(--texto);
+  }
+}
+
+/* Botão de ação: texto escuro sobre marca CLARA nos 3 modos. */
+html:is([data-tema="escuro"], [data-tema="noturno"], [data-tema="contraste"])
+  .conecta-aprovado-root .ap-primary {
+  background: var(--marca) !important;
+  color: var(--marca-texto) !important;
+  border-color: var(--marca);
+}
+
+@media (max-width: 780px) {
+  html:is([data-tema="escuro"], [data-tema="noturno"], [data-tema="contraste"])
+    .conecta-aprovado-root .ap-mobile-panes {
+    background: var(--realce);
+    border-color: var(--borda-forte);
+  }
+}

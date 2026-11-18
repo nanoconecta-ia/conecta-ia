@@ -1,6 +1,6 @@
 // Vitrine pública da loja (verify_jwt = false). POST { slug } ou { host } (domínio do cliente) e opcionais { q, pagina }.
 // A loja é resolvida NO SERVIDOR: por domínio verificado (DNS e SSL) ou pelo slug. Loja desconhecida/inativa => 404 genérico.
-// Só devolve produtos PUBLICADOS e campos públicos (sem custo, fornecedor ou id do ERP).
+// Devolve produtos publicados; somente no piloto Mobis em teste admite prévia explicitamente marcada, sem preço nem venda.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.ts";
 import { modoCliente } from "../_shared/loja/publicacao.ts";
@@ -43,9 +43,9 @@ Deno.serve(async (req) => {
   if (host && loja.ambiente !== "producao") return json({ erro: "Loja ainda em preparação." }, 404);
   const fase = loja.ambiente === "producao" ? "producao" : "teste";
   const faseCliente = modoCliente(fase, loja.modo_venda);
-  // Política Mobis: rascunhos, aplicações a confirmar e exibicao_teste
-  // são somente do PAINEL autenticado. A API pública não os devolve.
-  // Isso vale também quando a loja permanece em ambiente de teste.
+  // Prévia controlada: somente Mobis no link de teste por slug (nunca por domínio)
+  // e somente SKUs selecionados pelo lojista com exibicao_teste=true.
+  // A prévia não é indexável, não anuncia preço/estoque nem homologa aplicações.
 
 
   // Página filha comercial por veículo: a aplicação aponta para o MESMO produto
@@ -104,6 +104,7 @@ Deno.serve(async (req) => {
     .eq("loja_id", loja.id).eq("publicado", true);
   const { data: pub } = await consultaPublicados.limit(5000);
   const idsPublicados = (pub ?? []).map((p: { id: string }) => p.id);
+  const modoPreviaCatalogo = loja.slug === "mobis" && fase === "teste" && !host && idsPublicados.length === 0;
   let apls: Aplicacao[] = [];
   if (idsPublicados.length) {
     let { data, error: eApl } = await sb.from("produto_aplicacoes").select("produto_id, modelo, motorizacao, ano_inicial, ano_final, modelos(categoria)").eq("loja_id", loja.id).eq("status", "aprovado").limit(5000);
@@ -121,7 +122,9 @@ Deno.serve(async (req) => {
 
   let consulta = sb.from("produtos").select("nome, sku, preco, estoque, marca, descricao_curta, sincronizado_em, publicado, exibicao_teste, taxonomia_no_id", { count: "exact" })
     .eq("loja_id", loja.id);
-  consulta = consulta.eq("publicado", true);
+  consulta = modoPreviaCatalogo
+    ? consulta.eq("exibicao_teste", true).eq("situacao", "A")
+    : consulta.eq("publicado", true);
   consulta = consulta.order("nome").range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1);
   // Espelho de códigos: apenas vínculos realmente aprovados podem levar a um
   // produto; candidato ou pendente não serve como atalho de correspondência.
@@ -216,12 +219,12 @@ Deno.serve(async (req) => {
     [l.sku, categoriaPorNo.get(l.taxonomia_no_id ?? "") ?? null]));
   const produtos = montarVitrine((linhas ?? []).map((l: Record<string, unknown>) => ({
     ...l,
-    preco: l.preco,
-    estoque: l.estoque,
+    preco: modoPreviaCatalogo ? null : l.preco,
+    estoque: modoPreviaCatalogo ? null : l.estoque,
     imagem: imagens.get(String(l.sku)) ?? null,
   }) as never), loja.whatsapp, urlDoProduto)
     .map((produto) => ({
-      ...produto, consulta_previa: false,
+      ...produto, consulta_previa: modoPreviaCatalogo,
       categoria: categoriaPorSku.get(produto.sku) ?? null,
       referencias_aprovadas: codigosAprovadosPorSku.get(produto.sku) ?? [],
     }));
@@ -255,6 +258,26 @@ Deno.serve(async (req) => {
   const fonteTema = (FONTES as readonly string[]).includes(tm?.fonte) ? (tm!.fonte as Fonte) : "inter";
   const cores = tm ? { primaria: tm.cor_primaria, destaque: tm.cor_destaque, bloco: tm.cor_bloco } : PERFIS.azul_conecta;
   const tema = { variaveis: variaveisCss(cores, fonteTema), logo_url: tm?.logo_url ?? null, icone_url: tm?.icone_url ?? null };
+  // Logotipos de montadoras: nunca substituir por marcas artificiais.
+  // Só expor imagem liberada individualmente e com origem/direito registrados.
+  const logos_montadoras:Record<string,string>={};
+  if(loja.slug==="mobis"){
+    const {data:midias}=await sb.from("veiculo_midias")
+      .select("montadora_id,logo_png_url,logo_direito_uso")
+      .eq("loja_id",loja.id).eq("logo_aprovado",true).eq("status","aprovado")
+      .not("logo_png_url","is",null).not("logo_direito_uso","is",null).limit(40);
+    const aprovadas=(midias??[]).filter(x=>typeof x.logo_direito_uso==="string"&&x.logo_direito_uso.trim().length>3
+      &&typeof x.logo_png_url==="string"&&/^https:\/\//.test(x.logo_png_url));
+    const ids=[...new Set(aprovadas.map(x=>x.montadora_id).filter(Boolean))];
+    if(ids.length){
+      const {data:nomes}=await sb.from("montadoras").select("id,nome").in("id",ids);
+      const porId=new Map((nomes??[]).map(x=>[x.id,x.nome]));
+      for(const imagem of aprovadas){
+        const nome=porId.get(imagem.montadora_id);
+        if(nome&&!logos_montadoras[nome])logos_montadoras[nome]=imagem.logo_png_url;
+      }
+    }
+  }
   // Rodapé público: somente informações institucionais e políticas formalmente aprovadas.
   // Ausência, erro ou rascunho => null; jamais divulgar contatos ou textos não revisados.
   const { data: politicasAprovadas } = await sb.from("loja_politicas")
@@ -296,5 +319,5 @@ Deno.serve(async (req) => {
         paleta=Object.fromEntries(campos.map(c=>[c,publicavel[c]]));
     }
   }
-  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, layout, paleta, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
+  return json({ loja: { nome: loja.nome, slug: loja.slug, ...faseCliente, whatsapp: /^55\d{10,11}$/.test(String(loja.whatsapp ?? "").replace(/\D/g, "")) ? String(loja.whatsapp).replace(/\D/g, "") : null }, tema, layout, paleta, logos_montadoras, politicas: politicasAprovadas ?? null, produtos, paginas_aplicacao: paginasPorSku, banners, total: count ?? produtos.length, pagina, por_pagina: POR_PAGINA, veiculos: opcoesVeiculo(apls), tipos: tiposDoVeiculo(apls), ficha, categorias, filtros: filtros ?? null });
 });

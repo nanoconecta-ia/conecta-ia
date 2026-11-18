@@ -132,6 +132,11 @@ export function App() {
 
   const filhoMobis = caminho.match(/^\/a\/([a-z0-9-]{4,110})$/);
   if (filhoMobis) return <PaginaAplicacaoMobis slug={filhoMobis[1]} />;
+  const detalheMobis = caminho.match(/^\/loja\/mobis\/(veiculo|sistema)\/([^/?#]{1,100})$/);
+  if (detalheMobis) return <LojaMobisNova key={caminho} slug="mobis"
+    contexto={{tipo: detalheMobis[1] as "veiculo"|"sistema", valor:decodeURIComponent(detalheMobis[2])}} />;
+  if (caminho === "/loja/mobis/empresa") return <LojaMobisNova key={caminho} slug="mobis"
+    contexto={{tipo:"empresa",valor:"mobis"}} />;
   const lojaSlug = caminho.match(/^\/loja\/([a-z0-9-]{2,63})$/);
   if (lojaSlug) return lojaSlug[1] === "mobis" ? <LojaMobisNova slug="mobis" /> : <Loja slug={lojaSlug[1]} />;
   if (hostCliente && !caminho.startsWith("/p/")) return lojaMobisPorHost(hostCliente) ? <LojaMobisNova slug="mobis" /> : <Loja host={hostCliente} />;

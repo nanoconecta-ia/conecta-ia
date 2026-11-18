@@ -43,7 +43,10 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
       loja:{nome:"Mobis Autopeças",slug:"mobis",whatsapp:"5562991654515",...flags},
       layout:{blocos:flags.layoutOrdem??["banner","montadoras","taxonomia","catalogo","empresa"],intervalo_segundos:flags.layoutIntervalo??6},
       paleta:flags.paleta??null,
-      produtos:cenarioFlash && pedido.sku==="CI003000"
+      produtos:flags.previaSimulada
+        ? [{sku:"CI003696",nome:"Motor parcial D4CB",marca:"TRIM-GO",preco:null,em_estoque:null,
+            imagem:null,descricao:null,consulta_previa:true,whatsapp:"https://wa.me/5562991654515"}]
+        : cenarioFlash && pedido.sku==="CI003000"
         ? [{sku:"CI003000",nome:"Motor parcial D4CB",marca:"TRIM-GO",preco:null,em_estoque:false,
             imagem:null,descricao:null,whatsapp:null}] : [],
       banners:cenarioFlash ? [{sku:"CI003000",nome:"Motor parcial D4CB",preco:null,chamada:"Motor HR / Bongo 2.5 16V",
@@ -58,11 +61,12 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
         {slug:"kia-bongo-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Kia Bongo",modelo:"Kia Bongo K2500",status:"aprovado"},
         {slug:"pendente-nao-publicado",titulo:"Aplicação em estudo",modelo:"Outro",status:"a_confirmar"}]} : {},
       veiculos:[{modelo:"Hyundai HR",motor:"2.5 16V",de:2013,ate:2022},{modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022}],
-      categorias:flags.categoriaSimulada ? [{nome:"Motor",slug:"motor",total:1}] : [], total:0, pagina:1, por_pagina:24
+      categorias:flags.categoriaSimulada ? [{nome:"Motor",slug:"motor",total:1}] : [], total:flags.previaSimulada?1:0, pagina:1, por_pagina:24
     })});
   });
   await page.goto(base + "#/loja/mobis");
-  await page.locator(".m2-catalogo").getByText(erro ? "Não foi possível carregar o catálogo." : "Catálogo de peças em preparação.", {exact:true}).waitFor();
+  if(flags.previaSimulada) await page.locator(".m2-produto").waitFor();
+  else await page.locator(".m2-catalogo").getByText(erro ? "Não foi possível carregar o catálogo." : "Catálogo de peças em preparação.", {exact:true}).waitFor();
   return {context,page,consultas,erros};
 }
 async function consultar(page, acao, criterio) {
@@ -85,7 +89,7 @@ try {
     assert.match(decodeURIComponent(link||""),/Iveco/,"consulta inclui a linha selecionada na mensagem");
     assert.equal(consultas.length,1,"a seleção comercial não consulta nem grava produto");
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow");
-    assert.equal(await page.locator(".m2-aviso-teste").evaluate(el=>el.getBoundingClientRect().top < document.querySelector(".m2-hero").getBoundingClientRect().top),true);
+    assert.equal(await page.locator(".m2-aviso-teste").evaluate(el=>el.getBoundingClientRect().top < document.querySelector(".gcv3").getBoundingClientRect().top),true);
     assert.deepEqual(erros,[]);
     if (width===1280 || width===390) {
       await page.locator(".m4-bloco-montadoras").screenshot({path:dir+`montadoras-CONSULTA-SIMULADO-${width}.png`});
@@ -102,8 +106,8 @@ try {
       layoutOrdem:["catalogo","banner","montadoras","taxonomia","empresa"]},390);
     const ordem=await page.locator("main [data-bloco]").evaluateAll(els=>
       els.map(el=>el.getAttribute("data-bloco")).filter(x=>["banner","montadoras","taxonomia","filtros","produtos"].includes(x)));
-    assert.deepEqual(ordem,["filtros","produtos","banner","montadoras","taxonomia"],
-      "ordem do layout aprovado controla a sequência real no DOM");
+    assert.deepEqual(ordem,["banner","filtros","produtos","montadoras","taxonomia"],
+      "prioridade comercial V3: carrossel, catálogo, montadoras, sistemas");
     assert.deepEqual(erros,[],"sem exceções JS ao montar a ordem personalizada");
     await context.close();
   }
@@ -159,8 +163,8 @@ try {
     await consultar(page, () => page.getByRole("search",{name:"Busca rápida de peças"}).getByRole("button",{name:"Buscar peças",exact:false}).click(), q => q.q === "bomba");
     assert.equal(consultas.at(-1).q,"bomba");
     assert.equal(consultas.at(-1).categoria,"motor");
-    await page.getByRole("button",{name:"Já tenho o código",exact:false}).click();
-    assert.equal(await page.locator("#m2-pesquisar").evaluate(el=>el===document.activeElement),true);
+    await page.getByRole("tab",{name:"SKU, fabricante ou OEM"}).click();
+    assert.equal(await page.getByRole("tab",{name:"SKU, fabricante ou OEM"}).getAttribute("aria-selected"),"true");
     await context.close();
   }
   {
@@ -191,15 +195,15 @@ try {
   }
   {
     const {context,page,erros} = await abrir({ambiente:"teste",venda_habilitada:false},390,false,true);
-    assert.equal(await page.locator(".m4-flash-campanha").count(),1,"banner Flash gerado apenas a partir da API");
-    assert.equal(await page.locator(".m4-flash-midia").getAttribute("href"),"#/p/mobis/CI003000",
+    assert.equal(await page.locator(".gcv3").count(),1,"banner Flash gerado apenas a partir da API");
+    assert.equal(await page.locator(".gcv3-midia").getAttribute("href"),"#/p/mobis/CI003000",
       "imagem da campanha abre diretamente a página SKU");
-    assert.equal(await page.locator(".m4-flash-acao").getAttribute("href"),"#/p/mobis/CI003000",
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/p/mobis/CI003000",
       "CTA do carrossel abre diretamente a página SKU");
-    assert.equal(await page.locator(".m4-flash-titulo-link").getAttribute("href"),"#/p/mobis/CI003000",
+    assert.equal(await page.locator(".gcv3-titulo-link").getAttribute("href"),"#/p/mobis/CI003000",
       "título da campanha abre diretamente a página SKU");
     assert.equal(await page.getByRole("dialog").count(),0,"não exibe janela intermediária");
-    await page.locator(".m4-flash-acao").click();
+    await page.locator(".gcv3-cta").click();
     await page.locator(".produto-publico-mobis-aplicacoes").waitFor();
     assert.equal(new URL(page.url()).hash,"#/p/mobis/CI003000","navegação direta à página canônica");
     assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a").count(),2,
@@ -212,12 +216,30 @@ try {
   }
   {
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,multiplosBanners:true},390,false,true);
-    assert.equal(await page.getByRole("button",{name:"Próximo banner"}).count(),1,"carrossel com duas campanhas");
-    assert.equal(await page.locator(".m4-flash-acao").getAttribute("href"),"#/p/mobis/CI003000");
-    await page.getByRole("button",{name:"Próximo banner"}).click();
-    assert.equal(await page.locator(".m4-flash-acao").getAttribute("href"),"#/p/mobis/EXEMPLO-2",
+    assert.equal(await page.getByRole("button",{name:"Próximo destaque"}).count(),1,"carrossel com duas campanhas");
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/p/mobis/CI003000");
+    await page.getByRole("button",{name:"Próximo destaque"}).click();
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/p/mobis/EXEMPLO-2",
       "cada campanha na mesma faixa aponta ao seu próprio SKU");
-    assert.equal(await page.locator(".m2-flash-controles").getByText("2/2").count(),1);
+    assert.match(await page.locator(".gcv3-topo > span").last().textContent()||"",/02\s*\/\s*02/);
+    assert.deepEqual(erros,[]);
+    await context.close();
+  }
+  {
+    const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,previaSimulada:true},390);
+    assert.equal(await page.locator(".m2-produto").count(),1,"prévia sinalizada mostra produto de consulta");
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"https://wa.me/5562991654515");
+    assert.equal(await page.locator(".gcv3-preco").count(),0,"prévia não mostra preço");
+    assert.equal(await page.locator("#m2-empresa").count(),0,"institucional não ocupa home");
+    assert.deepEqual(erros,[]);
+    await context.close();
+  }
+  {
+    const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false},390);
+    await page.locator(".m4-menu-empresa").click();
+    await page.locator("#m2-empresa").waitFor();
+    assert.equal(new URL(page.url()).hash,"#/loja/mobis/empresa","empresa tem página dedicada");
+    assert.equal(await page.locator(".m2-catalogo").count(),0,"empresa não duplica catálogo");
     assert.deepEqual(erros,[]);
     await context.close();
   }
