@@ -230,6 +230,7 @@ Deno.serve(async (req) => {
   // imagem principal aprovada de cada produto da página
   const skus = (linhas ?? []).map((l: { sku: string | null }) => l.sku).filter(Boolean) as string[];
   const imagens = new Map<string, string>();
+  const galeriaAprovada = new Map<string,string[]>();
   const codigosAprovadosPorSku = new Map<string, { tipo: string; valor: string }[]>();
   if (skus.length) {
     const { data: ids } = await sb.from("produtos").select("id, sku").eq("loja_id", loja.id).in("sku", skus);
@@ -249,7 +250,17 @@ Deno.serve(async (req) => {
     }
     // view da migração 20261019000005: só imagem aprovada, sem retirada e com direitos de uso confirmados (nunca url_original)
     const { data: imgs } = await sb.from("imagens_publicaveis").select("produto_id, url, principal, ordem").eq("loja_id", loja.id).in("produto_id", [...porId.keys()]).order("principal", { ascending: false }).order("ordem");
-    for (const i of imgs ?? []) { const s = porId.get(i.produto_id); if (s && !imagens.has(s)) imagens.set(s, i.url); }
+    for (const i of imgs ?? []) {
+      const sku = porId.get(i.produto_id);
+      if (!sku || typeof i.url !== "string") continue;
+      if (!imagens.has(sku)) imagens.set(sku,i.url);
+      // Apenas URLs da view imagens_publicaveis: direito de uso + status aprovado.
+      const fotos = galeriaAprovada.get(sku) ?? [];
+      if (fotos.length < 8 && !fotos.includes(i.url)) {
+        fotos.push(i.url);
+        galeriaAprovada.set(sku,fotos);
+      }
+    }
   }
   const categoriaPorNo = new Map((nos ?? []).map((n: { id: string; nome: string }) => [n.id, n.nome]));
   const categoriaPorSku = new Map((linhas ?? []).map((l: { sku: string | null; taxonomia_no_id: string | null }) =>
@@ -267,6 +278,7 @@ Deno.serve(async (req) => {
         ? trilhaTaxonomia((linhas??[]).find((l:{sku:string|null})=>l.sku===produto.sku)?.taxonomia_no_id)
           .map(n=>({nome:n.nome,slug:n.slug})) : [],
       referencias_aprovadas: codigosAprovadosPorSku.get(produto.sku) ?? [],
+      galeria_aprovada: loja.slug === "mobis" ? (galeriaAprovada.get(produto.sku) ?? []) : [],
     }));
 
   const paginasPorSku: Record<string, { slug: string; titulo: string; modelo: string; status: string }[]> = {};
