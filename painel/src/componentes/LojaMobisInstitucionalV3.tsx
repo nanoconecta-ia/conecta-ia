@@ -42,7 +42,7 @@ type Comum={
 };
 
 export function CabecalhoMobisV3({busca,onBusca,onEnviar,lista,whatsapp,ir,categorias,selecionarCategoria,consultar,bannersPresentes}:Comum){
-  return <div className="ms-cabecalho" data-mobis-vitrine-completa="v3">
+  return <div className="ms-cabecalho" data-bloco="cabecalho" data-mobis-vitrine-completa="v3">
     <div className="ms-faixa-superior">
       <div className="ms-container ms-faixa-interna">
         <span><b aria-hidden="true">●</b> Goiás · Atendimento em autopeças diesel</span>
