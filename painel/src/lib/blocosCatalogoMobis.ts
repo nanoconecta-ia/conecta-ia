@@ -25,7 +25,8 @@ export const MONTADORAS_MOBIS = [
 ] as const;
 
 export type MontadoraMobis = (typeof MONTADORAS_MOBIS)[number]["nome"];
-export type CategoriaPublica = {nome:string;slug:string;total:number};
+export type CategoriaPublica = {nome:string;slug:string;total:number;pai_slug?:string|null;nivel?:number};
+export type CategoriaArvorePublica = CategoriaPublica & {pai_slug:string|null;nivel:number};
 const normalizar=(v:string)=>v.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
 
 /** Usado só para navegação: correspondência textual não prova compatibilidade de peça. */
