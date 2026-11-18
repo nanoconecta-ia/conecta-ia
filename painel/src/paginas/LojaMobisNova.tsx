@@ -180,7 +180,7 @@ export function LojaMobisNova({slug,contexto,produtoInicial}:{slug:string;contex
     setAbaBusca("descricao");setMontadora("");setModelo("");setMotor("");setAnoInicial("");setAnoFinal("");setCategoria(slugNo);setBusca("");
     setF({...VAZIO,categoria:slugNo});window.location.hash="#/loja/mobis/sistema/"+encodeURIComponent(slugNo);
   }
-  function adicionar(p:Produto){
+  function adicionar(p:{sku:string;nome:string}){
     if(lista.some(x=>x.sku===p.sku)){setAviso("Essa peça já consta na lista.");return;}
     if(lista.length>=10){setAviso("A lista permite até dez peças.");return;}
     setLista(a=>[...a,{sku:p.sku,nome:p.nome}]);
