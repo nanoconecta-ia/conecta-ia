@@ -217,3 +217,106 @@
   .mobis-v2.m4 .m4-tipo-veiculo{min-height:145px;padding:7px 4px}
   .mobis-v2.m4 .m4-tipo-veiculo .m4-emblema-veiculo{width:min(133px,100%)}
 }
+
+
+/* Catálogo MOBIS com navegação de veículo/produto, pai/filho real.
+   Inspiração funcional em catálogos automotivos, sem copiar identidade Bosch. */
+.mobis-v2.m4 .m4-catalogo-formas{
+  display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;
+  border-bottom:1px solid #BFC3C7;margin:12px 0 8px;
+}
+.mobis-v2.m4 .m4-catalogo-formas button{
+  flex:1 1 185px;background:#fff;color:#1F2327;
+  font-family:Montserrat,Inter,system-ui,sans-serif;
+  border:1px solid #BFC3C7;border-bottom:4px solid transparent;
+  padding:13px 16px;font-weight:850;cursor:pointer;
+  border-radius:10px 10px 0 0;
+}
+.mobis-v2.m4 .m4-catalogo-formas button[aria-selected="true"]{
+  color:#B01218;border-color:#BFC3C7;border-bottom-color:#E2181A;
+  background:#EAF2F6;
+}
+.mobis-v2.m4 .m4-catalogo-instrucao{font-size:.86rem;color:#41505A;margin:8px 0 13px}
+.mobis-v2.m4 .m4-taxonomia-caminho{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 14px;
+}
+.mobis-v2.m4 .m4-taxonomia-caminho>span{display:inline-flex;align-items:center;gap:8px}
+.mobis-v2.m4 .m4-taxonomia-caminho button{
+  color:#B01218;border:1px solid #BFC3C7;border-radius:8px;
+  background:#fff;padding:8px 11px;cursor:pointer;font-weight:750;
+}
+.mobis-v2.m4 .m4-taxonomia-subgrupo{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:8px;background:#fff;border:1px solid #D6E0E6;border-radius:10px;
+  padding:12px;margin-bottom:16px;color:#1F2327;
+}
+.mobis-v2.m4 .m4-taxonomia-subgrupo button{
+  background:#E2181A;color:#fff;border:1px solid #E2181A;border-radius:9px;
+  padding:10px 13px;font-weight:800;cursor:pointer;
+}
+.mobis-v2.m4 .m4-taxonomia-subgrupo button:hover{background:#B01218}
+.mobis-v2.m4 .m4-taxonomia-caminho button:focus-visible,
+.mobis-v2.m4 .m4-taxonomia-subgrupo button:focus-visible{
+  outline:3px solid #E2181A;outline-offset:2px;
+}
+/* Ficha Bosch-like somente em organização, identidade estritamente MOBIS. */
+.produto-publico-mobis .produto-publico-mobis-pai{
+  display:inline-flex;gap:8px;align-items:center;
+}
+.produto-publico-mobis .produto-publico-mobis-pai a{
+  color:#B01218;text-decoration:none;font-weight:700;
+}
+.produto-publico-mobis-detalhes{
+  max-width:1330px;margin:0 auto 22px;background:#fff;
+  border:1px solid #BFC3C7;border-radius:18px;
+  padding:clamp(14px,2vw,24px);
+}
+.produto-publico-mobis-detalhes-titulo>span{
+  color:#B01218;font-size:.76rem;letter-spacing:.06em;font-weight:900;
+}
+.produto-publico-mobis-detalhes-titulo h2{
+  color:#1F2327;margin:5px 0 18px;font-size:clamp(1.25rem,2.2vw,1.8rem);
+  font-family:"Eurostile Next Heavy",Montserrat,system-ui,sans-serif;
+}
+.produto-publico-mobis-abas{
+  display:flex;flex-wrap:wrap;gap:5px;
+  border-bottom:1px solid #BFC3C7;margin-bottom:14px;
+}
+.produto-publico-mobis-abas button{
+  flex:1 1 155px;min-height:47px;background:#fff;
+  color:#1F2327;border:0;border-bottom:3px solid transparent;
+  font-weight:800;font-family:Montserrat,system-ui,sans-serif;
+  cursor:pointer;padding:11px 12px;
+}
+.produto-publico-mobis-abas button[aria-selected="true"]{
+  color:#B01218;border-bottom-color:#E2181A;
+}
+.produto-publico-mobis-abas button:focus-visible{
+  outline:3px solid #E2181A;outline-offset:-3px;
+}
+.produto-publico-mobis-conteudo-abas{
+  color:#34404B;font-size:.94rem;line-height:1.6;overflow-wrap:anywhere;
+}
+.produto-publico-mobis-conteudo-abas h3{
+  font-size:1.07rem;margin:4px 0 12px;color:#1F2327;
+}
+.produto-publico-mobis-especificacoes{margin:0;display:grid;gap:0}
+.produto-publico-mobis-especificacoes>div{
+  display:grid;grid-template-columns:minmax(110px,1fr) minmax(0,2fr);
+  border-bottom:1px solid #DCE3E7;gap:14px;padding:11px 7px;
+}
+.produto-publico-mobis-especificacoes>div:nth-child(odd){background:#EAF2F6}
+.produto-publico-mobis-especificacoes dt{font-weight:800}
+.produto-publico-mobis-especificacoes dd{margin:0;overflow-wrap:anywhere}
+.produto-publico-mobis-aplicacoes-lista{list-style:none;margin:0;padding:0}
+.produto-publico-mobis-aplicacoes-lista li{
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  border-bottom:1px solid #DCE3E7;padding:10px 7px;
+}
+.produto-publico-mobis-aplicacoes-lista li:nth-child(odd){background:#EAF2F6}
+@media(max-width:600px){
+  .mobis-v2.m4 .m4-catalogo-formas{gap:5px}
+  .mobis-v2.m4 .m4-catalogo-formas button{flex:1 1 135px;padding:11px 6px;font-size:.77rem}
+  .produto-publico-mobis-especificacoes>div{grid-template-columns:1fr;gap:2px}
+  .produto-publico-mobis-abas button{flex:1 1 100%;text-align:left;min-height:40px}
+}
