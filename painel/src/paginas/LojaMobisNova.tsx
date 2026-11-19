@@ -20,6 +20,7 @@ import "./mobis-paleta-dinamica.css";
 import "./mobis-premium-v3.css";
 import "./mobis-ma-identidade.css";
 import "./mobis-vitrine-completa-v3.css";
+import "./mobis-v3-limpo.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -127,11 +128,6 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     if(url)window.open(url,"_blank","noopener,noreferrer");
     else window.location.hash="#/loja/mobis/empresa";
   }
-  function escolherVeiculoAprovado(valor:string){
-    // O rótulo vem dos modelos de aplicações aprovadas entregues pela API.
-    setAbaBusca("descricao");setModelo(valor);setMotor("");setAno("");setCategoria("");setBusca("");
-    setF({...VAZIO,modelo:valor});window.location.hash="#/loja/mobis/veiculo/"+encodeURIComponent(valor);
-  }
   function escolherNoTaxonomia(slugNo:string){
     if(!dados?.categorias.some(c=>c.slug===slugNo&&c.total>0))return;
     setAbaBusca("descricao");setModelo("");setMotor("");setAno("");setCategoria(slugNo);setBusca("");
@@ -159,7 +155,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
       emTeste={dados?.loja.ambiente!=="producao"}/></div>,
     catalogo: <>
       <section className="m2-wrap m2-secao m2-catalogo" data-bloco="produtos" id="m2-catalogo" aria-live="polite">
-        <div className="m2-cab-secao"><div><span className="m2-kicker">PEÇAS E COMPONENTES</span><h2>Produtos no catálogo</h2><small>{estado==="carregando"?"Consultando…":String(dados?.total??0)+" produto(s) encontrado(s)"}</small></div></div>
+        <div className="m2-cab-secao"><div><span className="m2-kicker">PEÇAS E COMPONENTES</span><h2>Produtos no catálogo</h2><small>{estado==="carregando"?"Consultando…":estado==="ok"?(dados?.total??0)>0?String(dados?.total??0)+" produtos para consulta":"Novos itens em preparação":""}</small></div></div>
         {estado==="carregando"&&<div className="m2-vazio">Consultando catálogo público autorizado…</div>}
         {(estado==="erro"||estado==="limite")&&<div className="m2-vazio"><strong>Não foi possível carregar o catálogo.</strong><p>{estado==="limite"?"Limite de consultas atingido.":"Tente novamente."}</p><button onClick={()=>setTentativa(x=>x+1)}>Tentar novamente</button></div>}
         {estado==="naoachada"&&<div className="m2-vazio">Loja não encontrada.</div>}
@@ -218,7 +214,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
        <AplicacoesMobisV3 categorias={dados?.categorias??[]} opcoes={opcoes} motores={motores}
          f={{modelo,motor,ano,categoria}} onModelo={v=>{setModelo(v);setMotor("");}} onMotor={setMotor}
          onAno={setAno} onCategoria={setCategoria} onAplicar={aplicar}
-         onAprovado={escolherVeiculoAprovado} onConsultar={consultarLinha} ir={irVitrine}/>
+         onConsultar={consultarLinha} onLimpar={()=>{setF(VAZIO);setBusca("");setModelo("");setMotor("");setAno("");setCategoria("");setAbaBusca("descricao");}}/>
        {blocosSite.catalogo}
       </>}
     </main>
