@@ -228,3 +228,24 @@
   font-size:.74rem;
   color:#737e85;
 }
+
+/* Cabeçalho: o atalho de atendimento também recebe o símbolo oficial verde. */
+.mobis-v2.m4 .ms-acoes .ms-icone-whatsapp{
+  display:grid;
+  place-items:center;
+  width:33px;
+  height:33px;
+  padding:4px;
+  margin-bottom:4px;
+  border-radius:10px;
+  background:#25d366;
+  color:#fff;
+  font-size:inherit;
+  box-shadow:0 2px 6px #0005;
+}
+.mobis-v2.m4 .ms-acoes .ms-icone-whatsapp svg{
+  display:block;
+  width:25px;
+  height:25px;
+  color:#fff;
+}
