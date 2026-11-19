@@ -1,6 +1,9 @@
 # MOBIS — Norma proposta do porteiro para cadastro técnico em lotes
 Data: 19/11/2026. Estado: rascunho de regra de negócio; **não está implantada no gateway nem no banco**. Escopo: Conecta.IA / loja MOBIS.
 
+## Entrega final por SKU ou descrição — roteiro obrigatório
+O porteiro e todos os agentes devem cumprir o **[contrato operacional de entrega e comprovação de cadastro](porteiro-entrega-cadastro-por-sku-ou-descricao-20261119.md)**: ler Bling, cruzar motor/aplicação por até três famílias de fontes (juntas Ajusa/SABÓ/Taranto/Vedamec, filtros, peça exata), pesquisar imagens via buscador Conecta.IA/Firecrawl, preparar ficha e páginas por veículo e **devolver o status verdadeiro** (`proposta_preparada` vs `rascunho_real_gravado` vs `publicado_e_verificado`). Nenhum arquivo no GitHub é prova de gravação no site. Sem foto, continuar e deixar pendência; produto pausado não recebe escrita/proposta.
+
 ## Localização das ferramentas internas de busca de imagem: Firecrawl
 Ler obrigatoriamente **[mapa do Firecrawl e das ferramentas efetivamente expostas](porteiro-ferramentas-firecrawl-imagens-20261119.md)**. O porteiro orienta o agente a usar **`conecta.imagem.buscar_web`** ou o alias `buscar_imagem_web` pelo chat (sem novos provedores), e a propor uma imagem candidata pelo fluxo existente. A ferramenta não está atualmente habilitada no MCP externo; não simular sua disponibilidade. Sem foto aprovada, continuar o cadastro técnico e registrar foto pendente, inclusive em outros modelos e famílias de peças.
 
