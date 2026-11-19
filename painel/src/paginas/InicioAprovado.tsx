@@ -2,6 +2,7 @@ import type { Loja } from "../lib/dados.ts";
 import { useWorkspaceDados } from "../lib/workspaceDados.ts";
 import { AtivoAprovado } from "../componentes/AtivoAprovado.tsx";
 import { IndicadoresInicio } from "./IndicadoresInicio.tsx";
+import { urlLojaPublica } from "../lib/lojaHost.ts";
 const numero=(n:number|null|undefined)=>n==null?"—":n.toLocaleString("pt-BR");
 export function InicioAprovado({loja}:{loja:Loja}){
  const {dados,recarregar}=useWorkspaceDados(loja.id);
@@ -13,7 +14,7 @@ export function InicioAprovado({loja}:{loja:Loja}){
   <div className="ap-niveis">
    <article><span className="ap-eyebrow">NÍVEL 01 / ORIGEM</span><AtivoAprovado nome="inicio" tamanho={62}/><h2>ERP Bling</h2><p>Cadastro físico e fiscal, SKU, saldo e preço na origem. A estrutura nativa é reconhecida e espelhada para a plataforma.</p><strong>{numero(dados?.total)} produtos no espelho</strong><small>Consulta atual. Nenhum saldo é criado ou somado pelas aplicações.</small><a href="#/catalogo-espelho">Conferir retrato da origem →</a></article>
    <article className="ap-nivel-central"><span className="ap-eyebrow">NÍVEL 02 / INTELIGÊNCIA</span><AtivoAprovado nome="matriz" tamanho={62}/><h2>Conecta.IA + Nano.IA</h2><p>Enriquecimento, taxonomia própria, aliases, aplicações e propostas. Uma tarefa, seu contexto e evidências conferíveis.</p><strong>{numero(dados?.aprovadas)} aplicações homologadas</strong><small>{numero(dados?.fila)} propostas aguardando revisão. A aprovação de um campo não publica o produto.</small><a href="#/estudio">Abrir Estúdio do Nano →</a></article>
-   <article><span className="ap-eyebrow">NÍVEL 03 / EXPERIÊNCIA</span><AtivoAprovado nome="catalogo" tamanho={62}/><h2>Loja virtual</h2><p>A taxonomia vira busca por veículo, sistema e peça. O cliente recebe somente a projeção comercial dos dados liberados.</p><strong>{numero(dados?.publicados)} produtos publicados</strong><small>{loja.ambiente==="teste"?"Loja em teste. Sem checkout ou recebimento de pagamentos.":"Condições comerciais e disponibilidade sujeitas à confirmação."}</small><a href={`#/loja/${encodeURIComponent(loja.slug)}`} target="_blank" rel="noopener noreferrer">Abrir loja em outra aba ↗</a></article>
+   <article><span className="ap-eyebrow">NÍVEL 03 / EXPERIÊNCIA</span><AtivoAprovado nome="catalogo" tamanho={62}/><h2>Loja virtual</h2><p>A taxonomia vira busca por veículo, sistema e peça. O cliente recebe somente a projeção comercial dos dados liberados.</p><strong>{numero(dados?.publicados)} produtos publicados</strong><small>{loja.ambiente==="teste"?"Loja em teste. Sem checkout ou recebimento de pagamentos.":"Condições comerciais e disponibilidade sujeitas à confirmação."}</small><a href={urlLojaPublica(loja.slug, window.location.href)} target="_blank" rel="noopener noreferrer">Conferir loja pública em outra aba ↗</a></article>
   </div>
   <section className="ap-audiencias"><span className="ap-eyebrow">A MESMA INTELIGÊNCIA, DUAS EXPERIÊNCIAS</span><h2>O que cada pessoa encontra.</h2><div className="ap-tablewrap"><table><thead><tr><th>Estrutura interna · lojista e Nano</th><th>Experiência comercial · cliente da loja</th></tr></thead><tbody>{[
    ["Taxonomia, montadoras, famílias, gerações e motores","Escolher meu veículo e procurar a peça"],
