@@ -275,3 +275,13 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Sem mudanças em Supabase, Edge Functions, ERP Bling, contas, preço, estoque, dados fiscais, notas, DNS, domínio ou outras lojas.
 - Conferir checks visuais ainda em conclusão, sucesso do build/deploy e o commit publicado em `version.json`. Verificar o botão com sessão autenticada, sem declarar validação de login real que não ocorreu.
 
+## Publicação autorizada — Importar ficha de outra IA por JSON, somente prévia (19/11/2026) — PR #468
+
+- Autorização expressa do proprietário: “Pode seguir e colocar o aplicativo no sistema do Conecta.IA” após receber o relatório do piloto de importação do cadastro gerado por outros agentes.
+- PR #468 integrada à `main` no commit `f15226054f64f3b3d42c1beb645954b157be6f06`. Compilação, testes unitários, segurança e interface aprovados; última suíte visual de demonstração monitorada separadamente.
+- Publicar exclusivamente os arquivos estáticos do painel via `painel-pages.yml`, preservando as flags já usadas (`VITE_PAIR_ATIVO=1`, `VITE_BACKUP_ATIVO=1`, `VITE_BANNERS_ATIVO=1`). A nova seção “Colar cadastro preparado por outra IA” aparece em “Conectar meu agente”, após login.
+- Permitir apenas preparar prompt por SKU, colar JSON de proposta, validar limites/formato e visualizar candidaturas de OEM/aplicações. **Não salva os dados**, **não cria cadastro no Conecta.IA nem no Bling** e não publica páginas.
+- Aplicações e OEM trazidos de agentes externos permanecem `a_confirmar`. A leitura do SKU/NF e o fluxo de aprovação/gravação real serão mudanças separadas após homologação e autorização; automações pausadas seguem bloqueadas.
+- Sem Edge Functions, migrações, alterações no Supabase, tokens, notas, preço, estoque, dados fiscais, DNS, domínio ou outras lojas.
+- Validar build/deploy, `version.json`, visualização autenticada e integridade da vitrine. Não declarar teste de login real sem evidência.
+
