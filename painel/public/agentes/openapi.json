@@ -1,0 +1,165 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Conecta.IA — gateway MCP via HTTP",
+    "version": "0.1.0",
+    "description": "Descrição interoperável do gateway MCP existente, usando JSON-RPC 2.0. NÃO é API REST CRUD nem servidor A2A. Clientes sem ferramentas HTTP não conseguem executar comandos. Nunca envie Bearer em chat ou URL."
+  },
+  "servers": [
+    {
+      "url": "https://dsfzhsrudriqkumtlqwj.supabase.co/functions/v1"
+    }
+  ],
+  "tags": [
+    {
+      "name": "MCP",
+      "description": "Consulta e proposta por loja; aprovação humana fora deste gateway"
+    }
+  ],
+  "paths": {
+    "/conector-mcp": {
+      "post": {
+        "tags": [
+          "MCP"
+        ],
+        "operationId": "executarJsonRpcMcp",
+        "summary": "Enviar método MCP JSON-RPC 2.0 com Bearer",
+        "description": "Comece com tools/list após autenticação. As ferramentas disponíveis dependem do escopo. Não há escrita direta no Bling, publicação nem aprovação. Requisições feitas diretamente de um navegador com Origin são recusadas.",
+        "security": [
+          {
+            "bearerMcp": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonRpcRequest"
+              },
+              "examples": {
+                "discoverTools": {
+                  "summary": "Descoberta de ferramentas permitidas",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "tools/list",
+                    "params": {}
+                  }
+                },
+                "initialize": {
+                  "summary": "Negociar versão do protocolo",
+                  "value": {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {
+                      "protocolVersion": "2025-06-18",
+                      "capabilities": {},
+                      "clientInfo": {
+                        "name": "external-agent",
+                        "version": "1.0"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resposta JSON-RPC. Erros de ferramenta podem estar em result.isError.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "jsonrpc": {
+                      "const": "2.0"
+                    },
+                    "id": {},
+                    "result": {},
+                    "error": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Notificação sem resposta"
+          },
+          "401": {
+            "description": "Bearer ausente, inválido, revogado ou expirado"
+          },
+          "403": {
+            "description": "Origem de navegador recusada"
+          },
+          "405": {
+            "description": "Método HTTP não aceito"
+          },
+          "413": {
+            "description": "Corpo muito grande"
+          },
+          "429": {
+            "description": "Limite de chamadas atingido"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerMcp": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Chave MCP por loja ou token OAuth do recurso conector-mcp. Nunca incluir no chat ou em URL."
+      }
+    },
+    "schemas": {
+      "JsonRpcRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "jsonrpc",
+          "id",
+          "method"
+        ],
+        "properties": {
+          "jsonrpc": {
+            "type": "string",
+            "const": "2.0"
+          },
+          "id": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "initialize",
+              "ping",
+              "tools/list",
+              "tools/call"
+            ]
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Para tools/call use name (retornado por tools/list) e arguments conforme inputSchema."
+          }
+        }
+      }
+    }
+  },
+  "x-conecta-a2a-status": "not-implemented",
+  "x-conecta-safety": "Agente externo somente consulta e propõe; confirmação humana obrigatória."
+}
