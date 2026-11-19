@@ -40,7 +40,7 @@ export function GlassyCarouselMobisV3({
   // Somente campanhas da API e aplicações aprovadas podem criar banners comerciais.
   // Um SKU físico pode ter banners por veículo, cada um com rota distinta de aplicação.
   // Em preparação, a linha continua apontando à busca do veículo; nunca a uma página 404.
-  const campanhas:Slide[]=banners.flatMap((b,i)=>{
+  const campanhas:Slide[]=banners.flatMap((b,i):Slide[]=>{
     const perfis=paginasAprovadas(paginasPorSku[b.sku]);
     if(!perfis.length)return [{
       id:"banner-"+b.sku+"-"+i,tipo:"campanha" as const,titulo:b.chamada||b.nome,
