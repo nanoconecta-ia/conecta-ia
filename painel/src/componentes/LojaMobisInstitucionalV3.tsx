@@ -38,12 +38,12 @@ const setorComCategoria=(s:Setor,categorias:readonly Categoria[])=>categorias.fi
 
 type Comum={
   busca:string;onBusca:(valor:string)=>void;onEnviar:(event?:FormEvent)=>void;
-  lista:number;whatsapp:string|null;ir:(id:string)=>void;
+  whatsapp:string|null;ir:(id:string)=>void;
   categorias:readonly Categoria[];selecionarCategoria:(slug:string)=>void;consultar:(nome:string)=>void;
   bannersPresentes:boolean;
 };
 
-export function CabecalhoMobisV3({busca,onBusca,onEnviar,lista,whatsapp,ir,categorias,selecionarCategoria,consultar,bannersPresentes}:Comum){
+export function CabecalhoMobisV3({busca,onBusca,onEnviar,whatsapp,ir,categorias,selecionarCategoria,consultar,bannersPresentes}:Comum){
   return <div className="ms-cabecalho" data-bloco="cabecalho" data-mobis-vitrine-completa="v3">
     <div className="ms-faixa-superior">
       <div className="ms-container ms-faixa-interna">
@@ -61,9 +61,6 @@ export function CabecalhoMobisV3({busca,onBusca,onEnviar,lista,whatsapp,ir,categ
         <button type="submit" aria-label="Pesquisar peças"><span aria-hidden="true">⌕</span><span>Buscar</span></button>
       </form>
       <div className="ms-acoes">
-        <button type="button" onClick={()=>ir("m2-lista")} aria-label={"Ir para lista de consulta com "+lista+" peças"}>
-          <span aria-hidden="true">▤</span><small>Minha lista</small><b>{lista}</b>
-        </button>
         {whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label="Conversar com a Mobis no WhatsApp"><span aria-hidden="true">◉</span><small>Contato</small></a>}
       </div>
     </div></div>
@@ -74,7 +71,7 @@ export function CabecalhoMobisV3({busca,onBusca,onEnviar,lista,whatsapp,ir,categ
       <button type="button" onClick={()=>ir("ms-aplicacoes")}>Aplicações</button>
       {bannersPresentes&&<button type="button" onClick={()=>ir("m2-destaques")}>Destaques</button>}
       <a href="#/loja/mobis/empresa">Sobre a Mobis</a>
-      <button type="button" onClick={()=>ir("m2-atendimento")}>Contato</button>
+      <a href="#/loja/mobis/empresa">Contato</a>
     </div></nav>
     <div id="ms-departamentos" className="ms-departamentos-faixa" aria-label="Departamentos de peças">
       <div className="ms-container ms-departamentos-lista">
@@ -123,7 +120,7 @@ export function AberturaMobisV3({whatsapp,ir}:Pick<Comum,"whatsapp"|"ir">){
       <span><b aria-hidden="true">▣</b> Pesquisa por SKU e referência</span>
       <span><b aria-hidden="true">✓</b> Aplicações com validação técnica</span>
       <span><b aria-hidden="true">⚙</b> Peças organizadas por sistema</span>
-      <span><b aria-hidden="true">▤</b> Lista para consulta no WhatsApp</span>
+      <span><b aria-hidden="true">◉</b> Atendimento pelo WhatsApp</span>
     </div></div>
   </section>;
 }

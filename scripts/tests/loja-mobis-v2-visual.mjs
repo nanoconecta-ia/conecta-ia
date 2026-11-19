@@ -71,20 +71,18 @@ try{
   await page.getByRole('tab',{name:'Nome, peça ou sistema'}).click();
   await page.locator('#m2-pesquisar').fill('');
 
-  // NOVO layout em blocos ligados ao Conecta.IA: um só seletor de marcas e um só de sistemas.
-  for(const bloco of ["cabecalho","banner","montadoras","taxonomia","filtros","produtos","rodape"]){
-    assert.equal(await page.locator('[data-bloco="'+bloco+'"]').count(),1,"bloco "+bloco+" montado uma vez");
+  // V3 enxuta: não montar os três grupos legados enviados nas capturas pelo proprietário.
+  for(const bloco of ["cabecalho","banner","filtros","produtos","rodape"]){
+    assert.equal(await page.locator('[data-bloco="'+bloco+'"]').count(),1,"bloco aprovado "+bloco);
   }
-  assert.equal(await page.locator(".m4-montadora-item").count(),9,"nove montadoras para consulta, sem inventar aplicações");
-  assert.equal(await page.locator(".m4-taxonomia-item").count(),6,"sistemas em consulta quando não há produtos aprovados");
-  assert.equal(await page.locator(".m4-montadora-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(255, 255, 255)","seletor de montadoras branco");
-  assert.equal(await page.locator(".m4-taxonomia-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(255, 255, 255)","nós exibem superfície branca");
-  assert.equal(await page.locator(".m2-filtros").evaluate(el=>getComputedStyle(el).maxWidth),"none","filtros não herdam largura administrativa de 440px");
-  assert.equal(await page.locator(".m4-linha-card,.m2-veiculo-grade").count(),0,"navegação duplicada foi retirada");
-  await page.locator(".m4-montadora-item").filter({hasText:"Iveco"}).click();
-  await page.locator(".m4-montadora-opcoes button").filter({hasText:"Consultar a equipe"}).click();
-  const linkConsulta=await page.locator("#m2-atendimento .m2-contato-form a").getAttribute("href");
-  assert.match(decodeURIComponent(linkConsulta||""),/Iveco/,"consulta contextual registra a montadora selecionada");
+  for(const bloco of ["montadoras","taxonomia"]){
+    assert.equal(await page.locator('[data-bloco="'+bloco+'"]').count(),0,"bloco legado "+bloco+" ausente");
+  }
+  assert.equal(await page.locator(".m4-montadora-item,.m4-taxonomia-item").count(),0,"grades antigas não montadas");
+  assert.equal(await page.locator("#m2-atendimento,.m2-contato-form,#m2-lista").count(),0,"consulta e lista duplicadas removidas");
+  assert.equal(await page.locator(".ms-departamentos-lista button").count(),7,"departamentos modernos mantidos");
+  assert.equal(await page.locator(".m2-filtros").evaluate(el=>getComputedStyle(el).maxWidth),"none","filtros preservados e responsivos");
+  assert.equal(await page.locator(".m4-linha-card,.m2-veiculo-grade").count(),0,"outras grades duplicadas ausentes");
   assert.equal(await page.locator(".gcv3-etiqueta-flash").count(),0,"sem campanha ativa não há oferta Flash fictícia");
   assert.equal(await page.locator(".v-rodape-privacidade-bloco").count(),0,"rodapé enxuto: políticas ficam na página institucional, não no rodapé");
   assert.equal(await page.locator(".v-rodape-privacidade-bloco button").count(),0,"sem política aprovada não publica texto inventado");
@@ -101,7 +99,7 @@ try{
   await respostaBusca;
   assert.ok(requests.some(x=>x.q==="D4CB"&&x.slug==="mobis"),"busca conecta à API da loja");
   assert.equal(await page.getByRole("heading",{name:"Indexar e enriquecer"}).count(),0,"não expor painel privado");
-  for(const [nome,id] of [["Catálogo","m2-catalogo"],["Buscar por veículo","m2-montadoras"],["Peças por sistema","m2-taxonomia"]]){
+  for(const [nome,id] of [["Catálogo","m2-catalogo"],["Buscar por veículo","ms-aplicacoes"],["Peças por sistema","ms-departamentos"]]){
    const link=page.getByRole("link",{name:nome,exact:true});
    assert.equal(await link.getAttribute("href"),"#/loja/mobis","abrir em outra aba também mantém a loja");
    await link.click();
@@ -122,7 +120,7 @@ try{
    page.on("pageerror",err=>errors.push(err.message));
    const fixture={...payload,veiculos:[{modelo:"HR",motor:"D4CB",de:2013,ate:2022},{modelo:"Bongo",motor:"D4BH",de:2006,ate:2011}],
     categorias:[{nome:"Motor",slug:"motor",total:1}],total:1,
-    produtos:[{sku:"TESTE-SINTETICO",nome:"Peça sintética para teste",preco:null,marca:null,descricao:null,imagem:null,whatsapp:null,em_estoque:null,atualizado_em:null}]};
+    produtos:[{sku:"TESTE-SINTETICO",nome:"Peça sintética para teste",preco:null,marca:null,descricao:null,imagem:null,whatsapp:"https://wa.me/5562991654515?text=TESTE-SINTETICO",em_estoque:null,atualizado_em:null}]};
    await page.route("**/*",async route=>{
     const req=route.request(),url=new URL(req.url());
     if(url.hostname===host){
@@ -148,9 +146,10 @@ try{
    const resposta=page.waitForResponse(r=>r.url().endsWith("/loja-publica")&&(r.request().postData()||"").includes('"motor":"D4CB"'));
    await page.getByRole("button",{name:"Aplicar filtros",exact:true}).click();await resposta;
    assert.ok(requests.some(x=>x.slug==="mobis"&&x.modelo==="HR"&&x.motor==="D4CB"&&x.ano===2019&&x.categoria==="motor"));
-   await page.getByRole("button",{name:"Adicionar à lista +",exact:true}).click();
-   const link=page.locator(".m2-lista").getByRole("link",{name:"Consultar no WhatsApp",exact:false});
-   assert.match(await link.getAttribute("href"),/TESTE-SINTETICO/);
+   assert.equal(await page.locator("#m2-lista").count(),0,"não reintroduzir bloco de lista antigo");
+   assert.equal(await page.getByRole("button",{name:"Adicionar à lista +",exact:true}).count(),0,"não duplicar fluxo da lista no produto");
+   const link=page.locator(".m2-produto").getByRole("link",{name:"Consultar no WhatsApp",exact:false});
+   assert.match(await link.getAttribute("href"),/TESTE-SINTETICO/,"atendimento direto no produto preservado");
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow no domínio "+width);
    assert.deepEqual(errors,[]);
    await context.close();
