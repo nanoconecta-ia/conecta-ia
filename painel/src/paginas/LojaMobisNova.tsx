@@ -192,10 +192,13 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
                   </div>
                 </div>
               : p.descricao&&<p>{p.descricao.slice(0,105)}</p>}
-            <strong>Preço sob consulta</strong>
-            <p>Confirme aplicação e disponibilidade.</p>
+            <strong>{p.consulta_previa ? "Catálogo enriquecido · sem preço" : "Preço sob consulta"}</strong>
+            <p>{p.consulta_previa
+              ? "Ficha informativa. Aplicações, preço e disponibilidade dependem de confirmação da loja."
+              : "Confirme aplicação e disponibilidade."}</p>
             <div>{p.whatsapp&&<a href={p.whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>}
-              {!p.consulta_previa&&<a href={"#/p/mobis/"+encodeURIComponent(p.sku)} target="_blank" rel="noopener noreferrer">Abrir ficha em nova aba ↗</a>}
+              <a href={"#/p/mobis/"+encodeURIComponent(p.sku)} target="_blank" rel="noopener noreferrer">
+                {p.consulta_previa ? "Ver ficha informativa ↗" : "Abrir ficha em nova aba ↗"}</a>
             </div>
           </div>
         </article>)}</div>}
