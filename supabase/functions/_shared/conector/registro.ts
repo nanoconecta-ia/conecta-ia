@@ -12,6 +12,8 @@ const sku: JsonSchema = { type: "string", minLength: 1, maxLength: 80, descripti
 const livre: JsonSchema = { type: "object" };
 const lista = (items: JsonSchema, maxItems = 50): JsonSchema => ({ type: "array", items, maxItems });
 const fonte = obj({ url: txt("endereço da fonte", 500), documento: txt("nome do documento", 200), versao: txt("versão da fonte", 60), consultado_em: txt("data (ISO)", 40) });
+// Contrato de arquivo do ChatGPT (openai/fileParams): campos opcionais declarados, mas apenas download_url e file_id obrigatórios.
+const arquivoChatGpt = obj({ download_url: txt("URL HTTPS temporária do arquivo enviada pelo host; não guardar", 5000), file_id: txt("ID do arquivo enviado pelo ChatGPT", 250), mime_type: txt("MIME informado pelo host", 100), file_name: txt("Nome original, não usado como caminho", 250) }, ["download_url", "file_id"]);
 
 /** Campos do produto no Bling que o Nano.ia PODE alterar (nunca fiscal, preço, custo, fornecedor, estoque, SKU). conferido:false até a conferência na documentação oficial. */
 export const CAMPOS_BLING_PERMITIDOS = ["nome", "descricaoCurta", "descricaoComplementar", "marca", "gtin", "pesoLiquido", "pesoBruto", "dimensoes", "categoria", "situacao"] as const; // situacao: só "A" (reativar), ver bling_campos.ts
@@ -73,6 +75,13 @@ export const FERRAMENTAS_CONECTOR: readonly DefinicaoFerramenta[] = [
     obj({ resumo: txt("o que foi verificado ou proposto, em texto simples", 600), sku: txt("SKU do produto, se houver", 80) }, ["resumo"]), livre, "LOW", { estado: "ativa", exposicao: { chat: false, mcp: true } }),
   proposta("conecta.imagem.propor", "conecta", "Propõe a imagem ORIGINAL de um produto, sem editar: o servidor confere o endereço (https, nunca rede interna), baixa o arquivo, confirma que é JPEG/PNG/WebP, mede largura/altura e calcula o SHA-256. Entra pendente de aprovação; direitos de uso e marca d'água continuam a conferir por uma pessoa.",
     obj({ sku, url: txt(undefined, 1000), origem: txt(), pagina: txt(undefined, 1000) }, ["sku", "url"]), livre, "LOW", { estado: "ativa" }),
+  proposta("conecta.midia.anexar_produto", "conecta", "Recebe FOTO REAL de peça enviada como arquivo do ChatGPT (PNG/JPG/WebP até 8 MB), valida bytes e SKU e guarda original PRIVADO em a_confirmar. Não aprova, não publica e não altera Bling.",
+    obj({ sku, file: arquivoChatGpt, origem: txt("Autoria/fonte declarada, sem credenciais", 200), direitos: { type: "string", enum: ["a_confirmar", "autor_proprio", "licenca_informada"] } }, ["sku", "file"]), livre, "LOW",
+    { estado: "ativa", exposicao: { chat: false, mcp: true }, fileParams: ["file"] }),
+  proposta("conecta.banner.anexar", "conecta", "Recebe ARTE DE BANNER enviada como arquivo (PNG/JPG/WebP até 8 MB), armazena privada e deixa a_confirmar. Banner por veículo exige aplicação e página já aprovadas, sem duplicar SKU nem publicar.",
+    obj({ sku, file: arquivoChatGpt, modo: { type: "string", enum: ["institucional", "por_veiculo"] }, aplicacao_id: uuid,
+      titulo: txt("Título do banner", 120), origem: txt("Autoria/fonte declarada", 200), direitos: { type: "string", enum: ["a_confirmar", "autor_proprio", "licenca_informada"] } }, ["sku", "file", "modo", "titulo"]), livre, "LOW",
+    { estado: "ativa", exposicao: { chat: false, mcp: true }, fileParams: ["file"] }),
   leitura("conecta.contexto.produto_ativo", "conecta", "Produto que o lojista está com ABERTO ou SELECIONADO agora no painel do Conecta.IA (contexto de 30 min, escolhido por ele). Devolve só id, SKU, nome e marca, nunca custo, fornecedor ou dado fiscal. Use quando ele disser 'este produto' ou 'os selecionados' sem informar o SKU. Sem contexto válido responde contexto_indisponivel: nunca adivinhe o SKU.",
     obj({}), livre, "Mostra versão e origem do contexto; só da loja da chave. Não altera nada.", { estado: "ativa", exposicao: { chat: true, mcp: true } }),
   leitura("engenharia.pesquisa.investigar", "engenharia", "Investigação técnica de um produto do catálogo: monta consultas progressivas (código, OEM, GTIN, descrição + motor + veículo, catálogos alternativos, imagens) com orçamento, cache e timeout, e devolve um relatório que separa CONFIRMADO, INFERIDO, NÃO ENCONTRADO e NÃO TESTADO, com a galeria (≤ 8) pendente. Sem evidência forte responde APLICAÇÃO NÃO CONFIRMADA. Só leitura; sem provedor de busca devolve 'nao_testada'.",
