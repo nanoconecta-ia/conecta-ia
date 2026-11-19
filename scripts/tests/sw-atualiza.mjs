@@ -1,53 +1,101 @@
-// Service worker do app instalável: troca de versão apaga o cache antigo e recarrega as janelas abertas UMA vez; navegação ignora o cache HTTP; offline mostra a última casca.
-// Roda o sw.js REAL num ambiente simulado (sem navegador, sem rede).
+// Homologação isolada dos DOIS service workers reais sem navegador e sem rede externa.
+// Nunca deve atualizar a vitrine recarregando janelas do painel (nem vice-versa).
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
-const fonte=readFileSync(new URL('../../painel/public/sw.js',import.meta.url),'utf8');
-const cacheAtual=fonte.match(/const VERSAO = "([^"]+)";/)?.[1];
-assert.ok(cacheAtual,'service worker precisa declarar versão do cache');
-function ambiente({ caches: iniciais = [], janelas = 1, rede = 'ok' } = {}) {
-  const ouvintes = {}, guardado = new Map(iniciais.map((k) => [k, new Map()])), navegou = [], chamadasFetch = [];
-  const cacheDe = (k) => ({ addAll: async () => { if (!guardado.has(k)) guardado.set(k, new Map()); }, put: async (u, v) => { guardado.get(k).set(u, v); }, match: async (u) => guardado.get(k)?.get(u) });
+
+const ler = (nome) => readFileSync(new URL('../../painel/public/' + nome, import.meta.url), 'utf8');
+const LOJA = ler('sw.js'), PAINEL = ler('sw-conecta.js');
+const versao = (fonte) => fonte.match(/const CACHE = "([^"]+)"/)?.[1];
+const versaoLoja = versao(LOJA), versaoPainel = versao(PAINEL);
+assert.ok(versaoLoja?.startsWith('mobis-loja-casca-v'));
+assert.ok(versaoPainel?.startsWith('conecta-admin-casca-v'));
+assert.notEqual(versaoLoja, versaoPainel);
+
+function ambiente(fonte, { iniciais = [], rede = 'ok', scope = 'https://exemplo.test/' } = {}) {
+  const ouvintes = {};
+  const guardado = new Map(iniciais.map((k) => [k, new Map()]));
+  const chamadasFetch = [];
+  let recarregamentos = 0;
+  const cacheDe = (k) => ({
+    addAll: async (items) => {
+      if (!guardado.has(k)) guardado.set(k, new Map());
+      for (const item of items) guardado.get(k).set(item, 'CASCA-' + item);
+    },
+    put: async (u, v) => { guardado.get(k).set(u, v); },
+    match: async (u) => guardado.get(k)?.get(u),
+  });
   const self = {
     location: { origin: 'https://exemplo.test' },
+    registration: { scope },
     addEventListener: (t, f) => { ouvintes[t] = f; },
     skipWaiting: async () => {},
-    clients: { claim: async () => {}, matchAll: async () => Array.from({ length: janelas }, (_, i) => ({ url: `https://exemplo.test/#/j${i}`, navigate: async (u) => { navegou.push(u); } })) },
+    clients: { claim: async () => {}, matchAll: async () => [{ navigate: async () => { recarregamentos++; } }] },
   };
-  const ctx = { self, caches: { open: async (k) => { if (!guardado.has(k)) guardado.set(k, new Map()); return cacheDe(k); }, keys: async () => [...guardado.keys()], delete: async (k) => guardado.delete(k), match: async (u) => { for (const m of guardado.values()) if (m.has(u)) return m.get(u); } },
-    fetch: async (r, init) => { chamadasFetch.push(init); if (rede === 'cai') throw new TypeError('offline'); return { ok: true, clone() { return this; } }; },
-    Response: { error: () => 'ERRO' }, URL, Promise };
-  vm.createContext(ctx);vm.runInContext(fonte, ctx);
-  const evento = (extra) => { const e = { waitUntil: (p) => { e.p = p; }, ...extra }; return e; };
-  return { ouvintes, guardado, navegou, chamadasFetch, evento };
+  const caches = {
+    open: async (k) => { if (!guardado.has(k)) guardado.set(k, new Map()); return cacheDe(k); },
+    keys: async () => [...guardado.keys()],
+    delete: async (k) => guardado.delete(k),
+    match: async (u) => { for (const m of guardado.values()) if (m.has(u)) return m.get(u); },
+  };
+  const fetch = async (_r, opts) => {
+    chamadasFetch.push(opts);
+    if (rede === 'cai') throw new TypeError('sem rede');
+    return { ok: true, clone() { return this; } };
+  };
+  vm.runInNewContext(fonte, { self, caches, fetch, Response: { error: () => 'ERRO' }, URL, Promise });
+  const evento = (extra = {}) => ({ waitUntil(p) { this.p = p; }, ...extra });
+  return { ouvintes, guardado, chamadasFetch, evento, get recarregamentos() { return recarregamentos; } };
 }
-// 1) estava na v1: apaga, assume e recarrega cada janela uma vez
-{ const a = ambiente({ caches: ['conecta-casca-v1'], janelas: 2 });
-  const e = a.evento();a.ouvintes.activate(e);await e.p;
-  assert.deepEqual([...a.guardado.keys()].filter((k) => k === 'conecta-casca-v1'), [], 'cache da versão antiga apagado');
-  assert.equal(a.navegou.length, 2, 'cada janela aberta é recarregada uma vez'); }
-// 2) primeira instalação: nada a recarregar
-{ const a = ambiente({ caches: [] });
-  const i = a.evento();a.ouvintes.install(i);await i.p;
-  const e = a.evento();a.ouvintes.activate(e);await e.p;
-  assert.equal(a.navegou.length, 0, 'primeira instalação não recarrega'); }
-// 3) mesma versão já instalada: não recarrega de novo (sem laço de recarga)
-{ const a = ambiente({ caches: [cacheAtual], janelas: 1 });
-  const e = a.evento();a.ouvintes.activate(e);await e.p;
-  assert.equal(a.navegou.length, 0, 'mesma versão não recarrega'); }
-// 4) navegação: vai à rede sem o cache HTTP; cai a rede => última casca
-{ const a = ambiente({ caches: [cacheAtual] });
-  let resposta; const e = { request: { method: 'GET', mode: 'navigate', url: 'https://exemplo.test/' }, respondWith: (p) => { resposta = p; } };
-  a.ouvintes.fetch(e);await resposta;
-  assert.equal(a.chamadasFetch[0].cache, 'no-store', 'navegação ignora o cache HTTP'); }
-{ const a = ambiente({ caches: [cacheAtual], rede: 'cai' });
-  a.guardado.get(cacheAtual).set('./', 'CASCA-GUARDADA');
-  let resposta; const e = { request: { method: 'GET', mode: 'navigate', url: 'https://exemplo.test/' }, respondWith: (p) => { resposta = p; } };
-  a.ouvintes.fetch(e);assert.equal(await resposta, 'CASCA-GUARDADA', 'offline mostra a última casca'); }
-// 5) outros domínios e escritas não são tocados
-{ const a = ambiente(); let respondeu = false;
-  a.ouvintes.fetch({ request: { method: 'GET', mode: 'cors', url: 'https://outro.test/x' }, respondWith: () => { respondeu = true; } });
-  a.ouvintes.fetch({ request: { method: 'POST', mode: 'navigate', url: 'https://exemplo.test/' }, respondWith: () => { respondeu = true; } });
-  assert.equal(respondeu, false); }
-console.log('sw-atualiza: OK (troca de versão recarrega uma vez, sem laço; navegação sem cache HTTP; offline usa a última casca)');
+
+async function iniciarEAtivar(a) {
+  let e = a.evento(); a.ouvintes.install(e); await e.p;
+  e = a.evento(); a.ouvintes.activate(e); await e.p;
+}
+
+for (const [nome, fonte, atual, outro, scope] of [
+  ['loja', LOJA, versaoLoja, versaoPainel, 'https://exemplo.test/'],
+  ['painel', PAINEL, versaoPainel, versaoLoja, 'https://exemplo.test/conecta.html'],
+]) {
+  const antigo = nome === 'loja' ? 'mobis-loja-casca-v0' : 'conecta-admin-casca-v0';
+  const a = ambiente(fonte, { iniciais: [antigo, outro, 'cache-externo'], scope });
+  await iniciarEAtivar(a);
+  assert.ok(a.guardado.has(atual), nome + ': cache atual instalado');
+  assert.ok(!a.guardado.has(antigo), nome + ': cache antigo eliminado');
+  assert.ok(a.guardado.has(outro), nome + ': cache do outro aplicativo preservado');
+  assert.ok(a.guardado.has('cache-externo'), nome + ': caches de terceiros preservados');
+  assert.equal(a.recarregamentos, 0, nome + ': não navega ou fecha nenhuma janela');
+
+  const b = ambiente(fonte, { iniciais: [atual], scope });
+  await iniciarEAtivar(b);
+  assert.equal(b.recarregamentos, 0, nome + ': mesmo worker não recarrega janelas');
+
+  // Enquanto online, navegação aprovada deve ignorar cache HTTP; offline usa somente sua casca.
+  const caminho = nome === 'loja' ? '/' : '/conecta.html';
+  const c = ambiente(fonte, { iniciais: [atual], scope });
+  let resposta;
+  let e = c.evento({ request: { method: 'GET', mode: 'navigate', url: 'https://exemplo.test' + caminho }, respondWith(p) { resposta = p; } });
+  c.ouvintes.fetch(e);
+  assert.ok(resposta, nome + ': navegação correta foi interceptada');
+  await resposta;
+  assert.equal(c.chamadasFetch[0]?.cache, 'no-store', nome + ': navegação rede-primeiro');
+
+  const off = ambiente(fonte, { iniciais: [atual], rede: 'cai', scope });
+  off.guardado.get(atual).set(nome === 'loja' ? './' : './conecta.html', 'ULTIMA-CASCA');
+  resposta = undefined;
+  e = off.evento({ request: { method: 'GET', mode: 'navigate', url: 'https://exemplo.test' + caminho }, respondWith(p) { resposta = p; } });
+  off.ouvintes.fetch(e);
+  assert.equal(await resposta, 'ULTIMA-CASCA', nome + ': fallback offline isolado');
+
+  // Rotas do outro aplicativo e chamadas à API jamais entram no interceptador.
+  const ignorados = nome === 'loja' ? ['/conecta.html'] : ['/', '/index.html'];
+  for (const caminhoIgnorado of [...ignorados, '/functions/v1/conector-mcp']) {
+    let interceptou = false;
+    c.ouvintes.fetch({ request: { method: 'GET', mode: 'navigate', url: 'https://exemplo.test' + caminhoIgnorado }, respondWith() { interceptou = true; } });
+    assert.equal(interceptou, false, nome + ': não intercepta ' + caminhoIgnorado);
+  }
+  let escreveu = false;
+  c.ouvintes.fetch({ request: { method: 'POST', mode: 'navigate', url: 'https://exemplo.test' + caminho }, respondWith() { escreveu = true; } });
+  assert.equal(escreveu, false, nome + ': não intercepta escritas');
+}
+console.log('sw-atualiza: OK (dois PWAs: caches separados, sem recarga cruzada, offline isolado e navegação rede-primeiro)');
