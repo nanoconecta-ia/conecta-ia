@@ -1,6 +1,9 @@
 # MOBIS — Norma proposta do porteiro para cadastro técnico em lotes
 Data: 19/11/2026. Estado: rascunho de regra de negócio; **não está implantada no gateway nem no banco**. Escopo: Conecta.IA / loja MOBIS.
 
+## REGRA MESTRE (19/11): CATÁLOGO ENRIQUECIDO SEM PREÇO E SEM FOTO
+Esta norma fica subordinada à [decisão mais recente do lojista: catálogo informativo público sem foto e sem preço, complementação posterior](regra-mestra-catalogo-enriquecido-sem-preco-sem-foto-20261119.md). O produto com SKU existente pode receber ficha informativa antes de ganhar imagem/preço comercial aprovados. No modo informativo, ocultar **preço e estoque mesmo que existam no Bling**, sem checkout, sem oferta Merchant/JSON-LD e sem compatibilidade ainda não homologada. A aprovação informativa é independente do portão de oferta comercial. Não alterar a pausa da automação por SQL ou agent; catalogação já autorizada permanece consultável.
+
 ## Entrega final por SKU ou descrição — roteiro obrigatório
 O porteiro e todos os agentes devem cumprir o **[contrato operacional de entrega e comprovação de cadastro](porteiro-entrega-cadastro-por-sku-ou-descricao-20261119.md)**: ler Bling, cruzar motor/aplicação por até três famílias de fontes (juntas Ajusa/SABÓ/Taranto/Vedamec, filtros, peça exata), pesquisar imagens via buscador Conecta.IA/Firecrawl, preparar ficha e páginas por veículo e **devolver o status verdadeiro** (`proposta_preparada` vs `rascunho_real_gravado` vs `publicado_e_verificado`). Nenhum arquivo no GitHub é prova de gravação no site. Sem foto, continuar e deixar pendência; produto pausado não recebe escrita/proposta.
 
