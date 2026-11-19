@@ -56,6 +56,10 @@ import { NanoWorkspace } from "./paginas/NanoWorkspace.tsx";
 // Em domínio de cliente (fora do GitHub Pages/localhost) a raiz é a loja daquele domínio, resolvida pelo servidor.
 const HOSTS_PAINEL = ["nanoconecta-ia.github.io", "localhost", "127.0.0.1"];
 const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(window.location.hostname) && !entradaAdministrativa(window.location.pathname) ? window.location.hostname : null;
+// No domínio técnico do GitHub Pages, a entrada /conecta-ia/ também é a vitrine pública.
+// /conecta-ia/conecta.html continua sendo exclusivamente o painel autenticado.
+const entradaPublicaPages = typeof window !== "undefined" && window.location.hostname === "nanoconecta-ia.github.io"
+  && /^\/conecta-ia\/(?:index\.html)?$/.test(window.location.pathname);
 
 const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], ["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [
@@ -139,7 +143,7 @@ export function App() {
     contexto={{tipo:"empresa",valor:"mobis"}} />;
   const lojaSlug = caminho.match(/^\/loja\/([a-z0-9-]{2,63})$/);
   if (lojaSlug) return lojaSlug[1] === "mobis" ? <LojaMobisNova slug="mobis" /> : <Loja slug={lojaSlug[1]} />;
-  if (hostCliente && !caminho.startsWith("/p/")) return lojaMobisPorHost(hostCliente) ? <LojaMobisNova slug="mobis" /> : <Loja host={hostCliente} />;
+  if ((hostCliente || entradaPublicaPages) && !caminho.startsWith("/p/")) return entradaPublicaPages || lojaMobisPorHost(hostCliente) ? <LojaMobisNova slug="mobis" /> : <Loja host={hostCliente!} />;
   const pub = caminho.match(/^\/p\/([a-z0-9-]+)\/(.+)$/);
   if (caminho === "/demo/vitrine" && import.meta.env.DEV && DEMO) return <VitrineDemo />;
   if (pub) return <ProdutoPublico slug={pub[1]} sku={decodeURIComponent(pub[2])} />;

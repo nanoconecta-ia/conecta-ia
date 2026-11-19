@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
+import { urlLojaPublica } from "../lib/lojaHost.ts";
 import "./publicacao-loja.css";
 
 type Fase = "teste" | "producao";
@@ -46,7 +47,7 @@ export function PublicacaoLoja({ loja }: { loja: Loja }) {
     (destino === "teste" || (pronto && backup && teste && senha.trim().toUpperCase() === "PUBLICAR"));
 
   const linkTeste = typeof window !== "undefined"
-    ? window.location.origin + window.location.pathname + "#/loja/" + encodeURIComponent(loja.slug)
+    ? urlLojaPublica(loja.slug, window.location.href)
     : "";
 
   async function copiarTeste() {
@@ -109,7 +110,7 @@ export function PublicacaoLoja({ loja }: { loja: Loja }) {
         </div>
         <div className="publicar-acoes">
           <button type="button" className="sec" onClick={() => void copiarTeste()}>Copiar link de teste</button>
-          <a className="botao sec" href={"#/loja/" + encodeURIComponent(loja.slug)} target="_blank" rel="noopener noreferrer">Abrir loja teste</a>
+          <a className="botao sec" href={linkTeste} target="_blank" rel="noopener noreferrer">Abrir loja teste</a>
         </div>
       </section>
       <section aria-labelledby="publicar-checklist">
