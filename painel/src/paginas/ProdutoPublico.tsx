@@ -29,11 +29,13 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
         setPoliticasMobis(j?.politicas ?? null);
         setWhatsappMobis(j?.loja?.whatsapp ?? null);
       }
-      if (produto && j?.ficha) {
+      // O SKU em prévia tem ficha técnica sem preço e sem aplicações homologadas.
+      // Aplicações por veículo continuam invisíveis até aprovação e publicação.
+      if (produto && (j?.ficha || (slug === MOBIS.slug && (produto as Produto & { consulta_previa?: boolean }).consulta_previa === true))) {
         const consulta = (produto as Produto & { em_estoque?:boolean|null;consulta_previa?:boolean }).em_estoque;
         const previa = (produto as Produto & { consulta_previa?:boolean }).consulta_previa;
         setFicha({ produto: { ...produto, preco: consulta === true && !previa ? produto.preco : null },
-          veiculos: j.ficha.veiculos ?? [] });
+          veiculos: j?.ficha?.veiculos ?? [] });
         setPaginasVeiculos(((j.paginas_aplicacao?.[sku] ?? []) as PaginaVeiculo[])
           .filter(a => a.status === "aprovado"));
       }

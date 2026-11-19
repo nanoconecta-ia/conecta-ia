@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { EmpresaMobis } from "../componentes/EmpresaMobis.tsx";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
-import { IconePeca } from "../componentes/IconePeca.tsx";
 import { RodapeMobisEnxuto } from "../componentes/RodapeMobisEnxuto.tsx";
 import type { PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
@@ -52,16 +51,6 @@ const VEICULOS=[
   {nome:"Mitsubishi L200",valor:"L200",foto:fotoL200},
 ];
 const brl=(n:number)=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
-/** Ícone de sistema aprovado, nunca representa foto ou compatibilidade do item. */
-function iconeDaCategoria(categoria:string|null|undefined):string {
-  const c=(categoria??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-  if(/bandeja|suspens|amortec/.test(c))return "suspensao";
-  if(/freio|pastilha|disco de freio/.test(c))return "freios";
-  if(/embreagem|transmiss|cambio/.test(c))return "transmissao";
-  if(/eletric|sensor|alternador/.test(c))return "eletrica";
-  if(/radiador|arrefecimento|bomba.*agua|termostat/.test(c))return "arrefecimento";
-  return "motor";
-}
 const para=(id:string)=>document.getElementById(id)?.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
 /** Links por veículo somente para aplicações tecnicamente aprovadas. */
 const aplicacoesPublicas = (paginas: PaginaAplicacao[] | undefined) =>
@@ -163,7 +152,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     coresPublicas.cor_acento==="#e2181a";
   const blocosSite:Record<(typeof ordemVitrine)[number],ReactNode>={
     banner: <div data-bloco="banner"><GlassyCarouselMobisV3
-      banners={banners} veiculos={VEICULOS}
+      banners={banners} veiculos={VEICULOS} paginasPorSku={dados?.paginas_aplicacao??{}}
       intervalo={intervaloPublico(dados?.layout?.intervalo_segundos)}/></div>,
     catalogo: <>
       <section className="m2-wrap m2-secao m2-catalogo" data-bloco="produtos" id="m2-catalogo" aria-live="polite">
@@ -178,9 +167,9 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
         </p>}
         {dados&&dados.produtos.length>0&&<div className="m2-produto-grade">{dados.produtos.map(p=><article key={p.sku} data-sku-fisico={p.sku} className="m2-produto">
           <div className="m2-foto-produto">
-            <a href={p.consulta_previa?(p.whatsapp||"#/loja/mobis"):"#/p/mobis/"+encodeURIComponent(p.sku)} target={p.consulta_previa?undefined:"_blank"} rel={p.consulta_previa?undefined:"noopener noreferrer"} aria-label={(p.consulta_previa?"Consultar peça ":"Abrir ficha em nova aba ")+p.sku} style={{display:"block",width:"100%"}}>
-              {p.imagem?<img src={p.imagem} alt={"Fotografia autorizada do produto físico "+p.sku} loading="lazy"/>:
-                <div aria-label="Ilustração de categoria, não é foto da peça"><IconePeca nome={iconeDaCategoria(p.categoria)} tamanho={72}/></div>}
+            <a href={"#/p/mobis/"+encodeURIComponent(p.sku)} aria-label={"Abrir página do produto físico "+p.sku} className="m2-foto-link">
+              {p.imagem?<img src={p.imagem} alt={"Foto real aprovada da peça física "+p.sku} loading="lazy"/>:
+                <span className="m2-sem-foto-real" role="status">Foto real da peça em preparação<small>SKU {p.sku}</small></span>}
             </a>
           </div>
           <div><small>SKU {p.sku}{p.marca?" · "+p.marca:""}</small>

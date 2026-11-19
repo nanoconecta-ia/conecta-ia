@@ -39,6 +39,23 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
     const pedido = route.request().postDataJSON();
     consultas.push(pedido);
     if (erro) return route.fulfill({status:503, headers, contentType:"application/json", body:'{"erro":"simulado"}'});
+    // As rotas por veículo só respondem quando há aprovação e página indexável na API.
+    if(pedido.aplicacao_slug){
+      const aplicacoes={
+        "hyundai-hr-motor-d4cb":{modelo:"Hyundai HR",titulo:"Motor parcial 2.5 D4CB para Hyundai HR"},
+        "kia-bongo-motor-d4cb":{modelo:"Kia Bongo K2500",titulo:"Motor parcial 2.5 D4CB para Kia Bongo"}
+      };
+      const app=cenarioFlash?aplicacoes[pedido.aplicacao_slug]:null;
+      if(!app)return route.fulfill({status:404,headers,contentType:"application/json",body:'{"erro":"Aplicação não publicada"}'});
+      return route.fulfill({status:200,headers,contentType:"application/json",body:JSON.stringify({
+        loja:{nome:"Mobis Autopeças",slug:"mobis",ambiente:"teste",whatsapp:"5562991654515"},
+        pagina_aplicacao:{
+          slug:pedido.aplicacao_slug,titulo:app.titulo,descricao:"Ficha de homologação simulada",modelo:app.modelo,
+          motorizacao:"D4CB 2.5 16V Euro V",ano_inicial:2013,ano_final:null,status:"aprovado",indexavel:true,
+          sku_pai:"CI003000",marca:"TRIM-GO",categoria:"Motor parcial",fotos:[],preco:null,estoque:null,whatsapp:null
+        }
+      })});
+    }
     return route.fulfill({status:200, headers, contentType:"application/json", body:JSON.stringify({
       loja:{nome:"Mobis Autopeças",slug:"mobis",whatsapp:"5562991654515",...flags},
       layout:{blocos:flags.layoutOrdem??["banner","montadoras","taxonomia","catalogo","empresa"],intervalo_segundos:flags.layoutIntervalo??6},
@@ -214,41 +231,57 @@ try {
   }
   {
     const {context,page,erros} = await abrir({ambiente:"teste",venda_habilitada:false},390,false,true);
-    assert.equal(await page.locator(".gcv3").count(),1,"banner Flash gerado apenas a partir da API");
-    assert.equal(await page.locator(".gcv3-midia").getAttribute("href"),"#/p/mobis/CI003000",
-      "imagem da campanha abre diretamente a página SKU");
-    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/p/mobis/CI003000",
-      "CTA do carrossel abre diretamente a página SKU");
-    assert.equal(await page.locator(".gcv3-titulo-link").getAttribute("href"),"#/p/mobis/CI003000",
-      "título da campanha abre diretamente a página SKU");
-    assert.equal(await page.getByRole("dialog").count(),0,"não exibe janela intermediária");
+    assert.equal(await page.locator(".gcv3").count(),1,"um carrossel com banners individuais por veículo");
+    assert.equal(await page.locator(".gcv3-paginacao .gcv3-ponto").count(),2,
+      "campanha de um SKU físico com dois perfis aprovados gera exatamente dois banners");
+    const hr="#/a/hyundai-hr-motor-d4cb",bongo="#/a/kia-bongo-motor-d4cb";
+    assert.equal(await page.locator(".gcv3-midia").getAttribute("href"),hr,"banner HR abre sua aplicação");
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),hr,"CTA HR abre sua aplicação");
+    assert.equal(await page.locator(".gcv3-titulo-link").getAttribute("href"),hr,"título HR abre sua aplicação");
+    assert.equal(await page.locator(".gcv3-mstyle-logo").count(),1,"banner segue logo M-STYLE");
+    assert.equal(await page.locator(".gcv3-preco").count(),0,"banners de aplicação não expõem preços");
     await page.locator(".gcv3-cta").click();
-    await page.locator(".produto-publico-mobis-aplicacoes").waitFor();
-    assert.equal(new URL(page.url()).hash,"#/p/mobis/CI003000","navegação direta à página canônica");
-    assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a").count(),2,
-      "página física tem os destinos individuais por veículo aprovados");
-    assert.equal(await page.locator(".produto-publico-mobis-aplicacoes a[href*=pendente]").count(),0,
-      "aplicação pendente nunca vira link público");
+    await page.getByRole("heading",{name:/Hyundai HR/}).first().waitFor();
+    assert.equal(new URL(page.url()).hash,hr,"banner HR navega ao perfil Hyundai HR");
+    await page.goto(base+"#/loja/mobis");
+    await page.locator(".gcv3-paginacao .gcv3-ponto").nth(1).click();
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),bongo,"banner Kia aponta à página Kia");
+    assert.equal(await page.locator(".gcv3-midia").getAttribute("href"),bongo,"foto Kia aponta à página Kia");
+    await page.locator(".gcv3-cta").click();
+    await page.getByRole("heading",{name:/Kia Bongo/}).first().waitFor();
+    assert.equal(new URL(page.url()).hash,bongo,"banner Kia navega ao perfil Kia Bongo");
+    assert.equal(await page.locator('a[href*="pendente-nao-publicado"]').count(),0,"perfil pendente nunca vira banner");
     assert.deepEqual(erros,[]);
-    resultados.push({flash:"foto, título e CTA navegam direto ao SKU; páginas por veículo só aprovadas"});
+    resultados.push({banners:"2 perfis aprovados: HR e Bongo com páginas independentes e mesmo SKU"});
     await context.close();
   }
   {
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,multiplosBanners:true},390,false,true);
-    assert.equal(await page.getByRole("button",{name:"Próximo destaque"}).count(),1,"carrossel com duas campanhas");
-    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/p/mobis/CI003000");
+    assert.equal(await page.getByRole("button",{name:"Próximo destaque"}).count(),1);
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/a/hyundai-hr-motor-d4cb");
+    await page.getByRole("button",{name:"Próximo destaque"}).click();
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/a/kia-bongo-motor-d4cb",
+      "segunda aplicação tem banner próprio e link próprio");
     await page.getByRole("button",{name:"Próximo destaque"}).click();
     assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/p/mobis/EXEMPLO-2",
-      "cada campanha na mesma faixa aponta ao seu próprio SKU");
-    assert.match(await page.locator(".gcv3-topo > span").last().textContent()||"",/02\s*\/\s*02/);
+      "produto sem aplicações aprovadas mantém link ao SKU físico");
+    assert.match(await page.locator(".gcv3-topo > span").last().textContent()||"",/03\s*\/\s*03/);
     assert.deepEqual(erros,[]);
     await context.close();
   }
   {
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,previaSimulada:true},390);
     assert.equal(await page.locator(".m2-produto").count(),1,"prévia sinalizada mostra produto de consulta");
+    assert.equal(await page.locator(".m2-foto-produto .ico-peca").count(),0,"não substituir fotografia por ícone de sistema");
+    assert.equal(await page.locator(".m2-foto-produto .m2-sem-foto-real").count(),1,"quadro sem fotografia real é identificado claramente");
+    assert.equal(await page.locator(".m2-foto-produto").evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(255, 255, 255)","fundo branco puro no catálogo");
+    assert.equal(await page.locator(".m2-foto-link").getAttribute("href"),"#/p/mobis/CI003696","foto da peça abre ficha do SKU físico, não WhatsApp");
+
     assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/loja/mobis/veiculo/HR",
       "produto de prévia nunca entra no banner automaticamente: só aparecem os veículos institucionais");
+    await page.getByRole("button",{name:"Próximo destaque"}).click();
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/loja/mobis/veiculo/Bongo",
+      "Bongo em preparação navega à sua própria busca, não à página pendente");
     assert.equal(await page.locator(".gcv3-sku").count(),0,"nenhum SKU automático no destaque");
     assert.equal(await page.locator(".gcv3-preco").count(),0,"prévia não mostra preço");
     assert.equal(await page.locator("#m2-empresa").count(),0,"institucional não ocupa home");
@@ -257,7 +290,7 @@ try {
   }
   {
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false},390);
-    await page.locator(".ms-navegacao a[href=\"#/loja/mobis/empresa\"]").click();
+    await page.locator(".ms-navegacao a[href=\"#/loja/mobis/empresa\"]:visible").first().click();
     await page.locator("#m2-empresa").waitFor();
     assert.equal(new URL(page.url()).hash,"#/loja/mobis/empresa","empresa tem página dedicada");
     assert.equal(await page.locator(".m2-catalogo").count(),0,"empresa não duplica catálogo");
