@@ -79,12 +79,13 @@
 }
 
 /* TIPOGRAFIA OFICIAL M-STYLE
-   Títulos: Eurostile Next Heavy quando licenciado/local; Barlow Condensed 900
-   como equivalente visual aberto (vertical, compacto, geométrico).
-   Apoio, preços, SKU e botões: Montserrat. A arte do logotipo é imagem oficial e nunca texto recriado. */
+   Títulos: Eurostile Next Heavy quando disponível/local; Inter Variable Black 900
+   (já incluída no bundle local) como alternativa geométrica confiável, sem CDN.
+   Apoio, preços, SKU e botões: Montserrat se instalada, senão Inter Variable.
+   A arte do logotipo é imagem oficial e nunca texto recriado. */
 .mobis-v2.m4 .gcv3{
-  --mobis-banner-titulo:"Eurostile Next Heavy","Barlow Condensed","Arial Narrow",Impact,sans-serif;
-  --mobis-banner-texto:"Montserrat",Inter,Arial,sans-serif;
+  --mobis-banner-titulo:"Eurostile Next Heavy","Arial Black","Inter Variable",Inter,sans-serif;
+  --mobis-banner-texto:"Montserrat","Inter Variable",Inter,Arial,sans-serif;
   font-family:var(--mobis-banner-texto);
   font-kerning:normal;
   text-rendering:optimizeLegibility;
@@ -96,7 +97,8 @@
   font-style:normal;
   font-weight:900;
   font-synthesis:weight;
-  letter-spacing:.012em;
+  font-variation-settings:"wght" 900;
+  letter-spacing:-.012em;
   line-height:1;
   text-transform:uppercase;
   max-width:100%;
