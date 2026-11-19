@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { ApresentarConecta } from "../componentes/ApresentarConecta.tsx";
 import { Dialogo } from "../componentes/Dialogo.tsx";
 import { dataBr } from "../componentes/conector/ui.tsx";
 import { SUPABASE_URL } from "../config.ts";
@@ -57,6 +58,8 @@ export function GatewayMCP({ loja }: { loja: Loja }) {
         <div className="cartao"><h2>2. Cliente externo autorizado</h2><p className="suave">Um app de IA seu se conecta ao endereço abaixo com uma chave desta página e chama as ferramentas permitidas pelo escopo. Depende de o cliente suportar MCP ou chamadas HTTP.</p></div>
         <div className="cartao"><h2>3. Plugins e serviços externos</h2><p className="suave">Serviços integrados <strong>um a um</strong> em Integrações de IA (risco, capacidades e teste próprios). Assinaturas e plugins do ChatGPT <strong>não</strong> são transferidos automaticamente para cá.</p></div>
       </div>
+
+      <ApresentarConecta />
 
       {msg && <p className={msg.ok ? "msg-ok" : "msg-erro"} role={msg.ok ? "status" : "alert"}>{msg.t}</p>}
       {novo && (

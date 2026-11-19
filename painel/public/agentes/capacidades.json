@@ -1,0 +1,65 @@
+{
+  "document_type": "conecta-ia-capability-manifest",
+  "version": "1.0",
+  "name": "Conecta.IA — Nano",
+  "description": "Catálogo técnico e operações comerciais com consultas e propostas auditadas por loja. Descoberta pública; dados privados requerem autenticação.",
+  "documentation": "https://github.com/nanoconecta-ia/conecta-ia/blob/main/docs/MCP-ESCOPO-NANO-PLUGIN-AUDITORIA.md",
+  "interfaces": {
+    "mcp": {
+      "url": "https://dsfzhsrudriqkumtlqwj.supabase.co/functions/v1/conector-mcp",
+      "transport": "http-jsonrpc-2.0",
+      "methods": [
+        "initialize",
+        "ping",
+        "tools/list",
+        "tools/call"
+      ],
+      "authorization": "Bearer por loja ou OAuth autorizado",
+      "browserDirectRequests": false
+    },
+    "openapi": {
+      "description": "Descrição do mesmo endpoint HTTP JSON-RPC; não é nova API REST",
+      "specification": "openapi.json"
+    },
+    "a2a": {
+      "status": "not_implemented",
+      "agentCardAvailable": false,
+      "note": "Não anunciar A2A até existir endpoint de mensagens/tasks A2A e teste real de conformidade"
+    }
+  },
+  "capabilities": [
+    {
+      "name": "catalogo-consulta",
+      "permission": "leitura",
+      "note": "Escopado à loja autorizada"
+    },
+    {
+      "name": "bling-consulta-sku",
+      "permission": "leitura",
+      "note": "Somente campos permitidos; custo e fornecedor não saem pelo MCP"
+    },
+    {
+      "name": "referencias-oem-consulta",
+      "permission": "leitura",
+      "note": "Somente registros/estados autorizados"
+    },
+    {
+      "name": "proposta-enriquecimento",
+      "permission": "propor",
+      "note": "A confirmar; aprovação humana obrigatória"
+    }
+  ],
+  "security": {
+    "data_publicly_available": false,
+    "auth_required_for_tools": true,
+    "never_share": [
+      "service_role",
+      "bling_access_token",
+      "mcp_bearer_token",
+      "loja_secret"
+    ],
+    "external_agent_can_approve": false,
+    "external_agent_can_publish": false,
+    "external_agent_can_write_bling": false
+  }
+}
