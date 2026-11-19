@@ -17,3 +17,20 @@ export function linkWhatsAppProduto(numero: string | null | undefined, nome: str
   return linkWhatsAppPublico(numero, "Olá! Tenho interesse em " + nome.slice(0, 150) +
     " (cód. " + sku.slice(0, 60) + "). Pode confirmar aplicação, preço e disponibilidade?");
 }
+
+/**
+ * Perfis comerciais definidos pelo proprietário. NÃO confundir a página Facebook
+ * principal (ID 119574083114811, cerca de 800 seguidores) com páginas menores,
+ * perfil pessoal ou o botão genérico de compartilhamento. Instagram escolhido
+ * para a marca: @mobisautopartsgoias (não @mobisautopartsgo).
+ *
+ * Fontes: "MOBIS AUTOPEÇAS | Padronização Meta Business — Plano aprovado e
+ * auditoria de acessos | 09-11-2026", no Google Drive do proprietário.
+ *
+ * São links de navegação. Esta lista NÃO altera nomes, relações entre contas,
+ * permissões, anúncios ou perfis nas plataformas externas.
+ */
+export const REDES_OFICIAIS_MOBIS = {
+  facebook: "https://www.facebook.com/profile.php?id=119574083114811",
+  instagram: "https://www.instagram.com/mobisautopartsgoias/",
+} as const;
