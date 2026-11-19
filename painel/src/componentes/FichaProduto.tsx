@@ -14,7 +14,7 @@ export function FichaProduto({ produto, veiculos }: { produto: Produto; veiculos
         <span className="ficha-codigo"><small>CÓDIGO</small><b className="mono">{f.codigo}</b></span>
       </header>
       <div className="ficha-corpo">
-        <div className="ficha-foto">{produto.imagem ? <img src={produto.imagem} alt={"Foto real aprovada da peça física "+produto.codigo} /> : <span>Foto real da peça em preparação</span>}</div>
+        <div className="ficha-foto">{produto.imagem ? <img src={produto.imagem} alt={"Foto real aprovada da peça física "+f.codigo} /> : <span>Foto real da peça em preparação</span>}</div>
         <div className="ficha-texto">
           <h1>{f.titulo}</h1>
           {f.veiculos && <p className="ficha-veiculo">{f.veiculos}</p>}
