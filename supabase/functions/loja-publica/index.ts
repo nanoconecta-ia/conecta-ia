@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
   // Catálogo enriquecido: visibilidade aprovada e segregada de venda.
   // Mantém a prévia antiga apenas no piloto de teste com zero produtos publicados.
   consulta = modoPreviaCatalogo
-    ? consulta.eq("exibicao_teste", true).eq("situacao", "A")
+    ? consulta.or("exibicao_teste.eq.true,exibicao_informativa.eq.true").eq("situacao", "A")
     : loja.slug === "mobis"
       ? consulta.or("publicado.eq.true,exibicao_informativa.eq.true")
       : consulta.eq("publicado", true);
