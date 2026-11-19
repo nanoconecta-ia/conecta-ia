@@ -1,55 +1,128 @@
-/* MOBIS · ficha individual do SKU físico; aplicações por veículo possuem URLs próprias. */
-.produto-publico-mobis{background:#f7f8fa;min-height:100vh;color:#252e35;padding:0 clamp(12px,3vw,30px) 45px}
-.produto-publico-mobis-cab{display:flex;align-items:center;justify-content:space-between;gap:16px;
-  max-width:1120px;margin:0 auto 24px;padding:14px 0;border-bottom:1px solid #dfe4e8;background:#f7f8fa}
-.produto-publico-mobis-cab img{width:clamp(140px,18vw,210px);max-height:65px;object-fit:contain}
-.produto-publico-mobis-cab>a:last-child{background:#4a5159;color:#fff;padding:11px 15px;border-radius:10px;
-  text-decoration:none;font-size:.88rem;font-weight:750;white-space:nowrap}
-.produto-publico-mobis>.ficha,.produto-publico-mobis>.cartao,.produto-publico-mobis-aplicacoes{
-  max-width:1120px;margin:0 auto 18px;border:1px solid #dfe4e8;border-radius:14px;background:#fff;padding:clamp(14px,2vw,22px)}
-.produto-publico-mobis-aplicacoes h2{margin:0 0 12px;font-size:1.18rem;color:#252e35}
-.produto-publico-mobis-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px}
-.produto-publico-mobis-grade a{display:grid;gap:5px;border:1px solid #dce2e6;background:#f8f9fa;border-radius:12px;
-  padding:12px;color:#29323a;text-decoration:none}
-.produto-publico-mobis-grade a:hover{border-color:#66727d}
-.produto-publico-mobis-grade small{color:#5c6872;font-size:.82rem}
-.produto-publico-mobis-grade span{font-weight:750;font-size:.83rem}
-.produto-publico-mobis-aplicacoes>p{color:#647079;font-size:.84rem;line-height:1.45}
-.produto-publico-mobis .ficha-wa,.produto-publico-mobis .linha-voz button{background:#4a5159;color:#fff;border-color:#4a5159}
-@media(max-width:560px){.produto-publico-mobis-cab{gap:10px}.produto-publico-mobis-cab img{width:145px}.produto-publico-mobis-cab>a:last-child{font-size:.8rem;padding:9px}}
-
-/* A fotografia comercial mostra a peça REAL, nunca ícone/veículo de referência.
-   Fundo branco é obrigatório também no arquivo fotográfico aprovado. */
+/* MOBIS | Página COMPLETA do SKU: layout largo, informações em abas, catálogo
+   relacionado e rodapé full bleed. Não altera os estilos do painel interno. */
+.produto-publico-mobis{
+  display:flex;flex-direction:column;min-height:100dvh;width:100%;
+  background:#eaf2f6;color:#252e35;padding:0;overflow-x:clip;
+}
+.produto-publico-mobis *{box-sizing:border-box}
+.produto-publico-mobis-cab{
+  width:100%;padding:14px max(16px,calc((100vw - 1460px)/2));
+  display:flex;justify-content:space-between;align-items:center;gap:18px;
+  border-bottom:1px solid #dce3e8;background:#fff;
+}
+.produto-publico-mobis-cab img{display:block;width:clamp(165px,19vw,260px);height:auto;max-height:90px;object-fit:contain}
+.produto-publico-mobis-cab nav a{display:inline-flex;align-items:center;min-height:44px;padding:10px 14px;
+  border:1px solid #adb9c2;border-radius:10px;color:#24313a;text-decoration:none;font-weight:800}
+.produto-publico-mobis-cab nav a:hover{background:#edf2f6}
+.produto-publico-mobis-conteudo{width:min(1480px,calc(100% - clamp(28px,5vw,96px)));margin:0 auto;padding:0 0 clamp(24px,4vw,58px)}
+.produto-publico-mobis-breadcrumb{display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:20px 0 14px;color:#5d6872;font-size:.84rem}
+.produto-publico-mobis-breadcrumb a{color:#384550;text-decoration:none}
+.produto-publico-mobis-breadcrumb a:hover{text-decoration:underline}
+.produto-publico-mobis-intro{
+  display:flex;gap:16px;justify-content:space-between;align-items:center;flex-wrap:wrap;
+  padding:clamp(20px,3vw,34px);margin:0 0 20px;border-radius:18px;
+  background:linear-gradient(110deg,#20282e,#3b4147);color:#fff;
+  box-shadow:0 10px 24px #17212b12;border-top:4px solid #e2181a;
+}
+.produto-publico-mobis-kicker{font-size:.75rem!important;letter-spacing:.14em;color:#f3b3b3!important;font-weight:900;margin:0 0 8px!important}
+.produto-publico-mobis-intro h2{color:#fff!important;font-size:clamp(1.5rem,2.5vw,2.45rem);margin:0 0 10px;line-height:1.15}
+.produto-publico-mobis-intro p{margin:0;color:#e1e8ed;line-height:1.5}
+.produto-publico-mobis-selo{padding:12px 16px;border:1px solid #eb8c90;background:#e2181a18;
+  color:#fff;font-weight:800;border-radius:10px;font-size:.89rem}
+.produto-publico-mobis-estado{padding:clamp(24px,6vw,64px);background:#fff;border:1px solid #dce3e8;
+  border-radius:16px;margin:10px 0 28px;min-height:320px}
+.produto-publico-mobis-estado a{color:#9d0710;font-weight:750}
+.produto-publico-mobis-conteudo>.ficha{
+  width:100%;max-width:none;margin:0 0 24px;border:1px solid #d6e0e6;
+  border-radius:18px;background:#fff;box-shadow:0 10px 28px #1c2e410d;
+}
+.produto-publico-mobis .ficha-topo{padding:16px clamp(18px,3vw,30px);background:#20282e;min-height:64px}
+.produto-publico-mobis .ficha-corpo{
+  display:grid;grid-template-columns:minmax(0,.96fr) minmax(0,1.12fr);
+  gap:clamp(22px,3vw,56px);align-items:stretch;padding:clamp(22px,3.2vw,46px);
+}
 .produto-publico-mobis .ficha-foto{
-  display:grid;
-  place-items:center;
-  min-height:300px;
-  overflow:hidden;
-  background:#fff!important;
-  border:1px solid #dce5e9;
-  border-radius:12px;
-  padding:clamp(12px,2vw,22px);
+  display:grid;place-items:center;min-height:clamp(360px,33vw,535px);
+  overflow:hidden;background:#fff!important;border:1px solid #dce5e9;
+  border-radius:14px;padding:clamp(12px,2vw,22px)
 }
-.produto-publico-mobis .ficha-foto img{
-  display:block;
-  width:100%;
-  max-width:100%;
-  max-height:490px;
-  height:auto;
-  object-fit:contain;
-  object-position:center;
-  background:#fff!important;
-  filter:none;
-  transform:none;
+.produto-publico-mobis .ficha-foto img{display:block;width:100%;max-width:100%;max-height:530px;height:auto;
+  object-fit:contain;object-position:center;background:#fff!important;filter:none;transform:none}
+.produto-publico-mobis .ficha-foto>span{color:#64717b;background:#fff;font-size:.97rem;
+  line-height:1.6;text-align:center;font-weight:650}
+.produto-publico-mobis .ficha-texto{min-width:0;align-self:center;overflow-wrap:anywhere}
+.produto-publico-mobis .ficha-texto h1{
+  font-size:clamp(1.5rem,2.5vw,2.7rem);line-height:1.23;
+  color:#1a252e;font-weight:850;letter-spacing:-.02em;margin:4px 0 16px;
 }
-.produto-publico-mobis .ficha-foto>span{
-  color:#64717b;
-  background:#fff;
-  font-size:.9rem;
-  line-height:1.6;
-  text-align:center;
-  font-weight:650;
+.produto-publico-mobis .ficha-texto h2{font-size:.89rem;letter-spacing:.09em;color:#37434d;margin-top:26px}
+.produto-publico-mobis .ficha-texto p,.produto-publico-mobis .ficha-texto li{line-height:1.65;font-size:1rem}
+.produto-publico-mobis .ficha-wa{
+  display:inline-flex;align-items:center;justify-content:center;margin:0 clamp(22px,3.2vw,46px) 26px;
+  width:fit-content;max-width:calc(100% - 44px);min-height:48px;
+  background:#252f37;border:1px solid #37424c;color:#fff;border-radius:10px;
+  padding:12px 20px;text-decoration:none;font-weight:800;text-align:center
+}
+.produto-publico-mobis-detalhes{background:#fff;border:1px solid #d7e0e6;border-radius:18px;
+  overflow:hidden;margin:0 0 24px;box-shadow:0 10px 25px #1c2e410a}
+.produto-publico-mobis-abas{display:flex;gap:0;align-items:stretch;overflow-x:auto;
+  border-bottom:1px solid #d8e1e8;background:#f2f5f7;scrollbar-width:thin}
+.produto-publico-mobis-abas button{flex:1 0 auto;min-width:max-content;padding:20px clamp(14px,2vw,28px);
+  font:inherit;font-size:.91rem;font-weight:850;color:#45535d;background:transparent;
+  border:0;border-bottom:4px solid transparent;cursor:pointer}
+.produto-publico-mobis-abas button[aria-selected="true"]{background:#fff;color:#a50b15;border-bottom-color:#e2181a}
+.produto-publico-mobis-abas button:hover{background:#e8edf1}
+.produto-publico-mobis :is(a,button,[tabindex]):focus-visible{outline:3px solid #e2181a;outline-offset:3px}
+.produto-publico-mobis-painel{padding:clamp(22px,3vw,42px);min-height:270px;line-height:1.7;color:#29353e;overflow-wrap:anywhere}
+.produto-publico-mobis-painel h2{font-size:clamp(1.25rem,2vw,1.65rem);color:#242e36;margin:0 0 18px}
+.produto-publico-mobis-painel p{max-width:90ch;font-size:1rem;margin:0 0 16px}
+.produto-publico-mobis-nota{background:#f1f6f8;border-left:4px solid #c61b24;padding:14px 18px;border-radius:0 8px 8px 0;color:#46555f}
+.produto-publico-mobis-fatos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:14px;margin:0 0 22px}
+.produto-publico-mobis-fatos>div{min-width:0;padding:16px;border:1px solid #d9e2e8;border-radius:12px;background:#fafbfc}
+.produto-publico-mobis-fatos dt{font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;font-weight:800;color:#63727b}
+.produto-publico-mobis-fatos dd{margin:6px 0 0;font-weight:750;color:#24303a;overflow-wrap:anywhere}
+.produto-publico-mobis-grade,.produto-publico-mobis-relacionados{display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr));gap:15px}
+.produto-publico-mobis-grade a,.produto-publico-mobis-relacionado{
+  display:flex;flex-direction:column;gap:7px;padding:20px;border:1px solid #d9e2e8;
+  background:#f8fafb;border-radius:13px;color:#29333b;text-decoration:none;min-width:0
+}
+.produto-publico-mobis-grade a:hover,.produto-publico-mobis-relacionado:hover{border-color:#e2181a}
+.produto-publico-mobis-grade small,.produto-publico-mobis-relacionado small{font-size:.82rem;color:#596972}
+.produto-publico-mobis-grade span,.produto-publico-mobis-relacionado>span{font-weight:800;color:#9f0e17;margin-top:auto}
+.produto-publico-mobis-relacionado-foto{width:100%;height:160px;display:grid;place-items:center;
+  background:#fff;border:1px solid #e0e6eb;border-radius:10px;overflow:hidden}
+.produto-publico-mobis-relacionado-foto img{max-height:100%;max-width:100%;width:auto;height:auto;object-fit:contain}
+.produto-publico-mobis-relacionado-foto span{font-size:.86rem;text-align:center;color:#6d777f;padding:12px}
+.produto-publico-mobis-familias{display:flex;gap:9px;flex-wrap:wrap;margin-top:24px}
+.produto-publico-mobis-familias a{display:inline-flex;align-items:center;min-height:44px;
+  padding:8px 15px;background:#eef2f5;border:1px solid #cbd5de;border-radius:999px;
+  color:#273541;text-decoration:none;font-weight:750}
+.produto-publico-mobis-familias a:hover{border-color:#c11c24}
+.produto-publico-mobis-veiculos{margin:20px 0;padding-left:20px}
+.produto-publico-mobis-conexao{display:flex;gap:22px;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;border-radius:16px;padding:clamp(22px,3vw,40px);margin:0;
+  background:#20282e;color:#fff}
+.produto-publico-mobis-conexao h2{color:#fff;font-size:clamp(1.3rem,2.1vw,1.8rem);margin:0 0 8px}
+.produto-publico-mobis-conexao p{margin:0;color:#d8e2ea;max-width:75ch;line-height:1.6}
+.produto-publico-mobis-conexao>a{background:#d81921;border-radius:10px;padding:14px 18px;
+  color:#fff;text-decoration:none;font-weight:800;min-height:48px;display:inline-flex;align-items:center}
+.produto-publico-mobis>.m4-rodape-enxuto{width:100%;margin-top:auto;flex-shrink:0}
+@media(max-width:790px){
+  .produto-publico-mobis .ficha-corpo{grid-template-columns:1fr;gap:20px}
+  .produto-publico-mobis .ficha-foto{min-height:290px}
+  .produto-publico-mobis-abas button{flex:0 0 auto}
 }
 @media(max-width:540px){
-  .produto-publico-mobis .ficha-foto{min-height:245px}
+  .produto-publico-mobis-cab{padding:10px 14px;gap:10px}
+  .produto-publico-mobis-cab img{width:152px}
+  .produto-publico-mobis-cab nav a{font-size:.77rem;padding:8px;min-height:42px}
+  .produto-publico-mobis-conteudo{width:calc(100% - 24px)}
+  .produto-publico-mobis-intro{padding:22px 18px}
+  .produto-publico-mobis .ficha-foto{min-height:250px}
+  .produto-publico-mobis .ficha-corpo{padding:16px}
+  .produto-publico-mobis .ficha-texto h1{font-size:1.45rem}
+  .produto-publico-mobis-painel{padding:20px 16px}
 }
+@media(prefers-reduced-motion:reduce){.produto-publico-mobis *{scroll-behavior:auto}}
