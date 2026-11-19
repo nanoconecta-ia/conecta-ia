@@ -1,6 +1,9 @@
 # MOBIS × Conecta.IA — PORTEIRO: como o agente deve ENTREGAR um cadastro
 **Regra universal para todos os produtos e veículos da MOBIS.** Data: 19/11/2026. Status: procedimento obrigatório de orquestração/aceite a ser implementado e testado; documentação não é execução funcional, homologação ou autorização para contornar o Policy Engine.
 
+## REQUISITO UNIVERSAL — páginas por veículo com SEO e OEM da montadora
+A [regra mestre de 1 SKU do Bling e N cadastros editoriais por aplicação](porteiro-master-ofertas-por-aplicacao-oem-seo-bling-20261119.md) faz parte deste contrato de entrega. O porteiro gera páginas próprias para cada montadora/modelo/versão com OEM EPC verificável, título, descrição, aplicação, tags SEO, URL e banner próprios, mas cada uma referencia a mesma peça física/notas do Bling. Quando o OEM for compartilhado entre montadoras, registrar uma correspondência comprovada com fonte, nunca adivinhar ou reutilizar números de juntas/filtros. Aplicação não aprovada: texto interno/noindex, não alegar encaixe público. O ERP segue como base fiscal e histórica, sem duplicação de estoque.
+
 ## REGRA MESTRE — ficha informativa não depende de foto nem preço
 Usar [norma definitiva do catálogo enriquecido](regra-mestra-catalogo-enriquecido-sem-preco-sem-foto-20261119.md). O contrato de entrega passa a distinguir `catalogo_informativo` e `oferta_comercial`. Ficha informativa pode expor dados técnicos aprovados SEM preço público e SEM foto; o preço existente no Bling fica privado até o lojista liberar sua exibição, e a foto pode ser adicionada depois. Nenhum `offers`, checkout, estoque ou aplicação não comprovada é exposto no modo informativo. A prévia da loja MOBIS em `teste` já existe, mas publicar em produção com estado separado ainda requer backend homologado. `produto_automacao.pausado` continua impedindo gravações do agente.
 
