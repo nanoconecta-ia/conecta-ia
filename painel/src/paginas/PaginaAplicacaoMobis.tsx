@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
+import { RodapeMobisEnxuto } from "../componentes/RodapeMobisEnxuto.tsx";
+import type { PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import logoMobis from "../assets/marcas/mobis-mstyle-v3-logo.png";
 import "./loja-mobis-nova.css";
 
@@ -10,7 +12,7 @@ type Aplicacao = {
   status:string; indexavel:boolean; sku_pai:string; marca:string|null;
   categoria:string|null; fotos:string[]; preco:null; estoque:null; whatsapp:string|null
 };
-type Resposta = {loja:{nome:string;slug:string;ambiente:string};pagina_aplicacao:Aplicacao};
+type Resposta = {loja:{nome:string;slug:string;ambiente:string;whatsapp?:string|null};pagina_aplicacao:Aplicacao;politicas?:PoliticasLojaPublicas|null};
 
 /** Identificador visual de modelo, sem placa nem fotografia de terceiro. */
 function identidadeVeiculo(modelo:string){
@@ -105,5 +107,6 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
         </div>
       </>}
     </div>
+    <RodapeMobisEnxuto nome={dados?.loja?.nome??"Mobis Autopeças"} whatsapp={dados?.loja?.whatsapp} politicas={dados?.politicas}/>
   </main>;
 }
