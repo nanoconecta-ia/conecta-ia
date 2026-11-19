@@ -1,6 +1,9 @@
 # MOBIS × Conecta.IA — PORTEIRO: como o agente deve ENTREGAR um cadastro
 **Regra universal para todos os produtos e veículos da MOBIS.** Data: 19/11/2026. Status: procedimento obrigatório de orquestração/aceite a ser implementado e testado; documentação não é execução funcional, homologação ou autorização para contornar o Policy Engine.
 
+## REGRA MESTRE — ficha informativa não depende de foto nem preço
+Usar [norma definitiva do catálogo enriquecido](regra-mestra-catalogo-enriquecido-sem-preco-sem-foto-20261119.md). O contrato de entrega passa a distinguir `catalogo_informativo` e `oferta_comercial`. Ficha informativa pode expor dados técnicos aprovados SEM preço público e SEM foto; o preço existente no Bling fica privado até o lojista liberar sua exibição, e a foto pode ser adicionada depois. Nenhum `offers`, checkout, estoque ou aplicação não comprovada é exposto no modo informativo. A prévia da loja MOBIS em `teste` já existe, mas publicar em produção com estado separado ainda requer backend homologado. `produto_automacao.pausado` continua impedindo gravações do agente.
+
 ## Objetivo: entrega de cadastro, não relatório extenso
 A entrada pode ser um SKU do Bling (ex.: `CI003696`) ou descrição natural (ex.: `motor para HR 2013`, `jogo de juntas Gol 1.0`). O agente conclui uma **ficha de produto físico identificável** e **rascunhos de ofertas por aplicação brasileira**, com fontes e pendências pontuais. Deve mostrar ao lojista o que realmente foi salvo e o que ainda depende de aprovação — **não declarar 'cadastrei no site' se apenas gerou texto/arquivo**.
 
