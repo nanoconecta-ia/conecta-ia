@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
-import { destinoPainel } from "./lib/lojaHost.ts";
+import { destinoPainel, entradaAdministrativa } from "./lib/lojaHost.ts";
 import { SpriteIcones } from "./componentes/SpriteIcones.tsx";
 import { aplicarTema, armazemLocal, lerPreferencia } from "./lib/tema.ts";
 import { aplicarOrbe, lerOrbe } from "./lib/orbe.ts";
@@ -28,5 +28,13 @@ if (!paraPainel) createRoot(document.getElementById("raiz")!).render(
 
 // App instalável: registra o service worker só no build de produção (em desenvolvimento ele atrapalharia o recarregamento).
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => { navigator.serviceWorker.register("./sw.js").catch(() => { /* sem service worker o site continua funcionando; só não abre offline */ }); });
+  window.addEventListener("load", () => {
+    // Cada app tem seu próprio registro e escopo; /conecta.html nunca usa a casca da vitrine.
+    const painel = entradaAdministrativa(window.location.pathname);
+    const script = painel ? "./sw-conecta.js" : "./sw.js";
+    const scope = painel ? "./conecta.html" : "./";
+    navigator.serviceWorker.register(script, { scope }).catch(() => {
+      /* sem service worker a página continua funcionando; não força cache ou alteração de sessão */
+    });
+  });
 }
