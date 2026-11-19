@@ -17,8 +17,8 @@
   --m2-ivory:#BFC3C7;
   --m2-ink:#1F2327;
   --m2-line:#BFC3C7;
-  --mobis-v3-fonte-titulo:"Eurostile Next Heavy","Barlow Condensed","Arial Narrow",sans-serif;
-  --mobis-v3-fonte-texto:"Montserrat",Inter,Arial,sans-serif;
+  --mobis-v3-fonte-titulo:"Eurostile Next Heavy","Arial Black","Inter Variable",Inter,sans-serif;
+  --mobis-v3-fonte-texto:"Montserrat","Inter Variable",Inter,Arial,sans-serif;
 }
 .mobis-v2.m4[data-mobis-v3-publicada="sim"] {
   font-family:var(--mobis-v3-fonte-texto);
