@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { destinoPainel, entradaAdministrativa, lojaMobisPorHost } from "./lojaHost.ts";
+import { destinoPainel, entradaAdministrativa, lojaMobisPorHost, urlLojaPublica } from "./lojaHost.ts";
 
 test("dominio principal e www mostram o layout novo Mobis", () => {
   assert.equal(lojaMobisPorHost("mobisautopecas.com.br"), true);
@@ -23,7 +23,7 @@ const PAGES = "nanoconecta-ia.github.io";
 test("rota do painel aberta pela entrada da loja vai para conecta.html, mantendo a rota e a busca", () => {
   assert.equal(destinoPainel(PAGES, "/conecta-ia/", "#/integracoes"), "/conecta-ia/conecta.html#/integracoes");
   assert.equal(destinoPainel(PAGES, "/conecta-ia/index.html", "#/estudio", "?v=1"), "/conecta-ia/conecta.html?v=1#/estudio");
-  assert.equal(destinoPainel(PAGES, "/conecta-ia/", ""), "/conecta-ia/conecta.html");
+  assert.equal(destinoPainel(PAGES, "/conecta-ia/", ""), null); // abrir a loja sem hash nunca pode invocar o painel
 });
 
 test("vitrine, aplicação e produto público ficam na entrada da loja", () => {
@@ -32,7 +32,22 @@ test("vitrine, aplicação e produto público ficam na entrada da loja", () => {
 
 test("não redireciona conecta.html, domínio de cliente, localhost nem caminho desconhecido", () => {
   assert.equal(destinoPainel(PAGES, "/conecta-ia/conecta.html", "#/integracoes"), null);
-  assert.equal(destinoPainel("www.mobisautopecas.com.br", "/", "#/integracoes"), null);
+  assert.equal(destinoPainel("www.mobisautopecas.com.br", "/", "#/integracoes"), "/conecta.html#/integracoes");
   assert.equal(destinoPainel("localhost", "/", "#/integracoes"), null);
   assert.equal(destinoPainel(PAGES, "/outro/", "#/integracoes"), null);
+});
+
+
+test("raiz pública nunca é substituída pelo painel em ambos os domínios", () => {
+  for (const host of ["www.mobisautopecas.com.br", "mobisautopecas.com.br"]) {
+    for (const h of ["", "#", "#/","#/loja/mobis", "#/a/aplicacao-aprovada", "#/p/mobis/CI003696"]) {
+      assert.equal(destinoPainel(host, "/", h), null, host + h);
+    }
+  }
+  assert.equal(destinoPainel("mobisautopecas.com.br", "/index.html", "#/fila"), "/conecta.html#/fila");
+});
+
+test("abrir loja pelo Conecta.IA usa entrada pública separada, nunca hash interno do painel", () => {
+  assert.equal(urlLojaPublica("mobis", "https://www.mobisautopecas.com.br/conecta.html#/fila"), "https://www.mobisautopecas.com.br/");
+  assert.equal(urlLojaPublica("outra-loja", "https://nanoconecta-ia.github.io/conecta-ia/conecta.html#/fila"), "https://nanoconecta-ia.github.io/conecta-ia/#/loja/outra-loja");
 });
