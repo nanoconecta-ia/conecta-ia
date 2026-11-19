@@ -3,6 +3,13 @@
 Site inteligente que conecta ERPs (piloto: Bling) a uma loja online, de forma autônoma.
 Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no chat, pergunte.
 
+## Como pesquisar peças MOBIS (atalho obrigatório)
+Antes de pesquisar ou propor SKU/OEM/GTIN/NCM, ler:
+- [Norma do porteiro e cadastro em lotes](docs/conector-ia/mobis-porteiro-cadastro-em-lotes-20261119.md)
+- [Mapa de fontes rápidas (GS1 Brasil, PartSouq/EPC, CAOA/Hyundai, Kia KMB/Grupo Gandini, fabricantes OE, importadores/B2B e marketplaces)](docs/conector-ia/fontes-pesquisa-rapida-sku-ncm-gs1-20261119.md)
+
+O serviço deve ter **deadline global de 15s por SKU**, não 15s por fonte; consultar primeiro Bling e cache. Sem GTIN, **não inventar EAN**; NCM é pista de classificação e nunca identifica equivalência. O gateway/servidor, não este prompt, deve impor as restrições; a regra e o timeout ainda não estão implantados em produção. Sem alterar SKU, NCM, nota, estoque ou homologar códigos automaticamente.
+
 ## Isolamento (regra 0)
 - Projeto **isolado** dos demais projetos e repositórios.
 - Nunca escreva em outros repositórios nem use o projeto Supabase **NanoShell IA**: ele é de outro produto e não pode ser tocado, pausado ou alterado.
