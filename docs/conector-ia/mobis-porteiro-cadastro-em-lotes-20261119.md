@@ -9,6 +9,9 @@ O agente deve consultar antes de tudo **[o mapa rápido de fontes GS1 Brasil + N
 
 Prioridade da pesquisa: Bling/XML/etiqueta → **GS1 Verified by GS1/CNP (quando houver GTIN)** → **PartSouq/EPC original** → **portal nacional da montadora/importadora do período (CAOA/Hyundai Brasil; Kia Brasil/KMB/Grupo Gandini; equivalentes verificados de outras marcas)** → **fabricante de peça / fornecedor OE com prova** → **importadores e catálogos B2B** → e-commerce/Mercado Livre/Shopee, **somente para pistas**. O NCM permite localizar classes e candidatos, inclusive pela GS1 Other Keys (API sujeita a plano), mas jamais comprova identidade única ou aplicação.
 
+## Cadastro por descrição e nascimento/fim das versões brasileiras
+Consultar obrigatoriamente **[pesquisa por descrição, genealogia pai/filhos/primos e exemplos Hyundai HR e VW Gol](roteiro-descricao-genealogia-veicular-br-20261119.md)**. Entrada sem SKU (`motor para HR 2013`) **é válida**: resolver modelo/mercado BR/ano, detectar várias gerações no mesmo ano, documentar motor e cilindros, retornar candidatos e só depois cruzar produto físico existente no Bling. Os anos de início/fim do MODELO não são os de cada MOTOR ou versão; último ano de catálogo de reposição não é prova do encerramento da montadora. Filhos = versões com documentos; primos = aplicações relacionadas sem equivalência automática. Sem evidência, permitir hipótese/consulta, **não** publicação.
+
 ## Entrada e processamento por lote
 1. Receber lista de SKUs atuais do Bling em modo consulta. Deduplicar por `loja_id + bling_id + sku`; manter UM produto físico, SEM clonar estoque.
 2. Recuperar receitas aprovadas por fabricante da peça, família técnica, motor e geração. Consultar primeiro base de evidências/cache interno com data e validade; pesquisar fontes externas (PartSouq/EPC + CAOA/Hyundai Brasil, Kia Motors do Brasil/KMB e fabricantes) **apenas para lacunas ou dados vencidos**. Não inferir ano brasileiro de lançamento internacional.
