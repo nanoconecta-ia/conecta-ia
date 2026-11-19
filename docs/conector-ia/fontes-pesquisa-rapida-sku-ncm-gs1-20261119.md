@@ -2,6 +2,9 @@
 **Estado:** norma técnica proposta na PR #461. Não é execução automática instalada. Data: 19/11/2026.
 **Público:** Nano.IA, GPT, Claude, ferramentas MCP e qualquer agente integrado. Aplicar SOMENTE à loja autorizada, com isolamento por tenant e sem contornar o Policy Engine.
 
+## Busca pela descrição, mesmo sem SKU
+**Não exigir SKU para iniciar a investigação.** Para entradas como `motor para HR 2013` ou `motor Gol 2003`, seguir [genealogia veicular brasileira e identificação por descrição](roteiro-descricao-genealogia-veicular-br-20261119.md): modelo pai → projeto/versão filho → motorização/cilindros/sistemas → ano inicial/final documentado → peça → SKU Bling. Não criar SKU novo por similaridade. A busca por descrição também entra no deadline GLOBAL proposto de 15s por entrada, com resposta parcial e ambiguidades.
+
 ## Regra zero: identificar antes de relacionar
 Chave física `loja_id + bling_id + SKU`. Ler primeiro o **Bling** (ou espelho recente) em **somente leitura**: SKU, nome/descrição, marca de reposição, GTIN ou GTIN tributário quando realmente existente, NCM da ficha fiscal/NF original, atributos logísticos e códigos do fabricante. Não expor custo, fornecedor privado, CNPJ de cliente, tributos de NF nem credenciais à web/LLM. NCM **não identifica individualmente** uma peça: agrupa mercadorias; NCM igual NÃO prova OEM, composição, aplicação ou intercambiabilidade. Preservar NCM original; inconsistências fiscais vão para revisão do contador, nunca para reclassificação pelo agente.
 
