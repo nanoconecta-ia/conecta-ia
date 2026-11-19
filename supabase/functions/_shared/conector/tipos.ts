@@ -45,6 +45,8 @@ export interface DefinicaoFerramenta {
   exposicao: { chat: boolean; mcp: boolean };
   /** Operação externa (Bling etc.)? Escrita real só passa pelo executor. */
   escreveExterno: boolean;
+  /** Campos de arquivo enviados pelo host ChatGPT; nunca armazenar a URL temporária na auditoria. */
+  fileParams?: readonly string[];
 }
 
 export interface ContextoPolicy {
