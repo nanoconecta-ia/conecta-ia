@@ -247,7 +247,9 @@ try {
   {
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,previaSimulada:true},390);
     assert.equal(await page.locator(".m2-produto").count(),1,"prévia sinalizada mostra produto de consulta");
-    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"https://wa.me/5562991654515");
+    assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/loja/mobis/veiculo/HR",
+      "produto de prévia nunca entra no banner automaticamente: só aparecem os veículos institucionais");
+    assert.equal(await page.locator(".gcv3-sku").count(),0,"nenhum SKU automático no destaque");
     assert.equal(await page.locator(".gcv3-preco").count(),0,"prévia não mostra preço");
     assert.equal(await page.locator("#m2-empresa").count(),0,"institucional não ocupa home");
     assert.deepEqual(erros,[]);
