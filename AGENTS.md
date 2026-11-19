@@ -2,6 +2,9 @@
 
 **Escopo:** este repositório apenas. Consulte `CLAUDE.md` e a arquitetura/Policy Engine existentes antes de qualquer operação. O projeto Supabase autorizado é `conecta-ia` (`dsfzhsrudriqkumtlqwj`), **nunca** `NanoShell IA`.
 
+## REGRA MESTRE: catálogo enriquecido público sem imagem e sem preço
+Ler e aplicar primeiro **[REGRA MESTRE — catálogo enriquecido informativo, sem preço e sem foto](docs/conector-ia/regra-mestra-catalogo-enriquecido-sem-preco-sem-foto-20261119.md)**. Para a MOBIS, diferenciar `catalogo_informativo` de `oferta_comercial`: a ficha pode ser informativa mesmo sem fotografia ou preço público. Preço do Bling continua interno e NÃO pode vazar para payload, SEO, feed, HTML ou chatbot. Não transformar ausência de preço em zero. Publicar somente identidade/fatos documentados e aplicações aprovadas; não liberar venda, estoque ou checkout no modo informativo. O lojista complementa a foto e autoriza preço posteriormente. Pausa da automação impede escrita pelo agente, mas não cancela visibilidade informativa anteriormente autorizada. A prévia `exibicao_teste` existente não equivale a publicação informativa de produção; não prometer fluxo universal enquanto backend não estiver implantado.
+
 ## Entrega obrigatória do cadastro — ler ANTES de começar
 **TODOS os agentes** devem seguir o [contrato completo de entrega do porteiro por SKU ou descrição](docs/conector-ia/porteiro-entrega-cadastro-por-sku-ou-descricao-20261119.md). Não terminar só com pesquisa: identificar peça no Bling, triangular juntas/filtros/peça exata, preencher ficha técnica e ofertas por versão brasileira, procurar foto no Firecrawl interno quando acessível e entregar com status REAL de gravação/publicação, fontes e pendências. Não confundir arquivo ou texto produzido com cadastro efetivamente salvo no site. Respeitar pausas e aprovação humana.
 
