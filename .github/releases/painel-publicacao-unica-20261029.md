@@ -257,3 +257,12 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - O componente de rodapé é compartilhado por home, ficha de produto e página de aplicação. Nenhum ícone leva a página desconhecida, e não criar YouTube/TikTok sem perfil verificado.
 - Publicar exclusivamente frontend `painel-pages.yml`; não alterar Supabase, Bling, estoque, preços, NF, campanhas, Meta Ads, contas de Facebook/Instagram/WhatsApp, domínio, DNS ou outras lojas/projetos. Aplicações CI003696 continuam pendentes.
 - Testes unitários e build do painel aprovados na PR; conferência visual pós-publicação obrigatória: `version.json`, ícones, cores, links da página FB 119574083114811, Instagram escolhido e WhatsApp cadastrado, em celular e desktop.
+
+## Publicação autorizada — Apresentar Conecta.IA a outros agentes (19/11/2026) — PR #464
+
+- Proprietário autorizou em conversa: “Pode faz” para a implementação e posteriormente “Faz vc” especificamente para publicar a atualização do Conecta.IA.
+- PR #464 incorporada à `main` em `526ac0bef0af2caa7e5a6df31b3c0c2703ccf0cd`, após 11 verificações verdes do GitHub Actions (job de deploy de homologação ignorado, não é falha).
+- Publicar exclusivamente o frontend estático via `painel-pages.yml` com as flags existentes, incluindo a nova seção “Apresentar Conecta.IA a outro agente” na tela Gateway MCP/API, documentação OpenAPI JSON-RPC e manifesto informativo público.
+- A especificação OpenAPI descreve o MCP HTTP existente, não cria novas permissões nem endpoint REST de escrita. A2A não é anunciado como servidor implantado. Não expor chaves, tokens, dados de clientes ou informações fiscais.
+- Nenhuma Edge Function, migração Supabase, Bling, estoque, preços, nota fiscal, domínio, DNS ou outra conta deve ser alterada.
+- Conferir jobs build e deploy, comparar o SHA da versão pública e verificar os arquivos públicos `agentes/capacidades.json` e `agentes/openapi.json`. Sem confirmação real do deploy, não declarar o site atualizado.
