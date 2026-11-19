@@ -1,0 +1,79 @@
+/* MOBIS M-STYLE CROMO V3 — o mesmo padrão oficial para TODOS os banners por veículo.
+   Uma peça física, banners independentes por aplicação; não alterar a foto do produto ou reivindicar compatibilidade. */
+.mobis-v2.m4 .gcv3 .gcv3-painel{
+  background:
+    linear-gradient(122deg,rgba(12,15,19,.98) 0%,rgba(31,35,39,.98) 60%,rgba(12,14,17,.99) 100%);
+  border:2px solid #a6a6a6;
+  box-shadow:0 20px 55px #11171c38,inset 0 0 0 2px #353a40;
+  color:#ffffff;
+}
+.mobis-v2.m4 .gcv3 .gcv3-painel::before{
+  height:6px;
+  background:linear-gradient(90deg,#e2181a 0 67%,#bfc3c7 67% 85%,#eaf2f6 85%);
+}
+.mobis-v2.m4 .gcv3 .gcv3-mstyle-logo{
+  display:block;
+  height:auto;
+  width:min(290px,78%);
+  max-width:100%;
+  aspect-ratio:1983/793;
+  object-fit:contain;
+  object-position:left center;
+  filter:none;
+  flex:0 0 auto;
+}
+.mobis-v2.m4 .gcv3 .gcv3-copy{
+  color:#fff;
+}
+.mobis-v2.m4 .gcv3 .gcv3-copy h1,
+.mobis-v2.m4 .gcv3 .gcv3-copy h1 a{
+  color:#fff!important;
+  text-decoration:none;
+  text-shadow:0 1px 2px #0008;
+}
+.mobis-v2.m4 .gcv3 .gcv3-copy p,
+.mobis-v2.m4 .gcv3 .gcv3-nota,
+.mobis-v2.m4 .gcv3 .gcv3-sku{
+  color:#eaf2f6;
+}
+.mobis-v2.m4 .gcv3 .gcv3-etiqueta,
+.mobis-v2.m4 .gcv3 .gcv3-etiqueta-flash{
+  background:linear-gradient(180deg,#f12427,#bb070f);
+  color:#fff;
+  border-radius:5px;
+  box-shadow:0 2px 0 #761015;
+}
+.mobis-v2.m4 .gcv3 .gcv3-cta{
+  background:linear-gradient(180deg,#f02226,#c30b12);
+  border:1px solid #fc6566;
+  box-shadow:0 2px 0 #86090e;
+  color:#fff!important;
+}
+.mobis-v2.m4 .gcv3 .gcv3-cta:hover{
+  background:#a9080e;
+}
+.mobis-v2.m4 .gcv3 .gcv3-midia{
+  background:#fff;
+  border:2px solid #c7cbd0;
+  box-shadow:0 0 0 1px #494e56;
+}
+.mobis-v2.m4 .gcv3 .gcv3-midia img{
+  background:#fff;
+  object-fit:contain;
+  filter:none;
+  transform:none;
+}
+.mobis-v2.m4 .gcv3 .gcv3-paginacao .gcv3-ponto.ativo{
+  background:#e2181a;
+  border-color:#bd1016;
+}
+.mobis-v2.m4 .gcv3 .gcv3-preco{color:#fff}
+.mobis-v2.m4 .gcv3 .gcv3-painel [data-banner-tipo="aplicacao"]{color:#fff}
+@media(max-width:700px){
+  .mobis-v2.m4 .gcv3 .gcv3-mstyle-logo{width:min(250px,76%)}
+  .mobis-v2.m4 .gcv3 .gcv3-painel{padding:15px}
+  .mobis-v2.m4 .gcv3 .gcv3-copy h1{font-size:clamp(1.4rem,5vw,1.9rem)}
+}
+@media(prefers-reduced-motion:reduce){
+  .mobis-v2.m4 .gcv3 .gcv3-copy{animation:none}
+}
