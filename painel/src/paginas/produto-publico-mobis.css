@@ -17,3 +17,39 @@
 .produto-publico-mobis-aplicacoes>p{color:#647079;font-size:.84rem;line-height:1.45}
 .produto-publico-mobis .ficha-wa,.produto-publico-mobis .linha-voz button{background:#4a5159;color:#fff;border-color:#4a5159}
 @media(max-width:560px){.produto-publico-mobis-cab{gap:10px}.produto-publico-mobis-cab img{width:145px}.produto-publico-mobis-cab>a:last-child{font-size:.8rem;padding:9px}}
+
+/* A fotografia comercial mostra a peça REAL, nunca ícone/veículo de referência.
+   Fundo branco é obrigatório também no arquivo fotográfico aprovado. */
+.produto-publico-mobis .ficha-foto{
+  display:grid;
+  place-items:center;
+  min-height:300px;
+  overflow:hidden;
+  background:#fff!important;
+  border:1px solid #dce5e9;
+  border-radius:12px;
+  padding:clamp(12px,2vw,22px);
+}
+.produto-publico-mobis .ficha-foto img{
+  display:block;
+  width:100%;
+  max-width:100%;
+  max-height:490px;
+  height:auto;
+  object-fit:contain;
+  object-position:center;
+  background:#fff!important;
+  filter:none;
+  transform:none;
+}
+.produto-publico-mobis .ficha-foto>span{
+  color:#64717b;
+  background:#fff;
+  font-size:.9rem;
+  line-height:1.6;
+  text-align:center;
+  font-weight:650;
+}
+@media(max-width:540px){
+  .produto-publico-mobis .ficha-foto{min-height:245px}
+}
