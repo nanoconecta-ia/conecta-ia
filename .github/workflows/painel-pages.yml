@@ -8,6 +8,8 @@ on:
     branches: [main]
     paths:
       - '.github/releases/painel-publicacao-unica-20261029.md'
+      # Autorização pontual do proprietário: revisão visual MCP de fotos e banners.
+      - '.github/releases/painel-midia-mcp-20261119.md'
 
 permissions:
   contents: read
