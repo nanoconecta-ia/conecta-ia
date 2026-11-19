@@ -2,6 +2,9 @@
 **Estado:** norma técnica proposta na PR #461. Não é execução automática instalada. Data: 19/11/2026.
 **Público:** Nano.IA, GPT, Claude, ferramentas MCP e qualquer agente integrado. Aplicar SOMENTE à loja autorizada, com isolamento por tenant e sem contornar o Policy Engine.
 
+## Busca de imagem é opcional, não impede cadastro no site
+O agente deve ler [regras de foto opcional para todos os SKUs MOBIS e pendência para o lojista](mobis-cadastro-sem-foto-todos-skus-20261119.md). Pesquisar primeiro imagens com código e fabricante exatos em Bling/catálogo autorizado, depois GS1 quando houver GTIN, fabricantes e fornecedores documentados; Google Imagens e marketplaces só localizam candidatas. Foto ausente, sem licença ou de peça semelhante = **`foto_pendente`**, não erro do cadastro; o orçamento GLOBAL de 15s por SKU inclui essa busca. Não inserir imagem de outro motor, não criar imagem sintética com aparência de foto da mercadoria, e não bloquear a vitrine MOBIS apenas por falta de foto quando todos os outros requisitos aprovados existirem.
+
 ## Busca pela descrição, mesmo sem SKU
 **Não exigir SKU para iniciar a investigação.** Para entradas como `motor para HR 2013` ou `motor Gol 2003`, seguir [genealogia veicular brasileira e identificação por descrição](roteiro-descricao-genealogia-veicular-br-20261119.md): modelo pai → projeto/versão filho → motorização/cilindros/sistemas → ano inicial/final documentado → peça → SKU Bling. Não criar SKU novo por similaridade. A busca por descrição também entra no deadline GLOBAL proposto de 15s por entrada, com resposta parcial e ambiguidades.
 
