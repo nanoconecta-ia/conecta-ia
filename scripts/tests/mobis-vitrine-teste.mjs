@@ -239,7 +239,7 @@ try {
     assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),hr,"CTA HR abre sua aplicação");
     assert.equal(await page.locator(".gcv3-titulo-link").getAttribute("href"),hr,"título HR abre sua aplicação");
     assert.equal(await page.locator(".gcv3-mstyle-logo").count(),1,"banner segue logo M-STYLE");
-    const heading = await page.locator(".gcv3-copy h1").evaluate(el=>getComputedStyle(el));
+    const heading = await page.locator(".gcv3-copy h1").evaluate(el=>{const cs=getComputedStyle(el);return {fontFamily:cs.fontFamily,fontWeight:cs.fontWeight,textTransform:cs.textTransform};});
     assert.match(heading.fontFamily,/Barlow Condensed/,"título com tipografia geométrica pesada do M-STYLE");
     assert.equal(heading.textTransform,"uppercase","título do banner em caixa alta");
     assert.ok(Number(heading.fontWeight)>=800,"título M-STYLE com peso pesado");
