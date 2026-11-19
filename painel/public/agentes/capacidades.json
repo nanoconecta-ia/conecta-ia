@@ -1,8 +1,8 @@
 {
   "document_type": "conecta-ia-capability-manifest",
-  "version": "1.0",
+  "version": "1.1",
   "name": "Conecta.IA — Nano",
-  "description": "Catálogo técnico e operações comerciais com consultas e propostas auditadas por loja. Descoberta pública; dados privados requerem autenticação.",
+  "description": "Catálogo técnico da Mobis com consultas e propostas auditadas por loja, incluindo imagens reais de produtos por URL. Anexos diretos de arquivos e banners por agente estão previstos, ainda não operacionais.",
   "documentation": "https://github.com/nanoconecta-ia/conecta-ia/blob/main/docs/MCP-ESCOPO-NANO-PLUGIN-AUDITORIA.md",
   "interfaces": {
     "mcp": {
@@ -31,22 +31,54 @@
     {
       "name": "catalogo-consulta",
       "permission": "leitura",
-      "note": "Escopado à loja autorizada"
+      "note": "Escopado à loja autorizada",
+      "status": "ativa"
     },
     {
       "name": "bling-consulta-sku",
       "permission": "leitura",
-      "note": "Somente campos permitidos; custo e fornecedor não saem pelo MCP"
+      "note": "Somente campos permitidos; custo e fornecedor não saem pelo MCP",
+      "status": "ativa"
     },
     {
       "name": "referencias-oem-consulta",
       "permission": "leitura",
-      "note": "Somente registros/estados autorizados"
+      "note": "Somente registros/estados autorizados",
+      "status": "ativa"
     },
     {
       "name": "proposta-enriquecimento",
       "permission": "propor",
-      "note": "A confirmar; aprovação humana obrigatória"
+      "note": "A confirmar; aprovação humana obrigatória",
+      "status": "ativa"
+    },
+    {
+      "name": "imagem-real-produto-por-url",
+      "tool": "conecta.imagem.propor",
+      "permission": "propor",
+      "status": "ativa",
+      "note": "Vincular imagem original por URL HTTPS ao SKU para conferência; não transfere automaticamente arquivo do chat, não aprova nem publica."
+    },
+    {
+      "name": "anexo-foto-produto",
+      "tool": "conecta.midia.anexar_produto",
+      "permission": "propor",
+      "status": "planejada",
+      "note": "Receber JPEG/PNG/WebP enviado à conversa ou escolhido na biblioteca (OpenAI fileParams); validar arquivo, SKU, origem/direitos, SHA-256 e criar proposta. Sem upload operacional nesta versão."
+    },
+    {
+      "name": "anexo-banner-por-aplicacao",
+      "tool": "conecta.banner.anexar",
+      "permission": "propor",
+      "status": "planejada",
+      "note": "Receber banner do agente por arquivo ou URL e vinculá-lo ao SKU físico e à página de veículo aprovada, em rascunho para revisão. Sem publicação automática."
+    },
+    {
+      "name": "proposta-banner-comercial",
+      "tool": "conecta.banners.gerenciar",
+      "permission": "propor",
+      "status": "planejada",
+      "note": "Rascunho de campanhas promocionais por aplicação/veículo; não gera automaticamente imagem, não publica e não altera Bling."
     }
   ],
   "security": {
@@ -60,6 +92,9 @@
     ],
     "external_agent_can_approve": false,
     "external_agent_can_publish": false,
-    "external_agent_can_write_bling": false
-  }
+    "external_agent_can_write_bling": false,
+    "external_agent_can_upload_without_owner_approval": false,
+    "external_agent_can_auto_publish_images_or_banners": false
+  },
+  "media_proposal_reference": "https://github.com/nanoconecta-ia/conecta-ia/blob/main/docs/conector-ia/PLUGIN-MIDIAS-CHATGPT-PROPOSTA-20261119.md"
 }
