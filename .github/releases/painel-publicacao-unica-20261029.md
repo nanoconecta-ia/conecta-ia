@@ -228,3 +228,11 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Aviso de catálogo sem botão repetido do WhatsApp, sem cartão grande. O contato permanece no rodapé institucional.
 - Publicação exclusivamente do frontend estático `painel-pages.yml`. Loja em teste, sem checkout; catálogo espelhado do Bling, preços/estoque/fiscal, notas fiscais, Supabase, Edge Functions, DNS e outros projetos intocados.
 - Verificar release via `version.json`, 7 cliques de navegação dos departamentos, ausência de WhatsApp externo, logo/favicons sem distorção, integridade do rodapé e erros na API antes de afirmar conclusão.
+
+
+## Publicação solicitada — Logotipo cromado MOBIS corrigido (19/11/2026)
+- Proprietário apontou deformação dos logotipos da vitrine e apresentou amostra visual. Após a criação do novo logotipo cromado, solicitou colocá-lo no site: **“Agora consta lá jo site”**.
+- PR #456 integrada na `main` no commit `0e7f4633dbbc326662e07e1ccab759bf38768e15`; substitui somente o asset de marca já compartilhado pelas páginas MOBIS por nova arte otimizada (WebP alfa em SVG), com proporção integral 1983:793 e sem slogan por segmento.
+- Atualização responsiva no cabeçalho, rodapé e fichas de produto por herança do mesmo asset, sem alteração de taxonomia ou sistema de catálogo.
+- Executar release exclusivamente do frontend estático via `painel-pages.yml`. Não modificar Bling, preços, estoque, dados fiscais, notas, Supabase, DNS, anúncios, gateways, outras lojas ou outros projetos.
+- Build de painel validado no PR. Confirmar `version.json` e verificar presença real do novo asset no cabeçalho/rodapé em navegador após a publicação, sem distorção ou quebra da imagem. Loja continua em teste e sem checkout.
