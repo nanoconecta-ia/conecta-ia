@@ -10,6 +10,8 @@ on:
       - '.github/releases/painel-publicacao-unica-20261029.md'
       # Autorização pontual do proprietário: revisão visual MCP de fotos e banners.
       - '.github/releases/painel-midia-mcp-20261119.md'
+      # Implantação pontual autorizada: separar instalação/navegação PWA do Conecta e loja.
+      - '.github/releases/painel-pwa-independente-20261119.md'
 
 permissions:
   contents: read
