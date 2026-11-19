@@ -57,20 +57,12 @@ try{
   assert.equal(dados.loja.ambiente,"teste","loja deve permanecer em teste");
   assert.notEqual(dados.loja.venda_habilitada,true,"vendas não podem estar habilitadas");
   assert.equal(await page.locator(".m2-aviso-teste").count(),0,"aviso de ambiente de teste removido da vitrine (pedido do dono)");
-  for(const bloco of ["cabecalho","banner","montadoras","taxonomia","filtros","produtos","rodape"]){
-    assert.equal(await page.locator('[data-bloco="'+bloco+'"]').count(),1,"bloco real "+bloco);
+  for(const bloco of ["cabecalho","banner","filtros","produtos","rodape"]){
+    assert.equal(await page.locator('[data-bloco="'+bloco+'"]').count(),1,"bloco real V3 "+bloco);
   }
-  assert.equal(await page.locator(".m4-montadora-item").count(),9,"nove montadoras de atendimento");
-  assert.ok(await page.locator(".m4-taxonomia-item").count()>0,"taxonomia e consultas carregam");
-  // A paleta aprovada e publicada pode usar fundo branco ou branco-gelo. Os cartões
-  // devem acompanhar exatamente o token de fundo aplicado na raiz da vitrine,
-  // sem obrigar #fff quando o cliente publicou #f6f7f8.
-  const fundoAprovado=await page.locator(".mobis-v2.m4").evaluate(el=>
-    el.getAttribute("data-paleta-publicada")==="sim"
-      ?getComputedStyle(el).backgroundColor
-      :"rgb(255, 255, 255)");
-  assert.equal(await page.locator(".m4-montadora-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),fundoAprovado,"bloco de montadoras respeita a paleta publicada");
-  assert.equal(await page.locator(".m4-taxonomia-item").first().evaluate(el=>getComputedStyle(el).backgroundColor),fundoAprovado,"bloco de taxonomia respeita a paleta publicada");
+  assert.equal(await page.locator('[data-bloco="montadoras"],[data-bloco="taxonomia"]').count(),0,"grades antigas não publicadas");
+  assert.equal(await page.locator(".m4-montadora-item,.m4-taxonomia-item").count(),0,"cartões grandes duplicados ausentes");
+  assert.equal(await page.locator("#m2-atendimento,.m2-contato-form,#m2-lista").count(),0,"consulta e lista duplicadas ausentes");
   assert.equal(await page.locator(".m2-filtros").evaluate(el=>getComputedStyle(el).maxWidth),"none","filtros sem largura administrativa de 440px");
   assert.equal(await page.locator(".gcv3").count(),1,"um único carrossel de produtos e veículos");
    assert.equal(await page.locator(".ms-abertura").count(),1,"um único banner institucional V3");
