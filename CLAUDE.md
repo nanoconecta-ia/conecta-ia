@@ -3,6 +3,9 @@
 Site inteligente que conecta ERPs (piloto: Bling) a uma loja online, de forma autônoma.
 Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no chat, pergunte.
 
+## Ferramenta de imagens Firecrawl antes de pesquisa manual
+Ler [roteiro do buscador Conecta.IA/Firecrawl e disponibilidade no chat ou MCP](docs/conector-ia/porteiro-ferramentas-firecrawl-imagens-20261119.md). Priorizar `conecta.imagem.buscar_web` e alias `buscar_imagem_web` quando expostos, com consulta SKU+marca+composição; propor via `conecta.imagem.propor` apenas candidatura segura. API Firecrawl da loja não é chave do agente. **No MCP de terceiros a busca não está exposta nem recebe configuração do provedor**; reconhecer limitação e manter pendência. O prazo global de 15s ainda não está implementado no adaptador.
+
 ## Catálogo MOBIS sem foto — todos os veículos e produtos
 Ler [regra de pesquisa de imagens, foto opcional e conclusão posterior pelo lojista](docs/conector-ia/mobis-cadastro-sem-foto-todos-skus-20261119.md). O agente não deve suspender a pesquisa/cadastro em lote por falta de imagem; marcar `foto_pendente` e usar placeholder. Exceção de foto opcional no banco é exclusiva à loja MOBIS, não se aplica a outros tenants. Publicação exige outros campos e aprovação humana; sem evidência de aplicação/OEM, não anunciar compatibilidade. `produto_automacao.pausado` continua bloqueando propostas/escritas.
 
