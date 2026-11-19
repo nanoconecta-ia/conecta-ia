@@ -266,3 +266,12 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - A especificação OpenAPI descreve o MCP HTTP existente, não cria novas permissões nem endpoint REST de escrita. A2A não é anunciado como servidor implantado. Não expor chaves, tokens, dados de clientes ou informações fiscais.
 - Nenhuma Edge Function, migração Supabase, Bling, estoque, preços, nota fiscal, domínio, DNS ou outra conta deve ser alterada.
 - Conferir jobs build e deploy, comparar o SHA da versão pública e verificar os arquivos públicos `agentes/capacidades.json` e `agentes/openapi.json`. Sem confirmação real do deploy, não declarar o site atualizado.
+
+## Publicação autorizada — Botão “Copiar para outro chat” visível (19/11/2026) — PR #466
+- O proprietário informou que OpenAPI abria JSON e não via onde copiar a apresentação para testar com outros chats. Correção aprovada no contexto do pedido para executar a implantação do Conecta.IA.
+- PR #466 incorporada em `main` em `2d3b87afdec650b800374feac03aaefeb552fbc3`.
+- Publicar **somente o frontend estático** `painel-pages.yml` com as flags já existentes; novo botão “Copiar para outro chat” e texto selecionável em `#/meu-agente`, que é uma rota existente e habilitada. A rota administrativa `#/gateway` permanece oculta pela flag do conector.
+- OpenAPI e manifesto técnico seguem opcionais; nenhum token entra em URL, conversa, HTML público ou repositório. Autenticação MCP continua obrigatória para acesso à loja.
+- Sem mudanças em Supabase, Edge Functions, ERP Bling, contas, preço, estoque, dados fiscais, notas, DNS, domínio ou outras lojas.
+- Conferir checks visuais ainda em conclusão, sucesso do build/deploy e o commit publicado em `version.json`. Verificar o botão com sessão autenticada, sem declarar validação de login real que não ocorreu.
+
