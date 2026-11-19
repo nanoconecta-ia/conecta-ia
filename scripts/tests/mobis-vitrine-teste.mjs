@@ -239,6 +239,19 @@ try {
     assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),hr,"CTA HR abre sua aplicação");
     assert.equal(await page.locator(".gcv3-titulo-link").getAttribute("href"),hr,"título HR abre sua aplicação");
     assert.equal(await page.locator(".gcv3-mstyle-logo").count(),1,"banner segue logo M-STYLE");
+    assert.equal(await page.locator('link[href*="fonts.googleapis.com"],link[href*="fonts.gstatic.com"]').count(),0,
+      "fontes não dependem de serviços externos bloqueados");
+
+    const heading = await page.locator(".gcv3-copy h1").evaluate(el=>{const cs=getComputedStyle(el);return {fontFamily:cs.fontFamily,fontWeight:cs.fontWeight,textTransform:cs.textTransform};});
+    assert.match(heading.fontFamily,/Inter Variable/,"título usa fonte pesada local do M-STYLE sem CDN");
+    assert.equal(heading.textTransform,"uppercase","título do banner em caixa alta");
+    assert.ok(Number(heading.fontWeight)>=800,"título M-STYLE com peso pesado");
+    const apoio = await page.locator(".gcv3-copy p").evaluate(el=>getComputedStyle(el).fontFamily);
+    assert.match(apoio,/Montserrat/,"Montserrat é a tipografia secundária preferida");
+    assert.match(apoio,/Inter Variable/,"texto de apoio possui fonte local de segurança");
+    assert.match(await page.locator(".gcv3-cta").evaluate(el=>getComputedStyle(el).fontFamily),/Montserrat/,
+      "CTA segue tipografia secundária Montserrat");
+
     assert.equal(await page.locator(".gcv3-preco").count(),0,"banners de aplicação não expõem preços");
     await page.locator(".gcv3-cta").click();
     await page.getByRole("heading",{name:/Hyundai HR/}).first().waitFor();

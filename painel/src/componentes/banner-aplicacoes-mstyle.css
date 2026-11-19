@@ -77,3 +77,67 @@
 @media(prefers-reduced-motion:reduce){
   .mobis-v2.m4 .gcv3 .gcv3-copy{animation:none}
 }
+
+/* TIPOGRAFIA OFICIAL M-STYLE
+   Títulos: Eurostile Next Heavy quando disponível/local; Inter Variable Black 900
+   (já incluída no bundle local) como alternativa geométrica confiável, sem CDN.
+   Apoio, preços, SKU e botões: Montserrat se instalada, senão Inter Variable.
+   A arte do logotipo é imagem oficial e nunca texto recriado. */
+.mobis-v2.m4 .gcv3{
+  --mobis-banner-titulo:"Eurostile Next Heavy","Arial Black","Inter Variable",Inter,sans-serif;
+  --mobis-banner-texto:"Montserrat","Inter Variable",Inter,Arial,sans-serif;
+  font-family:var(--mobis-banner-texto);
+  font-kerning:normal;
+  text-rendering:optimizeLegibility;
+}
+.mobis-v2.m4 .gcv3 .gcv3-copy h1,
+.mobis-v2.m4 .gcv3 .gcv3-copy h1 a{
+  font-family:var(--mobis-banner-titulo)!important;
+  font-size:clamp(2.1rem,3.6vw,3.6rem);
+  font-style:normal;
+  font-weight:900;
+  font-synthesis:weight;
+  font-variation-settings:"wght" 900;
+  letter-spacing:-.012em;
+  line-height:1;
+  text-transform:uppercase;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  text-wrap:balance;
+}
+.mobis-v2.m4 .gcv3 .gcv3-copy p{
+  font-family:var(--mobis-banner-texto);
+  font-size:clamp(.9rem,.75rem + .5vw,1.12rem);
+  font-weight:750;
+  line-height:1.4;
+  letter-spacing:.005em;
+  max-width:48ch;
+  text-transform:none;
+  -webkit-line-clamp:3;
+}
+.mobis-v2.m4 .gcv3 .gcv3-etiqueta{
+  font-family:var(--mobis-banner-texto);
+  font-size:.71rem;
+  font-weight:800;
+  letter-spacing:.075em;
+  text-transform:uppercase;
+}
+.mobis-v2.m4 .gcv3 .gcv3-cta,
+.mobis-v2.m4 .gcv3 .gcv3-sku,
+.mobis-v2.m4 .gcv3 .gcv3-nota,
+.mobis-v2.m4 .gcv3 .gcv3-preco{
+  font-family:var(--mobis-banner-texto);
+}
+.mobis-v2.m4 .gcv3 .gcv3-cta{font-weight:800;letter-spacing:.01em}
+.mobis-v2.m4 .gcv3 .gcv3-preco{font-weight:800;font-variant-numeric:tabular-nums}
+@media(max-width:700px){
+  .mobis-v2.m4 .gcv3 .gcv3-copy h1,
+  .mobis-v2.m4 .gcv3 .gcv3-copy h1 a{
+    font-size:clamp(1.78rem,7.5vw,2.6rem);
+    line-height:1.02;
+  }
+  .mobis-v2.m4 .gcv3 .gcv3-copy p{
+    font-size:.91rem;
+    line-height:1.43;
+  }
+}
