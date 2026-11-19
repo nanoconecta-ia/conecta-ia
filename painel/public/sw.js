@@ -1,23 +1,31 @@
-// Service worker mínimo do app instalável. NÃO guarda dados do usuário nem respostas do servidor (Supabase, funções, login):
-// só a "casca" do painel para abrir sem rede. Navegação vai primeiro à rede (SEM o cache HTTP do navegador); se cair, mostra a última casca guardada.
-// v2: ao trocar de versão, apaga o cache antigo e recarrega UMA vez as janelas abertas, para o app instalado não ficar preso numa tela antiga.
-const VERSAO = "conecta-casca-v7-pwa-separados";
-const CASCA = ["./", "./conecta.html", "./mobis.webmanifest", "./manifest.webmanifest", "icones/mobis-app-192.png", "icones/conecta-app-icone.svg", "icones/conecta-wordmark-2026.svg"];
-self.addEventListener("install", (e) => { e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(CASCA)).then(() => self.skipWaiting())); });
-self.addEventListener("activate", (e) => {
-  e.waitUntil((async () => {
-    const antigas = (await caches.keys()).filter((k) => k !== VERSAO);
-    await Promise.all(antigas.map((k) => caches.delete(k)));
+// PWA da vitrine MOBIS: apenas a casca pública. Nunca armazena sessões, OAuth, APIs ou dados privados.
+const CACHE = "mobis-loja-casca-v1";
+const CASCA = ["./", "./mobis.webmanifest", "./icones/mobis-ma-app-192.png"];
+self.addEventListener("install", (evento) => {
+  evento.waitUntil(caches.open(CACHE).then((c) => c.addAll(CASCA)).then(() => self.skipWaiting()));
+});
+self.addEventListener("activate", (evento) => {
+  evento.waitUntil((async () => {
+    const nomes = await caches.keys();
+    // Apenas caches da loja e o cache legado COMPARTILHADO; nunca apaga os do painel independente.
+    await Promise.all(nomes.filter((n) => (n.startsWith("mobis-loja-casca-") && n !== CACHE) || n.startsWith("conecta-casca-v")).map((n) => caches.delete(n)));
     await self.clients.claim();
-    if (antigas.length === 0) return; // primeira instalação ou mesma versão: nada a recarregar
-    const janelas = await self.clients.matchAll({ type: "window" });
-    await Promise.all(janelas.map((j) => j.navigate(j.url).catch(() => undefined)));
   })());
 });
-self.addEventListener("fetch", (e) => {
-  const r = e.request;
-  if (r.method !== "GET" || new URL(r.url).origin !== self.location.origin) return; // outros domínios e escritas: direto pela rede
-  if (r.mode === "navigate") {
-    e.respondWith(fetch(r, { cache: "no-store" }).then((resp) => { const copia = resp.clone(); const caminho = new URL(r.url).pathname.endsWith("/conecta.html") ? "./conecta.html" : "./"; void caches.open(VERSAO).then((c) => c.put(caminho, copia)); return resp; }).catch(() => caches.match(new URL(r.url).pathname.endsWith("/conecta.html") ? "./conecta.html" : "./").then((m) => m || Response.error())));
-  }
+self.addEventListener("fetch", (evento) => {
+  const requisicao = evento.request;
+  const url = new URL(requisicao.url);
+  if (requisicao.method !== "GET" || url.origin !== self.location.origin || requisicao.mode !== "navigate") return;
+  const raiz = new URL("./", self.registration.scope).pathname;
+  // Não captura /conecta.html nem qualquer tela de autenticação ou administração.
+  if (url.pathname !== raiz && url.pathname !== raiz + "index.html") return;
+  evento.respondWith(
+    fetch(requisicao, { cache: "no-store" }).then((resposta) => {
+      if (resposta.ok) {
+        const copia = resposta.clone();
+        evento.waitUntil(caches.open(CACHE).then((c) => c.put("./", copia)));
+      }
+      return resposta;
+    }).catch(() => caches.match("./").then((cache) => cache || Response.error()))
+  );
 });
