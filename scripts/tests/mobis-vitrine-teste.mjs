@@ -247,6 +247,11 @@ try {
   {
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,previaSimulada:true},390);
     assert.equal(await page.locator(".m2-produto").count(),1,"prévia sinalizada mostra produto de consulta");
+    assert.equal(await page.locator(".m2-foto-produto .ico-peca").count(),0,"não substituir fotografia por ícone de sistema");
+    assert.equal(await page.locator(".m2-foto-produto .m2-sem-foto-real").count(),1,"quadro sem fotografia real é identificado claramente");
+    assert.equal(await page.locator(".m2-foto-produto").evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(255, 255, 255)","fundo branco puro no catálogo");
+    assert.equal(await page.locator(".m2-foto-link").getAttribute("href"),"#/p/mobis/CI003696","foto da peça abre ficha do SKU físico, não WhatsApp");
+
     assert.equal(await page.locator(".gcv3-cta").getAttribute("href"),"#/loja/mobis/veiculo/HR",
       "produto de prévia nunca entra no banner automaticamente: só aparecem os veículos institucionais");
     assert.equal(await page.locator(".gcv3-sku").count(),0,"nenhum SKU automático no destaque");
