@@ -184,3 +184,12 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - **Não** alterar `lojas.ambiente` (permanece `teste`), `venda_habilitada`, RLS, preços, estoque, GTIN, OEM, compatibilidades, anúncios, checkout ou dados fiscais. Não publicar oferta não aprovada.
 - Homologar após deploy: status `build/deploy`, `version.json` e commit publicado, requisição real à Edge Function `loja-publica`, navegação em desktop e celular, links e filtros, política de noindex e não exibição de dados não aprovados. Se falhar, registrar o motivo sem declarar homologação integral.
 - Homologação visual do GitHub Pages **não comprova** DNS/SSL do domínio próprio, nem constitui liberação comercial. Esses controles exigem verificação independente.
+
+
+## Publicação autorizada — Rodapé MOBIS M-STYLE V3 (18/11/2026)
+- Autorização expressa do proprietário após conferência dos dados da empresa e aprovação do novo rodapé: **“Aprovado, pode aplicar.”**
+- PR #449 integrada na `main` em `3e576214292fc13d3648bec4ac9d051a89001eb0`, seguida da correção de navegação #450 em `cc4b686d71452d56fcec89812c9018f98ecda6e5`.
+- Publicar somente a interface estática do painel GitHub Pages pelo workflow `painel-pages.yml`, com as flags e verificações já definidas. Novo rodapé V3 escuro/vermelho, responsivo, nas páginas da vitrine, produtos e aplicações.
+- Dados institucionais **aprovados** vêm da API pública: MOBIS DISTRIBUIDORA DE PECAS E ACESSORIOS LTDA, CNPJ 19.903.967/0001-01, Avenida T-9, nº 3492, Jardim América, **Goiânia–GO**, CEP 74255-220. WhatsApp e telefone são lidos do cadastro; não inventar contatos ou links sociais.
+- Manter a loja em ambiente de **teste**, 20 SKUs na prévia e zero anúncios publicados, sem habilitar checkout. Sem escrita Bling, estoque, preço, NF, migração, Edge Functions, DNS, credenciais ou qualquer outro projeto Supabase.
+- Verificar build e deploy da action, versão efetivamente servida (`version.json` com commit de release) e rodapé real no domínio oficial antes de anunciar conclusão.
