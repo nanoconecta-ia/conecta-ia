@@ -2,6 +2,9 @@
 
 **Escopo:** este repositório apenas. Consulte `CLAUDE.md` e a arquitetura/Policy Engine existentes antes de qualquer operação. O projeto Supabase autorizado é `conecta-ia` (`dsfzhsrudriqkumtlqwj`), **nunca** `NanoShell IA`.
 
+## Todos os SKUs e modelos: cadastrar mesmo sem fotografia
+Ler [fluxo de cadastro MOBIS sem foto, busca de imagens e complementação posterior](docs/conector-ia/mobis-cadastro-sem-foto-todos-skus-20261119.md). Imagem não encontrada dentro de 15s, sem fonte ou sem licença não trava cadastro técnico/rascunho: registrar `foto_pendente`, usar placeholder e continuar a próxima peça. Para MOBIS, a publicação SEM FOTO é permitida **somente após os demais portões e aprovação humana**; nunca publicar aplicação a confirmar. Não transferir essa exceção a outras lojas, nem a produto com automação pausada. Não usar foto de item similar como real.
+
 ## Entrada por descrição e árvore de versões brasileiras
 Antes de assumir um SKU, leia [busca por descrição e árvore pai/filhos/primos (casos Hyundai HR e VW Gol)](docs/conector-ia/roteiro-descricao-genealogia-veicular-br-20261119.md). Aceite `motor para HR 2013` sem SKU; documente primeiro versão, cilindros, válvulas, início/fim no Brasil e fonte. Ausência de ano final comprovado **não** significa versão ainda fabricada. Não propague aplicação/OEM dos «primos» nem transforme ano de catálogo aftermarket em fim de comercialização.
 
