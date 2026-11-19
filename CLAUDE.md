@@ -58,3 +58,9 @@ Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no ch
 - Custo de IA é por cliente: medir e limitar o uso do enriquecimento de cada loja.
 
 Detalhes e decisões em aberto: `docs/ARQUITETURA.md`.
+
+## Identidade visual oficial da loja MOBIS (vigência 18/11/2026)
+- Fonte única para novos banners, anúncios, cards e ícones da **MOBIS AUTOPEÇAS**: [Biblioteca oficial no Google Drive](https://drive.google.com/drive/folders/1erX6xhGuIenFWtrjRIRHV7EpnT_yrxS3), diretórios `00_LEIA_PRIMEIRO_E_NORMAS`, `01_REFERENCIAS_APROVADAS_IMUTAVEIS` e `05_PALETA_TIPOGRAFIA_TOKENS`.
+- **Precedência:** referências aprovadas PNG > manual atualizado de 18/11/2026 > templates SVG. Desenhos antigos laranja e kits digitais anteriores estão desativados. Ver [contrato completo](docs/conector-ia/mobis-identidade-visual-oficial-20261118.md).
+- Marca Mobis: grafite `#1F2327`, vermelho `#E2181A`, cinza `#BFC3C7`, aço `#A6A6A6`, branco `#FFFFFF` e branco-gelo `#EAF2F6` (fundo preferencial de produto). Preservar M prateado/vermelho na placa grafite dupla moldura metálica discreta, lettering MOBIS prateado e AUTOPEÇAS vermelho, sem neon.
+- **Não aplicar essa paleta globalmente ao Conecta.IA** nem a outras lojas. Nenhuma gravação de tema publicado, deploy, estoque Bling ou publicação de anúncio por causa desta regra documental. Revisão e aprovação humana obrigatórias.
