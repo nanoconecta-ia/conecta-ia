@@ -152,7 +152,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     coresPublicas.cor_acento==="#e2181a";
   const blocosSite:Record<(typeof ordemVitrine)[number],ReactNode>={
     banner: <div data-bloco="banner"><GlassyCarouselMobisV3
-      banners={banners} veiculos={VEICULOS}
+      banners={banners} veiculos={VEICULOS} paginasPorSku={dados?.paginas_aplicacao??{}}
       intervalo={intervaloPublico(dados?.layout?.intervalo_segundos)}/></div>,
     catalogo: <>
       <section className="m2-wrap m2-secao m2-catalogo" data-bloco="produtos" id="m2-catalogo" aria-live="polite">
