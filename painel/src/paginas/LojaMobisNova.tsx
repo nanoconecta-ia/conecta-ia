@@ -163,9 +163,8 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     coresPublicas.cor_acento==="#e2181a";
   const blocosSite:Record<(typeof ordemVitrine)[number],ReactNode>={
     banner: <div data-bloco="banner"><GlassyCarouselMobisV3
-      banners={banners} produtos={dados?.produtos??[]} veiculos={VEICULOS} sistemas={dados?.categorias??[]}
-      intervalo={intervaloPublico(dados?.layout?.intervalo_segundos)}
-      emTeste={dados?.loja.ambiente!=="producao"}/></div>,
+      banners={banners} veiculos={VEICULOS}
+      intervalo={intervaloPublico(dados?.layout?.intervalo_segundos)}/></div>,
     catalogo: <>
       <section className="m2-wrap m2-secao m2-catalogo" data-bloco="produtos" id="m2-catalogo" aria-live="polite">
         <div className="m2-cab-secao"><div><span className="m2-kicker">PEÇAS E COMPONENTES</span><h2>Produtos no catálogo</h2><small>{estado==="carregando"?"Consultando…":estado==="ok"?(dados?.total??0)>0?String(dados?.total??0)+" produtos para consulta":"Novos itens em preparação":""}</small></div></div>
