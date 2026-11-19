@@ -102,15 +102,15 @@ export function AplicacoesMobisV3({categorias,opcoes,motores,f,onModelo,onMotor,
         <aside className="ms-encontrar" aria-label="Filtros por veículo">
           <div className="ms-encontrar-titulo"><h2>Encontre sua peça</h2><p>Selecione o veículo e refine a aplicação. Não presumimos compatibilidade sem aprovação técnica.</p></div>
           <form onSubmit={e=>{if(montadora&&!f.modelo){e.preventDefault();onConsultar(montadora);return;}onAplicar(e);}}>
-            <label>Montadora<select value={montadora} onChange={e=>{setMontadora(e.target.value as MontadoraMobis|""|"Toyota");onModelo("");}}>
+            <label>Montadora<select aria-label="Montadora" value={montadora} onChange={e=>{setMontadora(e.target.value as MontadoraMobis|""|"Toyota");onModelo("");}}>
               <option value="">Todas as montadoras</option>
               {MONTADORAS_MOBIS.map(m=><option value={m.nome} key={m.nome}>{m.nome}</option>)}
               <option value="Toyota">Toyota (sob consulta)</option>
             </select></label>
-            <label>Veículo / modelo<select value={f.modelo} onChange={e=>onModelo(e.target.value)}><option value="">Todos os modelos</option>{[...new Set(modelosDaMontadora)].sort().map(x=><option key={x}>{x}</option>)}</select></label>
-            <label>Motor / versão<select value={f.motor} onChange={e=>onMotor(e.target.value)}><option value="">Todos os motores</option>{motores.map(x=><option key={x}>{x}</option>)}</select></label>
-            <label>Ano / geração<input type="number" min={1980} max={new Date().getFullYear()+1} value={f.ano} placeholder="Ex.: 2019" onChange={e=>onAno(e.target.value.slice(0,4))}/></label>
-            <label>Sistema / categoria<select value={f.categoria} onChange={e=>onCategoria(e.target.value)}><option value="">Todos os sistemas</option>{categorias.filter(x=>x.total>0).map(x=><option key={x.slug} value={x.slug}>{x.nome}</option>)}</select></label>
+            <label>Veículo / modelo<select aria-label="Veículo / modelo" value={f.modelo} onChange={e=>onModelo(e.target.value)}><option value="">Todos os modelos</option>{[...new Set(modelosDaMontadora)].sort().map(x=><option key={x}>{x}</option>)}</select></label>
+            <label>Motor / versão<select aria-label="Motor / versão" value={f.motor} onChange={e=>onMotor(e.target.value)}><option value="">Todos os motores</option>{motores.map(x=><option key={x}>{x}</option>)}</select></label>
+            <label>Ano / geração<input aria-label="Ano / geração" type="number" min={1980} max={new Date().getFullYear()+1} value={f.ano} placeholder="Ex.: 2019" onChange={e=>onAno(e.target.value.slice(0,4))}/></label>
+            <label>Sistema / categoria<select aria-label="Sistema / categoria" value={f.categoria} onChange={e=>onCategoria(e.target.value)}><option value="">Todos os sistemas</option>{categorias.filter(x=>x.total>0).map(x=><option key={x.slug} value={x.slug}>{x.nome}</option>)}</select></label>
             <button type="submit">Aplicar filtros <span aria-hidden="true">→</span></button>
             <button className="ms-limpar-filtros" type="button" onClick={()=>{setMontadora("");onLimpar();}}>Limpar filtros</button>
           </form>
