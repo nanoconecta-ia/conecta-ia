@@ -33,17 +33,29 @@ create trigger conecta_midia_validar_vinculo
 
 -- Acesso temporário de visualização à mídia privada somente para lojista da mesma loja.
 -- O navegador solicitará signed URL de no máximo 120 s, jamais public URL.
-create policy conecta_midia_preview_dono
-on storage.objects for select to authenticated
-using (
-  bucket_id='agente-anexos' and name like 'mcp-midias/%'
-  and exists (
-    select 1 from public.conecta_midia_pendentes m
-    where m.storage_bucket=storage.objects.bucket_id
-    and m.storage_path=storage.objects.name
-    and private.administra_loja(m.loja_id, (select auth.uid()))
-  )
-);
+-- O runner SQL descartável não instala Supabase Storage; produção possui storage.objects.
+-- SQL dinâmico evita falhar no runner, e registra a política quando Storage está presente.
+do $storage_policy$
+begin
+  if to_regclass('storage.objects') is null then
+    raise notice 'Supabase Storage indisponível no banco de teste: política de preview não criada';
+  else
+    execute $policy$
+      create policy conecta_midia_preview_dono
+      on storage.objects for select to authenticated
+      using (
+        bucket_id='agente-anexos' and name like 'mcp-midias/%'
+        and exists (
+          select 1 from public.conecta_midia_pendentes m
+          where m.storage_bucket=storage.objects.bucket_id
+          and m.storage_path=storage.objects.name
+          and private.administra_loja(m.loja_id, (select auth.uid()))
+        )
+      )
+    $policy$;
+  end if;
+end;
+$storage_policy$;
 
 -- A aprovação grava somente decisão na fila privada. Não movimenta imagem para bucket público.
 create or replace function public.conecta_midia_decidir(
