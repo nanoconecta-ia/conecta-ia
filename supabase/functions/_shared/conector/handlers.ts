@@ -3,6 +3,7 @@
 import { registrarResumo } from "./atividade.ts";
 import { lerContextoDaLoja } from "../contexto/ler.ts";
 import { baixarImagemOriginal } from "../busca_segura/imagem_original.ts";
+import { anexarMidiaMcp } from "./midias_mcp.ts";
 /** Resolvedor DNS do runtime (Deno). Fora dele (testes), fica indefinido e vale só a checagem estática do endereço. */
 const denoDns = (globalThis as { Deno?: { resolveDns?: (h: string, t: string) => Promise<string[]> } }).Deno?.resolveDns;
 const resolverDns: ((host: string) => Promise<string[]>) | undefined = denoDns
