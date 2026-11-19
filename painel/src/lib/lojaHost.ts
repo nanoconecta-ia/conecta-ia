@@ -1,4 +1,5 @@
 /** O domínio oficial da Mobis mostra a vitrine aprovada; outros clientes mantêm suas próprias lojas. */
+export const URL_LOJA_MOBIS = "https://www.mobisautopecas.com.br/";
 export function lojaMobisPorHost(host: string | null): boolean {
   const normalizado = host?.toLowerCase().replace(/\.$/, "") ?? "";
   return normalizado === "mobisautopecas.com.br" || normalizado === "www.mobisautopecas.com.br";
@@ -9,17 +10,27 @@ export function entradaAdministrativa(pathname: string): boolean {
   return pathname === "/conecta.html" || pathname === "/conecta-ia/conecta.html";
 }
 
+/** Sempre abre a LOJA pública, não uma rota hash dentro do app instalado Conecta.IA. */
+export function urlLojaPublica(slug: string, urlPainel: string): string {
+  if (slug === "mobis") return URL_LOJA_MOBIS;
+  const url = new URL("./", urlPainel);
+  url.hash = "/loja/" + encodeURIComponent(slug);
+  return url.toString();
+}
+
 /**
- * No GitHub Pages as duas entradas moram na mesma pasta: `index.html` (loja Mobis, app "Mobis") e `conecta.html`
- * (painel do lojista, app "Conecta.IA"). Abrir uma rota do painel pela entrada da loja misturava os dois apps instalados.
- * Devolve o endereço de `conecta.html` quando a página aberta é a entrada da loja e a rota é do painel; senão, null (não mexe).
- * Só vale para o host do Pages: domínios de cliente e localhost não são redirecionados.
+ * Se uma rota interna do painel foi aberta pelo atalho da loja, direciona para o app
+ * administrativo. A raiz SEM hash continua sendo sempre a vitrine, inclusive no Pages.
+ * As rotas públicas /loja, /a e /p nunca redirecionam para a administração.
  */
 export function destinoPainel(host: string, pathname: string, hash: string, search = ""): string | null {
-  if (host !== "nanoconecta-ia.github.io") return null;
-  const m = pathname.match(/^(\/conecta-ia\/)(?:index\.html)?$/);
-  if (!m) return null; // já é conecta.html, ou outro caminho: não mexe
+  const raizPages = host === "nanoconecta-ia.github.io"
+    ? pathname.match(/^(\/conecta-ia\/)(?:index\.html)?$/)?.[1]
+    : null;
+  const raizMobis = lojaMobisPorHost(host) && /^\/(?:index\.html)?$/.test(pathname) ? "/" : null;
+  const raiz = raizPages ?? raizMobis;
+  if (!raiz || !hash || hash === "#" || hash === "#/") return null;
   const rota = hash.replace(/^#/, "") || "/";
-  if (/^\/(?:loja|a|p|demo)(?:\/|$)/.test(rota)) return null; // vitrine, página de aplicação e produto público ficam na entrada da loja
-  return `${m[1]}conecta.html${search}${hash}`;
+  if (/^\/(?:loja|a|p|demo)(?:\/|$)/.test(rota)) return null;
+  return `${raiz}conecta.html${search}${hash}`;
 }
