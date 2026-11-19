@@ -3,6 +3,9 @@
 Site inteligente que conecta ERPs (piloto: Bling) a uma loja online, de forma autônoma.
 Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no chat, pergunte.
 
+## Entrada por descrição, sem SKU (roteiro comum a qualquer agente)
+Ler [genealogia de veículos brasileiros: descrição → pai/filho/primos → motor/cilindros → documento e anos locais → SKU](docs/conector-ia/roteiro-descricao-genealogia-veicular-br-20261119.md). Consultas `motor para HR 2013` e `motor Gol 2003` são válidas sem SKU; não adivinhar ano final ou transferir OEM entre «primos». Aplicar a mesma trava do porteiro/Policy Engine.
+
 ## Como pesquisar peças MOBIS (atalho obrigatório)
 Antes de pesquisar ou propor SKU/OEM/GTIN/NCM, ler:
 - [Norma do porteiro e cadastro em lotes](docs/conector-ia/mobis-porteiro-cadastro-em-lotes-20261119.md)
