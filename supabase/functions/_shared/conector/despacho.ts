@@ -15,11 +15,23 @@ export interface ContextoDespacho extends ContextoFerramenta {
 }
 export interface ResultadoDespacho { ok: boolean; decisao: Decisao; resultado?: unknown; erro?: string; auditoria_falhou?: boolean }
 
+/** URLs temporárias do ChatGPT são credenciais efêmeras. Nunca registrar download_url/file_id em auditoria. */
+export function entradaParaAuditoria(id: string, entrada: unknown): unknown {
+  if (id !== "conecta.midia.anexar_produto" && id !== "conecta.banner.anexar") return entrada;
+  const e = entrada && typeof entrada === "object" && !Array.isArray(entrada) ? entrada as Record<string, unknown> : {};
+  return {
+    sku: typeof e.sku === "string" ? e.sku.slice(0, 80) : null,
+    modo: typeof e.modo === "string" ? e.modo.slice(0, 30) : null,
+    aplicacao_id: typeof e.aplicacao_id === "string" ? e.aplicacao_id.slice(0, 40) : null,
+    arquivo_enviado: !!e.file, URL_temporaria_e_file_id: "[protegidos]",
+  };
+}
+
 async function registrar(c: ContextoDespacho, id: string, decisao: Decisao, motivo: string, entrada: unknown, saida: unknown, ms: number): Promise<boolean> {
   const def = buscarDefinicao(id);
   try {
     const { error } = await c.rpc("agente_chamada_registrar", { p_loja: c.lojaId, p_origem: c.origem, p_conversa: c.conversaId ?? null, p_tarefa: c.tarefaId ?? null,
-      p_user: c.userId, p_mcp_chave: c.mcpChaveId ?? null, p_pair_sessao: c.pairSessaoId ?? null, p_ferramenta: id, p_risco: def?.risco ?? null, p_decisao: decisao, p_motivo: motivo, p_entrada: entrada ?? null, p_saida: saida ?? null, p_duracao: ms });
+      p_user: c.userId, p_mcp_chave: c.mcpChaveId ?? null, p_pair_sessao: c.pairSessaoId ?? null, p_ferramenta: id, p_risco: def?.risco ?? null, p_decisao: decisao, p_motivo: motivo, p_entrada: entradaParaAuditoria(id, entrada) ?? null, p_saida: saida ?? null, p_duracao: ms });
     return !error;
   } catch { return false; }
 }

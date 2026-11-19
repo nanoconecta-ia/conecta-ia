@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "8e898d68932a1cb9afd064ba35ba689294fd100429f79350be12bab977433973",
+  "artefato_sha256": "3904df5522f65d34a673ebcfd2a116c2ade32e674c826d3bd66c63aafc0c0c2d",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -89,12 +89,16 @@
       "sha256": "735152ee3e7dee93f8cb1c60d8a02a681ad6bdb7af2bad4f8642ea5ded5cec1d"
     },
     {
+      "path": "supabase/functions/_shared/conector/midias_mcp.ts",
+      "sha256": "abe219673efd9877251256b9df1553021015b3b1c98b97136a6702e8bfcda91d"
+    },
+    {
       "path": "supabase/functions/_shared/cadastro/regras_marca.ts",
       "sha256": "7a03f8af54ccae751a4a78a737de63c9659b1fe9a46b43da0d940364f2d7e18b"
     },
     {
       "path": "supabase/functions/_shared/conector/registro.ts",
-      "sha256": "08bbe092759b564184186994815a025ea788270677afd8654b3baa0f8ce8fa12"
+      "sha256": "40e8694e0e805c568bcf3759e50583e31b6363857a5343db76a4dd5b67e2157e"
     },
     {
       "path": "supabase/functions/_shared/conector/bling_campos.ts",
@@ -154,11 +158,11 @@
     },
     {
       "path": "supabase/functions/_shared/conector/handlers.ts",
-      "sha256": "b08f5058ba3220c2b1d71c99941b96e627c833eabd70a0d5cedf259962d18596"
+      "sha256": "22b82ddeb6e584ac9292fcb4093f1e26a72e68c3fefb2c7e2147d968c9b1284d"
     },
     {
       "path": "supabase/functions/_shared/conector/tipos.ts",
-      "sha256": "5aaeb8f6145409711a2eb5f0930e3a73cdde45573b5e0aa1103b257d290a4de1"
+      "sha256": "ffe3123a9f4a6c28d4e216f1231086011cb768b237890c6a1160b236b91d27ce"
     },
     {
       "path": "supabase/functions/_shared/conector/policy.ts",
@@ -170,7 +174,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/despacho.ts",
-      "sha256": "edf706e74ed00367f600dc355dc361bbd1e1a4d9260c578e68ab53f80b785795"
+      "sha256": "0e61186c7b047d20e86cc7cdeb5bc50b224879d648a6a09a0b1824f901bbaa79"
     },
     {
       "path": "supabase/functions/_shared/conector/aliases.ts",
