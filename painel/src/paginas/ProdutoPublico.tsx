@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { MOBIS } from "../lib/publicoLoja.ts";
 import { FichaProduto } from "../componentes/FichaProduto.tsx";
+import { RodapeMobisEnxuto } from "../componentes/RodapeMobisEnxuto.tsx";
+import type { PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import logoMobis from "../assets/marcas/mobis-mstyle-v3-logo.png";
 import "./produto-publico-mobis.css";
 import type { FichaProduto as Produto, FichaVeiculo } from "../lib/ficha.ts";
@@ -14,6 +16,8 @@ const REDES_SOCIAIS: { nome: string; url: string }[] = [];
 export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
   const [ficha, setFicha] = useState<{ produto: Produto; veiculos: FichaVeiculo[] } | null>(null);
   const [paginasVeiculos, setPaginasVeiculos] = useState<PaginaVeiculo[]>([]);
+  const [politicasMobis, setPoliticasMobis] = useState<PoliticasLojaPublicas | null>(null);
+  const [whatsappMobis, setWhatsappMobis] = useState<string | null>(null);
   useEffect(() => {
     let vivo = true;
     fetch(`${SUPABASE_URL}/functions/v1/loja-publica`, {
@@ -21,6 +25,10 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
     }).then((r) => r.json()).then((j) => {
       const produto = (j?.produtos ?? []).find((p: Produto) => p.sku === sku);
       if (!vivo) return;
+      if (slug === MOBIS.slug) {
+        setPoliticasMobis(j?.politicas ?? null);
+        setWhatsappMobis(j?.loja?.whatsapp ?? null);
+      }
       if (produto && j?.ficha) {
         const consulta = (produto as Produto & { em_estoque?:boolean|null;consulta_previa?:boolean }).em_estoque;
         const previa = (produto as Produto & { consulta_previa?:boolean }).consulta_previa;
@@ -50,12 +58,13 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
         : <p>As páginas individuais por veículo serão vinculadas aqui após a aprovação técnica de cada aplicação.</p>}
         <p>O SKU físico continua único: as páginas por veículo não representam peças ou estoques diferentes.</p>
       </section>}
-      <div className="cartao">
+      {slug === MOBIS.slug && <RodapeMobisEnxuto nome={MOBIS.nome} whatsapp={whatsappMobis} politicas={politicasMobis}/>}
+      {slug !== MOBIS.slug && <div className="cartao">
         {REDES_SOCIAIS.length > 0 && <nav className="produto-publico-redes" aria-label="Redes sociais da loja">
           {REDES_SOCIAIS.map(r => <a key={r.url} href={r.url} target="_blank" rel="noopener noreferrer">{r.nome}</a>)}
         </nav>}
         {slug === MOBIS.slug && <p className="suave"><a href={MOBIS.site}>mobisautopecas.com.br — site oficial</a></p>}
-      </div>
+      </div>}
     </main>
   );
 }
