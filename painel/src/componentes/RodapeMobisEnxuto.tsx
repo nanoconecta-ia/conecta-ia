@@ -1,6 +1,7 @@
 import type { MouseEvent } from "react";
 import type { PoliticasLojaPublicas } from "./RodapeLoja.tsx";
-import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
+import { linkWhatsAppPublico, REDES_OFICIAIS_MOBIS } from "../lib/publicoLoja.ts";
+import { IconeRedeMobis } from "./IconeRedeMobis.tsx";
 import logoMobis from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
 import "./rodape-enxuto-mobis.css";
 
@@ -35,7 +36,7 @@ const DOCUMENTOS = [
 
 /** Rodapé exclusivo da MOBIS V3. Identificação e textos legais vêm somente das políticas aprovadas na API pública. */
 export function RodapeMobisEnxuto({
-  nome, whatsapp, politicas, redes,
+  nome, whatsapp, politicas, redes = REDES_OFICIAIS_MOBIS,
 }: {
   nome: string;
   whatsapp?: string | null;
@@ -76,20 +77,31 @@ export function RodapeMobisEnxuto({
 
         <section className="m4-rodape-coluna" aria-label="Atendimento">
           <h2>Atendimento</h2>
-          {wa && <a className="m4-rodape-wa" href={wa} target="_blank" rel="noopener noreferrer">
-            <span className="m4-rodape-marca-icone" aria-hidden="true">◉</span>
-            Consultar no WhatsApp
-          </a>}
           {telefone && (ligar ? <a href={ligar}>{telefone}</a> : <span>{telefone}</span>)}
           {email && <a href={"mailto:" + email}>{email}</a>}
           {!wa && !telefone && !email && <p>Atendimento em atualização.</p>}
         </section>
 
-        <section className="m4-rodape-coluna" aria-label="Redes sociais">
+        <section className="m4-rodape-coluna" aria-label="Redes sociais e atendimento online">
           <h2>Redes sociais</h2>
-          {instagram && <a href={instagram} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">◎</span> Instagram oficial</a>}
-          {facebook && <a href={facebook} target="_blank" rel="noopener noreferrer"><span aria-hidden="true">f</span> Facebook oficial</a>}
-          {!instagram && !facebook && <p>Os links para os perfis oficiais serão incluídos após confirmação.</p>}
+          <nav className="m4-rodape-canais" aria-label="Perfis oficiais e WhatsApp da Mobis">
+            {facebook && <a className="m4-canal m4-canal-facebook" href={facebook} target="_blank" rel="noopener noreferrer"
+              aria-label="Abrir a página principal da Mobis Autopeças no Facebook">
+              <span className="m4-canal-icone"><IconeRedeMobis canal="facebook" /></span>
+              <span className="m4-canal-nome">Facebook</span>
+            </a>}
+            {instagram && <a className="m4-canal m4-canal-instagram" href={instagram} target="_blank" rel="noopener noreferrer"
+              aria-label="Abrir Instagram oficial da Mobis Autopeças">
+              <span className="m4-canal-icone"><IconeRedeMobis canal="instagram" /></span>
+              <span className="m4-canal-nome">Instagram</span>
+            </a>}
+            {wa && <a className="m4-canal m4-canal-whatsapp" href={wa} target="_blank" rel="noopener noreferrer"
+              aria-label="Falar com a Mobis Autopeças no WhatsApp">
+              <span className="m4-canal-icone"><IconeRedeMobis canal="whatsapp" /></span>
+              <span className="m4-canal-nome">WhatsApp</span>
+            </a>}
+          </nav>
+          {!instagram && !facebook && !wa && <p>Perfis oficiais em confirmação.</p>}
         </section>
 
         <section className="m4-rodape-coluna" aria-label="Localização e identificação da empresa">
