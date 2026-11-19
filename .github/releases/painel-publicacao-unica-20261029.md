@@ -246,3 +246,14 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - A tipografia é exclusivamente aplicada ao escopo `.mobis-v2.m4 .gcv3` e às variáveis do M-STYLE na vitrine pública. Não altera layout/conteúdo de outras lojas, painel Conecta.IA, Bling/ERP, estoque, preços de custo, fiscal, NF, Supabase, DNS, aplicações técnicas ou permissões de publicação.
 - Os banners por veículo continuam com URLs independentes após homologação, mas o **CI003696** tem aplicações HR/Bongo no estado `a_confirmar` e `pagina_indexavel=false`: nenhum desses perfis pode ser publicado automaticamente pela mudança tipográfica. O preço R$17.600 da imagem promocional antiga não é transferido automaticamente.
 - Publicação pelo fluxo **painel-pages.yml**, exclusivamente frontend estático. Após deploy, conferir `version.json`, links das linhas e tipografia no domínio oficial. A compilação principal passou; testes visuais abrangentes estavam em progresso no momento da liberação.
+
+
+## Publicação solicitada — Ícones oficiais das redes sociais MOBIS (19/11/2026)
+- O proprietário pediu explicitamente na loja: **“faz os ícones para todos ... em cores padrão”** após enviar captura da marca antiga/laranja em sua página no Facebook. A alteração autorizada é **somente na vitrine MOBIS**: não editar os perfis Meta por esta publicação.
+- PR #459 integrada em `main`, commit `b188c10abac29d981ffbd7a9d2236b13d2e7b3ed`.
+- Rodapé V3: links diretos para a página oficial do Facebook escolhida pelo proprietário **ID 119574083114811** (não perfis menores), Instagram **@mobisautopartsgoias**, WhatsApp obtido do cadastro ativo da loja; ícones SVG locais: Facebook `#1877F2`, Instagram gradiente e WhatsApp `#25D366`. Nome de marca MOBIS continua no kit cromado V3.
+- Os três canais ficam juntos na seção “Redes sociais”, **sem botão WhatsApp duplicado** no rodapé. Preservar telefone, email, localização, dados legais e páginas de políticas.
+- Ícone WhatsApp também substitui o símbolo genérico de contato do cabeçalho. Botões acessíveis (mínimo 44px), links HTTPS validados e `rel=noopener noreferrer`. Layout responsivo no celular.
+- O componente de rodapé é compartilhado por home, ficha de produto e página de aplicação. Nenhum ícone leva a página desconhecida, e não criar YouTube/TikTok sem perfil verificado.
+- Publicar exclusivamente frontend `painel-pages.yml`; não alterar Supabase, Bling, estoque, preços, NF, campanhas, Meta Ads, contas de Facebook/Instagram/WhatsApp, domínio, DNS ou outras lojas/projetos. Aplicações CI003696 continuam pendentes.
+- Testes unitários e build do painel aprovados na PR; conferência visual pós-publicação obrigatória: `version.json`, ícones, cores, links da página FB 119574083114811, Instagram escolhido e WhatsApp cadastrado, em celular e desktop.
