@@ -89,9 +89,9 @@ export function Fila({ loja }: { loja: Loja }) {
         <div className="gs-fila-revisao">
           <h3>Revisão das fotos de {selecionado.sku ?? "produto sem SKU"}</h3>
           <GaleriaProduto loja={loja} produtoId={selecionado.id} sku={selecionado.sku} aoDecidir={carregar}/>
-          <MidiasPendentesMcp loja={loja} />
-    </div>
+        </div>
       )}
+      <MidiasPendentesMcp loja={loja} />
     </div>
   );
 }
