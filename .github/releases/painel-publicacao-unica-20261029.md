@@ -201,3 +201,11 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - CI `Painel (verificação em PR)` aprovado, incluindo TypeScript, testes e builds normal e com flag Pair.
 - Republicar apenas frontend estático via `painel-pages.yml`, mantendo loja em modo teste. Nenhuma mudança no Bling, estoque, NF, preço, banco Supabase, DNS ou outros projetos.
 - Verificar o hash exato do release e o logotipo na página pública antes de declarar que a versão sem slogan está efetivamente em produção.
+
+
+## Publicação autorizada — Vitrine MOBIS sem blocos duplicados (19/11/2026)
+- Autorização direta do proprietário ao mostrar três capturas do modelo antigo: **“Retira este modelo”**.
+- PR #452 integrada na `main` em `b2dbf0c32ab697be10449045f7b22c50dee626fc`, após sucesso do workflow de TypeScript, testes unitários e builds do painel.
+- Retirar exclusivamente da loja MOBIS as seções extras de grade de nove montadoras, seis cartões de sistemas, formulário duplicado “Conte o que você procura” e lista repetida vazia. A nova vitrine mantém sete ícones no cabeçalho, busca de SKU/OEM, filtros por aplicação, carrossel/banner, catálogo individual e rodapé V3 com dados aprovados de Goiânia.
+- O catálogo continua em modo **teste**, com os 20 itens de prévia e nenhum anúncio comercial publicado. Somente frontend estático do GitHub Pages: não alterar Bling, NF, preço, estoque, taxonomia técnica de banco, Edge Functions, Supabase ou DNS.
+- Fazer conferência pós-publicação com `version.json`, visual em celular e ausência explícita dos nós `m2-montadoras`, `m2-taxonomia`, `m2-atendimento` e `m2-lista`; exigir os componentes V3 preservados.
