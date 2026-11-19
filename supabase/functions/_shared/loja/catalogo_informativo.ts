@@ -15,7 +15,7 @@ export function linhaInformativaSemComercial<T extends { preco?: unknown; estoqu
  */
 export function modoInformativoProduto(
   previaLegacy: boolean,
-  produto: { exibicao_informativa?: boolean | null },
+  produto: { exibicao_informativa?: unknown },
 ): boolean {
   return previaLegacy || produto.exibicao_informativa === true;
 }
