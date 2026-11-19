@@ -127,8 +127,8 @@ export function RodapeMobisEnxuto({
           <details className="m4-rodape-documento">
             <summary>Aplicativos Mobis para instalar</summary>
             <p>São dois aplicativos independentes. Abra cada endereço no Chrome do celular e use “Instalar app” no menu do navegador.</p>
-            <a href="./" aria-label="Abrir o aplicativo público Mobis Autopeças">App Loja Mobis</a>
-            <a href="./conecta.html" target="_blank" rel="noopener noreferrer" aria-label="Abrir Conecta.IA, área restrita do lojista, para instalar">App Conecta.IA · área restrita</a>
+            <p><a href="./" aria-label="Abrir o aplicativo público Mobis Autopeças">Abrir App Loja Mobis</a></p>
+            <p><a href="./conecta.html" target="_blank" rel="noopener noreferrer" aria-label="Abrir Conecta.IA, área restrita do lojista, para instalar">Abrir App Conecta.IA · área restrita</a></p>
           </details>
         </nav>
       </div>
