@@ -104,12 +104,13 @@ try{
   const canais=page.locator(".m4-rodape-canais");
   assert.equal(await canais.locator("a.m4-canal").count(),3,"rodapé com Facebook, Instagram e WhatsApp oficiais");
   assert.equal(await canais.locator(".m4-canal svg").count(),3,"três símbolos SVG locais, sem dependências externas");
-  assert.match(await canais.locator(".m4-canal-facebook").getAttribute("href"),/facebook\\.com\\/profile\\.php\\?id=119574083114811/,
+  assert.ok((await canais.locator(".m4-canal-facebook").getAttribute("href")).includes(
+    "facebook.com/profile.php?id=119574083114811"),
     "link da página Facebook principal escolhida, não de outras páginas ou botão de compartilhar");
   assert.equal(await canais.locator(".m4-canal-instagram").getAttribute("href"),
     "https://www.instagram.com/mobisautopartsgoias/","Instagram escolhido pelo proprietário");
-  assert.match(await canais.locator(".m4-canal-whatsapp").getAttribute("href"),/^https:\\/\\/wa\\.me\\/5562991654515\\?/,
-    "número WhatsApp vem do cadastro da loja");
+  assert.ok((await canais.locator(".m4-canal-whatsapp").getAttribute("href")).startsWith(
+    "https://wa.me/5562991654515?"),"número WhatsApp vem do cadastro da loja");
   assert.equal(await canais.locator(".m4-canal-facebook .m4-canal-icone").evaluate(el=>getComputedStyle(el).backgroundColor),
     "rgb(24, 119, 242)","azul oficial Facebook");
   assert.match(await canais.locator(".m4-canal-instagram .m4-canal-icone").evaluate(el=>getComputedStyle(el).backgroundImage),
