@@ -99,6 +99,30 @@ try{
   assert.equal(await page.locator(".ms-encontrar form").count(),1,"filtro hierárquico preservado sem duplicação");
   assert.equal(await page.locator(".m4-linha-card,.m2-veiculo-grade").count(),0,"outras grades duplicadas ausentes");
   assert.equal(await page.locator(".gcv3-etiqueta-flash").count(),0,"sem campanha ativa não há oferta Flash fictícia");
+
+  // As redes oficiais são links DIRETOS para os perfis corretos, com cores de marca.
+  const canais=page.locator(".m4-rodape-canais");
+  assert.equal(await canais.locator("a.m4-canal").count(),3,"rodapé com Facebook, Instagram e WhatsApp oficiais");
+  assert.equal(await canais.locator(".m4-canal svg").count(),3,"três símbolos SVG locais, sem dependências externas");
+  assert.match(await canais.locator(".m4-canal-facebook").getAttribute("href"),/facebook\\.com\\/profile\\.php\\?id=119574083114811/,
+    "link da página Facebook principal escolhida, não de outras páginas ou botão de compartilhar");
+  assert.equal(await canais.locator(".m4-canal-instagram").getAttribute("href"),
+    "https://www.instagram.com/mobisautopartsgoias/","Instagram escolhido pelo proprietário");
+  assert.match(await canais.locator(".m4-canal-whatsapp").getAttribute("href"),/^https:\\/\\/wa\\.me\\/5562991654515\\?/,
+    "número WhatsApp vem do cadastro da loja");
+  assert.equal(await canais.locator(".m4-canal-facebook .m4-canal-icone").evaluate(el=>getComputedStyle(el).backgroundColor),
+    "rgb(24, 119, 242)","azul oficial Facebook");
+  assert.match(await canais.locator(".m4-canal-instagram .m4-canal-icone").evaluate(el=>getComputedStyle(el).backgroundImage),
+    /linear-gradient/,"Instagram com gradiente de marca");
+  assert.equal(await canais.locator(".m4-canal-whatsapp .m4-canal-icone").evaluate(el=>getComputedStyle(el).backgroundColor),
+    "rgb(37, 211, 102)","verde oficial WhatsApp");
+  assert.equal(await page.locator(".m4-rodape-wa").count(),0,"sem botão WhatsApp duplicado no rodapé");
+  for(const link of await canais.locator("a.m4-canal").all()){
+    assert.equal(await link.getAttribute("target"),"_blank","canais abrem sem substituir a loja");
+    assert.match(await link.getAttribute("rel"),/noopener/,"proteção ao abrir nova aba");
+    const tamanho=await link.boundingBox();
+    assert.ok(tamanho && tamanho.height>=44 && tamanho.width>=44,"área tocável acessível dos canais");
+  }
   assert.equal(await page.locator(".v-rodape-privacidade-bloco").count(),0,"rodapé enxuto: políticas ficam na página institucional, não no rodapé");
   assert.equal(await page.locator(".v-rodape-privacidade-bloco button").count(),0,"sem política aprovada não publica texto inventado");
   assert.equal(new Set(origens).size,3,"rotacao exibe fotografias distintas por modelo");
