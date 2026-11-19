@@ -63,10 +63,13 @@ try{
   assert.equal(await page.locator('[data-bloco="montadoras"],[data-bloco="taxonomia"]').count(),0,"grades antigas não publicadas");
   assert.equal(await page.locator(".m4-montadora-item,.m4-taxonomia-item").count(),0,"cartões grandes duplicados ausentes");
   assert.equal(await page.locator("#m2-atendimento,.m2-contato-form,#m2-lista").count(),0,"consulta e lista duplicadas ausentes");
-  assert.equal(await page.locator(".m2-filtros").evaluate(el=>getComputedStyle(el).maxWidth),"none","filtros sem largura administrativa de 440px");
+  assert.equal(await page.locator(".ms-encontrar form").count(),1,"somente o formulário de aplicação aprovado permanece");
+  assert.equal(await page.locator(".ms-pesquisa").count(),1,"somente uma barra de busca textual permanece");
+  assert.equal(await page.locator(".m2-search,.m2-filtros").count(),0,"busca e filtros duplicados ausentes");
   assert.equal(await page.locator(".gcv3").count(),1,"um único carrossel de produtos e veículos");
-   assert.equal(await page.locator(".ms-abertura").count(),1,"um único banner institucional V3");
+  assert.equal(await page.locator(".ms-abertura,.ms-linha,.ms-consulta-rodape").count(),0,"abertura, linhas e faixa de contato duplicadas não montadas");
   assert.equal(await page.locator(".m4-linha-card,.m2-veiculo-grade").count(),0,"seções repetidas não aparecem");
+  assert.equal(await page.locator(".m2-estado-compacto").count()<=1,true,"estado vazio nunca cria mais de um aviso");
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow "+width);
   assert.deepEqual(errors,[]);
   resultados.push({width,layout:"mobis-v3-site",catalogo:r.status(),produtos:dados.total,erros:errors});

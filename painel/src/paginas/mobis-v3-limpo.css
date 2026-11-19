@@ -1,0 +1,171 @@
+/* MOBIS V3 — vitrine com um único funil de busca. Não altera o painel Conecta.IA. */
+.mobis-v2.m4 .ms-pesquisa {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-rows:minmax(46px,auto) auto;
+  overflow:hidden;
+  background:#1f2327;
+  border:1px solid #8b969d;
+  border-radius:12px;
+}
+.mobis-v2.m4 .ms-pesquisa input[type="search"] {
+  grid-column:1;
+  grid-row:1;
+  width:100%;
+  min-width:0;
+  height:50px;
+  border-radius:0;
+  padding-inline:12px;
+  flex:none;
+}
+.mobis-v2.m4 .ms-pesquisa button[type="submit"] {
+  grid-column:2;
+  grid-row:1;
+  min-height:50px;
+}
+.mobis-v2.m4 .ms-pesquisa .ms-codigo-exato {
+  grid-column:1/-1;
+  grid-row:2;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:5px 12px;
+  min-height:29px;
+  background:#1f2327;
+  border-top:1px solid #626a70;
+  color:#f5f7f9;
+  font-size:.72rem;
+  font-weight:750;
+  cursor:pointer;
+}
+.mobis-v2.m4 .ms-pesquisa .ms-codigo-exato input[type="checkbox"] {
+  display:inline-block;
+  flex:0 0 16px;
+  width:16px!important;
+  height:16px!important;
+  min-width:16px!important;
+  min-height:16px!important;
+  padding:0!important;
+  margin:0;
+  border:1px solid #eaf2f6;
+  border-radius:3px;
+  appearance:auto;
+  accent-color:#e2181a;
+  box-shadow:none;
+}
+.mobis-v2.m4 .ms-aplicacoes {
+  padding:clamp(18px,2vw,28px) 0;
+  background:#eaf2f6;
+  border-bottom:1px solid #bdc6cb;
+}
+.mobis-v2.m4 .ms-aplicacoes-grid.ms-aplicacoes-grid-unica {
+  display:block;
+  width:100%;
+}
+.mobis-v2.m4 .ms-aplicacoes-grid-unica .ms-encontrar {
+  width:100%;
+  max-width:none;
+  padding:clamp(16px,2.4vw,25px);
+  border-radius:15px;
+}
+.mobis-v2.m4 .ms-encontrar-titulo {
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:6px 24px;
+  margin:0 0 16px;
+}
+.mobis-v2.m4 .ms-encontrar-titulo h2 {
+  margin:0!important;
+  color:#fff!important;
+  font-size:clamp(1.2rem,1.4vw,1.5rem);
+  font-weight:900;
+}
+.mobis-v2.m4 .ms-encontrar-titulo p {
+  margin:0;
+  max-width:610px;
+  line-height:1.45;
+  color:#d7e0e4;
+  font-size:.83rem;
+}
+.mobis-v2.m4 .ms-aplicacoes-grid-unica .ms-encontrar form {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  align-items:end;
+}
+.mobis-v2.m4 .ms-aplicacoes-grid-unica .ms-encontrar :is(select,input) {
+  width:100%;
+  min-width:0;
+  border-color:#a8b3b9;
+  border-radius:8px;
+  padding:10px 12px;
+}
+.mobis-v2.m4 .ms-aplicacoes-grid-unica .ms-encontrar form button {
+  grid-column:auto;
+  min-height:45px;
+  margin:0;
+}
+.mobis-v2.m4 .ms-aplicacoes-grid-unica .ms-encontrar form .ms-limpar-filtros {
+  color:#f3f6f7;
+  background:#343b42;
+  border:1px solid #a6b1b9;
+  font-weight:750;
+}
+.mobis-v2.m4 .m2-catalogo[data-bloco="produtos"] {
+  padding-top:clamp(20px,2.8vw,35px);
+  padding-bottom:clamp(26px,3vw,45px);
+}
+.mobis-v2.m4 .m2-estado-compacto {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px 20px;
+  margin:12px 0;
+  padding:16px clamp(14px,2vw,22px);
+  border:1px solid #bdc7ce;
+  border-left:4px solid #e2181a;
+  border-radius:9px;
+  background:#f7fafb;
+}
+.mobis-v2.m4 .m2-estado-compacto p {
+  margin:0;
+  color:#26333d;
+  font-size:.9rem;
+  line-height:1.5;
+  flex:1 1 360px;
+}
+.mobis-v2.m4 .m2-estado-compacto a {
+  display:inline-flex;
+  align-items:center;
+  min-height:42px;
+  padding:8px 13px;
+  border:1px solid #e2181a;
+  border-radius:7px;
+  color:#b4000a;
+  font-weight:800;
+  text-decoration:none;
+}
+.mobis-v2.m4 .m2-estado-compacto a:hover {background:#e2181a;color:#fff}
+.mobis-v2.m4 .ms-pesquisa :is(input,button):focus-visible,
+.mobis-v2.m4 .ms-encontrar :is(select,input,button):focus-visible {
+  outline:3px solid #f14448;
+  outline-offset:2px;
+}
+@media(max-width:890px) {
+  .mobis-v2.m4 .ms-aplicacoes-grid-unica .ms-encontrar form {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:530px) {
+  .mobis-v2.m4 .ms-aplicacoes-grid-unica .ms-encontrar form {
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .mobis-v2.m4 .ms-pesquisa input[type="search"] {height:46px;font-size:.78rem}
+  .mobis-v2.m4 .ms-pesquisa button[type="submit"] {min-height:46px}
+  .mobis-v2.m4 .ms-encontrar-titulo {display:block}
+  .mobis-v2.m4 .ms-encontrar-titulo p {margin-top:7px}
+}

@@ -66,14 +66,15 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
   });
   await page.goto(base + "#/loja/mobis");
   if(flags.previaSimulada) await page.locator(".m2-produto").waitFor();
-  else await page.locator(".m2-catalogo").getByText(erro ? "Não foi possível carregar o catálogo." : "Catálogo de peças em preparação.", {exact:true}).waitFor();
+  else if(erro) await page.locator(".m2-catalogo").getByText("Não foi possível carregar o catálogo.", {exact:true}).waitFor();
+  else await page.locator(".m2-estado-compacto").getByText(/O catálogo está sendo organizado por produto/).waitFor();
   return {context,page,consultas,erros};
 }
 async function consultar(page, acao, criterio) {
   const resposta = page.waitForResponse(r => r.url().endsWith("/functions/v1/loja-publica") && r.request().method() === "POST" && criterio(r.request().postDataJSON()));
   await acao();
   await resposta;
-  await page.getByText("0 produto(s) encontrado(s)", {exact:true}).waitFor();
+  await page.locator(".m2-estado-compacto").waitFor();
 }
 try {
   for (const width of [360,390,720,1280]) {
@@ -81,23 +82,23 @@ try {
     assert.equal(await page.locator("#m2-produto-teste").count(),0,"a página comercial não mostra produto fictício");
     assert.equal(await page.locator(".m2-produto").count(),0,"um catálogo vazio não inventa itens");
     assert.equal(await page.locator(".m4-banner-campanha").count(),0,"sem campanha publicada não existe banner de oferta fictício");
-    assert.equal(await page.locator(".m4-montadora-item").count(),9,"nove montadoras como caminho de consulta");
-    assert.equal(await page.locator(".m4-taxonomia-item").count(),6,"seis sistemas de consulta sem produto publicado");
-    await page.locator(".m4-montadora-item").filter({hasText:"Iveco"}).click();
-    await page.locator(".m4-montadora-opcoes button").filter({hasText:"Consultar a equipe"}).click();
-    const link=await page.locator("#m2-atendimento .m2-contato-form a").getAttribute("href");
-    assert.match(decodeURIComponent(link||""),/Iveco/,"consulta inclui a linha selecionada na mensagem");
-    assert.equal(consultas.length,1,"a seleção comercial não consulta nem grava produto");
+    assert.equal(await page.locator(".m4-montadora-item,.m4-taxonomia-item,.ms-linha,.ms-abertura,.ms-consulta-rodape").count(),0,
+      "sem grades, hero ou faixa duplicadas");
+    assert.equal(await page.locator(".ms-pesquisa").count(),1,"uma única busca textual");
+    assert.equal(await page.locator(".ms-encontrar form").count(),1,"um único formulário de aplicação");
+    await page.getByLabel("Montadora",{exact:true}).selectOption("Iveco");
+    assert.equal(await page.getByLabel("Montadora",{exact:true}).inputValue(),"Iveco","uma consulta contextual pode começar por montadora");
+    assert.equal(consultas.length,1,"a escolha do seletor não consulta nem grava produto");
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow");
     assert.equal(await page.locator(".m2-aviso-teste").count(),0,"aviso de ambiente de teste removido da vitrine (pedido do dono)");
     assert.equal(await page.getByText("Prévia da loja", {exact:false}).count(),0,"legenda de prévia removida do carrossel (pedido do dono)");
     assert.deepEqual(erros,[]);
     if (width===1280 || width===390) {
-      await page.locator(".m4-bloco-montadoras").screenshot({path:dir+`montadoras-CONSULTA-SIMULADO-${width}.png`});
+      await page.locator(".ms-aplicacoes").screenshot({path:dir+`filtros-UNICO-SIMULADO-${width}.png`});
       await page.evaluate(()=>scrollTo(0,0));
       await page.screenshot({path:dir+`inicio-SIMULADO-${width}.png`});
     }
-    resultados.push({width,amostra:false,montadoras:9,nosComConsulta:6,produtosPublicados:0,erros});
+    resultados.push({width,amostra:false,blocosDuplicados:0,formularioUnico:1,produtosPublicados:0,erros});
     await context.close();
   }
   {
@@ -107,8 +108,8 @@ try {
       layoutOrdem:["catalogo","banner","montadoras","taxonomia","empresa"]},390);
     const ordem=await page.locator("main [data-bloco]").evaluateAll(els=>
       els.map(el=>el.getAttribute("data-bloco")).filter(x=>["banner","montadoras","taxonomia","filtros","produtos"].includes(x)));
-    assert.deepEqual(ordem,["banner","filtros","produtos","montadoras","taxonomia"],
-      "prioridade comercial V3: carrossel, catálogo, montadoras, sistemas");
+    assert.deepEqual(ordem,["banner","filtros","produtos"],
+      "prioridade comercial V3: carrossel, filtro único e catálogo, sem blocos legados");
     assert.deepEqual(erros,[],"sem exceções JS ao montar a ordem personalizada");
     await context.close();
   }
@@ -147,8 +148,8 @@ try {
       true,"o menu completo da V3 apresenta o degradê vermelho Mobis");
     assert.equal(await page.locator(".ms-cabecalho").evaluate(el=>getComputedStyle(el).backgroundColor),
       "rgb(11, 15, 18)","a busca do cabeçalho está na faixa de grafite da V3");
-    assert.ok((await page.locator(".ms-logo img").getAttribute("src")||"").includes("mobis-mstyle-v3-logo"),
-      "logo horizontal usa o PNG original V3");
+    assert.ok((await page.locator(".ms-logo img").getAttribute("src")||"").includes("mobis-mstyle-v3-sem-slogan"),
+      "logo horizontal usa variante V3 sem slogan");
     assert.deepEqual(erros,[]);
     await context.close();
   }
@@ -164,24 +165,25 @@ try {
   }
   {
     const {context,page,consultas} = await abrir({ambiente:"teste",venda_habilitada:false,categoriaSimulada:true});
-    await page.getByLabel("Ano",{exact:true}).fill("2019");
+    await page.getByLabel("Ano / geração",{exact:true}).fill("2019");
     await consultar(page, () => page.getByRole("button",{name:"Aplicar filtros",exact:true}).click(), q => q.ano === 2019);
-    await page.locator(".m4-montadora-item").filter({hasText:"Hyundai"}).click();
-    await consultar(page, () => page.locator(".m4-montadora-opcoes button").filter({hasText:"Hyundai HR"}).click(), q => q.modelo === "Hyundai HR");
+    await page.getByLabel("Montadora",{exact:true}).selectOption("Hyundai");
+    await page.getByLabel("Veículo / modelo",{exact:true}).selectOption("Hyundai HR");
+    await consultar(page, () => page.getByRole("button",{name:"Aplicar filtros",exact:true}).click(), q => q.modelo === "Hyundai HR");
     assert.equal(consultas.at(-1).modelo,"Hyundai HR");
-    assert.equal(consultas.at(-1).q,undefined);
-    assert.equal(consultas.at(-1).ano,undefined);
-    assert.equal(await page.getByLabel("Ano",{exact:true}).inputValue(),"");
-    await consultar(page, () => page.locator(".m4-taxonomia-item[data-taxonomia-no='motor']").click(), q => q.categoria === "motor");
+    assert.equal(consultas.at(-1).ano,2019,"formulário único preserva os filtros em cascata");
+    await page.getByLabel("Sistema / categoria",{exact:true}).selectOption("motor");
+    await consultar(page, () => page.getByRole("button",{name:"Aplicar filtros",exact:true}).click(), q => q.categoria === "motor");
     assert.equal(consultas.at(-1).categoria,"motor");
-    assert.equal(consultas.at(-1).modelo,undefined);
-    assert.equal(await page.getByLabel("Modelo",{exact:true}).inputValue(),"");
-    await page.getByLabel("Buscar peça, SKU, OEM ou aplicação",{exact:true}).fill("bomba");
+    await consultar(page, () => page.getByRole("button",{name:"Limpar filtros",exact:true}).click(), q => !q.modelo && !q.motor && !q.ano && !q.categoria);
+    assert.equal(await page.getByLabel("Ano / geração",{exact:true}).inputValue(),"","limpar filtros remove o ano");
+    await page.getByRole("search",{name:"Buscar peça e referência"}).getByRole("searchbox").fill("bomba");
     await consultar(page, () => page.getByRole("search",{name:"Buscar peça e referência"}).getByRole("button",{name:"Pesquisar peças",exact:true}).click(), q => q.q === "bomba");
     assert.equal(consultas.at(-1).q,"bomba");
-    assert.equal(consultas.at(-1).categoria,"motor");
-    await page.getByRole("tab",{name:"SKU, fabricante ou OEM"}).click();
-    assert.equal(await page.getByRole("tab",{name:"SKU, fabricante ou OEM"}).getAttribute("aria-selected"),"true");
+    await page.locator(".ms-codigo-exato input[type='checkbox']").check();
+    await page.getByRole("search",{name:"Buscar peça e referência"}).getByRole("searchbox").fill("CI000120");
+    await consultar(page, () => page.getByRole("search",{name:"Buscar peça e referência"}).getByRole("button",{name:"Pesquisar peças",exact:true}).click(), q => q.q === "CI000120" && q.referencia_exata === true);
+    assert.equal(consultas.at(-1).referencia_exata,true,"modo de código exato envia o filtro correto");
     await context.close();
   }
   {
@@ -260,7 +262,7 @@ try {
     assert.deepEqual(erros,[]);
     await context.close();
   }
-  resultados.push({guardas:"produto sintético ausente em todos os ambientes, inclusive em falha de API",filtros:"modelo canônico, ano/categoria limpos, busca rápida e foco por código aprovados"});
+  resultados.push({guardas:"produto sintético ausente em todos os ambientes, inclusive em falha de API",filtros:"cascata única, limpar filtros, busca textual e SKU/OEM exato verificados"});
   console.log(JSON.stringify(resultados,null,2));
 } catch (erro) {
   resultados.push({erro:String(erro),stack:erro.stack});

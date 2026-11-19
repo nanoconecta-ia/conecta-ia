@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { EmpresaMobis } from "../componentes/EmpresaMobis.tsx";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { IconePeca } from "../componentes/IconePeca.tsx";
@@ -6,7 +6,7 @@ import { RodapeMobisEnxuto } from "../componentes/RodapeMobisEnxuto.tsx";
 import type { PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 import { GlassyCarouselMobisV3 } from "../componentes/GlassyCarouselMobisV3.tsx";
-import {CabecalhoMobisV3,AberturaMobisV3,AplicacoesMobisV3,BarraConsultaMobisV3} from "../componentes/LojaMobisInstitucionalV3.tsx";
+import {CabecalhoMobisV3,AplicacoesMobisV3} from "../componentes/LojaMobisInstitucionalV3.tsx";
 import {intervaloPublico} from "../lib/layoutMobis.ts";
 import {paletaPublicada,variaveisPaletaMobis} from "../lib/paletaMobis.ts";
 import fotoHR from "../assets/veiculos-mobis/hyundai-hr.webp";
@@ -20,6 +20,7 @@ import "./mobis-paleta-dinamica.css";
 import "./mobis-premium-v3.css";
 import "./mobis-ma-identidade.css";
 import "./mobis-vitrine-completa-v3.css";
+import "./mobis-v3-limpo.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -50,7 +51,6 @@ const VEICULOS=[
   {nome:"Kia Bongo K2500",valor:"Bongo",foto:fotoBongo},
   {nome:"Mitsubishi L200",valor:"L200",foto:fotoL200},
 ];
-const MODELOS_FILTRO=["HR","Bongo","L200"];
 const brl=(n:number)=>n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 /** Ícone de sistema aprovado, nunca representa foto ou compatibilidade do item. */
 function iconeDaCategoria(categoria:string|null|undefined):string {
@@ -128,11 +128,6 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     if(url)window.open(url,"_blank","noopener,noreferrer");
     else window.location.hash="#/loja/mobis/empresa";
   }
-  function escolherVeiculoAprovado(valor:string){
-    // O rótulo vem dos modelos de aplicações aprovadas entregues pela API.
-    setAbaBusca("descricao");setModelo(valor);setMotor("");setAno("");setCategoria("");setBusca("");
-    setF({...VAZIO,modelo:valor});window.location.hash="#/loja/mobis/veiculo/"+encodeURIComponent(valor);
-  }
   function escolherNoTaxonomia(slugNo:string){
     if(!dados?.categorias.some(c=>c.slug===slugNo&&c.total>0))return;
     setAbaBusca("descricao");setModelo("");setMotor("");setAno("");setCategoria(slugNo);setBusca("");
@@ -159,32 +154,17 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
       intervalo={intervaloPublico(dados?.layout?.intervalo_segundos)}
       emTeste={dados?.loja.ambiente!=="producao"}/></div>,
     catalogo: <>
-      <section id="m2-busca" data-bloco="filtros" className="m2-band m2-busca"><div className="m2-wrap m2-secao">
-        <div className="m2-titulo"><div><span className="m2-kicker">CATÁLOGO ONLINE</span><h2>Encontre sua peça automotiva.</h2><p>Pesquise pelo veículo, sistema ou referência. Mostramos somente anúncios aprovados.</p></div></div>
-        <div className="m2-modos-busca" role="tablist" aria-label="Escolher modalidade de pesquisa">
-          <button role="tab" aria-selected={abaBusca==="descricao"} type="button" onClick={()=>setAbaBusca("descricao")}>Nome, peça ou sistema</button>
-          <button role="tab" aria-selected={abaBusca==="referencia"} type="button" onClick={()=>setAbaBusca("referencia")}>SKU, fabricante ou OEM</button>
-        </div>
-        <p className="m2-ajuda-referencias">{abaBusca==="referencia"?"Localize o SKU físico ou uma referência exata aprovada de fabricante/OEM. Códigos pendentes não aparecem como equivalências.":"Pesquise por nome ou peça e refine pelos filtros. Códigos aprovados também são localizados."}</p>
-        <form className="m2-search" onSubmit={aplicar} role="search" aria-label="Busca detalhada de peças"><label className="sr" htmlFor="m2-pesquisar">Buscar peça, referência ou código SKU</label><span aria-hidden="true">⌕</span>
-          <input id="m2-pesquisar" maxLength={60} value={busca} onChange={e=>setBusca(e.target.value)} placeholder={abaBusca==="referencia"?"Ex.: 5074, CI000120 ou OEM homologado":"Buscar peça, referência ou código SKU"}/>
-          <button type="submit">Buscar peças →</button></form>
-        <form className="m2-filtros" onSubmit={aplicar}><div className="m2-filtros-topo"><div><strong>Filtre pelo seu veículo</strong><small>Use os dados do veículo para refinar a busca</small></div><button type="button" onClick={()=>{setF(VAZIO);setBusca("");setModelo("");setMotor("");setAno("");setCategoria("")}}>Limpar filtros ×</button></div>
-          <div className="m2-filtros-grid">
-            <label>Modelo<select aria-label="Modelo" value={modelo} onChange={e=>{setModelo(e.target.value);setMotor("")}}>
-              <option value="">Todos os modelos</option>{[...new Set([...MODELOS_FILTRO,...opcoes])].map(x=><option value={x} key={x}>{x}</option>)}</select></label>
-            <label>Motorização<select aria-label="Motorização" value={motor} onChange={e=>setMotor(e.target.value)}><option value="">Todos os motores</option>{motores.map(x=><option key={x}>{x}</option>)}</select></label>
-            <label>Ano<input type="number" min={1980} max={new Date().getFullYear()+1} value={ano} inputMode="numeric" placeholder="Ex.: 2019" onChange={e=>setAno(e.target.value.slice(0,4))}/></label>
-            <label>Sistema / categoria<select aria-label="Sistema / categoria" value={categoria} onChange={e=>setCategoria(e.target.value)}><option value="">Todas as categorias</option>{dados?.categorias.map(x=><option key={x.slug} value={x.slug}>{x.nome}</option>)}</select></label>
-          </div><div className="m2-filtros-rodape"><p>Não encontrou a peça? Nossa equipe confirma a compatibilidade por modelo e versão.</p><button type="submit">Aplicar filtros</button></div>
-        </form>
-      </div></section>
       <section className="m2-wrap m2-secao m2-catalogo" data-bloco="produtos" id="m2-catalogo" aria-live="polite">
-        <div className="m2-cab-secao"><div><span className="m2-kicker">PEÇAS E COMPONENTES</span><h2>Produtos no catálogo</h2><small>{estado==="carregando"?"Consultando…":String(dados?.total??0)+" produto(s) encontrado(s)"}</small></div></div>
+        <div className="m2-cab-secao"><div><span className="m2-kicker">PEÇAS E COMPONENTES</span><h2>Produtos no catálogo</h2><small>{estado==="carregando"?"Consultando…":estado==="ok"?(dados?.total??0)>0?String(dados?.total??0)+" produtos para consulta":"Novos itens em preparação":""}</small></div></div>
         {estado==="carregando"&&<div className="m2-vazio">Consultando catálogo público autorizado…</div>}
         {(estado==="erro"||estado==="limite")&&<div className="m2-vazio"><strong>Não foi possível carregar o catálogo.</strong><p>{estado==="limite"?"Limite de consultas atingido.":"Tente novamente."}</p><button onClick={()=>setTentativa(x=>x+1)}>Tentar novamente</button></div>}
         {estado==="naoachada"&&<div className="m2-vazio">Loja não encontrada.</div>}
-        {estado==="ok"&&dados?.produtos.length===0&&<div className="m2-vazio"><div><span className="m2-kicker">ATENDIMENTO MOBIS</span><h3>{Object.entries(f).some(([k,v])=>k!=="pagina"&&Boolean(v))?"Nenhuma peça encontrada com esses filtros.":"Catálogo de peças em preparação."}</h3><p>Nenhum anúncio aprovado foi encontrado. Consulte a equipe com o veículo e a referência; isso não significa falta de estoque na loja física.</p><button onClick={()=>consultarLinha("a peça procurada")}>Consultar a equipe ↗</button></div></div>}
+        {estado==="ok"&&dados?.produtos.length===0&&<div className="m2-estado-compacto" role="status">
+          <p>{Object.entries(f).some(([k,v])=>k!=="pagina"&&Boolean(v))
+            ?"Nenhuma peça encontrada com esses critérios."
+            :"O catálogo está sendo organizado por produto e aplicação aprovada."} Para consultar disponibilidade, fale com a equipe.</p>
+          {whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>}
+        </div>}
         {dados&&dados.produtos.length>0&&<div className="m2-produto-grade">{dados.produtos.map(p=><article key={p.sku} data-sku-fisico={p.sku} className="m2-produto">
           <div className="m2-foto-produto">
             <a href={p.consulta_previa?(p.whatsapp||"#/loja/mobis"):"#/p/mobis/"+encodeURIComponent(p.sku)} target={p.consulta_previa?undefined:"_blank"} rel={p.consulta_previa?undefined:"noopener noreferrer"} aria-label={(p.consulta_previa?"Consultar peça ":"Abrir ficha em nova aba ")+p.sku} style={{display:"block",width:"100%"}}>
@@ -206,7 +186,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                     {aplicacoesPublicas(dados.paginas_aplicacao?.[p.sku]).map(ap=>
                       <a key={ap.slug} href={"#/a/"+ap.slug}
-                        style={{display:"inline-block",padding:"8px 11px",border:"1px solid #c25a1b",borderRadius:6,color:"#914a27",fontWeight:700,fontSize:13,textDecoration:"none"}}>
+                        style={{display:"inline-block",padding:"8px 11px",border:"1px solid #E2181A",borderRadius:6,color:"#b50009",fontWeight:700,fontSize:13,textDecoration:"none"}}>
                         {ap.modelo} · ver ficha ↗
                       </a>)}
                   </div>
@@ -225,20 +205,19 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
   };
   return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="aprovado-v2" data-mobis-site="v3" data-layout-versionado="true" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4" data-paleta-publicada={coresPublicas?"sim":"nao"} data-mobis-v3-publicada={v3Publicada?"sim":"nao"} style={coresPublicas?variaveisPaletaMobis(coresPublicas) as CSSProperties:undefined}>
     <CabecalhoMobisV3
-       busca={busca} onBusca={setBusca} onEnviar={aplicar} whatsapp={whatsapp}
+       busca={busca} onBusca={setBusca} onEnviar={aplicar} whatsapp={whatsapp} exata={abaBusca==="referencia"} onExata={v=>setAbaBusca(v?"referencia":"descricao")}
        ir={irVitrine} categorias={dados?.categorias??[]} selecionarCategoria={escolherNoTaxonomia}
        consultar={consultarLinha} bannersPresentes={banners.length>0}/>
     <main>
       {contexto?.tipo==="empresa" ? <EmpresaMobis whatsapp={whatsapp} politicas={dados?.politicas}/> : <>
-       <AberturaMobisV3 whatsapp={whatsapp} ir={irVitrine}/>
+       {blocosSite.banner}
        <AplicacoesMobisV3 categorias={dados?.categorias??[]} opcoes={opcoes} motores={motores}
          f={{modelo,motor,ano,categoria}} onModelo={v=>{setModelo(v);setMotor("");}} onMotor={setMotor}
          onAno={setAno} onCategoria={setCategoria} onAplicar={aplicar}
-         onAprovado={escolherVeiculoAprovado} onConsultar={consultarLinha} ir={irVitrine}/>
-       {ordemVitrine.map(id=><Fragment key={id}>{blocosSite[id]}</Fragment>)}
+         onConsultar={consultarLinha} onLimpar={()=>{setF(VAZIO);setBusca("");setModelo("");setMotor("");setAno("");setCategoria("");setAbaBusca("descricao");}}/>
+       {blocosSite.catalogo}
       </>}
     </main>
-    <BarraConsultaMobisV3 whatsapp={whatsapp} politicas={dados?.politicas}/>
     <RodapeMobisEnxuto nome={dados?.loja.nome??"Mobis Autopeças"} whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas}/>
   </div>;
 }
