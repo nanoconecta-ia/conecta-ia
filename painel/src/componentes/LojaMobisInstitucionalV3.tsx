@@ -1,11 +1,6 @@
-import {useState, type FormEvent, type ReactNode} from "react";
+import {useState, type FormEvent} from "react";
 import {MONTADORAS_MOBIS, modelosAprovadosDaMontadora, type MontadoraMobis} from "../lib/blocosCatalogoMobis.ts";
 import logo from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
-import hr from "../assets/veiculos-mobis/hyundai-hr.webp";
-import bongo from "../assets/veiculos-mobis/kia-bongo-k2500.webp";
-import l200 from "../assets/veiculos-mobis/mitsubishi-l200.webp";
-import {linkWhatsAppPublico} from "../lib/publicoLoja.ts";
-import type {PoliticasLojaPublicas} from "./RodapeLoja.tsx";
 
 /** Vitrine comercial Mobis 2026. Imagens de veículos são referências de LINHA,
  * não evidência de aplicação de uma peça. O catálogo permanece 100% na API pública.
@@ -38,17 +33,18 @@ const setorComCategoria=(s:Setor,categorias:readonly Categoria[])=>categorias.fi
 
 type Comum={
   busca:string;onBusca:(valor:string)=>void;onEnviar:(event?:FormEvent)=>void;
+  exata:boolean;onExata:(valor:boolean)=>void;
   whatsapp:string|null;ir:(id:string)=>void;
   categorias:readonly Categoria[];selecionarCategoria:(slug:string)=>void;consultar:(nome:string)=>void;
   bannersPresentes:boolean;
 };
 
-export function CabecalhoMobisV3({busca,onBusca,onEnviar,whatsapp,ir,categorias,selecionarCategoria,consultar,bannersPresentes}:Comum){
+export function CabecalhoMobisV3({busca,onBusca,onEnviar,exata,onExata,whatsapp,ir,categorias,selecionarCategoria,consultar,bannersPresentes}:Comum){
   return <div className="ms-cabecalho" data-bloco="cabecalho" data-mobis-vitrine-completa="v3">
     <div className="ms-faixa-superior">
       <div className="ms-container ms-faixa-interna">
         <span><b aria-hidden="true">●</b> Goiás · Atendimento em autopeças diesel</span>
-        <span className="ms-faixa-razao">MOBIS AUTOPEÇAS · PICAPES • VANS • UTILITÁRIOS</span>
+        <span className="ms-faixa-razao">MOBIS AUTOPEÇAS · GOIÂNIA</span>
         {whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Consulta pelo WhatsApp ↗</a>}
       </div>
     </div>
@@ -57,7 +53,8 @@ export function CabecalhoMobisV3({busca,onBusca,onEnviar,whatsapp,ir,categorias,
       <p className="ms-especialidade">Peças para <strong>picapes, vans e utilitários diesel</strong> <small>Aplicação técnica sob consulta</small></p>
       <form className="ms-pesquisa" role="search" aria-label="Buscar peça e referência" onSubmit={onEnviar}>
         <label className="ms-visualmente-oculto" htmlFor="ms-buscar">Buscar peça, SKU, OEM ou aplicação</label>
-        <input id="ms-buscar" maxLength={60} value={busca} onChange={e=>onBusca(e.target.value)} placeholder="Busque por peça, SKU, OEM, veículo ou motor"/>
+        <input id="ms-buscar" type="search" maxLength={60} value={busca} onChange={e=>onBusca(e.target.value)} placeholder={exata?"SKU, fabricante ou OEM exato":"Peça, SKU, OEM, veículo ou motor"}/>
+        <label className="ms-codigo-exato"><input type="checkbox" checked={exata} onChange={e=>onExata(e.target.checked)}/><span>Código exato</span></label>
         <button type="submit" aria-label="Pesquisar peças"><span aria-hidden="true">⌕</span><span>Buscar</span></button>
       </form>
       <div className="ms-acoes">
@@ -88,107 +85,37 @@ export function CabecalhoMobisV3({busca,onBusca,onEnviar,whatsapp,ir,categorias,
   </div>;
 }
 
-const LINHAS=[
-  {nome:"Hyundai HR",filtro:"HR",foto:hr,texto:"Vans e utilitários diesel"},
-  {nome:"Kia Bongo",filtro:"Bongo",foto:bongo,texto:"Linha de utilitários"},
-  {nome:"Mitsubishi L200",filtro:"L200",foto:l200,texto:"Picapes diesel"},
-  {nome:"Hilux",filtro:"Hilux",foto:null,texto:"Consulte aplicações"},
-  {nome:"Toro",filtro:"Toro",foto:null,texto:"Consulte aplicações"},
-  {nome:"Sprinter",filtro:"Sprinter",foto:null,texto:"Consulte aplicações"},
-] as const;
-
-export function AberturaMobisV3({whatsapp,ir}:Pick<Comum,"whatsapp"|"ir">){
-  return <section className="ms-abertura" aria-label="MOBIS — especialistas em peças diesel">
-    <div className="ms-container ms-abertura-conteudo">
-      <div className="ms-abertura-texto">
-        <span className="ms-categoria-label">MOBIS AUTOPEÇAS · GOIÁS</span>
-        <h1>ESPECIALISTA EM <em>PEÇAS DIESEL</em> PARA PICAPES, VANS E UTILITÁRIOS.</h1>
-        <p>Encontre peças por sistema, veículo, motor ou código. Nossa equipe confirma a aplicação antes da compra.</p>
-        <div className="ms-cta-hero">
-          <button type="button" onClick={()=>ir("ms-aplicacoes")}>Encontrar a peça certa <span aria-hidden="true">→</span></button>
-          {whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>}
-        </div>
-        <div className="ms-hero-nota">Foto ilustrativa das linhas atendidas; aplicação e disponibilidade devem ser confirmadas.</div>
-      </div>
-      <div className="ms-vitrine-veiculos" aria-label="Linhas de veículos de referência">
-        <div><img src={hr} width={430} height={320} alt="Veículo Hyundai HR — referência de linha"/></div>
-        <div><img src={l200} width={430} height={320} alt="Picape Mitsubishi L200 — referência de linha"/></div>
-        <div><img src={bongo} width={430} height={320} alt="Veículo Kia Bongo — referência de linha"/></div>
-      </div>
-    </div>
-    <div className="ms-beneficios"><div className="ms-container ms-beneficios-grade">
-      <span><b aria-hidden="true">▣</b> Pesquisa por SKU e referência</span>
-      <span><b aria-hidden="true">✓</b> Aplicações com validação técnica</span>
-      <span><b aria-hidden="true">⚙</b> Peças organizadas por sistema</span>
-      <span><b aria-hidden="true">◉</b> Atendimento pelo WhatsApp</span>
-    </div></div>
-  </section>;
-}
-
 type AplicacoesProps={
   categorias:readonly Categoria[];opcoes:readonly string[];motores:readonly string[];
   f: Filtros;onModelo:(s:string)=>void;onMotor:(s:string)=>void;onAno:(s:string)=>void;onCategoria:(s:string)=>void;
-  onAplicar:(event?:FormEvent)=>void;onAprovado:(s:string)=>void;onConsultar:(s:string)=>void;ir:(id:string)=>void;
-  extra?:ReactNode;
+  onAplicar:(event?:FormEvent)=>void;onConsultar:(s:string)=>void;onLimpar:()=>void;
 };
-export function AplicacoesMobisV3({categorias,opcoes,motores,f,onModelo,onMotor,onAno,onCategoria,onAplicar,onAprovado,onConsultar,ir,extra}:AplicacoesProps){
+/** Único formulário de filtros: a busca textual/SKU continua somente no cabeçalho V3. */
+export function AplicacoesMobisV3({categorias,opcoes,motores,f,onModelo,onMotor,onAno,onCategoria,onAplicar,onConsultar,onLimpar}:AplicacoesProps){
   const [montadora,setMontadora]=useState<MontadoraMobis|""|"Toyota">("");
   const modelosDaMontadora=montadora==="Toyota"
     ? opcoes.filter(x=>/hilux|toyota/i.test(x))
     : montadora?modelosAprovadosDaMontadora(montadora,opcoes):opcoes;
-  const verificacao=(nome:string)=>opcoes.find(op=>normalizar(op)===normalizar(nome)||
-   normalizar(op).includes(normalizar(nome))||normalizar(nome).includes(normalizar(op)));
-  return <section id="ms-aplicacoes" className="ms-aplicacoes">
+  return <section id="ms-aplicacoes" data-bloco="filtros" className="ms-aplicacoes" aria-label="Pesquisa única por aplicação">
     <div className="ms-container">
-      <div className="ms-titulo-bloco"><div><span className="ms-tracos" aria-hidden="true">///</span><h2>Aplicações em destaque</h2></div><p>Consulte por modelo, motor, ano e sistema.</p></div>
-      <div className="ms-aplicacoes-grid">
-        <aside className="ms-encontrar" aria-label="Encontrar a peça certa">
-          <h3>⌕ Encontre a peça certa</h3>
-          <p>Selecione o veículo para pesquisar peças aprovadas.</p>
+      <div className="ms-aplicacoes-grid ms-aplicacoes-grid-unica">
+        <aside className="ms-encontrar" aria-label="Filtros por veículo">
+          <div className="ms-encontrar-titulo"><h2>Encontre sua peça</h2><p>Selecione o veículo e refine a aplicação. Não presumimos compatibilidade sem aprovação técnica.</p></div>
           <form onSubmit={e=>{if(montadora&&!f.modelo){e.preventDefault();onConsultar(montadora);return;}onAplicar(e);}}>
             <label>Montadora<select value={montadora} onChange={e=>{setMontadora(e.target.value as MontadoraMobis|""|"Toyota");onModelo("");}}>
-              <option value="">Selecione a montadora</option>
+              <option value="">Todas as montadoras</option>
               {MONTADORAS_MOBIS.map(m=><option value={m.nome} key={m.nome}>{m.nome}</option>)}
               <option value="Toyota">Toyota (sob consulta)</option>
             </select></label>
-            <label>Veículo / modelo<select value={f.modelo} onChange={e=>onModelo(e.target.value)}><option value="">Selecione o modelo</option>{[...new Set(modelosDaMontadora)].sort().map(x=><option key={x}>{x}</option>)}</select></label>
-            <label>Motor / versão<select value={f.motor} onChange={e=>onMotor(e.target.value)}><option value="">Selecione o motor</option>{motores.map(x=><option key={x}>{x}</option>)}</select></label>
+            <label>Veículo / modelo<select value={f.modelo} onChange={e=>onModelo(e.target.value)}><option value="">Todos os modelos</option>{[...new Set(modelosDaMontadora)].sort().map(x=><option key={x}>{x}</option>)}</select></label>
+            <label>Motor / versão<select value={f.motor} onChange={e=>onMotor(e.target.value)}><option value="">Todos os motores</option>{motores.map(x=><option key={x}>{x}</option>)}</select></label>
             <label>Ano / geração<input type="number" min={1980} max={new Date().getFullYear()+1} value={f.ano} placeholder="Ex.: 2019" onChange={e=>onAno(e.target.value.slice(0,4))}/></label>
             <label>Sistema / categoria<select value={f.categoria} onChange={e=>onCategoria(e.target.value)}><option value="">Todos os sistemas</option>{categorias.filter(x=>x.total>0).map(x=><option key={x.slug} value={x.slug}>{x.nome}</option>)}</select></label>
-            <button type="submit">Buscar peças <span aria-hidden="true">→</span></button>
+            <button type="submit">Aplicar filtros <span aria-hidden="true">→</span></button>
+            <button className="ms-limpar-filtros" type="button" onClick={()=>{setMontadora("");onLimpar();}}>Limpar filtros</button>
           </form>
-          <small>Não encontrou a aplicação? Consulte a equipe. Sem cadastro aprovado, não inferimos compatibilidade.</small>
         </aside>
-        <div className="ms-aplicacoes-vitrine">
-          <div className="ms-linhas-grid">{LINHAS.map(v=>{
-            const aprovada=verificacao(v.filtro);
-            return <button type="button" className="ms-linha" key={v.nome} onClick={()=>aprovada?onAprovado(aprovada):onConsultar(v.nome)}>
-              <div className="ms-linha-imagem">{v.foto?<img src={v.foto} alt={"Referência visual: "+v.nome} width={320} height={200} loading="lazy"/>:<span className="ms-silhueta" aria-hidden="true">▰</span>}</div>
-              <div className="ms-linha-texto"><strong>{v.nome}</strong><small>{aprovada?"Ver aplicações aprovadas":v.texto+" · sob consulta"}</small></div>
-            </button>;
-          })}</div>
-          <div className="ms-linha-promo">
-            <div><span>CONSULTA TÉCNICA MOBIS</span><h3>PEÇAS E COMPONENTES PARA <em>MOTORES DIESEL</em></h3><p>Busque por SKU, fabricante, OEM aprovado ou aplicação confirmada. Sem anúncio aprovado, nossa equipe atende por consulta.</p></div>
-            <button type="button" onClick={()=>ir("m2-catalogo")}>Consultar catálogo <span aria-hidden="true">›</span></button>
-          </div>
-          {extra}
-        </div>
       </div>
     </div>
   </section>;
-}
-
-export function BarraConsultaMobisV3({whatsapp,politicas}: {whatsapp:string|null;politicas?:PoliticasLojaPublicas|null}){
-  const url=whatsapp || linkWhatsAppPublico(null,"Olá, quero consultar uma peça na MOBIS Autopeças.");
-  // Estes contatos são exibidos somente quando entregues pela API na política APROVADA.
-  const endereco=politicas?.endereco?.trim()||"Goiás · MOBIS AUTOPEÇAS";
-  const telefone=politicas?.telefone?.trim()||null;
-  const numero=telefone?.replace(/[^0-9+]/g,"")||"";
-  return <div className="ms-consulta-rodape"><div className="ms-container">
-    <span>{endereco}</span>
-    {politicas?.cnpj?.trim()&&<span>CNPJ: {politicas.cnpj}</span>}
-    {telefone&&<a href={numero?"tel:"+numero:"#/loja/mobis/empresa"}>Telefone: {telefone}</a>}
-    {url&&<a href={url} target="_blank" rel="noopener noreferrer">Atendimento WhatsApp ↗</a>}
-    <a href="#/loja/mobis/empresa">Informações da loja</a>
-  </div></div>;
 }
