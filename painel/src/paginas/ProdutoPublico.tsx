@@ -38,7 +38,7 @@ const FAMILIAS = [
   { nome: "Elétrica", slug: "eletrica" },
 ] as const;
 
-function consultaPublica(dados: RespostaLoja, produto: Produto): Produto {
+function consultaPublica(produto: Produto): Produto {
   // Uma ficha em prévia nunca pode vazar o preço do Bling. Sem estoque
   // confirmado, a página também não promete pronta entrega.
   return {
@@ -83,7 +83,7 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
       if (!produto || (!j.ficha && !(mobis && produto.consulta_previa))) {
         throw new Error("Produto não liberado para consulta");
       }
-      setFicha({ produto: consultaPublica(j, produto), veiculos: j.ficha?.veiculos ?? [] });
+      setFicha({ produto: consultaPublica(produto), veiculos: j.ficha?.veiculos ?? [] });
       setPoliticasMobis(j.politicas ?? null);
       setWhatsappMobis(j.loja?.whatsapp ?? null);
       setPaginasVeiculos((j.paginas_aplicacao?.[sku] ?? []).filter((p) => p.status === "aprovado"));
@@ -169,6 +169,17 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
                   id={"mobis-aba-" + item.id} aria-selected={aba === item.id}
                   aria-controls={"mobis-painel-" + item.id}
                   tabIndex={aba === item.id ? 0 : -1}
+                  onKeyDown={(evento) => {
+                    const atual = ABAS.findIndex((x) => x.id === item.id);
+                    const proxima = evento.key === "ArrowRight" ? (atual + 1) % ABAS.length
+                      : evento.key === "ArrowLeft" ? (atual + ABAS.length - 1) % ABAS.length
+                      : evento.key === "Home" ? 0 : evento.key === "End" ? ABAS.length - 1 : -1;
+                    if (proxima < 0) return;
+                    evento.preventDefault();
+                    const destino = ABAS[proxima].id;
+                    setAba(destino);
+                    document.getElementById("mobis-aba-" + destino)?.focus();
+                  }}
                   onClick={() => setAba(item.id)}>{item.rotulo}</button>)}
               </div>
               <div className="produto-publico-mobis-painel" role="tabpanel"
