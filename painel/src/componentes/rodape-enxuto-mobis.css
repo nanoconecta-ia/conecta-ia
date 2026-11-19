@@ -61,3 +61,100 @@
 @media(prefers-reduced-motion:reduce){
   .m4-rodape-enxuto *{scroll-behavior:auto}
 }
+
+/* Redes sociais MOBIS — símbolos de cada plataforma nas suas cores oficiais.
+   Fundo e tipografia do rodapé seguem o M-STYLE CROMO V3, sem laranja legado.
+   Facebook, Instagram e WhatsApp têm destinos reais; um único atalho por canal. */
+.m4-rodape-enxuto .m4-rodape-canais{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:9px;
+  min-width:0;
+  width:100%;
+}
+.m4-rodape-enxuto .m4-canal{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:50px;
+  width:100%;
+  min-width:0;
+  max-width:240px;
+  padding:5px 10px 5px 5px;
+  border:1px solid #58616a;
+  border-radius:12px;
+  background:#2b3339;
+  text-decoration:none;
+  color:#fff;
+  font-weight:750;
+  font-size:.85rem;
+  line-height:1.25;
+  transition:background-color .15s ease,border-color .15s ease,transform .15s ease;
+}
+.m4-rodape-enxuto .m4-canal:hover{
+  color:#fff;
+  background:#394249;
+  border-color:#bfc3c7;
+  text-decoration:none;
+  transform:translateY(-1px);
+}
+.m4-rodape-enxuto .m4-canal:focus-visible{
+  outline:3px solid #eaf2f6;
+  outline-offset:3px;
+}
+.m4-rodape-enxuto .m4-canal-icone{
+  display:grid;
+  place-items:center;
+  flex:0 0 39px;
+  width:39px;
+  height:39px;
+  border-radius:10px;
+  color:#fff;
+  overflow:hidden;
+  box-shadow:0 1px 7px #080a0c55;
+}
+.m4-rodape-enxuto .m4-canal-icone svg{
+  display:block;
+  width:24px;
+  height:24px;
+  color:#fff;
+}
+.m4-rodape-enxuto .m4-canal-facebook .m4-canal-icone{background:#1877f2}
+.m4-rodape-enxuto .m4-canal-instagram .m4-canal-icone{
+  background:linear-gradient(38deg,#feda75 0%,#fa7e1e 25%,#d62976 57%,#962fbf 79%,#4f5bd5 100%);
+}
+.m4-rodape-enxuto .m4-canal-whatsapp .m4-canal-icone{background:#25d366}
+.m4-rodape-enxuto .m4-canal-nome{
+  color:#f4f7f9;
+  white-space:nowrap;
+  line-height:1.2;
+  overflow-wrap:normal;
+}
+@media(max-width:480px){
+  .m4-rodape-enxuto .m4-rodape-canais{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;
+  }
+  .m4-rodape-enxuto .m4-canal{
+    flex-direction:column;
+    justify-content:center;
+    gap:6px;
+    min-height:85px;
+    max-width:none;
+    padding:9px 4px 8px;
+    font-size:.73rem;
+    text-align:center;
+  }
+  .m4-rodape-enxuto .m4-canal-icone{
+    flex-basis:auto;
+    width:39px;
+    height:39px;
+  }
+  .m4-rodape-enxuto .m4-canal-nome{font-size:.73rem}
+}
+@media(prefers-reduced-motion:reduce){
+  .m4-rodape-enxuto .m4-canal{transition:none}
+  .m4-rodape-enxuto .m4-canal:hover{transform:none}
+}

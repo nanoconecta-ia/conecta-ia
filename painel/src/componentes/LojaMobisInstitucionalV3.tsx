@@ -1,6 +1,7 @@
 import {useState, type FormEvent} from "react";
 import {MONTADORAS_MOBIS, modelosAprovadosDaMontadora, type MontadoraMobis} from "../lib/blocosCatalogoMobis.ts";
 import logo from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
+import { IconeRedeMobis } from "./IconeRedeMobis.tsx";
 
 /** Vitrine comercial Mobis 2026. Imagens de veículos são referências de LINHA,
  * não evidência de aplicação de uma peça. O catálogo permanece 100% na API pública.
@@ -58,7 +59,7 @@ export function CabecalhoMobisV3({busca,onBusca,onEnviar,exata,onExata,whatsapp,
         <button type="submit" aria-label="Pesquisar peças"><span aria-hidden="true">⌕</span><span>Buscar</span></button>
       </form>
       <div className="ms-acoes">
-        {whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label="Conversar com a Mobis no WhatsApp"><span aria-hidden="true">◉</span><small>Contato</small></a>}
+        {whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label="Conversar com a Mobis no WhatsApp"><span className="ms-icone-whatsapp" aria-hidden="true"><IconeRedeMobis canal="whatsapp" /></span><small>Contato</small></a>}
       </div>
     </div></div>
     <nav className="ms-navegacao" aria-label="Menu principal da loja"><div className="ms-container ms-menu">
