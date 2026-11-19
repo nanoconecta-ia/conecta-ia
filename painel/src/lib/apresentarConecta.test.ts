@@ -34,3 +34,13 @@ test("manifesto não se apresenta como Agent Card de servidor A2A inexistente", 
   assert.equal(m.security.external_agent_can_publish, false);
   assert.equal(m.security.external_agent_can_write_bling, false);
 });
+
+test("botão de apresentação fica na página de Conectar meu agente, que não depende da flag do conector", () => {
+  const fonte = readFileSync(new URL("../paginas/MeuAgente.tsx", import.meta.url), "utf8");
+  assert.match(fonte, /<ApresentarConecta \/>/);
+  const ui = readFileSync(new URL("../componentes/ApresentarConecta.tsx", import.meta.url), "utf8");
+  assert.match(ui, /Copiar para outro chat/);
+  assert.match(ui, /Ver o texto para copiar manualmente/);
+  const flags = readFileSync(new URL("./flags.ts", import.meta.url), "utf8");
+  assert.ok(!flags.match(/ROTAS_DO_CONECTOR = \[[^\]]*"\/meu-agente"/));
+});

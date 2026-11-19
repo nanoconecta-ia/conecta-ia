@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ApresentarConecta } from "../componentes/ApresentarConecta.tsx";
 import { supabase } from "../supabase.ts";
 import { ir } from "../lib/rota.ts";
 import { useFonte } from "../lib/useFonte.ts";
@@ -33,6 +34,7 @@ export function MeuAgente({ loja }: { loja: Loja }) {
     <div className="cartao">
       <h1>Conectar meu agente</h1>
       <p className="suave">Os caminhos para usar IA na sua loja, num só lugar. Cada linha mostra só o que dá para conferir; o que não dá fica como “não verificado”.</p>
+      <ApresentarConecta />
       {erro && <p className="msg-erro" role="alert">Não consegui ler o estado das conexões agora.</p>}
       {!dados && !erro && <p className="suave">Carregando…</p>}
       <div className="grade">
