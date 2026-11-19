@@ -1,0 +1,17 @@
+/* Fila privada MCP: interface responsiva, sem estilizar fotografia original. */
+.mcp-midias { margin-top: 1.25rem; }
+.mcp-midias-lista { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: .65rem; margin: 1rem 0; }
+.mcp-midia-item { display: flex; flex-direction: column; align-items: flex-start; text-align: left; white-space: normal; gap: .35rem; min-height: 88px; padding: .8rem; overflow-wrap: anywhere; }
+.mcp-midia-item[aria-pressed="true"] { outline: 2px solid currentColor; outline-offset: 2px; }
+.mcp-midia-item span { font-size: .8rem; opacity: .8; }
+.mcp-midia-revisao { margin-top: 1rem; padding: 1rem; border: 1px solid currentColor; border-radius: 12px; }
+.mcp-midia-previa { max-width: 100%; margin: 1rem 0; padding: .5rem; border: 1px solid #9ca3af; border-radius: 12px; background: white; color: #343b45; }
+.mcp-midia-previa img { display: block; max-width: 100%; width: auto; max-height: 520px; height: auto; margin: auto; object-fit: contain; }
+.mcp-midia-previa figcaption { font-size: .82rem; margin-top: .5rem; color: #555; }
+.mcp-midia-verificacoes { display: grid; gap: 1rem; margin: 1rem 0; padding: 1rem; border-radius: 10px; border: 1px solid #9ca3af; }
+.mcp-midia-verificacoes label { display: flex; align-items: flex-start; gap: .6rem; }
+.mcp-midia-verificacoes label:has(textarea) { display: flex; flex-direction: column; }
+.mcp-midia-verificacoes input[type="checkbox"] { width: 20px; height: 20px; flex-shrink: 0; }
+.mcp-midia-verificacoes textarea { width: 100%; max-width: 100%; padding: .65rem; border-radius: .5rem; }
+.mcp-midia-revisao .mono { overflow-wrap: anywhere; }
+@media (max-width: 640px) { .mcp-midia-revisao { padding: .6rem; } .mcp-midia-revisao .linha { flex-wrap: wrap; } }
