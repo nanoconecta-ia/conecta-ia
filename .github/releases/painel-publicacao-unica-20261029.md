@@ -193,3 +193,11 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Dados institucionais **aprovados** vêm da API pública: MOBIS DISTRIBUIDORA DE PECAS E ACESSORIOS LTDA, CNPJ 19.903.967/0001-01, Avenida T-9, nº 3492, Jardim América, **Goiânia–GO**, CEP 74255-220. WhatsApp e telefone são lidos do cadastro; não inventar contatos ou links sociais.
 - Manter a loja em ambiente de **teste**, 20 SKUs na prévia e zero anúncios publicados, sem habilitar checkout. Sem escrita Bling, estoque, preço, NF, migração, Edge Functions, DNS, credenciais ou qualquer outro projeto Supabase.
 - Verificar build e deploy da action, versão efetivamente servida (`version.json` com commit de release) e rodapé real no domínio oficial antes de anunciar conclusão.
+
+
+## Ajuste visual autorizado — Marca MOBIS sem subtítulo no site V3 (18/11/2026)
+- Após a publicação do rodapé V3, a inspeção em navegador real revelou que o logo original ainda mostrava `PICAPES • VANS • UTILITÁRIOS`, contrariando a instrução expressa do proprietário de usar apenas a marca `MOBIS AUTOPEÇAS`.
+- PR #451 integrada em `6ffe7e24eb01d83d0eae00328d35014a3ad12d0d`; cria variante SVG recortada do PNG oficial V3, com identidade metálica preservada e sem a linha de segmentação, aplicada no cabeçalho, rodapé, produtos e páginas por aplicação.
+- CI `Painel (verificação em PR)` aprovado, incluindo TypeScript, testes e builds normal e com flag Pair.
+- Republicar apenas frontend estático via `painel-pages.yml`, mantendo loja em modo teste. Nenhuma mudança no Bling, estoque, NF, preço, banco Supabase, DNS ou outros projetos.
+- Verificar o hash exato do release e o logotipo na página pública antes de declarar que a versão sem slogan está efetivamente em produção.
