@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { GaleriaProduto } from "../componentes/GaleriaProduto.tsx";
+import { MidiasPendentesMcp } from "../componentes/MidiasPendentesMcp.tsx";
 
 type Item = { id: string; campo: string; valor: unknown; fonte: string | null; confianca: number | null; produtos: { sku: string | null; nome: string | null } | null };
 type Imagem = { id: string; produto_id: string; url: string; origem: string | null; produtos: { sku: string | null; nome: string | null } | null };
@@ -90,6 +91,7 @@ export function Fila({ loja }: { loja: Loja }) {
           <GaleriaProduto loja={loja} produtoId={selecionado.id} sku={selecionado.sku} aoDecidir={carregar}/>
         </div>
       )}
+      <MidiasPendentesMcp loja={loja} />
     </div>
   );
 }
