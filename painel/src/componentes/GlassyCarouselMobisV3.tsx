@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { IconePeca } from "./IconePeca.tsx";
+import marcaMobis from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
 import "./glassy-carousel-mobis-v3.css";
+import "./banner-aplicacoes-mstyle.css";
 
 type Banner = { sku:string; nome:string; preco:number|null; chamada:string|null; flash:boolean; imagem?:string|null; fim?:string|null };
 type Veiculo = { nome:string; foto:string; valor:string };
@@ -89,9 +91,10 @@ export function GlassyCarouselMobisV3({
       <div className="gcv3-topo"><span>Mobis Autopeças <b aria-hidden="true">/</b> Vitrine comercial</span>
         <span>{String(indice+1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}</span>
       </div>
-      <div className="gcv3-painel" role="region" aria-roledescription="carrossel"
+      <div className="gcv3-painel" role="region" aria-roledescription="carrossel" data-banner-tipo={slide.tipo} data-banner-sku={slide.sku??undefined}
         onKeyDown={e=>{if(e.key==="ArrowRight"){e.preventDefault();mover(1);}if(e.key==="ArrowLeft"){e.preventDefault();mover(-1);}}}>
         <div className="gcv3-copy" key={"copy-"+slide.id}>
+          <img className="gcv3-mstyle-logo" src={marcaMobis} alt="MOBIS AUTOPEÇAS" loading="lazy"/>
           <span className={"gcv3-etiqueta"+(slide.flash?" gcv3-etiqueta-flash":"")}>{slide.etiqueta}</span>
           <h1><a className="gcv3-titulo-link" href={slide.url}>{slide.titulo}</a></h1>
           {slide.subtitulo!==slide.titulo&&<p>{slide.subtitulo}</p>}
