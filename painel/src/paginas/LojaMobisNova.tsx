@@ -13,7 +13,7 @@ import {paletaPublicada,variaveisPaletaMobis} from "../lib/paletaMobis.ts";
 import fotoHR from "../assets/veiculos-mobis/hyundai-hr.webp";
 import fotoBongo from "../assets/veiculos-mobis/kia-bongo-k2500.webp";
 import fotoL200 from "../assets/veiculos-mobis/mitsubishi-l200.webp";
-import logoMobis from "../assets/marcas/mobis-mstyle-v3-logo.png";
+import logoMobis from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
 import "./loja-mobis-nova.css";
 import "./loja-mobis-branco.css";
 import "./loja-mobis-clara.css";

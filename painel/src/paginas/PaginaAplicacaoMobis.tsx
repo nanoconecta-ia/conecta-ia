@@ -3,7 +3,7 @@ import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { IconePeca, IconeVeiculo } from "../componentes/IconePeca.tsx";
 import { RodapeMobisEnxuto } from "../componentes/RodapeMobisEnxuto.tsx";
 import type { PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
-import logoMobis from "../assets/marcas/mobis-mstyle-v3-logo.png";
+import logoMobis from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
 import "./loja-mobis-nova.css";
 
 type Aplicacao = {

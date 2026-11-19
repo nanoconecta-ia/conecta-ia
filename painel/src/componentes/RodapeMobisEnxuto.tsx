@@ -1,7 +1,7 @@
 import type { MouseEvent } from "react";
 import type { PoliticasLojaPublicas } from "./RodapeLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
-import logoMobis from "../assets/marcas/mobis-mstyle-v3-logo.png";
+import logoMobis from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
 import "./rodape-enxuto-mobis.css";
 
 /** Apenas perfis oficiais confirmados podem receber links no rodapé. */
@@ -69,7 +69,7 @@ export function RodapeMobisEnxuto({
       <div className="m4-rodape-linha">
         <div className="m4-rodape-marca">
           <a href="#/loja/mobis" aria-label="Voltar à página inicial da Mobis Autopeças">
-            <img src={logoMobis} alt="MOBIS AUTOPEÇAS" loading="lazy" width={1000} height={330} />
+            <img src={logoMobis} alt="MOBIS AUTOPEÇAS" loading="lazy" width={1000} height={268} />
           </a>
           <p>Peças e componentes com identificação e aplicação conferidas pela equipe.</p>
         </div>

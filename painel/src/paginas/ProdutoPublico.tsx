@@ -4,7 +4,7 @@ import { MOBIS } from "../lib/publicoLoja.ts";
 import { FichaProduto } from "../componentes/FichaProduto.tsx";
 import { RodapeMobisEnxuto } from "../componentes/RodapeMobisEnxuto.tsx";
 import type { PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
-import logoMobis from "../assets/marcas/mobis-mstyle-v3-logo.png";
+import logoMobis from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
 import "./produto-publico-mobis.css";
 import type { FichaProduto as Produto, FichaVeiculo } from "../lib/ficha.ts";
 type PaginaVeiculo = { slug:string;titulo:string;modelo:string;status:string };

@@ -1,6 +1,6 @@
 import {useState, type FormEvent, type ReactNode} from "react";
 import {MONTADORAS_MOBIS, modelosAprovadosDaMontadora, type MontadoraMobis} from "../lib/blocosCatalogoMobis.ts";
-import logo from "../assets/marcas/mobis-mstyle-v3-logo.png";
+import logo from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
 import hr from "../assets/veiculos-mobis/hyundai-hr.webp";
 import bongo from "../assets/veiculos-mobis/kia-bongo-k2500.webp";
 import l200 from "../assets/veiculos-mobis/mitsubishi-l200.webp";
@@ -53,7 +53,7 @@ export function CabecalhoMobisV3({busca,onBusca,onEnviar,lista,whatsapp,ir,categ
       </div>
     </div>
     <div className="ms-principal"><div className="ms-container ms-principal-grid">
-      <a className="ms-logo" href="#/loja/mobis" aria-label="Mobis Autopeças — página inicial"><img src={logo} width={1000} height={330} alt="MOBIS AUTOPEÇAS — M-STYLE CROMO V3"/></a>
+      <a className="ms-logo" href="#/loja/mobis" aria-label="Mobis Autopeças — página inicial"><img src={logo} width={1000} height={268} alt="MOBIS AUTOPEÇAS — M-STYLE CROMO V3"/></a>
       <p className="ms-especialidade">Peças para <strong>picapes, vans e utilitários diesel</strong> <small>Aplicação técnica sob consulta</small></p>
       <form className="ms-pesquisa" role="search" aria-label="Buscar peça e referência" onSubmit={onEnviar}>
         <label className="ms-visualmente-oculto" htmlFor="ms-buscar">Buscar peça, SKU, OEM ou aplicação</label>
