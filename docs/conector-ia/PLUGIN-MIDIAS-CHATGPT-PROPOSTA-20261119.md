@@ -13,8 +13,8 @@
 | Capacidade | Contrato / nome | Estado em 19/11/2026 |
 |---|---|---|
 | Propor imagem real do produto por URL HTTPS | `conecta.imagem.propor(sku,url,origem?,pagina?)` | **Ativa**, pendente de aprovação humana |
-| Anexar foto real enviada pelo usuário à conversa | `conecta.midia.anexar_produto` | **Planejada**; não fingir suporte a binário |
-| Anexar banner a uma campanha/perfil de aplicação | `conecta.banner.anexar` | **Planejada** |
+| Anexar foto real enviada pelo usuário à conversa | `conecta.midia.anexar_produto` | **Implementada na branch, em homologação**; upload privado e fila `a_confirmar`, sem implantação no servidor |
+| Anexar banner a uma campanha/perfil de aplicação | `conecta.banner.anexar` | **Implementada na branch, em homologação**; banner por veículo exige página de aplicação aprovada; sem implantação no servidor |
 | Preparar e gerir proposta comercial do banner por agente | `conecta.banners.gerenciar` | **Planejada**, sem geração de imagem implantada |
 | Editar rascunho de banner pelo painel da loja | `painel/src/paginas/Banners.tsx` | Existe na interface, **não equivale** a ferramenta MCP |
 
@@ -27,7 +27,7 @@
 5. Apresentar comparação de imagens e identificação da peça, SKU/marca/composição, possíveis duplicatas e direitos de uso. Estado inicial `a_confirmar`, nunca `aprovada`.
 6. Depois da decisão explícita do proprietário, associar a imagem à ficha no Conecta.IA; alteração no Bling, quando permitida, requer fluxo separado e conferência posterior. Nenhum ajuste fiscal/estoque/custo.
 
-**Nome proposto:** `conecta.midia.anexar_produto`. Entradas: `sku`, `file` (ou `url`, mutuamente exclusivos), `origem`, `direitos`, `papel` (`principal` ou `galeria`). Saída: `proposta_id`, `imagem_id`, `status: a_confirmar`, `verificacao`. Até implementação real, não registrar como ativa nem expor via `tools/list`.
+**Nome proposto:** `conecta.midia.anexar_produto`. Entradas: `sku`, `file` (ou `url`, mutuamente exclusivos), `origem`, `direitos`, `papel` (`principal` ou `galeria`). Saída: `proposta_id`, `imagem_id`, `status: a_confirmar`, `verificacao`. A ferramenta foi implementada no código da branch e é exposta no `tools/list` apenas **após implantação** e se o cliente tiver `mcp:propor`. A migração SQL e os testes de integração com o ChatGPT precisam ser homologados antes da ativação em produção.
 
 ## Fluxo proposto — banner comercial
 
@@ -37,7 +37,7 @@
 4. Guardar em rascunho, fornecer prévia responsiva, verificar tipografia/logomarca/imagem/licença e registrar aprovação humana separada para cada mídia e cada destino.
 5. Nunca publicar banner, preço/oferta, anúncio ou mídia no Bling/Instagram/Facebook sem autorização específica e ferramenta de execução homologada. Os banners **não** devem criar registros duplicados de produto.
 
-**Nome proposto:** `conecta.banner.anexar`. Entradas: `sku`, `file` ou `url`, `tipo`, `aplicacao_id`/slug, `texto`, `destino`, `sintetica`, `origem`, `direitos`. Saída: `proposta_id`, `banner_id`, `status: rascunho`, `previa`. Permissão `mcp:propor` não equivale a aprovar ou publicar.
+**Nome proposto:** `conecta.banner.anexar`. Entradas: `sku`, `file` ou `url`, `tipo`, `aplicacao_id`/slug, `texto`, `destino`, `sintetica`, `origem`, `direitos`. Saída: `proposta_id`, `banner_id`, `status: rascunho`, `previa`. Permissão `mcp:propor` não equivale a aprovar ou publicar. O código registra mídia privada como `a_confirmar`; **a tela de decisão de mídia ainda não foi implementada** e não há transferência automática para o editor de banners.
 
 ## Homologação antes de habilitar no plugin
 
@@ -52,3 +52,12 @@
 ## Segurança e fronteiras
 
 Somente `mcp:leitura` e `mcp:propor` para agentes externos; nenhum poder para emitir NF, alterar dados fiscais, estoque, custo, excluir produtos, aprovar suas próprias propostas ou publicar automaticamente. A chave da loja e as credenciais de serviço permanecem exclusivamente no servidor, com isolamento por `loja_id`, auditoria e revogação.
+
+## Implementação na PR #471
+
+- `supabase/functions/_shared/conector/midias_mcp.ts`: valida arquivo vindo do host (HTTPS, MIME real, limite de 8 MB, dimensão e SHA-256), escopa ao SKU/loja e armazena em `agente-anexos`, bucket privado. Não persiste URL temporária do ChatGPT.
+- `supabase/functions/_shared/conector/registro.ts` e `gateway.ts`: definem duas ferramentas com esquema de arquivo e `_meta['openai/fileParams']=['file']`, visíveis somente para `mcp:propor`.
+- `supabase/functions/_shared/conector/despacho.ts`: omite URL temporária e file_id da auditoria.
+- `supabase/migrations/20261119000020_mcp_midia_pendente_privada.sql`: fila da loja com leitura do proprietário e escrita do serviço, sem publicação.
+- `supabase/functions/_shared/conector/midias_mcp.test.ts`: testes de isolamento, aplicação aprovada, armazenamento privado e limpeza em erro.
+- **Implantação não feita.** O fluxo de revisão e aprovação visual ainda precisa ser desenvolvido e testado. Nunca marcar uma mídia `aprovada` sem decisão humana verificável.
