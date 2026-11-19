@@ -57,19 +57,22 @@ try{
   assert.equal(await hero.evaluate(el=>el.scrollWidth<=el.clientWidth+1),true,"banner sem estouro lateral em "+width+"px");
 
   assert.equal(await page.locator('.ms-departamentos-lista button').count(),7,"sete departamentos com ícones oficiais V3");
-   assert.equal(await page.locator('.ms-aplicacoes .ms-linha').count(),6,"seis linhas comerciais: publicadas ou sob consulta");
+   assert.equal(await page.locator('.ms-aplicacoes .ms-linha,.ms-abertura,.ms-consulta-rodape').count(),0,"sem linhas, abertura ou faixa de contato duplicadas");
   assert.ok((await hero.locator("h1").innerText()).length>5,"carrossel tem chamada real");
   assert.ok((await hero.locator(".gcv3-copy p").innerText()).length<150,"texto comercial curto");
-  await page.getByText(/Catálogo de peças em preparação/).waitFor({timeout:10000});
-  await page.getByRole('tab',{name:'SKU, fabricante ou OEM'}).click();
-  assert.equal(await page.getByRole('tab',{name:'SKU, fabricante ou OEM'}).getAttribute('aria-selected'),'true','CTA do banner habilita modo código');
-  await page.locator('#m2-pesquisar').fill('CI000120');
+  await page.getByText(/O catálogo está sendo organizado por produto/).waitFor({timeout:10000});
+  assert.equal(await page.locator('.ms-pesquisa').count(),1,"somente uma busca textual V3");
+  assert.equal(await page.locator('.ms-encontrar form').count(),1,"somente um formulário de aplicação");
+  assert.equal(await page.locator('.m2-search,.m2-filtros').count(),0,"formulários extras antigos ausentes");
+  await page.locator('.ms-codigo-exato input[type="checkbox"]').check();
+  assert.equal(await page.locator('.ms-codigo-exato input[type="checkbox"]').isChecked(),true,"busca de código exato disponível");
+  await page.locator('#ms-buscar').fill('CI000120');
   const respostaCodigo=page.waitForResponse(resp=>resp.url().includes('/loja-publica')&&(resp.request().postData()||'').includes('"q":"CI000120"')&&(resp.request().postData()||'').includes('"referencia_exata":true'));
-  await page.locator('.m2-search button').click();
+  await page.locator('.ms-pesquisa button[type="submit"]').click();
   await respostaCodigo;
   assert.ok(requests.some(x=>x.q==='CI000120'&&x.referencia_exata===true),'busca de referência exata chega ao servidor');
-  await page.getByRole('tab',{name:'Nome, peça ou sistema'}).click();
-  await page.locator('#m2-pesquisar').fill('');
+  await page.locator('.ms-codigo-exato input[type="checkbox"]').uncheck();
+  await page.locator('#ms-buscar').fill('');
 
   // V3 enxuta: não montar os três grupos legados enviados nas capturas pelo proprietário.
   for(const bloco of ["cabecalho","banner","filtros","produtos","rodape"]){
@@ -81,7 +84,7 @@ try{
   assert.equal(await page.locator(".m4-montadora-item,.m4-taxonomia-item").count(),0,"grades antigas não montadas");
   assert.equal(await page.locator("#m2-atendimento,.m2-contato-form,#m2-lista").count(),0,"consulta e lista duplicadas removidas");
   assert.equal(await page.locator(".ms-departamentos-lista button").count(),7,"departamentos modernos mantidos");
-  assert.equal(await page.locator(".m2-filtros").evaluate(el=>getComputedStyle(el).maxWidth),"none","filtros preservados e responsivos");
+  assert.equal(await page.locator(".ms-encontrar form").count(),1,"filtro hierárquico preservado sem duplicação");
   assert.equal(await page.locator(".m4-linha-card,.m2-veiculo-grade").count(),0,"outras grades duplicadas ausentes");
   assert.equal(await page.locator(".gcv3-etiqueta-flash").count(),0,"sem campanha ativa não há oferta Flash fictícia");
   assert.equal(await page.locator(".v-rodape-privacidade-bloco").count(),0,"rodapé enxuto: políticas ficam na página institucional, não no rodapé");
@@ -93,9 +96,9 @@ try{
     "sem rolagem horizontal para "+width+"px");
   assert.deepEqual(errors,[],"sem erros JS de layout");
   await page.screenshot({path:root+"evidencias-chat/loja-mobis-v2-"+width+"-SIMULADO.png",fullPage:width===390});
-  await page.locator("#m2-pesquisar").fill("D4CB");
+  await page.locator("#ms-buscar").fill("D4CB");
   const respostaBusca=page.waitForResponse(resp=>resp.url().includes("/loja-publica") && (resp.request().postData()||"").includes('"q":"D4CB"'));
-  await page.locator(".m2-search button").click();
+  await page.locator(".ms-pesquisa button[type=\"submit\"]").click();
   await respostaBusca;
   assert.ok(requests.some(x=>x.q==="D4CB"&&x.slug==="mobis"),"busca conecta à API da loja");
   assert.equal(await page.getByRole("heading",{name:"Indexar e enriquecer"}).count(),0,"não expor painel privado");
@@ -138,11 +141,12 @@ try{
    assert.equal(await page.locator('[data-mobis-layout="aprovado-v2"]').count(),1);
     assert.equal(await page.locator('[data-mobis-site="v3"]').count(),1,"layout completo V3 carregado");
    assert.equal(await page.locator(".v-hero").count(),0);
-   await page.locator(".m2-filtros-grid select").nth(0).selectOption("HR");
-   await page.locator(".m2-filtros-grid select").nth(1).selectOption("D4CB");
-   assert.equal(await page.locator(".m2-filtros-grid select").nth(1).locator("option").filter({hasText:"D4BH"}).count(),0,"motores respeitam modelo");
-   await page.locator(".m2-filtros-grid input").fill("2019");
-   await page.locator(".m2-filtros-grid select").nth(2).selectOption("motor");
+   await page.getByLabel("Montadora",{exact:true}).selectOption("Hyundai");
+   await page.getByLabel("Veículo / modelo",{exact:true}).selectOption("HR");
+   await page.getByLabel("Motor / versão",{exact:true}).selectOption("D4CB");
+   assert.equal(await page.getByLabel("Motor / versão",{exact:true}).locator("option").filter({hasText:"D4BH"}).count(),0,"motores respeitam modelo");
+   await page.getByLabel("Ano / geração",{exact:true}).fill("2019");
+   await page.getByLabel("Sistema / categoria",{exact:true}).selectOption("motor");
    const resposta=page.waitForResponse(r=>r.url().endsWith("/loja-publica")&&(r.request().postData()||"").includes('"motor":"D4CB"'));
    await page.getByRole("button",{name:"Aplicar filtros",exact:true}).click();await resposta;
    assert.ok(requests.some(x=>x.slug==="mobis"&&x.modelo==="HR"&&x.motor==="D4CB"&&x.ano===2019&&x.categoria==="motor"));
