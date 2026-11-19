@@ -18,6 +18,13 @@ export function urlLojaPublica(slug: string, urlPainel: string): string {
   return url.toString();
 }
 
+/** Abre a ficha SOMENTE da peça já publicada na vitrine, nunca uma rota interna do Conecta.IA. */
+export function urlProdutoPublico(slug: string, sku: string, urlPainel: string): string {
+  const url = new URL(urlLojaPublica(slug, urlPainel));
+  url.hash = "/p/" + encodeURIComponent(slug) + "/" + encodeURIComponent(sku);
+  return url.toString();
+}
+
 /**
  * Se uma rota interna do painel foi aberta pelo atalho da loja, direciona para o app
  * administrativo. A raiz SEM hash continua sendo sempre a vitrine, inclusive no Pages.
