@@ -94,6 +94,7 @@ async function tratarMcpInterno(req: RequisicaoMcp, p: PortasGateway): Promise<R
       const tools = ferramentasVisiveis("gateway_mcp", chave.escopos).map((f) => ({
         name: nomeParaLlm(f.id), title: f.id, description: `${f.descricao} [risco ${f.risco}; permissão ${f.permissao}]`, inputSchema: f.entrada,
         annotations: { readOnlyHint: f.permissao === "leitura", destructiveHint: false, idempotentHint: f.idempotencia !== "nao_se_aplica" },
+        ...(f.fileParams?.length ? { _meta: { "openai/fileParams": [...f.fileParams] } } : {}),
       }));
       return rpcOk(id, { tools });
     }
