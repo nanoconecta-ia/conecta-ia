@@ -3,6 +3,9 @@
 Site inteligente que conecta ERPs (piloto: Bling) a uma loja online, de forma autônoma.
 Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no chat, pergunte.
 
+## REGRA MESTRE: ERP Bling como fonte e páginas independentes com OEM e SEO
+Ler [regra de 1 produto físico/N páginas por veículo e OEM por montadora](docs/conector-ia/porteiro-master-ofertas-por-aplicacao-oem-seo-bling-20261119.md). Cada cadastro editorial por aplicação contém título e descrição únicos, tags de busca legítimas, OEM EPC validado por montadora ou pendente, ano/versão/motor/ECU/injeção comprovados, referências cruzadas, SEO e banner independente, ligados ao mesmo SKU e NF do Bling. Atribuir `oem_compartilhado` só se o mesmo conjunto OEM for comprovado. Códigos de juntas/filtros não se tornam código OEM de motor parcial. Aplicações pendentes ficam privadas/noindex; não duplicar estoque ou escrever no ERP sem aprovação de campo.
+
 ## REGRA MESTRE — catálogo enriquecido informativo
 Obrigatório ler [norma para exibir ficha pública sem foto e SEM preço](docs/conector-ia/regra-mestra-catalogo-enriquecido-sem-preco-sem-foto-20261119.md). Distinguir `catalogo_informativo` e `oferta_comercial`. O preço do Bling não é preço autorizado para mostrar em catálogo informativo; retornar `preco_publico=null`, `estoque_publico=null` e nenhum `offers`/checkout. O lojista informa ou aprova a exposição de preço e imagem posteriormente. A imagem é opcional, mas compatibilidade incerta nunca pode ser anunciada. O CI003696 possui `exibicao_teste=true` e uma prévia sem preço, não publicação comercial; automação pausada impede gravação por agente.
 
