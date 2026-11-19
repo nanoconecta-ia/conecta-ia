@@ -34,7 +34,7 @@ export interface Disponivel {
 }
 
 // Compara com campos_exigidos da receita. O que não está comprovado fica em "vazios" (produto incompleto não publica).
-export function checarCamposExigidos(exigidos: string[], d: Disponivel): { preenchidos: string[]; vazios: string[] } {
+export function checarCamposExigidos(exigidos: string[], d: Disponivel, opcoes: { fotoOpcional?: boolean } = {}): { preenchidos: string[]; vazios: string[] } {
   const tem = (c: string): boolean => {
     switch (c) {
       case "nome": return !!d.nome?.trim();
@@ -49,7 +49,12 @@ export function checarCamposExigidos(exigidos: string[], d: Disponivel): { preen
     }
   };
   const preenchidos: string[] = [], vazios: string[] = [];
-  for (const c of exigidos) (tem(c) ? preenchidos : vazios).push(c);
+  for (const c of exigidos) {
+    // Apenas na MOBIS (escopo verificado pelo servidor), ausência de foto é uma pendência opcional.
+    // Não declarar a foto como presente: apenas removê-la dos requisitos bloqueantes.
+    if (c === "imagem_principal" && opcoes.fotoOpcional) continue;
+    (tem(c) ? preenchidos : vazios).push(c);
+  }
   return { preenchidos, vazios };
 }
 

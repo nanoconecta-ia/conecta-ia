@@ -3,6 +3,22 @@
 Site inteligente que conecta ERPs (piloto: Bling) a uma loja online, de forma autônoma.
 Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no chat, pergunte.
 
+## Ferramenta de imagens Firecrawl antes de pesquisa manual
+Ler [roteiro do buscador Conecta.IA/Firecrawl e disponibilidade no chat ou MCP](docs/conector-ia/porteiro-ferramentas-firecrawl-imagens-20261119.md). Priorizar `conecta.imagem.buscar_web` e alias `buscar_imagem_web` quando expostos, com consulta SKU+marca+composição; propor via `conecta.imagem.propor` apenas candidatura segura. API Firecrawl da loja não é chave do agente. **No MCP de terceiros a busca não está exposta nem recebe configuração do provedor**; reconhecer limitação e manter pendência. O prazo global de 15s ainda não está implementado no adaptador.
+
+## Catálogo MOBIS sem foto — todos os veículos e produtos
+Ler [regra de pesquisa de imagens, foto opcional e conclusão posterior pelo lojista](docs/conector-ia/mobis-cadastro-sem-foto-todos-skus-20261119.md). O agente não deve suspender a pesquisa/cadastro em lote por falta de imagem; marcar `foto_pendente` e usar placeholder. Exceção de foto opcional no banco é exclusiva à loja MOBIS, não se aplica a outros tenants. Publicação exige outros campos e aprovação humana; sem evidência de aplicação/OEM, não anunciar compatibilidade. `produto_automacao.pausado` continua bloqueando propostas/escritas.
+
+## Entrada por descrição, sem SKU (roteiro comum a qualquer agente)
+Ler [genealogia de veículos brasileiros: descrição → pai/filho/primos → motor/cilindros → documento e anos locais → SKU](docs/conector-ia/roteiro-descricao-genealogia-veicular-br-20261119.md). Consultas `motor para HR 2013` e `motor Gol 2003` são válidas sem SKU; não adivinhar ano final ou transferir OEM entre «primos». Aplicar a mesma trava do porteiro/Policy Engine.
+
+## Como pesquisar peças MOBIS (atalho obrigatório)
+Antes de pesquisar ou propor SKU/OEM/GTIN/NCM, ler:
+- [Norma do porteiro e cadastro em lotes](docs/conector-ia/mobis-porteiro-cadastro-em-lotes-20261119.md)
+- [Mapa de fontes rápidas (GS1 Brasil, PartSouq/EPC, CAOA/Hyundai, Kia KMB/Grupo Gandini, fabricantes OE, importadores/B2B e marketplaces)](docs/conector-ia/fontes-pesquisa-rapida-sku-ncm-gs1-20261119.md)
+
+O serviço deve ter **deadline global de 15s por SKU**, não 15s por fonte; consultar primeiro Bling e cache. Sem GTIN, **não inventar EAN**; NCM é pista de classificação e nunca identifica equivalência. O gateway/servidor, não este prompt, deve impor as restrições; a regra e o timeout ainda não estão implantados em produção. Sem alterar SKU, NCM, nota, estoque ou homologar códigos automaticamente.
+
 ## Isolamento (regra 0)
 - Projeto **isolado** dos demais projetos e repositórios.
 - Nunca escreva em outros repositórios nem use o projeto Supabase **NanoShell IA**: ele é de outro produto e não pode ser tocado, pausado ou alterado.

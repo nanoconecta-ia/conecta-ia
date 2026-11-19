@@ -82,18 +82,22 @@ Deno.serve(async (req) => {
       if (g.error) throw new Error("falha ao gravar o enriquecimento");
     }
 
-    const [campos, imgs, cods, apls] = await Promise.all([
+    const [campos, imgs, cods, apls, loja] = await Promise.all([
       sb.from("produto_enriquecimento").select("campo").eq("produto_id", produto.id),
-      sb.from("produto_imagens").select("id", { count: "exact", head: true }).eq("produto_id", produto.id).eq("principal", true).is("removida_em", null),
+      sb.from("produto_imagens").select("id", { count: "exact", head: true }).eq("produto_id", produto.id).eq("principal", true).eq("aprovada", true).is("removida_em", null),
       sb.from("produto_codigos").select("id", { count: "exact", head: true }).eq("produto_id", produto.id).eq("tipo", "fabricante"),
       sb.from("produto_aplicacoes").select("id", { count: "exact", head: true }).eq("produto_id", produto.id),
+      // A opção de foto é determinada pelo tenant do PRODUTO, não por argumento do agente.
+      sb.from("lojas").select("slug").eq("id", produto.loja_id).maybeSingle(),
     ]);
+    const fotoOpcional = !loja.error && loja.data?.slug === "mobis";
+    const fotoPendente = (imgs.count ?? 0) === 0;
     const { preenchidos, vazios } = checarCamposExigidos(receita.campos_exigidos as string[], {
       nome: produto.nome, sku: produto.sku, preco: produto.preco == null ? null : Number(produto.preco),
       categoria: produto.categoria,
       temImagemPrincipal: (imgs.count ?? 0) > 0, temCodigoFabricante: (cods.count ?? 0) > 0, temAplicacao: (apls.count ?? 0) > 0,
       camposEnriquecidos: new Set((campos.data ?? []).map((r: { campo: string }) => r.campo)),
-    });
+    }, { fotoOpcional });
 
     const fim = await sb.from("receita_execucoes").update({
       resultado: resultadoDe(vazios), campos_preenchidos: preenchidos, campos_vazios: vazios, concluida_em: new Date().toISOString(),
@@ -105,6 +109,8 @@ Deno.serve(async (req) => {
       preservados: linhas.filter((l) => jaTem.has(l.campo)).map((l) => l.campo),
       passos_executados: PASSOS_EXECUTADOS,
       passos_pendentes: PASSOS_PENDENTES,
+      foto_pendente: fotoPendente,
+      foto_nao_bloqueante: fotoOpcional,
     });
   } catch (e) {
     await sb.from("receita_execucoes").update({
