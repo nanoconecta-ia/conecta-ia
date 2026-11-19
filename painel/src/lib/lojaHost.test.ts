@@ -32,7 +32,7 @@ test("vitrine, aplicação e produto público ficam na entrada da loja", () => {
 
 test("não redireciona conecta.html, domínio de cliente, localhost nem caminho desconhecido", () => {
   assert.equal(destinoPainel(PAGES, "/conecta-ia/conecta.html", "#/integracoes"), null);
-  assert.equal(destinoPainel("www.mobisautopecas.com.br", "/", "#/integracoes"), "/conecta.html#/integracoes");
+  assert.equal(destinoPainel("www.mobisautopecas.com.br", "/", "#/integracoes"), null);
   assert.equal(destinoPainel("localhost", "/", "#/integracoes"), null);
   assert.equal(destinoPainel(PAGES, "/outro/", "#/integracoes"), null);
 });
@@ -40,11 +40,11 @@ test("não redireciona conecta.html, domínio de cliente, localhost nem caminho 
 
 test("raiz pública nunca é substituída pelo painel em ambos os domínios", () => {
   for (const host of ["www.mobisautopecas.com.br", "mobisautopecas.com.br"]) {
-    for (const h of ["", "#", "#/","#/loja/mobis", "#/a/aplicacao-aprovada", "#/p/mobis/CI003696"]) {
+    for (const h of ["", "#", "#/", "#/integracoes", "#/estudio", "#/catalogo-espelho", "#/loja/mobis", "#/a/aplicacao-aprovada", "#/p/mobis/CI003696"]) {
       assert.equal(destinoPainel(host, "/", h), null, host + h);
     }
   }
-  assert.equal(destinoPainel("mobisautopecas.com.br", "/index.html", "#/fila"), "/conecta.html#/fila");
+  assert.equal(destinoPainel("mobisautopecas.com.br", "/index.html", "#/fila"), null);
 });
 
 test("abrir loja pelo Conecta.IA usa entrada pública separada, nunca hash interno do painel", () => {
