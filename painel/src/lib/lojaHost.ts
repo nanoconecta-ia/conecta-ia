@@ -34,8 +34,9 @@ export function destinoPainel(host: string, pathname: string, hash: string, sear
   const raizPages = host === "nanoconecta-ia.github.io"
     ? pathname.match(/^(\/conecta-ia\/)(?:index\.html)?$/)?.[1]
     : null;
-  const raizMobis = lojaMobisPorHost(host) && /^\/(?:index\.html)?$/.test(pathname) ? "/" : null;
-  const raiz = raizPages ?? raizMobis;
+  // A URL pública oficial NUNCA pode redirecionar para o painel, nem com hash legado.
+  // Entradas administrativas devem usar /conecta.html explicitamente.
+  const raiz = raizPages;
   if (!raiz || !hash || hash === "#" || hash === "#/") return null;
   const rota = hash.replace(/^#/, "") || "/";
   if (/^\/(?:loja|a|p|demo)(?:\/|$)/.test(rota)) return null;
