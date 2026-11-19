@@ -22,9 +22,11 @@ export function AvisoVersao() {
     setAtualizando(true);
     try {
       const regs = await navigator.serviceWorker?.getRegistrations?.();
-      await Promise.all((regs ?? []).map((r) => r.unregister()));
+      const scopePainel = new URL("./conecta.html", window.location.href).pathname;
+      // Nunca desinstala o service worker da loja (scope /), nem apaga os caches dela.
+      await Promise.all((regs ?? []).filter((r) => new URL(r.scope).pathname === scopePainel).map((r) => r.unregister()));
       const chaves = await caches?.keys?.();
-      await Promise.all((chaves ?? []).map((k) => caches.delete(k)));
+      await Promise.all((chaves ?? []).filter((k) => k.startsWith("conecta-admin-casca-")).map((k) => caches.delete(k)));
     } catch { /* segue para o recarregamento mesmo assim */ }
     window.location.reload();
   }
