@@ -2,6 +2,9 @@
 
 **Escopo:** este repositório apenas. Consulte `CLAUDE.md` e a arquitetura/Policy Engine existentes antes de qualquer operação. O projeto Supabase autorizado é `conecta-ia` (`dsfzhsrudriqkumtlqwj`), **nunca** `NanoShell IA`.
 
+## Entrada por descrição e árvore de versões brasileiras
+Antes de assumir um SKU, leia [busca por descrição e árvore pai/filhos/primos (casos Hyundai HR e VW Gol)](docs/conector-ia/roteiro-descricao-genealogia-veicular-br-20261119.md). Aceite `motor para HR 2013` sem SKU; documente primeiro versão, cilindros, válvulas, início/fim no Brasil e fonte. Ausência de ano final comprovado **não** significa versão ainda fabricada. Não propague aplicação/OEM dos «primos» nem transforme ano de catálogo aftermarket em fim de comercialização.
+
 ## Encontrar peças sem consumir tempo do lojista
 **LER PRIMEIRO**
 1. [Mapa de fontes oficiais para SKU + GTIN/GS1 + NCM + EPC + CAOA/Hyundai + Kia KMB + fabricantes/fornecedores OE + importadores B2B + Mercado Livre/Shopee](docs/conector-ia/fontes-pesquisa-rapida-sku-ncm-gs1-20261119.md)
