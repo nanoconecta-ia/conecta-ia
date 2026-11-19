@@ -197,7 +197,8 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
               ? "Ficha informativa. Aplicações, preço e disponibilidade dependem de confirmação da loja."
               : "Confirme aplicação e disponibilidade."}</p>
             <div>{p.whatsapp&&<a href={p.whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>}
-              {!p.consulta_previa&&<a href={"#/p/mobis/"+encodeURIComponent(p.sku)} target="_blank" rel="noopener noreferrer">Abrir ficha em nova aba ↗</a>}
+              <a href={"#/p/mobis/"+encodeURIComponent(p.sku)} target="_blank" rel="noopener noreferrer">
+                {p.consulta_previa ? "Ver ficha informativa ↗" : "Abrir ficha em nova aba ↗"}</a>
             </div>
           </div>
         </article>)}</div>}
