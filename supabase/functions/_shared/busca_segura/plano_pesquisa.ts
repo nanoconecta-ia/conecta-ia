@@ -30,7 +30,22 @@ export function planejarConsultas(d: DadosProduto, orc: Orcamento = ORCAMENTO_PA
   if (d.codigo_fabricante?.trim()) todas.push({ etapa: "codigo_fabricante", texto: `${aspas(d.codigo_fabricante)} ${peca}`.trim(), alvo: "web" });
   else avisos.push("Sem código de fabricante conhecido: o SKU interno é pesquisado como SKU, e NÃO é tratado como código de fabricante nem como OEM.");
   if (d.sku?.trim()) todas.push({ etapa: "codigo_fabricante", texto: `${aspas(d.sku)} ${peca}`.trim(), alvo: "web", observacao: "SKU interno (pode ser código do distribuidor)" });
-  for (const o of (d.oem ?? []).filter((x) => x.trim())) todas.push({ etapa: "oem", texto: `${aspas(o)} ${peca}`.trim(), alvo: "web" });
+  const oemsConhecidos = (d.oem ?? []).filter((x) => x.trim());
+  for (const o of oemsConhecidos) todas.push({ etapa: "oem", texto: `${aspas(o)} ${peca}`.trim(), alvo: "web" });
+  // Sem OEM comprovado, o agente pode INVESTIGAR o cruzamento SKU x referencia original.
+  // Estas consultas nao criam codigos nem validam equivalencia: so geram pistas com fonte para revisao.
+  if (d.sku?.trim() && oemsConhecidos.length === 0) {
+    const identificacao = [motor, veiculo].filter(Boolean).join(" ") || peca.slice(0, 60);
+    const contexto = marca || peca.slice(0, 60);
+    todas.push({
+      etapa: "oem", texto: `${aspas(d.sku)} ${identificacao} OEM`.trim(), alvo: "web",
+      observacao: "Pesquisa exploratoria: OEM candidato, nao validado nem cadastrado.",
+    });
+    todas.push({
+      etapa: "oem", texto: `${aspas(d.sku)} ${contexto} referencia original`.trim(), alvo: "web",
+      observacao: "Pesquisa exploratoria: referencia candidata; exige catalogo tecnico e aprovacao humana.",
+    });
+  }
   if (d.gtin?.trim()) {
     if (gtinValido(d.gtin.trim())) todas.push({ etapa: "gtin", texto: aspas(d.gtin.trim()), alvo: "web" });
     else avisos.push("GTIN informado tem dígito verificador inválido: não foi pesquisado.");

@@ -50,3 +50,26 @@ test("reformulação usa só sinônimos fornecidos como dado, respeita o orçame
   assert.deepEqual(reformular(base, sin, [], 0), []);
   assert.deepEqual(reformular({ ...base, peca: "junta" }, sin, [], 5), [], "sem sinônimo para a peça = sem reformulação inventada");
 });
+
+test("CI003696 sem OEM confirmado: amplia pesquisa SKU x OEM, sem criar homologacao", () => {
+  const p = planejarConsultas({
+    sku: "CI003696", oem: [], codigo_fabricante: null, gtin: null,
+    marca: "TRIM GO", descricao: "MOTOR HR/K2500 2.5 16V D4CB EURO V",
+    peca: "motor parcial", motor: "D4CB", veiculo: "Hyundai HR / Kia Bongo K2500",
+  });
+  const exploratorias = p.consultas.filter((c) => c.etapa === "oem");
+  assert.equal(exploratorias.length, 2);
+  assert.ok(exploratorias.every((c) => c.texto.includes('"CI003696"')));
+  assert.ok(exploratorias.every((c) => /candidat[oa]/i.test(c.observacao ?? "")));
+  assert.ok(exploratorias.some((c) => c.texto.includes("D4CB")));
+  assert.ok(p.consultas.some((c) => c.alvo === "imagens"));
+  assert.ok(p.consultas.length <= ORCAMENTO_PADRAO.max_consultas);
+});
+
+test("busca exploratoria nao substitui OEM ja conhecido", () => {
+  const p = planejarConsultas({ ...base, sku: "CI003696", oem: ["22100-4A701"] }, { max_consultas: 12, max_por_etapa: 3 });
+  const oems = p.consultas.filter((c) => c.etapa === "oem");
+  assert.equal(oems.length, 1);
+  assert.match(oems[0].texto, /22100-4A701/);
+  assert.equal(oems[0].observacao, undefined);
+});
