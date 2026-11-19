@@ -5,8 +5,12 @@
  */
 export function linhaInformativaSemComercial<T extends { preco?: unknown; estoque?: unknown }>(
   linha: T, informativa: boolean,
-): T {
-  return informativa ? { ...linha, preco: null, estoque: null } : linha;
+): Omit<T, "preco" | "estoque"> & { preco: T["preco"] | null; estoque: T["estoque"] | null } {
+  return {
+    ...linha,
+    preco: informativa ? null : (linha.preco ?? null),
+    estoque: informativa ? null : (linha.estoque ?? null),
+  };
 }
 
 /** A exibição de teste anterior também é informativa, mas não habilita produção.
