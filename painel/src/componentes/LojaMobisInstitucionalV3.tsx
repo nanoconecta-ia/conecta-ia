@@ -49,7 +49,7 @@ export function CabecalhoMobisV3({busca,onBusca,onEnviar,exata,onExata,whatsapp,
       </div>
     </div>
     <div className="ms-principal"><div className="ms-container ms-principal-grid">
-      <a className="ms-logo" href="#/loja/mobis" aria-label="Mobis Autopeças — página inicial"><img src={logo} width={1000} height={330} alt="MOBIS AUTOPEÇAS — M-STYLE CROMO V3"/></a>
+      <a className="ms-logo" href="#/loja/mobis" aria-label="Mobis Autopeças — página inicial"><img src={logo} width={1983} height={793} alt="MOBIS AUTOPEÇAS — M-STYLE CROMO V3"/></a>
       <p className="ms-especialidade">Peças para <strong>picapes, vans e utilitários diesel</strong> <small>Aplicação técnica sob consulta</small></p>
       <form className="ms-pesquisa" role="search" aria-label="Buscar peça e referência" onSubmit={onEnviar}>
         <label className="ms-visualmente-oculto" htmlFor="ms-buscar">Buscar peça, SKU, OEM ou aplicação</label>

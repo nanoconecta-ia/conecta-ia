@@ -172,8 +172,8 @@
 
 /* Kit oficial MOBIS: marca horizontal sem deformação em todas as larguras. */
 .mobis-v2.m4 .ms-logo{height:auto;min-width:0;justify-content:flex-start}
-.mobis-v2.m4 .ms-logo img{display:block;width:100%;height:auto!important;max-height:none!important;aspect-ratio:1000/330;object-fit:contain;object-position:left center;transform:none}
-.mobis-v2.m4 .m4-rodape-marca img{display:block;width:100%;height:auto!important;aspect-ratio:1000/330;object-fit:contain;object-position:left center;transform:none}
+.mobis-v2.m4 .ms-logo img{display:block;width:100%;height:auto!important;max-height:none!important;aspect-ratio:1983/793;object-fit:contain;object-position:left center;transform:none}
+.mobis-v2.m4 .m4-rodape-marca img{display:block;width:100%;height:auto!important;aspect-ratio:1983/793;object-fit:contain;object-position:left center;transform:none}
 .mobis-v2.m4 .ms-departamentos-lista button[aria-pressed="true"]{border-color:#e2181a!important;outline:2px solid #e2181a;outline-offset:-2px;background:linear-gradient(#30373c,#101418)}
 .mobis-v2.m4 .ms-departamentos-lista button:focus-visible{outline:3px solid #e2181a;outline-offset:3px}
 .mobis-v2.m4 .m2-catalogo-discreto{margin:10px 0 0;padding:0;color:#64717b;font-size:.88rem;line-height:1.55}
