@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { destinoPainel, entradaAdministrativa, lojaMobisPorHost, urlLojaPublica } from "./lojaHost.ts";
+import { destinoPainel, entradaAdministrativa, lojaMobisPorHost, urlLojaPublica, urlProdutoPublico } from "./lojaHost.ts";
 
 test("dominio principal e www mostram o layout novo Mobis", () => {
   assert.equal(lojaMobisPorHost("mobisautopecas.com.br"), true);
@@ -50,4 +50,9 @@ test("raiz pública nunca é substituída pelo painel em ambos os domínios", ()
 test("abrir loja pelo Conecta.IA usa entrada pública separada, nunca hash interno do painel", () => {
   assert.equal(urlLojaPublica("mobis", "https://www.mobisautopecas.com.br/conecta.html#/fila"), "https://www.mobisautopecas.com.br/");
   assert.equal(urlLojaPublica("outra-loja", "https://nanoconecta-ia.github.io/conecta-ia/conecta.html#/fila"), "https://nanoconecta-ia.github.io/conecta-ia/#/loja/outra-loja");
+});
+
+test("ficha publicada tem endereço da vitrine e nunca o caminho conecta.html", () => {
+  assert.equal(urlProdutoPublico("mobis", "CI003696", "https://www.mobisautopecas.com.br/conecta.html#/catalogo-aplicacao"),
+    "https://www.mobisautopecas.com.br/#/p/mobis/CI003696");
 });
