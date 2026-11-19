@@ -3,6 +3,9 @@
 Site inteligente que conecta ERPs (piloto: Bling) a uma loja online, de forma autônoma.
 Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no chat, pergunte.
 
+## Contrato de entrega de cadastro (qualquer agente e qualquer SKU)
+Seguir **[porteiro: entrada por SKU ou descrição → pesquisa curta → ficha → aplicações → imagem Firecrawl → entrega verificada](docs/conector-ia/porteiro-entrega-cadastro-por-sku-ou-descricao-20261119.md)**. Registrar separadamente `proposta_preparada`, `rascunho_real_gravado` e `publicado_e_verificado`: só declarar os dois últimos após leitura no banco/URL. Foto ausente não bloqueia ficha; `produto_automacao.pausado` impede gravações. Não dissecar toda a história das montadoras, usar jogo de juntas Ajusa/SABÓ/Taranto/Vedamec, filtros e código do motor. Meta global 15s ainda não comprovada em executor.
+
 ## Ferramenta de imagens Firecrawl antes de pesquisa manual
 Ler [roteiro do buscador Conecta.IA/Firecrawl e disponibilidade no chat ou MCP](docs/conector-ia/porteiro-ferramentas-firecrawl-imagens-20261119.md). Priorizar `conecta.imagem.buscar_web` e alias `buscar_imagem_web` quando expostos, com consulta SKU+marca+composição; propor via `conecta.imagem.propor` apenas candidatura segura. API Firecrawl da loja não é chave do agente. **No MCP de terceiros a busca não está exposta nem recebe configuração do provedor**; reconhecer limitação e manter pendência. O prazo global de 15s ainda não está implementado no adaptador.
 
