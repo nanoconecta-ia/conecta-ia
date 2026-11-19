@@ -104,7 +104,9 @@ export function RodapeMobisEnxuto({
         <nav className="m4-rodape-coluna m4-rodape-institucional" aria-label="Institucional e políticas">
           <h2>Institucional</h2>
           <a href="#/loja/mobis/empresa">Sobre a Mobis e como consultar</a>
-          <a href="#/loja/mobis" onClick={irPara("m2-catalogo")}>Catálogo de produtos</a>
+          <a href="#/loja/mobis" onClick={irPara("m2-catalogo")}>Catálogo</a>
+          <a href="#/loja/mobis" onClick={irPara("m2-montadoras")}>Buscar por veículo</a>
+          <a href="#/loja/mobis" onClick={irPara("m2-taxonomia")}>Peças por sistema</a>
           {legais.map(doc => <details key={doc.campo} className="m4-rodape-documento">
             <summary>{doc.nome}</summary>
             <p>{politicas?.[doc.campo]}</p>
