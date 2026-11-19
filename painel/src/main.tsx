@@ -15,9 +15,12 @@ import "./styles.css";
 const paraPainel = destinoPainel(window.location.hostname, window.location.pathname, window.location.hash, window.location.search);
 if (paraPainel) window.location.replace(paraPainel);
 
-aplicarTema(lerPreferencia(armazemLocal())); // antes de pintar: sem piscar o tema errado
-aplicarOrbe(lerOrbe(armazemLocal())); // modelo da esfera do Nano.IA escolhido neste aparelho
-aplicarPerfil(lerPerfil(armazemLocal())); // perfil de cor: o painel e a esfera mudam juntos
+// Preferências internas são exclusivas do painel: a vitrine usa somente sua identidade pública aprovada.
+if (entradaAdministrativa(window.location.pathname)) {
+  aplicarTema(lerPreferencia(armazemLocal()));
+  aplicarOrbe(lerOrbe(armazemLocal()));
+  aplicarPerfil(lerPerfil(armazemLocal()));
+}
 
 if (!paraPainel) createRoot(document.getElementById("raiz")!).render(
   <StrictMode>
