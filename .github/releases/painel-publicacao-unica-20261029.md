@@ -236,3 +236,13 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Atualização responsiva no cabeçalho, rodapé e fichas de produto por herança do mesmo asset, sem alteração de taxonomia ou sistema de catálogo.
 - Executar release exclusivamente do frontend estático via `painel-pages.yml`. Não modificar Bling, preços, estoque, dados fiscais, notas, Supabase, DNS, anúncios, gateways, outras lojas ou outros projetos.
 - Build de painel validado no PR. Confirmar `version.json` e verificar presença real do novo asset no cabeçalho/rodapé em navegador após a publicação, sem distorção ou quebra da imagem. Loja continua em teste e sem checkout.
+
+
+## Publicação autorizada — Tipografia M-STYLE em banners MOBIS (19/11/2026)
+- O proprietário detectou erro na tipografia dos banners de Hyundai HR e Kia Bongo e solicitou correção: "A tipografia", no contexto da aprovação do modelo M-STYLE CROMO V3 por aplicação.
+- PR #458 incorporada no commit `31646f3b047a82fe5acc0407351876d4ae914b36`. Ajustes somente de CSS das fontes dos banners MOBIS e do teste de regressão associado.
+- Primária visual: Eurostile Next Heavy **se disponível no dispositivo**; alternativa consistente e já embutida no bundle do próprio painel: **Inter Variable Black 900**, em caixa alta, tamanho/entrelinha responsivos. Secundária: Montserrat se disponível; fallback Inter Variable. A alternativa sem dependência de CDN é necessária porque os testes do projeto bloqueiam `fonts.googleapis.com` e URLs externas, detectado e corrigido antes do merge.
+- **Não** distribuir fontes proprietárias. O logotipo cromado M-STYLE aprovado permanece asset de imagem, jamais redesenho tipográfico textual.
+- A tipografia é exclusivamente aplicada ao escopo `.mobis-v2.m4 .gcv3` e às variáveis do M-STYLE na vitrine pública. Não altera layout/conteúdo de outras lojas, painel Conecta.IA, Bling/ERP, estoque, preços de custo, fiscal, NF, Supabase, DNS, aplicações técnicas ou permissões de publicação.
+- Os banners por veículo continuam com URLs independentes após homologação, mas o **CI003696** tem aplicações HR/Bongo no estado `a_confirmar` e `pagina_indexavel=false`: nenhum desses perfis pode ser publicado automaticamente pela mudança tipográfica. O preço R$17.600 da imagem promocional antiga não é transferido automaticamente.
+- Publicação pelo fluxo **painel-pages.yml**, exclusivamente frontend estático. Após deploy, conferir `version.json`, links das linhas e tipografia no domínio oficial. A compilação principal passou; testes visuais abrangentes estavam em progresso no momento da liberação.
