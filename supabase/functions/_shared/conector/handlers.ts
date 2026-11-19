@@ -206,6 +206,8 @@ export const HANDLERS: Record<string, Handler> = {
   "conecta.codigo.propor": (e, c) => proporCodigo(c.admin, c.lojaId, e),
   "conecta.aplicacao.propor": (e, c) => proporAplicacao(c.admin, c.lojaId, e),
   "conecta.imagem.propor": (e, c) => proporImagem(c.admin, c.lojaId, e, (u) => baixarImagemOriginal(u, { resolver: resolverDns })),
+  "conecta.midia.anexar_produto": (e, c) => anexarMidiaMcp(c, e, "foto_produto", { resolver: resolverDns, fetchFn: c.fetch }),
+  "conecta.banner.anexar": (e, c) => anexarMidiaMcp(c, e, "banner", { resolver: resolverDns, fetchFn: c.fetch }),
   "conecta.imagem.buscar_web": async (e, c) => {
     const provedor = escolherProvedorBusca(c);
     if (!provedor) return SEM_PROVEDOR();
