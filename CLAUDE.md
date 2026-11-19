@@ -3,6 +3,9 @@
 Site inteligente que conecta ERPs (piloto: Bling) a uma loja online, de forma autônoma.
 Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no chat, pergunte.
 
+## REGRA MESTRE — catálogo enriquecido informativo
+Obrigatório ler [norma para exibir ficha pública sem foto e SEM preço](docs/conector-ia/regra-mestra-catalogo-enriquecido-sem-preco-sem-foto-20261119.md). Distinguir `catalogo_informativo` e `oferta_comercial`. O preço do Bling não é preço autorizado para mostrar em catálogo informativo; retornar `preco_publico=null`, `estoque_publico=null` e nenhum `offers`/checkout. O lojista informa ou aprova a exposição de preço e imagem posteriormente. A imagem é opcional, mas compatibilidade incerta nunca pode ser anunciada. O CI003696 possui `exibicao_teste=true` e uma prévia sem preço, não publicação comercial; automação pausada impede gravação por agente.
+
 ## Contrato de entrega de cadastro (qualquer agente e qualquer SKU)
 Seguir **[porteiro: entrada por SKU ou descrição → pesquisa curta → ficha → aplicações → imagem Firecrawl → entrega verificada](docs/conector-ia/porteiro-entrega-cadastro-por-sku-ou-descricao-20261119.md)**. Registrar separadamente `proposta_preparada`, `rascunho_real_gravado` e `publicado_e_verificado`: só declarar os dois últimos após leitura no banco/URL. Foto ausente não bloqueia ficha; `produto_automacao.pausado` impede gravações. Não dissecar toda a história das montadoras, usar jogo de juntas Ajusa/SABÓ/Taranto/Vedamec, filtros e código do motor. Meta global 15s ainda não comprovada em executor.
 
