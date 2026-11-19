@@ -59,7 +59,7 @@ begin
   if v_ator is null or not private.administra_loja(p_loja,v_ator) then
     raise exception 'sem_permissao: somente lojista' using errcode='42501';
   end if;
-  if p_acao not in ('aprovar','rejeitar') then
+  if p_acao is null or p_acao not in ('aprovar','rejeitar') then
     raise exception 'acao_invalida' using errcode='22023';
   end if;
   if p_acao='aprovar' and p_confirmou_direitos is distinct from true then
