@@ -1,42 +1,39 @@
 import { useState } from "react";
 import { arquivosDeDescoberta, textoParaApresentar } from "../lib/apresentarConecta.ts";
 
+/** Apresentação para colar num chat. Não gera chave nem solicita credencial. */
 export function ApresentarConecta() {
   const [mensagem, setMensagem] = useState("");
   const urlAtual = typeof window === "undefined" ? "https://nanoconecta-ia.github.io/conecta-ia/" : window.location.href;
   const recursos = arquivosDeDescoberta(urlAtual);
+  const apresentacao = textoParaApresentar(urlAtual);
 
   async function copiar(conteudo: string, descricao: string) {
     try {
       await navigator.clipboard.writeText(conteudo);
-      setMensagem(descricao + " copiado. Nenhuma credencial foi incluída.");
+      setMensagem(descricao + " copiado. Cole no outro chat.");
     } catch {
-      setMensagem("A cópia automática não está disponível neste navegador. Abra o documento abaixo e copie o endereço.");
+      setMensagem("A cópia automática foi bloqueada. Selecione e copie o texto na caixa abaixo.");
     }
   }
 
   return <section className="cartao" aria-labelledby="apresentar-conecta-titulo">
-    <h2 id="apresentar-conecta-titulo">Apresentar Conecta.IA a outro agente</h2>
-    <p className="suave">Use a mesma apresentação com ChatGPT, Claude, DeepSeek, Qwen ou outro modelo. Ela informa o que o aplicativo faz; o acesso operacional depende de ferramentas externas e autorização.</p>
-    <div className="grade tres">
-      <div>
-        <h3>1. Copiar apresentação</h3>
-        <p className="suave">Para colar em qualquer conversa, mesmo quando o chat não aceita MCP.</p>
-        <button type="button" onClick={() => void copiar(textoParaApresentar(urlAtual), "Apresentação")}>Copiar apresentação</button>
-      </div>
-      <div>
-        <h3>2. Conector MCP</h3>
-        <p className="suave">Para clientes com conexão remota MCP ou HTTP JSON-RPC.</p>
-        <button type="button" className="sec" onClick={() => void copiar(recursos.mcp, "Endereço MCP")}>Copiar endereço MCP</button>
-      </div>
-      <div>
-        <h3>3. API para agentes</h3>
-        <p className="suave">Documentação pública da interface HTTP existente; não cria novo endpoint de escrita.</p>
-        <p><a href={recursos.openapi} target="_blank" rel="noopener noreferrer">Abrir OpenAPI (JSON)</a></p>
-        <p><a href={recursos.manifesto} target="_blank" rel="noopener noreferrer">Abrir manifesto de capacidades</a></p>
-      </div>
-    </div>
+    <h2 id="apresentar-conecta-titulo">Apresentar Conecta.IA para outra IA</h2>
+    <p>Quer testar com DeepSeek, Qwen, Claude ou ChatGPT? Toque no botão e cole a mensagem no chat escolhido. <strong>Não é necessário abrir o OpenAPI.</strong></p>
+    <button type="button" onClick={() => void copiar(apresentacao, "Apresentação")} aria-label="Copiar apresentação do Conecta.IA para outro chat">Copiar para outro chat</button>
     {mensagem && <p role="status" className="suave">{mensagem}</p>}
-    <p className="suave"><strong>Limite atual:</strong> A2A é uma etapa futura; não há endpoint A2A funcional anunciado. Chats sem ferramentas podem ler a apresentação, mas não executar comandos. Não envie tokens no chat; configure a autenticação somente no cliente autorizado.</p>
+    <details style={{ marginTop: 14 }}>
+      <summary>Ver o texto para copiar manualmente</summary>
+      <label htmlFor="conecta-texto-apresentacao">Mensagem de apresentação (sem senhas ou tokens)</label>
+      <textarea id="conecta-texto-apresentacao" readOnly value={apresentacao} rows={9} style={{ width: "100%", maxWidth: "100%", resize: "vertical" }} onFocus={(e) => e.currentTarget.select()} />
+    </details>
+    <details style={{ marginTop: 12 }}>
+      <summary>Conexão técnica MCP e OpenAPI (opcional)</summary>
+      <p className="suave">Esses links abrem documentos técnicos JSON; eles não são a mensagem para colar no chat.</p>
+      <button type="button" className="sec" onClick={() => void copiar(recursos.mcp, "Endereço MCP")}>Copiar endereço MCP</button>
+      <p><a href={recursos.openapi} target="_blank" rel="noopener noreferrer">Abrir descrição OpenAPI (JSON)</a></p>
+      <p><a href={recursos.manifesto} target="_blank" rel="noopener noreferrer">Abrir manifesto de capacidades (JSON)</a></p>
+    </details>
+    <p className="suave">Importante: colar a mensagem não conecta automaticamente a IA. Acesso operacional exige suporte do outro chat e autorização por loja. Não compartilhe chaves aqui.</p>
   </section>;
 }
