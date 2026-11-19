@@ -4,6 +4,11 @@ Data: 19/11/2026. Estado: rascunho de regra de negócio; **não está implantada
 ## Princípio de produtividade
 O lojista não deve conduzir pesquisa detalhada SKU por SKU. A investigação exemplar do CI003696 calibra **receitas reutilizáveis por família técnica** (ex.: motor D4CB 16V). O agente faz pesquisa, separa evidência e pendências e propõe em lote; o proprietário revisa um resumo de diferenças e só intervém em conflitos, sendo a aprovação humana obrigatória antes de qualquer publicação ou escrita.
 
+## Roteiro obrigatório de fontes: onde achar cada peça em até 15 segundos
+O agente deve consultar antes de tudo **[o mapa rápido de fontes GS1 Brasil + NCM + EPC + montadoras/importadores + B2B + marketplaces](fontes-pesquisa-rapida-sku-ncm-gs1-20261119.md)**. Esse arquivo orienta **todos** os agentes, não apenas uma sessão do Claude/GPT, e define a busca de SKU + GTIN + NCM + descrição com evidência e **orçamento GLOBAL de 15.000 ms por SKU** (incluindo retorno parcial). A integração real, `deadline` e `AbortController` ainda dependem de implementação e teste do executor — não declarar pronta pela existência desta norma.
+
+Prioridade da pesquisa: Bling/XML/etiqueta → **GS1 Verified by GS1/CNP (quando houver GTIN)** → **PartSouq/EPC original** → **portal nacional da montadora/importadora do período (CAOA/Hyundai Brasil; Kia Brasil/KMB/Grupo Gandini; equivalentes verificados de outras marcas)** → **fabricante de peça / fornecedor OE com prova** → **importadores e catálogos B2B** → e-commerce/Mercado Livre/Shopee, **somente para pistas**. O NCM permite localizar classes e candidatos, inclusive pela GS1 Other Keys (API sujeita a plano), mas jamais comprova identidade única ou aplicação.
+
 ## Entrada e processamento por lote
 1. Receber lista de SKUs atuais do Bling em modo consulta. Deduplicar por `loja_id + bling_id + sku`; manter UM produto físico, SEM clonar estoque.
 2. Recuperar receitas aprovadas por fabricante da peça, família técnica, motor e geração. Consultar primeiro base de evidências/cache interno com data e validade; pesquisar fontes externas (PartSouq/EPC + CAOA/Hyundai Brasil, Kia Motors do Brasil/KMB e fabricantes) **apenas para lacunas ou dados vencidos**. Não inferir ano brasileiro de lançamento internacional.
