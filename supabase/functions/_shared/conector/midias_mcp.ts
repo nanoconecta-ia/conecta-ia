@@ -54,8 +54,9 @@ export async function anexarMidiaMcp(c: Contexto, e: Record<string, unknown>, fi
       aplicacaoId = String(aplicacao.id); paginaSlug = String(aplicacao.pagina_slug);
     } else if (e.modo !== "institucional") return { erro: "Use modo institucional ou por_veiculo." };
   }
-  let bytes: Uint8Array | null = null;
-  const imagem = await verificar(v.arquivo.download_url, { ...op, maxBytes: 8 * 1024 * 1024, capturarBytes: (a) => { bytes = a; } });
+  const captura: { bytes: Uint8Array | null } = { bytes: null };
+  const imagem = await verificar(v.arquivo.download_url, { ...op, maxBytes: 8 * 1024 * 1024, capturarBytes: (a) => { captura.bytes = a; } });
+  const bytes = captura.bytes as Uint8Array | null;
   if (!imagem.ok) return { erro: imagem.erro };
   const info = imagem.imagem;
   if (!bytes || bytes.length !== info.bytes || !MIMES.has(info.mime) ||
