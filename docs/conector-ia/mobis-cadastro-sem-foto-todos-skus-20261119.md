@@ -2,6 +2,9 @@
 **Data:** 2026-11-19. **Escopo:** todos os modelos/veículos, peças e SKUs da loja `mobis`; não só o CI003696.
 **Status:** norma na PR #461 e correção de triagem do agente proposta nesta PR; publicação e execução de catálogo em lote dependem de integração e homologação. Não é autorização para ignorar outras travas do cadastro.
 
+## Atualização de regra mestre: catálogo informativo SEM preço e SEM foto
+Consultar antes de qualquer decisão de visibilidade a [regra mestre do catálogo enriquecido](regra-mestra-catalogo-enriquecido-sem-preco-sem-foto-20261119.md). **Cadastro informativo** dispensa imagem e preço público, mantendo ambos como pendência comercial para o lojista; a ausência de preço não desliga nem zerará o valor do Bling. **Oferta comercial** continua exigindo preço autorizado e demais requisitos de publicação. Não conflitar essas duas modalidades.
+
 ## Objetivo do lojista — fotografia não pode paralisar o catálogo
 O sistema precisa aceitar todo produto **físico já identificado no Bling** no catálogo interno da loja, mesmo quando não houver fotografia, e gerar seu rascunho técnico/comercial. O agente deve procurar fotos reais; se não as localizar com precisão/direitos, **seguir com o restante do cadastro** e sinalizar `foto_pendente`. O lojista acrescenta a foto real depois, com rastreabilidade. Isso se aplica a motores, cabeçotes, filtros, correias, suspensão, transmissão, elétrica e a todos os modelos (HR, Bongo, L200, Pajero, Sprinter, Daily, Gol etc.), desde que sejam produtos reais autorizados da loja.
 
