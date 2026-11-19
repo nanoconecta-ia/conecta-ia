@@ -1,6 +1,9 @@
 # MOBIS — Norma proposta do porteiro para cadastro técnico em lotes
 Data: 19/11/2026. Estado: rascunho de regra de negócio; **não está implantada no gateway nem no banco**. Escopo: Conecta.IA / loja MOBIS.
 
+## Localização das ferramentas internas de busca de imagem: Firecrawl
+Ler obrigatoriamente **[mapa do Firecrawl e das ferramentas efetivamente expostas](porteiro-ferramentas-firecrawl-imagens-20261119.md)**. O porteiro orienta o agente a usar **`conecta.imagem.buscar_web`** ou o alias `buscar_imagem_web` pelo chat (sem novos provedores), e a propor uma imagem candidata pelo fluxo existente. A ferramenta não está atualmente habilitada no MCP externo; não simular sua disponibilidade. Sem foto aprovada, continuar o cadastro técnico e registrar foto pendente, inclusive em outros modelos e famílias de peças.
+
 ## Regra universal — todos os modelos e SKUs podem ser cadastrados SEM FOTO
 Para todos os produtos reais da MOBIS (independentemente de marca, veículo, família ou SKU), ler a **[norma de fotos opcionais, busca de imagens e preenchimento posterior](mobis-cadastro-sem-foto-todos-skus-20261119.md)**. O agente deve identificar a peça no Bling, procurar imagem real com fonte/direitos dentro do orçamento de 15 segundos por SKU e **prosseguir com o cadastro técnico/rascunho do site** mesmo se não encontrar fotografia. Na loja MOBIS, foto ausente é pendência de complementação pelo lojista, **não bloqueia a publicação se os demais portões forem satisfeitos e o proprietário aprovar**. Nunca substituir por foto de peça parecida; sem imagem aprovada, mostrar placeholder neutro. Manter aplicação/OEM sem comprovação fora de páginas públicas. Produto pausado continua pausado. A publicação sem foto já é permitida pelo portão do banco MOBIS; os processos automáticos de catalogação em lote e busca de imagem ainda precisam ser implementados e testados.
 
