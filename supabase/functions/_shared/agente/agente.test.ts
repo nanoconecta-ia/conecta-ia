@@ -55,6 +55,30 @@ test("campos exigidos: o que não está comprovado fica vazio e o produto não f
 });
 
 
+test("MOBIS: qualquer SKU com dados exigidos completos pode ficar sem foto (foto pendente não bloqueia)", () => {
+  const exigidos = ["nome", "sku", "preco", "categoria", "imagem_principal", "marca_peca", "codigo_fabricante", "aplicacao_veicular"];
+  for (const sku of ["CI003696", "FILTRO-EXEMPLO-01", "L200-EXEMPLO-02"]) {
+    const base = { nome: "Peça real a homologar", sku, preco: 100, categoria: "sistema",
+      temImagemPrincipal: false, temCodigoFabricante: true, temAplicacao: true,
+      camposEnriquecidos: new Set(["marca_peca"]) };
+    const mobis = checarCamposExigidos(exigidos, base, { fotoOpcional: true });
+    assert.deepEqual(mobis.vazios, [], "sem imagem é permitido na MOBIS se o RESTANTE estiver completo");
+    assert.equal(resultadoDe(mobis.vazios), "sucesso");
+    assert.ok(!mobis.preenchidos.includes("imagem_principal"), "foto faltante NÃO aparece como existente");
+    const outraLoja = checarCamposExigidos(exigidos, base);
+    assert.deepEqual(outraLoja.vazios, ["imagem_principal"], "demais lojas preservam a exigência");
+  }
+});
+
+test("MOBIS: foto opcional não libera produto sem categoria, código do fabricante ou aplicação", () => {
+  const dados = { nome: "Peça", sku: "SEM-FOTO", preco: 100, categoria: null,
+    temImagemPrincipal: false, temCodigoFabricante: false, temAplicacao: false,
+    camposEnriquecidos: new Set(["marca_peca"]) };
+  const r = checarCamposExigidos(["nome","sku","preco","categoria","imagem_principal","marca_peca","codigo_fabricante","aplicacao_veicular"], dados, { fotoOpcional: true });
+  assert.deepEqual(r.vazios, ["categoria", "codigo_fabricante", "aplicacao_veicular"]);
+  assert.equal(resultadoDe(r.vazios), "parcial");
+});
+
 test("classifica as famílias reais do catálogo da Mobis (nomes reais)", () => {
   const casos: Array<[string, string | null]> = [
     ["BOMBA OLEO HR/K2500 2.5 16V 13/ D4CB EURO V 26 DTS ALUMINIO - MARCA: TRIM GO", "bomba-oleo"],
