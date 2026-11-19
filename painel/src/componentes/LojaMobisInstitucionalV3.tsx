@@ -35,11 +35,11 @@ type Comum={
   busca:string;onBusca:(valor:string)=>void;onEnviar:(event?:FormEvent)=>void;
   exata:boolean;onExata:(valor:boolean)=>void;
   whatsapp:string|null;ir:(id:string)=>void;
-  categorias:readonly Categoria[];selecionarCategoria:(slug:string)=>void;consultar:(nome:string)=>void;
+  categorias:readonly Categoria[];selecionarDepartamento:(chave:string,nome:string)=>void;departamentoAtivo?:string;
   bannersPresentes:boolean;
 };
 
-export function CabecalhoMobisV3({busca,onBusca,onEnviar,exata,onExata,whatsapp,ir,categorias,selecionarCategoria,consultar,bannersPresentes}:Comum){
+export function CabecalhoMobisV3({busca,onBusca,onEnviar,exata,onExata,whatsapp,ir,categorias,selecionarDepartamento,departamentoAtivo,bannersPresentes}:Comum){
   return <div className="ms-cabecalho" data-bloco="cabecalho" data-mobis-vitrine-completa="v3">
     <div className="ms-faixa-superior">
       <div className="ms-container ms-faixa-interna">
@@ -49,7 +49,7 @@ export function CabecalhoMobisV3({busca,onBusca,onEnviar,exata,onExata,whatsapp,
       </div>
     </div>
     <div className="ms-principal"><div className="ms-container ms-principal-grid">
-      <a className="ms-logo" href="#/loja/mobis" aria-label="Mobis Autopeças — página inicial"><img src={logo} width={1000} height={268} alt="MOBIS AUTOPEÇAS — M-STYLE CROMO V3"/></a>
+      <a className="ms-logo" href="#/loja/mobis" aria-label="Mobis Autopeças — página inicial"><img src={logo} width={1000} height={330} alt="MOBIS AUTOPEÇAS — M-STYLE CROMO V3"/></a>
       <p className="ms-especialidade">Peças para <strong>picapes, vans e utilitários diesel</strong> <small>Aplicação técnica sob consulta</small></p>
       <form className="ms-pesquisa" role="search" aria-label="Buscar peça e referência" onSubmit={onEnviar}>
         <label className="ms-visualmente-oculto" htmlFor="ms-buscar">Buscar peça, SKU, OEM ou aplicação</label>
@@ -74,10 +74,12 @@ export function CabecalhoMobisV3({busca,onBusca,onEnviar,exata,onExata,whatsapp,
       <div className="ms-container ms-departamentos-lista">
         {SETORES_MOBIS_V3.map(s=>{
           const categoria=setorComCategoria(s,categorias);
-          return <button key={s.chave} type="button" title={categoria?"Ver peças de "+s.nome:"Consultar peças de "+s.nome}
-            onClick={()=>categoria?selecionarCategoria(categoria.slug):consultar(s.nome)}>
+          return <button key={s.chave} type="button" className={departamentoAtivo===s.chave?"ms-departamento-ativo":undefined}
+            title={"Filtrar peças do departamento "+s.nome}
+            aria-label={"Filtrar produtos de "+s.nome} aria-pressed={departamentoAtivo===s.chave}
+            onClick={()=>selecionarDepartamento(s.chave,s.nome)}>
             <img src={s.icone} width={66} height={66} alt="" aria-hidden="true"/>
-            <span>{s.nome}</span><small>{categoria?"Ver peças":"Sob consulta"}</small>
+            <span>{s.nome}</span><small>{categoria?"Ver peças":"Filtrar peças"}</small>
           </button>;
         })}
       </div>
@@ -88,10 +90,11 @@ export function CabecalhoMobisV3({busca,onBusca,onEnviar,exata,onExata,whatsapp,
 type AplicacoesProps={
   categorias:readonly Categoria[];opcoes:readonly string[];motores:readonly string[];
   f: Filtros;onModelo:(s:string)=>void;onMotor:(s:string)=>void;onAno:(s:string)=>void;onCategoria:(s:string)=>void;
-  onAplicar:(event?:FormEvent)=>void;onConsultar:(s:string)=>void;onLimpar:()=>void;
+  onAplicar:(event?:FormEvent)=>void;onLimpar:()=>void;
+  departamentoPendente?:{chave:string;nome:string}|null;
 };
 /** Único formulário de filtros: a busca textual/SKU continua somente no cabeçalho V3. */
-export function AplicacoesMobisV3({categorias,opcoes,motores,f,onModelo,onMotor,onAno,onCategoria,onAplicar,onConsultar,onLimpar}:AplicacoesProps){
+export function AplicacoesMobisV3({categorias,opcoes,motores,f,onModelo,onMotor,onAno,onCategoria,onAplicar,onLimpar,departamentoPendente}:AplicacoesProps){
   const [montadora,setMontadora]=useState<MontadoraMobis|""|"Toyota">("");
   const modelosDaMontadora=montadora==="Toyota"
     ? opcoes.filter(x=>/hilux|toyota/i.test(x))
@@ -101,7 +104,7 @@ export function AplicacoesMobisV3({categorias,opcoes,motores,f,onModelo,onMotor,
       <div className="ms-aplicacoes-grid ms-aplicacoes-grid-unica">
         <aside className="ms-encontrar" aria-label="Filtros por veículo">
           <div className="ms-encontrar-titulo"><h2>Encontre sua peça</h2><p>Selecione o veículo e refine a aplicação. Não presumimos compatibilidade sem aprovação técnica.</p></div>
-          <form onSubmit={e=>{if(montadora&&!f.modelo){e.preventDefault();onConsultar(montadora);return;}onAplicar(e);}}>
+          <form onSubmit={onAplicar}>
             <label>Montadora<select aria-label="Montadora" value={montadora} onChange={e=>{setMontadora(e.target.value as MontadoraMobis|""|"Toyota");onModelo("");}}>
               <option value="">Todas as montadoras</option>
               {MONTADORAS_MOBIS.map(m=><option value={m.nome} key={m.nome}>{m.nome}</option>)}
@@ -110,7 +113,7 @@ export function AplicacoesMobisV3({categorias,opcoes,motores,f,onModelo,onMotor,
             <label>Veículo / modelo<select aria-label="Veículo / modelo" value={f.modelo} onChange={e=>onModelo(e.target.value)}><option value="">Todos os modelos</option>{[...new Set(modelosDaMontadora)].sort().map(x=><option key={x}>{x}</option>)}</select></label>
             <label>Motor / versão<select aria-label="Motor / versão" value={f.motor} onChange={e=>onMotor(e.target.value)}><option value="">Todos os motores</option>{motores.map(x=><option key={x}>{x}</option>)}</select></label>
             <label>Ano / geração<input aria-label="Ano / geração" type="number" min={1980} max={new Date().getFullYear()+1} value={f.ano} placeholder="Ex.: 2019" onChange={e=>onAno(e.target.value.slice(0,4))}/></label>
-            <label>Sistema / categoria<select aria-label="Sistema / categoria" value={f.categoria} onChange={e=>onCategoria(e.target.value)}><option value="">Todos os sistemas</option>{categorias.filter(x=>x.total>0).map(x=><option key={x.slug} value={x.slug}>{x.nome}</option>)}</select></label>
+            <label>Sistema / categoria<select aria-label="Sistema / categoria" value={f.categoria} onChange={e=>onCategoria(e.target.value)}><option value="">Todos os sistemas</option>{departamentoPendente&&<option value={departamentoPendente.chave}>{departamentoPendente.nome} · em organização</option>}{categorias.filter(x=>x.total>0).map(x=><option key={x.slug} value={x.slug}>{x.nome}</option>)}</select></label>
             <button type="submit">Aplicar filtros <span aria-hidden="true">→</span></button>
             <button className="ms-limpar-filtros" type="button" onClick={()=>{setMontadora("");onLimpar();}}>Limpar filtros</button>
           </form>

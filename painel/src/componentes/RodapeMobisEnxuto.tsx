@@ -69,7 +69,7 @@ export function RodapeMobisEnxuto({
       <div className="m4-rodape-linha">
         <div className="m4-rodape-marca">
           <a href="#/loja/mobis" aria-label="Voltar à página inicial da Mobis Autopeças">
-            <img src={logoMobis} alt="MOBIS AUTOPEÇAS" loading="lazy" width={1000} height={268} />
+            <img src={logoMobis} alt="MOBIS AUTOPEÇAS" loading="lazy" width={1000} height={330} />
           </a>
           <p>Peças e componentes com identificação e aplicação conferidas pela equipe.</p>
         </div>

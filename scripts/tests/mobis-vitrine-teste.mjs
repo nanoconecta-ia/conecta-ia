@@ -67,14 +67,14 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
   await page.goto(base + "#/loja/mobis");
   if(flags.previaSimulada) await page.locator(".m2-produto").waitFor();
   else if(erro) await page.locator(".m2-catalogo").getByText("Não foi possível carregar o catálogo.", {exact:true}).waitFor();
-  else await page.locator(".m2-estado-compacto").getByText(/O catálogo está sendo organizado por produto/).waitFor();
+  else await page.locator(".m2-catalogo-discreto").getByText(/Itens em organização por aplicação aprovada/).waitFor();
   return {context,page,consultas,erros};
 }
 async function consultar(page, acao, criterio) {
   const resposta = page.waitForResponse(r => r.url().endsWith("/functions/v1/loja-publica") && r.request().method() === "POST" && criterio(r.request().postDataJSON()));
   await acao();
   await resposta;
-  await page.locator(".m2-estado-compacto").waitFor();
+  await page.locator(".m2-catalogo-discreto").waitFor();
 }
 try {
   for (const width of [360,390,720,1280]) {

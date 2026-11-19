@@ -60,7 +60,7 @@ try{
    assert.equal(await page.locator('.ms-aplicacoes .ms-linha,.ms-abertura,.ms-consulta-rodape').count(),0,"sem linhas, abertura ou faixa de contato duplicadas");
   assert.ok((await hero.locator("h1").innerText()).length>5,"carrossel tem chamada real");
   assert.ok((await hero.locator(".gcv3-copy p").innerText()).length<150,"texto comercial curto");
-  await page.getByText(/O catálogo está sendo organizado por produto/).waitFor({timeout:10000});
+  await page.getByText(/Itens em organização por aplicação aprovada/).waitFor({timeout:10000});
   assert.equal(await page.locator('.ms-pesquisa').count(),1,"somente uma busca textual V3");
   assert.equal(await page.locator('.ms-encontrar form').count(),1,"somente um formulário de aplicação");
   assert.equal(await page.locator('.m2-search,.m2-filtros').count(),0,"formulários extras antigos ausentes");
@@ -84,6 +84,18 @@ try{
   assert.equal(await page.locator(".m4-montadora-item,.m4-taxonomia-item").count(),0,"grades antigas não montadas");
   assert.equal(await page.locator("#m2-atendimento,.m2-contato-form,#m2-lista").count(),0,"consulta e lista duplicadas removidas");
   assert.equal(await page.locator(".ms-departamentos-lista button").count(),7,"departamentos modernos mantidos");
+  // Não deve haver link de ícone para WhatsApp, mesmo quando categorias da API estão vazias.
+  for(const [chave,nome] of [["motor","Motor"],["cabecote","Cabeçote"],["suspensao","Suspensão"],["transmissao","Transmissão"],["eletrica","Elétrica"],["carroceria","Carroceria"],["acessorios","Acessórios"]]){
+    const botao=page.getByRole("button",{name:"Filtrar produtos de "+nome,exact:true});
+    const resposta=page.waitForResponse(resp=>resp.url().includes("/loja-publica") && (resp.request().postData()||"").includes('"categoria":"'+chave+'"'));
+    await botao.click();await resposta;
+    assert.equal(await botao.getAttribute("aria-pressed"),"true","departamento ativo "+nome);
+    assert.equal(await page.getByLabel("Sistema / categoria",{exact:true}).inputValue(),chave,"categoria selecionada "+nome);
+    assert.ok(page.url().includes("#/loja/mobis"),"o departamento não navega ao WhatsApp");
+  }
+  assert.equal(await page.locator(".m2-estado-compacto").count(),0,"sem cartão redundante de WhatsApp");
+  assert.ok((await page.locator('link[rel="icon"][type="image/svg+xml"]').getAttribute("href")).includes("mobis-v3-favicon.svg"),"favicon oficial V3 configurado");
+ 
   assert.equal(await page.locator(".ms-encontrar form").count(),1,"filtro hierárquico preservado sem duplicação");
   assert.equal(await page.locator(".m4-linha-card,.m2-veiculo-grade").count(),0,"outras grades duplicadas ausentes");
   assert.equal(await page.locator(".gcv3-etiqueta-flash").count(),0,"sem campanha ativa não há oferta Flash fictícia");
