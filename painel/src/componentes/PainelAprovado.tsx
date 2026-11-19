@@ -9,6 +9,7 @@ import "../contraste-wcag-pr427.css";
 import { PERFIS, lerPerfil, gravarPerfil, aplicarPerfil } from "../lib/perfilCor.ts";
 import { PREFERENCIAS, lerPreferencia, armazemLocal, aplicarTema, gravarPreferencia, type Preferencia } from "../lib/tema.ts";
 import marcaMobis from "../assets/mobis-identidade-aprovada.jpg";
+import { urlLojaPublica } from "../lib/lojaHost.ts";
 
 const PRINCIPAIS=[
  ["/","Conecta.IA","inicio"],["/estudio","Estúdio do Nano","nano"],
@@ -37,7 +38,7 @@ export function PainelAprovado({loja,caminho,menu,children,menuMovel,recolhido,a
    <div className="ap-loja-marca">{loja?.slug==="mobis"?<span className="ap-marca-window"><img src={marcaMobis} alt="Mobis Autopeças"/></span>:<strong>{loja?.nome??"Seu ambiente"}</strong>}<small>{loja?.slug==="mobis"?"LOJA PILOTO":"AMBIENTE INTERNO"}</small></div>
    <span className="ap-nav-label">ESPELHAMENTO</span>
    <nav>{PRINCIPAIS.filter(([r])=>r==="/estudio"||r==="/"||menu.some(x=>x[0]===r)).map(([r,t,ic])=><a key={r} title={t} aria-label={t} href={`#${r}`} aria-current={caminho===r||(r==="/estudio"&&caminho==="/assistente")?"page":undefined} className={caminho===r||(r==="/estudio"&&caminho==="/assistente")?"ativo":""} onClick={()=>{if(menuMovel)aoMenu();}}><AtivoAprovado nome={ic}/><span>{t}</span></a>)}</nav>
-   {loja&&<a className="ap-loja-link" href={`#/loja/${encodeURIComponent(loja.slug)}`} target="_blank" rel="noopener noreferrer"><AtivoAprovado nome="inicio"/><span>Loja virtual ↗</span></a>}
+   {loja&&<a className="ap-loja-link" href={urlLojaPublica(loja.slug, window.location.href)} target="_blank" rel="noopener noreferrer"><AtivoAprovado nome="inicio"/><span>Abrir loja pública ↗</span></a>}
    <details className="ap-modulos"><summary>Todos os módulos <span>+</span></summary><nav>{menu.filter(x=>!PRINCIPAIS.some(p=>p[0]===x[0])).map(([r,t])=><a key={r} title={t} aria-label={t} href={`#${r}`} onClick={()=>{if(menuMovel)aoMenu();}} aria-current={caminho===r?"page":undefined}><Icone nome="caixas" tamanho={16}/><span>{t}</span></a>)}</nav></details>
    <div className="ap-sidebar-fim"><div className="ap-protecao"><strong>Origem física preservada</strong><span>Bling · estoque e dados fiscais<br/>Conecta.IA · aplicações e revisão</span></div><button onClick={aoSair} className="ap-perfil"><span className="ap-avatar">{loja?.nome.slice(0,2).toUpperCase()??"IA"}</span><span><strong>{loja?.nome??"Minha conta"}</strong><small>Sair da conta</small></span></button><button className="ap-recolher" onClick={aoRecolher} aria-label={recolhido?"Expandir menu":"Recolher menu"}><Icone nome="recolher" tamanho={16}/></button></div>
   </aside>
