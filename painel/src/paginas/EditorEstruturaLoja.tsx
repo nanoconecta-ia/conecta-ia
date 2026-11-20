@@ -6,6 +6,8 @@ import "./EditorEstruturaLoja.css";
 
 type Versao={id:string;numero:number;blocos:string[];intervalo_segundos:number;criado_em:string;criado_por:string;aprovado_em:string|null;aprovado_por:string|null};
 type Publicada={versao_id:string;publicado_por:string;publicado_em:string};
+type Prontidao={publicados:number;comSaldoPreco:number;fotosPrincipais:number;aplicacoesAprovadas:number;bannersAtivos:number};
+const INIT_PRONTIDAO:Prontidao={publicados:0,comSaldoPreco:0,fotosPrincipais:0,aplicacoesAprovadas:0,bannersAtivos:0};
 type Evento={id:number;quando:string;user_id:string|null;acao:string;tabela:string;antes:Record<string,unknown>|null;depois:Record<string,unknown>|null};
 
 const MODELOS_OUTRAS_LOJAS=[
@@ -27,6 +29,9 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
  const [arrastando,setArrastando]=useState<number|null>(null);
  const [ocupado,setOcupado]=useState(false);
  const [confirmacao,setConfirmacao]=useState<{acao:"aprovar"|"publicar";versaoId:string;numero:number}|null>(null);
+ const [prontidao,setProntidao]=useState<Prontidao|null>(null);
+ const [erroProntidao,setErroProntidao]=useState("");
+ const [atualizandoProntidao,setAtualizandoProntidao]=useState(false);
  const [carregando,setCarregando]=useState(true);
  const [erro,setErro]=useState("");
  const [info,setInfo]=useState("");
@@ -53,6 +58,29 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
    return lista;
  },[loja.id]);
  useEffect(()=>{void recarregar()},[recarregar]);
+ const conferirProntidao=useCallback(async()=>{
+   if(loja.slug!=="mobis")return;
+   setAtualizandoProntidao(true);setErroProntidao("");
+   // Somente SELECT. Não aprova aplicação, não publica produto e não altera Bling.
+   const consultas=await Promise.all([
+     supabase.from("produtos").select("id",{count:"exact",head:true}).eq("loja_id",loja.id).eq("publicado",true),
+     supabase.from("produtos").select("id",{count:"exact",head:true}).eq("loja_id",loja.id).eq("situacao","A").gt("estoque",0).gt("preco",0),
+     supabase.from("produto_imagens").select("id",{count:"exact",head:true}).eq("loja_id",loja.id).eq("aprovada",true).eq("principal",true).is("removida_em",null),
+     supabase.from("produto_aplicacoes").select("id",{count:"exact",head:true}).eq("loja_id",loja.id).eq("status","aprovado"),
+     supabase.from("loja_banners").select("id",{count:"exact",head:true}).eq("loja_id",loja.id).eq("ativo",true),
+   ]);
+   setAtualizandoProntidao(false);
+   if(consultas.some(c=>c.error)){
+     setErroProntidao("Não foi possível conferir todos os indicadores. A publicação está inalterada.");
+     setProntidao(null);return;
+   }
+   setProntidao({
+     publicados:consultas[0].count??0,comSaldoPreco:consultas[1].count??0,
+     fotosPrincipais:consultas[2].count??0,aplicacoesAprovadas:consultas[3].count??0,
+     bannersAtivos:consultas[4].count??0,
+   });
+ },[loja.id,loja.slug]);
+ useEffect(()=>{void conferirProntidao()},[conferirProntidao]);
  const editar=(id:string|null)=>{
    const v=versoes.find(x=>x.id===id);
    if(v){setOrdem(ordemPublica(v.blocos));setSegundos(intervaloPublico(v.intervalo_segundos));}
@@ -118,6 +146,31 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
     <span><b>Publicada:</b> {publicadaVersao?"Versão "+publicadaVersao.numero:"ordem padrão"}</span>
     <span><b>Estado:</b> {temMudancas?"alterações não salvas":versao?.aprovado_em?"aprovada":"rascunho"}</span>
   </div>
+  {loja.slug==="mobis"&&<section className="layout-editor-prontidao" aria-label="Prontidão comercial Mobis">
+   <div className="layout-editor-prontidao-topo">
+     <div><span>CONEXÃO ENTRE ESTRUTURA, CATÁLOGO E COMÉRCIO</span>
+       <h2>Prontidão comercial da vitrine</h2>
+       <p>Indicadores reais do Supabase; cada número representa uma condição isolada, não autorização automática para vender.</p></div>
+     <button type="button" onClick={()=>void conferirProntidao()} disabled={atualizandoProntidao}>{atualizandoProntidao?"Conferindo…":"Atualizar indicadores"}</button>
+   </div>
+   {erroProntidao&&<p role="alert" className="msg-erro">{erroProntidao}</p>}
+   <div className="layout-editor-prontidao-indicadores">
+     {([
+       ["Produtos publicados",prontidao?.publicados],
+       ["Ativos com saldo e preço",prontidao?.comSaldoPreco],
+       ["Imagens principais aprovadas",prontidao?.fotosPrincipais],
+       ["Aplicações aprovadas",prontidao?.aplicacoesAprovadas],
+       ["Banners ativos",prontidao?.bannersAtivos],
+     ] as const).map(([rotulo,numero])=><div key={rotulo}><strong>{numero==null?"—":numero.toLocaleString("pt-BR")}</strong><span>{rotulo}</span></div>)}
+   </div>
+   <nav className="layout-editor-prontidao-fluxo" aria-label="Ações de prontidão da vitrine">
+     <a href="#/catalogo"><strong>1 · Catálogo</strong><small>Pesquisar por SKU, conferir imagem e publicar somente produto elegível</small></a>
+     <a href="#/catalogo-aplicacao"><strong>2 · Aplicações</strong><small>Revisar veículos, motores, OEM e restrições com evidência</small></a>
+     <a href="#/banners"><strong>3 · Carrossel Flash</strong><small>Ativar campanha apenas com produto e imagem publicáveis</small></a>
+     <a href="#/aparencia"><strong>4 · Identidade visual</strong><small>Paleta aprovada e blocos do Modelo 02</small></a>
+   </nav>
+   <p className="layout-editor-prontidao-aviso">Atenção: saldo + preço ou foto aprovada isoladamente não tornam um produto publicável. A liberação depende das travas reais do servidor, da situação do produto e dos direitos de imagem.</p>
+  </section>}
   {loja.slug==="mobis" ? <section className="layout-editor-modelos" aria-label="Três modelos de vitrine Mobis">
    <div className="layout-editor-modelos-titulo">
     <h2>Escolha a apresentação da loja</h2>
