@@ -7,7 +7,6 @@ import "./EditorEstruturaLoja.css";
 type Versao={id:string;numero:number;blocos:string[];intervalo_segundos:number;criado_em:string;criado_por:string;aprovado_em:string|null;aprovado_por:string|null};
 type Publicada={versao_id:string;publicado_por:string;publicado_em:string};
 type Prontidao={publicados:number;comSaldoPreco:number;fotosPrincipais:number;aplicacoesAprovadas:number;bannersAtivos:number};
-const INIT_PRONTIDAO:Prontidao={publicados:0,comSaldoPreco:0,fotosPrincipais:0,aplicacoesAprovadas:0,bannersAtivos:0};
 type Evento={id:number;quando:string;user_id:string|null;acao:string;tabela:string;antes:Record<string,unknown>|null;depois:Record<string,unknown>|null};
 
 const MODELOS_OUTRAS_LOJAS=[
