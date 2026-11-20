@@ -84,3 +84,17 @@
   right:0!important;
  }
 }
+
+
+/* Status real da API pública e atualização manual da prévia Web do Nano. */
+.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:12px 0}
+.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao button,
+.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao a{border:1px solid var(--borda);border-radius:8px;background:var(--cartao);color:var(--texto);padding:10px 12px;min-height:44px;display:inline-flex;align-items:center;font-size:12px;font-weight:700;text-decoration:none}
+.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao button:hover,
+.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao a:hover{border-color:var(--marca-forte)}
+.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao button:disabled{opacity:.6;cursor:wait}
+.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao-ok,
+.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao-erro{padding:11px 12px;border-radius:8px;font-size:12px;line-height:1.5;margin:0 0 10px}
+.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao-ok{border:1px solid #9bbcad;background:#eff8f3;color:#224536}
+.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao-erro{border:1px solid #ceaaa4;background:#fcf0ee;color:#743d34}
+@media(max-width:520px){.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao{display:grid;grid-template-columns:1fr}.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao button,.conecta-aprovado-root .ap-nano-workspace .ap-web-inspecao a{justify-content:center}}
