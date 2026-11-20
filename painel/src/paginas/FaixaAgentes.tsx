@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { ir } from "../lib/rota.ts";
-import { estadoAgente, maisRecentePorNome, nomeCurto, resumoFaixa } from "../lib/usoGateway.ts";
+import { estadoAgente, nomeCurto, resumoFaixa } from "../lib/usoGateway.ts";
 import "./faixa-agentes.css";
 import { restante } from "./Dispositivos.tsx";
 import { indicadorQr, type PresencaQr } from "../lib/indicadorQr.ts";
 
-type Linha = { id: string; nome: string; tipo: string; sessaoId: string; limite_ate: string; token_ate: string; absoluto: string | null; ultima: string | null };
+type Linha = { id: string; nome: string; tipo: string; sessaoId: string; limite_ate: string; token_ate: string; absoluto: string | null; ultima: string | null; escopos: string[] };
 
 /** Faixa fina no topo: quem está conectado AGORA (agente externo, extensão), quanto tempo resta e se está agindo. Só dados reais da loja. */
 export function FaixaAgentes({ loja }: { loja: Loja }) {
@@ -16,21 +16,31 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
   const [agora, setAgora] = useState(Date.now());
   const [msg, setMsg] = useState("");
   const [aberta, setAberta] = useState(false);
+  const [avisoConexao, setAvisoConexao] = useState("");
+  const agentesAtivosAnteriores = useRef<string | null>(null);
   const carregar = useCallback(async () => {
     const { data: estadoQr, error: erroQr } = await supabase.rpc("chat_qr_disponivel", { p_loja: loja.id });
     setPresencaQr(!erroQr ? (estadoQr as PresencaQr) : null);
     const { data } = await supabase.from("pair_dispositivos")
-      .select("id, nome, tipo, pair_sessoes(id, expira_em, limite_ate, limite_absoluto_ate, revogado_em)").eq("loja_id", loja.id).is("revogado_em", null).limit(20);
+      .select("id, nome, tipo, pair_sessoes(id, escopos, expira_em, limite_ate, limite_absoluto_ate, ultimo_uso_em, revogado_em)").eq("loja_id", loja.id).is("revogado_em", null).limit(20);
     const desde = new Date(Date.now() - 10 * 60_000).toISOString();
     const { data: ev } = await supabase.from("auditoria").select("quando, depois").eq("loja_id", loja.id).like("acao", "gateway.%").gte("quando", desde).order("quando", { ascending: false }).limit(200);
     const ultima = new Map<string, string>();
     for (const e of (ev ?? []) as { quando: string; depois: { dispositivo_id?: string } | null }[]) { const d = e.depois?.dispositivo_id; if (d && !ultima.has(d)) ultima.set(d, e.quando); }
     const l: Linha[] = [];
-    for (const d of (data ?? []) as unknown as { id: string; nome: string; tipo: string; pair_sessoes: { id: string; expira_em: string; limite_ate: string; limite_absoluto_ate?: string; revogado_em: string | null }[] }[]) {
+    for (const d of (data ?? []) as unknown as { id: string; nome: string; tipo: string; pair_sessoes: { id: string; escopos: string[]; expira_em: string; limite_ate: string; limite_absoluto_ate?: string; ultimo_uso_em: string | null; revogado_em: string | null }[] }[]) {
       const s = d.pair_sessoes.filter((x) => !x.revogado_em && Date.parse(x.limite_ate) > Date.now()).sort((a, b) => Date.parse(b.limite_ate) - Date.parse(a.limite_ate))[0];
-      if (s) l.push({ id: d.id, nome: d.nome, tipo: d.tipo, sessaoId: s.id, limite_ate: s.limite_ate, token_ate: s.expira_em, absoluto: s.limite_absoluto_ate ?? null, ultima: ultima.get(d.id) ?? null });
+      if (s) l.push({ id: d.id, nome: d.nome, tipo: d.tipo, sessaoId: s.id, limite_ate: s.limite_ate, token_ate: s.expira_em, absoluto: s.limite_absoluto_ate ?? null, ultima: ultima.get(d.id) ?? s.ultimo_uso_em ?? null, escopos: s.escopos ?? [] });
     }
-    setLinhas(maisRecentePorNome(l));
+    // Um dispositivo por linha: dois agentes distintos podem ter o mesmo nome.
+    setLinhas(l);
+    const t = Date.now();
+    const ativos = l.filter(x => estadoAgente(x.limite_ate, x.ultima, t, x.token_ate).situacao === "agindo")
+      .map(x => x.id).sort().join(",");
+    if (agentesAtivosAnteriores.current !== null && agentesAtivosAnteriores.current !== ativos) {
+      setAvisoConexao(ativos ? "Conector com atividade recente. Confira as permissões." : "Nenhum conector com atividade recente.");
+    }
+    agentesAtivosAnteriores.current = ativos;
   }, [loja.id]);
   useEffect(() => { void carregar(); const t = setInterval(() => { setAgora(Date.now()); void carregar(); }, 20_000); return () => clearInterval(t); }, [carregar]);
   async function reconfirmar(sessaoId: string) {
@@ -46,14 +56,14 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
     void carregar();
   }
   const sinal = indicadorQr(presencaQr, agora);
-  if (linhas.length === 0) return <div className="faixa-agentes faixa-qr-somente" role="status"><span className={`fa-qr ${sinal.online ? "fa-qr-online" : "fa-qr-offline"}`} title={sinal.detalhe} aria-label={sinal.detalhe}>{sinal.rotulo}</span>{msg && <span className="fa-msg">{msg}</span>}</div>;
+  if (linhas.length === 0) return <div className="faixa-agentes faixa-qr-somente" role="status"><span className={`fa-qr ${sinal.online ? "fa-qr-online" : "fa-qr-offline"}`} title={sinal.detalhe} aria-label={sinal.detalhe}>{sinal.rotulo}</span>{msg && <span className="fa-msg">{msg}</span>}{avisoConexao && <span className="fa-msg">{avisoConexao}</span>}<button type="button" onClick={() => ir("/conectores")}>Conectores</button></div>;
   return (
     <div className="faixa-agentes" role="status" aria-live="polite">
       <span className={`fa-qr ${sinal.online ? "fa-qr-online" : "fa-qr-offline"}`} title={sinal.detalhe} aria-label={sinal.detalhe}>{sinal.rotulo}</span>
-      <button className="fa-icone" aria-expanded={aberta} aria-label={aberta ? "Recolher agentes conectados" : `Agentes conectados: ${linhas.length}`} onClick={() => setAberta(!aberta)}>
+      <button type="button" className="fa-icone" aria-expanded={aberta} aria-label={aberta ? "Recolher agentes conectados" : `Agentes conectados: ${linhas.length}`} onClick={() => setAberta(!aberta)}>
         <span aria-hidden style={{ fontSize: 11, fontWeight: 600 }}>IA</span><i className="fa-badge" style={{ background: linhas.some((x) => estadoAgente(x.limite_ate, x.ultima, agora, x.token_ate).situacao === "parado") ? "#b42318" : "#1a6f4d" }} aria-hidden />
       </button>
-      {!aberta && <button type="button" className="fa-resumo" onClick={() => setAberta(true)}>{resumoFaixa(linhas.map((x) => x.nome), linhas.length === 1 ? restante(linhas[0].limite_ate, agora) : null)}</button>}
+      {!aberta && <button type="button" className="fa-resumo" onClick={() => ir("/conectores")}>{resumoFaixa(linhas.map((x) => x.nome), linhas.length === 1 ? restante(linhas[0].limite_ate, agora) : null)}</button>}
       {aberta && linhas.map((l) => {
         const e = estadoAgente(l.limite_ate, l.ultima, agora, l.token_ate);
         const rotulo = e.situacao === "parado" ? "parado: reconectar" : e.situacao === "agindo" ? "agindo agora" : e.situacao === "acabando" ? "sessão acabando" : "conectado";
@@ -63,7 +73,7 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
           <div key={l.id} className={`fa-item fa-${e.situacao}`} title={`${l.nome}. Nome informado pelo agente; ação medida pelo Conecta.IA.`}>
             <span className="fa-ponto" aria-hidden>●</span>
             <strong className="fa-nome">{nomeCurto(l.nome)}</strong>
-            <span className="fa-estado">{rotulo}</span>
+            <span className="fa-estado">{l.escopos.includes("chat:responder") ? "Chat Nano" : l.escopos.some(x => x.startsWith("mcp:")) ? "Catálogo MCP" : "Outro acesso"} · {rotulo}</span>
             {e.situacao !== "parado" && <span className="fa-tempo">{restante(l.limite_ate, agora)}</span>}
             {min !== null && e.situacao !== "parado" && <span className="fa-tempo">{min < 1 ? "agora" : `há ${min} min`}</span>}
             {e.situacao === "acabando" && podeEstender && <button onClick={() => void reconfirmar(l.sessaoId)}>+8 h</button>}
@@ -73,6 +83,7 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
         );
       })}
       {msg && <span className="fa-msg">{msg}</span>}
+      {avisoConexao && <span className="fa-msg">{avisoConexao}</span>}
     </div>
   );
 }
