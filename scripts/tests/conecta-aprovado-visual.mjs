@@ -27,6 +27,12 @@ async function preparar(context,autenticado=true){
    const a=JSON.parse(req.postData()||'{}').acao;
    assert.ok(['provedores','chat_config','chat_conversas','chat_listar','chat_mensagens'].includes(a),'Nenhuma execução automática: '+a);
    body=a==='provedores'?{verificado:true,provedores:[]}:a==='chat_config'?{persistente:false,bling:false,leitura_administrativa:false,retencao_dias:180}:{conversas:[],registros:[]};
+  }else if(u.pathname.endsWith('/functions/v1/loja-publica')){
+   const pedido=JSON.parse(req.postData()||'{}');
+   assert.equal(pedido.slug,'mobis','prévia somente da loja Mobis selecionada');
+   body={loja:{nome:loja.nome,slug:loja.slug,ambiente:'teste',whatsapp:null},
+    produtos:[],total:0,pagina:1,por_pagina:24,banners:[],veiculos:[],categorias:[],
+    layout:{blocos:['banner','montadoras','taxonomia','catalogo','empresa'],intervalo_segundos:6},paleta:null};
   }else if(u.pathname.endsWith('/rest/v1/lojas'))body=[loja];
   else if(u.pathname.endsWith('/rest/v1/produtos')){
    assert.equal(u.searchParams.get('loja_id'),'eq.'+L);body=req.method()==='HEAD'?[]:produtos;count=u.searchParams.get('publicado')?0:2;
@@ -66,6 +72,15 @@ try{
   await page.locator('.ap-work-tabs button').nth(1).click();await page.getByRole('heading',{name:'Produtos do espelho.',exact:true}).waitFor();
   await page.getByText('Produto sintético para teste',{exact:true}).waitFor({state:'visible'});
   await page.locator('.ap-work-tabs button').nth(2).click();await page.getByText('Nenhuma imagem aprovada disponível.',{exact:true}).waitFor();
+  if(width===390){
+   await page.locator('.ap-work-tabs button').nth(3).click();
+   await page.getByRole('button',{name:'Conferir catálogo público'}).click();
+   await page.getByText(/API pública respondeu normalmente/).waitFor();
+   assert.equal(await page.locator('.ap-web-preview').count(),1,'prévia Web permanece integrada no Nano');
+   await page.getByRole('button',{name:'Atualizar prévia'}).click();
+   assert.equal(await page.locator('.ap-web-preview').count(),1,'recarrega a prévia sem duplicar browser');
+   assert.equal(await page.getByText(/API pública respondeu normalmente/).count(),0,'atualização limpa o relatório anterior');
+  }
   await page.locator('.ap-work-tabs button').nth(0).click();
   if(width<781)await page.getByRole('button',{name:'Conversa',exact:true}).click();
   await campo.fill('ajuda');await campo.press('Enter');await page.waitForFunction(()=>document.querySelectorAll('.ap-chat-panel .bolha,.ap-chat-panel .bolha-linha').length>=3);
