@@ -11,7 +11,7 @@ const GRUPOS: { id: string; titulo: string; rotas: string[] }[] = [
   { id: "catalogo", titulo: "Catálogo inteligente", rotas: ["/catalogo", "/catalogo-espelho", "/ferramentas", "/studio", "/taxonomia", "/imagens", "/videos"] },
   { id: "agentes", titulo: "Nano.IA", rotas: ["/assistente", "/conector", "/estudio"] },
   { id: "fila", titulo: "Operações", rotas: ["/fila", "/aprovacoes", "/central"] },
-  { id: "ajustes", titulo: "Configurações", rotas: ["/bling", "/backup", "/contador", "/integracoes", "/gateway", "/meu-agente", "/dispositivos", "/aparencia", "/banners", "/condicoes", "/design"] },
+  { id: "ajustes", titulo: "Configurações", rotas: ["/bling", "/backup", "/contador", "/integracoes", "/gateway", "/meu-agente", "/conectores", "/dispositivos", "/aparencia", "/banners", "/condicoes", "/design"] },
 ];
 
 /** Agrupa os itens visíveis. Rota que não está em nenhum grupo cai em "Outros" (nada some do menu por esquecimento). */

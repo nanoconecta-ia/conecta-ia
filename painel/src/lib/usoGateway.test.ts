@@ -39,6 +39,6 @@ test("maisRecentePorNome mantém uma sessão por agente; nomeCurto tira o parên
 test("resumoFaixa: diz em texto que há agente conectado pelo QR", async () => {
   const { resumoFaixa } = await import("./usoGateway.ts");
   assert.equal(resumoFaixa([], "10 min"), "");
-  assert.match(resumoFaixa(["Claude (verificacao Bling)"], "12 min"), /^Agente conectado pelo QR · .+ · 12 min$/);
-  assert.equal(resumoFaixa(["A", "B"], null), "2 agentes conectados pelo QR");
+  assert.match(resumoFaixa(["Claude (verificacao Bling)"], "12 min"), /^Sessão autorizada · .+ · 12 min$/);
+  assert.equal(resumoFaixa(["A", "B"], null), "2 sessões autorizadas · conferir atividade");
 });

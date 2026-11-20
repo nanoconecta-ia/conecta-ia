@@ -39,6 +39,6 @@ export const nomeCurto = (nome: string) => nome.replace(/\s*\(.*$/, "").trim() |
 /** Texto sempre visível da faixa quando há agente conectado pelo QR (antes era só um ícone "IA"). */
 export function resumoFaixa(nomes: readonly string[], restanteTexto: string | null): string {
   if (nomes.length === 0) return "";
-  if (nomes.length > 1) return `${nomes.length} agentes conectados pelo QR`;
-  return `Agente conectado pelo QR · ${nomeCurto(nomes[0])}${restanteTexto ? ` · ${restanteTexto}` : ""}`;
+  if (nomes.length > 1) return `${nomes.length} sessões autorizadas · conferir atividade`;
+  return `Sessão autorizada · ${nomeCurto(nomes[0])}${restanteTexto ? ` · ${restanteTexto}` : ""}`;
 }

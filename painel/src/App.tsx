@@ -44,6 +44,7 @@ import { Dispositivos } from "./paginas/Dispositivos.tsx";
 import { DemoCadastro } from "./paginas/DemoCadastro.tsx";
 import { FaixaAgentes } from "./paginas/FaixaAgentes.tsx";
 import { MeuAgente } from "./paginas/MeuAgente.tsx";
+import { Conectores } from "./paginas/Conectores.tsx";
 import { Backup } from "./paginas/Backup.tsx";
 import { PaletaComandos } from "./componentes/PaletaComandos.tsx";
 import { AvisoVersao } from "./componentes/AvisoVersao.tsx";
@@ -61,7 +62,7 @@ const hostCliente = typeof window !== "undefined" && !HOSTS_PAINEL.includes(wind
 const entradaPublicaPages = typeof window !== "undefined" && window.location.hostname === "nanoconecta-ia.github.io"
   && /^\/conecta-ia\/(?:index\.html)?$/.test(window.location.pathname);
 
-const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], ["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
+const ITENS_PAIR: [string, string][] = [["/meu-agente", "Conectar meu agente"], ["/conectores", "Conectores"], ["/aprovacoes", "Aprovações"], ["/dispositivos", "Dispositivos"]];
 const ITENS: [string, string][] = [
   ["/", "Visão geral"],
   ["/catalogo-aplicacao", "Catálogo por aplicação"],
@@ -183,6 +184,7 @@ export function App() {
           : caminho === "/fila" ? <Fila loja={loja} />
           : PAIR_ATIVO && caminho === "/aprovacoes" ? <Aprovacoes loja={loja} email={sessao?.user.email ?? null} />
           : PAIR_ATIVO && caminho === "/meu-agente" ? <MeuAgente loja={loja} />
+          : PAIR_ATIVO && caminho === "/conectores" ? <Conectores loja={loja} />
           : PAIR_ATIVO && caminho === "/dispositivos" ? <Dispositivos loja={loja} />
           : caminho === "/taxonomia" ? <Taxonomia loja={loja} />
           : caminho === "/conector" ? <ConectorIA loja={loja} query={query} />

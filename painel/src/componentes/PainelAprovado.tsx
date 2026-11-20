@@ -12,7 +12,7 @@ import marcaMobis from "../assets/mobis-identidade-aprovada.jpg";
 import { urlLojaPublica } from "../lib/lojaHost.ts";
 
 const PRINCIPAIS=[
- ["/","Conecta.IA","inicio"],["/estudio","Estúdio do Nano","nano"],
+ ["/","Conecta.IA","inicio"],["/estudio","Estúdio do Nano","nano"],["/conectores","Conectores e agentes","nano"],
  ["/catalogo-aplicacao","Catálogo inteligente","catalogo"],["/taxonomia","Matriz e taxonomia","matriz"],
  ["/catalogo-espelho","Espelho do ERP","contexto"],["/fila","Fila de revisão","revisao"],
  ["/ferramentas","Indexar e enriquecer","taxonomia"],
