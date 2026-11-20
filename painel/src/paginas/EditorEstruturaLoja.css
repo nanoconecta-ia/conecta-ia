@@ -68,3 +68,17 @@
 .layout-editor-modelo-impacto .layout-editor-mini-banner{background:linear-gradient(110deg,#e2181a,#1f2327);border-left-color:#bfc3c7}
 .layout-editor-modelos button:focus-visible{outline:3px solid #e2181a;outline-offset:2px}
 @media(max-width:720px){.layout-editor-modelos-grade{grid-template-columns:1fr}.layout-editor-modelo-mini{height:90px}}
+
+
+/* MOBIS: confirmação explícita dentro do painel para navegadores sem window.confirm.
+ * Sem aprovação ou publicação automática; a RPC permanece restrita a lojista.
+ */
+.layout-editor-confirmacao{margin-top:14px;padding:16px;border:2px solid #b3161b;border-radius:12px;background:#fff5f5;color:#1f2327;box-shadow:0 7px 18px #1f232715}
+.layout-editor-confirmacao strong{display:block;font-size:1rem;font-weight:900}
+.layout-editor-confirmacao p{margin:8px 0 13px;font-size:.86rem;line-height:1.5;color:#394751}
+.layout-editor-confirmacao>div{display:flex;gap:10px;flex-wrap:wrap}
+.layout-editor-confirmacao button{min-height:42px;padding:9px 15px;border-radius:8px;border:1px solid #b3161b;font-weight:800;cursor:pointer}
+.layout-editor-confirmacao button:first-child{background:#b3161b;color:#fff}
+.layout-editor-confirmacao button:last-child{background:#fff;color:#1f2327;border-color:#a6b4bd}
+.layout-editor-confirmacao button:focus-visible{outline:3px solid #1f2327;outline-offset:3px}
+.layout-editor-confirmacao button:disabled{opacity:.55;cursor:wait}
