@@ -14,6 +14,8 @@ on:
       - '.github/releases/painel-pwa-independente-20261119.md'
       # Autorização pontual do proprietário para painel de conectores multiagente, sem alterações do backend.
       - '.github/releases/painel-conectores-multiagente-20261119.md'
+      # Autorização pontual: consolidar as sessões OAuth antigas do conector ChatGPT MCP.
+      - '.github/releases/painel-mcp-identidade-unica-20261119.md'
 
 permissions:
   contents: read
