@@ -8,6 +8,12 @@ type Versao={id:string;numero:number;blocos:string[];intervalo_segundos:number;c
 type Publicada={versao_id:string;publicado_por:string;publicado_em:string};
 type Evento={id:number;quando:string;user_id:string|null;acao:string;tabela:string;antes:Record<string,unknown>|null;depois:Record<string,unknown>|null};
 
+const MODELOS_OUTRAS_LOJAS=[
+ {nome:"Comercial",blocos:["banner","montadoras","taxonomia","catalogo","empresa"]},
+ {nome:"Busca primeiro",blocos:["catalogo","banner","montadoras","taxonomia","empresa"]},
+ {nome:"Por veículo",blocos:["montadoras","taxonomia","banner","catalogo","empresa"]},
+] as const;
+
 /** Estrutura / Loja: monta a ordem dos blocos já existentes, sem HTML livre nem acesso ao Bling.
  * Cada salvamento cria um snapshot. Aprovar e publicar são duas ações auditadas.
  */
@@ -101,7 +107,7 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
     <span><b>Publicada:</b> {publicadaVersao?"Versão "+publicadaVersao.numero:"ordem padrão"}</span>
     <span><b>Estado:</b> {temMudancas?"alterações não salvas":versao?.aprovado_em?"aprovada":"rascunho"}</span>
   </div>
-  <section className="layout-editor-modelos" aria-label="Três modelos de vitrine Mobis">
+  {loja.slug==="mobis" ? <section className="layout-editor-modelos" aria-label="Três modelos de vitrine Mobis">
    <div className="layout-editor-modelos-titulo">
     <h2>Escolha a apresentação da loja</h2>
     <p>São módulos reais, com o mesmo MA original, busca e catálogo. A escolha só chega à loja depois de salvar, aprovar e publicar.</p>
@@ -121,7 +127,11 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
       <span className="layout-editor-modelo-status">{modeloPublicado===m.id?"Modelo atual da loja":modeloEscolhido===m.id?"Selecionado para edição":"Disponível para escolher"}</span>
     </button>)}
    </div>
-  </section>
+  </section> : <div className="layout-editor-modelos"><strong>Modelos de organização</strong>
+   {MODELOS_OUTRAS_LOJAS.map(m=><button key={m.nome} type="button" onClick={()=>{
+      setOrdem(ordemPublica([...m.blocos]));setSelecionada(null);setInfo("Modelo carregado. Salve para criar uma versão.");
+   }}>{m.nome}</button>)}
+  </div>}
   <div className="layout-editor-grade">
    <section className="layout-editor-editor" aria-label="Organize os blocos da loja">
     <div className="layout-editor-fixo"><b>01 · Cabeçalho</b><small>Logo oficial · busca · navegação · fixo</small></div>
