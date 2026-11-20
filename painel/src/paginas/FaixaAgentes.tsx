@@ -6,8 +6,9 @@ import { estadoAgente, nomeCurto, resumoFaixa } from "../lib/usoGateway.ts";
 import "./faixa-agentes.css";
 import { restante } from "./Dispositivos.tsx";
 import { indicadorQr, type PresencaQr } from "../lib/indicadorQr.ts";
+import { consolidarAgentes, type DispositivoComSessoes } from "../lib/estadoConectores.ts";
 
-type Linha = { id: string; nome: string; tipo: string; sessaoId: string; limite_ate: string; token_ate: string; absoluto: string | null; ultima: string | null; escopos: string[] };
+type Linha = { id: string; nome: string; tipo: string; sessaoId: string; limite_ate: string; token_ate: string; absoluto: string | null; ultima: string | null; escopos: string[]; historicas: number };
 
 /** Faixa fina no topo: quem está conectado AGORA (agente externo, extensão), quanto tempo resta e se está agindo. Só dados reais da loja. */
 export function FaixaAgentes({ loja }: { loja: Loja }) {
@@ -22,17 +23,25 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
     const { data: estadoQr, error: erroQr } = await supabase.rpc("chat_qr_disponivel", { p_loja: loja.id });
     setPresencaQr(!erroQr ? (estadoQr as PresencaQr) : null);
     const { data } = await supabase.from("pair_dispositivos")
-      .select("id, nome, tipo, pair_sessoes(id, escopos, expira_em, limite_ate, limite_absoluto_ate, ultimo_uso_em, revogado_em)").eq("loja_id", loja.id).is("revogado_em", null).limit(20);
+      .select("id, nome, tipo, revogado_em, pair_sessoes(id, criado_em, escopos, expira_em, limite_ate, limite_absoluto_ate, ultimo_uso_em, revogado_em)").eq("loja_id", loja.id).is("revogado_em", null).order("criado_em", { ascending: false }).limit(100);
     const desde = new Date(Date.now() - 10 * 60_000).toISOString();
     const { data: ev } = await supabase.from("auditoria").select("quando, depois").eq("loja_id", loja.id).like("acao", "gateway.%").gte("quando", desde).order("quando", { ascending: false }).limit(200);
     const ultima = new Map<string, string>();
     for (const e of (ev ?? []) as { quando: string; depois: { dispositivo_id?: string } | null }[]) { const d = e.depois?.dispositivo_id; if (d && !ultima.has(d)) ultima.set(d, e.quando); }
     const l: Linha[] = [];
-    for (const d of (data ?? []) as unknown as { id: string; nome: string; tipo: string; pair_sessoes: { id: string; escopos: string[]; expira_em: string; limite_ate: string; limite_absoluto_ate?: string; ultimo_uso_em: string | null; revogado_em: string | null }[] }[]) {
-      const s = d.pair_sessoes.filter((x) => !x.revogado_em && Date.parse(x.limite_ate) > Date.now()).sort((a, b) => Date.parse(b.limite_ate) - Date.parse(a.limite_ate))[0];
-      if (s) l.push({ id: d.id, nome: d.nome, tipo: d.tipo, sessaoId: s.id, limite_ate: s.limite_ate, token_ate: s.expira_em, absoluto: s.limite_absoluto_ate ?? null, ultima: ultima.get(d.id) ?? s.ultimo_uso_em ?? null, escopos: s.escopos ?? [] });
+    // A lista é de agentes LÓGICOS, não de sessões OAuth; sem tokens vencidos no topo.
+    // O histórico continua preservado na base e aparece na tela Conectores.
+    const tInicio = Date.now();
+    const grupos = consolidarAgentes((data ?? []) as unknown as DispositivoComSessoes[], tInicio);
+    for (const grupo of grupos) {
+      const d = grupo.dispositivo, s = grupo.sessao;
+      if (s.revogado_em || Date.parse(s.expira_em) <= tInicio || Date.parse(s.limite_ate) <= tInicio) continue;
+      l.push({ id: d.id, nome: d.nome, tipo: d.tipo, sessaoId: s.id,
+        limite_ate: s.limite_ate, token_ate: s.expira_em,
+        absoluto: (s as typeof s & { limite_absoluto_ate?: string | null }).limite_absoluto_ate ?? null,
+        ultima: ultima.get(d.id) ?? s.ultimo_uso_em ?? null,
+        escopos: s.escopos ?? [], historicas: grupo.historicas });
     }
-    // Um dispositivo por linha: dois agentes distintos podem ter o mesmo nome.
     setLinhas(l);
     const t = Date.now();
     const ativos = l.filter(x => estadoAgente(x.limite_ate, x.ultima, t, x.token_ate).situacao === "agindo")
@@ -73,7 +82,7 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
           <div key={l.id} className={`fa-item fa-${e.situacao}`} title={`${l.nome}. Nome informado pelo agente; ação medida pelo Conecta.IA.`}>
             <span className="fa-ponto" aria-hidden>●</span>
             <strong className="fa-nome">{nomeCurto(l.nome)}</strong>
-            <span className="fa-estado">{l.escopos.includes("chat:responder") ? "Chat Nano" : l.escopos.some(x => x.startsWith("mcp:")) ? "Catálogo MCP" : "Outro acesso"} · {rotulo}</span>
+            <span className="fa-estado">{l.escopos.includes("chat:responder") ? "Chat Nano" : l.escopos.some(x => x.startsWith("mcp:")) ? "Catálogo MCP" : "Outro acesso"} · {rotulo}{l.historicas ? ` · ${l.historicas} sessão(ões) antigas no histórico` : ""}</span>
             {e.situacao !== "parado" && <span className="fa-tempo">{restante(l.limite_ate, agora)}</span>}
             {min !== null && e.situacao !== "parado" && <span className="fa-tempo">{min < 1 ? "agora" : `há ${min} min`}</span>}
             {e.situacao === "acabando" && podeEstender && <button onClick={() => void reconfirmar(l.sessaoId)}>+8 h</button>}
