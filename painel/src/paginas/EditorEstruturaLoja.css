@@ -82,3 +82,25 @@
 .layout-editor-confirmacao button:last-child{background:#fff;color:#1f2327;border-color:#a6b4bd}
 .layout-editor-confirmacao button:focus-visible{outline:3px solid #1f2327;outline-offset:3px}
 .layout-editor-confirmacao button:disabled{opacity:.55;cursor:wait}
+
+
+/* MOBIS — fluxo integrado de prontidão, com indicadores de leitura sem publicação implícita. */
+.layout-editor-prontidao{margin:20px 0 24px;padding:20px;border:1px solid #b8c7d0;background:#eaf2f6;color:#1f2327;border-radius:15px;box-shadow:0 6px 22px #17232c12}
+.layout-editor-prontidao-topo{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.layout-editor-prontidao-topo span{font-size:.72rem;letter-spacing:.09em;font-weight:850;color:#51616c}
+.layout-editor-prontidao h2{font-size:1.25rem;line-height:1.25;margin:7px 0}
+.layout-editor-prontidao p{margin:7px 0 0;line-height:1.5;font-size:.85rem}
+.layout-editor-prontidao-topo>button{flex-shrink:0;border:1px solid #334c59;background:#fff;padding:9px 13px;border-radius:9px;color:#1f2327;font-weight:750;cursor:pointer}
+.layout-editor-prontidao-topo>button:disabled{opacity:.6}
+.layout-editor-prontidao-indicadores{margin-top:17px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+.layout-editor-prontidao-indicadores>div{display:flex;flex-direction:column;gap:5px;background:#fff;border:1px solid #d0dce3;border-radius:10px;padding:13px 9px;min-width:0}
+.layout-editor-prontidao-indicadores strong{font-size:1.55rem;line-height:1.1;font-weight:900;font-variant-numeric:tabular-nums}
+.layout-editor-prontidao-indicadores span{font-size:.72rem;line-height:1.35;color:#4c5964}
+.layout-editor-prontidao-fluxo{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:13px}
+.layout-editor-prontidao-fluxo a{background:#1f2327;color:#fff;padding:13px;border-radius:10px;text-decoration:none;display:flex;flex-direction:column;gap:7px;min-width:0}
+.layout-editor-prontidao-fluxo a:focus-visible{outline:3px solid #e2181a;outline-offset:3px}
+.layout-editor-prontidao-fluxo strong{font-size:.89rem;font-weight:850}
+.layout-editor-prontidao-fluxo small{font-size:.72rem;line-height:1.4;color:#e8f0f4}
+.layout-editor-prontidao .layout-editor-prontidao-aviso{margin-top:13px;font-size:.77rem;color:#475561}
+@media(max-width:900px){.layout-editor-prontidao-indicadores{grid-template-columns:repeat(3,minmax(0,1fr))}.layout-editor-prontidao-fluxo{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.layout-editor-prontidao{padding:14px}.layout-editor-prontidao-topo{flex-direction:column}.layout-editor-prontidao-indicadores{grid-template-columns:repeat(2,minmax(0,1fr))}.layout-editor-prontidao-fluxo{grid-template-columns:1fr}}
