@@ -5,6 +5,29 @@ export const PADRAO_LAYOUT = {
   blocos: [...BLOCOS_COMERCIAIS],
   intervalo_segundos: 6,
 } as const;
+
+/**
+ * Três apresentações reais da MESMA loja. O seletor reutiliza a ordem de
+ * blocos versionada/aprovada pelo lojista: não cria tabela, token nem mecanismo
+ * de publicação paralelo. Sem ponteiro publicado, a Mobis usa o modelo Técnico.
+ *
+ * A identificação de modelo por ordem é deliberadamente limitada aos três
+ * arranjos oficiais; ordens manuais continuam válidas e usam o estilo técnico.
+ */
+export const MODELOS_VISUAIS_MOBIS = [
+  { id:"oficial", numero:"01", nome:"Oficial", descricao:"Gelo claro, vitrine institucional e navegação simples",
+    blocos:["banner","taxonomia","montadoras","catalogo","empresa"] },
+  { id:"tecnico", numero:"02", nome:"Técnico", descricao:"Bento industrial, sistemas, veículos e busca por referência",
+    blocos:["banner","montadoras","taxonomia","catalogo","empresa"] },
+  { id:"impacto", numero:"03", nome:"Impacto", descricao:"Destaques amplos, ofertas autorizadas e vitrine comercial",
+    blocos:["banner","catalogo","montadoras","taxonomia","empresa"] },
+] as const satisfies readonly {id:string;numero:string;nome:string;descricao:string;blocos:readonly BlocoComercial[]}[];
+export type ModeloVisualMobis = (typeof MODELOS_VISUAIS_MOBIS)[number]["id"];
+export function modeloVisualDaOrdem(valor:unknown):ModeloVisualMobis {
+  const ordem = ordemPublica(valor);
+  return MODELOS_VISUAIS_MOBIS.find(m=>m.blocos.join("|")===ordem.join("|"))?.id??"tecnico";
+}
+
 export const NOMES_BLOCOS: Record<BlocoComercial,string> = {
   banner:"Carrossel Flash / banner",
   montadoras:"Montadoras e veículos",
