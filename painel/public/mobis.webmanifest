@@ -16,6 +16,12 @@
   ],
   "icons": [
     {
+      "src": "icones/mobis-v3-favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
       "src": "icones/mobis-ma-app-192.png",
       "sizes": "192x192",
       "type": "image/png",
