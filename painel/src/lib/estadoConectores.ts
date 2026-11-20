@@ -2,6 +2,7 @@
 export type EscopoConector = "mcp:leitura" | "mcp:propor" | "chat:responder" | string;
 export type SessaoConector = {
   id: string;
+  criado_em?: string | null;
   escopos: string[];
   expira_em: string;
   limite_ate: string;
@@ -50,4 +51,69 @@ export function resumoConectores(sessoes: readonly SessaoConector[], agora = Dat
     podemPropor: atuais.filter(s => Date.parse(s.expira_em) > agora && s.escopos.includes("mcp:propor")).length,
     podemResponder: atuais.filter(s => Date.parse(s.expira_em) > agora && s.escopos.includes("chat:responder")).length,
   };
+}
+
+/** Um agente lógico pode abrir várias sessões OAuth. Não confundir sessão antiga com outro agente. */
+export type DispositivoComSessoes = {
+  id: string;
+  nome: string;
+  tipo: string;
+  revogado_em: string | null;
+  pair_sessoes: SessaoConector[];
+};
+export type GrupoIdentidadeAgente<T extends DispositivoComSessoes> = {
+  dispositivo: T;
+  sessao: SessaoConector;
+  quantidadeSessoes: number;
+  historicas: number;
+};
+
+const canalDaSessao = (s: SessaoConector): string =>
+  s.escopos.includes("chat:responder") ? "chat" :
+  s.escopos.some(x => x.startsWith("mcp:")) ? "mcp" : "outro";
+
+const pontuacaoSessao = (s: SessaoConector, agora: number): number => {
+  if (s.revogado_em) return 0;
+  if (Date.parse(s.limite_ate) <= agora) return 0;
+  return Date.parse(s.expira_em) > agora ? 2 : 1;
+};
+const ordemSessao = (s: SessaoConector): number =>
+  Date.parse(s.criado_em ?? "") || Date.parse(s.expira_em) || 0;
+
+/** Agrupa sessões repetidas do MESMO nome/tipo/canal sem misturar escopos de tokens.
+ * Seleciona o token válido mais recente. Antigos ficam contabilizados no histórico,
+ * nunca reaparecem como novos agentes online. Claude e ChatGPT permanecem separados.
+ * Não revoga tokens, não concede permissões e não modifica nenhum registro.
+ */
+export function consolidarAgentes<T extends DispositivoComSessoes>(
+  dispositivos: readonly T[], agora = Date.now(),
+): GrupoIdentidadeAgente<T>[] {
+  const grupos = new Map<string, Array<{ dispositivo: T; sessao: SessaoConector }>>();
+  for (const dispositivo of dispositivos) {
+    if (dispositivo.revogado_em) continue;
+    for (const sessao of dispositivo.pair_sessoes ?? []) {
+      const identidade = dispositivo.nome.trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " ");
+      const chave = [identidade, dispositivo.tipo, canalDaSessao(sessao)].join("|");
+      const entradas = grupos.get(chave) ?? [];
+      entradas.push({ dispositivo, sessao });
+      grupos.set(chave, entradas);
+    }
+  }
+  const resultado: GrupoIdentidadeAgente<T>[] = [];
+  for (const entradas of grupos.values()) {
+    entradas.sort((a, b) =>
+      pontuacaoSessao(b.sessao, agora) - pontuacaoSessao(a.sessao, agora)
+      || ordemSessao(b.sessao) - ordemSessao(a.sessao));
+    const atual = entradas[0];
+    if (!atual) continue;
+    resultado.push({
+      dispositivo: atual.dispositivo,
+      sessao: atual.sessao,
+      quantidadeSessoes: entradas.length,
+      historicas: Math.max(0, entradas.length - 1),
+    });
+  }
+  return resultado.sort((a, b) =>
+    pontuacaoSessao(b.sessao, agora) - pontuacaoSessao(a.sessao, agora)
+    || ordemSessao(b.sessao) - ordemSessao(a.sessao));
 }

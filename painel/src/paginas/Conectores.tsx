@@ -3,7 +3,7 @@ import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { ir } from "../lib/rota.ts";
 import { indicadorQr, type PresencaQr } from "../lib/indicadorQr.ts";
-import { estadoSessaoConector, permissoesConector, resumoConectores, situacaoSessao, type SessaoConector } from "../lib/estadoConectores.ts";
+import { consolidarAgentes, estadoSessaoConector, permissoesConector, resumoConectores, situacaoSessao, type SessaoConector } from "../lib/estadoConectores.ts";
 
 type Dispositivo = {
   id: string; nome: string; tipo: string; revogado_em: string | null;
@@ -23,8 +23,8 @@ export function Conectores({ loja }: { loja: Loja }) {
   const carregar = useCallback(async () => {
     const [rDispositivos, rPlugins, rQr] = await Promise.all([
       supabase.from("pair_dispositivos")
-        .select("id, nome, tipo, revogado_em, pair_sessoes(id, escopos, expira_em, limite_ate, ultimo_uso_em, chat_escuta_em, revogado_em)")
-        .eq("loja_id", loja.id).is("revogado_em", null).limit(100),
+        .select("id, nome, tipo, revogado_em, pair_sessoes(id, criado_em, escopos, expira_em, limite_ate, ultimo_uso_em, chat_escuta_em, revogado_em)")
+        .eq("loja_id", loja.id).is("revogado_em", null).order("criado_em", { ascending: false }).limit(100),
       supabase.from("loja_plugins")
         .select("nome, tipo, ativo, ultimo_teste_ok, ultimo_teste_em, url")
         .eq("loja_id", loja.id).is("removido_em", null).limit(50),
@@ -37,9 +37,9 @@ export function Conectores({ loja }: { loja: Loja }) {
     const dispositivos = (rDispositivos.data ?? []) as unknown as Dispositivo[];
     const plugins = (rPlugins.data ?? []) as Plugin[];
     const t = Date.now();
-    const identidadesAtivas = dispositivos.filter(d => !d.revogado_em)
-      .filter(d => d.pair_sessoes.some(s => estadoSessaoConector(s, t) === "atividade_recente"))
-      .map(d => d.id).sort().join(",");
+    const identidadesAtivas = consolidarAgentes(dispositivos, t)
+      .filter(g => estadoSessaoConector(g.sessao, t) === "atividade_recente")
+      .map(g => g.dispositivo.nome + ":" + g.dispositivo.tipo).sort().join(",");
     if (anterior.current !== null && anterior.current !== identidadesAtivas) {
       setAviso(identidadesAtivas ? "Um conector passou a registrar atividade. Confira o agente e suas permissões abaixo." : "Nenhum conector apresenta atividade recente.");
     }
@@ -55,19 +55,16 @@ export function Conectores({ loja }: { loja: Loja }) {
     return () => clearInterval(timer);
   }, [carregar]);
 
-  const porDispositivo = (dados?.dispositivos ?? []).map(d => {
-    const s = (d.pair_sessoes ?? []).filter(x => !x.revogado_em && Date.parse(x.limite_ate) > agora)
-      .sort((a, b) => Date.parse(b.expira_em) - Date.parse(a.expira_em))[0] ?? null;
-    return { d, s };
-  }).filter(x => x.s !== null);
-
-  const todas = porDispositivo.flatMap(x => x.s ? [x.s] : []);
+  // Um cartão por agente/canal. Tokens antigos permanecem apenas no histórico.
+  const porDispositivo = consolidarAgentes(dados?.dispositivos ?? [], agora)
+    .map(g => ({ d: g.dispositivo, s: g.sessao, historicas: g.historicas }));
+  const todas = porDispositivo.map(x => x.s);
   const resumo = resumoConectores(todas, agora);
   const qr = dados && !dados.erroQr ? indicadorQr(dados.qr, agora) : null;
   return (
     <div className="cartao">
       <h1>Conectores e agentes</h1>
-      <p className="suave">Status real da Mobis Autopeças. Cada agente (ChatGPT, Claude ou outro) tem sua própria sessão, permissões e prazo. <strong>Autorizado não significa online</strong>: presença exige atividade recente; o chat QR exige escuta própria.</p>
+      <p className="suave">Status real da Mobis Autopeças. Cada identidade MCP (ChatGPT, Claude ou outro agente) aparece uma vez. Renovações e tokens antigos ficam no histórico, sem contar como agentes adicionais. <strong>Autorizado não significa online</strong>: presença exige atividade recente; o chat QR exige escuta própria.</p>
       <div className="linha">
         <button type="button" onClick={() => ir("/parear")}>Conectar agente por QR</button>
         <button type="button" className="sec" onClick={() => ir("/meu-agente")}>Conectar meu agente</button>
@@ -78,9 +75,9 @@ export function Conectores({ loja }: { loja: Loja }) {
       {aviso && <p className="msg-ok" role="status" aria-live="polite">{aviso}</p>}
       {!dados ? <p role="status">Consultando agentes e permissões…</p> : <>
         <div className="grade tres">
-          <div className="cartao"><strong>{resumo.autorizadas}</strong><p className="suave">Sessões autorizadas com token válido</p></div>
-          <div className="cartao"><strong>{resumo.emAtividade}</strong><p className="suave">Sessões com atividade recente</p></div>
-          <div className="cartao"><strong>{resumo.podemResponder}</strong><p className="suave">Sessões autorizadas a responder ao Nano</p></div>
+          <div className="cartao"><strong>{resumo.autorizadas}</strong><p className="suave">Conectores autorizados com token válido</p></div>
+          <div className="cartao"><strong>{resumo.emAtividade}</strong><p className="suave">Conectores com atividade recente</p></div>
+          <div className="cartao"><strong>{resumo.podemResponder}</strong><p className="suave">Agentes autorizados a responder ao Nano</p></div>
         </div>
 
         <div className="cartao">
@@ -101,11 +98,11 @@ export function Conectores({ loja }: { loja: Loja }) {
           {porDispositivo.length === 0 ? <p className="suave">Nenhum agente com janela de autorização válida.</p> :
             <div className="rolagem"><table>
               <thead><tr><th>Agente</th><th>Estado</th><th>Permissões</th><th>Último uso</th></tr></thead>
-              <tbody>{porDispositivo.map(({ d, s }) => {
+              <tbody>{porDispositivo.map(({ d, s, historicas }) => {
                 if (!s) return null;
                 const p = permissoesConector(s.escopos);
                 return <tr key={d.id}>
-                  <td><strong>{d.nome}</strong><div className="suave">{d.tipo}</div></td>
+                  <td><strong>{d.nome}</strong><div className="suave">{d.tipo} · {s.escopos.some(e => e.startsWith("mcp:")) ? "Conector MCP" : s.escopos.includes("chat:responder") ? "Conector do chat Nano" : "Outro canal"}</div>{historicas > 0 && <div className="suave">{historicas} sessão(ões) anteriores no histórico</div>}</td>
                   <td>{situacaoSessao(estadoSessaoConector(s, agora))}</td>
                   <td className="suave">{[
                     p.consultar && "Catálogo: consultar",
