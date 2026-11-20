@@ -70,7 +70,7 @@ export function Conectores({ loja }: { loja: Loja }) {
       <p className="suave">Status real da Mobis Autopeças. Cada agente (ChatGPT, Claude ou outro) tem sua própria sessão, permissões e prazo. <strong>Autorizado não significa online</strong>: presença exige atividade recente; o chat QR exige escuta própria.</p>
       <div className="linha">
         <button type="button" onClick={() => ir("/parear")}>Conectar agente por QR</button>
-        <button type="button" className="sec" onClick={() => ir("/gateway")}>Configurar MCP</button>
+        <button type="button" className="sec" onClick={() => ir("/meu-agente")}>Conectar meu agente</button>
         <button type="button" className="sec" onClick={() => ir("/dispositivos")}>Permissões e revogação</button>
         <button type="button" className="sec" onClick={() => void carregar()}>Atualizar estados</button>
       </div>
