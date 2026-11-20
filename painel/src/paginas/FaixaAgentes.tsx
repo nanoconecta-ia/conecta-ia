@@ -60,13 +60,13 @@ export function FaixaAgentes({ loja }: { loja: Loja }) {
   return (
     <div className="faixa-agentes" role="status" aria-live="polite">
       <span className={`fa-qr ${sinal.online ? "fa-qr-online" : "fa-qr-offline"}`} title={sinal.detalhe} aria-label={sinal.detalhe}>{sinal.rotulo}</span>
-      <button type="button" className="fa-icone" aria-expanded={aberta} aria-label={aberta ? "Recolher agentes conectados" : `Agentes conectados: ${linhas.length}`} onClick={() => setAberta(!aberta)}>
-        <span aria-hidden style={{ fontSize: 11, fontWeight: 600 }}>IA</span><i className="fa-badge" style={{ background: linhas.some((x) => estadoAgente(x.limite_ate, x.ultima, agora, x.token_ate).situacao === "parado") ? "#b42318" : "#1a6f4d" }} aria-hidden />
+      <button type="button" className="fa-icone" aria-expanded={aberta} aria-label={aberta ? "Recolher sessões autorizadas" : `Sessões autorizadas: ${linhas.length}`} onClick={() => setAberta(!aberta)}>
+        <span aria-hidden style={{ fontSize: 11, fontWeight: 600 }}>IA</span><i className="fa-badge" style={{ background: linhas.some((x) => estadoAgente(x.limite_ate, x.ultima, agora, x.token_ate).situacao === "agindo") ? "#1a6f4d" : linhas.some((x) => estadoAgente(x.limite_ate, x.ultima, agora, x.token_ate).situacao === "parado") ? "#b42318" : "#9a5500" }} aria-hidden />
       </button>
       {!aberta && <button type="button" className="fa-resumo" onClick={() => ir("/conectores")}>{resumoFaixa(linhas.map((x) => x.nome), linhas.length === 1 ? restante(linhas[0].limite_ate, agora) : null)}</button>}
       {aberta && linhas.map((l) => {
         const e = estadoAgente(l.limite_ate, l.ultima, agora, l.token_ate);
-        const rotulo = e.situacao === "parado" ? "parado: reconectar" : e.situacao === "agindo" ? "agindo agora" : e.situacao === "acabando" ? "sessão acabando" : "conectado";
+        const rotulo = e.situacao === "parado" ? "token expirado: reconectar" : e.situacao === "agindo" ? "atividade recente" : e.situacao === "acabando" ? "sessão acabando" : "autorizado, inativo";
         const min = l.ultima ? Math.floor((agora - Date.parse(l.ultima)) / 60000) : null;
         const podeEstender = l.absoluto !== null && Date.parse(l.absoluto) - Date.parse(l.limite_ate) > 60_000;
         return (
