@@ -165,7 +165,7 @@ export function AparenciaMobis({loja}:{loja:Loja}){
         <button type="button" disabled={ocupado||alterada} onClick={()=>void (confirmacao.acao==="aprovar"?aprovar(true):publicar(true))}>Confirmar {confirmacao.acao==="aprovar"?"aprovação":"publicação"}</button>
         <button type="button" disabled={ocupado} onClick={()=>setConfirmacao(null)}>Cancelar</button>
       </div>
-    </div>
+    </div>}
     <p className="mobis-cores-ressalva">Salvar não altera a loja. Aprovar não publica. Só a última ação publica cores; o histórico anterior é preservado.</p>
    </section>
    <section className="mobis-cores-previsualizar" aria-label="Pré-visualização local da paleta">
