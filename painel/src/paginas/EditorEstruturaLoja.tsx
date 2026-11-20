@@ -26,6 +26,7 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
  const [selecionada,setSelecionada]=useState<string|null>(null);
  const [arrastando,setArrastando]=useState<number|null>(null);
  const [ocupado,setOcupado]=useState(false);
+ const [confirmacao,setConfirmacao]=useState<{acao:"aprovar"|"publicar";versaoId:string;numero:number}|null>(null);
  const [carregando,setCarregando]=useState(true);
  const [erro,setErro]=useState("");
  const [info,setInfo]=useState("");
@@ -56,7 +57,7 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
    const v=versoes.find(x=>x.id===id);
    if(v){setOrdem(ordemPublica(v.blocos));setSegundos(intervaloPublico(v.intervalo_segundos));}
    else {setOrdem([...BLOCOS_COMERCIAIS]);setSegundos(6);}
-   setSelecionada(id);setErro("");setInfo("");
+   setSelecionada(id);setConfirmacao(null);setErro("");setInfo("");
  };
  function mudarOrdem(de:number,para:number){
    setOrdem(a=>moverBloco(a,de,para));setInfo("");setErro("");
@@ -68,7 +69,7 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
  }
  async function salvar(){
    if(ocupado)return;
-   setOcupado(true);setErro("");setInfo("");
+   setConfirmacao(null);setOcupado(true);setErro("");setInfo("");
    const {data,error}=await supabase.rpc("layout_salvar_versao",{p_loja:loja.id,p_blocos:ordem,p_intervalo:segundos});
    setOcupado(false);
    if(error||typeof data!=="string"){setErro(error?.message||"Não foi possível salvar o rascunho.");return;}
@@ -76,19 +77,29 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
    if(lista?.some(v=>v.id===data))setSelecionada(data);
    setInfo("Nova versão salva como rascunho. Nada mudou na loja pública.");
  }
- async function aprovar(){
+ async function aprovar(confirmado=false){
    if(!versao||temMudancas||ocupado||versao.aprovado_em)return;
-   if(!window.confirm("Aprovar a versão "+versao.numero+"? A ordem será registrada, mas a loja só muda após a publicação."))return;
-   setOcupado(true);setErro("");setInfo("");
+   if(!confirmado){
+     if(loja.slug==="mobis"){
+       setConfirmacao({acao:"aprovar",versaoId:versao.id,numero:versao.numero});return;
+     }
+     if(!window.confirm("Aprovar a versão "+versao.numero+"? A ordem será registrada, mas a loja só muda após a publicação."))return;
+   }else if(confirmacao?.acao!=="aprovar"||confirmacao.versaoId!==versao.id)return;
+   setConfirmacao(null);setOcupado(true);setErro("");setInfo("");
    const {error}=await supabase.rpc("layout_aprovar_versao",{p_loja:loja.id,p_versao:versao.id});
    setOcupado(false);
    if(error){setErro(error.message);return;}
    await recarregar();setInfo("Versão aprovada. Publique quando decidir alterar a vitrine.");
  }
- async function publicar(){
+ async function publicar(confirmado=false){
    if(!versao?.aprovado_em||temMudancas||ocupado)return;
-   if(!window.confirm("Publicar a versão "+versao.numero+" na vitrine da Mobis? O histórico anterior será preservado."))return;
-   setOcupado(true);setErro("");setInfo("");
+   if(!confirmado){
+     if(loja.slug==="mobis"){
+       setConfirmacao({acao:"publicar",versaoId:versao.id,numero:versao.numero});return;
+     }
+     if(!window.confirm("Publicar a versão "+versao.numero+" na vitrine da Mobis? O histórico anterior será preservado."))return;
+   }else if(confirmacao?.acao!=="publicar"||confirmacao.versaoId!==versao.id)return;
+   setConfirmacao(null);setOcupado(true);setErro("");setInfo("");
    const {error}=await supabase.rpc("layout_publicar_versao",{p_loja:loja.id,p_versao:versao.id});
    setOcupado(false);
    if(error){setErro(error.message);return;}
@@ -117,7 +128,7 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
     {MODELOS_VISUAIS_MOBIS.map(m=><button key={m.id} type="button"
       className={"layout-editor-modelo layout-editor-modelo-"+m.id}
       aria-pressed={modeloEscolhido===m.id}
-      onClick={()=>{setOrdem(ordemPublica([...m.blocos]));setSelecionada(null);setInfo("Modelo "+m.numero+" · "+m.nome+" carregado na edição. Salve, aprove e publique para aplicar.");setErro("");}}>
+      onClick={()=>{setOrdem(ordemPublica([...m.blocos]));setSelecionada(null);setConfirmacao(null);setInfo("Modelo "+m.numero+" · "+m.nome+" carregado na edição. Salve, aprove e publique para aplicar.");setErro("");}}>
       <span className="layout-editor-modelo-mini" aria-hidden="true">
         <span className="layout-editor-mini-cab"></span><span className="layout-editor-mini-banner"></span>
         <span className="layout-editor-mini-cards"><i/><i/><i/></span>
@@ -163,6 +174,16 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
       <button type="button" disabled={!versao||temMudancas||!!versao.aprovado_em||ocupado} onClick={()=>void aprovar()}>Aprovar versão</button>
       <button type="button" disabled={!versao?.aprovado_em||temMudancas||ocupado||publicada?.versao_id===versao?.id} onClick={()=>void publicar()}>Publicar versão aprovada</button>
     </div>
+    {confirmacao&&versao?.id===confirmacao.versaoId&&<div className="layout-editor-confirmacao" role="group" aria-label="Confirme a ação para o layout da Mobis">
+      <strong>{confirmacao.acao==="aprovar"?"Confirmar aprovação":"Confirmar publicação"} da versão {confirmacao.numero}</strong>
+      <p>{confirmacao.acao==="aprovar"
+         ?"A ordem será aprovada e registrada com sua identidade. A vitrine só muda quando publicar."
+         :"A versão aprovada será publicada na vitrine Mobis. Produtos, estoque e dados fiscais não serão alterados."}</p>
+      <div>
+        <button type="button" disabled={ocupado||temMudancas} onClick={()=>void (confirmacao.acao==="aprovar"?aprovar(true):publicar(true))}>Confirmar {confirmacao.acao==="aprovar"?"aprovação":"publicação"}</button>
+        <button type="button" disabled={ocupado} onClick={()=>setConfirmacao(null)}>Cancelar</button>
+      </div>
+    </div>}
    </aside>
   </div>
   <section className="layout-editor-historico" aria-label="Histórico auditável de versões">
