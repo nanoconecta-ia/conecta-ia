@@ -28,7 +28,7 @@ const dir = root + "evidencias-vitrine-teste/";
 await mkdir(dir, { recursive: true });
 const browser = await chromium.launch({headless:true, executablePath:process.env.CHROMIUM_EXECUTABLE || undefined, args:["--no-sandbox"]});
 const resultados = [];
-async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
+async function abrir(flags, width = 1280, erro = false, cenarioFlash = false, falhaTransitoria = false) {
   const context = await browser.newContext({viewport:{width,height:900}, serviceWorkers:"block", reducedMotion:"reduce"});
   const page = await context.newPage(), consultas = [], erros = [];
   page.on("pageerror", e => erros.push(e.message));
@@ -38,7 +38,7 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false) {
     if (route.request().method() === "OPTIONS") return route.fulfill({status:204,headers});
     const pedido = route.request().postDataJSON();
     consultas.push(pedido);
-    if (erro) return route.fulfill({status:503, headers, contentType:"application/json", body:'{"erro":"simulado"}'});
+    if (erro || (falhaTransitoria && consultas.length===1)) return route.fulfill({status:503, headers, contentType:"application/json", body:'{"erro":"simulado"}'});
     // As rotas por veículo só respondem quando há aprovação e página indexável na API.
     if(pedido.aplicacao_slug){
       const aplicacoes={
@@ -330,6 +330,15 @@ try {
     assert.equal(new URL(page.url()).hash,"#/loja/mobis/empresa","empresa tem página dedicada");
     assert.equal(await page.locator(".m2-catalogo").count(),0,"empresa não duplica catálogo");
     assert.deepEqual(erros,[]);
+    await context.close();
+  }
+  {
+    const {context,page,consultas,erros}=await abrir({ambiente:"teste",venda_habilitada:false},390,false,false,true);
+    assert.ok(consultas.length>=2,"falha HTTP 503 transitória deve refazer a consulta uma vez");
+    assert.equal(await page.locator(".m2-catalogo-discreto").count(),1,"a vitrine recupera sem esconder a ausência de produtos publicados");
+    assert.equal(await page.locator(".m2-catalogo").getByText("Não foi possível carregar o catálogo.",{exact:true}).count(),0,"não mantém erro após recuperação");
+    assert.deepEqual(erros,[],"sem exceções JavaScript no retry");
+    resultados.push({resiliencia:"HTTP 503 transitório recuperado com uma nova tentativa — SIMULADO"});
     await context.close();
   }
   resultados.push({guardas:"produto sintético ausente em todos os ambientes, inclusive em falha de API",filtros:"cascata única, limpar filtros, busca textual e SKU/OEM exato verificados"});
