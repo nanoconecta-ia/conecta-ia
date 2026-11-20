@@ -28,6 +28,10 @@ try{
   const consulta=page.waitForResponse(r=>r.url().endsWith("/functions/v1/loja-publica"),{timeout:45000});
   await page.goto(base+"?release="+esperado+"#/loja/mobis");
   await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor();
+  assert.equal(await page.locator('[data-mobis-modelo="tecnico"]').count(),1,"Modelo 02 Técnico deve ser a vitrine inicial sem publicação alternativa");
+  assert.equal(await page.locator('[data-mobis-entrega="modelo-02-20261120"]').count(),1,"primeira dobra técnica real deve existir em produção");
+  const ordemEntrada=await page.locator('main [data-bloco="banner"],main [data-bloco="filtros"]').evaluateAll(els=>els.map(el=>el.getAttribute("data-bloco")));
+  assert.deepEqual(ordemEntrada,["banner","filtros"],"carrossel institucional antes do único seletor por aplicação");
   assert.equal(await page.locator('[data-mobis-palette="branco-gelo"]').count(),1,"publicação usa paleta branca");
   // Modelo claro v4: banner fluido com a imagem do veículo correto de cada modelo; sem as fotos do Wikimedia nem mascotes.
   assert.equal(await page.locator('[data-mobis-visual="claro-v4"]').count(),1,"layout claro publicado");

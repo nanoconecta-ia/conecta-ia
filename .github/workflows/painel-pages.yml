@@ -20,6 +20,8 @@ on:
       - '.github/releases/mobis-modelos-modulares-20261120.md'
       # Nova autorização do lojista: destaque branco do favicon MA sem editar logo nem produtos.
       - '.github/releases/mobis-favicon-ma-branco-20261120.md'
+      # Autorização de entrega real: primeira dobra do Modelo 02, sem liberar catálogo não aprovado.
+      - '.github/releases/mobis-modelo02-entrega-real-20261120.md'
 
 permissions:
   contents: read

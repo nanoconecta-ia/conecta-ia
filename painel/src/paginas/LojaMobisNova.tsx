@@ -21,6 +21,7 @@ import "./mobis-ma-identidade.css";
 import "./mobis-vitrine-completa-v3.css";
 import "./mobis-v3-limpo.css";
 import "./mobis-tres-modelos.css";
+import "./mobis-02-entrega-real.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -231,6 +232,11 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
         <a href="#/loja/mobis/empresa">Conheça a Mobis e nossos canais →</a></div>
     </section>,
   };
+  const filtrosVeiculo=<AplicacoesMobisV3 categorias={dados?.categorias??[]} opcoes={opcoes} motores={motores}
+    f={{modelo,motor,ano,categoria}} onModelo={v=>{setModelo(v);setMotor("");}} onMotor={setMotor}
+    onAno={setAno} onCategoria={setCategoria} onAplicar={aplicar}
+    departamentoPendente={departamentoPendente}
+    onLimpar={()=>{setF(VAZIO);setBusca("");setModelo("");setMotor("");setAno("");setCategoria("");setAbaBusca("descricao");setDepartamentoAtivo(null);setDepartamentoPendente(null);}}/>;
   return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="aprovado-v2" data-mobis-modelo={modeloVisual} data-mobis-site="v3" data-layout-versionado="true" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4" data-paleta-publicada={coresPublicas?"sim":"nao"} data-mobis-v3-publicada={v3Publicada?"sim":"nao"} style={coresPublicas?variaveisPaletaMobis(coresPublicas) as CSSProperties:undefined}>
     <CabecalhoMobisV3
        busca={busca} onBusca={setBusca} onEnviar={aplicar} whatsapp={whatsapp} exata={abaBusca==="referencia"} onExata={v=>setAbaBusca(v?"referencia":"descricao")}
@@ -238,12 +244,28 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
        departamentoAtivo={departamentoAtivo??undefined} bannersPresentes={banners.length>0}/>
     <main>
       {contexto?.tipo==="empresa" ? <EmpresaMobis whatsapp={whatsapp} politicas={dados?.politicas}/> : <>
-       <AplicacoesMobisV3 categorias={dados?.categorias??[]} opcoes={opcoes} motores={motores}
-         f={{modelo,motor,ano,categoria}} onModelo={v=>{setModelo(v);setMotor("");}} onMotor={setMotor}
-         onAno={setAno} onCategoria={setCategoria} onAplicar={aplicar}
-         departamentoPendente={departamentoPendente}
-         onLimpar={()=>{setF(VAZIO);setBusca("");setModelo("");setMotor("");setAno("");setCategoria("");setAbaBusca("descricao");setDepartamentoAtivo(null);setDepartamentoPendente(null);}}/>
-       {ordemVitrine.map(id=><div key={id} className="m2-bloco-modular" data-modulo={id}>{blocosSite[id]}</div>)}
+       {modeloVisual==="tecnico"&&<section className="m02-abertura" data-mobis-entrega="modelo-02-20261120" aria-label="Apresentação do catálogo técnico Mobis">
+         <div className="m02-abertura-grid m2-wrap">
+           <div className="m02-abertura-copy">
+             <span className="m02-eyebrow"><b aria-hidden="true">MA</b> MOBIS AUTOPEÇAS <span aria-hidden="true">/</span> ESPECIALISTA EM DIESEL</span>
+             <h2>Uma loja feita para quem precisa da <em>peça certa.</em></h2>
+             <p>Picapes, vans e utilitários. Encontre por veículo, motorização, sistema ou código de referência, com aplicação técnica verificada.</p>
+             <div className="m02-abertura-acoes">
+               <button type="button" onClick={()=>para("ms-aplicacoes")}>Buscar pela aplicação <span aria-hidden="true">→</span></button>
+               <button type="button" onClick={()=>para("m2-catalogo")}>Consultar catálogo</button>
+             </div>
+           </div>
+           <div className="m02-abertura-linhas" aria-label="Linhas de veículos disponíveis para consulta">
+             <span className="m02-linhas-kicker">ESCOLHA SUA LINHA</span>
+             <a href="#/loja/mobis/veiculo/HR"><strong>HYUNDAI HR</strong><span>Consultar peças <b aria-hidden="true">↗</b></span></a>
+             <a href="#/loja/mobis/veiculo/Bongo"><strong>KIA BONGO K2500</strong><span>Consultar peças <b aria-hidden="true">↗</b></span></a>
+             <a href="#/loja/mobis/veiculo/L200"><strong>MITSUBISHI L200</strong><span>Consultar peças <b aria-hidden="true">↗</b></span></a>
+             <small>As imagens dos veículos identificam a linha; não confirmam compatibilidade.</small>
+           </div>
+         </div>
+       </section>}
+       {modeloVisual!=="tecnico"&&filtrosVeiculo}
+       {ordemVitrine.map(id=><div key={id} className="m2-bloco-modular" data-modulo={id}>{blocosSite[id]}{id==="banner"&&modeloVisual==="tecnico"&&filtrosVeiculo}</div>)}
       </>}
     </main>
     <RodapeMobisEnxuto nome={dados?.loja.nome??"Mobis Autopeças"} whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas}/>
