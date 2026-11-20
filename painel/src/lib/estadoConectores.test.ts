@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { estadoSessaoConector, permissoesConector, resumoConectores, type SessaoConector } from "./estadoConectores.ts";
+import { consolidarAgentes, estadoSessaoConector, permissoesConector, resumoConectores, type SessaoConector } from "./estadoConectores.ts";
 
 const agora = Date.parse("2026-11-19T22:00:00Z");
 function sessao(id: string, escopos: string[], ultimo_uso_em: string | null): SessaoConector {
@@ -32,4 +32,44 @@ test("janela revogada ou expirada impede o estado ativo", () => {
   const s = sessao("a", ["chat:responder"], "2026-11-19T21:59:50Z");
   assert.equal(estadoSessaoConector({ ...s, revogado_em: "2026-11-19T21:59:59Z" }, agora), "revogada");
   assert.equal(estadoSessaoConector({ ...s, limite_ate: "2026-11-19T21:00:00Z" }, agora), "janela_expirada");
+});
+
+test("ChatGPT no MCP aparece apenas uma vez apesar de cinco tokens históricos", () => {
+  const velhas = Array.from({ length: 5 }, (_, i) => ({
+    id: "chatgpt-antigo-" + i, nome: "ChatGPT", tipo: "agente_externo",
+    revogado_em: null, pair_sessoes: [{
+      ...sessao("expirado-" + i, ["mcp:leitura", "mcp:propor"], null),
+      criado_em: "2026-11-18T20:00:00Z",
+      expira_em: "2026-11-19T21:00:00Z",
+    }],
+  }));
+  const atual = {
+    id: "chatgpt-atual", nome: "ChatGPT", tipo: "agente_externo",
+    revogado_em: null, pair_sessoes: [{
+      ...sessao("token-atual", ["mcp:leitura", "mcp:propor"], "2026-11-19T21:59:45Z"),
+      criado_em: "2026-11-19T21:55:00Z",
+    }],
+  };
+  const grupos = consolidarAgentes([...velhas, atual], agora);
+  assert.equal(grupos.length, 1);
+  assert.equal(grupos[0].dispositivo.id, "chatgpt-atual");
+  assert.equal(grupos[0].sessao.id, "token-atual");
+  assert.equal(grupos[0].historicas, 5);
+  assert.equal(estadoSessaoConector(grupos[0].sessao, agora), "atividade_recente");
+});
+
+test("Claude e canais MCP/chat distintos nunca herdam escopos de outra sessão", () => {
+  const dispositivo = (id: string, nome: string, escopos: string[]) => ({
+    id, nome, tipo: "agente_externo", revogado_em: null,
+    pair_sessoes: [sessao(id, escopos, null)],
+  });
+  const r = consolidarAgentes([
+    dispositivo("chatgpt-mcp", "ChatGPT", ["mcp:leitura", "mcp:propor"]),
+    dispositivo("chatgpt-chat", "ChatGPT", ["chat:responder"]),
+    dispositivo("claude-mcp", "Claude", ["mcp:leitura"]),
+  ], agora);
+  assert.equal(r.length, 3);
+  const canal = r.find(x => x.dispositivo.id === "chatgpt-mcp")!;
+  assert.equal(permissoesConector(canal.sessao.escopos).responderNano, false);
+  assert.equal(r.filter(x => x.dispositivo.nome === "Claude").length, 1);
 });
