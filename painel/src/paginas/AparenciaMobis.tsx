@@ -28,6 +28,7 @@ export function AparenciaMobis({loja}:{loja:Loja}){
  const [historico,setHistorico]=useState<Evento[]>([]);
  const [selecionada,setSelecionada]=useState<string|null>(null);
  const [ocupado,setOcupado]=useState(false);
+ const [confirmacao,setConfirmacao]=useState<{acao:"aprovar"|"publicar";versaoId:string;numero:number}|null>(null);
  const [carregando,setCarregando]=useState(true);
  const [erro,setErro]=useState("");
  const [info,setInfo]=useState("");
@@ -60,21 +61,21 @@ export function AparenciaMobis({loja}:{loja:Loja}){
    return()=>{montado=false};
  },[carregar]);
  const escolher=(v:Versao)=>{
-   setCores(corDaVersao(v));setSelecionada(v.id);setInfo("");setErro("");
+   setCores(corDaVersao(v));setSelecionada(v.id);setConfirmacao(null);setInfo("");setErro("");
  };
  const mudarCor=(campo:keyof PaletaMobis,valor:string)=>{
    setCores(c=>({...c,[campo]:valor.toLowerCase().slice(0,7)}));
-   setSelecionada(null);setInfo("");setErro("");
+   setSelecionada(null);setConfirmacao(null);setInfo("");setErro("");
  };
  const escolherModelo=(id:string)=>{
    const modelo=MODELOS_PALETA_MOBIS.find(m=>m.id===id);
    if(!modelo)return;
-   setCores({...modelo.cores});setSelecionada(null);
+   setCores({...modelo.cores});setSelecionada(null);setConfirmacao(null);
    setInfo("Modelo carregado somente na prévia. Salve para criar um rascunho auditável.");setErro("");
  };
  async function salvar(){
    if(ocupado||!valida.ok)return;
-   setOcupado(true);setErro("");setInfo("");
+   setConfirmacao(null);setOcupado(true);setErro("");setInfo("");
    const {data,error}=await supabase.rpc("paleta_salvar_versao",{
       p_loja:loja.id,p_fundo:cores.cor_fundo,p_superficie:cores.cor_superficie,
       p_texto:cores.cor_texto,p_botao:cores.cor_botao,p_acento:cores.cor_acento});
@@ -83,19 +84,29 @@ export function AparenciaMobis({loja}:{loja:Loja}){
    await carregar();setSelecionada(data);
    setInfo("Rascunho de cores salvo com auditoria. O site permanece inalterado.");
  }
- async function aprovar(){
+ async function aprovar(confirmado=false){
    if(ocupado||!versao||alterada||versao.aprovado_em)return;
-   if(!window.confirm("Aprovar a versão "+versao.numero+" de cores? Ela ainda NÃO será publicada."))return;
-   setOcupado(true);setErro("");setInfo("");
+   if(!confirmado){
+     if(loja.slug==="mobis"){
+       setConfirmacao({acao:"aprovar",versaoId:versao.id,numero:versao.numero});return;
+     }
+     if(!window.confirm("Aprovar a versão "+versao.numero+" de cores? Ela ainda NÃO será publicada."))return;
+   }else if(confirmacao?.acao!=="aprovar"||confirmacao.versaoId!==versao.id)return;
+   setConfirmacao(null);setOcupado(true);setErro("");setInfo("");
    const {error}=await supabase.rpc("paleta_aprovar_versao",{p_loja:loja.id,p_versao:versao.id});
    setOcupado(false);
    if(error){setErro(error.message);return;}
    await carregar();setInfo("Versão aprovada pelo lojista. A publicação continua separada.");
  }
- async function publicar(){
+ async function publicar(confirmado=false){
    if(ocupado||!versao?.aprovado_em||alterada)return;
-   if(!window.confirm("Publicar a versão "+versao.numero+" de cores na vitrine Mobis? Isso não muda produtos nem o Bling."))return;
-   setOcupado(true);setErro("");setInfo("");
+   if(!confirmado){
+     if(loja.slug==="mobis"){
+       setConfirmacao({acao:"publicar",versaoId:versao.id,numero:versao.numero});return;
+     }
+     if(!window.confirm("Publicar a versão "+versao.numero+" de cores na vitrine Mobis? Isso não muda produtos nem o Bling."))return;
+   }else if(confirmacao?.acao!=="publicar"||confirmacao.versaoId!==versao.id)return;
+   setConfirmacao(null);setOcupado(true);setErro("");setInfo("");
    const {error}=await supabase.rpc("paleta_publicar_versao",{p_loja:loja.id,p_versao:versao.id});
    setOcupado(false);
    if(error){setErro(error.message);return;}
@@ -145,6 +156,16 @@ export function AparenciaMobis({loja}:{loja:Loja}){
       <button type="button" onClick={()=>void aprovar()} disabled={ocupado||!versao||alterada||!!versao.aprovado_em}>Aprovar versão</button>
       <button type="button" onClick={()=>void publicar()} disabled={ocupado||!versao?.aprovado_em||alterada||publicacao?.versao_id===versao?.id}>Publicar versão aprovada</button>
     </div>
+    {confirmacao&&versao?.id===confirmacao.versaoId&&<div className="mobis-cores-confirmacao" role="group" aria-label="Confirme a ação para as cores da Mobis">
+      <strong>{confirmacao.acao==="aprovar"?"Confirmar aprovação":"Confirmar publicação"} da paleta {confirmacao.numero}</strong>
+      <p>{confirmacao.acao==="aprovar"
+        ?"A paleta será aprovada e auditada. A loja só muda depois da publicação."
+        :"Esta paleta será publicada na vitrine Mobis. Produtos, estoque e Bling não serão alterados."}</p>
+      <div>
+        <button type="button" disabled={ocupado||alterada} onClick={()=>void (confirmacao.acao==="aprovar"?aprovar(true):publicar(true))}>Confirmar {confirmacao.acao==="aprovar"?"aprovação":"publicação"}</button>
+        <button type="button" disabled={ocupado} onClick={()=>setConfirmacao(null)}>Cancelar</button>
+      </div>
+    </div>}
     <p className="mobis-cores-ressalva">Salvar não altera a loja. Aprovar não publica. Só a última ação publica cores; o histórico anterior é preservado.</p>
    </section>
    <section className="mobis-cores-previsualizar" aria-label="Pré-visualização local da paleta">
