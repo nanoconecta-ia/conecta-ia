@@ -6,7 +6,7 @@ import type { PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
 import { linkWhatsAppPublico } from "../lib/publicoLoja.ts";
 import { GlassyCarouselMobisV3 } from "../componentes/GlassyCarouselMobisV3.tsx";
 import {CabecalhoMobisV3,AplicacoesMobisV3,SETORES_MOBIS_V3} from "../componentes/LojaMobisInstitucionalV3.tsx";
-import {intervaloPublico} from "../lib/layoutMobis.ts";
+import {intervaloPublico,ordemPublica,modeloVisualDaOrdem,type BlocoComercial} from "../lib/layoutMobis.ts";
 import {paletaPublicada,variaveisPaletaMobis} from "../lib/paletaMobis.ts";
 import fotoHR from "../assets/veiculos-mobis/hyundai-hr.webp";
 import fotoBongo from "../assets/veiculos-mobis/kia-bongo-k2500.webp";
@@ -20,6 +20,7 @@ import "./mobis-premium-v3.css";
 import "./mobis-ma-identidade.css";
 import "./mobis-vitrine-completa-v3.css";
 import "./mobis-v3-limpo.css";
+import "./mobis-tres-modelos.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -140,9 +141,10 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
   const irVitrine=(id:string)=>contexto?.tipo==="empresa"?(window.location.hash="#/loja/mobis"):para(id);
   const paginas=Math.max(1,Math.ceil((dados?.total??0)/(dados?.por_pagina||24)));
 
-  // A MOBIS V3 exibe somente banner e catálogo. Blocos legados do layout no banco
-  // ficam preservados para auditoria, mas não são montados na vitrine pública.
-  const ordemVitrine=["banner","catalogo"] as const;
+  // A ordem só vem de layout PUBLICADO pela rotina existente do Conecta.IA.
+  // Na ausência de versão publicada, a ordem padrão corresponde ao Modelo 02 (Técnico).
+  const ordemVitrine=ordemPublica(dados?.layout?.blocos);
+  const modeloVisual=modeloVisualDaOrdem(ordemVitrine);
   const coresPublicas=paletaPublicada(dados?.paleta);
   // V3 visual somente quando a paleta oficial foi aprovada/publicada pela rotina da loja.
   // A logo e o favicon V3 já são os arquivos originais; cores antigas publicadas não são sobrepostas.
@@ -150,7 +152,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     coresPublicas.cor_fundo==="#eaf2f6" &&
     coresPublicas.cor_botao==="#e2181a" &&
     coresPublicas.cor_acento==="#e2181a";
-  const blocosSite:Record<(typeof ordemVitrine)[number],ReactNode>={
+  const blocosSite:Record<BlocoComercial,ReactNode>={
     banner: <div data-bloco="banner"><GlassyCarouselMobisV3
       banners={banners} veiculos={VEICULOS} paginasPorSku={dados?.paginas_aplicacao??{}}
       intervalo={intervaloPublico(dados?.layout?.intervalo_segundos)}/></div>,
@@ -202,21 +204,46 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
         {dados&&paginas>1&&<nav className="m2-paginas" aria-label="Páginas de produtos"><button disabled={f.pagina<=1} onClick={()=>setF({...f,pagina:f.pagina-1})}>Anterior</button><span>{f.pagina} / {paginas}</span><button disabled={f.pagina>=paginas} onClick={()=>setF({...f,pagina:f.pagina+1})}>Próxima</button></nav>}
       </section>
     </>,
+    montadoras: <section className="m2-wrap m2-modulo-montadoras" id="m2-montadoras" aria-label="Montadoras e modelos de veículos">
+      <div className="m2-modulo-titulo"><span>CATÁLOGO POR VEÍCULO</span><h2>Linhas de veículos</h2>
+        <p>Escolha a linha para buscar produtos. A foto identifica o modelo, não comprova compatibilidade.</p></div>
+      <div className="m2-modulo-veiculos">
+        {VEICULOS.map(v=><a key={v.valor} href={"#/loja/mobis/veiculo/"+encodeURIComponent(v.valor)} aria-label={"Buscar peças da linha "+v.nome}>
+          <img src={v.foto} alt={"Imagem de referência de "+v.nome} width={480} height={360} loading="lazy"/>
+          <strong>{v.nome}</strong><small>Ver linha e consultar aplicação →</small>
+        </a>)}
+      </div>
+    </section>,
+    taxonomia: <section className="m2-wrap m2-modulo-sistemas" id="m2-sistemas" aria-label="Sistemas de peças">
+      <div className="m2-modulo-titulo"><span>SELEÇÃO POR SISTEMA</span><h2>Escolha o sistema do veículo</h2>
+        <p>Navegue pelas categorias técnicas sem duplicar produtos ou estoque.</p></div>
+      <div className="m2-modulo-sistemas-grid">{SETORES_MOBIS_V3.map(s=><button key={s.chave} type="button"
+        aria-pressed={departamentoAtivo===s.chave} onClick={()=>selecionarDepartamento(s.chave,s.nome)}
+        aria-label={"Filtrar peças de "+s.nome}>
+        <img src={s.icone} width={58} height={58} alt="" aria-hidden="true"/>
+        <span>{s.nome}</span>
+      </button>)}</div>
+    </section>,
+    empresa: <section className="m2-wrap m2-modulo-empresa" aria-label="Informações da Mobis Autopeças">
+      <img src={logoMobis} alt="MOBIS AUTOPEÇAS" width={260} height={104} loading="lazy"/>
+      <div><h2>Peças para picapes, vans e utilitários diesel</h2>
+        <p>Atendimento técnico para identificar a peça correta. Aplicações, códigos e disponibilidade devem ser confirmados antes da compra.</p>
+        <a href="#/loja/mobis/empresa">Conheça a Mobis e nossos canais →</a></div>
+    </section>,
   };
-  return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="aprovado-v2" data-mobis-site="v3" data-layout-versionado="true" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4" data-paleta-publicada={coresPublicas?"sim":"nao"} data-mobis-v3-publicada={v3Publicada?"sim":"nao"} style={coresPublicas?variaveisPaletaMobis(coresPublicas) as CSSProperties:undefined}>
+  return <div className="mobis-v2 m4" id="m2-topo" data-mobis-layout="aprovado-v2" data-mobis-modelo={modeloVisual} data-mobis-site="v3" data-layout-versionado="true" data-mobis-palette="branco-gelo" data-mobis-visual="claro-v4" data-paleta-publicada={coresPublicas?"sim":"nao"} data-mobis-v3-publicada={v3Publicada?"sim":"nao"} style={coresPublicas?variaveisPaletaMobis(coresPublicas) as CSSProperties:undefined}>
     <CabecalhoMobisV3
        busca={busca} onBusca={setBusca} onEnviar={aplicar} whatsapp={whatsapp} exata={abaBusca==="referencia"} onExata={v=>setAbaBusca(v?"referencia":"descricao")}
        ir={irVitrine} categorias={dados?.categorias??[]} selecionarDepartamento={selecionarDepartamento}
        departamentoAtivo={departamentoAtivo??undefined} bannersPresentes={banners.length>0}/>
     <main>
       {contexto?.tipo==="empresa" ? <EmpresaMobis whatsapp={whatsapp} politicas={dados?.politicas}/> : <>
-       {blocosSite.banner}
        <AplicacoesMobisV3 categorias={dados?.categorias??[]} opcoes={opcoes} motores={motores}
          f={{modelo,motor,ano,categoria}} onModelo={v=>{setModelo(v);setMotor("");}} onMotor={setMotor}
          onAno={setAno} onCategoria={setCategoria} onAplicar={aplicar}
          departamentoPendente={departamentoPendente}
          onLimpar={()=>{setF(VAZIO);setBusca("");setModelo("");setMotor("");setAno("");setCategoria("");setAbaBusca("descricao");setDepartamentoAtivo(null);setDepartamentoPendente(null);}}/>
-       {blocosSite.catalogo}
+       {ordemVitrine.map(id=><div key={id} className="m2-bloco-modular" data-modulo={id}>{blocosSite[id]}</div>)}
       </>}
     </main>
     <RodapeMobisEnxuto nome={dados?.loja.nome??"Mobis Autopeças"} whatsapp={dados?.loja.whatsapp} politicas={dados?.politicas}/>
