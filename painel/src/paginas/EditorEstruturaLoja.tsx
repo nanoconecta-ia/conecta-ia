@@ -1,17 +1,12 @@
 import {useCallback,useEffect,useState,type DragEvent} from "react";
 import {supabase} from "../supabase.ts";
 import type {Loja} from "../lib/dados.ts";
-import {BLOCOS_COMERCIAIS,NOMES_BLOCOS,intervaloPublico,moverBloco,ordemPublica,type BlocoComercial} from "../lib/layoutMobis.ts";
+import {BLOCOS_COMERCIAIS,NOMES_BLOCOS,MODELOS_VISUAIS_MOBIS,modeloVisualDaOrdem,intervaloPublico,moverBloco,ordemPublica,type BlocoComercial} from "../lib/layoutMobis.ts";
 import "./EditorEstruturaLoja.css";
 
 type Versao={id:string;numero:number;blocos:string[];intervalo_segundos:number;criado_em:string;criado_por:string;aprovado_em:string|null;aprovado_por:string|null};
 type Publicada={versao_id:string;publicado_por:string;publicado_em:string};
 type Evento={id:number;quando:string;user_id:string|null;acao:string;tabela:string;antes:Record<string,unknown>|null;depois:Record<string,unknown>|null};
-const MODELOS=[
- {nome:"Comercial",blocos:["banner","montadoras","taxonomia","catalogo","empresa"]},
- {nome:"Busca primeiro",blocos:["catalogo","banner","montadoras","taxonomia","empresa"]},
- {nome:"Por veículo",blocos:["montadoras","taxonomia","banner","catalogo","empresa"]},
-] as const;
 
 /** Estrutura / Loja: monta a ordem dos blocos já existentes, sem HTML livre nem acesso ao Bling.
  * Cada salvamento cria um snapshot. Aprovar e publicar são duas ações auditadas.
@@ -31,6 +26,8 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
  const versao=versoes.find(v=>v.id===selecionada)||null;
  const publicadaVersao=versoes.find(v=>v.id===publicada?.versao_id);
  const temMudancas=!!versao && (ordem.join("|")!==ordemPublica(versao.blocos).join("|")||segundos!==versao.intervalo_segundos);
+ const modeloEscolhido=modeloVisualDaOrdem(ordem);
+ const modeloPublicado=publicadaVersao?modeloVisualDaOrdem(publicadaVersao.blocos):"tecnico";
  const recarregar=useCallback(async()=>{
    setCarregando(true);
    const [hist,atual,audit]=await Promise.all([
@@ -104,9 +101,27 @@ export function EditorEstruturaLoja({loja}:{loja:Loja}){
     <span><b>Publicada:</b> {publicadaVersao?"Versão "+publicadaVersao.numero:"ordem padrão"}</span>
     <span><b>Estado:</b> {temMudancas?"alterações não salvas":versao?.aprovado_em?"aprovada":"rascunho"}</span>
   </div>
-  <div className="layout-editor-modelos"><strong>Modelos de organização</strong>
-   {MODELOS.map(m=><button key={m.nome} type="button" onClick={()=>{setOrdem(ordemPublica(m.blocos));setSelecionada(null);setInfo("Modelo carregado. Salve para criar uma versão.");}}>{m.nome}</button>)}
-  </div>
+  <section className="layout-editor-modelos" aria-label="Três modelos de vitrine Mobis">
+   <div className="layout-editor-modelos-titulo">
+    <h2>Escolha a apresentação da loja</h2>
+    <p>São módulos reais, com o mesmo MA original, busca e catálogo. A escolha só chega à loja depois de salvar, aprovar e publicar.</p>
+    <p><strong>Na loja:</strong> {MODELOS_VISUAIS_MOBIS.find(m=>m.id===modeloPublicado)?.nome??"Técnico"} · <strong>Em edição:</strong> {MODELOS_VISUAIS_MOBIS.find(m=>m.id===modeloEscolhido)?.nome??"Técnico"}</p>
+   </div>
+   <div className="layout-editor-modelos-grade">
+    {MODELOS_VISUAIS_MOBIS.map(m=><button key={m.id} type="button"
+      className={"layout-editor-modelo layout-editor-modelo-"+m.id}
+      aria-pressed={modeloEscolhido===m.id}
+      onClick={()=>{setOrdem(ordemPublica([...m.blocos]));setSelecionada(null);setInfo("Modelo "+m.numero+" · "+m.nome+" carregado na edição. Salve, aprove e publique para aplicar.");setErro("");}}>
+      <span className="layout-editor-modelo-mini" aria-hidden="true">
+        <span className="layout-editor-mini-cab"></span><span className="layout-editor-mini-banner"></span>
+        <span className="layout-editor-mini-cards"><i/><i/><i/></span>
+      </span>
+      <strong>{m.numero} · {m.nome}</strong>
+      <small>{m.descricao}</small>
+      <span className="layout-editor-modelo-status">{modeloPublicado===m.id?"Modelo atual da loja":modeloEscolhido===m.id?"Selecionado para edição":"Disponível para escolher"}</span>
+    </button>)}
+   </div>
+  </section>
   <div className="layout-editor-grade">
    <section className="layout-editor-editor" aria-label="Organize os blocos da loja">
     <div className="layout-editor-fixo"><b>01 · Cabeçalho</b><small>Logo oficial · busca · navegação · fixo</small></div>
