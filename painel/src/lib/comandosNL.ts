@@ -33,6 +33,7 @@ const APELIDOS: Record<string, string[]> = {
   "/indicadores": ["indicadores", "metricas", "numeros"],
   "/conector": ["conector", "nano homologacao"],
   "/meu-agente": ["conectar meu agente", "meu agente"],
+  "/conectores": ["conectores", "agentes conectados", "permissoes dos agentes", "status do chatgpt", "status do claude", "conexao com nano"],
   "/aprovacoes": ["aprovacoes", "central de aprovacoes"],
   "/dispositivos": ["dispositivos", "aparelhos"],
 };
