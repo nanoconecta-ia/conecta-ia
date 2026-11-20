@@ -16,6 +16,8 @@ on:
       - '.github/releases/painel-conectores-multiagente-20261119.md'
       # Autorização pontual: consolidar as sessões OAuth antigas do conector ChatGPT MCP.
       - '.github/releases/painel-mcp-identidade-unica-20261119.md'
+      # Autorização pontual do lojista em 20/11/2026: aplicar Técnico e disponibilizar Oficial/Impacto.
+      - '.github/releases/mobis-modelos-modulares-20261120.md'
 
 permissions:
   contents: read

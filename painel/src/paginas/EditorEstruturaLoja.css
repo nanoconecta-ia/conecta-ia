@@ -44,3 +44,27 @@
 .layout-editor-eventos li{display:grid;gap:4px;background:#f7f9fa;border:1px solid #dde3e7;border-radius:10px;padding:11px}
 .layout-editor-eventos strong{font-size:.84rem}
 .layout-editor-eventos small{color:#59656e;font-size:.74rem;overflow-wrap:anywhere}
+
+
+/* Módulos visuais reais: reutiliza editor versionado (salvar → aprovar → publicar). */
+.layout-editor-modelos{display:grid;gap:12px;align-items:stretch}
+.layout-editor-modelos-titulo{display:grid;gap:5px}
+.layout-editor-modelos-titulo h2{margin:0;font-size:1.2rem}
+.layout-editor-modelos-titulo p{margin:0;color:#596671;font-size:.86rem}
+.layout-editor-modelos-grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.layout-editor-modelos .layout-editor-modelo{width:100%;min-width:0;display:grid;gap:7px;text-align:left;padding:12px;border:1px solid #c6d0d6;border-radius:14px;background:#fff;color:#26323a;cursor:pointer}
+.layout-editor-modelos .layout-editor-modelo[aria-pressed="true"]{border-color:#e2181a;box-shadow:0 0 0 2px #e2181a2b}
+.layout-editor-modelo strong{font-size:1rem;color:#1f2327}
+.layout-editor-modelo small{font-size:.78rem;line-height:1.35;color:#56626d}
+.layout-editor-modelo-status{font-size:.73rem;font-weight:800;color:#ae1118}
+.layout-editor-modelo-mini{height:94px;display:grid;grid-template-rows:16px 48px 13px;gap:6px;padding:8px;border-radius:9px;overflow:hidden;background:#eaf2f6;border:1px solid #c5d1da}
+.layout-editor-mini-cab{background:#1f2327;border-bottom:3px solid #e2181a;border-radius:3px}
+.layout-editor-mini-banner{background:linear-gradient(110deg,#fff 0 63%,#e8eef2 63%);border-left:3px solid #e2181a;border-radius:4px}
+.layout-editor-mini-cards{display:flex;gap:6px}
+.layout-editor-mini-cards i{flex:1;background:#1f2327;border-bottom:2px solid #e2181a;border-radius:2px}
+.layout-editor-modelo-tecnico .layout-editor-modelo-mini{background:#dce7ef}
+.layout-editor-modelo-tecnico .layout-editor-mini-banner{background:linear-gradient(110deg,#1f2327 0 70%,#eaf2f6 70%);border-left-color:#e2181a}
+.layout-editor-modelo-impacto .layout-editor-modelo-mini{background:#f4f5f6}
+.layout-editor-modelo-impacto .layout-editor-mini-banner{background:linear-gradient(110deg,#e2181a,#1f2327);border-left-color:#bfc3c7}
+.layout-editor-modelos button:focus-visible{outline:3px solid #e2181a;outline-offset:2px}
+@media(max-width:720px){.layout-editor-modelos-grade{grid-template-columns:1fr}.layout-editor-modelo-mini{height:90px}}
