@@ -123,12 +123,34 @@ try {
     // não pelo JSX fixo ou por uma prévia não aprovada do lojista.
     const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,
       layoutOrdem:["catalogo","banner","montadoras","taxonomia","empresa"]},390);
-    const ordem=await page.locator("main [data-bloco]").evaluateAll(els=>
-      els.map(el=>el.getAttribute("data-bloco")).filter(x=>["banner","montadoras","taxonomia","filtros","produtos"].includes(x)));
-    assert.deepEqual(ordem,["banner","filtros","produtos"],
-      "prioridade comercial V3: carrossel, filtro único e catálogo, sem blocos legados");
+    const ordem=await page.locator("main .m2-bloco-modular").evaluateAll(els=>
+      els.map(el=>el.getAttribute("data-modulo")));
+    assert.deepEqual(ordem,["catalogo","banner","montadoras","taxonomia","empresa"],
+      "todos os cinco módulos reais respeitam a ordem aprovada/publicada pelo lojista");
+    assert.equal(await page.locator("main #ms-aplicacoes").count(),1,
+      "o seletor de veículo deve existir uma única vez, mesmo com os módulos reordenados");
+    assert.equal(await page.locator(".mobis-v2.m4").getAttribute("data-mobis-modelo"),"tecnico",
+      "ordens manuais mantêm o visual técnico em vez de inventar uma quarta identidade");
     assert.deepEqual(erros,[],"sem exceções JS ao montar a ordem personalizada");
     await context.close();
+  }
+  {
+    // O usuário pode aplicar futuramente cada modelo no Conecta.IA sem publicar SKU,
+    // imagens ou compatibilidades. A API simulada representa APENAS versão publicada.
+    for (const [modelo,blocos] of [
+      ["oficial",["banner","taxonomia","montadoras","catalogo","empresa"]],
+      ["tecnico",["banner","montadoras","taxonomia","catalogo","empresa"]],
+      ["impacto",["banner","catalogo","montadoras","taxonomia","empresa"]],
+    ]) {
+      const {context,page,erros}=await abrir({ambiente:"teste",venda_habilitada:false,layoutOrdem:blocos},390);
+      assert.equal(await page.locator(".mobis-v2.m4").getAttribute("data-mobis-modelo"),modelo);
+      const real=await page.locator("main .m2-bloco-modular").evaluateAll(els=>els.map(el=>el.getAttribute("data-modulo")));
+      assert.deepEqual(real,blocos);
+      assert.equal(await page.locator(".m2-modulo-sistemas-grid button").count(),7);
+      assert.equal(await page.locator(".m2-produto").count(),0,"modelo visual não pode liberar produto não publicado");
+      assert.deepEqual(erros,[],"modelo "+modelo+" sem exceção no navegador");
+      await context.close();
+    }
   }
   {
     const cores={cor_fundo:"#f6f7f8",cor_superficie:"#ffffff",cor_texto:"#252a31",
