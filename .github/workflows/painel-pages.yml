@@ -24,6 +24,7 @@ on:
       - '.github/releases/mobis-modelo02-entrega-real-20261120.md'
       # Correção aprovada: confirmação de layout/paleta acessível ao lojista no navegador.
       - '.github/releases/mobis-confirmacao-aprovacao-20261120.md'
+      - '.github/releases/mobis-prontidao-comercial-20261120.md'
 
 permissions:
   contents: read
