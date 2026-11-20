@@ -1,0 +1,95 @@
+/*
+ * MOBIS | 01 Oficial · 02 Técnico · 03 Impacto
+ * Somente apresentação. O catálogo, o logotipo MA raster original, as fotos
+ * reais, os filtros e o fluxo de publicação não mudam com o modelo escolhido.
+ * As películas/sombras são restritas a superfícies, não aplicadas sobre a peça.
+ */
+.mobis-v2.m4[data-mobis-modelo]{--modelo-gelo:#eaf2f6;--modelo-grafite:#1f2327;--modelo-vermelho:#e2181a;--modelo-aco:#a6a6a6}
+.mobis-v2.m4 .m2-bloco-modular{min-width:0;scroll-margin-top:22px}
+.mobis-v2.m4 .m2-modulo-montadoras,.mobis-v2.m4 .m2-modulo-sistemas,.mobis-v2.m4 .m2-modulo-empresa{
+  margin-block:clamp(16px,2vw,30px);border:1px solid #cbd7dd;border-radius:15px;
+  background:#fff;padding:clamp(15px,2.5vw,30px);box-shadow:0 8px 26px #1f23270d;
+}
+.mobis-v2.m4 .m2-modulo-titulo{display:grid;gap:4px;margin-bottom:18px}
+.mobis-v2.m4 .m2-modulo-titulo>span{font-size:.72rem;font-weight:850;letter-spacing:.11em;color:#a10e15}
+.mobis-v2.m4 .m2-modulo-titulo h2{font-size:clamp(1.25rem,2vw,1.9rem);line-height:1.2;color:#1f2327;margin:0}
+.mobis-v2.m4 .m2-modulo-titulo p{color:#54616b;font-size:.88rem;margin:0;line-height:1.5}
+.mobis-v2.m4 .m2-modulo-veiculos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(9px,1.4vw,18px)}
+.mobis-v2.m4 .m2-modulo-veiculos>a{display:grid;grid-template-rows:auto auto auto;gap:7px;min-width:0;
+  border:1px solid #d4dee4;border-radius:12px;padding:12px;background:#f8fafb;text-decoration:none;color:#28323a;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.mobis-v2.m4 .m2-modulo-veiculos>a:hover{transform:translateY(-3px);border-color:#e2181a;box-shadow:0 11px 22px #1f23271c}
+.mobis-v2.m4 .m2-modulo-veiculos img{width:100%;height:clamp(110px,14vw,180px);object-fit:contain;background:#fff;border-radius:8px}
+.mobis-v2.m4 .m2-modulo-veiculos strong{font-size:clamp(.9rem,1.1vw,1.1rem)}
+.mobis-v2.m4 .m2-modulo-veiculos small{font-size:.77rem;color:#5b6973}
+.mobis-v2.m4 .m2-modulo-sistemas-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}
+.mobis-v2.m4 .m2-modulo-sistemas-grid button{
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;min-width:0;min-height:110px;
+  border:1px solid #3f474c;border-bottom:5px solid #e2181a;border-radius:12px;
+  background:linear-gradient(155deg,#313b42,#1f2327 65%);color:#fff;
+  box-shadow:0 5px 12px #1f232722;cursor:pointer;
+  transition:transform .18s ease,filter .18s ease,box-shadow .18s ease;
+}
+.mobis-v2.m4 .m2-modulo-sistemas-grid img{display:block;max-width:62px;max-height:62px;object-fit:contain;filter:none}
+.mobis-v2.m4 .m2-modulo-sistemas-grid span{font-weight:780;font-size:clamp(.72rem,.9vw,.9rem)}
+.mobis-v2.m4 .m2-modulo-sistemas-grid button:hover{transform:translateY(-3px);filter:brightness(1.14);box-shadow:0 11px 18px #1f232736}
+.mobis-v2.m4 .m2-modulo-sistemas-grid button:active{transform:translateY(0);filter:brightness(1.22)}
+.mobis-v2.m4 .m2-modulo-sistemas-grid button[aria-pressed=true]{outline:3px solid #e2181a;outline-offset:2px}
+.mobis-v2.m4 .m2-modulo-sistemas-grid button:focus-visible,.mobis-v2.m4 .m2-modulo-veiculos a:focus-visible{outline:3px solid #e2181a;outline-offset:3px}
+.mobis-v2.m4 .m2-modulo-empresa{display:flex;align-items:center;gap:clamp(16px,3vw,36px);
+  background:linear-gradient(125deg,#edf4f7 0%,#fff 70%);border-left:5px solid #e2181a}
+.mobis-v2.m4 .m2-modulo-empresa img{width:clamp(130px,18vw,220px);height:auto;object-fit:contain;flex-shrink:0}
+.mobis-v2.m4 .m2-modulo-empresa h2{font-size:clamp(1.08rem,1.7vw,1.55rem);line-height:1.2;color:#1f2327;margin:0 0 6px}
+.mobis-v2.m4 .m2-modulo-empresa p{color:#465560;font-size:.88rem;line-height:1.5;margin:0 0 10px}
+.mobis-v2.m4 .m2-modulo-empresa a{color:#a40e15;font-size:.87rem;font-weight:800}
+/* 02 Técnico: Bento industrial, gelo 20% nos fundos, grafite 25% atrás de texto. */
+.mobis-v2.m4[data-mobis-modelo=tecnico]{background:#eaf2f6}
+.mobis-v2.m4[data-mobis-modelo=tecnico] .gcv3{background:linear-gradient(125deg,#d8e5ed,#eaf2f6);border-bottom:1px solid #bfc3c7}
+.mobis-v2.m4[data-mobis-modelo=tecnico] .gcv3-painel{background:linear-gradient(120deg,#1f2327,#34424b);border:1px solid #72838c;box-shadow:0 18px 38px #1f232724}
+.mobis-v2.m4[data-mobis-modelo=tecnico] .gcv3-copy :is(h1,h1 a,p,.gcv3-sku){color:#fff}
+.mobis-v2.m4[data-mobis-modelo=tecnico] .gcv3-copy .gcv3-nota{color:#e2e9ed}
+.mobis-v2.m4[data-mobis-modelo=tecnico] .gcv3-midia{background:#fff}
+.mobis-v2.m4[data-mobis-modelo=tecnico] .gcv3-cta{background:#e2181a;color:#fff}
+.mobis-v2.m4[data-mobis-modelo=tecnico] .m2-modulo-sistemas{background:linear-gradient(130deg,#f4f8fa,#eaf2f6);border-color:#bacbd5}
+.mobis-v2.m4[data-mobis-modelo=tecnico] .m2-modulo-montadoras{background:#fff}
+.mobis-v2.m4[data-mobis-modelo=tecnico] .m2-produto{border-color:#b9cbd5;box-shadow:0 12px 20px #1f232711}
+/* 01 Oficial: página gelo clara, ênfase institucional. */
+.mobis-v2.m4[data-mobis-modelo=oficial]{background:#f6f8fa}
+.mobis-v2.m4[data-mobis-modelo=oficial] .gcv3{background:linear-gradient(120deg,#fff,#eaf2f6)}
+.mobis-v2.m4[data-mobis-modelo=oficial] .gcv3-painel{background:#fff;border:1px solid #c4d3db;box-shadow:0 9px 20px #1f23270f}
+.mobis-v2.m4[data-mobis-modelo=oficial] .gcv3-copy :is(h1,h1 a){color:#1f2327}
+.mobis-v2.m4[data-mobis-modelo=oficial] .gcv3-copy p{color:#4e5962}
+.mobis-v2.m4[data-mobis-modelo=oficial] .m2-modulo-montadoras{background:#f4f8fa}
+/* 03 Impacto: campanha ampla e botões destacados; fotos ficam intactas em fundo branco. */
+.mobis-v2.m4[data-mobis-modelo=impacto]{background:#f4f6f8}
+.mobis-v2.m4[data-mobis-modelo=impacto] .gcv3{background:linear-gradient(120deg,#d4dfe6,#f4f6f8);padding-block:clamp(18px,4vw,48px)}
+.mobis-v2.m4[data-mobis-modelo=impacto] .gcv3-painel{background:linear-gradient(120deg,#151a1d,#3b2226 70%);border:1px solid #e2181a;box-shadow:0 18px 37px #1f232732}
+.mobis-v2.m4[data-mobis-modelo=impacto] .gcv3-copy :is(h1,h1 a,p){color:#fff}
+.mobis-v2.m4[data-mobis-modelo=impacto] .gcv3-cta{background:#e2181a;color:#fff;box-shadow:0 6px 14px #e2181a35}
+.mobis-v2.m4[data-mobis-modelo=impacto] .gcv3-midia{background:#fff}
+.mobis-v2.m4[data-mobis-modelo=impacto] .m2-modulo-montadoras{border-top:4px solid #e2181a}
+.mobis-v2.m4[data-mobis-modelo=impacto] .m2-produto{border-bottom:4px solid #e2181a}
+/* Apenas o seletor de veículo fixa em monitores, sem prender carrossel ou cartões. */
+@media(min-width:1100px){
+  .mobis-v2.m4[data-mobis-modelo=tecnico] .ms-aplicacoes{
+    position:sticky;top:0;z-index:15;box-shadow:0 8px 18px #1f23271a;
+    padding:8px 0;border-bottom:2px solid #e2181a
+  }
+  .mobis-v2.m4[data-mobis-modelo=tecnico] .ms-aplicacoes .ms-encontrar{padding:12px 16px}
+}
+@media(max-width:950px){
+  .mobis-v2.m4 .m2-modulo-sistemas-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .mobis-v2.m4 .m2-modulo-veiculos{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:550px){
+  .mobis-v2.m4 .m2-modulo-sistemas-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+  .mobis-v2.m4 .m2-modulo-sistemas-grid button{min-height:88px;padding:6px 2px}
+  .mobis-v2.m4 .m2-modulo-sistemas-grid img{max-width:46px;max-height:46px}
+  .mobis-v2.m4 .m2-modulo-veiculos{grid-template-columns:minmax(0,1fr)}
+  .mobis-v2.m4 .m2-modulo-veiculos>a{grid-template-columns:minmax(95px,1fr) minmax(0,1fr);grid-template-rows:auto auto;align-items:center}
+  .mobis-v2.m4 .m2-modulo-veiculos img{grid-row:span 2;max-height:110px}
+  .mobis-v2.m4 .m2-modulo-empresa{flex-direction:column;align-items:flex-start}
+}
+@media(prefers-reduced-motion:reduce){
+  .mobis-v2.m4 .m2-modulo-sistemas-grid button,.mobis-v2.m4 .m2-modulo-veiculos>a{transition:none;transform:none!important}
+}
