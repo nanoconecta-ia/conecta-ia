@@ -18,6 +18,8 @@ on:
       - '.github/releases/painel-mcp-identidade-unica-20261119.md'
       # Autorização pontual do lojista em 20/11/2026: aplicar Técnico e disponibilizar Oficial/Impacto.
       - '.github/releases/mobis-modelos-modulares-20261120.md'
+      # Nova autorização do lojista: destaque branco do favicon MA sem editar logo nem produtos.
+      - '.github/releases/mobis-favicon-ma-branco-20261120.md'
 
 permissions:
   contents: read
