@@ -3,6 +3,9 @@
 Site inteligente que conecta ERPs (piloto: Bling) a uma loja online, de forma autônoma.
 Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no chat, pergunte.
 
+## CONTRATO UNIVERSAL — porteiro de produto com múltiplas aplicações
+Obrigatório ler [contrato de entrada, identidade física e N aplicações independentes](docs/conector-ia/porteiro-contrato-universal-multiaplicacao-20261121.md) **antes de pesquisar qualquer SKU**. Usar `loja_id + bling_id` como identidade; SKU exato pode ter histórico excluído. Validar a composição física e o motor/Euro/ano de cada versão, não inferir por aparência; OEM separado por montadora e estado `a_confirmar`; uma peça física, várias páginas sem clone de estoque. Documento e testes para revisão, ainda sem implantação do portão adicional.
+
 ## REGRA MESTRE: ERP Bling como fonte e páginas independentes com OEM e SEO
 Ler [regra de 1 produto físico/N páginas por veículo e OEM por montadora](docs/conector-ia/porteiro-master-ofertas-por-aplicacao-oem-seo-bling-20261119.md). Cada cadastro editorial por aplicação contém título e descrição únicos, tags de busca legítimas, OEM EPC validado por montadora ou pendente, ano/versão/motor/ECU/injeção comprovados, referências cruzadas, SEO e banner independente, ligados ao mesmo SKU e NF do Bling. Atribuir `oem_compartilhado` só se o mesmo conjunto OEM for comprovado. Códigos de juntas/filtros não se tornam código OEM de motor parcial. Aplicações pendentes ficam privadas/noindex; não duplicar estoque ou escrever no ERP sem aprovação de campo.
 
