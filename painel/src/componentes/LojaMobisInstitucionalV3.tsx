@@ -38,9 +38,36 @@ type Comum={
   whatsapp:string|null;ir:(id:string)=>void;
   categorias:readonly Categoria[];selecionarDepartamento:(chave:string,nome:string)=>void;departamentoAtivo?:string;
   bannersPresentes:boolean;
+  buscaNaVitrine?:boolean;
 };
 
-export function CabecalhoMobisV3({busca,onBusca,onEnviar,exata,onExata,whatsapp,ir,categorias,selecionarDepartamento,departamentoAtivo,bannersPresentes}:Comum){
+export function BuscaMobisV3({busca,onBusca,onEnviar,exata,onExata}:Pick<Comum,"busca"|"onBusca"|"onEnviar"|"exata"|"onExata">){
+  return <form className="ms-pesquisa" role="search" aria-label="Buscar peça e referência" onSubmit={onEnviar}>
+        <label className="ms-visualmente-oculto" htmlFor="ms-buscar">Buscar peça, SKU, OEM ou aplicação</label>
+        <input id="ms-buscar" type="search" maxLength={60} value={busca} onChange={e=>onBusca(e.target.value)} placeholder={exata?"SKU, fabricante ou OEM exato":"Peça, SKU, OEM, veículo ou motor"}/>
+        <label className="ms-codigo-exato"><input type="checkbox" checked={exata} onChange={e=>onExata(e.target.checked)}/><span>Código exato</span></label>
+        <button type="submit" aria-label="Pesquisar peças"><span aria-hidden="true">⌕</span><span>Buscar</span></button>
+      </form>;
+}
+
+export function DepartamentosMobisV3({categorias,selecionarDepartamento,departamentoAtivo}:Pick<Comum,"categorias"|"selecionarDepartamento"|"departamentoAtivo">){
+  return <div id="ms-departamentos" className="ms-departamentos-faixa" aria-label="Departamentos de peças">
+      <div className="ms-container ms-departamentos-lista">
+        {SETORES_MOBIS_V3.map(s=>{
+          const categoria=setorComCategoria(s,categorias);
+          return <button key={s.chave} type="button" className={departamentoAtivo===s.chave?"ms-departamento-ativo":undefined}
+            title={"Filtrar peças do departamento "+s.nome}
+            aria-label={"Filtrar produtos de "+s.nome} aria-pressed={departamentoAtivo===s.chave}
+            onClick={()=>selecionarDepartamento(s.chave,s.nome)}>
+            <img src={s.icone} width={66} height={66} alt="" aria-hidden="true"/>
+            <span>{s.nome}</span><small>{categoria?"Ver peças":"Filtrar peças"}</small>
+          </button>;
+        })}
+      </div>
+    </div>;
+}
+
+export function CabecalhoMobisV3({busca,onBusca,onEnviar,exata,onExata,whatsapp,ir,categorias,selecionarDepartamento,departamentoAtivo,bannersPresentes,buscaNaVitrine}:Comum){
   return <div className="ms-cabecalho" data-bloco="cabecalho" data-mobis-vitrine-completa="v3">
     <div className="ms-faixa-superior">
       <div className="ms-container ms-faixa-interna">
@@ -52,12 +79,7 @@ export function CabecalhoMobisV3({busca,onBusca,onEnviar,exata,onExata,whatsapp,
     <div className="ms-principal"><div className="ms-container ms-principal-grid">
       <a className="ms-logo" href="#/loja/mobis" aria-label="Mobis Autopeças — página inicial"><img src={logo} width={1983} height={793} alt="MOBIS AUTOPEÇAS — M-STYLE CROMO V3"/></a>
       <p className="ms-especialidade">Peças para <strong>picapes, vans e utilitários diesel</strong> <small>Aplicação técnica sob consulta</small></p>
-      <form className="ms-pesquisa" role="search" aria-label="Buscar peça e referência" onSubmit={onEnviar}>
-        <label className="ms-visualmente-oculto" htmlFor="ms-buscar">Buscar peça, SKU, OEM ou aplicação</label>
-        <input id="ms-buscar" type="search" maxLength={60} value={busca} onChange={e=>onBusca(e.target.value)} placeholder={exata?"SKU, fabricante ou OEM exato":"Peça, SKU, OEM, veículo ou motor"}/>
-        <label className="ms-codigo-exato"><input type="checkbox" checked={exata} onChange={e=>onExata(e.target.checked)}/><span>Código exato</span></label>
-        <button type="submit" aria-label="Pesquisar peças"><span aria-hidden="true">⌕</span><span>Buscar</span></button>
-      </form>
+      {!buscaNaVitrine&&<BuscaMobisV3 busca={busca} onBusca={onBusca} onEnviar={onEnviar} exata={exata} onExata={onExata}/>}
       <div className="ms-acoes">
         {whatsapp&&<a href={whatsapp} target="_blank" rel="noopener noreferrer" aria-label="Conversar com a Mobis no WhatsApp"><span className="ms-icone-whatsapp" aria-hidden="true"><IconeRedeMobis canal="whatsapp" /></span><small>Contato</small></a>}
       </div>
@@ -71,20 +93,7 @@ export function CabecalhoMobisV3({busca,onBusca,onEnviar,exata,onExata,whatsapp,
       <a href="#/loja/mobis/empresa">Sobre a Mobis</a>
       <a href="#/loja/mobis/empresa">Contato</a>
     </div></nav>
-    <div id="ms-departamentos" className="ms-departamentos-faixa" aria-label="Departamentos de peças">
-      <div className="ms-container ms-departamentos-lista">
-        {SETORES_MOBIS_V3.map(s=>{
-          const categoria=setorComCategoria(s,categorias);
-          return <button key={s.chave} type="button" className={departamentoAtivo===s.chave?"ms-departamento-ativo":undefined}
-            title={"Filtrar peças do departamento "+s.nome}
-            aria-label={"Filtrar produtos de "+s.nome} aria-pressed={departamentoAtivo===s.chave}
-            onClick={()=>selecionarDepartamento(s.chave,s.nome)}>
-            <img src={s.icone} width={66} height={66} alt="" aria-hidden="true"/>
-            <span>{s.nome}</span><small>{categoria?"Ver peças":"Filtrar peças"}</small>
-          </button>;
-        })}
-      </div>
-    </div>
+    {!buscaNaVitrine&&<DepartamentosMobisV3 categorias={categorias} selecionarDepartamento={selecionarDepartamento} departamentoAtivo={departamentoAtivo}/>}
   </div>;
 }
 

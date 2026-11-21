@@ -1,130 +1,134 @@
-/* Entrega visual pública do Modelo 02 da MOBIS.
- * Escopo deliberadamente restrito a data-mobis-modelo="tecnico".
- * Preserva o logotipo MA existente, a origem das fotos, o catálogo autorizado
- * e os controles de aprovação/versionamento de paleta no Conecta.IA.
- * O destaque técnico é institucional; NÃO é banner promocional fictício.
- */
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura {
-  position:relative;overflow:hidden;isolation:isolate;
-  color:#fff;background:
-    radial-gradient(circle at 70% -32%,#536b79 0%,transparent 43%),
-    linear-gradient(122deg,#10181d 0%,#25363f 62%,#121a1e 100%);
-  border-bottom:5px solid #e2181a;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura::before {
-  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:repeating-linear-gradient(133deg,transparent 0 74px,#ffffff08 75px 76px,transparent 77px 158px);
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura::after {
-  content:"";position:absolute;right:17%;top:-25%;height:180%;width:7px;
-  transform:rotate(19deg);background:#e2181a;box-shadow:22px 0 0 #e2181a40;
-  opacity:.75;pointer-events:none;z-index:-1;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-grid {
-  display:grid;grid-template-columns:minmax(0,1.45fr) minmax(230px,.7fr);
-  gap:clamp(20px,4vw,64px);align-items:center;
-  padding-block:clamp(22px,3.8vw,55px);
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-copy{max-width:750px}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-eyebrow {
-  display:flex;flex-wrap:wrap;gap:9px;align-items:center;
-  font-size:clamp(.65rem,.74vw,.78rem);font-weight:850;letter-spacing:.11em;color:#dce6ed;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-eyebrow b {
-  display:grid;place-items:center;letter-spacing:-.1em;
-  width:39px;height:37px;border-radius:8px;background:#fff;color:#1f2327;
-  font-size:1.12rem;padding-right:4px;box-shadow:inset 0 -4px 0 #e2181a;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-eyebrow>span{color:#f04448}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura h2 {
-  color:#fff!important;font-size:clamp(1.65rem,3.65vw,3.55rem);
-  font-weight:950;letter-spacing:-.045em;line-height:1.1;
-  margin:clamp(14px,2vw,26px) 0 12px;max-width:780px;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura h2 em{
-  font-style:normal;color:#eff9ff;box-shadow:inset 0 -9px 0 #e2181a;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-copy>p{
-  color:#dce6ec;max-width:635px;line-height:1.58;font-size:clamp(.84rem,1.05vw,1rem);
-  margin:0 0 21px;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-acoes{display:flex;flex-wrap:wrap;gap:10px}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-acoes button{
-  display:inline-flex;gap:15px;align-items:center;justify-content:center;
-  padding:12px 19px;border-radius:8px;font-weight:900;font-size:.87rem;
-  border:1px solid #bfcbd2;min-height:46px;cursor:pointer;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-acoes button:first-child{
-  background:#e2181a;color:#fff;border-color:#e2181a;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-acoes button:last-child{
-  background:transparent;color:#fff;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-acoes button:hover{filter:brightness(1.12)}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-acoes button:focus-visible,
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-linhas a:focus-visible {
-  outline:3px solid #fff;outline-offset:3px;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-linhas {
-  min-width:0;padding:19px;background:#edf4f9;
-  border:1px solid #bacad4;border-top:4px solid #e2181a;
-  border-radius:13px;color:#1f2327;box-shadow:0 15px 35px #0004;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-linhas-kicker{
-  display:block;margin:0 0 10px;font-size:.71rem;font-weight:950;
-  color:#a20b12;letter-spacing:.13em;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-linhas a {
-  display:flex;gap:6px;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;padding:11px 8px;border-bottom:1px solid #becbd3;
-  text-decoration:none;color:#1f2327;background:transparent;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-linhas a:hover{background:#fff}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-linhas a strong{
-  font-weight:930;font-size:.8rem;letter-spacing:.02em;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-linhas a span{
-  color:#a30f14;font-size:.72rem;font-weight:850;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-linhas small{
-  display:block;color:#586770;font-size:.69rem;line-height:1.45;margin-top:12px;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m2-bloco-modular[data-modulo="banner"] {
-  background:linear-gradient(#e1edf5,#eaf2f6);padding-bottom:10px;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m2-bloco-modular[data-modulo="banner"] .ms-aplicacoes{
-  margin-top:clamp(8px,1.5vw,20px);border-top:3px solid #e2181a;
-}
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .m2-bloco-modular[data-modulo="banner"] .gcv3{
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .ms-cabecalho {
   background:#eaf2f6;
+  color:#1f2327;
 }
-@media(max-width:900px){
-  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-grid{
-    grid-template-columns:1fr;gap:14px;
-  }
-  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-linhas {
-    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:13px;
-  }
-  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-linhas-kicker,
-  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-linhas small {grid-column:1/-1}
-  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-linhas a{
-    border:1px solid #bacad4;border-radius:8px;display:grid;justify-content:start;gap:3px;padding:10px;
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .ms-principal {
+  background:linear-gradient(115deg,#fff,#eaf2f6);
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .ms-principal-grid {
+  display:flex;
+  align-items:center;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .ms-principal-grid .ms-especialidade {
+  color:#1f2327;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .gcv3-painel {
+  background:repeating-linear-gradient(133deg,#ffffff55 0 2px,transparent 2px 75px),
+    linear-gradient(125deg,#fff,#eaf2f6 52%,#bfc3c7);
+  border:1px solid #bfc3c7;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .gcv3-copy :is(h1,h1 a,p,.gcv3-sku,.gcv3-nota) {
+  color:#1f2327;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .gcv3-copy {
+  border-inline-start:4px solid #e2181a;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .gcv3-copy .gcv3-mstyle-logo {
+  display:none;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-busca {
+  padding-block:12px;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-busca .ms-pesquisa {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  max-width:780px;
+  margin-inline:auto;
+  padding:6px 9px;
+  border:1px solid #bfc3c7;
+  border-radius:20px;
+  background:#fff;
+  box-shadow:0 4px 12px #1f23271c;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-busca input[type="search"] {
+  flex:1 1 160px;
+  min-width:0;
+  min-height:44px;
+  color:#1f2327;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-busca button {
+  min-height:44px;
+  border:0;
+  border-radius:14px;
+  padding-inline:16px;
+  background:#e2181a;
+  color:#fff;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-busca .ms-codigo-exato {
+  color:#1f2327;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] main .ms-departamentos-faixa {
+  background:transparent;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] main .ms-departamentos-lista {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:8px;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] main .ms-departamentos-lista button {
+  flex:0 1 calc((100% - 48px) / 7);
+  min-width:0;
+  min-height:70px;
+  padding:5px 2px;
+  border:1px solid #333b41;
+  border-bottom:4px solid #e2181a;
+  border-radius:10px;
+  background:linear-gradient(#30383e,#1f2327);
+  color:#fff;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] main .ms-departamentos-lista button img {
+  width:32px;
+  height:32px;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] main .ms-departamentos-lista button span {
+  font-size:clamp(.63rem,1.05vw,.9rem);
+  overflow-wrap:anywhere;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] main .ms-departamentos-lista button small {
+  display:none;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] main .ms-departamentos-lista button[aria-pressed="true"] {
+  outline:2px solid #e2181a;
+  outline-offset:2px;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-organizacao {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:4px 16px;
+  margin-block:12px;
+  padding:6px 12px;
+  border:1px solid #bfc3c7;
+  border-radius:10px;
+  background:#fff;
+  color:#1f2327;
+}
+.mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-organizacao button {
+  min-height:44px;
+  padding-inline:8px;
+  background:transparent;
+  border:0;
+  color:#1f2327;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  cursor:pointer;
+}
+@media(max-width:900px) {
+  .mobis-v2.m4[data-mobis-modelo="tecnico"] main .ms-departamentos-lista button {
+    flex-basis:calc((100% - 24px) / 4);
   }
 }
-@media(max-width:580px){
-  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-grid{
-    width:calc(100% - 32px);padding-block:22px;
+
+@media(max-width:580px) {
+  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-busca input[type="search"] {
+    flex-basis:0;
   }
-  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura h2{font-size:clamp(1.58rem,7.1vw,2.1rem)}
-  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-linhas{grid-template-columns:1fr}
-  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-linhas a{
-    display:flex;justify-content:space-between;
+  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-busca .ms-codigo-exato {
+    order:1;
+    flex-basis:100%;
   }
-  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-acoes button{
-    flex:1 1 145px;padding:10px 9px;font-size:.78rem;white-space:normal;
-  }
-  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-eyebrow{letter-spacing:.05em}
-}
-@media(prefers-reduced-motion:reduce){
-  .mobis-v2.m4[data-mobis-modelo="tecnico"] .m02-abertura-acoes button{transition:none}
 }
