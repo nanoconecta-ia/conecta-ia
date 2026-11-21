@@ -3,6 +3,9 @@
 Site inteligente que conecta ERPs (piloto: Bling) a uma loja online, de forma autônoma.
 Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no chat, pergunte.
 
+## EPC OEM dos componentes de conjunto importado
+Antes de enriquecer motores parciais, cabeçotes montados e kits, seguir [protocolo EPC de componentes, vínculo com a composição SKU e não-transitividade de OEM](docs/conector-ia/porteiro-epc-oem-por-componente-20261121.md). Não inferir o conteúdo de um motor importado a partir de um EPC de veículo; registrar fonte, versão, diagrama, código e status por peça. A referência OEM de um componente jamais vira OEM do conjunto. Validador puro está em revisão; não afirmar implantação do gate até passar por gateway/SQL, homologação e autorização.
+
 ## CONTRATO UNIVERSAL — porteiro de produto com múltiplas aplicações
 Obrigatório ler [contrato de entrada, identidade física e N aplicações independentes](docs/conector-ia/porteiro-contrato-universal-multiaplicacao-20261121.md) **antes de pesquisar qualquer SKU**. Usar `loja_id + bling_id` como identidade; SKU exato pode ter histórico excluído. Validar a composição física e o motor/Euro/ano de cada versão, não inferir por aparência; OEM separado por montadora e estado `a_confirmar`; uma peça física, várias páginas sem clone de estoque. Documento e testes para revisão, ainda sem implantação do portão adicional.
 
