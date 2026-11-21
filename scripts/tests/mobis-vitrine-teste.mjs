@@ -161,8 +161,9 @@ try {
     assert.equal(await root.getAttribute("data-paleta-publicada"),"sim",
       "somente paleta publicada pela API é aplicada à Mobis");
     assert.equal(await root.evaluate(el=>getComputedStyle(el).getPropertyValue("--mobis-botao").trim()),"#444c54");
-    assert.equal(await page.locator(".ms-pesquisa button").first().evaluate(el=>getComputedStyle(el).backgroundImage.includes("linear-gradient")),
-      true,"a busca usa a faixa comercial vermelha da marca V3");
+    // Marca V3: gradiente vermelho no modelo Oficial; no Modelo 02 (técnico) o botão de busca é o vermelho sólido #e2181a.
+    assert.ok(await page.locator(".ms-pesquisa button").first().evaluate(el=>{const s=getComputedStyle(el);return s.backgroundImage.includes("linear-gradient")||s.backgroundColor==="rgb(226, 24, 26)";}),
+      "a busca usa o vermelho comercial da marca V3");
     assert.equal(await page.locator(".ms-cabecalho").evaluate(el=>getComputedStyle(el).backgroundColor),
       "rgb(31, 35, 39)","identidade do cabeçalho V3 não altera o ponteiro da paleta antiga");
     assert.deepEqual(erros,[]);
