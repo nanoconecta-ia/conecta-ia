@@ -3274,7 +3274,7 @@ const FERRAMENTAS_CONECTOR = [
         simulacao: true,
         exposicao: {
             chat: true,
-            mcp: false
+            mcp: true
         }
     }),
     proposta("bling.produtos.preparar_atualizacao", "bling", "Prepara (sem gravar) a alteração de campos permitidos de um produto: lê o Bling agora, monta antes/depois e cria a proposta.", obj({
@@ -3308,7 +3308,7 @@ const FERRAMENTAS_CONECTOR = [
         simulacao: true,
         exposicao: {
             chat: true,
-            mcp: false
+            mcp: true
         }
     }),
     proposta("bling.produtos.preparar_alteracao_preco", "bling", "Prepara (sem gravar) a troca do PREÇO DE VENDA de um produto: compara com o preço do espelho, calcula a diferença no servidor e cria a proposta para aprovação humana. Só preço de venda: custo, compra, margem, fornecedor e fiscal são recusados. Regras em _shared/preco/regras_preco.ts (decisão do dono, ARQUITETURA seção 10).", obj({
@@ -3347,7 +3347,7 @@ const FERRAMENTAS_CONECTOR = [
         simulacao: true,
         exposicao: {
             chat: true,
-            mcp: false
+            mcp: true
         }
     }),
     execucao("bling.produtos.criar", "Cria produto no Bling (POST /produtos).", obj({
