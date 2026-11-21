@@ -7,3 +7,5 @@ Publicar a revisão incorporada no PR #482. A verificação do painel passou ant
 Ajuste de compatibilidade: o catálogo usa cancelamento com temporizador, sem depender das APIs estáticas recentes do navegador.
 
 Ícone da aba da loja atualizado para o M dobrado sobre fundo branco.
+
+Versão na URL do ícone para evitar respostas antigas em cache.
