@@ -87,3 +87,48 @@ Arquivo `supabase/functions/_shared/aplicacoes/regras_componentes_oem.ts`: valid
 - Composição detalhada **declarada** pelo lojista em `docs/mobis/catalogo/CI003696-ficha-proposta-web-20261119.md`.
 - EPC de cada componente: **pesquisa por versão/mercado pendente de extração e homologação**. Nenhuma associação ao OEM do conjunto foi aprovada.
 - Produto pausado: **não** inserir propostas no catálogo em produção, não alterar Bling, não publicar.
+
+
+## 8. Componentes comercializados avulsos — mesmo fornecedor, notas fiscais diferentes (declaração do lojista)
+
+**Informação adicional recebida em 21/11/2026:** o lojista relata que itens do conjunto como **cabeçote, válvulas e comandos** também podem ser encontrados no **RPM**, por meio do mesmo fornecedor, **em notas fiscais de aquisição diferentes** da nota do motor parcial. A existência desses registros e a identidade dos SKUs/NFs **não foram verificadas nesta revisão**: não inventar SKU, NF, OEM, fabricante ou preço; "RPM" é o nome de fonte mencionado pelo lojista e sua função exata (catálogo externo ou módulo comercial) deve ser confirmada pelo sistema antes de integrar.
+
+### Regra de genealogia comercial/fiscal
+
+- Um motor parcial **CI003696** é um produto comercial **individual**, com seu próprio `bling_id`, SKU, NF de entrada, marca, controle de estoque e composição declarada.
+- Uma **peça avulsa** (ex.: cabeçote ou comando) encontrada no RPM/Bling deve ser outro produto físico, **somente se comprovado** seu próprio código de referência, `bling_id` (se existir), SKU e entrada fiscal individual. Ela conserva **seu próprio** estoque, NF, NCM e dados de fornecedor.
+- Uma NF do componente **não** é prova de que o componente está dentro do motor parcial CI003696; tampouco obriga que o motor parcial tenha seus próprios componentes como registros de estoque filhos.
+- Um fornecedor igual e uma família de motor igual **não provam** equivalência do componente com o item embutido: comparar motor, fase Euro, 8V/16V, interfaces, número de peça, fabricante, composição e versão específica.
+- **Três fatos independentes:** (A) a peça avulsa existe como produto comercial, (B) o número OEM pertence a uma posição/versão EPC, (C) aquele componente físico está incluído no SKU do motor parcial. Só unir A, B e C quando houver evidências próprias de cada um.
+- Cada componente avulso pode ter **N aplicações veiculares próprias**, independentes das duas candidatas HR/Bongo do conjunto. Não herdar automaticamente aplicações ou títulos SEO do motor parcial.
+- Se o usuário desejar vender o motor parcial montado, **não** gerar ordem de produção, baixa de componentes, novo kit/estrutura de Bling, soma de custo ou composição de preço. Qualquer estrutura de estoque/produção exigiria autorização fiscal/operacional distinta.
+- Registrar a proveniência de fornecedor e NF apenas em ambiente interno autorizado; jamais expor custo, dados fiscais internos, fornecedor privado ou números de NF ao cliente da loja.
+
+### Relação lógica adicional do porteiro (proposta, sem migração)
+
+```text
+produto_fisico_conjunto: {loja_id, bling_id_conjunto, sku_conjunto}
+  | possui_descricao_de_componente (SOMENTE pesquisa/conhecimento)
+  +-- componente_declarado: {nome, posicao_funcional, estado_inclusao}
+       |--- referencia_original_epc: {montadora, versao, grupo, item, OEM, fonte, status}
+       +--- produto_avulso_candidato: {
+              origem: RPM | BLING | fornecedor | outro,
+              bling_id_avulso: opcional,
+              sku_avulso: opcional,
+              nf_avulsa_ref_interna: opcional,
+              fornecedor_id_privado: opcional,
+              status_vinculo: candidato | equivalente_comprovado | rejeitado,
+              evidencia_identidade: URL/documento, revisado_por, revisado_em
+            }
+```
+
+**Ponto de corte:** `status_vinculo=equivalente_comprovado` exige prova da identidade do componente **avulso** em relação ao componente presente no conjunto. O documento de entrada fiscal prova aquisição/identidade do item da NF, **não** identidade técnica, inclusão no conjunto ou adequação veicular.
+
+### Matriz de regressão complementar
+
+1. Motor parcial + cabeçote avulso do mesmo fornecedor, com NFs distintas → **dois produtos físicos e dois estoques**, vínculo comercial candidato.
+2. Item avulso presente no RPM, ausente no Bling → apenas referência externa, **não criar SKU do Bling**.
+3. Mesmo fornecedor + códigos/medidas divergentes → **não equivalente**; impedir compartilhamento de OEM e aplicação.
+4. Mesma peça OEM no EPC, sem lista documentada da composição do conjunto → código EPC pesquisável, **inclusão a confirmar**.
+5. Composição documentada do conjunto + produto avulso com código fabricante/medidas distintos → a inclusão do tipo de componente pode ser confirmada, mas **equivalência com produto avulso rejeitada**.
+6. Aprovação individual do OEM/componente não altera estoque, NF, preço, cadastro fiscal, SKU nem aplicação de outro produto.
