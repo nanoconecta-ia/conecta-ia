@@ -1,7 +1,5 @@
-.mobis-v2.m4[data-mobis-modelo="tecnico"] .ms-cabecalho {
-  background:#eaf2f6;
-  color:#1f2327;
-}
+/* Masthead segue o grafite oficial #1F2327 em todos os modelos (identidade Mobis);
+   o Modelo 02 mantém só o corpo/cards em gelo. */
 .mobis-v2.m4[data-mobis-modelo="tecnico"] .ms-principal {
   background:linear-gradient(115deg,#fff,#eaf2f6);
 }
