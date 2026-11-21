@@ -14,6 +14,7 @@ export interface EvidenciaComponente {
   consultada_em: string;
   codigo_conferido?: string | null;
   posicao_diagrama?: string | null;
+  nivel_diagrama?: "componente" | "subconjunto" | "conjunto" | null;
   sku_documentado?: string | null;
   versao_identificada?: string | null;
 }
@@ -88,6 +89,12 @@ export function validarVinculoOemComponente(
     if (proposta.finalidade === "incluido_no_sku" || proposta.finalidade === "equivalente_ao_oem" || proposta.finalidade === "oem_conjunto") {
       if (!evidencias.some((e) => fonteInclusao(e, proposta.sku))) {
         barrar("inclusao_nao_documentada", "EPC do veiculo nao prova que o importador incluiu a peça no SKU.");
+      }
+    }
+    if (proposta.finalidade === "oem_conjunto") {
+      if (!evidencias.some((e) => forteOem(e) && e.nivel_diagrama === "conjunto"
+        && codigo(e.codigo_conferido) === codigo(proposta.codigo_oem))) {
+        barrar("oem_do_componente_nao_e_oem_do_conjunto", "Referencia OEM do componente nao substitui codigo OEM do conjunto completo.");
       }
     }
     if (proposta.finalidade === "equivalente_ao_oem" || proposta.finalidade === "oem_conjunto") {
