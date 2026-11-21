@@ -105,3 +105,18 @@ O conjunto do **cabeçote montado** é informado com válvulas de admissão e es
 5. Separar identidade do produto (`TRIM GO`) de montadoras Hyundai/Kia, do distribuidor e da informação de **importação** (declarada pelo lojista; comprovação aduaneira/fiscal antes de afirmar origem ao consumidor).
 6. As páginas individuais Hyundai HR e Kia Bongo K2500 devem reutilizar **exatamente a mesma composição homologada do SKU físico**, sem adicionar ou retirar componentes por montagem do veículo; manter `status=a_confirmar` e `noindex` até validação de compatibilidade independente.
 7. Nunca confundir descrição proposta neste arquivo com `produto_enriquecimento` aprovado, sincronização de descrição com Bling, anúncio publicado ou homologação de OEM.
+
+
+## Referências de peças avulsas no RPM — informação adicional do lojista em 21/11/2026
+
+O lojista informou que **cabeçote, válvulas e comandos** também são encontrados **no RPM**, comercializados pelo **mesmo fornecedor** em **notas fiscais distintas** da aquisição do motor parcial. **Ainda não houve leitura desses cadastros, identificação dos SKUs ou consulta das NFs; não atribuir número, data, país ou composição sem a fonte.**
+
+**Ações de pesquisa para o porteiro, apenas quando autorizadas:**
+- Para cada componente, levantar a **referência avulsa** (RPM ou outra fonte), código fabricante e SKU/ID Bling **somente se estiver efetivamente cadastrado** no Bling da loja.
+- Confrontar **documentos privados diferentes**: NF do motor CI003696 e NF de cada produto avulso; não juntar NFs nem gerar outro estoque para o conjunto.
+- Vincular o **componente descritivo do conjunto** à peça avulsa como `referencia_de_pesquisa`, inicialmente `a_confirmar`, sem presumir equivalência ou inclusão.
+- Pesquisar **OEM de cada componente** no EPC da versão Hyundai HR e da versão Kia Bongo. Manter OEM da peça isolada distinto do OEM do motor parcial.
+- Só promover vínculo avulso a `equivalente_ao_componente_montado` após documentação específica do conjunto + identificação física e interfaces/medidas; **mesmo fornecedor não comprova identidade**.
+- Mostrar ao cliente apenas a **composição homologada do SKU**. Produtos vendidos separadamente podem aparecer como sugestões de peças relacionadas, mas sem afirmar que o conjunto os inclui.
+
+A regra universal e os testes propostos estão em `docs/conector-ia/porteiro-epc-oem-por-componente-20261121.md`, no PR #489 de revisão. Nenhuma aplicação, nota fiscal ou produto foi modificado.
