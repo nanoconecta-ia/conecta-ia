@@ -599,8 +599,50 @@ function validarIntercambiabilidade(c, produto, ctx) {
         nivel: b.length ? "bloqueada" : confirmavel ? "confirmavel" : "hipotese"
     };
 }
+function leituraValvulas(s) {
+    const m = s.match(/\b(8|12|16|20|24|32)\s*(?:V\b|VALVULAS\b|VÁLVULAS\b)/i);
+    return m ? Number(m[1]) : null;
+}
+function leituraEuro(s) {
+    const m = s.match(/\bEURO\s*([1-9])\b/i);
+    return m ? Number(m[1]) : null;
+}
+function leituraMotor(s) {
+    const m = s.toUpperCase().match(/\b[A-Z][0-9][A-Z0-9]{2,5}\b/);
+    return m ? m[0] : null;
+}
+function validarConfrontoFisico(fisico, propostaMotor) {
+    const bloqueios = [];
+    const ausencias = [];
+    const esperadoCodigo = fisico.codigo_motor?.trim().toUpperCase() ?? "";
+    const codigoVeiculo = leituraMotor(propostaMotor);
+    const esperadoValvulas = fisico.valvulas ?? null;
+    const valvulasVeiculo = leituraValvulas(propostaMotor);
+    const esperadoEuro = fisico.euro ?? null;
+    const euroVeiculo = leituraEuro(propostaMotor);
+    if (!esperadoCodigo || !codigoVeiculo) ausencias.push("codigo_motor");
+    else if (codigoVeiculo !== esperadoCodigo) bloqueios.push({
+        codigo: "motor_fisico_divergente",
+        mensagem: `Produto fisico ${esperadoCodigo} diverge do motor da aplicacao ${codigoVeiculo}.`
+    });
+    if (!esperadoValvulas || !valvulasVeiculo) ausencias.push("valvulas");
+    else if (esperadoValvulas !== valvulasVeiculo) bloqueios.push({
+        codigo: "valvulas_fisicas_divergentes",
+        mensagem: `Produto fisico ${esperadoValvulas}V diverge da aplicacao ${valvulasVeiculo}V.`
+    });
+    if (!esperadoEuro || !euroVeiculo) ausencias.push("norma_euro");
+    else if (esperadoEuro !== euroVeiculo) bloqueios.push({
+        codigo: "euro_fisico_divergente",
+        mensagem: `Produto fisico Euro ${esperadoEuro} diverge da aplicacao Euro ${euroVeiculo}.`
+    });
+    return {
+        estado: bloqueios.length ? "divergente" : ausencias.length ? "indeterminado" : "coerente",
+        bloqueios,
+        ausencias
+    };
+}
 
-return { FONTES_FORTES: FONTES_FORTES, codigosDoProduto: codigosDoProduto, fonteForte: fonteForte, validarAplicacao: validarAplicacao, validarIntercambiabilidade: validarIntercambiabilidade };
+return { FONTES_FORTES: FONTES_FORTES, codigosDoProduto: codigosDoProduto, fonteForte: fonteForte, validarAplicacao: validarAplicacao, validarIntercambiabilidade: validarIntercambiabilidade, validarConfrontoFisico: validarConfrontoFisico };
 })();
 
 // ---------- supabase/functions/_shared/aplicacoes/regras_seo.ts ----------
@@ -725,7 +767,7 @@ const TIPOS_CODIGO = [
     "antigo"
 ];
 const { urlImagemSegura: urlImagemSegura } = __m7;
-const { validarAplicacao: validarAplicacao } = __m8;
+const { validarAplicacao: validarAplicacao, validarConfrontoFisico: validarConfrontoFisico } = __m8;
 const { validarTextoSeo: validarTextoSeo } = __m9;
 const txt = (v, max = 500)=>typeof v === "string" ? v.trim().slice(0, max) : "";
 const conf = (v)=>typeof v === "number" && v >= 0 && v <= 1 ? v : null;
@@ -869,6 +911,13 @@ async function proporAplicacao(admin, lojaId, e) {
     if (!produtoId) return {
         erro: "Produto não encontrado nesta loja."
     };
+    const { data: automacao, error: falhaAutomacao } = await admin.from("produto_automacao").select("pausado").eq("loja_id", lojaId).eq("produto_id", produtoId).maybeSingle();
+    if (falhaAutomacao) return {
+        erro: "Estado da automação indisponível; proposta não enviada."
+    };
+    if (automacao?.pausado === true) return {
+        erro: "Produto com automação pausada: somente consulta, sem proposta."
+    };
     const codigos = await listar(admin.from("produto_codigos").select("tipo, valor").eq("produto_id", produtoId).eq("status", "aprovado"));
     const valores = (t)=>codigos.filter((c)=>c?.tipo === t && typeof c.valor === "string").map((c)=>c.valor);
     const fonte = {
@@ -915,6 +964,25 @@ async function proporAplicacao(admin, lojaId, e) {
         bloqueios: r.bloqueios
     };
     const v = proposta.veiculo;
+    const atributos = await listar(admin.from("produto_enriquecimento").select("campo, valor").eq("produto_id", produtoId).eq("status", "aprovado"));
+    const valor = (campo)=>{
+        const achado = atributos.find((a)=>a?.campo === campo)?.valor;
+        return typeof achado === "string" || typeof achado === "number" ? String(achado).trim() : null;
+    };
+    const inteiro = (texto)=>{
+        if (!texto) return null;
+        const n = Number(texto.replace(/[^0-9]/g, ""));
+        return Number.isInteger(n) && n >= 1 && n <= 99 ? n : null;
+    };
+    const confronto = validarConfrontoFisico({
+        codigo_motor: valor("espec:codigo_motor"),
+        valvulas: inteiro(valor("espec:valvulas")),
+        euro: inteiro(valor("espec:norma_euro"))
+    }, v.motor + " " + (v.versao ?? ""));
+    if (confronto.estado === "divergente") return {
+        erro: "Aplicação recusada por divergência com a configuração física aprovada do SKU.",
+        bloqueios: confronto.bloqueios
+    };
     const resumoFonte = [
         fonte.tipo,
         fonte.url ?? fonte.documento,
@@ -925,7 +993,8 @@ async function proporAplicacao(admin, lojaId, e) {
         fonte.codigo_conferido ? `codigo=${fonte.codigo_conferido}` : null,
         `base=${proposta.base}`
     ].filter(Boolean).join(" | ").slice(0, 400);
-    const limite = r.nivel === "confirmavel" ? 0.7 : 0.4;
+    const nivel = confronto.estado === "coerente" ? r.nivel : "hipotese";
+    const limite = nivel === "confirmavel" ? 0.7 : 0.4;
     const pedida = conf(e.confianca);
     const { error } = await admin.rpc("aplicacao_propor", {
         p_loja: lojaId,
@@ -943,8 +1012,13 @@ async function proporAplicacao(admin, lojaId, e) {
     return {
         ok: true,
         status: "a_confirmar",
-        nivel: r.nivel,
-        avisos: r.avisos
+        nivel,
+        avisos: [
+            ...r.avisos,
+            ...confronto.estado === "indeterminado" ? [
+                "Confronto físico pendente: " + confronto.ausencias.join(", ")
+            ] : []
+        ]
     };
 }
 async function proporImagem(admin, lojaId, e, verificar) {
