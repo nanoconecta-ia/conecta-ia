@@ -35,6 +35,18 @@
 9. **Projetar para canais:** dados físicos vêm do Bling; extensões técnicas ficam no Conecta e são exportadas **somente quando o canal está conectado/autorizado e o campo foi homologado**. Em `catalogo_informativo`: `preco_publico=null`, `estoque_publico=null`, sem `offers`, checkout ou feed comercial. Nunca assumir que marketplace/PDV externo recebe campos não suportados pelo Bling sem integração própria.
 10. **Provar a entrega:** diferenciar `proposta_preparada`, `rascunho_real_gravado`, `aguarda_homologacao`, `aprovado`, `publicado_e_verificado` por operação real. Só declarar gravação após leitura do registro; só declarar publicação após acesso e verificação da URL.
 
+### Explicação obrigatória ao cliente — o que o produto acompanha
+
+Toda ficha física deve conter uma aba **"O que acompanha"**, independente das páginas de aplicação, com:
+- descrição leiga do **tipo de conjunto** (motor parcial, completo, cabeçote, kit etc.), sem prometer peça pronta para funcionar se não houver comprovação;
+- **itens declarados e itens comprovados separados**: componente, posição/função, quantidade, especificação/medida quando documental, estado `inclui|nao_inclui|nao_confirmado` e fonte;
+- exclusões apenas quando documentadas; componente não mencionado é `nao_confirmado`, nunca uma exclusão inventada;
+- texto técnico livre de invenções, cópia do fornecedor sem fonte ou generalizações da família (peça de outro SKU não compartilha automaticamente o conteúdo);
+- uma composição física única reutilizada nas N páginas por veículo, com **compatibilidade separadamente homologada por versão**;
+- conteúdo de composição ainda declarado apenas pelo lojista deve ficar em proposta para revisão, nunca virar `aprovado` silenciosamente.
+
+**Exemplo específico para treinamento (não homologado):** [CI003696 — composição declarada de cabeçote, comandos, bronzinas, arruelas, jet coolers e virabrequim](../../mobis/catalogo/CI003696-ficha-proposta-web-20261119.md#declaracao-tecnica-do-lojista-em-21112026--detalhamento-do-que-acompanha-o-conjunto). A descrição do produto no site só poderá listar esses componentes como conteúdo confirmado após evidência da mesma versão física do SKU.
+
 ## 4. Contrato mínimo de saída (um registro mestre e lista de aplicações)
 
 ```json
