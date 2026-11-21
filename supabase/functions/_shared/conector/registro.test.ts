@@ -45,6 +45,23 @@ test("registro: lista visível ao LLM só tem ferramentas ativas, nunca execuç�
   assert.equal(ferramentasVisiveis("gateway_mcp", []).length, 0);
 });
 
+test("registro: propostas de reativação e categoria agora visíveis ao agente externo (MCP) com escopo 'propor'", () => {
+  const abertasAoMcp = ["bling.produtos.preparar_reativacao", "bling.categorias.preparar_alteracao_lote", "bling.categorias.preparar_criacao"];
+  const comPropor = ferramentasVisiveis("gateway_mcp", ["leitura", "propor"]);
+  const soLeitura = ferramentasVisiveis("gateway_mcp", ["leitura"]);
+  for (const id of abertasAoMcp) {
+    const f = d(id);
+    assert.equal(f.exposicao.mcp, true, `${id} exposta ao MCP`);
+    assert.equal(f.permissao, "propor", `${id} é proposta`);
+    assert.ok(comPropor.some((x) => x.id === id), `${id} aparece no gateway com 'propor'`);
+    assert.ok(!soLeitura.some((x) => x.id === id), `${id} não aparece só com 'leitura'`);
+    assert.equal(decidir(f, { origem: "gateway_mcp", escopos: ["leitura"] }).decisao, "negada", `${id} negada sem 'propor'`);
+    assert.equal(decidir(f, { origem: "gateway_mcp", escopos: ["propor"] }).decisao, "permitida", `${id} permitida com 'propor'`);
+    // continua só PROPOSTA: a gravação real é do executor e nunca do gateway, mesmo com escopo executar
+    assert.equal(decidir(f, { origem: "gateway_mcp", escopos: ["executar", "propor"], aprovacaoValida: true }).decisao, "permitida", `${id} no gateway é só proposta, nunca escrita`);
+  }
+});
+
 test("registro: planejadas aparecem no catálogo mas nunca na lista do LLM", () => {
   assert.equal(d("engenharia.oem.pesquisar").estado, "planejada");
   assert.ok(!ferramentasVisiveis("chat").some((f) => f.id === "engenharia.oem.pesquisar"));
