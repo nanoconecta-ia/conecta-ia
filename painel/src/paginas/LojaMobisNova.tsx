@@ -76,16 +76,16 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     // ou HTTP 5xx recebe UMA nova tentativa, sem ocultar regras do servidor.
     // Nunca repetir automaticamente 404/429/413 nem alterar o modo de publicação.
     let ativo=true;
-    const cancelar=new AbortController();
+    let tentativaAtiva:AbortController|undefined;
     setDados(null);setEstado("carregando");
     void (async()=>{
-      for(let numero=0;numero<2 && ativo && !cancelar.signal.aborted;numero++){
+      for(let numero=0;numero<2 && ativo;numero++){
+        const cancelar=new AbortController();
+        tentativaAtiva=cancelar;
+        const limite=window.setTimeout(()=>cancelar.abort(),18000);
         try{
-          // Evita o indicador "Consultando..." indefinido em conexões móveis instáveis.
-          const limite=AbortSignal.timeout(18000);
-          const sinal=AbortSignal.any([cancelar.signal,limite]);
           const resposta=await fetch(SUPABASE_URL+"/functions/v1/loja-publica",{
-            method:"POST",signal:sinal,
+            method:"POST",signal:cancelar.signal,
             headers:{"content-type":"application/json",apikey:SUPABASE_CHAVE_PUBLICAVEL},
             body:JSON.stringify({slug,q:f.q||undefined,referencia_exata:abaBusca==="referencia" && !!f.q,
               modelo:f.modelo||undefined,motor:f.motor||undefined,ano:f.ano?Number(f.ano):undefined,
@@ -105,12 +105,15 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
           }
           setDados(j);setEstado("ok");return;
         }catch{
-          if(!ativo||cancelar.signal.aborted)return;
+          if(!ativo)return;
           if(numero===1){setEstado("erro");return;}
+        }finally{
+          window.clearTimeout(limite);
+          tentativaAtiva=undefined;
         }
       }
     })();
-    return()=>{ativo=false;cancelar.abort()};
+    return()=>{ativo=false;tentativaAtiva?.abort()};
   },[slug,f,abaBusca,tentativa]);
   useEffect(()=>{
     if(!dados)return;
