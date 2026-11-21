@@ -28,6 +28,8 @@ on:
       # Autorização para corrigir resposta intermitente do catálogo e habilitar teste da prévia Web pelo Nano.
       - '.github/releases/mobis-catalogo-nano-web-resiliencia-20261120.md'
 
+      - '.github/releases/mobis-modelo02-referencia-responsiva.md'
+
 permissions:
   contents: read
   pages: write

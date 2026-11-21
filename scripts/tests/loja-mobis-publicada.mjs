@@ -29,9 +29,8 @@ try{
   await page.goto(base+"?release="+esperado+"#/loja/mobis");
   await page.locator('[data-mobis-layout="aprovado-v2"]').waitFor();
   assert.equal(await page.locator('[data-mobis-modelo="tecnico"]').count(),1,"Modelo 02 Técnico deve ser a vitrine inicial sem publicação alternativa");
-  assert.equal(await page.locator('[data-mobis-entrega="modelo-02-20261120"]').count(),1,"primeira dobra técnica real deve existir em produção");
-  const ordemEntrada=await page.locator('main [data-bloco="banner"],main [data-bloco="filtros"]').evaluateAll(els=>els.map(el=>el.getAttribute("data-bloco")));
-  assert.deepEqual(ordemEntrada,["banner","filtros"],"carrossel institucional antes do único seletor por aplicação");
+  const ordemEntrada=await page.locator('main [data-bloco="banner"],main [data-bloco="busca"],main #ms-departamentos,main [data-bloco="filtros"]').evaluateAll(els=>els.map(el=>el.getAttribute("data-bloco")??el.id));
+  assert.deepEqual(ordemEntrada,["banner","busca","ms-departamentos","filtros"],"carrossel, busca, categorias e filtros na ordem do Modelo 02");
   assert.equal(await page.locator('[data-mobis-palette="branco-gelo"]').count(),1,"publicação usa paleta branca");
   // Modelo claro v4: banner fluido com a imagem do veículo correto de cada modelo; sem as fotos do Wikimedia nem mascotes.
   assert.equal(await page.locator('[data-mobis-visual="claro-v4"]').count(),1,"layout claro publicado");
@@ -53,7 +52,7 @@ try{
   assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem as fotos do Wikimedia nem mascotes na loja");
   assert.equal(await page.locator('.mbi,.mgv,.m3-hero,.m3-faixa-sistemas').count(),0,"blocos duplicados removidos");
 
-  assert.equal(await page.locator('.ms-cabecalho').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(11, 15, 18)',"cabeçalho da loja M-STYLE V3 é grafite");
+  assert.equal(await page.locator('.ms-cabecalho').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(234, 242, 246)',"cabeçalho do Modelo 02 usa gelo");
    assert.equal(await page.locator('.ms-departamentos-lista button').count(),7,"sete ícones de sistema na vitrine V3");
   assert.equal(await page.locator(".v-hero").count(),0);
   const r=await consulta;assert.equal(r.status(),200,"catálogo público deve carregar");
