@@ -94,7 +94,7 @@ try{
     assert.ok(page.url().includes("#/loja/mobis"),"o departamento não navega ao WhatsApp");
   }
   assert.equal(await page.locator(".m2-estado-compacto").count(),0,"sem cartão redundante de WhatsApp");
-  assert.ok((await page.locator('link[rel="icon"][type="image/svg+xml"]').getAttribute("href")).includes("mobis-v3-favicon.svg"),"favicon oficial V3 configurado");
+  assert.ok((await page.locator('link[rel="icon"][type="image/svg+xml"]').getAttribute("href")).includes("mobis-falcon-m.svg"),"favicon oficial V3 configurado");
  
   assert.equal(await page.locator(".ms-encontrar form").count(),1,"filtro hierárquico preservado sem duplicação");
   assert.equal(await page.locator(".m4-linha-card,.m2-veiculo-grade").count(),0,"outras grades duplicadas ausentes");
