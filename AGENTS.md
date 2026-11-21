@@ -2,6 +2,9 @@
 
 **Escopo:** este repositório apenas. Consulte `CLAUDE.md` e a arquitetura/Policy Engine existentes antes de qualquer operação. O projeto Supabase autorizado é `conecta-ia` (`dsfzhsrudriqkumtlqwj`), **nunca** `NanoShell IA`.
 
+## CÓDIGOS OEM POR COMPONENTE — pesquisa EPC obrigatória quando há conjuntos importados
+Para motor parcial, cabeçote montado, kits e quaisquer outros produtos com múltiplas peças, aplicar [o protocolo de EPC e composição por componente](docs/conector-ia/porteiro-epc-oem-por-componente-20261121.md). **Não associar OEM de bronzina, virabrequim, cabeçote ou outra peça individual como OEM do SKU inteiro**. A fonte EPC identifica uma peça do veículo; provar inclusão/equivalência ao conjunto importado exige documentação e validação do produto físico. Agente só propõe; sem documentação final, `a_confirmar`. Protocolo sob revisão, ainda sem integração do validador ao gateway.
+
 ## CONTRATO UNIVERSAL DE MULTIAPLICAÇÃO — leitura obrigatória pelo porteiro
 Antes de pesquisar, propor ou aprovar **qualquer SKU**, incluindo peças com várias montadoras/modelos, aplicar o [contrato universal: identidade física Bling, N aplicações, variantes Euro, OEM e portões de revisão](docs/conector-ia/porteiro-contrato-universal-multiaplicacao-20261121.md). Ele mantém montadora, marca da peça, fornecedor/importador e OEM em campos distintos; não aprova aplicações por similaridade, não replica estoque e não confunde aplicação em revisão com publicação. É um contrato em revisão: o portão de confronto físico x versão e a fila de aprovação por aplicação ainda precisam ser implementados/testados antes de produção.
 
