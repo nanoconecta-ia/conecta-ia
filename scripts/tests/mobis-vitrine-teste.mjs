@@ -146,7 +146,8 @@ try {
       assert.equal(await page.locator(".mobis-v2.m4").getAttribute("data-mobis-modelo"),modelo);
       const real=await page.locator("main .m2-bloco-modular").evaluateAll(els=>els.map(el=>el.getAttribute("data-modulo")));
       assert.deepEqual(real,blocos);
-      assert.equal(await page.locator(".m2-modulo-sistemas-grid button").count(),7);
+      // Modelo 02 (técnico) move os 7 sistemas para a faixa de departamentos; os demais mantêm a grade dedicada.
+      assert.equal(await page.locator(modelo==="tecnico"?".ms-departamentos-lista button":".m2-modulo-sistemas-grid button").count(),7,"os 7 sistemas do veículo aparecem no modelo "+modelo);
       assert.equal(await page.locator(".m2-produto").count(),0,"modelo visual não pode liberar produto não publicado");
       assert.deepEqual(erros,[],"modelo "+modelo+" sem exceção no navegador");
       await context.close();
@@ -160,8 +161,9 @@ try {
     assert.equal(await root.getAttribute("data-paleta-publicada"),"sim",
       "somente paleta publicada pela API é aplicada à Mobis");
     assert.equal(await root.evaluate(el=>getComputedStyle(el).getPropertyValue("--mobis-botao").trim()),"#444c54");
-    assert.equal(await page.locator(".ms-pesquisa button").first().evaluate(el=>getComputedStyle(el).backgroundImage.includes("linear-gradient")),
-      true,"a busca usa a faixa comercial vermelha da marca V3");
+    // Marca V3: gradiente vermelho no modelo Oficial; no Modelo 02 (técnico) o botão de busca é o vermelho sólido #e2181a.
+    assert.ok(await page.locator(".ms-pesquisa button").first().evaluate(el=>{const s=getComputedStyle(el);return s.backgroundImage.includes("linear-gradient")||s.backgroundColor==="rgb(226, 24, 26)";}),
+      "a busca usa o vermelho comercial da marca V3");
     assert.equal(await page.locator(".ms-cabecalho").evaluate(el=>getComputedStyle(el).backgroundColor),
       "rgb(31, 35, 39)","identidade do cabeçalho V3 não altera o ponteiro da paleta antiga");
     assert.deepEqual(erros,[]);
