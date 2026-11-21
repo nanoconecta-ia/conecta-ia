@@ -47,6 +47,10 @@ Toda ficha física deve conter uma aba **"O que acompanha"**, independente das p
 
 **Exemplo específico para treinamento (não homologado):** [CI003696 — composição declarada de cabeçote, comandos, bronzinas, arruelas, jet coolers e virabrequim](../../mobis/catalogo/CI003696-ficha-proposta-web-20261119.md#declaracao-tecnica-do-lojista-em-21112026--detalhamento-do-que-acompanha-o-conjunto). A descrição do produto no site só poderá listar esses componentes como conteúdo confirmado após evidência da mesma versão física do SKU.
 
+### Peças avulsas do mesmo fornecedor, com notas fiscais distintas
+
+O porteiro deve suportar **vínculos de pesquisa entre produtos comerciais independentes**: cabeçotes, válvulas, comandos, bronzinas e demais peças avulsas podem ser vendidas separadamente por um fornecedor que também oferece um motor parcial montado, com notas fiscais próprias. Isso **não** os transforma em filhos de estoque do motor nem comprova que o item avulso seja o mesmo componente contido no conjunto. Comprovar separadamente: identidade e NF do avulso, OEM técnico por versão EPC, e composição/compatibilidade do SKU do motor. Cada peça mantém SKU/ID Bling/estoque/NF próprios quando efetivamente existentes; a referência externa pode ficar sem SKU no Bling, como candidato. Protocolo e testes: [peças avulsas, RPM e notas distintas](porteiro-epc-oem-por-componente-20261121.md#8-componentes-comercializados-avulsos--mesmo-fornecedor-notas-fiscais-diferentes-declaracao-do-lojista).
+
 ## 4. Contrato mínimo de saída (um registro mestre e lista de aplicações)
 
 ```json
