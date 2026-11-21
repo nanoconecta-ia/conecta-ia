@@ -2,6 +2,9 @@
 
 **Escopo:** este repositório apenas. Consulte `CLAUDE.md` e a arquitetura/Policy Engine existentes antes de qualquer operação. O projeto Supabase autorizado é `conecta-ia` (`dsfzhsrudriqkumtlqwj`), **nunca** `NanoShell IA`.
 
+## CONTRATO UNIVERSAL DE MULTIAPLICAÇÃO — leitura obrigatória pelo porteiro
+Antes de pesquisar, propor ou aprovar **qualquer SKU**, incluindo peças com várias montadoras/modelos, aplicar o [contrato universal: identidade física Bling, N aplicações, variantes Euro, OEM e portões de revisão](docs/conector-ia/porteiro-contrato-universal-multiaplicacao-20261121.md). Ele mantém montadora, marca da peça, fornecedor/importador e OEM em campos distintos; não aprova aplicações por similaridade, não replica estoque e não confunde aplicação em revisão com publicação. É um contrato em revisão: o portão de confronto físico x versão e a fila de aprovação por aplicação ainda precisam ser implementados/testados antes de produção.
+
 ## REGRA MESTRE: 1 item Bling → N páginas por veículo, OEM/SEO por aplicação
 **Antes de cadastrar qualquer SKU**, seguir [Bling como base fiscal/estoque e páginas independentes por veículo com OEM, especificações e SEO](docs/conector-ia/porteiro-master-ofertas-por-aplicacao-oem-seo-bling-20261119.md). Nota fiscal e SKU do fornecedor identificam a peça física; cada aplicação homologada recebe URL, H1, descrição, códigos OEM documentados **por montadora**, referências compartilhadas somente se prova do mesmo conjunto, tags sem repetição, banner próprio e link ao mesmo produto/estoque. Nunca clonar item no Bling apenas por atender HR e Bongo. Produto com aplicação pendente não tem página pública de compatibilidade, mas pode ter ficha informativa geral sem preço/foto. Código oficial do motor do exemplo: **CI003696**; não substituir por CI0033696 sem NF comprovando outro SKU.
 
