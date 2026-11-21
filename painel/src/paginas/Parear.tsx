@@ -4,6 +4,7 @@ import { ir } from "../lib/rota.ts";
 import { QrCode } from "../componentes/QrCode.tsx";
 import { RelogioPair } from "../componentes/RelogioPair.tsx";
 import { aleatorioB64u, chamarPair, ESCOPOS, mmss, MOTIVOS, ROTULOS_ESCOPO, segundosAte, sha256Hex, TIPOS_DISPOSITIVO, URL_GATEWAY } from "../lib/pair.ts";
+import { CodigoVidroMobis } from "../componentes/CodigoVidroMobis.tsx";
 
 type Desafio = { codigo: string; url: string; verificacao: string; segredo: string; expira_em: string; renovavel: boolean };
 type Conectado = { token: string; loja_id: string; escopos: string[]; limite_ate: string; token_ate: string | null; renovavel: boolean };
@@ -233,7 +234,10 @@ export function ParearAprovador({ codigo, email }: { codigo: string; email: stri
       </fieldset>
       <label>Duração<select value={duracao} onChange={(e) => setDuracao(Number(e.target.value))}>{duracoes.map((v) => <option key={v} value={v}>{v >= 1440 ? `${v / 1440} dia(s)` : v >= 60 ? `${v / 60} h` : `${v} min`}</option>)}</select></label>
       <p className="suave">{det.renovavel ? "O token gira a cada uso e expira em 15 minutos sem renovação." : "Este dispositivo guarda um token fixo: ele vale até o fim da duração escolhida."}</p>
-      <label>Código mostrado na tela do dispositivo<input inputMode="numeric" autoComplete="one-time-code" maxLength={7} value={verif} onChange={(e) => setVerif(e.target.value)} placeholder="000000" /></label>
+      <div className="campo-otp-mobis">
+        <label htmlFor="pair-codigo-otp">Código mostrado na tela do dispositivo</label>
+        <CodigoVidroMobis id="pair-codigo-otp" rotulo="Código de verificação do dispositivo" valor={verif} onChange={setVerif} />
+      </div>
       {pedeSenha && <label>Confirme sua senha<input type="password" autoComplete="current-password" value={senha} onChange={(e) => setSenha(e.target.value)} /></label>}
       {msg && <p className="msg-erro">{msg}</p>}
       <div className="linha">

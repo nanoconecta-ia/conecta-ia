@@ -1,0 +1,56 @@
+/* Opção 01 "Grafite Glass" — entrada de código Mobis.
+   Painel grafite oficial (#1F2327) com acabamento de vidro; caixas translúcidas,
+   foco no vermelho da marca (#E2181A). Mantém o visual nos temas claro e escuro. */
+.campo-otp-mobis { display: flex; flex-direction: column; gap: 8px; }
+.campo-otp-mobis > label { font-weight: 600; }
+.otp-vidro {
+  --otp-grafite: #1F2327;
+  --otp-vermelho: #E2181A;
+  padding: 18px 16px;
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 90% at 85% -15%, #2b333a 0%, #1F2327 48%, #141a1e 100%);
+  border: 1px solid #ffffff1f;
+  box-shadow: 0 10px 30px #0b0f1240, 0 1px 0 #ffffff26 inset;
+}
+.otp-vidro-caixas {
+  display: flex;
+  gap: 8px;
+}
+.otp-vidro-caixa {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 48px;
+  height: 54px;
+  text-align: center;
+  font: 700 1.5rem/1 "Space Grotesk", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  background: #ffffff14;
+  border: 1px solid #ffffff33;
+  border-radius: 12px;
+  box-shadow: 0 1px 0 #ffffff1f inset;
+  caret-color: var(--otp-vermelho);
+  transition: border-color .15s, box-shadow .15s, background .15s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.otp-vidro-caixa:hover { border-color: #ffffff55; }
+.otp-vidro-caixa:focus-visible,
+.otp-vidro-caixa:focus {
+  outline: none;
+  border-color: var(--otp-vermelho);
+  background: #ffffff1f;
+  box-shadow: 0 0 0 3px #e2181a55, 0 1px 0 #ffffff33 inset;
+}
+/* caixa já preenchida ganha um leve realce */
+.otp-vidro-caixa:not(:placeholder-shown) { border-color: #ffffff4d; }
+
+@media (max-width: 360px) {
+  .otp-vidro-caixa { height: 48px; font-size: 1.25rem; }
+  .otp-vidro-caixas { gap: 6px; }
+  .otp-vidro { padding: 14px 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .otp-vidro-caixa { transition: none; }
+}
