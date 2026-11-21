@@ -109,3 +109,65 @@ export function validarVinculoOemComponente(
 
   return { ok: bloqueios.length === 0, bloqueios, situacao: bloqueios.length ? "bloqueado" : ctx.acao === "propor" ? "a_confirmar" : "confirmavel" };
 }
+
+
+// Vinculo da PECA AVULSA (outro item comercial, outro documento fiscal) com a
+// descricao do componente do conjunto. Nao confundir com BOM/kit no Bling.
+// Existir no mesmo fornecedor nao prova inclusao, OEM, medidas ou intercambialidade.
+export interface ProdutoAvulsoCandidato {
+  loja_id: string;
+  bling_id_conjunto: string;
+  sku_conjunto: string;
+  componente: string;
+  origem: "RPM" | "Bling" | "catalogo_fornecedor" | "outra";
+  bling_id_avulso?: string | null;
+  sku_avulso?: string | null;
+  referencia_externa?: string | null;
+  nf_conjunto_ref_interna?: string | null;
+  nf_avulsa_ref_interna?: string | null;
+  mesmo_fornecedor?: boolean;
+  finalidade: "relacionado_para_pesquisa" | "equivalente_ao_componente_montado";
+  fonte_identidade?: string | null;
+  fonte_evidencia_conjunto?: string | null;
+  evidencia_comparacao_fisica?: string | null;
+  versao_motor_conferida?: boolean;
+  codigo_fabricante_conferido?: boolean;
+  interfaces_conferidas?: boolean;
+}
+export function validarVinculoProdutoAvulso(
+  candidato: ProdutoAvulsoCandidato, conjunto: IdentidadeFisica, ctx: Contexto,
+): Resultado {
+  const bloqueios: Bloqueio[] = [];
+  const barrar = (codigo: string, mensagem: string) => bloqueios.push({ codigo, mensagem });
+  if (candidato.loja_id !== conjunto.loja_id || candidato.bling_id_conjunto !== conjunto.bling_id
+    || candidato.sku_conjunto !== conjunto.sku) {
+    barrar("identidade_fisica_divergente", "Vinculo aponta para outro produto fisico no Bling.");
+  }
+  if (conjunto.automacao_pausada) barrar("produto_pausado", "Durante pausa, apenas pesquisa consultiva.");
+  if (ctx.ator === "agente" && ctx.acao !== "propor") barrar("agente_nao_aprova", "Aprovacao e publicacao exigem humano.");
+  if (!campo(candidato.componente)) barrar("componente_ausente", "Componente precisa ser individualizado.");
+  if (candidato.bling_id_avulso && candidato.bling_id_avulso === conjunto.bling_id) {
+    barrar("produto_nao_e_avulso", "O produto avulso nao pode referenciar o mesmo ID Bling do conjunto.");
+  }
+  if (candidato.sku_avulso && codigo(candidato.sku_avulso) === codigo(conjunto.sku)) {
+    barrar("sku_nao_e_avulso", "O codigo informado para a peca avulsa e o mesmo SKU do conjunto.");
+  }
+  if (ctx.acao !== "propor") {
+    if (!campo(candidato.fonte_identidade)) {
+      barrar("sem_fonte_avulsa", "Identidade do componente avulso exige documento ou URL.");
+    }
+    if (!campo(candidato.bling_id_avulso) && !campo(candidato.sku_avulso) && !campo(candidato.referencia_externa)) {
+      barrar("produto_avulso_nao_identificado", "Sem ID, SKU ou referencia do avulso nao pode confirmar vinculo.");
+    }
+    if (candidato.finalidade === "equivalente_ao_componente_montado"
+      && (!campo(candidato.fonte_evidencia_conjunto) || !campo(candidato.evidencia_comparacao_fisica)
+        || !candidato.versao_motor_conferida || !candidato.codigo_fabricante_conferido
+        || !candidato.interfaces_conferidas)) {
+      barrar("equivalencia_sem_prova", "Mesmo fornecedor e nota fiscal diferente nao provam equivalencia ao componente montado.");
+    }
+  }
+  // Ausencia de NF não deve inventar dados nem impedir referencia de pesquisa.
+  // Presenca de NF comprova entrada separada, nao que a peca esteja dentro do motor.
+  return { ok: bloqueios.length === 0, bloqueios,
+    situacao: bloqueios.length ? "bloqueado" : ctx.acao === "propor" ? "a_confirmar" : "confirmavel" };
+}
