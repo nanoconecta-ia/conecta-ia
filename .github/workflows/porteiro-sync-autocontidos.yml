@@ -1,0 +1,30 @@
+name: Porteiro - sincronizar pacotes locais em revisao
+on:
+  push:
+    branches: [codex/porteiro-multiaplicacao-20261121]
+permissions:
+  contents: write
+jobs:
+  gerar:
+    if: github.repository == 'nanoconecta-ia/conecta-ia' && github.ref == 'refs/heads/codex/porteiro-multiaplicacao-20261121'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with: { node-version: '24.19.0' }
+      - name: Regenerar pacotes do assistente e do gateway (sem deploy)
+        run: |
+          node --experimental-vm-modules scripts/gerar-autocontido.mjs
+          node --experimental-vm-modules scripts/gerar-pair.mjs
+      - name: Atualizar somente artefatos no proprio ramo
+        run: |
+          git add artifacts/assistente/index.ts artifacts/assistente/manifesto.json
+          git add artifacts/pair/index.ts artifacts/pair/manifesto.json artifacts/conecta-gateway/index.ts artifacts/conecta-gateway/manifesto.json
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "build(review): sincronizar assistente e gateway autocontidos"
+            git push origin HEAD:codex/porteiro-multiaplicacao-20261121
+          fi
