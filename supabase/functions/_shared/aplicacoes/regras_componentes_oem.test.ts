@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { validarVinculoOemComponente, type VinculoComponente } from "./regras_componentes_oem.ts";
+import { validarVinculoOemComponente, validarVinculoProdutoAvulso, type VinculoComponente, type ProdutoAvulsoCandidato } from "./regras_componentes_oem.ts";
 
 const produto = { loja_id: "mobis", bling_id: "16719530075", sku: "CI003696", marca_peca: "TRIM GO", automacao_pausada: false };
 const hoje = "2026-11-21";
@@ -78,4 +78,63 @@ test("OEM com fonte futura ou sem URL/documento nao entra",()=>{
 });
 test("publicacao de codigo OEM por veiculo exige aplicacao aprovada",()=>{
   bloqueado({...base,aplicacao_aprovada:false},"aplicacao_pendente","publicar");
+});
+
+
+const pecaAvulsa: ProdutoAvulsoCandidato = {
+  loja_id: "mobis", bling_id_conjunto: "16719530075", sku_conjunto: "CI003696",
+  componente: "comando de valvulas", origem: "RPM",
+  bling_id_avulso: "ID-AVULSO-DE-TESTE", sku_avulso: "SKU-AVULSO-FICTICIO",
+  nf_conjunto_ref_interna: "NF-CONJUNTO-TESTE", nf_avulsa_ref_interna: "NF-AVULSA-TESTE",
+  mesmo_fornecedor: true, finalidade: "relacionado_para_pesquisa",
+  fonte_identidade: "Documento catalogo RPM teste",
+};
+
+test("avulso em RPM e NF diferente: candidato sem mesclar SKU ou estoque", () => {
+  const r = validarVinculoProdutoAvulso(pecaAvulsa, produto,
+    {ator: "agente", acao: "propor", hoje});
+  assert.equal(r.ok, true);
+  assert.equal(r.situacao, "a_confirmar");
+  assert.notEqual(pecaAvulsa.sku_avulso, produto.sku);
+  assert.notEqual(pecaAvulsa.nf_avulsa_ref_interna, pecaAvulsa.nf_conjunto_ref_interna);
+});
+
+test("mesmo fornecedor e notas fiscais distintas NAO provam equivalencia fisica", () => {
+  const r = validarVinculoProdutoAvulso({
+    ...pecaAvulsa, finalidade: "equivalente_ao_componente_montado"
+  }, produto, {ator: "usuario", acao: "aprovar", hoje});
+  assert.ok(r.bloqueios.some(b => b.codigo === "equivalencia_sem_prova"));
+});
+
+test("referencia RPM sem SKU/ID pode ser pesquisada, mas nao homologada sem identificacao", () => {
+  const p = {...pecaAvulsa, sku_avulso: undefined, bling_id_avulso: undefined, referencia_externa: undefined};
+  const proposta = validarVinculoProdutoAvulso(p, produto, {ator:"agente",acao:"propor",hoje});
+  assert.equal(proposta.situacao, "a_confirmar");
+  const aprovacao = validarVinculoProdutoAvulso(p, produto, {ator:"usuario",acao:"aprovar",hoje});
+  assert.ok(aprovacao.bloqueios.some(b=>b.codigo==="produto_avulso_nao_identificado"));
+});
+
+test("avulso nao pode ser a mesma identidade do conjunto", () => {
+  const r = validarVinculoProdutoAvulso({...pecaAvulsa, bling_id_avulso:produto.bling_id},
+    produto, {ator:"agente",acao:"propor",hoje});
+  assert.ok(r.bloqueios.some(b=>b.codigo==="produto_nao_e_avulso"));
+});
+
+test("prova de equivalencia precisa de documento de composicao e confronto tecnico", () => {
+  const p: ProdutoAvulsoCandidato = {
+    ...pecaAvulsa, finalidade: "equivalente_ao_componente_montado",
+    fonte_evidencia_conjunto: "Packing list SKU CI003696",
+    evidencia_comparacao_fisica: "Laudo por codigo fabricante e versao",
+    versao_motor_conferida: true, codigo_fabricante_conferido: true,
+    interfaces_conferidas: true,
+  };
+  const r = validarVinculoProdutoAvulso(p, produto,{ator:"usuario",acao:"aprovar",hoje});
+  assert.equal(r.ok,true);
+  assert.equal(r.situacao,"confirmavel"); // requer revisao humana externa
+});
+
+test("pausa bloqueia qualquer proposta de vinculo avulso no produto", () => {
+  const r = validarVinculoProdutoAvulso(pecaAvulsa, {...produto,automacao_pausada:true},
+    {ator:"agente",acao:"propor",hoje});
+  assert.ok(r.bloqueios.some(b=>b.codigo==="produto_pausado"));
 });
