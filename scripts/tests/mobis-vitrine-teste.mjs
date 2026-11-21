@@ -163,7 +163,7 @@ try {
     assert.equal(await page.locator(".ms-pesquisa button").first().evaluate(el=>getComputedStyle(el).backgroundImage.includes("linear-gradient")),
       true,"a busca usa a faixa comercial vermelha da marca V3");
     assert.equal(await page.locator(".ms-cabecalho").evaluate(el=>getComputedStyle(el).backgroundColor),
-      "rgb(11, 15, 18)","identidade do cabeçalho V3 não altera o ponteiro da paleta antiga");
+      "rgb(31, 35, 39)","identidade do cabeçalho V3 não altera o ponteiro da paleta antiga");
     assert.deepEqual(erros,[]);
     await context.close();
   }
@@ -172,7 +172,7 @@ try {
     assert.equal(await page.locator(".mobis-v2.m4").getAttribute("data-paleta-publicada"),"nao",
       "rascunho ou ausência de paleta não muda site");
     assert.equal(await page.locator(".ms-cabecalho").evaluate(el=>getComputedStyle(el).backgroundColor),
-      "rgb(11, 15, 18)","na ausência de paleta, a marca institucional continua grafite");
+      "rgb(31, 35, 39)","na ausência de paleta, a marca institucional continua grafite");
     assert.deepEqual(erros,[]);
     await context.close();
   }
@@ -186,7 +186,7 @@ try {
     assert.equal(await page.locator(".ms-navegacao").evaluate(el=>getComputedStyle(el).backgroundImage.includes("linear-gradient")),
       true,"o menu completo da V3 apresenta o degradê vermelho Mobis");
     assert.equal(await page.locator(".ms-cabecalho").evaluate(el=>getComputedStyle(el).backgroundColor),
-      "rgb(11, 15, 18)","a busca do cabeçalho está na faixa de grafite da V3");
+      "rgb(31, 35, 39)","a busca do cabeçalho está na faixa de grafite da V3");
     assert.ok((await page.locator(".ms-logo img").getAttribute("src")||"").includes("mobis-mstyle-v3-sem-slogan"),
       "logo horizontal usa variante V3 sem slogan");
     assert.deepEqual(erros,[]);

@@ -52,7 +52,7 @@ try{
   assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem as fotos do Wikimedia nem mascotes na loja");
   assert.equal(await page.locator('.mbi,.mgv,.m3-hero,.m3-faixa-sistemas').count(),0,"blocos duplicados removidos");
 
-  assert.equal(await page.locator('.ms-cabecalho').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(234, 242, 246)',"cabeçalho do Modelo 02 usa gelo");
+  assert.equal(await page.locator('.ms-cabecalho').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(31, 35, 39)',"cabeçalho do Modelo 02 usa o grafite oficial #1F2327");
    assert.equal(await page.locator('.ms-departamentos-lista button').count(),7,"sete ícones de sistema na vitrine V3");
   assert.equal(await page.locator(".v-hero").count(),0);
   const r=await consulta;assert.equal(r.status(),200,"catálogo público deve carregar");

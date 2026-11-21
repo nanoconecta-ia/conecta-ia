@@ -51,7 +51,7 @@ try{
   assert.equal(await page.locator('img[src*="veiculos-reais"],img[src*="mascotes"],img[src*="nano-equipe"]').count(),0,"sem as fotos do Wikimedia nem mascotes na loja");
   assert.equal(await page.locator('.mbi,.mgv,.m3-hero,.m3-faixa-sistemas').count(),0,"blocos duplicados removidos");
   assert.equal(await page.evaluate(()=>getComputedStyle(document.querySelector('.mobis-v2')).backgroundColor),'rgb(234, 242, 246)',"fundo gelo oficial V3");
-  assert.equal(await page.locator('.ms-cabecalho').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(11, 15, 18)',"masthead grafite da V3");
+  assert.equal(await page.locator('.ms-cabecalho').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(31, 35, 39)',"masthead grafite oficial #1F2327 da V3");
   const caixa=await hero.boundingBox();
   assert.ok(caixa&&caixa.width>=width-1,"banner ocupa a largura da tela em "+width+"px");
   assert.equal(await hero.evaluate(el=>el.scrollWidth<=el.clientWidth+1),true,"banner sem estouro lateral em "+width+"px");
