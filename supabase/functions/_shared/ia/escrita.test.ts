@@ -56,6 +56,42 @@ test("proporAplicacao: sem fonte datada, sem versão, só motor/modelo ou ano in
     assert.equal(a.chamadas.length, 0, "nada gravado quando recusada");
   }
 });
+test("porteiro multiaplicação: um SKU físico pode ter propostas independentes sem clonar estoque ou homologar", async () => {
+  // Duas versões candidatas para o MESMO item físico; o agente registra hipóteses,
+  // não publica compatibilidade, não cria segundo produto nem grava no Bling.
+  const a = admin("produto-fisico-unico");
+  const hyundai: any = await proporAplicacao(a, "mobis", aplicacaoOk({
+    sku: "CI003696", marca_veiculo: "Hyundai", modelo: "HR",
+    motorizacao: "D4CB 2.5 16V Euro 5", ano_inicial: 2013, ano_final: 2017,
+  }));
+  const kia: any = await proporAplicacao(a, "mobis", aplicacaoOk({
+    sku: "CI003696", marca_veiculo: "Kia", modelo: "Bongo K2500",
+    motorizacao: "D4CB 2.5 16V Euro 5", ano_inicial: 2013, ano_final: 2017,
+  }));
+  assert.equal(hyundai.status, "a_confirmar");
+  assert.equal(kia.status, "a_confirmar");
+  assert.deepEqual(a.chamadas.map((x) => x.fn), ["aplicacao_propor", "aplicacao_propor"]);
+  assert.deepEqual(a.chamadas.map((x) => (x.args as any).p_produto), ["produto-fisico-unico", "produto-fisico-unico"]);
+  assert.deepEqual(a.chamadas.map((x) => (x.args as any).p_modelo), ["HR", "Bongo K2500"]);
+  assert.ok(a.chamadas.every((x) => (x.args as any).p_loja === "mobis"));
+  assert.ok(!a.chamadas.some((x) => /produto_criar|estoque|bling/i.test(x.fn)));
+});
+
+test("porteiro multiaplicação: não aceita juntar modelos nem fases Euro num campo de versão", async () => {
+  for (const motor of ["D4CB Euro 3 / Euro 5", "D4CB 8V + D4CB 16V"]) {
+    const a = admin("produto-fisico-unico");
+    const r: any = await proporAplicacao(a, "mobis", aplicacaoOk({ sku: "CI003696", motorizacao: motor }));
+    assert.ok(r.bloqueios.some((b: any) => b.codigo === "veiculos_misturados"), motor);
+    assert.equal(a.chamadas.length, 0);
+  }
+});
+
+// Pendente de implementação: uma combinação de campos individualmente válida ainda
+// exige confronto entre dados FÍSICOS aprovados do SKU e a versão completa do veículo.
+test.todo("porteiro: barrar proposta Euro 3/8V incompatível com a configuração física Euro 5/16V documentada");
+test.todo("porteiro: barrar gravação de aplicação quando produto_automacao.pausado=true");
+test.todo("porteiro: resolver duplicata histórica por Bling ID e impedir seleção ambígua de 2 ativos");
+
 test("proporAplicacao: o formato antigo (fonte em texto livre, sem versão) deixa de ser aceito", async () => {
   const a = admin("p1");
   const r: any = await proporAplicacao(a, "L1", { sku: "80692", modelo: "HR", motorizacao: "2.5 16V", ano_inicial: 2013, fonte: "manual" });
