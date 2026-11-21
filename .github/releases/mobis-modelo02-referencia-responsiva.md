@@ -5,3 +5,5 @@ Ajuste solicitado pelo lojista para aproximar a vitrine das referências aprovad
 Publicar a revisão incorporada no PR #482. A verificação do painel passou antes da integração.
 
 Ajuste de compatibilidade: o catálogo usa cancelamento com temporizador, sem depender das APIs estáticas recentes do navegador.
+
+Ícone da aba da loja atualizado para o M dobrado sobre fundo branco.
