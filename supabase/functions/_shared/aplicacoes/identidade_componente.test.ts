@@ -7,9 +7,9 @@ const oem = (codigo: string): ReferenciaOemPesquisa => ({
   motor: "D4CB", modelo: "Bongo K2500", mercado: "EUR", ano_modelo: 2014,
   diagrama: "CAMSHAFT & VALVE", posicao_diagrama: "24100B", versao_confirmada: true,
 });
-const base = { sku_bl: null, sku_nf: null, sku_nf_confirmado: false, codigo_fabricante: null };
+const base = { sku_bl: null, sku_bl_confirmado: false, sku_nf: null, sku_nf_confirmado: false, codigo_fabricante: null };
 test("SKU do Bling se mantem fisico e OEM fica como referencia separada", () => {
-  const r = resolverIdentidadeDeComponente({ ...base, sku_bl: "CI123", oems: [oem("24100-4A100")] });
+  const r = resolverIdentidadeDeComponente({ ...base, sku_bl: "CI123", sku_bl_confirmado: true, oems: [oem("24100-4A100")] });
   assert.equal(r.tipo, "sku_bling");
   assert.equal(r.chave_indice, "SKU:CI123");
   assert.equal(r.sku_fiscal, "CI123");
@@ -55,4 +55,14 @@ test("ausencia completa conserva pendencia, nao gera codigo", () => {
   const r = resolverIdentidadeDeComponente({ ...base, oems:[] });
   assert.equal(r.tipo,"pendente");
   assert.equal(r.chave_indice,null);
+});
+
+test("SKU alegado mas não conferido no Bling não pode substituir OEM de referência", () => {
+  const r = resolverIdentidadeDeComponente({ ...base, sku_bl:"CI000000",sku_bl_confirmado:false, oems:[oem("24100-4A100")] });
+  assert.equal(r.tipo, "oem_referencia_tecnica");
+  assert.equal(r.sku_fiscal,null);
+});
+test("ano de modelo inválido não passa como EPC confirmado", () => {
+  const r = resolverIdentidadeDeComponente({ ...base, oems:[{...oem("24100-4A100"),ano_modelo:0}] });
+  assert.equal(r.tipo, "pendente");
 });
