@@ -7,7 +7,7 @@ import "./banner-aplicacoes-mstyle.css";
 
 type Banner = { sku:string; nome:string; preco:number|null; chamada:string|null; flash:boolean; imagem?:string|null; fim?:string|null };
 type Veiculo = { nome:string; foto:string; valor:string };
-type PerfilAprovado = { slug:string; titulo:string; modelo:string; status:string };
+type PerfilAprovado = { slug:string; titulo:string; modelo:string; status:string; indexavel:boolean };
 type PaginasPorSku = Readonly<Record<string,readonly PerfilAprovado[]>>;
 /** A imagem diferencia a linha de veículos, nunca comprova aplicação técnica. */
 function fotoDaLinha(modelo:string,veiculos:readonly Veiculo[]):string|null{
@@ -19,7 +19,7 @@ function fotoDaLinha(modelo:string,veiculos:readonly Veiculo[]):string|null{
 }
 const slugValido=(s:string)=>/^[a-z0-9-]{4,110}$/.test(s);
 const paginasAprovadas=(paginas:readonly PerfilAprovado[]|undefined)=>
-  (paginas??[]).filter(p=>p.status==="aprovado"&&slugValido(p.slug)).sort((a,b)=>a.modelo.localeCompare(b.modelo,"pt-BR"));
+  (paginas??[]).filter(p=>p.status==="aprovado"&&p.indexavel===true&&slugValido(p.slug)).sort((a,b)=>a.modelo.localeCompare(b.modelo,"pt-BR"));
 type Slide = {
   id:string; tipo:"campanha"|"veiculo"|"aplicacao"; titulo:string; subtitulo:string;
   etiqueta:string; imagem:string|null; url:string; preco:number|null; sku:string|null; flash:boolean;
@@ -59,26 +59,22 @@ export function GlassyCarouselMobisV3({
       url:"#/a/"+a.slug,preco:null,sku:b.sku,flash:false,montadora:identidadeDaMontadora(a.modelo),
     }));
   });
-  // Os banners institucionais por modelo já são individuais (HR / Bongo / L200).
-  // A página de um motor só substitui o destino do modelo quando a API a liberou.
-  const perfilCI003696=paginasAprovadas(paginasPorSku["CI003696"]);
-  const slides:Slide[]=campanhas.length>0?campanhas:veiculos.map(v=>{
-    const aplicacao=perfilCI003696.find(a=>fotoDaLinha(a.modelo,[v])===v.foto);
-    return {
-      id:"veiculo-"+v.valor,tipo:aplicacao?"aplicacao":"veiculo",
-      titulo:aplicacao?(aplicacao.titulo||v.nome):v.nome,
-      subtitulo:aplicacao
-        ?"Perfil de aplicação para "+v.nome+" · SKU CI003696"
-        :"Veja modelos e consulte peças por aplicação tecnicamente aprovada",
-      etiqueta:aplicacao?"PERFIL "+v.nome.toUpperCase():"LINHA "+v.nome.toUpperCase(),
-      imagem:v.foto,url:aplicacao?"#/a/"+aplicacao.slug:"#/loja/mobis/veiculo/"+encodeURIComponent(v.valor),
-      preco:null,sku:aplicacao?"CI003696":null,flash:false,montadora:identidadeDaMontadora(v.nome),
-    };
-  });
+  // Sem campanha aprovada, só há banners INSTITUCIONAIS por linha de veículo.
+  // Nenhum SKU especial é inferido aqui: qualquer produto terá seus N banners
+  // individuais quando houver campanha + aplicação aprovada/indexável na API.
+  const slides:Slide[]=campanhas.length>0?campanhas:veiculos.map(v=>({
+    id:"veiculo-"+v.valor,tipo:"veiculo",
+    titulo:v.nome,
+    subtitulo:"Veja modelos e consulte peças por aplicação tecnicamente aprovada",
+    etiqueta:"LINHA "+v.nome.toUpperCase(),
+    imagem:v.foto,
+    url:"#/loja/mobis/veiculo/"+encodeURIComponent(v.valor),
+    preco:null,sku:null,flash:false,montadora:identidadeDaMontadora(v.nome),
+  }));
   const indice=Math.min(atual,Math.max(0,slides.length-1));
   const slide=slides[indice];
   const intervaloSeguro=Number.isFinite(intervalo)?Math.min(15,Math.max(4,intervalo)):6;
-  useEffect(()=>setAtual(0),[banners[0]?.sku,veiculos[0]?.valor,paginasPorSku["CI003696"]?.[0]?.slug]);
+  useEffect(()=>setAtual(0),[banners[0]?.sku,veiculos[0]?.valor,paginasPorSku]);
   useEffect(()=>{
     if(slides.length<2||pausado||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
     const timer=window.setInterval(()=>{if(!document.hidden)setAtual(n=>(n+1)%slides.length);},intervaloSeguro*1000);
