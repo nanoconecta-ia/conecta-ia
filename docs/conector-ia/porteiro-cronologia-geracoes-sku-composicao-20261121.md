@@ -56,6 +56,19 @@ Aprovar uma não aprova as outras. Quando faltar packing list/foto/medida, regis
 
 Se só houver dados incompletos: `pesquisa_com_candidatos` e lista de documentos faltantes. Ficha geral de catálogo informativo não autoriza anúncio de compatibilidade. Não publicar OEM/geração/código candidato em SEO, banners ou WhatsApp automático. **Somente humano autorizado homologa cada aplicação e cada aresta**; aprovação de um período não propaga aos demais.
 
+## Projeção para Conecta.IA e loja: componente avulso NÃO é item incluído na oferta
+
+**Painel interno do porteiro (consulta/proposta):** além da cronologia, exibir uma **lista da composição do SKU**, com um registro por componente/posição. Cada linha separa: `OEM_original_do_componente_na_geracao`, `codigo_do_fabricante_avulso`, `sku_avulso_no_Bling` (opcional), `marca_do_avulso`, `quantidade_declarada/confirmada`, `incluido_no_conjunto?`, `equivalencia_direta_com_o_avulso?`, `fontes`, `status` e `revisor`. O mesmo componente pode corresponder a **múltiplos SKUs independentes de fabricantes diferentes**, com cada vínculo e fonte aprovados separadamente; escolher um deles por marca ou fornecedor comum é proibido.
+
+**Vitrine pública (somente após os portões existentes):**
+- A aba **"O que acompanha"** mostra a composição comprovada do **SKU conjunto**. Se um componente não estiver comprovado, usar `a confirmar` e nunca descrevê-lo como incluído.
+- Uma aba separada **"Componentes avulsos relacionados"** poderá exibir links `#/p/mobis/<SKU_AVULSO>` **apenas** se: (a) o avulso for produto físico real e publicado no próprio tenant; (b) o vínculo direto com a **posição e geração** estiver aprovado por humano e possuir fonte documental; (c) o escopo e o nome estiverem claros como **peça vendida separadamente**. Se faltar qualquer condição, só permitir pesquisa interna, sem link público.
+- Cada cartão público do avulso terá **seu próprio SKU/marca/foto/estoque/preço autorizado**. A foto do motor parcial não substitui a foto do avulso; a marca da montadora não se torna marca do fabricante da peça.
+- **Nunca** contabilizar quantidade avulsa no estoque do motor, somar preços automaticamente, criar kit, compartilhar NF/GTIN/NCM, prometer que o avulso acompanha o conjunto, nem criar automaticamente banners de componentes a partir dos três banners do motor CI003696.
+- Códigos OEM por componente podem aparecer apenas **no contexto técnico daquele componente e da aplicação aprovada**, nunca como OEM do motor parcial inteiro. Se o status for `a_confirmar`, não usar em anúncio, SEO, feed, filtro de compatibilidade ou CTA comercial.
+
+**Estado:** esta é a projeção alvo contratual, **não** uma aba pública implementada. Depende de relações persistidas, licenças de mídia, revisão humana e filtros da API da loja.
+
 ## Formato de saída obrigatório (exemplo estrutural, sem anos inventados)
 
 ```json
