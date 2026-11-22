@@ -18,7 +18,7 @@ const aplicacao = (ger: GeracaoDocumentada = geracao()): PropostaAplicacaoCronol
   status: "a_confirmar",
 });
 const produto = (sku: string, nivel: ProdutoCruzar["nivel"]): ProdutoCruzar => ({
-  sku, nivel, bling_id: "bling-" + sku,
+  loja_id: "mobis", sku, nivel, bling_id: "bling-" + sku,
   fonte_identidade_fisica: "NF e lista fisica documentada deste SKU",
 });
 const vinculo = (): PropostaVinculoCronologico => ({
@@ -113,4 +113,18 @@ test("sucessao entre codigos exige boletim, sentido e periodo documentados", () 
 test("mesmo SKU nao constitui relacao independente nem cria estoque novo", () => {
   const v = vinculo(); v.destino.sku = v.origem.sku;
   assert.equal(avaliarVinculoCronologico(v).estado, "bloqueado");
+});
+
+test("SKU de outro tenant nunca entra no cruzamento da Mobis", () => {
+  const v = vinculo(); v.destino.loja_id = "outra-loja";
+  const r = avaliarVinculoCronologico(v);
+  assert.equal(r.estado, "bloqueado");
+  assert.ok(r.bloqueios.includes("lojas_diferentes"));
+});
+
+test("dois códigos sobre o mesmo bling_id não são dois estoques independentes", () => {
+  const v = vinculo(); v.destino.bling_id = v.origem.bling_id;
+  const r = avaliarVinculoCronologico(v);
+  assert.equal(r.estado, "bloqueado");
+  assert.ok(r.bloqueios.includes("mesmo_produto_erp_nao_e_sku_independente"));
 });
