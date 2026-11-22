@@ -3,6 +3,9 @@
 Site inteligente que conecta ERPs (piloto: Bling) a uma loja online, de forma autônoma.
 Este arquivo é lido em toda sessão. Se algo aqui conflitar com um pedido no chat, pergunte.
 
+## CRONOLOGIA DE FÁBRICA, SKUs E PEÇAS AVULSAS — contrato do porteiro
+Ler ANTES de propor aplicação, troca, homologação de fabricante ou referência cruzada: [cronologia por geração, janela de fabricação/ano-modelo/VIN, conjunto importado e composição avulsa](docs/conector-ia/porteiro-cronologia-geracoes-sku-composicao-20261121.md). Um SKU pode atender múltiplas gerações **apenas com prova para cada combinação de veículo/versão/período**; fases coexistentes no mesmo ano não herdam aplicação. Cruzar outro SKU importado com o CI003696 exige identidade de **nível do conjunto** e confronto documental direto da composição/medidas, além das aplicações correspondentes. Cabeçotes, comandos, válvulas e peças avulsas com SKU e NF próprios são **produtos separados**: vínculo `componente` não significa equivalência ao motor parcial nem baixa de estoque. Classificar OEM genuíno/OES e aftermarket por documento e período. Enquanto CI003696 estiver pausado, pesquisar/relatar em somente leitura. Não produzir códigos OEM, anos de início/fim, fornecimento homologado ou equivalência presumidos. Protocolo documentado em PR; controle ainda não implantado ponta a ponta.
+
 ## EPC OEM dos componentes de conjunto importado
 Antes de enriquecer motores parciais, cabeçotes montados e kits, seguir [protocolo EPC de componentes, vínculo com a composição SKU e não-transitividade de OEM](docs/conector-ia/porteiro-epc-oem-por-componente-20261121.md). Não inferir o conteúdo de um motor importado a partir de um EPC de veículo; registrar fonte, versão, diagrama, código e status por peça. A referência OEM de um componente jamais vira OEM do conjunto. Validador puro está em revisão; não afirmar implantação do gate até passar por gateway/SQL, homologação e autorização.
 
