@@ -1,0 +1,30 @@
+[
+  {
+    "width": 360,
+    "interface": "aprovado-v2",
+    "origem": "local",
+    "dados": "SIMULADOS",
+    "errors": []
+  },
+  {
+    "width": 390,
+    "interface": "aprovado-v2",
+    "origem": "local",
+    "dados": "SIMULADOS",
+    "errors": []
+  },
+  {
+    "width": 412,
+    "interface": "aprovado-v2",
+    "origem": "local",
+    "dados": "SIMULADOS",
+    "errors": []
+  },
+  {
+    "width": 1280,
+    "interface": "aprovado-v2",
+    "origem": "local",
+    "dados": "SIMULADOS",
+    "errors": []
+  }
+]
