@@ -74,7 +74,7 @@ export function GlassyCarouselMobisV3({
   const indice=Math.min(atual,Math.max(0,slides.length-1));
   const slide=slides[indice];
   const intervaloSeguro=Number.isFinite(intervalo)?Math.min(15,Math.max(4,intervalo)):6;
-  useEffect(()=>setAtual(0),[banners[0]?.sku,veiculos[0]?.valor,paginasPorSku]);
+  useEffect(()=>setAtual(0),[banners[0]?.sku,veiculos[0]?.valor,slides.length]);
   useEffect(()=>{
     if(slides.length<2||pausado||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
     const timer=window.setInterval(()=>{if(!document.hidden)setAtual(n=>(n+1)%slides.length);},intervaloSeguro*1000);
