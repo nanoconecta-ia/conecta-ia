@@ -1,6 +1,7 @@
 // Handlers das ferramentas ATIVAS do registro. Cada um recebe a entrada já validada pelo esquema e o contexto da loja.
 // Nenhum handler escreve no Bling: as ferramentas "preparar_*" só montam PROPOSTA; quem escreve é o executor, depois da aprovação.
 import { registrarResumo } from "./atividade.ts";
+import { projetarCruzamentosDoSku } from "../aplicacoes/projecao_cruzados.ts";
 import { lerContextoDaLoja } from "../contexto/ler.ts";
 import { baixarImagemOriginal } from "../busca_segura/imagem_original.ts";
 import { anexarMidiaMcp } from "./midias_mcp.ts";
@@ -175,7 +176,10 @@ export const HANDLERS: Record<string, Handler> = {
   "conecta.catalogo.listar": (e, c) => c.dados.listarProdutos({ apenasNaoPublicados: e.apenas_nao_publicados === true, busca: e.busca, limite: e.limite }),
   "conecta.catalogo.ver": (e, c) => c.dados.verProduto(e.sku),
   "engenharia.duplicidade.detectar": (e, c) => rpc(c, "detectar_duplicidade", { p_loja: c.lojaId, p_sku: e.sku ?? null, p_gtin: e.gtin ?? null, p_nome: e.nome ?? null }),
-  "engenharia.cruzados.verificar": (e, c) => rpc(c, "verificar_cruzados_do_sku", { p_loja: c.lojaId, p_sku: e.sku }),
+  "engenharia.cruzados.verificar": async (e, c) => projetarCruzamentosDoSku(
+    await rpc(c, "verificar_cruzados_do_sku", { p_loja: c.lojaId, p_sku: e.sku }),
+    e.incluir_a_confirmar === true,
+  ),
   "engenharia.aplicacoes.validar": (e, c) => rpc(c, "validar_aplicacoes_do_sku", { p_loja: c.lojaId, p_sku: e.sku, p_ano: e.ano ?? null }),
   "engenharia.oem.buscar": (e, c) => rpc(c, "dna_por_codigo_oem", { p_loja: c.lojaId, p_codigo: e.codigo, p_apenas_aprovados: e.incluir_a_confirmar !== true }),
   "engenharia.compartilhamento.sugerir": (e, c) => rpc(c, "candidatas_por_compartilhamento", { p_codigo: e.codigo, p_apenas_aprovados: e.incluir_a_confirmar !== true }),
