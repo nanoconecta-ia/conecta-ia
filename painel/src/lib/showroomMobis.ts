@@ -50,7 +50,7 @@ export function faixasPublicasPorAplicacao(paginas: readonly AplicacaoBanner[]):
   const jaIncluidas = new Set<string>();
   const result: FaixaShowroom[] = [];
   for (const a of paginas) {
-    if (a.status !== "aprovado" || a.indexavel === false || !a.slug.trim() || !a.modelo.trim()) continue;
+    if (a.status !== "aprovado" || a.indexavel !== true || !a.slug.trim() || !a.modelo.trim()) continue;
     if (jaIncluidas.has(a.slug)) continue;
     jaIncluidas.add(a.slug);
     const montadora = identidadeDaMontadora(a.modelo);
