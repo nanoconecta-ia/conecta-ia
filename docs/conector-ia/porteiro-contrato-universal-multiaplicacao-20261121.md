@@ -128,3 +128,19 @@ Na falta de SKU da nota/fornecedor, `OEM:<codigo>` identifica **apenas um índic
 **Exemplo do motor parcial CI003696:** TRIM GO é a marca comercial; `CI003696` é o SKU físico do Bling. Códigos originais de junta, cabeçote e virabrequim são **referências individuais de componentes**, não OEM do motor parcial. Um OEM do conjunto completo e os vínculos diretos a outros motores importados somente podem ser divulgados após comparação da composição do mesmo nível de conjunto e da versão D4CB 16V Euro 5. As aplicações Hyundai HR e Kia Bongo K2500 ainda estão `a_confirmar`. O índice `CI003696-indice-rastreabilidade-oem-20261121.json` é uma trilha de pesquisa, não cadastro aprovado.
 
 **Regra de software preparada:** `supabase/functions/_shared/aplicacoes/regras_cruzamento_multimarcas.ts` e testes de regressão. Ainda **não ligado ao gateway/banco/PDV** e não pode ser considerado homologação de produto.
+
+
+## Etapa de integração — consulta segura de códigos cruzados no MCP
+
+A ferramenta **já existente** `engenharia.cruzados.verificar` passou, neste PR de revisão, a usar `supabase/functions/_shared/aplicacoes/projecao_cruzados.ts`. Ela continua lendo a RPC **já existente** `verificar_cruzados_do_sku`, sem gravar. O parâmetro opcional `incluir_a_confirmar` controla a visibilidade:
+
+- padrão: somente **vínculos de produto e arestas de cruzamento com status aprovado**; ainda é necessário verificar a classe da referência, a identidade física do conjunto e a aplicação antes de anunciar substituição;
+- `true`: mostra também `a_confirmar`, claramente rotulado, para a pesquisa interna do porteiro;
+- o tipo `referencia_cruzada` é rotulado **referência de pesquisa**, mesmo quando essa relação aparece aprovada no grafo;
+- `equivalente_validado`/substituições com status aprovado aparecem como **relação aprovada no grafo**, não como afirmação publicitária de compatibilidade do motor parcial;
+- vínculos diretos são consultados somente **um salto**, sem inferência A→C por A→B→C;
+- o vínculo de OEM **de um componente interno** não é uma ligação `e_esta_peca` do SKU do motor parcial completo.
+
+**Limitações:** a RPC existente ainda não expõe todos os IDs de fonte, classe homologada, SKU comercial de fabricante, escopo físico ou versão técnica para cada aresta. A projeção não inventa esses metadados, não homologa uma peça e não acrescenta os 36 códigos candidatos do arquivo CI003696 ao banco. Para fazer isso, são necessários migração/portão de escrita específico e revisão de evidências, com permissão do lojista.
+
+O caminho de execução desta mudança está no **ramo de revisão**; sua presença no código não significa ferramenta implantada em produção.
