@@ -28,6 +28,7 @@ export interface PropostaAplicacaoCronologica {
   status: "a_confirmar" | "aprovado";
 }
 export interface ProdutoCruzar {
+  loja_id: string;
   sku: string;
   bling_id: string | null;
   nivel: NivelConjunto;
@@ -91,6 +92,10 @@ export function avaliarVinculoCronologico(p: PropostaVinculoCronologico): Result
   const bloqueios: string[] = [], pendencias: string[] = [];
   if (!preenchido(p.origem.sku) || !preenchido(p.destino.sku)
       || p.origem.sku === p.destino.sku) bloqueios.push("skus_invalidos_ou_iguais");
+  if (!preenchido(p.origem.loja_id) || p.origem.loja_id !== p.destino.loja_id)
+    bloqueios.push("lojas_diferentes");
+  if (preenchido(p.origem.bling_id) && p.origem.bling_id === p.destino.bling_id)
+    bloqueios.push("mesmo_produto_erp_nao_e_sku_independente");
   if (!preenchido(p.origem.bling_id) || !preenchido(p.destino.bling_id))
     pendencias.push("identidade_erp_independente_nao_documentada");
   if (!preenchido(p.origem.fonte_identidade_fisica) || !preenchido(p.destino.fonte_identidade_fisica))
@@ -114,6 +119,10 @@ export function avaliarVinculoCronologico(p: PropostaVinculoCronologico): Result
   } else {
     if (!preenchido(p.boletim_sucessao)) pendencias.push("boletim_sucessao_com_vigencia_ausente");
     if (!p.versoes_comparadas.length) pendencias.push("periodo_de_sucessao_nao_confrontado");
+    for (const v of p.versoes_comparadas) {
+      if (avaliarAplicacaoCronologica(v).estado !== "revisavel")
+        pendencias.push("periodo_de_sucessao_nao_comprovado_por_versao");
+    }
   }
   if (!preenchido(p.evidencia_direta)) pendencias.push("evidencia_direta_ausente");
   return { estado: bloqueios.length ? "bloqueado" : pendencias.length ? "a_confirmar" : "revisavel",
