@@ -134,6 +134,19 @@ Os exemplos acima são **campos-modelo**, não confirmação de SKU cruzado, ano
 - O índice `docs/mobis/catalogo/CI003696-indice-rastreabilidade-oem-20261121.json` traz candidatos EPC **de posições de componentes** de um contexto internacional; não atribuir códigos ao conjunto TRIM GO nem à versão brasileira sem cadeia documental.
 - A ferramenta `engenharia.cruzados.verificar` consulta vínculos diretos existentes; **não produz** packing list, genealogia de fábrica comprovada ou homologação do avulso por si só.
 
+## Consulta consolidada de somente leitura — estado do PR #489
+
+A ferramenta MCP **existente** `engenharia.cruzados.verificar({sku,incluir_a_confirmar})` ganhou no **código do PR**, ainda não implantado, uma projeção adicional de cronologia. O handler consulta em paralelo as RPCs **já existentes** `verificar_cruzados_do_sku` e `validar_aplicacoes_do_sku` da mesma loja autorizada. O resultado mantém os códigos cruzados anteriores e acrescenta:
+
+- `cronologia_veicular.registros[]`: somente as **versões e os períodos de referência técnica** retornados pela RPC, com eventos históricos de veículo quando disponíveis. **Não** são datas de fabricação do veículo nem confirmação do motor importado. Mesmo quando a RPC responder `resultado=confirmada`, o relatório apresenta `situacao_do_conjunto=a_confirmar` porque a RPC **não verifica** a composição de cada SKU, geração/projeto exato, VIN ou packing list. Campos ausentes permanecem `null`.
+- `outros_skus_importados`: não fabrica SKU com base em código OEM; a RPC de cruzamentos não retorna `bling_id`, nota de compra ou comparação física de dois motores, portanto listas de equivalentes confirmados permanecem vazias até existir vínculo fiscal/documental direto.
+- `componentes_avulsos`: referências técnicas que **não** identificam o SKU físico inteiro ficam marcadas como **escopo a conferir**, não como peça comprovadamente incluída ou SKU avulso com estoque. A RPC atual não comprova ligação do item avulso ao motor.
+- `pode_publicar_equivalencias_com_este_relatorio=false` sempre. Pesquisa de referências continua por arestas diretas e sem propagação entre marcas/gerações.
+
+Por padrão, apenas registros com status aprovado são visíveis como **dados de referência**; `incluir_a_confirmar=true` mostra candidatos rotulados para o porteiro. Mesmo "aprovado no grafo" não é homologação automática do conjunto. Falha da RPC de aplicações deixa a consulta de cruzamentos disponível com diagnóstico `consulta_indisponivel`; não esconde o erro nem responde "incompatível".
+
+**Limitações técnicas:** sem nova migração, sem vínculo fiscal entre dois motores, sem persistência das linhas de composição, sem verificador automático de geração/projeto e sem tela pública de avulsos. São etapas posteriores, dependentes de prova documental e aprovação de operação específica. Enquanto o SKU CI003696 estiver pausado, permanece **somente consulta**.
+
 ## Casos obrigatórios de regressão
 
 1. Mesmo nome `HR`, duas gerações ou fases no mesmo ano → **duas linhas**, sem herança da compatibilidade de uma para outra.
