@@ -71,8 +71,9 @@ export function gerar(p: Perfil): Gerado {
     claro = { "--marca": hex(Lc, c, p.h), "--marca-forte": hex(Lcf, c, p.h), "--marca-texto": BRANCO_TEXTO, "--grafite": hex(0.2, ch, p.h), "--grafite-2": hex(0.26, ch, p.h) };
     escuro = { "--marca": hex(Le, c, p.h), "--marca-forte": hex(Lef, c, p.h), "--marca-texto": ESCURO_TEXTO, "--grafite": hex(0.15, ch * 0.8, p.h), "--grafite-2": hex(0.2, ch * 0.8, p.h) };
   }
-  // Grafite fixo (neutro oficial Mobis #1F2327): o cabeçalho/menu usam este neutro em vez do grafite tingido pelo matiz do perfil.
-  if (p.grafiteFixo) { claro["--grafite"] = p.grafiteFixo; claro["--grafite-2"] = p.grafite2Fixo ?? p.grafiteFixo; escuro["--grafite"] = p.grafiteFixo; escuro["--grafite-2"] = p.grafite2Fixo ?? p.grafiteFixo; }
+  // Grafite fixo (neutro oficial Mobis #1F2327) só no tema CLARO (padrão): o cabeçalho/menu usam este neutro em vez do grafite tingido pelo matiz.
+  // No escuro, mantém o grafite computado (bem escuro) para preservar o contraste do texto de acento sobre as faixas grafite.
+  if (p.grafiteFixo) { claro["--grafite"] = p.grafiteFixo; claro["--grafite-2"] = p.grafite2Fixo ?? p.grafiteFixo; }
   // Esfera: as mesmas famílias de cor do layout. a = fita principal e repouso; b = luz secundária (borda inferior); m1..m3 = interior de vidro escuro.
   const hb = p.hb ?? p.h + 55, c = p.c;
   const orbe: Tokens = neutro
