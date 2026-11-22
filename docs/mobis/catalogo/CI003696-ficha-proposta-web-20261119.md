@@ -120,3 +120,13 @@ O lojista informou que **cabeçote, válvulas e comandos** também são encontra
 - Mostrar ao cliente apenas a **composição homologada do SKU**. Produtos vendidos separadamente podem aparecer como sugestões de peças relacionadas, mas sem afirmar que o conjunto os inclui.
 
 A regra universal e os testes propostos estão em `docs/conector-ia/porteiro-epc-oem-por-componente-20261121.md`, no PR #489 de revisão. Nenhuma aplicação, nota fiscal ou produto foi modificado.
+
+## Índice de referências OEM por componente — pesquisa preliminar 21/11/2026
+
+Foi criado o arquivo [CI003696 — índice de rastreabilidade OEM (JSON)](CI003696-indice-rastreabilidade-oem-20261121.json), com **21 posições funcionais de componentes e 36 referências OEM** encontradas no contexto EPC de Kia Bongo D4CB ano-modelo 2014. Inclui cabeçote, válvulas, comandos, seguidores/tuchos a cotejar, retentores, junta e seus possíveis valores por espessura, bloco, virabrequim, bronzinas, arruelas, pistões e bielas. Jet coolers e parafusos permanecem sem código comprovado.
+
+As fontes são referências **de peças da configuração do veículo**, não uma lista de peças comprovadamente instaladas no motor TRIM GO CI003696. Por isso, todos os códigos estão como `candidato_epc_sem_equivalencia_sku`. Os SKU comerciais avulsos só entram quando encontrados e conferidos no Bling, RPM ou nota fiscal. Nenhum SKU de peça avulsa foi confirmado nesta pesquisa; a ausência de resultado na busca por nome não é prova de inexistência no Bling.
+
+**Regra do índice técnico:** caso um componente não possua SKU fiscal/ERP, aceitar `OEM:<codigo_normalizado>` como **chave de pesquisa técnica** somente para uma **variante EPC única identificada**, com fonte/ano/mercado/posição do diagrama. Não preencher `sku_fiscal` com esse OEM e não criar produto/estoque no Bling. Se existirem várias espessuras/classes, nenhuma chave principal pode ser escolhida sem a variante comprovada.
+
+Estado: proposta de rastreabilidade para revisão, automação do CI003696 pausada; nenhum campo do cadastro produtivo foi escrito.
