@@ -46,7 +46,7 @@
 .mobis-v2.m4 .gcv3-painel:before{
   background:linear-gradient(90deg,#1f2327 0 60%,#e2181a 60% 84%,var(--gcv3-montadora) 84%);
 }
-.mobis-v2.m4 .gcv3-copy h1{color:#1f2327;font-family:Inter,Arial,sans-serif;font-style:italic;font-weight:900}
+.mobis-v2.m4 .gcv3-copy h1{color:#1f2327;font-style:italic;font-weight:900}
 .mobis-v2.m4 .gcv3-sku{font-weight:800;color:#a40c15}
 .mobis-v2.m4 .gcv3-etiqueta-flash{background:#f7ebed;color:#8b0f17}
 .mobis-v2.m4 .gcv3-cta{background:#ad1017;color:#fff!important}
