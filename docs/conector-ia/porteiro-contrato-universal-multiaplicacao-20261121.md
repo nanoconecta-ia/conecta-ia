@@ -22,6 +22,12 @@
 
 **Montadora do veículo não é a marca/fabricante/importador da peça.** Hyundai/Kia identificam veículos; TRIM GO é marca comercial da peça; distribuidor/importador/país de origem devem possuir evidência própria e não aparecem em propaganda quando forem dados internos. `origem fiscal` é informação distinta de `origem comercial` e não se infere pela marca.
 
+## Complemento obrigatório: cronologia de fábrica e composição avulsa
+
+Aplicar também o [protocolo de cronologia de gerações, comparação direta de SKUs importados e componentes avulsos](porteiro-cronologia-geracoes-sku-composicao-20261121.md). A unidade de aprovação é a **configuração de veículo por geração, fase, mercado e período/VIN**, não apenas o modelo, ano isolado, código de motor ou marca. Aplicações de um SKU entre várias gerações não são herdadas; vínculos de outro SKU importado exigem nível de conjunto, listas de composição e provas diretas **de ambos**. Cabeçote/comando/junta e demais peças avulsas podem ter SKU e NF próprios, mas nunca equivalem ao motor parcial inteiro.
+
+Este complemento é regra de orientação e validador puro em revisão; **não** implanta automaticamente persistência de cronologia ou homologação da aplicação no gateway/banco.
+
 ## 3. Algoritmo obrigatório por SKU (porteiro)
 
 1. **Resolver identidade:** localizar `loja_id`, `bling_id`, SKU exato, situação, duplicidades e NF; identificar se automação está pausada. `pausado=true` permite pesquisa e resposta consultiva, **não** proposta/escrita por portas alternativas.
