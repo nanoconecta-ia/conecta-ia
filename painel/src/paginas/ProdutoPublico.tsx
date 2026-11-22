@@ -4,10 +4,10 @@ import { MOBIS } from "../lib/publicoLoja.ts";
 import { FichaProduto } from "../componentes/FichaProduto.tsx";
 import { RodapeMobisEnxuto } from "../componentes/RodapeMobisEnxuto.tsx";
 import type { PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
-import logoMobis from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
+import { ShowroomProdutoMobis } from "../componentes/ShowroomProdutoMobis.tsx";
 import "./produto-publico-mobis.css";
 import type { FichaProduto as Produto, FichaVeiculo } from "../lib/ficha.ts";
-type PaginaVeiculo = { slug:string;titulo:string;modelo:string;status:string };
+type PaginaVeiculo = { slug:string;titulo:string;modelo:string;status:string;indexavel?:boolean };
 
 /** Redes sociais oficiais da loja. Preencher somente com links confirmados pela loja; vazio = não aparece. */
 const REDES_SOCIAIS: { nome: string; url: string }[] = [];
@@ -37,7 +37,7 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
         setFicha({ produto: { ...produto, preco: consulta === true && !previa ? produto.preco : null },
           veiculos: j?.ficha?.veiculos ?? [] });
         setPaginasVeiculos(((j.paginas_aplicacao?.[sku] ?? []) as PaginaVeiculo[])
-          .filter(a => a.status === "aprovado"));
+          .filter(a => a.status === "aprovado" && a.indexavel === true));
       }
     }).catch(() => undefined); // sem ficha, a página mostra só o cabeçalho e o contato
     return () => { vivo = false; };
@@ -45,21 +45,12 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
 
   return (
     <main className={slug === MOBIS.slug ? "produto-publico-mobis" : undefined}>
-      {slug === MOBIS.slug && <header className="produto-publico-mobis-cab">
-        <a href="#/loja/mobis" aria-label="Voltar à loja Mobis Autopeças">
-          <img src={logoMobis} alt="MOBIS AUTOPEÇAS" /></a>
-        <a href="#/loja/mobis">← Voltar à loja</a>
-      </header>}
-      {ficha && <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} />}
-      {slug === MOBIS.slug && ficha && <section className="produto-publico-mobis-aplicacoes" aria-label="Páginas por veículo">
-        <h2>Aplicações por veículo</h2>
-        {paginasVeiculos.length ? <div className="produto-publico-mobis-grade">{paginasVeiculos.map(a=>
-          <a key={a.slug} href={"#/a/"+encodeURIComponent(a.slug)}>
-            <strong>{a.modelo}</strong><small>{a.titulo}</small><span>Ver página da aplicação →</span>
-          </a>)}</div>
-        : <p>As páginas individuais por veículo serão vinculadas aqui após a aprovação técnica de cada aplicação.</p>}
-        <p>O SKU físico continua único: as páginas por veículo não representam peças ou estoques diferentes.</p>
-      </section>}
+      {slug === MOBIS.slug && <nav className="produto-publico-mobis-cab" aria-label="Navegação da loja">
+        <a href="#/loja/mobis">← Voltar à loja Mobis Autopeças</a>
+      </nav>}
+      {ficha && (slug === MOBIS.slug
+        ? <ShowroomProdutoMobis produto={ficha.produto} veiculos={ficha.veiculos} aplicacoes={paginasVeiculos} />
+        : <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} />)}
       {slug === MOBIS.slug && <RodapeMobisEnxuto nome={MOBIS.nome} whatsapp={whatsappMobis} politicas={politicasMobis}/>}
       {slug !== MOBIS.slug && <div className="cartao">
         {REDES_SOCIAIS.length > 0 && <nav className="produto-publico-redes" aria-label="Redes sociais da loja">
