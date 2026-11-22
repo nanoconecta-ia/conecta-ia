@@ -63,7 +63,7 @@ Restrições a implementar: `loja_id` do SKU conferido com `produtos`; FKs restr
 - Todo número OEM extraído precisa carregar: `fonte_url, data_consulta, montadora, modelo, ano_modelo, motor, mercado, grupo_diagrama, posicao, nivel_do_objeto`.
 - O catálogo PartSouq é uma fonte terciária de consulta ao EPC. A documentação da montadora ou um EPC autorizado para a versão pode ser necessário para confirmação. Respeitar direitos de uso/termos do fornecedor da informação; não assumir permissão de raspagem massiva ou de republicação de diagramas.
 
-**Esta etapa não trouxe nenhum OEM específico do CI003696 verificado.** Caso use outra versão do mesmo motor como pista, separar `candidato_contextual` do `codigo_verificado_para_versao`.
+**Atualização da pesquisa (21/11/2026):** o índice de revisão `docs/mobis/catalogo/CI003696-indice-rastreabilidade-oem-20261121.json` contém **21 grupos de componentes e 36 números OEM candidatos** extraídos de referências EPC de Kia Bongo D4CB 2014, todos **sem equivalência física ou aplicação brasileira aprovada**. O OEM é verificado no diagrama da configuração consultada, **não no conjunto importado CI003696**; não promover nenhum candidato a produto de estoque, SEO ou venda. Os URLs individuais do JSON são rotas de pesquisa por código; a evidência original é o diagrama do veículo e a posição informada, que precisam ser preservados na homologação.
 
 ## 6. Portão de software proposto e testes
 
