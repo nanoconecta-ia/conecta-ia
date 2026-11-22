@@ -4,9 +4,10 @@
 // em cada tema. Alto contraste fica de fora de propósito: ele nunca é alterado por perfil.
 import { razao } from "./contraste.ts";
 
-export interface Perfil { id: string; rotulo: string; descricao: string; h: number; c: number; neutro?: "cinza" | "chumbo" | "branco"; hb?: number }
-/** terracota é o padrão atual do painel (sem atributo); os demais escrevem data-cor na raiz. */
+export interface Perfil { id: string; rotulo: string; descricao: string; h: number; c: number; neutro?: "cinza" | "chumbo" | "branco"; hb?: number; grafiteFixo?: string; grafite2Fixo?: string }
+/** terracota é a base do CSS (sem atributo); os demais escrevem data-cor na raiz. "mobis" é o padrão APLICADO no boot (ver perfilCor.ts). */
 export const PERFIS: Perfil[] = [
+  { id: "mobis", rotulo: "Mobis", descricao: "Grafite e vermelho Mobis Autopeças", h: 28, c: 0.22, hb: 18, grafiteFixo: "#1F2327", grafite2Fixo: "#2A3137" },
   { id: "terracota", rotulo: "Terracota", descricao: "Padrão do Conecta.IA", h: 40, c: 0.14, hb: 80 },
   { id: "vermelho", rotulo: "Vermelho", descricao: "Acento vermelho", h: 25, c: 0.19, hb: 350 },
   { id: "pardo", rotulo: "Pardo", descricao: "Marrom terroso", h: 62, c: 0.075, hb: 85 },
@@ -70,6 +71,8 @@ export function gerar(p: Perfil): Gerado {
     claro = { "--marca": hex(Lc, c, p.h), "--marca-forte": hex(Lcf, c, p.h), "--marca-texto": BRANCO_TEXTO, "--grafite": hex(0.2, ch, p.h), "--grafite-2": hex(0.26, ch, p.h) };
     escuro = { "--marca": hex(Le, c, p.h), "--marca-forte": hex(Lef, c, p.h), "--marca-texto": ESCURO_TEXTO, "--grafite": hex(0.15, ch * 0.8, p.h), "--grafite-2": hex(0.2, ch * 0.8, p.h) };
   }
+  // Grafite fixo (neutro oficial Mobis #1F2327): o cabeçalho/menu usam este neutro em vez do grafite tingido pelo matiz do perfil.
+  if (p.grafiteFixo) { claro["--grafite"] = p.grafiteFixo; claro["--grafite-2"] = p.grafite2Fixo ?? p.grafiteFixo; escuro["--grafite"] = p.grafiteFixo; escuro["--grafite-2"] = p.grafite2Fixo ?? p.grafiteFixo; }
   // Esfera: as mesmas famílias de cor do layout. a = fita principal e repouso; b = luz secundária (borda inferior); m1..m3 = interior de vidro escuro.
   const hb = p.hb ?? p.h + 55, c = p.c;
   const orbe: Tokens = neutro
