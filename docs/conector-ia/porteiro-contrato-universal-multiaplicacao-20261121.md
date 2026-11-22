@@ -107,3 +107,9 @@ O porteiro deve suportar **vínculos de pesquisa entre produtos comerciais indep
 ## 7. Limites da presente revisão
 
 Já existem `validarAplicacao`, `validarTextoSeo` e propostas `a_confirmar` no backend; **este documento não substitui travas de código nem altera a base**. Ainda é necessário incorporar e testar o gate **entre identificação do produto físico, cada aplicação e a aprovação/publicação**, sobretudo a verificação cruzada da composição e versão Euro, e assegurar que a fila do painel exiba/aprove `produto_aplicacoes` por SKU. Antes de liberar, testar com 2 SKUs de famílias diferentes e revisão humana, sem publicar.
+
+## Fallback de identidade técnica: SKU de nota fiscal ou OEM (não são equivalentes)
+
+Quando uma peça avulsa não possuir SKU conhecido, o porteiro deve pesquisar o SKU no Bling/RPM e na NF; o SKU só tem precedência quando **conferido**. Se não existir SKU fiscal confirmado, poderá criar um **alias de índice técnico** `OEM:<codigo>` exclusivamente para o componente/variante identificado em EPC com fonte, contexto de veículo, mercado, motor, ano-modelo, diagrama e posição. Esse alias **não** é SKU no Bling, NCM, GTIN, garantia de estoque, equivalência com o motor parcial, nem autorização para publicar. OEMs alternativos (junta de espessura diferente, classe de bronzina, revisão de comando) permanecem como candidatos separados até uma decisão técnica.
+
+Um OEM de componente **nunca** substitui o OEM do conjunto montado. Cada linha de composição mantém relação de inclusão independente. O modelo de resolução, sem efeitos colaterais, está em `supabase/functions/_shared/aplicacoes/identidade_componente.ts`; a pesquisa inicial (não homologada) do CI003696 está em `docs/mobis/catalogo/CI003696-indice-rastreabilidade-oem-20261121.json`.
