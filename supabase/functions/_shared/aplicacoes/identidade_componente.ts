@@ -19,6 +19,7 @@ export interface ReferenciaOemPesquisa {
 }
 export interface IdentificadorAvulso {
   sku_bl: string | null;
+  sku_bl_confirmado: boolean;
   sku_nf: string | null;
   sku_nf_confirmado: boolean;
   codigo_fabricante: string | null;
@@ -39,7 +40,7 @@ const oemValido = (x: ReferenciaOemPesquisa) => x.estado === "verificado_no_epc"
   && /^https:\/\/\S+$/i.test(x.fonte_url)
   && !!x.descricao_fonte.trim()
   && !!x.modelo?.trim() && !!x.motor?.trim()
-  && !!x.mercado?.trim() && x.ano_modelo !== null
+  && !!x.mercado?.trim() && typeof x.ano_modelo === "number" && Number.isInteger(x.ano_modelo) && x.ano_modelo >= 1900 && x.ano_modelo <= 2100
   && !!x.diagrama?.trim() && !!x.posicao_diagrama?.trim()
   && x.versao_confirmada;
 
@@ -48,7 +49,7 @@ export function resolverIdentidadeDeComponente(p: IdentificadorAvulso): Identida
   const candidatos = [...new Set(p.oems.filter(x => x.estado !== "rejeitado")
     .map(x => normaliza(x.codigo)).filter(Boolean))].sort();
   const skuBl = normaliza(p.sku_bl);
-  if (skuBl) return {
+  if (skuBl && p.sku_bl_confirmado) return {
     chave_indice: "SKU:" + skuBl, tipo: "sku_bling", sku_fiscal: p.sku_bl,
     oems_candidatos: candidatos, necessita_revisao: candidatos.length > 0,
     motivo: "SKU cadastrado no ERP; OEMs ficam como referencias distintas.",
