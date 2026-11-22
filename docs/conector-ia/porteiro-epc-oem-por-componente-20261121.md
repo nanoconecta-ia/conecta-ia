@@ -132,3 +132,11 @@ produto_fisico_conjunto: {loja_id, bling_id_conjunto, sku_conjunto}
 4. Mesma peça OEM no EPC, sem lista documentada da composição do conjunto → código EPC pesquisável, **inclusão a confirmar**.
 5. Composição documentada do conjunto + produto avulso com código fabricante/medidas distintos → a inclusão do tipo de componente pode ser confirmada, mas **equivalência com produto avulso rejeitada**.
 6. Aprovação individual do OEM/componente não altera estoque, NF, preço, cadastro fiscal, SKU nem aplicação de outro produto.
+
+## 9. Camadas OEM genuíno, fornecimento homologado e independente
+
+A montadora define a **referência OE** por versão do veículo. Uma peça genuína vendida em embalagem/canal de origem precisa de documentação de autenticidade; uma peça de fornecedor de primeiro equipamento (OEM) ou OES precisa de prova do fabricante e do escopo do fornecimento; uma peça aftermarket independente pode ter código cruzado **sem** ser original. O fato de ser importada da China ou de outro país não é critério de homologação e não invalida automaticamente sua qualidade.
+
+Ponte de pesquisa recomendada: `codigo_montadora + componente + nivel_conjunto + motor + versao + mercado + fonte_epc` → `codigo_proprio_fabricante + documento` → `SKU_fiscal_real + fornecedor + NF` → `relacao_direta + fonte + situacao`. Produtos de fornecedores distintos têm NFs, SKUs e estoques próprios. Não se cria SKU fiscal quando só o OEM está disponível.
+
+Relacionamentos **não são transitivos**, nem herdados por todas as versões Euro de uma família de motor. Para o CI003696, cruzamentos com outros motores importados continuam pesquisas possíveis, não vínculos aprovados. Ver `regras_cruzamento_multimarcas.ts` (validador puro) e `regras_cruzamento_multimarcas.test.ts`. Arestas aprovadas dependem de implementação do fluxo controlado e revisão humana.
