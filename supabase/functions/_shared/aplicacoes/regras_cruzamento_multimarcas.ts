@@ -38,6 +38,7 @@ export interface EvidenciasCruzamento {
   fonte_composicao_sku?: string | null;
   evidencia_compatibilidade_direta?: string | null; // cotejo do conjunto/versao, nao propaganda
   fonte_fornecimento_original?: string | null;      // para OEM/OES, por peca e periodo
+  fonte_peca_genuina?: string | null;                // embalagem/certificacao de autenticidade genuina
   revisao_engenharia?: string | null;                // para substituicao
   data_consulta?: string | null;
   revisor_humano?: string | null;
@@ -76,6 +77,9 @@ export function avaliarCruzamento(c: Cruzamento): ResultadoCruzamento {
   if (!preenchido(e.fonte_oem)) b.push("fonte_original_nao_rastreada");
   if (!preenchido(p.codigo_fabricante) || !preenchido(e.fonte_codigo_fabricante)) {
     b.push("codigo_comercial_sem_documento");
+  }
+  if (c.classe_declarada === "genuina" && !preenchido(e.fonte_peca_genuina)) {
+    b.push("peca_genuina_sem_autenticidade_documentada");
   }
   if (c.classe_declarada === "oem_primeiro_equipamento" || c.classe_declarada === "oes") {
     if (!preenchido(p.fabricante) || !preenchido(e.fonte_fornecimento_original)) {
