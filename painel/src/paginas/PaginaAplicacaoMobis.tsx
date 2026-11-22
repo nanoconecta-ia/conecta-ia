@@ -3,7 +3,8 @@ import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 
 import { RodapeMobisEnxuto } from "../componentes/RodapeMobisEnxuto.tsx";
 import type { PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
-import logoMobis from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
+import { MarcaMobisOficial } from "../componentes/MarcaMobisOficial.tsx";
+import { FaixaAplicacaoShowroomMobis } from "../componentes/ShowroomProdutoMobis.tsx";
 import "./loja-mobis-nova.css";
 import "./pagina-aplicacao-mobis-v3.css";
 
@@ -14,14 +15,6 @@ type Aplicacao = {
   categoria:string|null; fotos:string[]; preco:null; estoque:null; whatsapp:string|null
 };
 type Resposta = {loja:{nome:string;slug:string;ambiente:string;whatsapp?:string|null};pagina_aplicacao:Aplicacao;politicas?:PoliticasLojaPublicas|null};
-
-/** Identificador visual de modelo, sem placa nem fotografia de terceiro. */
-function identidadeVeiculo(modelo:string){
-  if(/^(?:Hyundai\s+)?HR(?:\b|$)/i.test(modelo))return {montadora:"HYUNDAI"};
-  if(/^(?:Kia\s+)?(?:Bongo(?:\s+K2500)?|K2500)(?:\b|$)/i.test(modelo))return {montadora:"KIA"};
-  if(/^Mitsubishi\b/i.test(modelo))return {montadora:"MITSUBISHI"};
-  return {montadora:"MONTADORA A CONFIRMAR"};
-}
 
 export function PaginaAplicacaoMobis({slug}:{slug:string}){
   const [dados,setDados]=useState<Resposta|null>(null);
@@ -43,24 +36,21 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
   },[slug]);
   const p=dados?.pagina_aplicacao;
   const foto=p?.fotos?.[0]??null;
-  const veiculo=identidadeVeiculo(p?.modelo??"");
+
   return <main className="mobis-v2 mobis-aplicacao-v3" style={{minHeight:"100vh",background:"#eaf2f6",color:"#1f2327",paddingBottom:45}}>
-    <header style={{background:"#fff",borderBottom:"1px solid #dfe4e8",padding:"14px max(16px, calc((100vw - 1200px)/2))",display:"flex",alignItems:"center",flexWrap:"wrap",gap:20,justifyContent:"space-between"}}>
-      <img src={logoMobis} alt="MOBIS AUTOPEÇAS" style={{width:"min(310px,75vw)",height:"auto",objectFit:"contain"}} />
-      <a href="#/loja/mobis" style={{color:"#4a5159",fontWeight:700,textDecoration:"none"}}>← Voltar ao catálogo</a>
+    <header className="sm-aplicacao-cabecalho">
+      <MarcaMobisOficial compacta complemento="Página de aplicação · showroom técnico" />
+      <a href="#/loja/mobis" className="sm-aplicacao-voltar">← Voltar ao catálogo</a>
     </header>
     <div style={{maxWidth:1120,margin:"30px auto",padding:"0 18px"}}>
       {estado==="carregando"&&<p role="status">Buscando a ficha da aplicação…</p>}
       {estado==="erro"&&<div role="alert"><h1>Aplicação indisponível</h1><p>Confira a peça com nossa equipe.</p><a href="#/loja/mobis">Voltar ao catálogo</a></div>}
       {p&&<>
         <p style={{color:"#b90013",fontWeight:800,letterSpacing:"0.06em"}}>MOBIS AUTOPEÇAS · CONSULTA POR VEÍCULO</p>
-        <div className="m2-aplicacao-identidade" aria-label={"Perfil de aplicação para "+p.modelo}>
-
-          <div className="m2-aplicacao-identidade-texto">
-            <span className="m2-aplicacao-montadora">{veiculo.montadora}</span>
-            <strong>{p.modelo}</strong>
-            <small>{p.motorizacao??"Motorização a confirmar"} · {p.ano_inicial??"Ano inicial a confirmar"} – {p.ano_final??"ano final a confirmar"}</small>
-          </div>
+        <div className="sm-aplicacao-faixa-destaque">
+          <FaixaAplicacaoShowroomMobis modelo={p.modelo} titulo={p.titulo}
+            sku={p.sku_pai} motor={p.motorizacao}
+            homologada={p.status==="aprovado" && p.indexavel===true} />
         </div>
         <h1 style={{fontSize:"clamp(1.6rem, 4vw, 2.3rem)",lineHeight:1.25,margin:"8px 0 16px"}}>{p.titulo}</h1>
         <p role="status" style={{padding:"12px 15px",background:"#f1f7fa",borderLeft:"5px solid #e2181a",fontWeight:600}}>
