@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { IconePeca } from "./IconePeca.tsx";
+import { identidadeDaMontadora, type IdentidadeMontadora } from "../lib/showroomMobis.ts";
 import marcaMobis from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
 import "./glassy-carousel-mobis-v3.css";
 import "./banner-aplicacoes-mstyle.css";
@@ -22,6 +23,7 @@ const paginasAprovadas=(paginas:readonly PerfilAprovado[]|undefined)=>
 type Slide = {
   id:string; tipo:"campanha"|"veiculo"|"aplicacao"; titulo:string; subtitulo:string;
   etiqueta:string; imagem:string|null; url:string; preco:number|null; sku:string|null; flash:boolean;
+  montadora:IdentidadeMontadora;
 };
 
 const moeda=(valor:number)=>valor.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
@@ -46,7 +48,7 @@ export function GlassyCarouselMobisV3({
       id:"banner-"+b.sku+"-"+i,tipo:"campanha" as const,titulo:b.chamada||b.nome,
       subtitulo:b.nome,etiqueta:b.flash?"FLASH · OFERTA":"DESTAQUE MOBIS",
       imagem:b.imagem||null,url:"#/p/mobis/"+encodeURIComponent(b.sku),
-      preco:b.preco,sku:b.sku,flash:b.flash,
+      preco:b.preco,sku:b.sku,flash:b.flash,montadora:"neutra" as const,
     }];
     return perfis.map(a=>({
       id:"banner-"+b.sku+"-"+a.slug,tipo:"aplicacao" as const,
@@ -54,7 +56,7 @@ export function GlassyCarouselMobisV3({
       subtitulo:"Perfil individual de aplicação: "+a.modelo,
       etiqueta:"MOBIS · "+a.modelo.toUpperCase(),
       imagem:fotoDaLinha(a.modelo,veiculos)??b.imagem??null,
-      url:"#/a/"+a.slug,preco:null,sku:b.sku,flash:false,
+      url:"#/a/"+a.slug,preco:null,sku:b.sku,flash:false,montadora:identidadeDaMontadora(a.modelo),
     }));
   });
   // Os banners institucionais por modelo já são individuais (HR / Bongo / L200).
@@ -70,7 +72,7 @@ export function GlassyCarouselMobisV3({
         :"Veja modelos e consulte peças por aplicação tecnicamente aprovada",
       etiqueta:aplicacao?"PERFIL "+v.nome.toUpperCase():"LINHA "+v.nome.toUpperCase(),
       imagem:v.foto,url:aplicacao?"#/a/"+aplicacao.slug:"#/loja/mobis/veiculo/"+encodeURIComponent(v.valor),
-      preco:null,sku:aplicacao?"CI003696":null,flash:false,
+      preco:null,sku:aplicacao?"CI003696":null,flash:false,montadora:identidadeDaMontadora(v.nome),
     };
   });
   const indice=Math.min(atual,Math.max(0,slides.length-1));
@@ -91,7 +93,7 @@ export function GlassyCarouselMobisV3({
       <div className="gcv3-topo"><span>Mobis Autopeças <b aria-hidden="true">/</b> Vitrine comercial</span>
         <span>{String(indice+1).padStart(2,"0")} / {String(slides.length).padStart(2,"0")}</span>
       </div>
-      <div className="gcv3-painel" role="region" aria-roledescription="carrossel" data-banner-tipo={slide.tipo} data-banner-sku={slide.sku??undefined}
+      <div className="gcv3-painel" role="region" aria-roledescription="carrossel" data-banner-tipo={slide.tipo} data-banner-montadora={slide.montadora} data-banner-sku={slide.sku??undefined}
         onKeyDown={e=>{if(e.key==="ArrowRight"){e.preventDefault();mover(1);}if(e.key==="ArrowLeft"){e.preventDefault();mover(-1);}}}>
         <div className="gcv3-copy" key={"copy-"+slide.id}>
           <img className="gcv3-mstyle-logo" src={marcaMobis} alt="MOBIS AUTOPEÇAS" loading="lazy"/>
