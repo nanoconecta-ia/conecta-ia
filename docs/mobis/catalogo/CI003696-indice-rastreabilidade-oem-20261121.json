@@ -932,5 +932,15 @@
     }
   ],
   "itens_ausentes_de_oem": "jet coolers e seus parafusos; outros campos só após consulta da variante específica",
-  "oem_motor_parcial_completo": null
+  "oem_motor_parcial_completo": null,
+  "exclusoes_explicitas": [
+    {
+      "sku_bling": "Ci000028",
+      "motivo": "Consulta ao Bling localizou cabeçote HR/K2500 2.5 8V, motores 4D56/D4BH. NÃO associar a D4CB 16V Euro 5 CI003696.",
+      "fonte": "Bling API, listagem por nome CABEÇOTE HR, 2026-11-21",
+      "tipo": "exemplo_de_nao_equivalencia",
+      "nao_usar_para_indexar": true
+    }
+  ],
+  "observacao_de_qualidade": "As rotas fonte_pesquisa dos candidatos são links de busca PartSouq por número, não substituem o EPC original com VIN, grupo e posição do diagrama. Conferir a fonte integral antes de homologar ou publicar."
 }
