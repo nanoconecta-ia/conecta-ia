@@ -76,3 +76,16 @@ test("outro SKU importado é outra identidade física, mesmo cruzamento OEM",()=
   assert.notEqual(base.produto.sku,"CI-OUTRO-EXEMPLO");
   assert.equal(b.situacao,"a_confirmar");
 });
+
+test("importador sem SKU do fabricante usa OEM como índice provisório, sem homologação",()=>{
+  const r=avaliarCruzamento({...base,produto:{...base.produto,codigo_fabricante:null},
+    evidencias:{...base.evidencias,fonte_codigo_fabricante:null}});
+  assert.equal(r.situacao,"a_confirmar");
+  assert.deepEqual(r.pendencias,["codigo_comercial_a_confirmar"]);
+  assert.equal(r.codigo_busca_oem,"OEMEXEMPLOCONJUNTO");
+});
+test("não é permitido aprovar cruzamento de importador sem seu código comercial",()=>{
+  possui({...base,status:"aprovado",aplicacao_homologada:true,produto:{...base.produto,codigo_fabricante:null},
+    evidencias:{...base.evidencias,fonte_codigo_fabricante:null,revisor_humano:"rev"}},
+    "codigo_comercial_sem_documento");
+});
