@@ -55,6 +55,7 @@ export interface Cruzamento {
 export interface ResultadoCruzamento {
   situacao: "a_confirmar" | "bloqueado" | "revisavel";
   bloqueios: string[];
+  pendencias: string[];
   // Nunca altera produto, sku fiscal, NCM, GTIN, estoque ou OEM de outros itens.
   codigo_busca_oem: string | null;
 }
@@ -69,6 +70,7 @@ const dataValida = (s: string | null | undefined) => !!s && /^\d{4}-\d{2}-\d{2}$
  */
 export function avaliarCruzamento(c: Cruzamento): ResultadoCruzamento {
   const b: string[] = [];
+  const pendencias: string[] = [];
   const o = c.original, p = c.produto, e = c.evidencias;
   if (![o.montadora,o.codigo,o.mercado,o.modelo,o.codigo_motor,o.posicao_diagrama,o.fonte_epc].every(preenchido)
     || !dataValida(e.data_consulta)) b.push("origem_oem_sem_contexto_rastreavel");
@@ -76,7 +78,11 @@ export function avaliarCruzamento(c: Cruzamento): ResultadoCruzamento {
   if (o.escopo !== p.escopo) b.push("oem_componente_nao_equivale_a_conjunto");
   if (!preenchido(e.fonte_oem)) b.push("fonte_original_nao_rastreada");
   if (!preenchido(p.codigo_fabricante) || !preenchido(e.fonte_codigo_fabricante)) {
-    b.push("codigo_comercial_sem_documento");
+    // A pesquisa pelo OEM continua possível enquanto o SKU/código comercial
+    // do importador não é documentado. NUNCA o gravar como SKU do Bling.
+    if (c.status === "a_confirmar" && c.relacao === "referencia_cruzada") {
+      pendencias.push("codigo_comercial_a_confirmar");
+    } else b.push("codigo_comercial_sem_documento");
   }
   if (c.classe_declarada === "genuina" && !preenchido(e.fonte_peca_genuina)) {
     b.push("peca_genuina_sem_autenticidade_documentada");
@@ -95,7 +101,7 @@ export function avaliarCruzamento(c: Cruzamento): ResultadoCruzamento {
   if (c.status === "aprovado" && !preenchido(e.revisor_humano)) b.push("aprovacao_sem_revisor");
   if (c.status === "aprovado" && !c.aplicacao_homologada) b.push("aplicacao_nao_homologada");
   return { situacao: b.length ? "bloqueado" : c.status === "a_confirmar" ? "a_confirmar" : "revisavel",
-    bloqueios: b, codigo_busca_oem: preenchido(o.codigo) ? normalizado(o.codigo) : null };
+    bloqueios: b, pendencias, codigo_busca_oem: preenchido(o.codigo) ? normalizado(o.codigo) : null };
 }
 
 /** Não cria fecho transitivo nem acha "todos os similares" por caminho A→B→C. */
