@@ -1,6 +1,6 @@
 import "server-only";
 import { supabaseServico } from "@/lib/supabase/servico";
-import type { Imagem, Produto } from "@/lib/tipos";
+import type { Imagem, Produto, ProdutoAplicacao, ProdutoCodigo } from "@/lib/tipos";
 
 const COLUNAS =
   "id, loja_id, bling_id, sku, nome, preco, estoque, situacao, categoria, marca, gtin, descricao, publicado, sincronizado_em";
@@ -34,12 +34,34 @@ export async function catalogoPublico(lojaId: string, limite = 60) {
   return produtos.map((p) => ({ produto: p, imagens: imgs.get(p.id) ?? [] }));
 }
 
+/**
+ * Enriquecimento APROVADO de um produto (mesma trava do RLS público, aplicada em código
+ * porque o service role ignora RLS): compatibilidade incerta nunca é anunciada na vitrine.
+ */
+async function enriquecimentoAprovado(lojaId: string, produtoId: string) {
+  const cli = supabaseServico();
+  const [cod, aplic] = await Promise.all([
+    cli.from("produto_codigos")
+      .select("tipo, valor, fonte, coletado_em, confianca")
+      .eq("loja_id", lojaId).eq("produto_id", produtoId).eq("status", "aprovado")
+      .order("tipo"),
+    cli.from("produto_aplicacoes")
+      .select("modelo, motorizacao, ano_inicial, ano_final, fonte, coletado_em, confianca")
+      .eq("loja_id", lojaId).eq("produto_id", produtoId).eq("status", "aprovado")
+      .order("modelo"),
+  ]);
+  return {
+    codigos: ((cod.data ?? []) as ProdutoCodigo[]),
+    aplicacoes: ((aplic.data ?? []) as ProdutoAplicacao[]),
+  };
+}
+
 export async function produtoPublico(lojaId: string, id: string) {
   const { data } = await supabaseServico()
     .from("produtos").select(COLUNAS).eq("loja_id", lojaId).eq("publicado", true).eq("id", id).maybeSingle();
   if (!data) return null;
-  const imgs = await imagensPublicas(lojaId, [id]);
-  return { produto: data as Produto, imagens: imgs.get(id) ?? [] };
+  const [imgs, enriq] = await Promise.all([imagensPublicas(lojaId, [id]), enriquecimentoAprovado(lojaId, id)]);
+  return { produto: data as Produto, imagens: imgs.get(id) ?? [], ...enriq };
 }
 
 /** Link de WhatsApp com nome, referência (SKU), código interno e URL, sem simular checkout. */
