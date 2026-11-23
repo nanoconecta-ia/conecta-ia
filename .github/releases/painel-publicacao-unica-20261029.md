@@ -285,3 +285,11 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Sem Edge Functions, migrações, alterações no Supabase, tokens, notas, preço, estoque, dados fiscais, DNS, domínio ou outras lojas.
 - Validar build/deploy, `version.json`, visualização autenticada e integridade da vitrine. Não declarar teste de login real sem evidência.
 
+## Republicação autorizada — loja em modo catálogo atualizada (identidade Mobis) (23-11-2026)
+- Autorização expressa do proprietário nesta conversa: "Volta para a loja online funcionar como catálogo. Veja para colocá-la no ar o mais rápido possível."
+- Estado verificado antes do release: a vitrine **já está no ar** em `https://www.mobisautopecas.com.br/` (GitHub Pages), servindo em **modo catálogo** (`meta robots=noindex`, "preço sob consulta", sem checkout/carrinho), porém no build de 21/11 (`version.json` commit `c3e2cc4`). Este release apenas **atualiza** o frontend já publicado.
+- Publicar **somente o frontend estático** de `painel/` pelo workflow existente `Painel (GitHub Pages)`, com as flags já usadas `VITE_PAIR_ATIVO=1`, `VITE_BACKUP_ATIVO=1` e `VITE_BANNERS_ATIVO=1`. `main` no head `eedc3790` (PR #492).
+- Delta frente ao build publicado (`c3e2cc4..eedc3790`, só `painel/`): masthead da vitrine no grafite oficial `#1F2327` (PR #486), sincronização de testes visuais (#487), entrada de código "Grafite Glass" no pareamento (#488), perfil de cor Mobis selecionável (#491) e aplicado como padrão do painel com contraste WCAG no modo escuro (#492). Mudanças de identidade visual já aprovadas e integradas; nenhuma altera o comportamento comercial da loja.
+- A loja permanece `ambiente=teste`, `venda_habilitada=false`, `noindex`, atendimento por WhatsApp e ficha sem preço/estoque público. **Não** inclui Edge Functions, migrações SQL, Supabase, escrita no Bling, preços, estoque, GTIN, OEM, notas fiscais, checkout, pagamentos, anúncios pagos, DNS, domínio ou `lojas.ambiente`.
+- Homologação pós-deploy obrigatória: status `build/deploy` verde, `version.json` com o commit do release, Playwright da vitrine publicada em 360/390/412/1280px e acesso real ao host oficial. Sem status verde, não declarar o site atualizado. Esta republicação de frontend **não** constitui homologação de DNS/SSL nem liberação comercial.
+
