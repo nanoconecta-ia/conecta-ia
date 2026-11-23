@@ -2,8 +2,12 @@ import Link from "next/link";
 import type { Imagem, Produto } from "@/lib/tipos";
 import { brl } from "@/lib/publicacao";
 
-/** Cartão de produto, o mesmo na vitrine e na pré-visualização do painel. */
-export function CartaoProduto({ produto, imagens, href }: { produto: Produto; imagens: Imagem[]; href: string | null }) {
+/**
+ * Cartão de produto, o mesmo na vitrine e na pré-visualização do painel.
+ * `mostrarPreco` fica desligado por padrão: catálogo informativo não expõe preço (regra mestra).
+ * Só liga quando houver oferta comercial autorizada pelo lojista.
+ */
+export function CartaoProduto({ produto, imagens, href, mostrarPreco = false }: { produto: Produto; imagens: Imagem[]; href: string | null; mostrarPreco?: boolean }) {
   const img = imagens.find((i) => i.principal && i.aprovada) ?? imagens.find((i) => i.aprovada);
   const corpo = (
     <>
@@ -17,7 +21,9 @@ export function CartaoProduto({ produto, imagens, href }: { produto: Produto; im
       </div>
       <p className="mt-2 line-clamp-2 text-sm font-medium">{produto.nome ?? "(sem nome)"}</p>
       <p className="font-mono text-xs text-suave">{produto.sku}</p>
-      <p className="mt-1 font-semibold tabular-nums">{brl(produto.preco)}</p>
+      {mostrarPreco
+        ? <p className="mt-1 font-semibold tabular-nums">{brl(produto.preco)}</p>
+        : <p className="mt-1 text-xs text-suave">Preço sob consulta</p>}
     </>
   );
   return href ? (

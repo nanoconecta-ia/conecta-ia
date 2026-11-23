@@ -1,5 +1,6 @@
 import type { BannerOferta as Banner, LojaPublica } from "@/lib/vitrine";
 import { linkWhatsappBanner } from "@/lib/vitrine";
+import { precoPublicoAutorizado } from "@/lib/ficha";
 
 const brl = (v: number | null) => (v == null ? null : v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }));
 
@@ -7,7 +8,8 @@ const brl = (v: number | null) => (v == null ? null : v.toLocaleString("pt-BR", 
 export function BannerOferta({ loja, banner }: { loja: LojaPublica; banner: Banner }) {
   const href = `/loja/${loja.slug}/produto/${banner.produto_id}`;
   const wa = linkWhatsappBanner(loja, banner, href);
-  const preco = brl(banner.preco);
+  // Preço só aparece em oferta comercial autorizada; no catálogo informativo, não.
+  const preco = precoPublicoAutorizado(loja) ? brl(banner.preco) : null;
   return (
     <article className={`banner-oferta ${banner.flash ? "banner-flash" : ""}`} aria-label={`Oferta: ${banner.nome}`}>
       {banner.flash && <span className="banner-etiqueta">Oferta relâmpago</span>}

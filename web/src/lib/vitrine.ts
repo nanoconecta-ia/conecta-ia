@@ -1,6 +1,8 @@
 import "server-only";
 import { supabaseServico } from "@/lib/supabase/servico";
-import type { Imagem, Produto } from "@/lib/tipos";
+import type { Imagem, PaginaAplicacao, Produto, ProdutoAplicacao, ProdutoCodigo } from "@/lib/tipos";
+
+const COD_COLS = "tipo, valor, fonte, coletado_em, confianca";
 
 const COLUNAS =
   "id, loja_id, bling_id, sku, nome, preco, estoque, situacao, categoria, marca, gtin, descricao, publicado, sincronizado_em";
@@ -34,12 +36,57 @@ export async function catalogoPublico(lojaId: string, limite = 60) {
   return produtos.map((p) => ({ produto: p, imagens: imgs.get(p.id) ?? [] }));
 }
 
+/**
+ * Enriquecimento APROVADO de um produto (mesma trava do RLS público, aplicada em código
+ * porque o service role ignora RLS): compatibilidade incerta nunca é anunciada na vitrine.
+ */
+async function enriquecimentoAprovado(lojaId: string, produtoId: string) {
+  const cli = supabaseServico();
+  const [cod, aplic] = await Promise.all([
+    cli.from("produto_codigos")
+      .select(COD_COLS)
+      .eq("loja_id", lojaId).eq("produto_id", produtoId).eq("status", "aprovado")
+      .order("tipo"),
+    cli.from("produto_aplicacoes")
+      .select("modelo, motorizacao, ano_inicial, ano_final, fonte, coletado_em, confianca, pagina_slug, pagina_titulo, pagina_indexavel")
+      .eq("loja_id", lojaId).eq("produto_id", produtoId).eq("status", "aprovado")
+      .order("modelo"),
+  ]);
+  return {
+    codigos: ((cod.data ?? []) as ProdutoCodigo[]),
+    aplicacoes: ((aplic.data ?? []) as ProdutoAplicacao[]),
+  };
+}
+
+/**
+ * Uma página de aplicação pública (1 SKU → N páginas por veículo).
+ * Só serve aplicação `aprovada` com `pagina_slug`; o produto físico precisa estar publicado.
+ */
+export async function paginaAplicacao(lojaId: string, slug: string): Promise<PaginaAplicacao | null> {
+  const cli = supabaseServico();
+  const { data: ap } = await cli.from("produto_aplicacoes")
+    .select("produto_id, modelo, motorizacao, ano_inicial, ano_final, fonte, coletado_em, confianca, pagina_slug, pagina_titulo, pagina_descricao, pagina_indexavel")
+    .eq("loja_id", lojaId).eq("pagina_slug", slug).eq("status", "aprovado").maybeSingle();
+  if (!ap) return null;
+  const produtoId = (ap as { produto_id: string }).produto_id;
+  const { data: prod } = await cli.from("produtos").select(COLUNAS)
+    .eq("loja_id", lojaId).eq("id", produtoId).eq("publicado", true).maybeSingle();
+  if (!prod) return null;
+  const { data: cod } = await cli.from("produto_codigos").select(COD_COLS)
+    .eq("loja_id", lojaId).eq("produto_id", produtoId).eq("status", "aprovado").order("tipo");
+  return {
+    aplicacao: ap as PaginaAplicacao["aplicacao"],
+    produto: prod as Produto,
+    codigos: (cod ?? []) as ProdutoCodigo[],
+  };
+}
+
 export async function produtoPublico(lojaId: string, id: string) {
   const { data } = await supabaseServico()
     .from("produtos").select(COLUNAS).eq("loja_id", lojaId).eq("publicado", true).eq("id", id).maybeSingle();
   if (!data) return null;
-  const imgs = await imagensPublicas(lojaId, [id]);
-  return { produto: data as Produto, imagens: imgs.get(id) ?? [] };
+  const [imgs, enriq] = await Promise.all([imagensPublicas(lojaId, [id]), enriquecimentoAprovado(lojaId, id)]);
+  return { produto: data as Produto, imagens: imgs.get(id) ?? [], ...enriq };
 }
 
 /** Link de WhatsApp com nome, referência (SKU), código interno e URL, sem simular checkout. */
