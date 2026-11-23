@@ -18,6 +18,7 @@ import "./loja-mobis-clara.css";
 import "./mobis-paleta-dinamica.css";
 import "./mobis-premium-v3.css";
 import "./mobis-ma-identidade.css";
+import "./peliculas-mobis.css";
 import "./mobis-vitrine-completa-v3.css";
 import "./mobis-v3-limpo.css";
 import "./mobis-tres-modelos.css";
@@ -200,6 +201,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
               {p.imagem?<img src={p.imagem} alt={"Foto real aprovada da peça física "+p.sku} loading="lazy"/>:
                 <span className="m2-sem-foto-real" role="status">Foto real da peça em preparação<small>SKU {p.sku}</small></span>}
             </a>
+            <span className="pelicula pelicula-glass" aria-hidden="true"/>
           </div>
           <div><small>SKU {p.sku}{p.marca?" · "+p.marca:""}</small>
             {p.referencias_aprovadas?.length ? <div className="m2-ref-aprovadas" aria-label={"Referências aprovadas do SKU "+p.sku}>
@@ -249,6 +251,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
         aria-label={"Filtrar peças de "+s.nome}>
         <img src={s.icone} width={58} height={58} alt="" aria-hidden="true"/>
         <span>{s.nome}</span>
+        <span className="pelicula pelicula-brush" aria-hidden="true"/>
       </button>)}</div>
     </section>,
     empresa: <section className="m2-wrap m2-modulo-empresa" aria-label="Informações da Mobis Autopeças">
