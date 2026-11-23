@@ -1,4 +1,4 @@
-import type { Produto, ProdutoAplicacao } from "@/lib/tipos";
+import type { PaginaAplicacao, Produto, ProdutoAplicacao, ProdutoCodigo } from "@/lib/tipos";
 
 /**
  * Regras da ficha pública (catálogo enriquecido). Funções puras, sem acesso a banco,
@@ -69,5 +69,44 @@ export function montarJsonLdProduto(args: {
       availability: (produto.estoque ?? 0) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
     };
   }
+  return ld;
+}
+
+/* ---- Páginas de aplicação (1 SKU → N páginas por veículo) ---- */
+
+export function veiculoRotulo(a: Pick<ProdutoAplicacao, "modelo" | "motorizacao" | "ano_inicial" | "ano_final">): string {
+  const anos = faixaAnos(a);
+  return [a.modelo, a.motorizacao, anos].filter(Boolean).join(" ");
+}
+
+/** Título da página da aplicação: usa o definido no enriquecimento ou deriva (sem inventar nada novo). */
+export function tituloAplicacao(pa: PaginaAplicacao): string {
+  if (pa.aplicacao.pagina_titulo?.trim()) return pa.aplicacao.pagina_titulo.trim();
+  const base = pa.produto.nome ?? "Peça";
+  return `${base} — ${veiculoRotulo(pa.aplicacao)}`.trim();
+}
+
+export function descricaoAplicacao(pa: PaginaAplicacao): string | undefined {
+  if (pa.aplicacao.pagina_descricao?.trim()) return pa.aplicacao.pagina_descricao.trim().slice(0, 160);
+  if (pa.produto.descricao?.trim()) return pa.produto.descricao.trim().slice(0, 160);
+  return undefined;
+}
+
+/** Página de aplicação indexa só quando marcada indexável (o banco já exige status aprovado para isso). */
+export function deveIndexarAplicacao(pa: PaginaAplicacao): boolean {
+  return pa.aplicacao.pagina_indexavel === true;
+}
+
+/** JSON-LD da aplicação: peça para um veículo, com OEM aprovados como mpn. Nunca com preço (catálogo informativo). */
+export function montarJsonLdAplicacao(args: { pa: PaginaAplicacao; url: string; imagemUrl?: string | null }): Record<string, unknown> {
+  const { pa, url, imagemUrl } = args;
+  const oem = pa.codigos.filter((c: ProdutoCodigo) => c.tipo === "oem").map((c) => c.valor);
+  const ld: Record<string, unknown> = { "@context": "https://schema.org", "@type": "Product", name: tituloAplicacao(pa), url };
+  if (pa.produto.sku) ld.sku = pa.produto.sku;
+  if (oem.length) ld.mpn = oem;
+  if (pa.produto.marca) ld.brand = { "@type": "Brand", name: pa.produto.marca };
+  if (imagemUrl) ld.image = imagemUrl;
+  const desc = descricaoAplicacao(pa);
+  if (desc) ld.description = desc;
   return ld;
 }

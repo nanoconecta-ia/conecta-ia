@@ -161,12 +161,20 @@ export default async function PaginaProduto({ params }: Props) {
         </header>
         {aplicacoes.length ? (
           <ul className="divide-y divide-borda">
-            {aplicacoes.map((a, i) => (
-              <li key={i} className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3">
-                <span className="font-medium">{a.modelo}{a.motorizacao ? ` · ${a.motorizacao}` : ""}{faixaAnos(a) ? ` · ${faixaAnos(a)}` : ""}</span>
-                <span className="text-xs text-suave">{a.fonte ?? "fonte registrada"}{DATA(a.coletado_em) ? ` · ${DATA(a.coletado_em)}` : ""}</span>
-              </li>
-            ))}
+            {aplicacoes.map((a, i) => {
+              const rotulo = `${a.modelo}${a.motorizacao ? ` · ${a.motorizacao}` : ""}${faixaAnos(a) ? ` · ${faixaAnos(a)}` : ""}`;
+              const href = a.pagina_slug ? `/loja/${loja.slug}/aplicacao/${a.pagina_slug}` : null;
+              return (
+                <li key={i} className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3">
+                  {href ? (
+                    <a href={href} className="font-medium text-marca hover:underline">{rotulo} →</a>
+                  ) : (
+                    <span className="font-medium">{rotulo}</span>
+                  )}
+                  <span className="text-xs text-suave">{a.fonte ?? "fonte registrada"}{DATA(a.coletado_em) ? ` · ${DATA(a.coletado_em)}` : ""}</span>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p className="px-4 py-4 text-sm text-suave">

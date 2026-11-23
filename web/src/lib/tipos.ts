@@ -52,4 +52,16 @@ export type ProdutoAplicacao = {
   fonte: string | null;
   coletado_em: string | null;
   confianca: number | null;
+  // Página comercial independente por veículo (1 SKU → N páginas). Não cria produto no Bling.
+  pagina_slug?: string | null;
+  pagina_titulo?: string | null;
+  pagina_descricao?: string | null;
+  pagina_indexavel?: boolean;
+};
+
+/** Página de aplicação já carregada com o produto físico (SKU) por trás. */
+export type PaginaAplicacao = {
+  aplicacao: ProdutoAplicacao & { pagina_slug: string };
+  produto: Produto;
+  codigos: ProdutoCodigo[];
 };
