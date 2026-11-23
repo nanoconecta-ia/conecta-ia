@@ -1,0 +1,45 @@
+/* Dashboards do painel (Indicadores e Central de Inteligência): sistema visual único, baseado nos tokens do perfil.
+   Segue a identidade aplicada (Mobis por padrão: banda grafite + acento) e os temas claro/escuro/contraste, sem cores fixas de marca.
+   Só apresentação: nenhuma regra aqui altera lógica, dados ou escrita. */
+
+.dash { display:grid; gap:20px; min-width:0; }
+
+/* Banda de cabeçalho em grafite (cabeçalho/menu usam o mesmo neutro): dá a identidade sem tocar no conteúdo. */
+.dash-cabecalho { position:relative; overflow:hidden; border-radius:20px; padding:clamp(20px,2.6vw,30px);
+  background:linear-gradient(118deg,var(--grafite),var(--grafite-2)); color:#fff; box-shadow:var(--sombra); display:grid; gap:10px; }
+.dash-cabecalho .dash-eyebrow { display:flex; align-items:center; gap:9px; letter-spacing:.14em; font:750 .62rem var(--mono); color:var(--acento-claro); margin:0; }
+.dash-eyebrow i { width:7px; height:7px; border-radius:50%; background:var(--acento-claro); box-shadow:0 0 0 4px color-mix(in srgb,var(--acento-claro) 22%,transparent); flex:none; }
+.dash-cabecalho h1 { margin:0; font-size:clamp(1.5rem,2.4vw,2.05rem); letter-spacing:-.03em; line-height:1.1; font-weight:850; color:#fff; }
+.dash-cabecalho p { margin:0; max-width:70ch; color:rgba(255,255,255,.82); font-size:.88rem; line-height:1.55; }
+.dash-cabecalho .dash-nota { display:flex; align-items:center; gap:9px; margin-top:4px; padding:9px 13px; border-radius:11px;
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); color:#fff; font-size:.8rem; font-weight:600; width:fit-content; max-width:100%; }
+
+/* Grade de KPIs. Cada cartão lê um número real; "não medido" fica visivelmente apagado (nunca um zero de enfeite). */
+.dash-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.dash-kpi { display:grid; align-content:start; gap:5px; min-width:0; padding:18px; border-radius:16px; border:1px solid var(--borda);
+  border-top:3px solid color-mix(in srgb,var(--marca) 55%,var(--borda)); background:var(--cartao); box-shadow:var(--sombra); color:inherit; text-decoration:none; transition:transform .16s,border-color .16s; }
+a.dash-kpi:hover { transform:translateY(-2px); border-color:var(--marca); color:inherit; }
+.dash-kpi .dash-kpi-dom { font:600 .55rem var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--suave); }
+.dash-kpi .dash-kpi-num { font:850 clamp(1.5rem,2.2vw,2.1rem) var(--titulo); letter-spacing:-.045em; color:var(--texto); font-variant-numeric:tabular-nums; }
+.dash-kpi .dash-kpi-rot { font-size:.85rem; font-weight:750; }
+.dash-kpi .dash-kpi-aj { font-size:.73rem; color:var(--suave); line-height:1.4; }
+.dash-kpi.dash-nm { border-top-color:var(--borda); }
+.dash-kpi.dash-nm .dash-kpi-num { font-size:1.05rem; font-weight:600; color:var(--suave); padding:.4rem 0; }
+.dash-kpi .dash-kpi-seta { display:none; }
+a.dash-kpi .dash-kpi-dom::after { content:" ↗"; color:var(--marca); }
+
+/* Filtros em pílulas (Central). Reaproveita os botões .sec, só muda a forma. */
+.dash-filtros { display:flex; flex-wrap:wrap; gap:8px; }
+.dash-filtros button { min-height:36px; padding:7px 14px; border-radius:999px; font-size:.8rem; font-weight:650; }
+
+/* Tabela dentro de cartão de dashboard (custo por agente, listas). */
+.dash-bloco { background:var(--cartao); border:1px solid var(--borda); border-radius:16px; padding:18px; box-shadow:var(--sombra); }
+.dash-bloco h2 { margin:0 0 12px; font-size:1.1rem; letter-spacing:-.02em; }
+.dash-legenda { display:flex; align-items:center; gap:8px; color:var(--suave); font-size:.76rem; }
+
+@media (max-width:980px) { .dash-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:420px) { .dash-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; } .dash-kpi { padding:13px; } .dash-kpi .dash-kpi-dom { display:none; } }
+@media (prefers-reduced-motion:reduce) { a.dash-kpi { transition:none; } }
+[data-tema="contraste"] .dash-cabecalho { background:#000; border:2px solid #fff; }
+[data-tema="contraste"] .dash-cabecalho .dash-eyebrow { color:#ffd23f; }
+[data-tema="contraste"] .dash-kpi { border-width:2px; }
