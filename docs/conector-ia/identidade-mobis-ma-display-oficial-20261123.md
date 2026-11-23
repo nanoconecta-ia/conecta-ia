@@ -14,7 +14,7 @@ dependa daqui passa por pré-visualização e aprovação (regra do projeto); na
 | Branco | `#FFFFFF` | fundo claro, texto sobre grafite | sim |
 | Gelo | `#EAF2F6` | fundo branco-gelo da vitrine | sim (24×) |
 | Preto | `#000000` | contraste pontual (não substitui o grafite) | pontual |
-| Azul Hyundai (auxiliar) | `#004897` / `#1877F2` | **só** variações auxiliares/co-marca; **não** é cor Mobis padrão | não |
+| Azul Auxiliar | `#1877F2` (prancha definitiva) / `#004897` (variação) | **auxiliar/co-marca** (linha Hyundai e Kia); **não** é cor Mobis padrão | não |
 
 Observação: a loja já usa a paleta Mobis padrão. O azul é auxiliar (aparece só em pranchas de variação) e **não** deve virar cor
 primária da vitrine sem decisão explícita.
@@ -29,6 +29,7 @@ primária da vitrine sem decisão explícita.
   atual (Space Grotesk/Inter); uma aproximação licenciável (ex.: uma display itálica no Google Fonts) só entra com aprovação.
 
 ## Películas / acabamentos (overlays)
+**Padrão oficial** (confirmado pela prancha definitiva "MOBIS MA DISPLAY — Novo Padrão Película", 23/11/2026).
 Quatro acabamentos oficiais para emblemas e caixas: **Brilho (glass)**, **Fosco (frosted)**, **Metálica (brush)**, **Escura (smoke)**.
 São sobreposições de gradiente/reflexo sobre a peça; reproduzíveis em CSS sem imagem (gradientes + `mix-blend`/`backdrop-filter`),
 preservando o emblema MA e a paleta. Aplicar como camada, nunca recolorindo o logo.
@@ -40,5 +41,6 @@ preservando o emblema MA e a paleta. Aplicar como camada, nunca recolorindo o lo
   arquivos licenciados, não extraídos das pranchas de referência.
 
 ## Pranchas de referência (enviadas 23/11/2026)
-Nove variações do mesmo sistema (fundos prata, branco, azul, vermelho, grafite) + duas de "Tipografia MA" com exemplos de uso
-(MOBIS · AUTOPEÇAS · MOTOR · CABEÇOTE · CATÁLOGO · CONECTA.IA). Guardadas como referência do proprietário; não publicadas na loja.
+Variações do mesmo sistema (fundos prata, branco, azul, vermelho, grafite) + pranchas de "Tipografia MA" com exemplos de uso
+(MOBIS · AUTOPEÇAS · MOTOR · CABEÇOTE · CATÁLOGO · CONECTA.IA). A prancha **definitiva** ("Novo Padrão Película") traz a aplicação
+oficial com o emblema MA e o subtítulo "Peças para linha Hyundai e Kia". Guardadas como referência do proprietário; não publicadas na loja.
