@@ -125,6 +125,11 @@ export function cssDosPerfis(): string {
     const esc = linhas({ ...g.escuro, ...(g.superficieEscura ?? {}) });
     o.push(`html[data-cor="${p.id}"][data-tema="escuro"], html[data-cor="${p.id}"][data-tema="noturno"] { ${esc} }`);
     o.push(`@media (prefers-color-scheme: dark) { html[data-cor="${p.id}"]:not([data-tema]) { ${esc} } }`);
+    // Interface aprovada no escuro: a regra clara acima (NAO_CONTRASTE) fixa a marca CLARA (vermelho escuro) dentro de .conecta-aprovado-root,
+    // ilegível como texto de acento sobre o cartão escuro (eyebrow, abas, links "Abrir →"). Aqui devolvemos a marca ESCURA (≥5,2:1) nesse escopo.
+    const escInterna = linhas({ "--marca": g.escuro["--marca"], "--marca-forte": g.escuro["--marca-forte"], "--marca-texto": g.escuro["--marca-texto"] });
+    o.push(`html[data-cor="${p.id}"][data-tema="escuro"] :is(.conecta-aprovado-root, .entrada-aprovada), html[data-cor="${p.id}"][data-tema="noturno"] :is(.conecta-aprovado-root, .entrada-aprovada) { ${escInterna} }`);
+    o.push(`@media (prefers-color-scheme: dark) { html[data-cor="${p.id}"]:not([data-tema]) :is(.conecta-aprovado-root, .entrada-aprovada) { ${escInterna} } }`);
   }
   return o.join("\n") + "\n";
 }

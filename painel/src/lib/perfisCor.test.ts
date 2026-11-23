@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { lerTokens, razao } from "./contraste.ts";
 import { PERFIS, PADRAO, gerar, cssDosPerfis } from "./perfisCorGerador.ts";
-import { lerPerfil, gravarPerfil } from "./perfilCor.ts";
+import { lerPerfil, gravarPerfil, APLICADO } from "./perfilCor.ts";
 
 const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const bloco = (abre: string) => { const i = css.indexOf(abre); assert.ok(i >= 0, abre); return css.slice(css.indexOf("{", i) + 1, css.indexOf("}", i)); };
@@ -50,12 +50,13 @@ for (const p of PERFIS) {
   });
 }
 
-test("perfilCor: lê e grava só ids válidos; lixo cai no padrão", () => {
+test("perfilCor: lê e grava só ids válidos; sem escolha cai no aplicado (mobis)", () => {
   const mem = new Map<string, string>();
   const arm = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) } as Pick<Storage, "getItem" | "setItem" | "removeItem">;
-  assert.equal(lerPerfil(arm), PADRAO);
+  assert.equal(APLICADO, "mobis");
+  assert.equal(lerPerfil(arm), APLICADO);
   gravarPerfil(arm, "verde"); assert.equal(lerPerfil(arm), "verde");
-  mem.set("conecta:cor", "<script>"); assert.equal(lerPerfil(arm), PADRAO);
+  mem.set("conecta:cor", "<script>"); assert.equal(lerPerfil(arm), APLICADO);
   gravarPerfil(arm, "chumbo"); assert.equal(mem.get("conecta:cor"), "chumbo");
-  gravarPerfil(arm, PADRAO); assert.equal(mem.has("conecta:cor"), false);
+  gravarPerfil(arm, APLICADO); assert.equal(mem.has("conecta:cor"), false);
 });
