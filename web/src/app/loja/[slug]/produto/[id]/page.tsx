@@ -9,6 +9,15 @@ type Props = { params: Promise<{ slug: string; id: string }> };
 const UUID = /^[0-9a-f-]{36}$/i;
 const DATA = (s: string | null) => (s ? new Date(s).toLocaleDateString("pt-BR") : null);
 
+/** Rótulo público de proveniência — não vaza ERP, IDs internos nem notas de validação. */
+function fontePublica(fonte: string | null | undefined): string {
+  const f = (fonte ?? "").toLowerCase();
+  if (!f) return "catálogo";
+  if (/epc|partsouq|vin|montadora|genu[ií]n|fabricante/.test(f)) return "EPC / montadora";
+  if (/lojista|ficha|importador|fornecedor/.test(f)) return "registro do lojista";
+  return "catálogo";
+}
+
 async function carregar({ slug, id }: { slug: string; id: string }) {
   if (!UUID.test(id)) return null;
   const loja = await lojaPorSlug(slug);
@@ -138,7 +147,7 @@ export default async function PaginaProduto({ params }: Props) {
                   <tr key={i} className="border-t border-borda">
                     <td className="px-4 py-2 uppercase">{c.tipo}</td>
                     <td className="px-4 py-2 font-mono">{c.valor}</td>
-                    <td className="px-4 py-2 text-suave">{c.fonte ?? "—"}</td>
+                    <td className="px-4 py-2 text-suave">{fontePublica(c.fonte)}</td>
                     <td className="px-4 py-2 text-suave">{DATA(c.coletado_em) ?? "—"}</td>
                   </tr>
                 ))}
@@ -171,7 +180,7 @@ export default async function PaginaProduto({ params }: Props) {
                   ) : (
                     <span className="font-medium">{rotulo}</span>
                   )}
-                  <span className="text-xs text-suave">{a.fonte ?? "fonte registrada"}{DATA(a.coletado_em) ? ` · ${DATA(a.coletado_em)}` : ""}</span>
+                  <span className="text-xs text-suave">{fontePublica(a.fonte)}{DATA(a.coletado_em) ? ` · ${DATA(a.coletado_em)}` : ""}</span>
                 </li>
               );
             })}

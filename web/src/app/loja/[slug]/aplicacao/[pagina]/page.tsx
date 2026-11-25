@@ -27,6 +27,15 @@ function componente(c: ProdutoCodigo): { label: string; icon: "cabecote" | "bloc
   return null;
 }
 
+/** Rótulo público de proveniência — não vaza ERP, IDs internos nem notas de validação. */
+function fontePublica(fonte: string | null | undefined): string {
+  const f = (fonte ?? "").toLowerCase();
+  if (!f) return "catálogo";
+  if (/epc|partsouq|vin|montadora|genu[ií]n|fabricante/.test(f)) return "EPC / montadora";
+  if (/lojista|ficha|importador|fornecedor/.test(f)) return "registro do lojista";
+  return "catálogo";
+}
+
 async function carregar({ slug, pagina }: { slug: string; pagina: string }) {
   if (!SLUG.test(pagina)) return null;
   const loja = await lojaPorSlug(slug);
@@ -163,7 +172,7 @@ export default async function PaginaDeAplicacao({ params }: Props) {
             {produto.marca && <div className="mf-cell"><span className="mf-med"><svg viewBox="0 0 24 24"><path d="M3 9l9-5 9 5-9 5z" /><path d="M3 9v6l9 5 9-5V9" /></svg></span><div><div className="mf-k">Marca</div><div className="mf-v">{produto.marca}</div></div></div>}
             <div className="mf-cell"><span className="mf-med"><svg viewBox="0 0 24 24"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16" /></svg></span><div><div className="mf-k">Referência</div><div className="mf-v" style={{ fontFamily: "var(--font-mono)" }}>{produto.sku ?? "—"}</div></div></div>
           </div>
-          {a.fonte && <p className="mf-nav" style={{ marginTop: 8 }}>Fonte da aplicação: {a.fonte}{DATA(a.coletado_em) ? ` · ${DATA(a.coletado_em)}` : ""}</p>}
+          <p className="mf-nav" style={{ marginTop: 8 }}>Fonte: {fontePublica(a.fonte)}{DATA(a.coletado_em) ? ` · ${DATA(a.coletado_em)}` : ""}</p>
         </section>
 
         {oem.length > 0 && (
