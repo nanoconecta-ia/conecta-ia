@@ -1,3 +1,4 @@
+import { MarcaConectaNova } from "../componentes/MarcaConectaNova.tsx";
 import { useState, type FormEvent } from "react";
 import "../acesso-publico.css";
 import "../workspace-aprovado.css";
@@ -28,7 +29,7 @@ export function Entrar({ aviso }: { aviso: string | null }) {
   return (
     <div className="entrada-aprovada" data-acesso-layout="aprovado-v2">
       <section className="ap-auth-origem" aria-labelledby="entrada-titulo">
-        <a href="./" className="ap-identidade"><strong>Conecta<span>.IA</span></strong><small>ENRIQUECIMENTO DE CATÁLOGOS</small></a>
+        <a href="./" className="ap-identidade"><MarcaConectaNova/></a>
         <AtivoAprovado nome="robo" tamanho={120}/>
         <span className="ap-eyebrow">ORIGEM · INTELIGÊNCIA · EXPERIÊNCIA</span>
         <h1 id="entrada-titulo">Três níveis.<br/>Uma origem física.</h1>

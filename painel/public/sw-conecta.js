@@ -1,5 +1,5 @@
 // PWA Conecta.IA: scope exclusivo de /conecta.html. Não controla o aplicativo da loja.
-const CACHE = "conecta-admin-casca-v1";
+const CACHE = "conecta-admin-casca-v2";
 const CASCA = ["./conecta.html", "./manifest.webmanifest", "./icones/conecta-app-192.png"];
 self.addEventListener("install", (evento) => {
   evento.waitUntil(caches.open(CACHE).then((c) => c.addAll(CASCA)).then(() => self.skipWaiting()));
