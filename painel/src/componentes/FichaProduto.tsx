@@ -1,3 +1,4 @@
+import type { CampoTecnicoMobis } from "../lib/fichaPilotoMobis.ts";
 import { IconePeca, IconeVeiculo } from "./IconePeca.tsx";
 import { TIPOS_VEICULO, iconeDaCategoria } from "../lib/icones.ts";
 import { montarFicha, type FichaProduto as Produto, type FichaVeiculo } from "../lib/ficha.ts";
@@ -8,7 +9,7 @@ const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", curren
 type ReferenciaAprovada = { tipo: string; valor: string };
 type ProdutoComReferencias = Produto & { referencias_aprovadas?: ReferenciaAprovada[] };
 
-export function FichaProduto({ produto, veiculos, mostrarDetalhes = false }: { produto: ProdutoComReferencias; veiculos: FichaVeiculo[]; mostrarDetalhes?: boolean }) {
+export function FichaProduto({ produto, veiculos, mostrarDetalhes = false, tecnicaPiloto = null }: { produto: ProdutoComReferencias; veiculos: FichaVeiculo[]; mostrarDetalhes?: boolean; tecnicaPiloto?: CampoTecnicoMobis[] | null }) {
   const f = montarFicha(produto, veiculos);
   const referenciasOem = (produto.referencias_aprovadas ?? []).filter((r) => r.tipo === "oem" && typeof r.valor === "string" && r.valor.trim());
   return (
@@ -31,12 +32,15 @@ export function FichaProduto({ produto, veiculos, mostrarDetalhes = false }: { p
       </div>
       {mostrarDetalhes && <><section className="ficha-tecnica" aria-label="Ficha técnica">
         <h2>Ficha técnica</h2>
-        <dl className="ficha-tecnica-grade">
+        {tecnicaPiloto ? <dl className="ficha-mobis-especificacoes">{tecnicaPiloto.map(c => <div key={c.rotulo} className="ficha-mobis-linha">
+          <span className="ficha-mobis-tecnico-icone"><IconePeca nome={c.icone} tamanho={30}/></span>
+          <dt>{c.rotulo}</dt><dd>{c.valor}{c.origem && <small className="ficha-mobis-fonte">{c.origem}</small>}</dd>
+        </div>)}</dl> : <dl className="ficha-tecnica-grade">
           <div><dt>Código</dt><dd>{f.codigo}</dd></div>
           {f.marca && <div><dt>Marca</dt><dd>{f.marca}</dd></div>}
           <div><dt>Produto</dt><dd>{f.titulo}</dd></div>
           <div><dt>Aplicação</dt><dd>{f.compativel.length ? "Consulte os veículos listados" : "Em validação"}</dd></div>
-        </dl>
+        </dl>}
       </section>
       <section className="ficha-oem" aria-label="Códigos OEM de referência">
         <h2>Códigos OEM de referência</h2>
