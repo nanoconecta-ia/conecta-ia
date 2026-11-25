@@ -27,6 +27,15 @@ function componente(c: ProdutoCodigo): { label: string; icon: "cabecote" | "bloc
   return null;
 }
 
+/** Rótulo público de proveniência — não vaza ERP, IDs internos nem notas de validação. */
+function fontePublica(fonte: string | null | undefined): string {
+  const f = (fonte ?? "").toLowerCase();
+  if (!f) return "catálogo";
+  if (/epc|partsouq|vin|montadora|genu[ií]n|fabricante/.test(f)) return "EPC / montadora";
+  if (/lojista|ficha|importador|fornecedor/.test(f)) return "registro do lojista";
+  return "catálogo";
+}
+
 async function carregar({ slug, pagina }: { slug: string; pagina: string }) {
   if (!SLUG.test(pagina)) return null;
   const loja = await lojaPorSlug(slug);
@@ -160,10 +169,10 @@ export default async function PaginaDeAplicacao({ params }: Props) {
             <div className="mf-cell"><span className="mf-med"><svg viewBox="0 0 24 24"><path d="M3 15V9l3-4h8l4 4h2a1 1 0 0 1 1 1v5" /><path d="M3 15h18" /><circle cx="7.5" cy="16.5" r="1.6" /><circle cx="16.5" cy="16.5" r="1.6" /></svg></span><div><div className="mf-k">Modelo</div><div className="mf-v">{a.modelo}</div></div></div>
             {a.motorizacao && <div className="mf-cell"><span className="mf-med"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-2h4l2 2h3v6h-3l-2 2H9l-2-2H4z" /></svg></span><div><div className="mf-k">Motorização</div><div className="mf-v">{a.motorizacao}</div></div></div>}
             <div className="mf-cell"><span className="mf-med"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M8 3v4M16 3v4M4 11h16" /></svg></span><div><div className="mf-k">Anos</div><div className="mf-v">{anos}</div></div></div>
-            {produto.marca && <div className="mf-cell"><span className="mf-med"><svg viewBox="0 0 24 24"><path d="M3 9l9-5 9 5-9 5z" /><path d="M3 9v6l9 5 9-5V9" /></svg></span><div><div className="mf-k">Marca</div><div className="mf-v">{produto.marca} <small><i />Bling</small></div></div></div>}
+            {produto.marca && <div className="mf-cell"><span className="mf-med"><svg viewBox="0 0 24 24"><path d="M3 9l9-5 9 5-9 5z" /><path d="M3 9v6l9 5 9-5V9" /></svg></span><div><div className="mf-k">Marca</div><div className="mf-v">{produto.marca}</div></div></div>}
             <div className="mf-cell"><span className="mf-med"><svg viewBox="0 0 24 24"><path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16" /></svg></span><div><div className="mf-k">Referência</div><div className="mf-v" style={{ fontFamily: "var(--font-mono)" }}>{produto.sku ?? "—"}</div></div></div>
           </div>
-          {a.fonte && <p className="mf-nav" style={{ marginTop: 8 }}>Fonte da aplicação: {a.fonte}{DATA(a.coletado_em) ? ` · ${DATA(a.coletado_em)}` : ""}</p>}
+          <p className="mf-nav" style={{ marginTop: 8 }}>Fonte: {fontePublica(a.fonte)}{DATA(a.coletado_em) ? ` · ${DATA(a.coletado_em)}` : ""}</p>
         </section>
 
         {oem.length > 0 && (
@@ -211,7 +220,7 @@ export default async function PaginaDeAplicacao({ params }: Props) {
           </div>
         )}
 
-        <p className="mf-foot">1 peça física · estoque único no Bling · catálogo informativo, sem preço · todo dado com fonte e data.</p>
+        <p className="mf-foot">Catálogo informativo · sem preço · informações com fonte e data.<br />Loja operada pelo <b style={{ color: "var(--mf-fg)" }}>Conecta.IA</b> — sistema operacional de catálogo.</p>
       </div>
 
       <ChatLojaWeb nome={loja.nome} whatsapp={loja.whatsapp} produto={{ nome: tituloAplicacao(pa), sku: produto.sku ?? "" }} />

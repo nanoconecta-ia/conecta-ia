@@ -9,6 +9,15 @@ type Props = { params: Promise<{ slug: string; id: string }> };
 const UUID = /^[0-9a-f-]{36}$/i;
 const DATA = (s: string | null) => (s ? new Date(s).toLocaleDateString("pt-BR") : null);
 
+/** Rótulo público de proveniência — não vaza ERP, IDs internos nem notas de validação. */
+function fontePublica(fonte: string | null | undefined): string {
+  const f = (fonte ?? "").toLowerCase();
+  if (!f) return "catálogo";
+  if (/epc|partsouq|vin|montadora|genu[ií]n|fabricante/.test(f)) return "EPC / montadora";
+  if (/lojista|ficha|importador|fornecedor/.test(f)) return "registro do lojista";
+  return "catálogo";
+}
+
 async function carregar({ slug, id }: { slug: string; id: string }) {
   if (!UUID.test(id)) return null;
   const loja = await lojaPorSlug(slug);
@@ -81,13 +90,13 @@ export default async function PaginaProduto({ params }: Props) {
             <img src={principal.url} alt={produto.nome ?? ""} className="size-full object-contain" />
           ) : (
             <div className="grid size-full place-items-center rounded-lg border border-dashed border-borda text-center text-sm text-suave">
-              <span><b className="block font-semibold text-texto">Foto pendente</b>sem imagem no Bling</span>
+              <span><b className="block font-semibold text-texto">Foto pendente</b>sem imagem no catálogo</span>
             </div>
           )}
         </div>
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
-            <Selo tom="ok">Fonte: Bling</Selo>
+            <Selo tom="ok">Confirmado</Selo>
             {produto.sku && <Selo tom="neutro">SKU {produto.sku}</Selo>}
             {produto.situacao === "A" && <Selo tom="neutro">Ativo</Selo>}
           </div>
@@ -108,7 +117,7 @@ export default async function PaginaProduto({ params }: Props) {
       {/* Confirmado — Bling */}
       <section className="overflow-hidden rounded-xl border border-borda bg-card">
         <header className="flex items-center justify-between gap-2 border-b border-borda px-4 py-3">
-          <h2 className="flex items-center gap-2 text-base font-semibold"><Selo tom="ok">Confirmado</Selo> Dados do Bling</h2>
+          <h2 className="flex items-center gap-2 text-base font-semibold"><Selo tom="ok">Confirmado</Selo> Dados do produto</h2>
         </header>
         <div className="grid gap-x-6 gap-y-2.5 p-4 sm:grid-cols-2">
           <Campo k="SKU / código" v={<span className="font-mono text-sm">{produto.sku ?? "—"}</span>} />
@@ -138,7 +147,7 @@ export default async function PaginaProduto({ params }: Props) {
                   <tr key={i} className="border-t border-borda">
                     <td className="px-4 py-2 uppercase">{c.tipo}</td>
                     <td className="px-4 py-2 font-mono">{c.valor}</td>
-                    <td className="px-4 py-2 text-suave">{c.fonte ?? "—"}</td>
+                    <td className="px-4 py-2 text-suave">{fontePublica(c.fonte)}</td>
                     <td className="px-4 py-2 text-suave">{DATA(c.coletado_em) ?? "—"}</td>
                   </tr>
                 ))}
@@ -171,7 +180,7 @@ export default async function PaginaProduto({ params }: Props) {
                   ) : (
                     <span className="font-medium">{rotulo}</span>
                   )}
-                  <span className="text-xs text-suave">{a.fonte ?? "fonte registrada"}{DATA(a.coletado_em) ? ` · ${DATA(a.coletado_em)}` : ""}</span>
+                  <span className="text-xs text-suave">{fontePublica(a.fonte)}{DATA(a.coletado_em) ? ` · ${DATA(a.coletado_em)}` : ""}</span>
                 </li>
               );
             })}
@@ -185,7 +194,8 @@ export default async function PaginaProduto({ params }: Props) {
       </section>
 
       <p className="text-center text-xs text-suave">
-        Catálogo informativo · preço e disponibilidade sob consulta no WhatsApp · sem escrita no Bling.
+        Catálogo informativo · preço e disponibilidade sob consulta no WhatsApp.
+        <br />Loja operada pelo <b>Conecta.IA</b> — sistema operacional de catálogo.
       </p>
 
       <ChatLojaWeb nome={loja.nome} whatsapp={loja.whatsapp} produto={{ nome: produto.nome ?? "Peça automotiva", sku: produto.sku ?? "" }} />

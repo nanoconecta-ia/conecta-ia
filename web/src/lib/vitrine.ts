@@ -1,5 +1,5 @@
 import "server-only";
-import { supabaseServico } from "@/lib/supabase/servico";
+import { supabasePublico } from "@/lib/supabase/publico";
 import type { Imagem, PaginaAplicacao, Produto, ProdutoAplicacao, ProdutoCodigo } from "@/lib/tipos";
 
 const COD_COLS = "tipo, valor, fonte, coletado_em, confianca";
@@ -10,14 +10,14 @@ const COLUNAS =
 export type LojaPublica = { id: string; nome: string; slug: string; whatsapp: string | null; modo_venda: string };
 
 export async function lojaPorSlug(slug: string): Promise<LojaPublica | null> {
-  const { data } = await supabaseServico()
+  const { data } = await supabasePublico()
     .from("lojas").select("id, nome, slug, whatsapp, modo_venda").eq("slug", slug).eq("ativa", true).maybeSingle();
   return (data as LojaPublica | null) ?? null;
 }
 
 async function imagensPublicas(lojaId: string, ids: string[]) {
   if (ids.length === 0) return new Map<string, Imagem[]>();
-  const { data } = await supabaseServico()
+  const { data } = await supabasePublico()
     .from("produto_imagens").select("id, produto_id, url, ordem, tipo, principal, aprovada")
     .eq("loja_id", lojaId).eq("aprovada", true).in("produto_id", ids).order("ordem");
   const mapa = new Map<string, Imagem[]>();
@@ -29,11 +29,15 @@ async function imagensPublicas(lojaId: string, ids: string[]) {
 
 /** Somente produtos publicados da loja. */
 export async function catalogoPublico(lojaId: string, limite = 60) {
-  const { data } = await supabaseServico()
+  const { data } = await supabasePublico()
     .from("produtos").select(COLUNAS).eq("loja_id", lojaId).eq("publicado", true).order("nome").limit(limite);
   const produtos = (data ?? []) as Produto[];
   const imgs = await imagensPublicas(lojaId, produtos.map((p) => p.id));
-  return produtos.map((p) => ({ produto: p, imagens: imgs.get(p.id) ?? [] }));
+  // Não enviar ao cliente identificadores internos (bling_id/loja_id) nem preço/estoque do ERP.
+  return produtos.map((p) => ({
+    produto: { ...p, bling_id: "", loja_id: "", preco: null, estoque: null },
+    imagens: imgs.get(p.id) ?? [],
+  }));
 }
 
 /**
@@ -41,7 +45,7 @@ export async function catalogoPublico(lojaId: string, limite = 60) {
  * porque o service role ignora RLS): compatibilidade incerta nunca é anunciada na vitrine.
  */
 async function enriquecimentoAprovado(lojaId: string, produtoId: string) {
-  const cli = supabaseServico();
+  const cli = supabasePublico();
   const [cod, aplic] = await Promise.all([
     cli.from("produto_codigos")
       .select(COD_COLS)
@@ -63,7 +67,7 @@ async function enriquecimentoAprovado(lojaId: string, produtoId: string) {
  * Só serve aplicação `aprovada` com `pagina_slug`; o produto físico precisa estar publicado.
  */
 export async function paginaAplicacao(lojaId: string, slug: string): Promise<PaginaAplicacao | null> {
-  const cli = supabaseServico();
+  const cli = supabasePublico();
   const { data: ap } = await cli.from("produto_aplicacoes")
     .select("produto_id, modelo, motorizacao, ano_inicial, ano_final, fonte, coletado_em, confianca, pagina_slug, pagina_titulo, pagina_descricao, pagina_indexavel")
     .eq("loja_id", lojaId).eq("pagina_slug", slug).eq("status", "aprovado").maybeSingle();
@@ -86,7 +90,7 @@ export async function paginaAplicacao(lojaId: string, slug: string): Promise<Pag
 
 /** Outras aplicações aprovadas (páginas) do mesmo SKU — para "modelos que usam". */
 export async function aplicacoesIrmas(lojaId: string, produtoId: string) {
-  const { data } = await supabaseServico()
+  const { data } = await supabasePublico()
     .from("produto_aplicacoes")
     .select("modelo, motorizacao, ano_inicial, ano_final, pagina_slug")
     .eq("loja_id", lojaId).eq("produto_id", produtoId).eq("status", "aprovado")
@@ -95,7 +99,7 @@ export async function aplicacoesIrmas(lojaId: string, produtoId: string) {
 }
 
 export async function produtoPublico(lojaId: string, id: string) {
-  const { data } = await supabaseServico()
+  const { data } = await supabasePublico()
     .from("produtos").select(COLUNAS).eq("loja_id", lojaId).eq("publicado", true).eq("id", id).maybeSingle();
   if (!data) return null;
   const [imgs, enriq] = await Promise.all([imagensPublicas(lojaId, [id]), enriquecimentoAprovado(lojaId, id)]);
@@ -113,7 +117,7 @@ export type BannerOferta = { id: string; produto_id: string; sku: string; nome: 
 
 /** Banners de oferta no ar (loja_banners): só produto publicado e dentro do período. Falha na leitura não derruba a vitrine. */
 export async function bannersDaLoja(lojaId: string): Promise<BannerOferta[]> {
-  const { data, error } = await supabaseServico().rpc("banners_da_vitrine", { p_loja: lojaId });
+  const { data, error } = await supabasePublico().rpc("banners_da_vitrine", { p_loja: lojaId });
   return error || !Array.isArray(data) ? [] : (data as BannerOferta[]);
 }
 
