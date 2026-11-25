@@ -3,6 +3,10 @@ import { formatarValor, normalizar, rotaDoFiltro, TITULO_FILTRO } from "../lib/i
 import type { ListaIndicador } from "../lib/conectorDados.ts";
 import type { Loja } from "../lib/dados.ts";
 import { useFonte } from "../lib/useFonte.ts";
+import "./dashboards.css";
+
+/** Domínio curto do indicador (prefixo do filtro), só para rotular o cartão. */
+const dominio = (filtro: string) => (filtro.split(":")[0] || "geral").replace("sincronizacao", "sync").toUpperCase();
 
 /** Indicadores operacionais REAIS (rpc dashboard_operacional). "não medido" quando o banco devolve null; cada cartão abre os registros. */
 export function Indicadores({ loja }: { loja: Loja }) {
@@ -15,23 +19,26 @@ export function Indicadores({ loja }: { loja: Loja }) {
     fonte.dashboard(loja.id).then((b) => { const n = normalizar(b); if (!n) setErro("Resposta inesperada do banco."); setR(n); }).catch((e) => { setErro(e instanceof Error ? e.message : "Não foi possível carregar os indicadores."); setR(null); });
   }, [fonte, loja.id]);
   return (
-    <>
-      <div className="cartao">
-        <h1>Indicadores</h1>
-        <p className="suave">Números lidos do banco agora. “Não medido” significa que a plataforma ainda não calcula aquele indicador — nunca é um zero de enfeite.</p>
-        {erro && <p className="msg-erro" role="alert">{erro}</p>}
-      </div>
+    <div className="dash">
+      <header className="dash-cabecalho">
+        <p className="dash-eyebrow"><i aria-hidden="true" /> OPERAÇÃO · CONECTA.IA</p>
+        <h1>Indicadores detalhados</h1>
+        <p>Números lidos do banco agora. “Não medido” significa que a plataforma ainda não calcula aquele indicador — nunca é um zero de enfeite. Cada cartão abre os registros.</p>
+      </header>
+      {erro && <p className="msg-erro" role="alert">{erro}</p>}
       {r === undefined && !erro && <p className="suave">Carregando…</p>}
       {r && (
         <>
-          <div className="grade indicadores" role="list">
+          <div className="dash-kpis" role="list">
             {r.indicadores.map((i) => {
               const rota = rotaDoFiltro(i.filtro);
-              const corpo = (<><span className="rotulo">{i.titulo}</span><span className={`numero ${i.valor === null ? "nm" : ""}`}>{formatarValor(i.valor)}</span><span className="suave ajuda">{i.observacao ?? i.ajuda}</span></>);
-              return rota ? <a key={i.chave} role="listitem" className="cartao indicador" href={`#${rota}`} aria-label={`${i.titulo}: ${formatarValor(i.valor)}. Abrir lista`}>{corpo}</a> : <div key={i.chave} role="listitem" className="cartao indicador">{corpo}</div>;
+              const nm = i.valor === null;
+              const corpo = (<><span className="dash-kpi-dom">{dominio(i.filtro)}</span><span className="dash-kpi-num">{formatarValor(i.valor)}</span><span className="dash-kpi-rot">{i.titulo}</span><span className="dash-kpi-aj">{i.observacao ?? i.ajuda}</span></>);
+              const cls = `dash-kpi ${nm ? "dash-nm" : ""}`;
+              return rota ? <a key={i.chave} role="listitem" className={cls} href={`#${rota}`} aria-label={`${i.titulo}: ${formatarValor(i.valor)}. Abrir lista`}>{corpo}</a> : <div key={i.chave} role="listitem" className={cls}>{corpo}</div>;
             })}
           </div>
-          <div className="cartao">
+          <div className="dash-bloco">
             <h2>Custo por agente neste mês</h2>
             {r.custo.length === 0 ? <p className="suave">Nenhuma resposta de IA registrada neste mês.</p> : (
               <div className="rolagem"><table><thead><tr><th>Provedor</th><th>Modelo</th><th>Tokens</th><th>Custo estimado</th></tr></thead>
@@ -39,7 +46,7 @@ export function Indicadores({ loja }: { loja: Loja }) {
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
 

@@ -8,6 +8,7 @@ import type { Loja } from "../lib/dados.ts";
 import { aReconciliar, agruparPorProduto, itensAprovaveis, prazo, resumoOperacoes, ROTULO_PROPOSTA, type EstadoProposta, type ItemProposta, type Operacao, type Proposta } from "../lib/propostas.ts";
 import { useFonte } from "../lib/useFonte.ts";
 import { ir } from "../lib/rota.ts";
+import "./dashboards.css";
 
 const FILTROS: [string, string][] = [["pendente", "Aguardando decisão"], ["aprovada", "Aprovadas"], ["executando", "Em execução"], ["executada", "Executadas"], ["parcial", "Parciais"], ["rejeitada", "Rejeitadas"], ["expirada", "Expiradas"], ["", "Todas"]];
 type ItemSim = { item_id: string; operacao: string; ok: boolean; motivo?: string; previsto?: unknown; confirmacao_simulada?: boolean };
@@ -84,12 +85,15 @@ export function CentralInteligencia({ loja, query }: { loja: Loja; query: URLSea
   const produtosDe = D ? [...agruparPorProduto(D.itens).keys()].filter((k) => k !== "sem-produto") : [];
   const opsBling = D ? D.itens.filter((i) => i.operacao.startsWith("bling.")) : [];
   return (
-    <div className="central">
-      <div className="cartao">
+    <div className="central dash">
+      <header className="dash-cabecalho">
+        <p className="dash-eyebrow"><i aria-hidden="true" /> DECISÃO · NANO.IA</p>
         <h1>Central de Inteligência</h1>
-        <p className="suave">Tudo que o Nano.ia quer alterar passa por aqui: você vê o antes e o depois, as fontes e o risco, e decide sobre a <strong>versão exata</strong> da proposta.</p>
-        <p className="aviso" role="note"><strong>Escrita real no Bling: DESLIGADA nesta fase.</strong> As execuções são simuladas; nenhum cadastro real do Bling é alterado.</p>
-        <div className="linha" role="group" aria-label="Filtrar por estado">
+        <p>Tudo que o Nano.ia quer alterar passa por aqui: você vê o antes e o depois, as fontes e o risco, e decide sobre a <strong>versão exata</strong> da proposta.</p>
+        <span className="dash-nota" role="note"><strong>Escrita real no Bling: DESLIGADA nesta fase</strong> — execuções simuladas; nenhum cadastro real é alterado.</span>
+      </header>
+      <div className="cartao">
+        <div className="dash-filtros" role="group" aria-label="Filtrar por estado">
           {FILTROS.map(([v, t]) => <button key={v || "todas"} className={filtro === v ? "" : "sec"} aria-pressed={filtro === v} onClick={() => { setFiltro(v); ir(`/central${v ? `?estado=${v}` : ""}`); setSel(null); }}>{t}</button>)}
         </div>
       </div>
