@@ -1,5 +1,5 @@
-import { IconeVeiculo } from "./IconePeca.tsx";
-import { TIPOS_VEICULO } from "../lib/icones.ts";
+import { IconePeca, IconeVeiculo } from "./IconePeca.tsx";
+import { TIPOS_VEICULO, iconeDaCategoria } from "../lib/icones.ts";
 import { montarFicha, type FichaProduto as Produto, type FichaVeiculo } from "../lib/ficha.ts";
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -10,7 +10,7 @@ export function FichaProduto({ produto, veiculos }: { produto: Produto; veiculos
   return (
     <article className="ficha" aria-label={`Ficha de ${produto.nome}`}>
       <header className="ficha-topo">
-        <span className="ficha-marca">{f.marca ?? ""}</span>
+        <span className="ficha-marca"><IconePeca nome={iconeDaCategoria(null, produto.nome)} tamanho={40} /> {f.marca ?? ""}</span>
         <span className="ficha-codigo"><small>CÓDIGO</small><b className="mono">{f.codigo}</b></span>
       </header>
       <div className="ficha-corpo">
