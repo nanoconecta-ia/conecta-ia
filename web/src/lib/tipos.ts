@@ -64,4 +64,5 @@ export type PaginaAplicacao = {
   aplicacao: ProdutoAplicacao & { pagina_slug: string };
   produto: Produto;
   codigos: ProdutoCodigo[];
+  imagem: Imagem | null;
 };

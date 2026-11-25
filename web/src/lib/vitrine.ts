@@ -74,10 +74,13 @@ export async function paginaAplicacao(lojaId: string, slug: string): Promise<Pag
   if (!prod) return null;
   const { data: cod } = await cli.from("produto_codigos").select(COD_COLS)
     .eq("loja_id", lojaId).eq("produto_id", produtoId).eq("status", "aprovado").order("tipo");
+  const imgs = await imagensPublicas(lojaId, [produtoId]);
+  const lista = imgs.get(produtoId) ?? [];
   return {
     aplicacao: ap as PaginaAplicacao["aplicacao"],
     produto: prod as Produto,
     codigos: (cod ?? []) as ProdutoCodigo[],
+    imagem: lista.find((i) => i.principal) ?? lista[0] ?? null,
   };
 }
 

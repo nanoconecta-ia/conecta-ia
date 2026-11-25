@@ -63,6 +63,14 @@ export default async function PaginaDeAplicacao({ params }: Props) {
         {a.pagina_descricao && <p className="text-suave">{a.pagina_descricao}</p>}
       </header>
 
+      {pa.imagem && (
+        <div className="overflow-hidden rounded-xl border border-borda bg-white p-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={pa.imagem.url} alt={tituloAplicacao(pa)} className="mx-auto max-h-80 w-full object-contain" />
+          {pa.imagem.tipo !== "real" && <p className="mt-2 text-center text-xs text-suave">Imagem ilustrativa</p>}
+        </div>
+      )}
+
       {/* Veículo desta página */}
       <section className="overflow-hidden rounded-xl border border-borda bg-card">
         <header className="border-b border-borda px-4 py-3"><h2 className="text-base font-semibold">Veículo</h2></header>

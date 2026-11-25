@@ -72,6 +72,7 @@ const paBase: PaginaAplicacao = {
     { tipo: "oem", valor: "22100-4A701", fonte: "EPC PartSouq", coletado_em: "2026-11-23T00:00:00Z", confianca: 0.8 },
     { tipo: "similar", valor: "XYZ", fonte: null, coletado_em: null, confianca: null },
   ],
+  imagem: null,
 };
 
 test("veiculoRotulo junta só o que existe", () => {
