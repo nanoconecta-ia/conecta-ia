@@ -84,6 +84,16 @@ export async function paginaAplicacao(lojaId: string, slug: string): Promise<Pag
   };
 }
 
+/** Outras aplicações aprovadas (páginas) do mesmo SKU — para "modelos que usam". */
+export async function aplicacoesIrmas(lojaId: string, produtoId: string) {
+  const { data } = await supabaseServico()
+    .from("produto_aplicacoes")
+    .select("modelo, motorizacao, ano_inicial, ano_final, pagina_slug")
+    .eq("loja_id", lojaId).eq("produto_id", produtoId).eq("status", "aprovado")
+    .not("pagina_slug", "is", null).order("modelo");
+  return (data ?? []) as { modelo: string; motorizacao: string | null; ano_inicial: number | null; ano_final: number | null; pagina_slug: string }[];
+}
+
 export async function produtoPublico(lojaId: string, id: string) {
   const { data } = await supabaseServico()
     .from("produtos").select(COLUNAS).eq("loja_id", lojaId).eq("publicado", true).eq("id", id).maybeSingle();
