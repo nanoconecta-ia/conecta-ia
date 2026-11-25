@@ -1,0 +1,28 @@
+/* Películas oficiais Mobis (Novo Padrão Película) — acabamentos glass/frosted/brush/smoke.
+   Camada de overlay DECORATIVA, aplicada como <span> filho (pointer-events:none): não recolore o emblema/foto,
+   não altera o fundo do elemento (os testes que checam fundos seguem válidos) e some com prefers-reduced-motion não aplicável.
+   Hosts precisam conter o overlay: position:relative + overflow:hidden (não mudam a cor computada do elemento). */
+.mobis-v2 .m2-foto-produto,
+.mobis-v2 .m2-modulo-sistemas-grid button { position:relative; overflow:hidden; }
+
+.pelicula { position:absolute; inset:0; pointer-events:none; border-radius:inherit; z-index:2; }
+
+/* Brilho (glass): reflexo diagonal sutil no canto superior — preserva a leitura da foto da peça. */
+.pelicula-glass { background:
+  linear-gradient(125deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.08) 22%, rgba(255,255,255,0) 40%),
+  linear-gradient(0deg, rgba(0,0,0,.10), rgba(0,0,0,0) 34%); }
+
+/* Fosco (frosted): véu suave e difuso, baixo contraste. */
+.pelicula-frosted { mix-blend-mode:soft-light; background:
+  linear-gradient(130deg, rgba(255,255,255,.32), rgba(255,255,255,.05) 55%, rgba(255,255,255,0)),
+  radial-gradient(130% 80% at 50% -10%, rgba(255,255,255,.18), rgba(255,255,255,0) 60%); }
+
+/* Metálica (brush): microlinhas de aço + brilho diagonal — acabamento dos emblemas/selos. */
+.pelicula-brush { mix-blend-mode:overlay; background:
+  repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 1px, rgba(0,0,0,.05) 1px 2px),
+  linear-gradient(120deg, rgba(255,255,255,.42) 0%, rgba(255,255,255,0) 30%, rgba(255,255,255,.20) 68%, rgba(255,255,255,0) 86%); }
+
+/* Escura (smoke): vidro fumê — véu escuro + fio de luz (para peças sobre fundo escuro). */
+.pelicula-smoke { background:
+  linear-gradient(135deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,0) 22%),
+  linear-gradient(0deg, rgba(10,12,14,.5), rgba(10,12,14,.22) 60%, rgba(10,12,14,.08)); }
