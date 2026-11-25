@@ -1,3 +1,4 @@
+import { MarcaConectaNova } from "./MarcaConectaNova.tsx";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import type { Loja } from "../lib/dados.ts";
 import { AtivoAprovado } from "./AtivoAprovado.tsx";
@@ -34,7 +35,7 @@ export function PainelAprovado({loja,caminho,menu,children,menuMovel,recolhido,a
  return <div className={`conecta-aprovado ${menuMovel?"ap-menu-aberto":""} ${recolhido?"ap-recolhido":""}`} data-conecta-layout="aprovado-v2" data-area={nano?"nano":"painel"} data-leitura={leitura} style={{"--res-esq":res.esq+"px","--res-dir":res.dir+"px"} as CSSProperties}>
   {menuMovel&&<button className="ap-menu-fundo" aria-label="Fechar menu de navegação" onClick={aoMenu}/>}
   <aside className="ap-sidebar" id="menu-principal" aria-label="Menu principal">
-   <a className="ap-identidade" href="#/"><strong>Conecta<span>.IA</span></strong><small>ENRIQUECIMENTO DE CATÁLOGOS</small></a>
+   <a className="ap-identidade" href="#/"><MarcaConectaNova/></a>
    <div className="ap-loja-marca">{loja?.slug==="mobis"?<span className="ap-marca-window"><img src={marcaMobis} alt="Mobis Autopeças"/></span>:<strong>{loja?.nome??"Seu ambiente"}</strong>}<small>{loja?.slug==="mobis"?"LOJA PILOTO":"AMBIENTE INTERNO"}</small></div>
    <span className="ap-nav-label">ESPELHAMENTO</span>
    <nav>{PRINCIPAIS.filter(([r])=>r==="/estudio"||r==="/"||menu.some(x=>x[0]===r)).map(([r,t,ic])=><a key={r} title={t} aria-label={t} href={`#${r}`} aria-current={caminho===r||(r==="/estudio"&&caminho==="/assistente")?"page":undefined} className={caminho===r||(r==="/estudio"&&caminho==="/assistente")?"ativo":""} onClick={()=>{if(menuMovel)aoMenu();}}><AtivoAprovado nome={ic}/><span>{t}</span></a>)}</nav>

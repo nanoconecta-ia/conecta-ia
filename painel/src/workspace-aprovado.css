@@ -92,3 +92,6 @@
 .ap-studio-layout .ap-tower{top:70px}
 }
 .item-imagem{margin:8px 0 0}.item-imagem img{display:block;width:100%;max-height:180px;object-fit:contain;background:#fff;border:1px solid var(--borda);border-radius:6px}.item-imagem figcaption{font-size:10px;color:var(--suave);margin-top:4px}
+
+/* Marca Conecta.IA aprovada: apenas identidade da plataforma. */
+.marca-conecta-nova{display:flex;align-items:center;gap:9px;min-width:0}.marca-conecta-nova svg{width:35px;height:35px;flex:none}.marca-conecta-nova>span{min-width:0}.ap-identidade .marca-conecta-nova strong{font-size:20px;letter-spacing:-.7px;color:inherit}.ap-identidade .marca-conecta-nova strong span{color:#36b9ee}.ap-identidade .marca-conecta-nova small{font-size:6px;letter-spacing:.8px;line-height:1.4;white-space:nowrap}

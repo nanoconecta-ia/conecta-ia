@@ -8,8 +8,8 @@
   "scope": "./conecta.html",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#1D1B18",
-  "theme_color": "#1D1B18",
+  "background_color": "#0B1020",
+  "theme_color": "#0B1020",
   "categories": ["business", "shopping"],
   "icons": [
     { "src": "icones/conecta-app-icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
