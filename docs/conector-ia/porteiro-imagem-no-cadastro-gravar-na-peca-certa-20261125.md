@@ -36,5 +36,13 @@ Os docs de imagem já mandavam **buscar** e **propor** foto, mas não travavam a
 - `imagem_gravada` — gravada e **lida de volta** no banco, no SKU certo (vale também `foto_pendente` quando não há foto segura).
 - `imagem_publicada_verificada` — vista na **URL pública** da página.
 
+## Símbolos/logos de montadora nas páginas de aplicação
+Para marcar cada aplicação (Hyundai, Kia, Mitsubishi, Ford…), pode-se exibir o **símbolo da montadora** no cartão do modelo — **cada aplicação usa o seu** símbolo, ligado ao mesmo SKU físico.
+
+1. **Fonte do símbolo:** os próprios provedores de OEM/EPC já usados na pesquisa (**PartSouq/EPC** e catálogos de montadora) exibem os logos de todas as montadoras; pode-se obter o símbolo ali. Preferir, quando houver, **arquivo oficial/limpo fornecido pelo lojista**. Não baixar de fontes aleatórias.
+2. **Padrão de imagem:** PNG ou SVG com **fundo transparente, sem marca d'água, recorte limpo** e boa nitidez (mesma régua da política de imagem). O logo é **asset de marca**, não substitui a foto real da peça — entra só como marcador da montadora no cartão/filtro.
+3. **Base de uso (importante):** uso **referencial/nominativo**, autorizado pelo lojista, só para **identificar a aplicação** da peça (em que veículo encaixa). O símbolo aparecer no PartSouq **não concede licença** da montadora. Por isso: nunca usar o logo como **selo de endosso** nem de forma que sugira que a loja é **oficial/autorizada** pela montadora; vincular sempre o símbolo à **aplicação real comprovada**.
+4. **Fluxo:** propor o símbolo como **candidato** (como qualquer imagem), lojista aprova; só então entra na página.
+
 ## Requisito para o gateway (código, a implementar)
 O servidor que grava `produto_imagens` deve **recusar** um `produto_id` cujo SKU não corresponda ao SKU do cadastro em andamento, e impedir mais de uma `principal` por produto. Enquanto não implementado, a conferência do item 5 é obrigatória para o agente.
