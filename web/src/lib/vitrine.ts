@@ -74,11 +74,24 @@ export async function paginaAplicacao(lojaId: string, slug: string): Promise<Pag
   if (!prod) return null;
   const { data: cod } = await cli.from("produto_codigos").select(COD_COLS)
     .eq("loja_id", lojaId).eq("produto_id", produtoId).eq("status", "aprovado").order("tipo");
+  const imgs = await imagensPublicas(lojaId, [produtoId]);
+  const lista = imgs.get(produtoId) ?? [];
   return {
     aplicacao: ap as PaginaAplicacao["aplicacao"],
     produto: prod as Produto,
     codigos: (cod ?? []) as ProdutoCodigo[],
+    imagem: lista.find((i) => i.principal) ?? lista[0] ?? null,
   };
+}
+
+/** Outras aplicações aprovadas (páginas) do mesmo SKU — para "modelos que usam". */
+export async function aplicacoesIrmas(lojaId: string, produtoId: string) {
+  const { data } = await supabaseServico()
+    .from("produto_aplicacoes")
+    .select("modelo, motorizacao, ano_inicial, ano_final, pagina_slug")
+    .eq("loja_id", lojaId).eq("produto_id", produtoId).eq("status", "aprovado")
+    .not("pagina_slug", "is", null).order("modelo");
+  return (data ?? []) as { modelo: string; motorizacao: string | null; ano_inicial: number | null; ano_final: number | null; pagina_slug: string }[];
 }
 
 export async function produtoPublico(lojaId: string, id: string) {
