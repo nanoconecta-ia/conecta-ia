@@ -58,7 +58,7 @@ export default async function PaginaDeAplicacao({ params }: Props) {
       </nav>
 
       <header className="space-y-2">
-        <p className="text-sm font-medium uppercase tracking-wide text-suave">Aplicação homologada</p>
+        <p className="text-sm font-medium uppercase tracking-wide text-suave">{deveIndexarAplicacao(pa) ? "Aplicação homologada" : "Aplicação de referência (a homologar)"}</p>
         <h1 className="text-2xl font-semibold text-balance">{tituloAplicacao(pa)}</h1>
         {a.pagina_descricao && <p className="text-suave">{a.pagina_descricao}</p>}
       </header>
