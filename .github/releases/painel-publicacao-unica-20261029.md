@@ -285,3 +285,10 @@ Este arquivo é o gatilho **único** de publicação do painel do GitHub Pages, 
 - Sem Edge Functions, migrações, alterações no Supabase, tokens, notas, preço, estoque, dados fiscais, DNS, domínio ou outras lojas.
 - Validar build/deploy, `version.json`, visualização autenticada e integridade da vitrine. Não declarar teste de login real sem evidência.
 
+
+## Publicação autorizada — identidade Conecta.IA e ficha Mobis (25/11/2026)
+
+- Proprietário autorizou a publicação da nova identidade Conecta.IA após as verificações. O PR #503 foi integrado em `b4f328ad8707885010549940885176736d5b2a90`; o frontend da main também inclui os PRs #497 e #502 de película e ficha Mobis.
+- Publicar apenas o frontend estático pelo workflow existente, com as flags vigentes. Não altera Bling, banco, dados de produtos, preço, estoque, DNS ou permissões.
+- Compilação, 493 testes e testes visuais simulados em celular e desktop passaram. A ficha foi verificada com OEM aprovado, referência ausente e sem preço usando dados simulados.
+- Conferir build/deploy, versão no domínio e acesso ao Conecta.IA e à vitrine. A instalação e atualização do ícone em Android físico permanece pendente; não alegar homologação do aparelho sem teste real.
