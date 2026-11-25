@@ -109,3 +109,35 @@
 .produto-publico-mobis .ficha-oem ul{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:0}
 .produto-publico-mobis .ficha-oem li{padding:8px;border:1px solid #4a525a;border-radius:6px;background:#242a30;overflow-wrap:anywhere}
 .produto-publico-mobis .ficha-oem p{color:#d2d8dd;line-height:1.5;font-size:.9rem}
+
+
+/* Piloto CI003696 · película grafite M-STYLE, isolada das demais lojas e SKUs. */
+.ficha-mobis-piloto{background:#101215;color:#f7f8fa}
+.ficha-mobis-piloto .produto-publico-mobis-cab{display:flex;flex-wrap:wrap;position:sticky;top:0;z-index:5;background:#15191e;border:0;border-bottom:1px solid #41464d;border-radius:0;gap:10px;padding:12px 0;margin-bottom:18px}
+.ficha-mobis-piloto .produto-publico-mobis-cab img{width:clamp(135px,31vw,235px);max-height:76px;object-fit:contain;display:block}
+.ficha-mobis-catalogo{margin-left:auto;display:block;border:1px solid #4b525a;border-radius:6px;padding:8px 11px;color:#d6d9dc;line-height:1.35;font-size:clamp(.7rem,2.7vw,.92rem);font-weight:800;text-transform:uppercase;letter-spacing:.12em;white-space:nowrap}
+.ficha-mobis-piloto .produto-publico-mobis-cab>a:last-child{font-size:.78rem;background:none;padding:6px 0;color:#e4e6e8}
+.ficha-mobis-piloto .ficha-tecnica,.ficha-mobis-piloto .ficha-oem{margin:0 0 16px;padding:0;border:0;background:none;box-shadow:none}
+.ficha-mobis-piloto .ficha-tecnica h2,.ficha-mobis-piloto .ficha-oem h2,.ficha-mobis-piloto .produto-publico-mobis-aplicacoes h2,.ficha-mobis-alerta h2{font-family:inherit;font-weight:900;letter-spacing:.045em;text-transform:uppercase;line-height:1.35;font-size:clamp(1rem,3.8vw,1.35rem);color:#fff}
+.ficha-mobis-especificacoes{display:grid;grid-template-columns:minmax(0,1fr);margin:0;border:1px solid #41464e;border-radius:8px;overflow:hidden;background:#20242a}
+.ficha-mobis-linha{display:grid;grid-template-columns:44px minmax(0,1fr);column-gap:13px;row-gap:3px;align-items:center;padding:15px 12px;border-bottom:1px solid #41464e}
+.ficha-mobis-linha:last-child{border-bottom:0}
+.ficha-mobis-tecnico-icone{grid-row:1/3;display:grid;place-items:center;width:44px;height:44px;background:linear-gradient(#4b5056,#191d22 58%,#101215);box-shadow:inset 0 1px 1px #777b80,0 5px 10px #0005;border-radius:13px}
+.ficha-mobis-linha dt{color:#bfc3c7;text-transform:uppercase;letter-spacing:.08em;font-size:.75rem;font-weight:800}
+.ficha-mobis-linha dd{color:#fff;margin:0;font-size:clamp(1.05rem,4vw,1.3rem);line-height:1.3;font-weight:700;overflow-wrap:anywhere}
+.ficha-mobis-fonte{display:inline-block;margin-inline-start:9px;font-size:.75rem;color:#8cdda1;font-weight:600}
+.ficha-mobis-piloto .produto-publico-mobis-aplicacoes{background:none;border:none;box-shadow:none;padding:8px 0 12px}
+.ficha-mobis-piloto .produto-publico-mobis-grade{grid-template-columns:1fr;gap:12px}
+.ficha-mobis-piloto .produto-publico-mobis-grade a{grid-template-columns:58px minmax(0,1fr);column-gap:14px;padding:17px 13px;min-height:92px;border:1px solid #4a5057;border-radius:8px;background:radial-gradient(ellipse at 9% 0%,#7b20264d,transparent 48%),linear-gradient(135deg,#292e35,#171b20 65%);position:relative}
+.ficha-mobis-piloto .produto-publico-mobis-grade a>strong{font-size:clamp(1rem,4vw,1.25rem);text-transform:uppercase;font-weight:900;letter-spacing:.035em;overflow-wrap:anywhere}
+.ficha-mobis-piloto .produto-publico-mobis-grade a>small{font-size:.9rem;overflow-wrap:anywhere}
+.ficha-mobis-piloto .produto-publico-mobis-grade a>span:last-child{color:#ff797a;grid-column:2;font-size:.8rem}
+.ficha-mobis-veiculo-icone{grid-row:1/4;align-self:center;display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:linear-gradient(#343b42,#101215);box-shadow:inset 0 1px 2px #71767c;color:#e4e7eb}
+.ficha-mobis-veiculo-icone svg{width:32px;height:32px}
+.ficha-mobis-alerta{max-width:1120px;margin:0 auto 22px;display:grid;grid-template-columns:28px minmax(0,1fr);gap:14px;padding:clamp(15px,3vw,24px);background:#24191b;color:#f1e8e8;border:1px solid #a4373e;border-left:5px solid #e2181a;border-radius:10px;box-sizing:border-box}
+.ficha-mobis-alerta>svg{width:28px;height:28px;color:#ff5055;margin-top:3px}
+.ficha-mobis-alerta h2{margin:0 0 10px}
+.ficha-mobis-alerta p{margin:0 0 8px;line-height:1.6;overflow-wrap:anywhere}
+.ficha-mobis-alerta p:last-child{margin-bottom:0}
+@media(min-width:760px){.ficha-mobis-especificacoes{grid-template-columns:repeat(2,minmax(0,1fr))}.ficha-mobis-linha:nth-child(odd){border-right:1px solid #41464e}.ficha-mobis-linha:nth-last-child(-n+2):nth-child(odd):nth-last-child(2){border-bottom:0}.ficha-mobis-piloto .produto-publico-mobis-grade{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:380px){.ficha-mobis-piloto .produto-publico-mobis-cab img{width:125px}.ficha-mobis-catalogo{letter-spacing:.07em;padding:7px 8px}.ficha-mobis-piloto .ficha{padding:12px}.ficha-mobis-linha{padding:12px 9px;column-gap:10px}}
