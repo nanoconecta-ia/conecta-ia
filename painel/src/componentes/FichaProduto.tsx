@@ -1,16 +1,20 @@
-import { IconeVeiculo } from "./IconePeca.tsx";
-import { TIPOS_VEICULO } from "../lib/icones.ts";
+import { IconePeca, IconeVeiculo } from "./IconePeca.tsx";
+import { TIPOS_VEICULO, iconeDaCategoria } from "../lib/icones.ts";
 import { montarFicha, type FichaProduto as Produto, type FichaVeiculo } from "../lib/ficha.ts";
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 /** Ficha do produto montada sozinha a partir do cadastro e das aplicações aprovadas (padrão aprovado no desenho). */
-export function FichaProduto({ produto, veiculos }: { produto: Produto; veiculos: FichaVeiculo[] }) {
+type ReferenciaAprovada = { tipo: string; valor: string };
+type ProdutoComReferencias = Produto & { referencias_aprovadas?: ReferenciaAprovada[] };
+
+export function FichaProduto({ produto, veiculos, mostrarDetalhes = false }: { produto: ProdutoComReferencias; veiculos: FichaVeiculo[]; mostrarDetalhes?: boolean }) {
   const f = montarFicha(produto, veiculos);
+  const referenciasOem = (produto.referencias_aprovadas ?? []).filter((r) => r.tipo === "oem" && typeof r.valor === "string" && r.valor.trim());
   return (
     <article className="ficha" aria-label={`Ficha de ${produto.nome}`}>
       <header className="ficha-topo">
-        <span className="ficha-marca">{f.marca ?? ""}</span>
+        <span className="ficha-marca"><IconePeca nome={iconeDaCategoria(null, produto.nome)} tamanho={40} /> {f.marca ?? ""}</span>
         <span className="ficha-codigo"><small>CÓDIGO</small><b className="mono">{f.codigo}</b></span>
       </header>
       <div className="ficha-corpo">
@@ -25,6 +29,21 @@ export function FichaProduto({ produto, veiculos }: { produto: Produto; veiculos
           {produto.preco != null && <p className="v-preco">{brl(produto.preco)}</p>}
         </div>
       </div>
+      {mostrarDetalhes && <><section className="ficha-tecnica" aria-label="Ficha técnica">
+        <h2>Ficha técnica</h2>
+        <dl className="ficha-tecnica-grade">
+          <div><dt>Código</dt><dd>{f.codigo}</dd></div>
+          {f.marca && <div><dt>Marca</dt><dd>{f.marca}</dd></div>}
+          <div><dt>Produto</dt><dd>{f.titulo}</dd></div>
+          <div><dt>Aplicação</dt><dd>{f.compativel.length ? "Consulte os veículos listados" : "Em validação"}</dd></div>
+        </dl>
+      </section>
+      <section className="ficha-oem" aria-label="Códigos OEM de referência">
+        <h2>Códigos OEM de referência</h2>
+        {referenciasOem.length ? <ul>{referenciasOem.map((r, i) => <li key={`${r.valor}-${i}`}>{r.valor}</li>)}</ul> : <p>Referências em validação.</p>}
+        <p>Confirme o código e o chassi antes de comprar ou montar.</p>
+      </section>
+      </>}
       {produto.whatsapp && <a className="ficha-wa" href={produto.whatsapp} target="_blank" rel="noopener noreferrer">Consultar com vendedor no WhatsApp</a>}
     </article>
   );

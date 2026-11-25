@@ -50,7 +50,7 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
           <img src={logoMobis} alt="MOBIS AUTOPEÇAS" /></a>
         <a href="#/loja/mobis">← Voltar à loja</a>
       </header>}
-      {ficha && <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} />}
+      {ficha && <FichaProduto produto={ficha.produto} veiculos={ficha.veiculos} mostrarDetalhes={slug === MOBIS.slug} />}
       {slug === MOBIS.slug && ficha && <section className="produto-publico-mobis-aplicacoes" aria-label="Páginas por veículo">
         <h2>Aplicações por veículo</h2>
         {paginasVeiculos.length ? <div className="produto-publico-mobis-grade">{paginasVeiculos.map(a=>
