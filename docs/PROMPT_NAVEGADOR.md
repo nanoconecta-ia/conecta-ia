@@ -8,7 +8,7 @@ As funções `bling-conectar` e `bling-callback` já estão publicadas no projet
 Você vai me ajudar, no navegador, a cadastrar o aplicativo PRIVADO no meu Bling e a guardar as chaves no Supabase.
 Regras: (1) NUNCA escreva no chat, em resumo ou em captura de tela nenhuma chave, senha, token ou Client Secret; digite
 esses valores só nos campos onde eles pertencem. (2) NÃO use Render nem nenhuma outra hospedagem. (3) PARE e me pergunte antes
-de qualquer pagamento, mudança de plano, domínio, DNS ou alteração no site atual www.mobisautoparts.com.br.
+de qualquer pagamento, mudança de plano, domínio, DNS ou alteração no site atual www.mobisautopecas.com.br.
 (4) Confirme cada etapa comigo antes de salvar. (5) Se algo não bater, pare e me explique.
 
 PARTE 1 — Bling
