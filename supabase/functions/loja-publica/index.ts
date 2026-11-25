@@ -4,6 +4,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.ts";
 import { modoCliente } from "../_shared/loja/publicacao.ts";
+import { linhaInformativaSemComercial, modoInformativoProduto } from "../_shared/loja/catalogo_informativo.ts";
 import { urlProduto } from "../_shared/seo/url.ts";
 import { cabecalhoIpConfigurado, guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
 import { montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
@@ -120,11 +121,15 @@ Deno.serve(async (req) => {
   // filtros calculados do dado aprovado (categorias com ícone, montadoras, fabricantes); falha aqui não derruba a vitrine
   const { data: filtros } = await sb.rpc("filtros_da_vitrine", { p_loja: loja.id });
 
-  let consulta = sb.from("produtos").select("nome, sku, preco, estoque, marca, descricao_curta, sincronizado_em, publicado, exibicao_teste, taxonomia_no_id", { count: "exact" })
+  let consulta = sb.from("produtos").select("nome, sku, preco, estoque, marca, descricao_curta, sincronizado_em, publicado, exibicao_teste, exibicao_informativa, taxonomia_no_id", { count: "exact" })
     .eq("loja_id", loja.id);
+  // Catálogo enriquecido: visibilidade aprovada e segregada de venda.
+  // Mantém a prévia antiga apenas no piloto de teste com zero produtos publicados.
   consulta = modoPreviaCatalogo
-    ? consulta.eq("exibicao_teste", true).eq("situacao", "A")
-    : consulta.eq("publicado", true);
+    ? consulta.or("exibicao_teste.eq.true,exibicao_informativa.eq.true").eq("situacao", "A")
+    : loja.slug === "mobis"
+      ? consulta.or("publicado.eq.true,exibicao_informativa.eq.true")
+      : consulta.eq("publicado", true);
   consulta = consulta.order("nome").range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1);
   // Espelho de códigos: apenas vínculos realmente aprovados podem levar a um
   // produto; candidato ou pendente não serve como atalho de correspondência.
@@ -217,14 +222,18 @@ Deno.serve(async (req) => {
   const categoriaPorNo = new Map((nos ?? []).map((n: { id: string; nome: string }) => [n.id, n.nome]));
   const categoriaPorSku = new Map((linhas ?? []).map((l: { sku: string | null; taxonomia_no_id: string | null }) =>
     [l.sku, categoriaPorNo.get(l.taxonomia_no_id ?? "") ?? null]));
+  // A ocultação de preço/estoque vale por SKU, mesmo com ofertas comerciais
+  // de outros itens na mesma loja. Não altera o preço original no Bling.
+  const skusInformativos = new Set((linhas ?? [])
+    .filter((l: { exibicao_informativa?: boolean }) => modoInformativoProduto(modoPreviaCatalogo, l))
+    .map((l: { sku?: string | null }) => l.sku)
+    .filter((v): v is string => typeof v === "string"));
   const produtos = montarVitrine((linhas ?? []).map((l: Record<string, unknown>) => ({
-    ...l,
-    preco: modoPreviaCatalogo ? null : l.preco,
-    estoque: modoPreviaCatalogo ? null : l.estoque,
+    ...linhaInformativaSemComercial(l, modoInformativoProduto(modoPreviaCatalogo, l)),
     imagem: imagens.get(String(l.sku)) ?? null,
   }) as never), loja.whatsapp, urlDoProduto)
     .map((produto) => ({
-      ...produto, consulta_previa: modoPreviaCatalogo,
+      ...produto, consulta_previa: skusInformativos.has(produto.sku),
       categoria: categoriaPorSku.get(produto.sku) ?? null,
       referencias_aprovadas: codigosAprovadosPorSku.get(produto.sku) ?? [],
     }));
