@@ -100,3 +100,12 @@
   background: linear-gradient(135deg, #287d4d, #175d38);
 }
 .produto-publico-mobis a:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.produto-publico-mobis .ficha-tecnica,.produto-publico-mobis .ficha-oem{margin:0 16px 16px;padding:16px;border:1px solid #454d55;border-radius:10px;background:linear-gradient(135deg,#30363c,#1a1e22 70%);color:#f3f5f7}
+.produto-publico-mobis .ficha-tecnica h2,.produto-publico-mobis .ficha-oem h2{font-family:system-ui,sans-serif;font-size:1rem;letter-spacing:.04em;text-transform:uppercase;color:#fff;margin:0 0 12px}
+.produto-publico-mobis .ficha-tecnica-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+.produto-publico-mobis .ficha-tecnica-grade div{padding:10px;border:1px solid #424950;border-radius:7px;background:#22282d}
+.produto-publico-mobis .ficha-tecnica-grade dt{font-size:.72rem;color:#c6cdd3;text-transform:uppercase;font-weight:700}
+.produto-publico-mobis .ficha-tecnica-grade dd{margin:4px 0 0;color:#fff;overflow-wrap:anywhere}
+.produto-publico-mobis .ficha-oem ul{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:0}
+.produto-publico-mobis .ficha-oem li{padding:8px;border:1px solid #4a525a;border-radius:6px;background:#242a30;overflow-wrap:anywhere}
+.produto-publico-mobis .ficha-oem p{color:#d2d8dd;line-height:1.5;font-size:.9rem}
