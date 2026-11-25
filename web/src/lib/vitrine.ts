@@ -33,7 +33,11 @@ export async function catalogoPublico(lojaId: string, limite = 60) {
     .from("produtos").select(COLUNAS).eq("loja_id", lojaId).eq("publicado", true).order("nome").limit(limite);
   const produtos = (data ?? []) as Produto[];
   const imgs = await imagensPublicas(lojaId, produtos.map((p) => p.id));
-  return produtos.map((p) => ({ produto: p, imagens: imgs.get(p.id) ?? [] }));
+  // Não enviar ao cliente identificadores internos (bling_id/loja_id) nem preço/estoque do ERP.
+  return produtos.map((p) => ({
+    produto: { ...p, bling_id: "", loja_id: "", preco: null, estoque: null },
+    imagens: imgs.get(p.id) ?? [],
+  }));
 }
 
 /**
