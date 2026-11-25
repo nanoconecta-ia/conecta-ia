@@ -221,10 +221,12 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
                   </div>
                 </div>
               : p.descricao&&<p>{p.descricao.slice(0,105)}</p>}
-            <strong>Preço sob consulta</strong>
+            <strong>{p.consulta_previa ? "Catálogo enriquecido · sem preço" : "Preço sob consulta"}</strong>
             <p>Confirme aplicação e disponibilidade.</p>
             <div>{p.whatsapp&&<a href={p.whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>}
-              {!p.consulta_previa&&<a href={"#/p/mobis/"+encodeURIComponent(p.sku)} target="_blank" rel="noopener noreferrer">Abrir ficha em nova aba ↗</a>}
+              <a href={"#/p/mobis/"+encodeURIComponent(p.sku)} aria-label={"Abrir ficha completa do produto "+p.sku}>
+                Ver ficha completa e informações técnicas ↗
+              </a>
             </div>
           </div>
         </article>)}</div>}
