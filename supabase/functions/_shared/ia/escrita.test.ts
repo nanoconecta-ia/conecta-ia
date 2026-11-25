@@ -33,10 +33,11 @@ const aplicacaoOk = (extra: Record<string, unknown> = {}) => ({
   sku: "80692", marca_veiculo: "Hyundai", modelo: "HR", motorizacao: "2.5 16V D4CB", ano_inicial: 2013, ano_final: 2017, tipo_ano: "comercializacao_brasil", regime: "importado",
   base: "versao_do_veiculo", fonte_tipo: "catalogo_fabricante", fonte_url: "https://fabricante.example/catalogo/80692", fonte_data: "2026-10-30", ...extra,
 });
-test("proporAplicacao: versão completa com fonte forte entra a_confirmar, com confiança limitada", async () => {
+test("proporAplicacao: fonte forte com ficha fisica ausente entra como hipótese a confirmar", async () => {
   const a = admin("p1");
   const r: any = await proporAplicacao(a, "L1", aplicacaoOk({ confianca: 1 }));
-  assert.equal(r.ok, true); assert.equal(r.status, "a_confirmar"); assert.equal(r.nivel, "confirmavel");
+  assert.equal(r.ok, true); assert.equal(r.status, "a_confirmar"); assert.equal(r.nivel, "hipotese");
+  assert.ok(r.avisos.some((v: string) => v.includes("Confronto físico pendente")));
   const args: any = a.chamadas[0].args; assert.equal(a.chamadas[0].fn, "aplicacao_propor");
   assert.ok(args.p_confianca <= 0.7, "a confiança do agente nunca passa do limite");
   assert.match(args.p_fonte, /catalogo_fabricante \| https:\/\/fabricante\.example\/catalogo\/80692 \| 2026-10-30/);
@@ -56,6 +57,42 @@ test("proporAplicacao: sem fonte datada, sem versão, só motor/modelo ou ano in
     assert.equal(a.chamadas.length, 0, "nada gravado quando recusada");
   }
 });
+test("porteiro multiaplicação: um SKU físico pode ter propostas independentes sem clonar estoque ou homologar", async () => {
+  // Duas versões candidatas para o MESMO item físico; o agente registra hipóteses,
+  // não publica compatibilidade, não cria segundo produto nem grava no Bling.
+  const a = admin("produto-fisico-unico");
+  const hyundai: any = await proporAplicacao(a, "mobis", aplicacaoOk({
+    sku: "CI003696", marca_veiculo: "Hyundai", modelo: "HR",
+    motorizacao: "D4CB 2.5 16V Euro 5", ano_inicial: 2013, ano_final: 2017,
+  }));
+  const kia: any = await proporAplicacao(a, "mobis", aplicacaoOk({
+    sku: "CI003696", marca_veiculo: "Kia", modelo: "Bongo K2500",
+    motorizacao: "D4CB 2.5 16V Euro 5", ano_inicial: 2013, ano_final: 2017,
+  }));
+  assert.equal(hyundai.status, "a_confirmar");
+  assert.equal(kia.status, "a_confirmar");
+  assert.deepEqual(a.chamadas.map((x) => x.fn), ["aplicacao_propor", "aplicacao_propor"]);
+  assert.deepEqual(a.chamadas.map((x) => (x.args as any).p_produto), ["produto-fisico-unico", "produto-fisico-unico"]);
+  assert.deepEqual(a.chamadas.map((x) => (x.args as any).p_modelo), ["HR", "Bongo K2500"]);
+  assert.ok(a.chamadas.every((x) => (x.args as any).p_loja === "mobis"));
+  assert.ok(!a.chamadas.some((x) => /produto_criar|estoque|bling/i.test(x.fn)));
+});
+
+test("porteiro multiaplicação: não aceita juntar modelos nem fases Euro num campo de versão", async () => {
+  for (const motor of ["D4CB Euro 3 / Euro 5", "D4CB 8V + D4CB 16V"]) {
+    const a = admin("produto-fisico-unico");
+    const r: any = await proporAplicacao(a, "mobis", aplicacaoOk({ sku: "CI003696", motorizacao: motor }));
+    assert.ok(r.bloqueios.some((b: any) => b.codigo === "veiculos_misturados"), motor);
+    assert.equal(a.chamadas.length, 0);
+  }
+});
+
+// Pendente de implementação: uma combinação de campos individualmente válida ainda
+// exige confronto entre dados FÍSICOS aprovados do SKU e a versão completa do veículo.
+test.todo("porteiro: barrar proposta Euro 3/8V incompatível com a configuração física Euro 5/16V documentada");
+test.todo("porteiro: barrar gravação de aplicação quando produto_automacao.pausado=true");
+test.todo("porteiro: resolver duplicata histórica por Bling ID e impedir seleção ambígua de 2 ativos");
+
 test("proporAplicacao: o formato antigo (fonte em texto livre, sem versão) deixa de ser aceito", async () => {
   const a = admin("p1");
   const r: any = await proporAplicacao(a, "L1", { sku: "80692", modelo: "HR", motorizacao: "2.5 16V", ano_inicial: 2013, fonte: "manual" });
@@ -128,4 +165,54 @@ test("proporImagem com verificação reprovada: devolve o erro e NÃO grava a pr
   const a = admin("p1");
   const r: any = await proporImagem(a, "L1", { sku: "80692", url: "https://x.com/a.png" }, async () => ({ ok: false, erro: "O arquivo não é uma imagem JPEG, PNG ou WebP válida." }));
   assert.match(r.erro, /não é uma imagem/); assert.equal(a.chamadas.length, 0);
+});
+
+
+function adminComFichaFisica(fisico: { campo: string; valor: string }[], pausado = false) {
+  const a: any = admin("p1");
+  const original = a.from;
+  a.from = (t: string) => {
+    if (t === "produto_automacao") return {
+      select: () => ({ eq: () => ({ eq: () => ({
+        maybeSingle: async () => ({ data: { pausado }, error: null }),
+      }) }) }),
+    };
+    if (t === "produto_enriquecimento") return {
+      select: () => ({ eq: () => ({ eq: () => Promise.resolve({ data: fisico, error: null }) }) }),
+    };
+    return original();
+  };
+  return a;
+}
+const fichaD4cb = [
+  { campo: "espec:codigo_motor", valor: "D4CB" },
+  { campo: "espec:valvulas", valor: "16" },
+  { campo: "espec:norma_euro", valor: "Euro 5" },
+];
+test("porteiro: pausa no SKU bloqueia proposta de aplicação no gateway", async () => {
+  const a = adminComFichaFisica(fichaD4cb, true);
+  const r: any = await proporAplicacao(a, "L1", aplicacaoOk({ sku: "CI003696" }));
+  assert.match(r.erro, /pausada/);
+  assert.equal(a.chamadas.length, 0, "nenhum RPC de escrita autorizado");
+});
+test("porteiro: aplicação Euro 3 / 8V diverge do físico aprovado Euro 5 / 16V", async () => {
+  const a = adminComFichaFisica(fichaD4cb);
+  const r: any = await proporAplicacao(a, "L1", aplicacaoOk({
+    sku: "CI003696", motorizacao: "D4CB 2.5 8V Euro 3",
+  }));
+  assert.match(r.erro, /divergência/);
+  assert.ok(r.bloqueios.some((b: any) => b.codigo === "valvulas_fisicas_divergentes"));
+  assert.ok(r.bloqueios.some((b: any) => b.codigo === "euro_fisico_divergente"));
+  assert.equal(a.chamadas.length, 0);
+});
+test("porteiro: somente ficha fisica homologada e fonte forte tornam candidatura confirmável, ainda sem aprovar", async () => {
+  const a = adminComFichaFisica(fichaD4cb);
+  const r: any = await proporAplicacao(a, "L1", aplicacaoOk({
+    sku: "CI003696", motorizacao: "D4CB 2.5 16V Euro 5",
+  }));
+  assert.equal(r.ok, true);
+  assert.equal(r.status, "a_confirmar");
+  assert.equal(r.nivel, "confirmavel");
+  assert.equal(a.chamadas.length, 1);
+  assert.equal(a.chamadas[0].fn, "aplicacao_propor");
 });

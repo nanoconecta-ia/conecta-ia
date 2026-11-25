@@ -22,7 +22,7 @@ export function problemaNoValor(campo: string, valor: unknown): string | null {
 export const TIPOS_CODIGO = ["oem", "fabricante", "ean", "similar", "substituto", "antigo"] as const; // "sku" é do Bling, o agente não propõe
 
 import { urlImagemSegura, type ImagemInspecionada, type ResultadoImagem } from "../busca_segura/imagem_original.ts";
-import { validarAplicacao, type BaseAplicacao, type Fonte, type PropostaAplicacao, type TipoAno, type TipoFonte } from "../aplicacoes/regras_aplicacao.ts";
+import { validarAplicacao, validarConfrontoFisico, type BaseAplicacao, type Fonte, type PropostaAplicacao, type TipoAno, type TipoFonte } from "../aplicacoes/regras_aplicacao.ts";
 import { validarTextoSeo } from "../aplicacoes/regras_seo.ts";
 
 // deno-lint-ignore no-explicit-any
@@ -90,6 +90,11 @@ export async function proporAplicacao(admin: AdminRpc, lojaId: string, e: Record
   if (!sku) return { erro: "Informe o SKU." };
   const produtoId = await idDoSku(admin, lojaId, sku);
   if (!produtoId) return { erro: "Produto não encontrado nesta loja." };
+  // A pausa e uma trava de seguranca: nem mesmo a proposta pode contornar o porteiro.
+  const { data: automacao, error: falhaAutomacao } = await admin.from("produto_automacao")
+    .select("pausado").eq("loja_id", lojaId).eq("produto_id", produtoId).maybeSingle();
+  if (falhaAutomacao) return { erro: "Estado da automação indisponível; proposta não enviada." };
+  if (automacao?.pausado === true) return { erro: "Produto com automação pausada: somente consulta, sem proposta." };
   const codigos = await listar(admin.from("produto_codigos").select("tipo, valor").eq("produto_id", produtoId).eq("status", "aprovado"));
   const valores = (t: string) => codigos.filter((c) => c?.tipo === t && typeof c.valor === "string").map((c) => c.valor as string);
   const fonte: Fonte = {
@@ -105,12 +110,35 @@ export async function proporAplicacao(admin: AdminRpc, lojaId: string, e: Record
   const r = validarAplicacao(proposta, { loja_id: lojaId, sku, oem: valores("oem"), fabricante: valores("fabricante"), marca_tipo: "desconhecido" }, { acao: "propor", ator: "agente", hoje: hojeIso() });
   if (!r.ok) return { erro: `Aplicação recusada: ${r.bloqueios.map((b) => b.mensagem).join(" ")}`, bloqueios: r.bloqueios };
   const v = proposta.veiculo;
+  // Apenas dados tecnicos individualmente APROVADOS no Conecta valem como atributos
+  // do item fisico. O texto do Bling, fotos e EPC de outra peca nao homologam o SKU.
+  const atributos = await listar(admin.from("produto_enriquecimento").select("campo, valor")
+    .eq("produto_id", produtoId).eq("status", "aprovado"));
+  const valor = (campo: string): string | null => {
+    const achado = atributos.find((a) => a?.campo === campo)?.valor;
+    return typeof achado === "string" || typeof achado === "number" ? String(achado).trim() : null;
+  };
+  const inteiro = (texto: string | null) => {
+    if (!texto) return null;
+    const n = Number(texto.replace(/[^0-9]/g, ""));
+    return Number.isInteger(n) && n >= 1 && n <= 99 ? n : null;
+  };
+  const confronto = validarConfrontoFisico({
+    codigo_motor: valor("espec:codigo_motor"), valvulas: inteiro(valor("espec:valvulas")),
+    euro: inteiro(valor("espec:norma_euro")),
+  }, v.motor + " " + (v.versao ?? ""));
+  if (confronto.estado === "divergente") return {
+    erro: "Aplicação recusada por divergência com a configuração física aprovada do SKU.",
+    bloqueios: confronto.bloqueios,
+  };
   const resumoFonte = [fonte.tipo, fonte.url ?? fonte.documento, fonte.data, `ano=${v.tipo_ano}`, `marca=${v.marca}`, v.regime ? `regime=${v.regime}` : null, fonte.codigo_conferido ? `codigo=${fonte.codigo_conferido}` : null, `base=${proposta.base}`].filter(Boolean).join(" | ").slice(0, 400);
-  const limite = r.nivel === "confirmavel" ? 0.7 : 0.4; // quem aprova é a pessoa: a confiança do agente nunca passa disso
+  // Fonte forte sem confronto fisico completo ainda e hipotese: aguarda prova do SKU.
+  const nivel = confronto.estado === "coerente" ? r.nivel : "hipotese";
+  const limite = nivel === "confirmavel" ? 0.7 : 0.4; // mesmo validada, proposta nunca vira aprovacao
   const pedida = conf(e.confianca);
   const { error } = await admin.rpc("aplicacao_propor", { p_loja: lojaId, p_produto: produtoId, p_modelo: v.modelo, p_motorizacao: v.motor, p_ano_inicial: ini, p_ano_final: fim, p_fonte: resumoFonte, p_confianca: pedida == null ? limite : Math.min(pedida, limite) });
   if (error) return { erro: "Não foi possível registrar a aplicação." };
-  return { ok: true, status: "a_confirmar", nivel: r.nivel, avisos: r.avisos };
+  return { ok: true, status: "a_confirmar", nivel, avisos: [...r.avisos, ...(confronto.estado === "indeterminado" ? ["Confronto físico pendente: " + confronto.ausencias.join(", ")] : [])] };
 }
 
 /** Verificação opcional da imagem (download no servidor, tipo real, dimensões, SHA-256). Sem ela, só a checagem estática do endereço (sem rede). */

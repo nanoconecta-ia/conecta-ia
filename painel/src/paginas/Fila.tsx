@@ -6,6 +6,11 @@ import { MidiasPendentesMcp } from "../componentes/MidiasPendentesMcp.tsx";
 
 type Item = { id: string; campo: string; valor: unknown; fonte: string | null; confianca: number | null; produtos: { sku: string | null; nome: string | null } | null };
 type Imagem = { id: string; produto_id: string; url: string; origem: string | null; produtos: { sku: string | null; nome: string | null } | null };
+type AplicacaoPendente = {
+  id: string; produto_id: string; modelo: string; motorizacao: string | null;
+  ano_inicial: number | null; ano_final: number | null; fonte: string | null;
+  confianca: number | null; produtos: { sku: string | null; nome: string | null } | null;
+};
 
 const texto = (v: unknown) => (typeof v === "string" ? v : JSON.stringify(v));
 
@@ -13,6 +18,8 @@ const texto = (v: unknown) => (typeof v === "string" ? v : JSON.stringify(v));
 export function Fila({ loja }: { loja: Loja }) {
   const [itens, setItens] = useState<Item[] | null>(null);
   const [imagens, setImagens] = useState<Imagem[] | null>(null);
+  const [aplicacoes, setAplicacoes] = useState<AplicacaoPendente[] | null>(null);
+  const [erroAplicacoes, setErroAplicacoes] = useState("");
   const [erro, setErro] = useState("");
   const [ocupado, setOcupado] = useState("");
   const [podeDecidir, setPodeDecidir] = useState<boolean | null>(null);
@@ -21,6 +28,14 @@ export function Fila({ loja }: { loja: Loja }) {
     supabase.from("produto_enriquecimento").select("id, campo, valor, fonte, confianca, produtos(sku, nome)")
       .eq("loja_id", loja.id).eq("status", "a_confirmar").order("criado_em", { ascending: false }).limit(200)
       .then(({ data }) => setItens((data ?? []) as unknown as Item[]));
+    supabase.from("produto_aplicacoes")
+      .select("id, produto_id, modelo, motorizacao, ano_inicial, ano_final, fonte, confianca, produtos(sku, nome)")
+      .eq("loja_id", loja.id).eq("status", "a_confirmar")
+      .order("criado_em", { ascending: false }).limit(200)
+      .then(({ data, error }) => {
+        setErroAplicacoes(error ? "Não foi possível carregar as aplicações em revisão." : "");
+        setAplicacoes(error ? null : (data ?? []) as unknown as AplicacaoPendente[]);
+      });
     supabase.from("produto_imagens").select("id, produto_id, url, origem, produtos(sku, nome)")
       .eq("loja_id", loja.id).eq("aprovada", false).is("removida_em", null).order("criado_em", { ascending: false }).limit(100)
       .then(({ data }) => setImagens((data ?? []) as unknown as Imagem[]));
@@ -70,6 +85,22 @@ export function Fila({ loja }: { loja: Loja }) {
             </tr>))}</tbody>
         </table></div>
       )}
+
+      <h2>Aplicações veiculares aguardando homologação</h2>
+      <p className="suave">Cada veículo e versão pertence ao mesmo SKU físico, mas exige confirmação técnica própria. Esta seção é somente para conferência: aprovação depende de evidências e de uma ação autorizada no porteiro. Nenhum botão aqui altera o cadastro ou publica compatibilidade.</p>
+      {erroAplicacoes && <p className="msg-erro">{erroAplicacoes}</p>}
+      {aplicacoes === null ? <p className="suave">{erroAplicacoes ? "Consulte a integração antes de decidir." : "Carregando aplicações…"}</p>
+        : aplicacoes.length === 0 ? <p className="suave">Nenhuma aplicação veicular aguardando homologação.</p>
+        : <div className="rolagem"><table>
+            <thead><tr><th>SKU / Produto</th><th>Veículo</th><th>Motorização</th><th>Anos da proposta</th><th>Fonte da candidatura</th><th>Situação</th></tr></thead>
+            <tbody>{aplicacoes.map((a) => <tr key={a.id}>
+              <td><span className="mono">{a.produtos?.sku ?? "sem SKU"}</span><br/><span className="suave">{a.produtos?.nome ?? "Produto não identificado"}</span></td>
+              <td>{a.modelo}</td><td>{a.motorizacao ?? "Não informada"}</td>
+              <td>{a.ano_inicial ?? "?"} – {a.ano_final ?? "não comprovado"}<br/><small className="suave">Período de aplicação a conferir, não é fim de fabricação</small></td>
+              <td className="suave">{a.fonte ?? "Fonte ausente — bloqueada"}{a.confianca != null ? <small> · confiança declarada {Math.round(a.confianca * 100)}%</small> : null}</td>
+              <td><strong>A confirmar</strong><br/><small className="suave">Sem publicação ou homologação automática</small></td>
+            </tr>)}</tbody>
+          </table></div>}
 
       <h2>Imagens propostas · escolha até 8 por produto</h2>
       <p className="suave">Escolha a peça para abrir sua grade visual, comparar as fotos e decidir uma de cada vez. Pesquisa e preparação não aprovam direitos nem publicam imagens. As candidatas continuam relacionadas ao mesmo ID Bling.</p>

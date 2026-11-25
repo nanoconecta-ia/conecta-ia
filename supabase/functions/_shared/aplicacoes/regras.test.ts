@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { validarAplicacao, validarIntercambiabilidade, fonteForte, type Contexto, type Fonte, type ProdutoTecnico, type PropostaAplicacao } from "./regras_aplicacao.ts";
+import { validarAplicacao, validarConfrontoFisico, validarIntercambiabilidade, fonteForte, type Contexto, type Fonte, type ProdutoTecnico, type PropostaAplicacao } from "./regras_aplicacao.ts";
 import { validarTaxonomia, caminhoDoNo, type NoTaxonomia, type PropostaTaxonomia } from "./regras_taxonomia.ts";
 import { validarTextoSeo, type BaseSeo } from "./regras_seo.ts";
 
@@ -186,4 +186,26 @@ test("SEO: motor se reconhece pelo código em qualquer ordem, mas palavra genér
 test("SEO: faixa de anos escrita de vários jeitos é reconhecida e conferida contra o aprovado", () => {
   for (const ok of ["Compatível com HR, de 2013 a 2017.", "Compatível com HR a partir de 2013.", "Compatível com HR entre 2014 e 2016.", "Compatível com HR 2013-2017."]) assert.equal(seoOk(ok).ok, true, ok);
   for (const ruim of ["Compatível com HR, de 2008 a 2017.", "Compatível com HR a partir de 2005.", "Compatível com HR, de 2013 a 2025."]) assert.ok(cods(seoOk(ruim)).includes("seo_ano_fora_do_aprovado"), ruim);
+});
+
+
+test("confronto físico: Euro 3 e 8V divergem do SKU aprovado Euro 5 e 16V", () => {
+  const r = validarConfrontoFisico({ codigo_motor: "D4CB", valvulas: 16, euro: 5 }, "D4CB 2.5 8V Euro 3");
+  assert.equal(r.estado, "divergente");
+  assert.deepEqual(r.bloqueios.map(x => x.codigo), ["valvulas_fisicas_divergentes", "euro_fisico_divergente"]);
+});
+test("confronto físico: motor distinto não herda homologação pela família", () => {
+  const r = validarConfrontoFisico({ codigo_motor: "D4CB", valvulas: 16, euro: 5 }, "D4BH 2.5 16V Euro 5");
+  assert.equal(r.estado, "divergente");
+  assert.ok(r.bloqueios.some(x => x.codigo === "motor_fisico_divergente"));
+});
+test("confronto físico: campo aprovado ausente não é preenchido por adivinhação", () => {
+  const r = validarConfrontoFisico({ codigo_motor: "D4CB" }, "D4CB 2.5 16V Euro 5");
+  assert.equal(r.estado, "indeterminado");
+  assert.deepEqual(r.ausencias, ["valvulas", "norma_euro"]);
+});
+test("confronto físico: tudo coerente ainda requer fonte da aplicação e aprovação humana", () => {
+  const r = validarConfrontoFisico({ codigo_motor: "D4CB", valvulas: 16, euro: 5 }, "D4CB 2.5 16V Euro 5");
+  assert.equal(r.estado, "coerente");
+  assert.equal(r.bloqueios.length, 0);
 });

@@ -1,0 +1,946 @@
+{
+  "versao": "1.0-rascunho",
+  "data_pesquisa": "2026-11-21",
+  "responsavel": "porteiro - preparacao assistida",
+  "publicavel": false,
+  "produto_fisico": {
+    "loja": "mobis",
+    "sku_bling": "CI003696",
+    "bling_id": "16719530075",
+    "marca_peca": "TRIM GO",
+    "situacao_aplicacoes": "a_confirmar",
+    "automacao": "pausada; consulta apenas"
+  },
+  "politica": {
+    "sku_bling": "Somente SKU real verificado no ERP ou documentos fiscais; não criar a partir do OEM",
+    "sku_componentes": "Não confirmado sem referência comercial/nota individual",
+    "oem": "Códigos originais encontrados no EPC para um veículo de contexto; não comprovam inclusão ou equivalência ao CI003696",
+    "principal": "OEM poderá ser alias técnico de busca sem SKU fiscal apenas com identificação inequívoca da variante e fonte; nunca como SKU físico ou de estoque",
+    "similares": "Não promover por transitividade",
+    "market": "GEN não equivale automaticamente ao Brasil"
+  },
+  "aplicacoes": [
+    {
+      "montadora": "Hyundai",
+      "modelo": "HR",
+      "status": "a_confirmar"
+    },
+    {
+      "montadora": "Kia",
+      "modelo": "Bongo K2500",
+      "status": "a_confirmar"
+    }
+  ],
+  "componentes": [
+    {
+      "id_taxonomia": "cabecote_montado",
+      "descricao": "Cabeçote montado",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "22100-4A701",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=221004A701",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CYLINDER HEAD",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "5J025-4AU00",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=5J0254AU00",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CYLINDER HEAD",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "alternativas_no_diagrama",
+      "observacao": "Cabeçote montado; composição do conjunto do importador não comprovada",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "valvula_admissao",
+      "descricao": "Válvulas de admissão",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "22211-4A061",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=222114A061",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CAMSHAFT & VALVE",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": null,
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "valvula_escape",
+      "descricao": "Válvulas de escape",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "22212-4A061",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=222124A061",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CAMSHAFT & VALVE",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": null,
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "comando_lh",
+      "descricao": "Comando de válvulas LH (esquerdo)",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "24100-4A100",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=241004A100",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CAMSHAFT & VALVE",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": "Não supor LH = admissão sem conferir documento e montagem",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "comando_rh",
+      "descricao": "Comando de válvulas RH (direito)",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "24200-4A500",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=242004A500",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CAMSHAFT & VALVE",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": "Não supor RH = escape sem conferir documento e montagem",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "ajustador_folga",
+      "descricao": "Ajustador de folga do balancim (tucho a conferir)",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "22231-4A000",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=222314A000",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CAMSHAFT & VALVE",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": "Tipo de tucho fornecido exige confirmação",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "seguidor_comando_curto",
+      "descricao": "Seguidor de comando curto / balancim a conferir",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "24170-4A010",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=241704A010",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CAMSHAFT & VALVE",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": "Denominação OEM: CAM FOLLOWER SHORT",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "seguidor_comando_longo",
+      "descricao": "Seguidor de comando longo / balancim a conferir",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "24180-4A010",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=241804A010",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CAMSHAFT & VALVE",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": "Denominação OEM: CAM FOLLOWER LONG",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "retentor_valvula",
+      "descricao": "Retentores de haste de válvula",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "22224-4A000",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=222244A000",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CAMSHAFT & VALVE",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": null,
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "junta_metalica_cabecote",
+      "descricao": "Junta metálica do cabeçote",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "22311-4A700",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=223114A700",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CYLINDER HEAD",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "22311-4A710",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=223114A710",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CYLINDER HEAD",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "22311-4A720",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=223114A720",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CYLINDER HEAD",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "variantes_dimensionais",
+      "observacao": "Escolher somente após conferir espessura/ressalto e versão",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "parafusos_cabecote",
+      "descricao": "Parafusos de cabeçote ao bloco",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "22321-4A000",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=223214A000",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CYLINDER HEAD",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": null,
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "bloco_motor",
+      "descricao": "Bloco do motor",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "3J023-4AU00",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=3J0234AU00",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CYLINDER BLOCK",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": "No EPC: BLOCK ASSY-CYLINDER; não equivale ao motor parcial montado",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "virabrequim",
+      "descricao": "Eixo virabrequim",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "23111-4A701",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=231114A701",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": null,
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "bronzinas_biela",
+      "descricao": "Bronzinas de biela",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "23060-4A930",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=230604A930",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "23060-4A931",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=230604A931",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "23060-4A932",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=230604A932",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "23060-4A933",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=230604A933",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "23060-4A934",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=230604A934",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "classes_dimensionais",
+      "observacao": "Não selecionar classe/cor ou medida sem metrologia",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "bronzinas_mancal",
+      "descricao": "Bronzinas de mancal",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "21020-4A940",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=210204A940",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "21020-4A941",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=210204A941",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "21020-4A942",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=210204A942",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "21020-4A943",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=210204A943",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "21020-4A944",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=210204A944",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "classes_dimensionais",
+      "observacao": "Não selecionar classe/cor ou medida sem metrologia",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "arruelas_encosto",
+      "descricao": "Arruelas de encosto do virabrequim",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "21021-4A920",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=210214A920",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": null,
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "jet_coolers",
+      "descricao": "Bicos de jato de óleo dos pistões (jet coolers)",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [],
+      "multiplicidade": "pesquisa_pendente",
+      "observacao": "Catálogo EPC exige identificação do grupo e posição da versão",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "parafusos_jet_coolers",
+      "descricao": "Parafusos dos jet coolers",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [],
+      "multiplicidade": "pesquisa_pendente",
+      "observacao": "Não usar parafuso genérico da carcaça como referência OEM",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "bielas",
+      "descricao": "Bielas - citadas em briefing anterior",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "23510-4A710",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=235104A710",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "candidato_unico_no_diagrama",
+      "observacao": "Inclusão no conjunto TRIM GO ainda a confirmar",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "pistoes",
+      "descricao": "Pistões - citados em briefing anterior",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "23410-4A950",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=234104A950",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "23410-4A951",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=234104A951",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "23410-4A952",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=234104A952",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "23410-4A953",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=234104A953",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "23410-4A954",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=234104A954",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "variantes_dimensionais",
+      "observacao": "Inclusão e classe do pistão ainda a confirmar",
+      "aprovado_para_anuncio": false
+    },
+    {
+      "id_taxonomia": "aneis_pistao",
+      "descricao": "Anéis de pistão - citados em briefing anterior",
+      "sku_fiscal_avulso": null,
+      "sku_documentado": false,
+      "inclusao_no_ci003696": "declarado_ou_a_conferir",
+      "referencias_oem": [
+        {
+          "codigo": "23040-4A940",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=230404A940",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "23040-4A941",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=230404A941",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        },
+        {
+          "codigo": "23040-4A942",
+          "descricao_tipo": "OE publicado no EPC para o veículo de referência",
+          "estado": "candidato_epc_sem_equivalencia_sku",
+          "fonte_pesquisa": "https://partsouq.com/en/search/all?q=230404A942",
+          "contexto_fonte": {
+            "catalogo": "PartSouq EPC",
+            "montadora": "Kia",
+            "modelo": "Bongo 3 (1t/1,4t)",
+            "ano_modelo": 2014,
+            "motor": "D4CB",
+            "mercado": "GEN",
+            "diagrama": "CRANKSHAFT & PISTON",
+            "identificador_contexto": "KNCSJX76AE7821655; D4CBD380082",
+            "pagina": "https://partsouq.com/en/search/all?q="
+          },
+          "data_consulta": "2026-11-21"
+        }
+      ],
+      "multiplicidade": "variantes_dimensionais",
+      "observacao": "Inclusão e jogo de anéis ainda a confirmar",
+      "aprovado_para_anuncio": false
+    }
+  ],
+  "itens_ausentes_de_oem": "jet coolers e seus parafusos; outros campos só após consulta da variante específica",
+  "oem_motor_parcial_completo": null,
+  "exclusoes_explicitas": [
+    {
+      "sku_bling": "Ci000028",
+      "motivo": "Consulta ao Bling localizou cabeçote HR/K2500 2.5 8V, motores 4D56/D4BH. NÃO associar a D4CB 16V Euro 5 CI003696.",
+      "fonte": "Bling API, listagem por nome CABEÇOTE HR, 2026-11-21",
+      "tipo": "exemplo_de_nao_equivalencia",
+      "nao_usar_para_indexar": true
+    }
+  ],
+  "observacao_de_qualidade": "As rotas fonte_pesquisa dos candidatos são links de busca PartSouq por número, não substituem o EPC original com VIN, grupo e posição do diagrama. Conferir a fonte integral antes de homologar ou publicar."
+}

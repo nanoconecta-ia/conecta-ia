@@ -130,3 +130,58 @@ export function validarIntercambiabilidade(c: ClaimIntercambiavel, produto: Prod
   const confirmavel = b.length === 0 && (c.relacao === "equivalente" || c.relacao === "supersessao") && forte && !!c.medidas_conferidas;
   return { ok: b.length === 0, bloqueios: b, avisos: a, nivel: b.length ? "bloqueada" : confirmavel ? "confirmavel" : "hipotese" };
 }
+
+
+// Segundo portao: confrontar SOMENTE atributos fisicos HOMOLOGADOS do SKU com a
+// descricao da versao veicular proposta. Sem homologacao fisica, o resultado
+// e indeterminado e nao autoriza aprovar/publicar compatibilidade.
+// Nao converter imagem, nome de modelo, chassi ou EPC de outro conjunto em prova.
+export interface ConfiguracaoFisicaAprovada {
+  codigo_motor?: string | null;
+  valvulas?: number | null;
+  euro?: number | null;
+}
+export interface ResultadoConfrontoFisico {
+  estado: "coerente" | "indeterminado" | "divergente";
+  bloqueios: Bloqueio[];
+  ausencias: string[];
+}
+function leituraValvulas(s: string): number | null {
+  const m = s.match(/\b(8|12|16|20|24|32)\s*(?:V\b|VALVULAS\b|VÁLVULAS\b)/i);
+  return m ? Number(m[1]) : null;
+}
+function leituraEuro(s: string): number | null {
+  const m = s.match(/\bEURO\s*([1-9])\b/i);
+  return m ? Number(m[1]) : null;
+}
+function leituraMotor(s: string): string | null {
+  // D4CB, D4BH, G4GC e formatos analogos. Nao inferir pela palavra 'motor'.
+  const m = s.toUpperCase().match(/\b[A-Z][0-9][A-Z0-9]{2,5}\b/);
+  return m ? m[0] : null;
+}
+export function validarConfrontoFisico(
+  fisico: ConfiguracaoFisicaAprovada, propostaMotor: string,
+): ResultadoConfrontoFisico {
+  const bloqueios: Bloqueio[] = [];
+  const ausencias: string[] = [];
+  const esperadoCodigo = fisico.codigo_motor?.trim().toUpperCase() ?? "";
+  const codigoVeiculo = leituraMotor(propostaMotor);
+  const esperadoValvulas = fisico.valvulas ?? null;
+  const valvulasVeiculo = leituraValvulas(propostaMotor);
+  const esperadoEuro = fisico.euro ?? null;
+  const euroVeiculo = leituraEuro(propostaMotor);
+  if (!esperadoCodigo || !codigoVeiculo) ausencias.push("codigo_motor");
+  else if (codigoVeiculo !== esperadoCodigo) bloqueios.push({
+    codigo: "motor_fisico_divergente", mensagem: `Produto fisico ${esperadoCodigo} diverge do motor da aplicacao ${codigoVeiculo}.`,
+  });
+  if (!esperadoValvulas || !valvulasVeiculo) ausencias.push("valvulas");
+  else if (esperadoValvulas !== valvulasVeiculo) bloqueios.push({
+    codigo: "valvulas_fisicas_divergentes", mensagem: `Produto fisico ${esperadoValvulas}V diverge da aplicacao ${valvulasVeiculo}V.`,
+  });
+  if (!esperadoEuro || !euroVeiculo) ausencias.push("norma_euro");
+  else if (esperadoEuro !== euroVeiculo) bloqueios.push({
+    codigo: "euro_fisico_divergente", mensagem: `Produto fisico Euro ${esperadoEuro} diverge da aplicacao Euro ${euroVeiculo}.`,
+  });
+  return { estado: bloqueios.length ? "divergente" : ausencias.length ? "indeterminado" : "coerente",
+    bloqueios, ausencias };
+}

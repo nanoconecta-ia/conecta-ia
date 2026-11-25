@@ -2,7 +2,7 @@
   "versao": 1,
   "entrada": "supabase/functions/assistente/index.ts",
   "externo": "npm:@supabase/supabase-js@2.117.3",
-  "artefato_sha256": "92f40cdc21978d2ae5c23b8e2c20af335791667ec1cadf63ac813faf34b948df",
+  "artefato_sha256": "eddb3af114aa5f9ec9bb2da6e93a6f97062938e776c62f27142bac8b9b11eec6",
   "fontes": [
     {
       "path": "supabase/functions/_shared/intencoes.ts",
@@ -58,7 +58,7 @@
     },
     {
       "path": "supabase/functions/_shared/aplicacoes/regras_aplicacao.ts",
-      "sha256": "546b7a85a1f330b57af81c9fb72e501edf37e80798f8036cf4144887a58b705b"
+      "sha256": "9e0da2fde0d961816fe2d0937fd62bb13a526370c2207e63826ec0ff73da4b1d"
     },
     {
       "path": "supabase/functions/_shared/aplicacoes/regras_seo.ts",
@@ -66,7 +66,7 @@
     },
     {
       "path": "supabase/functions/_shared/ia/escrita.ts",
-      "sha256": "30a56850a47353eb6ce9032b4205eac6d9f1a5bd84402eea5c8d2a65b3bba440"
+      "sha256": "3e00edd2787c86b748c02d70c928040b70cca8085b5e31724f42b469c26bc595"
     },
     {
       "path": "supabase/functions/_shared/ia/google.ts",
@@ -79,6 +79,14 @@
     {
       "path": "supabase/functions/_shared/conector/atividade.ts",
       "sha256": "b4db708730f635d40c9ef9173abc9ba9eaea6d01af18cb97bfb4cebbd75c9f99"
+    },
+    {
+      "path": "supabase/functions/_shared/aplicacoes/projecao_cruzados.ts",
+      "sha256": "35d6b3fa8b759ef9184fdff50ade978ea24a4ae5307cb9569fe7299dbb581fda"
+    },
+    {
+      "path": "supabase/functions/_shared/aplicacoes/projecao_cronologia_sku.ts",
+      "sha256": "fa08aabda779173ac8f9bee6e079d61a962fd08a4321017cf46142599c0e217a"
     },
     {
       "path": "supabase/functions/_shared/contexto/contexto.ts",
@@ -98,7 +106,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/registro.ts",
-      "sha256": "776555999f2c6152c2dc84f3e3a9cd7d4494689ec12731c330343ec57673f37d"
+      "sha256": "c84c4c932c2ecd66cdfa96f22e551c8574ad15d4ae20738937564cf7ef1af1d6"
     },
     {
       "path": "supabase/functions/_shared/conector/bling_campos.ts",
@@ -158,7 +166,7 @@
     },
     {
       "path": "supabase/functions/_shared/conector/handlers.ts",
-      "sha256": "22b82ddeb6e584ac9292fcb4093f1e26a72e68c3fefb2c7e2147d968c9b1284d"
+      "sha256": "91d5d2d21fdca6796858f838385e16c7bd0a15880b08e67e90c4b03b11b5fd7b"
     },
     {
       "path": "supabase/functions/_shared/conector/tipos.ts",

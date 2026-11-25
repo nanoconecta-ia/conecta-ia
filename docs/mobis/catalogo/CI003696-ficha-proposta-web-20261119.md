@@ -58,3 +58,75 @@ Seguir [regra mestre de páginas por veículo com OEM e SEO](../../conector-ia/p
 
 ## Ação permitida na situação consultada
 O produto **JÁ EXISTE** no Conecta.IA como registro interno e duas ofertas **pendentes**. `produto_automacao.pausado=true` impede que o agente proponha/escreva no cadastro. **Não executar SQL de atualização manual nem contornar a pausa/Policy Engine.** Para continuar, o proprietário deve retomar a automação do SKU na interface autorizada; então Nano.IA pesquisa com Firecrawl, gera propostas, usuário aprova campos e utiliza o portão de publicação. A falta de imagem, isoladamente, não bloqueia publicação na MOBIS após os demais requisitos aprovados, segundo a política atual.
+
+## Declaração técnica do lojista em 21/11/2026 — detalhamento do que acompanha o conjunto
+
+**Origem da informação:** relato direto do lojista em conversa, recebido em 21/11/2026. **Evidência da composição física para fins de anúncio: ainda pendente** de conferência com a nota/embalagem/lista do fabricante/importador do **mesmo SKU CI003696 e mesma versão física**. Este trecho complementa, mas **não substitui**, a validação e o aceite do porteiro. Não gravar no ERP, no site, em produto_aplicacoes ou na bula aprovada enquanto a automação deste SKU estiver pausada.
+
+### Descrição comercial explicativa — texto proposto, não publicado
+
+**Motor parcial importado TRIM GO D4CB 2.5 16V Euro 5, com cabeçote montado — CI003696.**
+
+Para que o cliente compreenda o fornecimento, o motor parcial é descrito como um **conjunto do bloco do motor e do cabeçote montado**, com componentes internos e elementos de montagem declarados abaixo. Ele **não deve ser anunciado como um motor completo pronto para funcionar** sem documento que relacione os sistemas periféricos incluídos.
+
+O conjunto do **cabeçote montado** é informado com válvulas de admissão e escape, **dois comandos de válvulas**, tuchos, **balancins de admissão e escape** e **retentores das hastes de válvula**. Para a união entre o cabeçote e o bloco, foram declarados **junta metálica de cabeçote** e **parafusos de fixação do cabeçote**. No conjunto inferior foram declarados **bloco do motor, virabrequim, bronzinas de biela e mancal, arruelas de encosto do virabrequim** e **bicos injetores de óleo para resfriamento dos pistões (jet coolers), com os respectivos parafusos de fixação**.
+
+**Atenção ao cliente:** a compatibilidade com Hyundai HR ou Kia Bongo K2500 depende da versão, do ano-modelo, do código do motor e da documentação da peça. As duas aplicações permanecem `a_confirmar`. A relação acima é uma composição **informada pelo lojista, ainda a validar documentalmente**, e não confirmação de fornecimento do fabricante.
+
+### Composição detalhada para a aba "O que acompanha"
+
+| Grupo | Item declarado | Como explicar ao comprador | Evidência/status |
+| --- | --- | --- | --- |
+| Cabeçote montado | Cabeçote com válvulas de admissão e escape | Parte superior do motor onde ficam as válvulas | Relato do lojista / conferir fabricante |
+| Comando de válvulas | Dois comandos | Acionam o sistema de abertura das válvulas | Relato do lojista / conferir fabricante |
+| Acionamento das válvulas | Tuchos | Componentes do mecanismo de acionamento das válvulas | Relato do lojista / conferir fabricante |
+| Acionamento das válvulas | Balancins de admissão e escape | Integram o mecanismo de acionamento das válvulas | Relato do lojista / conferir fabricante |
+| Vedação de válvulas | Retentores de haste das válvulas | Ajudam a controlar a passagem de óleo nas hastes | Relato do lojista / conferir fabricante |
+| Vedação entre conjuntos | Junta metálica do cabeçote | Vedação na união do cabeçote com o bloco | Relato do lojista / conferir material e código |
+| Fixação | Parafusos do cabeçote ao bloco | Fixam o cabeçote sobre o bloco | Relato do lojista / conferir se acompanham o kit |
+| Estrutura inferior | Bloco do motor | Corpo estrutural do conjunto inferior | Relato do lojista / versão exata a conferir |
+| Mancais internos | Bronzinas de biela | Elementos de apoio entre biela e virabrequim | Relato do lojista / conferir quantidade e medidas |
+| Mancais internos | Bronzinas de mancal | Elementos de apoio entre virabrequim e bloco | Relato do lojista / conferir quantidade e medidas |
+| Controle axial | Arruelas de encosto do virabrequim | Controlam a folga axial do virabrequim | Relato do lojista / conferir jogo e especificação |
+| Lubrificação e resfriamento | Jet coolers (bicos de óleo) | Direcionam óleo para auxiliar o resfriamento dos pistões | Relato do lojista / conferir presença e modelo |
+| Fixação de lubrificação | Parafusos dos jet coolers | Fixação dos bicos de óleo ao bloco | Relato do lojista / conferir presença |
+| Conjunto rotativo | Virabrequim | Eixo principal do conjunto rotativo | Relato do lojista / conferir versão |
+
+**Itens informados anteriormente e ainda por reconciliar na versão final da composição:** **bielas** e **pistões com anéis**, citados em briefing anterior. Não os apagar da pesquisa técnica, mas **não os prometer no anúncio definitivo** até confirmação de que acompanham este exato SKU, inclusive quantidades e estado de montagem.
+
+**Itens que NÃO devem ser presumidos como inclusos, por ausência de comprovação:** turbocompressor, injetores, bomba de alta pressão, sistema de injeção, sensores, coletores, volante, alternador, motor de partida, bomba de água, bomba de óleo e periféricos. Esta lista **não afirma que estejam ausentes**: sua inclusão/exclusão deverá ser documentada expressamente pelo fabricante/fornecedor.
+
+### Porteiro — validações obrigatórias antes da aprovação da bula
+
+1. Solicitar **packing list, catálogo, nota de entrada, declaração de composição ou fotos reais da peça** identificando SKU/código do fabricante, versão D4CB e ano da aplicação. Fotos de motores semelhantes não provam a composição.
+2. Conferir individualmente os itens da tabela e decidir `inclui`, `nao_inclui` ou `nao_confirmado`; quantidades/medidas desconhecidas ficam vazias, nunca inventadas.
+3. Resolver os itens do briefing anterior (bielas e pistões com anéis) sem apagar nem declarar inclusão até evidência da composição.
+4. Confirmar **Euro 5/16V** para a peça física; não relacionar a versão Euro 3/8V por simples semelhança de motor ou de fotografia.
+5. Separar identidade do produto (`TRIM GO`) de montadoras Hyundai/Kia, do distribuidor e da informação de **importação** (declarada pelo lojista; comprovação aduaneira/fiscal antes de afirmar origem ao consumidor).
+6. As páginas individuais Hyundai HR e Kia Bongo K2500 devem reutilizar **exatamente a mesma composição homologada do SKU físico**, sem adicionar ou retirar componentes por montagem do veículo; manter `status=a_confirmar` e `noindex` até validação de compatibilidade independente.
+7. Nunca confundir descrição proposta neste arquivo com `produto_enriquecimento` aprovado, sincronização de descrição com Bling, anúncio publicado ou homologação de OEM.
+
+
+## Referências de peças avulsas no RPM — informação adicional do lojista em 21/11/2026
+
+O lojista informou que **cabeçote, válvulas e comandos** também são encontrados **no RPM**, comercializados pelo **mesmo fornecedor** em **notas fiscais distintas** da aquisição do motor parcial. **Ainda não houve leitura desses cadastros, identificação dos SKUs ou consulta das NFs; não atribuir número, data, país ou composição sem a fonte.**
+
+**Ações de pesquisa para o porteiro, apenas quando autorizadas:**
+- Para cada componente, levantar a **referência avulsa** (RPM ou outra fonte), código fabricante e SKU/ID Bling **somente se estiver efetivamente cadastrado** no Bling da loja.
+- Confrontar **documentos privados diferentes**: NF do motor CI003696 e NF de cada produto avulso; não juntar NFs nem gerar outro estoque para o conjunto.
+- Vincular o **componente descritivo do conjunto** à peça avulsa como `referencia_de_pesquisa`, inicialmente `a_confirmar`, sem presumir equivalência ou inclusão.
+- Pesquisar **OEM de cada componente** no EPC da versão Hyundai HR e da versão Kia Bongo. Manter OEM da peça isolada distinto do OEM do motor parcial.
+- Só promover vínculo avulso a `equivalente_ao_componente_montado` após documentação específica do conjunto + identificação física e interfaces/medidas; **mesmo fornecedor não comprova identidade**.
+- Mostrar ao cliente apenas a **composição homologada do SKU**. Produtos vendidos separadamente podem aparecer como sugestões de peças relacionadas, mas sem afirmar que o conjunto os inclui.
+
+A regra universal e os testes propostos estão em `docs/conector-ia/porteiro-epc-oem-por-componente-20261121.md`, no PR #489 de revisão. Nenhuma aplicação, nota fiscal ou produto foi modificado.
+
+## Índice de referências OEM por componente — pesquisa preliminar 21/11/2026
+
+Foi criado o arquivo [CI003696 — índice de rastreabilidade OEM (JSON)](CI003696-indice-rastreabilidade-oem-20261121.json), com **21 posições funcionais de componentes e 36 referências OEM** encontradas no contexto EPC de Kia Bongo D4CB ano-modelo 2014. Inclui cabeçote, válvulas, comandos, seguidores/tuchos a cotejar, retentores, junta e seus possíveis valores por espessura, bloco, virabrequim, bronzinas, arruelas, pistões e bielas. Jet coolers e parafusos permanecem sem código comprovado.
+
+As fontes são referências **de peças da configuração do veículo**, não uma lista de peças comprovadamente instaladas no motor TRIM GO CI003696. Por isso, todos os códigos estão como `candidato_epc_sem_equivalencia_sku`. Os SKU comerciais avulsos só entram quando encontrados e conferidos no Bling, RPM ou nota fiscal. Nenhum SKU de peça avulsa foi confirmado nesta pesquisa; a ausência de resultado na busca por nome não é prova de inexistência no Bling.
+
+**Regra do índice técnico:** caso um componente não possua SKU fiscal/ERP, aceitar `OEM:<codigo_normalizado>` como **chave de pesquisa técnica** somente para uma **variante EPC única identificada**, com fonte/ano/mercado/posição do diagrama. Não preencher `sku_fiscal` com esse OEM e não criar produto/estoque no Bling. Se existirem várias espessuras/classes, nenhuma chave principal pode ser escolhida sem a variante comprovada.
+
+Estado: proposta de rastreabilidade para revisão, automação do CI003696 pausada; nenhum campo do cadastro produtivo foi escrito.
