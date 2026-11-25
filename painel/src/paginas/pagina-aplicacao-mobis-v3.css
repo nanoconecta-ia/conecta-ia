@@ -109,3 +109,45 @@
   }
   .mobis-aplicacao-v3 .m2-aplicacao-identidade{padding:12px}
 }
+
+
+/* SHOWROOM por aplicação: mesmos tokens e logotipo mestre da ficha SKU físico.
+   Acentos por montadora permanecem limitados à faixa, sem recolorir o MA. */
+.mobis-aplicacao-v3 .sm-aplicacao-cabecalho{
+  max-width:1240px;
+  margin:0 auto;
+  padding:14px clamp(14px,3vw,28px);
+  background:#fff;
+  border-bottom:1px solid #d9e1e7;
+  display:flex;
+  flex-wrap:wrap;
+  gap:18px;
+  align-items:center;
+  justify-content:space-between;
+}
+.mobis-aplicacao-v3 .sm-aplicacao-voltar{
+  display:inline-flex;
+  align-items:center;
+  min-height:44px;
+  padding:10px 15px;
+  border-radius:10px;
+  background:#1f2327;
+  color:#fff;
+  font-weight:800;
+  text-decoration:none;
+}
+.mobis-aplicacao-v3 .sm-aplicacao-voltar:focus-visible{
+  outline:3px solid #1877f2;
+  outline-offset:3px;
+}
+.mobis-aplicacao-v3 .sm-aplicacao-faixa-destaque{
+  margin:12px 0 22px;
+}
+.mobis-aplicacao-v3 .sm-aplicacao-faixa-destaque .sm-faixa{
+  padding:clamp(18px,3vw,30px);
+  border-radius:16px;
+}
+@media(max-width:520px){
+  .mobis-aplicacao-v3 .sm-aplicacao-cabecalho{align-items:flex-start}
+  .mobis-aplicacao-v3 .sm-aplicacao-voltar{width:100%;justify-content:center}
+}

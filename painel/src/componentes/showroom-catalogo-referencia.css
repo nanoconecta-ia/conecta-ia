@@ -1,0 +1,160 @@
+/* Showroom Mobis · referência visual enviada em 22/11/2026.
+   Reprodução estrutural responsiva, sem reproduzir números técnicos não validados.
+   O logo MA do componente MarcaMobisOficial mantém seu SVG e tipografia originais. */
+.sm-ref-showroom{
+  max-width:1536px;width:100%;margin-inline:auto;border:0;border-radius:0;
+  background:#f7f9fa;color:#171b1f;box-shadow:none;
+}
+.sm-ref-showroom .sm-ref-topo{
+  width:100%;min-height:102px;flex-wrap:wrap;
+  padding:12px clamp(14px,2.6vw,32px);
+  background:linear-gradient(117deg,#121719,#1e252a 57%,#080b0e 100%);
+  border-left:10px solid #df1518;gap:14px 24px;
+}
+.sm-ref-showroom .sm-ref-topo:after{width:45px;right:44%;opacity:.88}
+.sm-ref-showroom .sm-marca{min-width:0;flex-shrink:1;gap:10px}
+.sm-ref-showroom .sm-marca-link img{width:clamp(192px,26vw,345px)}
+.sm-ref-showroom .sm-marca-legenda{font-size:.72rem;font-weight:700;max-width:190px}
+.sm-ref-menu{display:flex;flex:1 1 490px;justify-content:flex-end;align-items:stretch;
+  gap:0;position:relative;z-index:3;min-width:0}
+.sm-ref-menu a,.sm-ref-menu button{font:inherit;font-size:clamp(.78rem,1vw,.95rem);font-weight:750;
+  min-height:52px;display:grid;place-items:center;white-space:nowrap;text-decoration:none;
+  padding:10px clamp(9px,1.5vw,18px);color:#f4f7fa;background:transparent;
+  border:0;border-left:1px solid #3e4348;cursor:pointer}
+.sm-ref-menu a:hover,.sm-ref-menu button:hover{background:#32383c;color:#fff}
+.sm-ref-menu a:focus-visible,.sm-ref-menu button:focus-visible{outline:3px solid #fff;outline-offset:-3px}
+.sm-ref-migalhas{display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+  background:#fff;padding:9px clamp(12px,2.6vw,32px);border-bottom:1px solid #d8dce1;
+  font-size:.88rem;line-height:1.5;color:#293139}
+.sm-ref-migalhas a{color:#293139;text-decoration:none;font-weight:700}
+.sm-ref-migalhas a:hover{text-decoration:underline}
+.sm-ref-migalhas strong{color:#c70c16}
+.sm-ref-migalhas [aria-hidden]{color:#6c7780}
+.sm-ref-hero{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(340px,1fr);
+  gap:clamp(12px,2vw,28px);align-items:stretch;padding:clamp(12px,1.8vw,22px);
+  background:#fff}
+.sm-ref-galeria{min-width:0;min-height:310px;display:flex;flex-direction:column;
+  border:1px solid #cbd4db;border-radius:18px;background:#fff;overflow:hidden;
+  box-shadow:0 3px 10px #18212c15}
+.sm-ref-fotos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:0;flex:1;min-height:270px}
+.sm-ref-foto{display:grid;place-items:center;background:#fff;padding:10px;
+  min-width:0;min-height:260px;position:relative}
+.sm-ref-foto+.sm-ref-foto:before{content:"";position:absolute;left:0;top:7%;height:86%;
+  border-left:2px solid #d7dce0}
+.sm-ref-foto img{display:block;width:100%;height:100%;min-height:0;max-height:320px;
+  object-fit:contain;filter:none!important;transform:none!important;background:#fff}
+.sm-ref-sem-foto{display:grid;place-items:center;text-align:center;padding:20px 8px;
+  color:#68727c;font-size:clamp(.75rem,1.1vw,.9rem);font-weight:700;line-height:1.5;
+  background:#f7f8f9;border:1px dashed #bdc9d2;border-radius:12px;min-height:110px}
+.sm-ref-foto-etiqueta{align-self:center;max-width:100%;margin:-5px auto 8px;padding:8px 22px;
+  background:linear-gradient(100deg,#9f0b14,#f2161e 45%,#b60a16);border-radius:8px;
+  text-align:center;font-size:.92rem;font-weight:850;font-style:italic;color:#fff}
+.sm-ref-resumo{display:flex;flex-direction:column;justify-content:flex-start;
+  gap:12px;min-width:0;padding:0 0 4px}
+.sm-ref-resumo h1{font-size:clamp(1.65rem,2.65vw,3rem);font-style:italic;font-weight:900;
+  line-height:1.12;letter-spacing:-.04em;margin:0;padding-bottom:12px;color:#121518;
+  border-bottom:4px solid #e2181a;overflow-wrap:anywhere}
+.sm-ref-sku-marca{display:flex;flex-wrap:wrap;gap:10px 0;align-items:baseline;
+  font-size:clamp(.94rem,1.6vw,1.4rem);font-weight:800}
+.sm-ref-sku-marca span{padding:0 13px}
+.sm-ref-sku-marca span:first-child{padding-left:0;border-right:2px solid #636a70}
+.sm-ref-sku-marca strong{color:#d3131d;font-weight:900}
+.sm-ref-avisos{display:flex;flex-wrap:wrap;align-items:center;gap:7px 18px;background:#fff0f0;
+  border-radius:11px;padding:10px 13px;color:#8d1017;font-size:.85rem;line-height:1.45;margin:0}
+.sm-ref-avisos span:before{content:"•";margin-right:7px;font-weight:900}
+.sm-ref-fatos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.sm-ref-fatos>div{background:#fff;min-width:0;border:1px solid #cbd5dd;
+  border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:3px}
+.sm-ref-fatos span{font-size:.74rem;color:#525e69;font-weight:700}
+.sm-ref-fatos strong{font-size:.9rem;font-weight:850;line-height:1.25;overflow-wrap:anywhere}
+.sm-ref-revendedor{font-size:.77rem;line-height:1.4;color:#58636e;margin:0}
+.sm-ref-resumo .sm-showroom-preco,.sm-ref-resumo .sm-showroom-preco-consulta{font-size:1rem;margin:0}
+.sm-ref-abas{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;
+  padding:0 clamp(12px,1.4vw,20px) 0;background:#f6f8f9;
+  border-bottom:2px solid #b8c3cc}
+.sm-ref-abas button{font:inherit;font-size:clamp(.72rem,1.15vw,1rem);font-weight:850;
+  min-height:49px;padding:8px;line-height:1.3;text-align:center;border:1px solid #dae0e6;
+  border-bottom:0;border-radius:12px 12px 0 0;color:#1a2229;background:#e8edf2;cursor:pointer}
+.sm-ref-abas button.ativo,.sm-ref-abas button[aria-selected="true"]{
+  color:#fff;background:linear-gradient(180deg,#ff2026,#b40a13);border-color:#df161d}
+.sm-ref-abas button:focus-visible{outline:3px solid #1458a3;outline-offset:2px}
+.sm-ref-conteudo{padding:clamp(12px,1.5vw,20px);background:#fff}
+.sm-ref-grade{display:grid;grid-template-columns:minmax(250px,1.02fr) minmax(340px,1.5fr) minmax(260px,1.23fr);
+  gap:clamp(10px,1.35vw,18px);align-items:stretch}
+.sm-ref-painel{background:#fff;border-radius:13px;overflow:hidden;
+  border:1px solid #cbd3dc;box-shadow:0 2px 8px #1119200f;min-width:0}
+.sm-ref-painel h2{font-size:clamp(.86rem,1.18vw,1.12rem);font-weight:850;line-height:1.32;
+  color:#fff;margin:0;padding:10px 14px;background:linear-gradient(180deg,#f5262d,#b60712);
+  text-align:left}
+.sm-ref-painel h3{font-size:.88rem;font-weight:850;color:#fff;margin:0;
+  padding:9px 13px;background:linear-gradient(180deg,#f5262d,#b60712)}
+.sm-ref-pendente{padding:14px;font-size:.89rem;line-height:1.65;color:#46535e;margin:0}
+.sm-ref-lista-composicao{list-style:none;margin:0;padding:8px 15px 12px}
+.sm-ref-lista-composicao li{display:flex;gap:10px;align-items:start;min-width:0;
+  padding:8px 0;border-bottom:1px solid #dce1e5;font-size:.9rem;line-height:1.35;color:#242c31}
+.sm-ref-lista-composicao li>span:first-child{color:#e3181c;font-size:1.1rem;font-weight:900}
+.sm-ref-tabela-rolagem{overflow-x:auto;max-width:100%}
+.sm-ref-indice table{border-collapse:collapse;width:100%;font-size:.77rem}
+.sm-ref-indice th,.sm-ref-indice td{padding:7px 9px;border-bottom:1px solid #d8dce0;text-align:left}
+.sm-ref-indice th{background:#eef1f4;font-weight:850}
+.sm-ref-indice tbody tr:nth-child(even){background:#f4f6f8}
+.sm-ref-indice tbody td:first-child{font-weight:800;color:#cd0c18}
+.sm-ref-nota{margin:10px 12px;font-size:.76rem;color:#52616e;line-height:1.5}
+.sm-ref-painel-aplicacoes{display:flex;flex-direction:column}
+.sm-ref-aplicacoes{padding:9px;display:grid;gap:8px}
+.sm-ref-painel-aplicacoes .sm-faixa{padding:11px 13px;border-left-width:5px}
+.sm-ref-painel-aplicacoes .sm-faixa-destaque{font-size:1.28rem}
+.sm-ref-painel-aplicacoes .sm-faixa-desc{font-size:.8rem}
+.sm-ref-painel-aplicacoes .sm-faixa-montadora{font-size:.64rem}
+.sm-ref-proveniencia{margin-top:auto;border-top:1px solid #e2e4e9}
+.sm-ref-proveniencia p{font-size:.8rem;line-height:1.45;color:#3d4851;margin:8px 12px}
+.sm-ref-painel-expandido{min-height:260px}
+.sm-ref-painel-expandido.sm-ref-painel{padding-bottom:20px}
+.sm-ref-painel-expandido.sm-ref-painel>p{margin:14px;font-size:.88rem;line-height:1.65}
+.sm-ref-dados{padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:12px;margin:0}
+.sm-ref-dados>div{border:1px solid #dce3e9;background:#f6f8fa;border-radius:9px;padding:13px}
+.sm-ref-dados dt{font-size:.78rem;color:#50606c;margin:0 0 5px}
+.sm-ref-dados dd{font-size:.91rem;font-weight:850;margin:0;overflow-wrap:anywhere}
+.sm-ref-rodape{display:flex;gap:16px 22px;align-items:center;justify-content:space-between;
+  padding:13px 22px;background:linear-gradient(130deg,#1a2228,#30363c 55%,#111719);color:#fff}
+.sm-ref-rodape>div{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;
+  font-size:clamp(.75rem,1.15vw,.92rem);font-style:italic;font-weight:700}
+.sm-ref-rodape>div span:before{content:"●";font-style:normal;color:#f0181f;margin-right:12px;font-size:.75rem}
+.sm-ref-rodape .sm-showroom-cta{flex-shrink:0;background:linear-gradient(95deg,#dd0c15,#f1282b);
+  border-radius:11px;font-size:.87rem;white-space:nowrap}
+@media(max-width:1080px){
+  .sm-ref-menu{justify-content:flex-start;flex-basis:100%}
+  .sm-ref-showroom .sm-ref-topo:after{right:10%;opacity:.35}
+  .sm-ref-hero{grid-template-columns:minmax(0,1fr) minmax(300px,1fr)}
+  .sm-ref-grade{grid-template-columns:minmax(240px,1fr) minmax(340px,1.35fr)}
+  .sm-ref-painel-aplicacoes{grid-column:1/-1}
+}
+@media(max-width:760px){
+  .sm-ref-hero{grid-template-columns:minmax(0,1fr)}
+  .sm-ref-resumo h1{font-size:clamp(1.55rem,5.5vw,2.25rem)}
+  .sm-ref-foto{min-height:175px}
+  .sm-ref-fotos{min-height:215px}
+  .sm-ref-abas{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .sm-ref-abas button{border-radius:8px;font-size:.75rem;min-height:48px}
+  .sm-ref-grade{grid-template-columns:minmax(0,1fr)}
+  .sm-ref-painel-aplicacoes{grid-column:auto}
+}
+@media(max-width:480px){
+  .sm-ref-showroom .sm-ref-topo{padding:12px;border-left-width:5px}
+  .sm-ref-showroom .sm-marca-link img{width:min(100%,260px)}
+  .sm-ref-menu{overflow-x:auto;justify-content:flex-start}
+  .sm-ref-menu a,.sm-ref-menu button{min-height:44px;font-size:.74rem}
+  .sm-ref-hero{padding:10px}
+  .sm-ref-fotos{grid-template-columns:1fr}
+  .sm-ref-foto{min-height:215px}
+  .sm-ref-foto:not(:first-child){display:none}
+  .sm-ref-resumo{padding:6px 0}
+  .sm-ref-sku-marca span{padding:0 8px}
+  .sm-ref-fatos{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sm-ref-rodape{flex-direction:column;align-items:stretch;padding:15px}
+  .sm-ref-rodape .sm-showroom-cta{white-space:normal}
+}
+@media(prefers-reduced-motion:reduce){
+  .sm-ref-showroom *{scroll-behavior:auto!important}
+}

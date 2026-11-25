@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
       referencias_aprovadas: codigosAprovadosPorSku.get(produto.sku) ?? [],
     }));
 
-  const paginasPorSku: Record<string, { slug: string; titulo: string; modelo: string; status: string }[]> = {};
+  const paginasPorSku: Record<string, { slug: string; titulo: string; modelo: string; status: string; indexavel: boolean }[]> = {};
   if (loja.slug === "mobis" && idsPublicados.length) {
     let aq = sb.from("produto_aplicacoes")
       .select("produto_id,pagina_slug,pagina_titulo,modelo,status,pagina_indexavel")
@@ -242,6 +242,7 @@ Deno.serve(async (req) => {
       if (!sku || !a.pagina_slug || !a.pagina_titulo) continue;
       (paginasPorSku[sku] ??= []).push({
         slug: a.pagina_slug, titulo: a.pagina_titulo, modelo: a.modelo, status: a.status,
+        indexavel: a.status === "aprovado" && a.pagina_indexavel === true,
       });
     }
     // Ordem estável ao clicar na foto: HR -> Bongo -> demais; nunca escolher

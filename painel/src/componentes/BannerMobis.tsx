@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import logoMobisOficial from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
 
 /** Banner principal da loja Mobis (modelo claro v4).
  * Um único bloco fluido: mesma marcação do smartphone ao monitor largo, sem versões separadas.
@@ -25,7 +26,7 @@ export function BannerMobis({ veiculos, abrirEscolha, buscarCodigo, extra, campa
             aria-label={"Abrir página individual do produto "+campanha.sku+" na própria loja"}>
             {campanha.imagem
               ? <img className="m4-banner-campanha-foto" src={campanha.imagem} alt="" loading="lazy"/>
-              : <span className="m4-banner-campanha-marca" aria-hidden="true">M</span>}
+              : <img className="m4-banner-campanha-logo-oficial" src={logoMobisOficial} alt="" aria-hidden="true" width={1983} height={793} style={{width:110,maxWidth:"100%",height:"auto",objectFit:"contain"}}/>}
             <span><small>{campanha.flash?"DESTAQUE FLASH":"CAMPANHA CONECTA.IA"}</small>
               <strong>{campanha.chamada||campanha.nome}</strong>
               <em>Ver ficha e aplicações por veículo · SKU {campanha.sku}</em>

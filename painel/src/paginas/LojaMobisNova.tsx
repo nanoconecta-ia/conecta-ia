@@ -30,7 +30,7 @@ import "./mobis-02-entrega-real.css";
 type Produto = {sku:string;nome:string;preco:number|null;marca:string|null;descricao:string|null;imagem:string|null;whatsapp:string|null;em_estoque:boolean|null;atualizado_em:string|null;consulta_previa?:boolean;categoria?:string|null;referencias_aprovadas?:{tipo:string;valor:string}[]};
 type Veiculo = {modelo:string;motor:string|null;de:number|null;ate:number|null};
 type Banner = {sku:string;nome:string;preco:number|null;chamada:string|null;flash:boolean;whatsapp:string|null;imagem?:string|null;fim?:string|null};
-type PaginaAplicacao = {slug:string;titulo:string;modelo:string;status:string};
+type PaginaAplicacao = {slug:string;titulo:string;modelo:string;status:string;indexavel:boolean};
 type Resposta = {
   paginas_aplicacao?:Record<string,PaginaAplicacao[]>;
   loja:{nome:string;slug:string;ambiente?:"teste"|"producao";whatsapp?:string|null;venda_habilitada?:boolean};

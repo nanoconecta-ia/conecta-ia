@@ -74,8 +74,8 @@ async function abrir(flags, width = 1280, erro = false, cenarioFlash = false, fa
         {modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022,tipo:"caminhao"},
       ]} : null,
       paginas_aplicacao:cenarioFlash ? {CI003000:[
-        {slug:"hyundai-hr-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Hyundai HR",modelo:"Hyundai HR",status:"aprovado"},
-        {slug:"kia-bongo-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Kia Bongo",modelo:"Kia Bongo K2500",status:"aprovado"},
+        {slug:"hyundai-hr-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Hyundai HR",modelo:"Hyundai HR",status:"aprovado",indexavel:true},
+        {slug:"kia-bongo-motor-d4cb",titulo:"Motor parcial 2.5 D4CB para Kia Bongo",modelo:"Kia Bongo K2500",status:"aprovado",indexavel:true},
         {slug:"pendente-nao-publicado",titulo:"Aplicação em estudo",modelo:"Outro",status:"a_confirmar"}]} : {},
       veiculos:[{modelo:"Hyundai HR",motor:"2.5 16V",de:2013,ate:2022},{modelo:"Kia Bongo K2500",motor:"2.5 16V",de:2013,ate:2022}],
       categorias:flags.categoriaSimulada ? [{nome:"Motor",slug:"motor",total:1}] : [], total:flags.previaSimulada?1:0, pagina:1, por_pagina:24
