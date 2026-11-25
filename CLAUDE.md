@@ -21,6 +21,9 @@ Obrigatório ler [porteiro: imagem no cadastro, gravar na peça certa](docs/cone
 ## Catálogo MOBIS sem foto — todos os veículos e produtos
 Ler [regra de pesquisa de imagens, foto opcional e conclusão posterior pelo lojista](docs/conector-ia/mobis-cadastro-sem-foto-todos-skus-20261119.md). O agente não deve suspender a pesquisa/cadastro em lote por falta de imagem; marcar `foto_pendente` e usar placeholder. Exceção de foto opcional no banco é exclusiva à loja MOBIS, não se aplica a outros tenants. Publicação exige outros campos e aprovação humana; sem evidência de aplicação/OEM, não anunciar compatibilidade. `produto_automacao.pausado` continua bloqueando propostas/escritas.
 
+## Originalidade e OEM (não rotular original/não-original)
+Ler [porteiro: originalidade e OEM como referência](docs/conector-ia/porteiro-originalidade-oem-referencia-20261125.md). Quase tudo é aftermarket; **não destacar nem rotular** a peça como "original"/"genuína"/"não-original", e não carimbar "sem original". O que se destaca como referência é o **CÓDIGO OEM**, que confirma a aplicação correta. Marca da peça é dado factual (ex.: Trim Go), sem selo de originalidade. **Proibido** holograma/selo de autenticidade de peça genuína em item aftermarket (CDC). OEM só com fonte; sem VIN, "a confirmar".
+
 ## Entrada por descrição, sem SKU (roteiro comum a qualquer agente)
 Ler [genealogia de veículos brasileiros: descrição → pai/filho/primos → motor/cilindros → documento e anos locais → SKU](docs/conector-ia/roteiro-descricao-genealogia-veicular-br-20261119.md). Consultas `motor para HR 2013` e `motor Gol 2003` são válidas sem SKU; não adivinhar ano final ou transferir OEM entre «primos». Aplicar a mesma trava do porteiro/Policy Engine.
 
