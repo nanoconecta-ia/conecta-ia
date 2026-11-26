@@ -119,5 +119,5 @@ try{
  console.log("ok E2E protegido: recuperação integral, preços/saldos do ERP espelhados e evento técnico único");
 
 }finally{
- sql("delete from public.lojas where id in ("+q(loja)+","+q(outra)+")","postgres");
+ sql("update public.nano_lifecycle_checkpoint set habilitado=false where loja_id="+q(loja)+"; delete from public.lojas where id in ("+q(loja)+","+q(outra)+")","postgres");
 }
