@@ -40,6 +40,13 @@ jobs:
       - uses: actions/checkout@v4
       # Banco DESCARTÁVEL do runner (nunca o Supabase). Aplica stub + migrações e roda os testes SQL do Conecta Pair.
       - run: ./supabase/tests/rodar_local.sh
+      - name: Homologar minuta Nano Lifecycle no PostgreSQL descartável
+        env:
+          PGDATABASE: conecta_teste
+        run: |
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-persistencia-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-persistencia-TESTE.sql
+          bash supabase/tests/nano_lifecycle_concorrencia.sh
       - run: ./supabase/tests/conecta_pair_concorrencia.sh
       - run: ./supabase/tests/exec_local_concorrencia.sh
       - run: node scripts/tests/chat-concorrencia.mjs
