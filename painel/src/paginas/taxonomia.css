@@ -89,3 +89,12 @@
   .tx-fila li { grid-template-columns: 150px minmax(0, 1.4fr) minmax(0, 1fr); align-items: center; gap: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .janela .tx-cartao:hover:not(:disabled) { transform: none; } }
+
+/* Auditoria veicular: leitura privada, cartões responsivos e distinção de conflitos. */
+.tx-auditoria{display:grid;gap:12px;min-width:0;border:1px solid var(--borda);border-radius:14px;background:var(--cartao);padding:14px}
+.tx-auditoria h2{margin:0;font-size:1.12rem}.tx-auditoria p{margin:4px 0;overflow-wrap:anywhere}
+.tx-auditoria-lista{display:grid;gap:8px;min-width:0}
+.tx-auditoria-item{min-width:0;padding:10px 12px;border:1px solid var(--borda);border-radius:10px;background:var(--fundo);overflow-wrap:anywhere}
+.tx-auditoria-item summary{cursor:pointer;line-height:1.5}.tx-auditoria-item summary span{display:block;color:var(--suave);font-size:.84rem}
+.tx-auditoria-dados{display:grid;grid-template-columns:minmax(88px,1fr) minmax(0,2fr);gap:5px 12px;font-size:.87rem}
+.tx-auditoria-dados dd{margin:0;min-width:0;overflow-wrap:anywhere}.tx-auditoria-item ul{padding-left:20px;font-size:.85rem}

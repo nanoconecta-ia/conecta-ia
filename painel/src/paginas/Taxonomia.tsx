@@ -9,6 +9,7 @@ import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
 import { SincroniaBling } from "../componentes/SincroniaBling.tsx";
 import { conferir, type CategoriaBling, type Ligacao } from "../lib/taxonomiaBling.ts";
 import { eixoDaRaiz, indicePecas, pct, sinaisVeiculo, sugerirPeca, type NoPeca, type Sugestao, type TermoVeiculo } from "../lib/lentesTaxonomia.ts";
+import { AuditoriaVeicular } from "../componentes/AuditoriaVeicular.tsx";
 import "./taxonomia.css";
 
 type Produto = { id: string; sku: string | null; nome: string | null; marca: string | null; situacao: string | null; publicado: boolean; taxonomia_no_id: string | null };
@@ -174,7 +175,7 @@ export function Taxonomia({ loja }: { loja: Loja }) {
                   <Indicador rotulo="produtos no espelho" valor={v.total} />
                   <Indicador rotulo="sem classificação" valor={v.fila.length} tom={v.fila.length ? "atencao" : "ok"} nota={`${v.filaAtivos} ativos`} />
                   <Indicador rotulo="com sugestão pelo nome" valor={v.comSugestao} tom="ok" nota="aguardam revisão" />
-                  <Indicador rotulo="aplicações homologadas" valor={dados.aplicacoes} tom={dados.aplicacoes ? "ok" : "erro"} nota={dados.aplicacoes ? undefined : "nenhuma ainda"} />
+                  <Indicador rotulo="registros de aplicação" valor={dados.aplicacoes} nota="status e evidências a conferir" />
                   <Indicador rotulo="publicados no site" valor={v.publicados} tom={v.publicados ? "ok" : "erro"} />
                 </div>
               </div>
@@ -233,7 +234,8 @@ export function Taxonomia({ loja }: { loja: Loja }) {
 
             {lente === "veiculos" && (
               <section className="tx-painel" role="tabpanel" aria-label="Veículos">
-                <p className="tx-aviso"><strong>Candidato pelo nome.</strong> Os números contam produtos cujo nome cita o modelo ou o motor. Isso não é aplicação homologada: {dados.aplicacoes} aplicação(ões) com fonte registrada até agora.</p>
+                <p className="tx-aviso"><strong>Candidato pelo nome.</strong> Os números contam produtos cujo nome cita o modelo ou o motor. Isso não é aplicação homologada: {dados.aplicacoes} registro(s) de aplicação, incluindo status diversos.</p>
+                <AuditoriaVeicular key={loja.id} lojaId={loja.id} />
                 <div className="tx-veiculos">
                   {v.veiculos.map((m) => (
                     <article key={m.id} className={`tx-montadora ${m.citados ? "" : "vazio"}`}>
