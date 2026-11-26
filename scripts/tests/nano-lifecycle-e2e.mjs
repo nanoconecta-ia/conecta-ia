@@ -36,6 +36,10 @@ const executar=async(linhas,completo=true)=>{
  const porta=criarPortaSupabase(admin,async reserva=>{
   const ret=await admin.rpc("nano_lifecycle_gravar_tecnico",{p_loja:reserva.loja,p_execucao:reserva.execucao,p_geracao:reserva.geracao,p_linhas:linhas});
   assert.equal(ret.error,null);assert.equal(ret.data,linhas.length);
+  if(completo){
+   const v=await admin.rpc("nano_lifecycle_registrar_varredura",{p_loja:reserva.loja,p_execucao:reserva.execucao,p_geracao:reserva.geracao,p_grupos:{ativos:[linhas.map(l=>l.bling_id)],inativos:[[]],excluidos:[[]]}});
+   assert.equal(v.error,null);assert.deepEqual(v.data.candidatos,[]);
+  }
   return {...r,gravados:linhas.length,vistos:linhas.length,completo};
  });
  const resultado=await executarRodadaLifecycle(porta,{loja,execucao:randomUUID(),habilitada:true});
