@@ -83,6 +83,8 @@ jobs:
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-eventos-MINUTA.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-diario-TESTE.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-eventos-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-despacho-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-despacho-TESTE.sql
           node --experimental-strip-types scripts/tests/nano-lifecycle-e2e.mjs
       - name: Validar reversão somente no banco descartável
         env:
