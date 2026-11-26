@@ -293,4 +293,30 @@ select 1/case when (not has_function_privilege('service_role','nano_lifecycle_in
 select 1/case when ((select count(*)=1 from nano_lifecycle_interno.autorias_engenharia where loja_id='ed000000-0000-0000-0000-000000000001')) then 1 else 0 end;
 select 1/case when ((select count(*)=2 from nano_lifecycle_interno.resultados_engenharia where loja_id='ed000000-0000-0000-0000-000000000001')) then 1 else 0 end;
 select 1/case when ((select estado='entrada' and versao=1 and resultado='{}'::jsonb and nano_geracao=7 and nano_produtor='nano_ci_produtor_b' from public.pipeline_itens where id=:'nano_item'::uuid)) then 1 else 0 end;
+
+-- Catálogo documental sintético, sem qualquer afirmação de aplicação real.
+insert into nano_lifecycle_interno.fontes_documentais(loja_id,id,tipo,emissor,autorizada) values('ed000000-0000-0000-0000-000000000001','fonte-ci','catalogo_fabricante','Emissor sintético',true),('ed000000-0000-0000-0000-000000000099','fonte-ci','catalogo_fabricante','Outra loja sintética',true);
+insert into nano_lifecycle_interno.documentos_tecnicos(loja_id,id,fonte_id,conteudo,consultado_em,referencia) values('ed000000-0000-0000-0000-000000000001','doc-ci','fonte-ci','Texto sintético de CI',clock_timestamp()-interval '1 day','fixture página 1'),('ed000000-0000-0000-0000-000000000099','doc-ci','fonte-ci','Documento de outra loja',clock_timestamp()-interval '1 day','fixture página 2'),('ed000000-0000-0000-0000-000000000001','doc-futuro','fonte-ci','Texto futuro',clock_timestamp()+interval '1 day','fixture futura');
+update nano_lifecycle_interno.auditoria_escopos set habilitado=true where login_db='nano_ci_auditor' and loja_id='ed000000-0000-0000-0000-000000000001';
+set session authorization nano_ci_auditor;
+set local role nano_lifecycle_auditoria;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_ler_fonte('ed000000-0000-0000-0000-000000000001','fonte-ci')->>'emissor'='Emissor sintético') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_ler_documento('ed000000-0000-0000-0000-000000000001','doc-ci')->>'sha256'=encode(sha256(convert_to('Texto sintético de CI','UTF8')),'hex')) then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_ler_documento('ed000000-0000-0000-0000-000000000001','doc-ci')->>'conteudo'='Texto sintético de CI') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_ler_fonte('ed000000-0000-0000-0000-000000000099','fonte-ci') is null and nano_lifecycle_interno.nano_lifecycle_ler_documento('ed000000-0000-0000-0000-000000000099','doc-ci') is null and nano_lifecycle_interno.nano_lifecycle_ler_documento('ed000000-0000-0000-0000-000000000001','doc-futuro') is null) then 1 else 0 end;
+reset session authorization;
+update nano_lifecycle_interno.fontes_documentais set autorizada=false where loja_id='ed000000-0000-0000-0000-000000000001' and id='fonte-ci';
+set session authorization nano_ci_auditor;
+set local role nano_lifecycle_auditoria;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_ler_fonte('ed000000-0000-0000-0000-000000000001','fonte-ci') is null and nano_lifecycle_interno.nano_lifecycle_ler_documento('ed000000-0000-0000-0000-000000000001','doc-ci') is null) then 1 else 0 end;
+reset session authorization;
+update nano_lifecycle_interno.fontes_documentais set autorizada=true where loja_id='ed000000-0000-0000-0000-000000000001' and id='fonte-ci';
+update nano_lifecycle_interno.auditoria_escopos set habilitado=false where login_db='nano_ci_auditor' and loja_id='ed000000-0000-0000-0000-000000000001';
+set session authorization nano_ci_auditor;
+set local role nano_lifecycle_auditoria;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_ler_fonte('ed000000-0000-0000-0000-000000000001','fonte-ci') is null and nano_lifecycle_interno.nano_lifecycle_ler_documento('ed000000-0000-0000-0000-000000000001','doc-ci') is null) then 1 else 0 end;
+reset session authorization;
+select 1/case when (not has_function_privilege('service_role','nano_lifecycle_interno.nano_lifecycle_ler_documento(uuid,text)','execute') and not has_function_privilege('nano_lifecycle_produtor','nano_lifecycle_interno.nano_lifecycle_ler_fonte(uuid,text)','execute') and not has_table_privilege('nano_lifecycle_auditoria','nano_lifecycle_interno.documentos_tecnicos','select') and not has_table_privilege('nano_lifecycle_auditor_leitor','nano_lifecycle_interno.documentos_tecnicos','insert')) then 1 else 0 end;
+select pg_temp.recusa($t$update nano_lifecycle_interno.documentos_tecnicos set conteudo='alterado'$t$,'documento imutável');
+select pg_temp.recusa($t$delete from nano_lifecycle_interno.documentos_tecnicos$t$,'documento preservado');
 rollback;
