@@ -57,3 +57,17 @@ export async function conferirComAuditorSql(c:Candidato,chave:ChaveEvidencia,ses
   return r;
  }catch{return negar("transporte_auditoria_nao_confirmado");}
 }
+
+/** Conferência pontual de atualidade depois da procedência histórica. Não autoriza DML. */
+export async function conferirEvidenciaAtualComAuditorSql(c:Candidato,chave:ChaveEvidencia,sessao:SessaoAuditoriaSql,identidadeConfigurada:string,agora:string){
+ const negar=(motivo:string)=>({estado:"retida" as const,motivo,homologada:false as const});
+ try{
+  // Clona o candidato antes de qualquer await para impedir troca do escopo.
+  const candidato=structuredClone(c), k=Object.freeze({...chave});
+  const r=await conferirComAuditorSql(candidato,k,sessao,identidadeConfigurada,agora);
+  if(r.estado!=="procedencia_conferida")return r;
+  const rows=await sessao.consultar("select session_user::text as identidade, nano_lifecycle_interno.nano_lifecycle_conferir_atualidade($1::uuid,$2::uuid,$3::uuid,$4::bigint,$5::integer,$6::jsonb) as atual",[k.loja,k.item,k.execucao,k.geracao,k.versao,JSON.stringify(candidato.escopo)]);
+  if(!Array.isArray(rows)||rows.length!==1||!campos(rows[0],["identidade","atual"])||rows[0].identidade!==identidadeConfigurada||rows[0].atual!==true)return negar("evidencia_desatualizada_ou_indisponivel");
+  return {...r,atualidade:"conferida_no_instante" as const};
+ }catch{return negar("atualidade_nao_confirmada");}
+}

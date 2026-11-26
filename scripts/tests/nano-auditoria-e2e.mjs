@@ -5,7 +5,7 @@ import {readFileSync} from "node:fs";
 import {randomBytes,createHash} from "node:crypto";
 import assert from "node:assert/strict";
 import {extrair} from "../../supabase/functions/_shared/pipeline/extracao.ts";
-import {conferirComAuditorSql} from "../../supabase/functions/_shared/nano_lifecycle/porta_auditoria_sql.ts";
+import {conferirComAuditorSql,conferirEvidenciaAtualComAuditorSql} from "../../supabase/functions/_shared/nano_lifecycle/porta_auditoria_sql.ts";
 if(process.env.GITHUB_ACTIONS!=="true"||process.env.PGHOST!=="localhost"||process.env.PGPORT!=="5432"||process.env.PGDATABASE!=="conecta_teste"||process.env.PGUSER!=="postgres")throw Error("somente CI descartável");
 const L="fa000000-0000-0000-0000-000000000001",P="fa100000-0000-0000-0000-000000000001",X="fb200000-0000-0000-0000-000000000001";
 const args=user=>["-XqAtw","-h","127.0.0.1","-p","5432","-U",user,"-d","conecta_teste","-v","ON_ERROR_STOP=1"];
@@ -85,6 +85,22 @@ try{
  assert.deepEqual(await conferir(candidato),{estado:"procedencia_conferida",leituraId:r.id,sha256:hash,homologada:false});
  assert.equal((await conferir({...candidato,escopo:{...candidato.escopo,geracao:2}})).estado,"retida");
  assert.equal((await conferir({...candidato,fato:{...fato,oem:"99999-99999"}})).estado,"retida");
+ const atual=()=>conferirEvidenciaAtualComAuditorSql(candidato,k,audit,"nano_e2e_auditor",new Date().toISOString());
+ assert.equal((await atual()).atualidade,"conferida_no_instante");
+ admin("update public.produto_automacao set pausado=true where produto_id='"+P+"';");
+ assert.equal((await atual()).motivo,"evidencia_desatualizada_ou_indisponivel");
+ admin("update public.produto_automacao set pausado=false where produto_id='"+P+"';");
+ admin("update public.nano_lifecycle_checkpoint set consumo_habilitado=false where loja_id='"+L+"';");
+ assert.equal((await atual()).motivo,"evidencia_desatualizada_ou_indisponivel");
+ admin("update public.nano_lifecycle_checkpoint set consumo_habilitado=true where loja_id='"+L+"';");
+ admin("update public.produtos set nome='Alteração posterior sintética' where id='"+P+"';");
+ assert.equal((await atual()).motivo,"evidencia_desatualizada_ou_indisponivel");
+ // Readback histórico continua disponível mesmo com divergência no produto.
+ assert.equal((await conferir(candidato)).estado,"procedencia_conferida");
+ admin("update public.produtos set nome='Peça sintética OEM 12345-67890' where id='"+P+"';");
+ // Não exige que a projeção restaurada seja idêntica se triggers alterarem outros campos.
+ assert.equal(admin("select has_function_privilege('nano_lifecycle_produtor','nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(uuid,uuid,uuid,bigint,integer,jsonb)','execute');"),"f");
+
  admin("update nano_lifecycle_interno.auditoria_escopos set habilitado=false where login_db='nano_e2e_parecer' and loja_id='"+L+"';");
  assert.equal((await conferir(candidato)).motivo,"verificador_nao_autorizado");
  assert.equal(admin("select count(*) from nano_lifecycle_interno.leituras_documentais where loja_id='"+L+"';"),"1");
