@@ -53,6 +53,8 @@ jobs:
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-finalizacao-TESTE.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-lote-MINUTA.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-lote-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-leitura-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-leitura-TESTE.sql
       - run: ./supabase/tests/conecta_pair_concorrencia.sh
       - run: ./supabase/tests/exec_local_concorrencia.sh
       - run: node scripts/tests/chat-concorrencia.mjs
