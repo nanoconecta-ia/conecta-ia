@@ -9,7 +9,7 @@ export type LeituraIndependente={id:string;escopo:Escopo;fonteId:string;document
 export interface PortaAuditoria {
  fonte(loja:string,id:string):Promise<FonteAutorizada|null>;
  documento(loja:string,id:string):Promise<Documento|null>;
- leituras(loja:string,documento:string,localizador:string):Promise<readonly LeituraIndependente[]>;
+ leituras(loja:string,documento:string,localizador:string,escopo:Escopo):Promise<readonly LeituraIndependente[]>;
  // Deve consultar identidade e autorização verificadas no servidor, nunca texto fornecido pelo produtor.
  verificadorAutorizado(loja:string,id:string):Promise<boolean>;
 }
@@ -34,11 +34,11 @@ export async function conferirProcedencia(c:Candidato,porta:PortaAuditoria,agora
   const d=await porta.documento(s.loja,c.documentoId);
   if(!d||d.id!==c.documentoId||d.loja!==s.loja||d.fonteId!==fonte.id||!texto(d.conteudo)||!hash(d.sha256)||!instante(d.consultadoEm)||Date.parse(d.consultadoEm)>Date.parse(agora))return negar("documento_invalido");
   if(await digest(d.conteudo)!==d.sha256)return negar("documento_divergente");
-  const leituras=await porta.leituras(s.loja,d.id,c.localizador);
+  const leituras=await porta.leituras(s.loja,d.id,c.localizador,s);
   if(!Array.isArray(leituras)||leituras.length!==1)return negar("leitura_ausente_ou_ambigua");
   const l=leituras[0];
   if(!texto(l.id)||!texto(l.verificador)||l.verificador===s.produtor||!mesmoEscopo(s,l.escopo)||l.fonteId!==fonte.id||l.documentoId!==d.id||l.sha256!==d.sha256||l.localizador!==c.localizador||!instante(l.verificadoEm)||Date.parse(l.verificadoEm)<Date.parse(d.consultadoEm)||Date.parse(l.verificadoEm)>Date.parse(agora))return negar("leitura_sem_vinculo_independente");
-  if(!(await porta.verificadorAutorizado(s.loja,l.verificador)))return negar("verificador_nao_autorizado");
+  if((await porta.verificadorAutorizado(s.loja,l.verificador))!==true)return negar("verificador_nao_autorizado");
   if(l.resultado!=="confere"||!mesmoFato(f,l.fato))return negar("fato_divergente");
   // Não afirma compatibilidade física: apenas procedência conferida pelo adaptador.
   return {estado:"procedencia_conferida" as const,leituraId:l.id,sha256:d.sha256,homologada:false as const};

@@ -100,6 +100,7 @@ jobs:
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-reserva-produtor-MINUTA.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-recibo-produtor-MINUTA.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-documentos-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-atestacao-MINUTA.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-autoridade-consumo-TESTE.sql
           bash supabase/tests/nano_lifecycle_despacho_concorrencia.sh
           node --experimental-strip-types scripts/tests/nano-lifecycle-e2e.mjs

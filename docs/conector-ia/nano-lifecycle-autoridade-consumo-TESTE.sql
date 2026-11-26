@@ -333,4 +333,32 @@ end $teste_hash$;
 select pg_temp.afirma(not exists(select 1 from nano_lifecycle_interno.documentos_tecnicos where loja_id='ed000000-0000-0000-0000-000000000001' and id='doc-hash-falso'),'sem registro após recusa');
 select pg_temp.recusa($t$update nano_lifecycle_interno.documentos_tecnicos set conteudo='alterado'$t$,'documento imutável');
 select pg_temp.recusa($t$delete from nano_lifecycle_interno.documentos_tecnicos$t$,'documento preservado');
+
+-- Parecer sintético; não representa aplicação automotiva verdadeira.
+set session authorization nano_ci_auditor;
+set local role nano_lifecycle_auditoria;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_atestar_fato('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1,'doc-ci',encode(sha256(convert_to('Texto sintético de CI','UTF8')),'hex'),'p. 1','Texto sintético de CI','{"oem":"12345-67890","montadora":"Marca teste","modelo":"Modelo teste","geracao":"G1","motor":"M1","emissao":"Euro 5","mercado":"BR","tipo_ano":"ano_modelo_crlv","ano_inicio":2014,"ano_fim":2016}'::jsonb,'confere')->>'estado'='evidencia_indisponivel') then 1 else 0 end;
+reset session authorization;
+update nano_lifecycle_interno.auditoria_escopos set habilitado=true where login_db='nano_ci_auditor' and loja_id='ed000000-0000-0000-0000-000000000001';
+set session authorization nano_ci_auditor;
+set local role nano_lifecycle_auditoria;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_atestar_fato('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1,'doc-ci',repeat('0',64),'p. 1','Texto sintético de CI','{"oem":"12345-67890","montadora":"Marca teste","modelo":"Modelo teste","geracao":"G1","motor":"M1","emissao":"Euro 5","mercado":"BR","tipo_ano":"ano_modelo_crlv","ano_inicio":2014,"ano_fim":2016}'::jsonb,'confere')->>'estado'='documento_indisponivel') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_atestar_fato('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1,'doc-ci',encode(sha256(convert_to('Texto sintético de CI','UTF8')),'hex'),'p. 1','trecho ausente','{"oem":"12345-67890","montadora":"Marca teste","modelo":"Modelo teste","geracao":"G1","motor":"M1","emissao":"Euro 5","mercado":"BR","tipo_ano":"ano_modelo_crlv","ano_inicio":2014,"ano_fim":2016}'::jsonb,'confere')->>'estado'='leitura_invalida') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_atestar_fato('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1,'doc-ci',encode(sha256(convert_to('Texto sintético de CI','UTF8')),'hex'),'p. 1','Texto sintético de CI','{"oem":"12345-67890","montadora":"Marca teste","modelo":"Modelo teste","geracao":"G1","motor":"M1","emissao":"Euro 5","mercado":"BR","tipo_ano":"ano_modelo_crlv","ano_inicio":2014,"ano_fim":2016}'::jsonb-'motor','confere')->>'estado'='fato_invalido') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_atestar_fato('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1,'doc-ci',encode(sha256(convert_to('Texto sintético de CI','UTF8')),'hex'),'p. 1','Texto sintético de CI','{"oem":"12345-67890","montadora":"Marca teste","modelo":"Modelo teste","geracao":"G1","motor":"M1","emissao":"Euro 5","mercado":"BR","tipo_ano":"ano_modelo_crlv","ano_inicio":2014,"ano_fim":2016}'::jsonb,'confere')->>'estado'='registrado') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_atestar_fato('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1,'doc-ci',encode(sha256(convert_to('Texto sintético de CI','UTF8')),'hex'),'p. 1','Texto sintético de CI','{"oem":"12345-67890","montadora":"Marca teste","modelo":"Modelo teste","geracao":"G1","motor":"M1","emissao":"Euro 5","mercado":"BR","tipo_ano":"ano_modelo_crlv","ano_inicio":2014,"ano_fim":2016}'::jsonb,'confere')->>'estado'='ja_registrado') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_atestar_fato('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1,'doc-ci',encode(sha256(convert_to('Texto sintético de CI','UTF8')),'hex'),'p. 1','Texto sintético de CI','{"oem":"12345-67890","montadora":"Marca teste","modelo":"Modelo teste","geracao":"G1","motor":"M1","emissao":"Euro 5","mercado":"BR","tipo_ano":"ano_modelo_crlv","ano_inicio":2014,"ano_fim":2016}'::jsonb,'diverge')->>'estado'='parecer_divergente') then 1 else 0 end;
+reset session authorization;
+select escopo::text as nano_escopo from nano_lifecycle_interno.leituras_documentais where loja_id='ed000000-0000-0000-0000-000000000001'
+\gset
+set session authorization nano_ci_auditor;
+set local role nano_lifecycle_auditoria;
+select 1/case when (jsonb_array_length(nano_lifecycle_interno.nano_lifecycle_ler_pareceres('ed000000-0000-0000-0000-000000000001','doc-ci','p. 1',:'nano_escopo'::jsonb))=1) then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_ler_pareceres('ed000000-0000-0000-0000-000000000001','doc-ci','p. 1',:'nano_escopo'::jsonb)->0->>'verificador'='nano_ci_auditor') then 1 else 0 end;
+select 1/case when (jsonb_array_length(nano_lifecycle_interno.nano_lifecycle_ler_pareceres('ed000000-0000-0000-0000-000000000001','doc-ci','p. 1',jsonb_set(:'nano_escopo'::jsonb,'{geracao}','7')))=0) then 1 else 0 end;
+reset session authorization;
+select 1/case when (not has_function_privilege('nano_lifecycle_produtor','nano_lifecycle_interno.nano_lifecycle_atestar_fato(uuid,uuid,uuid,bigint,integer,text,text,text,text,jsonb,text)','execute') and not has_table_privilege('nano_lifecycle_auditoria','nano_lifecycle_interno.leituras_documentais','insert')) then 1 else 0 end;
+select 1/case when ((select count(*)=1 from nano_lifecycle_interno.leituras_documentais where loja_id='ed000000-0000-0000-0000-000000000001')) then 1 else 0 end;
+select pg_temp.recusa($t$update nano_lifecycle_interno.leituras_documentais set resultado='diverge'$t$,'parecer imutável');
+select 1/case when ((select estado='entrada' and versao=1 and resultado='{}'::jsonb from public.pipeline_itens where id=:'nano_item'::uuid)) then 1 else 0 end;
 rollback;
