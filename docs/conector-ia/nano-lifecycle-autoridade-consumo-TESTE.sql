@@ -321,7 +321,15 @@ select 1/case when (not has_function_privilege('service_role','nano_lifecycle_in
 insert into nano_lifecycle_interno.documentos_tecnicos(loja_id,id,fonte_id,conteudo,consultado_em,referencia)
  values('ed000000-0000-0000-0000-000000000001','doc-utf8','fonte-ci',concat('Peça ',chr(92),' revisão',chr(10),'Linha 2'),clock_timestamp(),'fixture hash UTF-8');
 select pg_temp.afirma((select sha256=encode(pg_catalog.sha256(convert_to(conteudo,'UTF8')),'hex') from nano_lifecycle_interno.documentos_tecnicos where loja_id='ed000000-0000-0000-0000-000000000001' and id='doc-utf8'),'hash UTF-8 literal');
-select pg_temp.recusa($t$insert into nano_lifecycle_interno.documentos_tecnicos(loja_id,id,fonte_id,conteudo,sha256,consultado_em,referencia) values('ed000000-0000-0000-0000-000000000001','doc-hash-falso','fonte-ci','texto',repeat('0',64),clock_timestamp(),'fixture hash divergente')$t$,'hash fornecido divergente recusado');
+do $teste_hash$
+begin
+ begin
+  insert into nano_lifecycle_interno.documentos_tecnicos(loja_id,id,fonte_id,conteudo,sha256,consultado_em,referencia) values('ed000000-0000-0000-0000-000000000001','doc-hash-falso','fonte-ci','texto',repeat('0',64),clock_timestamp(),'fixture hash divergente');
+  raise exception 'hash falso aceito indevidamente';
+ exception when check_violation then
+  if sqlerrm is distinct from 'hash documental divergente' then raise; end if;
+ end;
+end $teste_hash$;
 select pg_temp.afirma(not exists(select 1 from nano_lifecycle_interno.documentos_tecnicos where loja_id='ed000000-0000-0000-0000-000000000001' and id='doc-hash-falso'),'sem registro após recusa');
 select pg_temp.recusa($t$update nano_lifecycle_interno.documentos_tecnicos set conteudo='alterado'$t$,'documento imutável');
 select pg_temp.recusa($t$delete from nano_lifecycle_interno.documentos_tecnicos$t$,'documento preservado');
