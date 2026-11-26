@@ -211,16 +211,26 @@ grant nano_lifecycle_produtor to nano_ci_produtor,nano_ci_produtor_b;
 grant nano_lifecycle_auditoria to nano_ci_auditor;
 select id as nano_item from public.pipeline_itens where loja_id='ed000000-0000-0000-0000-000000000001' and entrada->>'origem'='nano_lifecycle'
 \gset
-set local role service_role;
-select 1/case when (public.nano_lifecycle_reivindicar('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',180)->>'geracao'='6') then 1 else 0 end;
-select public.nano_lifecycle_entrada_tecnica('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)::text as nano_snapshot
-\gset
-reset role;
 set session authorization nano_ci_produtor;
 set local role nano_lifecycle_produtor;
-select 1/case when (nano_lifecycle_interno.nano_lifecycle_persistir_com_autoria('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1,:'nano_snapshot'::jsonb,'{"sku":"NANO-EV1","codigos_oem":[],"marca_fabricante":null,"gtin":null,"aplicacao":{"veiculos_citados":[],"motores":[],"emissoes":[],"anos_informados":[]},"nao_se_aplica":null,"excluido":{"motores":[],"emissoes":[],"anos_informados":[]},"texto_fonte":"Alterado."}'::jsonb)->>'estado'='produtor_nao_autorizado') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_reservar_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',180)->>'estado'='produtor_nao_autorizado') then 1 else 0 end;
 reset session authorization;
 insert into nano_lifecycle_interno.produtor_escopos(login_db,loja_id,habilitado) values('nano_ci_produtor','ed000000-0000-0000-0000-000000000001',true),('nano_ci_produtor_b','ed000000-0000-0000-0000-000000000001',true);
+set session authorization nano_ci_produtor;
+set local role nano_lifecycle_produtor;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_reservar_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',180)->>'geracao'='6') then 1 else 0 end;
+select nano_lifecycle_interno.nano_lifecycle_entrada_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)::text as nano_snapshot
+\gset
+reset session authorization;
+set local role service_role;
+select 1/case when (public.nano_lifecycle_entrada_tecnica('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)->>'estado'='reserva_invalida') then 1 else 0 end;
+select 1/case when (not public.nano_lifecycle_liberar_item('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)) then 1 else 0 end;
+reset role;
+set session authorization nano_ci_produtor_b;
+set local role nano_lifecycle_produtor;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_entrada_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)->>'estado'='reserva_invalida') then 1 else 0 end;
+select 1/case when (not nano_lifecycle_interno.nano_lifecycle_liberar_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)) then 1 else 0 end;
+reset session authorization;
 set session authorization nano_ci_produtor;
 set local role nano_lifecycle_produtor;
 select 1/case when (session_user='nano_ci_produtor') then 1 else 0 end;
@@ -229,7 +239,7 @@ select 1/case when (nano_lifecycle_interno.nano_lifecycle_persistir_com_autoria(
 reset session authorization;
 set session authorization nano_ci_produtor_b;
 set local role nano_lifecycle_produtor;
-select 1/case when (nano_lifecycle_interno.nano_lifecycle_persistir_com_autoria('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1,:'nano_snapshot'::jsonb,'{"sku":"NANO-EV1","codigos_oem":[],"marca_fabricante":null,"gtin":null,"aplicacao":{"veiculos_citados":[],"motores":[],"emissoes":[],"anos_informados":[]},"nao_se_aplica":null,"excluido":{"motores":[],"emissoes":[],"anos_informados":[]},"texto_fonte":"Alterado."}'::jsonb)->>'estado'='autoria_nao_registrada_ou_divergente') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_persistir_com_autoria('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1,:'nano_snapshot'::jsonb,'{"sku":"NANO-EV1","codigos_oem":[],"marca_fabricante":null,"gtin":null,"aplicacao":{"veiculos_citados":[],"motores":[],"emissoes":[],"anos_informados":[]},"nao_se_aplica":null,"excluido":{"motores":[],"emissoes":[],"anos_informados":[]},"texto_fonte":"Alterado."}'::jsonb)->>'estado'='reserva_invalida') then 1 else 0 end;
 reset session authorization;
 insert into nano_lifecycle_interno.auditoria_escopos(login_db,loja_id,habilitado) values('nano_ci_auditor','ed000000-0000-0000-0000-000000000001',true);
 set session authorization nano_ci_auditor;
@@ -247,4 +257,10 @@ reset session authorization;
 select 1/case when (not has_function_privilege('service_role','nano_lifecycle_interno.nano_lifecycle_persistir_com_autoria(uuid,uuid,uuid,bigint,integer,jsonb,jsonb)','execute') and not has_table_privilege('nano_lifecycle_produtor','nano_lifecycle_interno.autorias_engenharia','insert') and not has_function_privilege('nano_lifecycle_produtor','nano_lifecycle_interno.nano_lifecycle_ler_autoria(uuid,uuid,uuid,bigint,integer)','execute')) then 1 else 0 end;
 select 1/case when ((select count(*)=1 from nano_lifecycle_interno.autorias_engenharia where loja_id='ed000000-0000-0000-0000-000000000001')) then 1 else 0 end;
 select 1/case when ((select estado='entrada' and versao=1 and resultado='{}'::jsonb from public.pipeline_itens where id=:'nano_item'::uuid)) then 1 else 0 end;
+set session authorization nano_ci_produtor;
+set local role nano_lifecycle_produtor;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_liberar_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)) then 1 else 0 end;
+reset session authorization;
+select 1/case when ((select reservado_ate is null and nano_produtor='nano_ci_produtor' from public.pipeline_itens where id=:'nano_item'::uuid)) then 1 else 0 end;
+select 1/case when (not has_function_privilege('service_role','nano_lifecycle_interno.nano_lifecycle_reservar_produtor(uuid,uuid,uuid,integer)','execute') and not has_table_privilege('nano_lifecycle_produtor','public.pipeline_itens','select')) then 1 else 0 end;
 rollback;
