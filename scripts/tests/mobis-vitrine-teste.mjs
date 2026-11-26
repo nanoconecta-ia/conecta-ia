@@ -208,6 +208,8 @@ try {
     const {context,page,consultas} = await abrir({ambiente:"teste",venda_habilitada:false,categoriaSimulada:true});
     await page.getByLabel("Ano / geração",{exact:true}).fill("2019");
     await consultar(page, () => page.getByRole("button",{name:"Aplicar filtros",exact:true}).click(), q => q.ano === 2019);
+    assert.equal(await page.locator(".m2-catalogo-discreto").count(),1,"estado vazio tem identificador único");
+    assert.match(await page.locator(".m2-busca-selecionada").textContent()||"",/2019/,"resumo dos filtros é distinto do estado vazio");
     await page.getByLabel("Montadora",{exact:true}).selectOption("Hyundai");
     await page.getByLabel("Veículo / modelo",{exact:true}).selectOption("Hyundai HR");
     await consultar(page, () => page.getByRole("button",{name:"Aplicar filtros",exact:true}).click(), q => q.modelo === "Hyundai HR");
@@ -218,6 +220,7 @@ try {
     assert.equal(consultas.at(-1).categoria,"motor");
     await consultar(page, () => page.getByRole("button",{name:"Limpar filtros",exact:true}).click(), q => !q.modelo && !q.motor && !q.ano && !q.categoria);
     assert.equal(await page.getByLabel("Ano / geração",{exact:true}).inputValue(),"","limpar filtros remove o ano");
+    assert.equal(await page.locator(".m2-busca-selecionada").count(),0,"limpar filtros remove o resumo contextual");
     await page.getByRole("search",{name:"Buscar peça e referência"}).getByRole("searchbox").fill("bomba");
     await consultar(page, () => page.getByRole("search",{name:"Buscar peça e referência"}).getByRole("button",{name:"Pesquisar peças",exact:true}).click(), q => q.q === "bomba");
     assert.equal(consultas.at(-1).q,"bomba");

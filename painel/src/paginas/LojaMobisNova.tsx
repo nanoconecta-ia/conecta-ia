@@ -187,7 +187,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     catalogo: <>
       <section className="m2-wrap m2-secao m2-catalogo" data-bloco="produtos" id="m2-catalogo" aria-live="polite">
         <div className="m2-cab-secao"><div><span className="m2-kicker">PEÇAS E COMPONENTES</span><h2>{modeloVisual==="tecnico"?"Destaques da loja":"Produtos no catálogo"}</h2><small>{estado==="carregando"?"Consultando…":estado==="ok"?(dados?.total??0)>0?String(dados?.total??0)+" produtos para consulta":"Novos itens em preparação":""}</small></div></div>
-        {(f.q||f.modelo||f.motor||f.ano||f.categoria)&&<p className="m2-catalogo-discreto">Busca selecionada: {[f.q,f.modelo,f.motor,f.ano,dados?.categorias.find(c=>c.slug===f.categoria)?.nome??f.categoria].filter(Boolean).join(" · ")}</p>}
+        {(f.q||f.modelo||f.motor||f.ano||f.categoria)&&<p className="m2-busca-selecionada">Busca selecionada: {[f.q,f.modelo,f.motor,f.ano,dados?.categorias.find(c=>c.slug===f.categoria)?.nome??f.categoria].filter(Boolean).join(" · ")}</p>}
         {estado==="carregando"&&<div className="m2-vazio">Consultando catálogo público autorizado…</div>}
         {(estado==="erro"||estado==="limite")&&<div className="m2-vazio"><strong>Não foi possível carregar o catálogo.</strong><p>{estado==="limite"?"Limite de consultas atingido.":"Tente novamente."}</p><button onClick={()=>setTentativa(x=>x+1)}>Tentar novamente</button></div>}
         {estado==="naoachada"&&<div className="m2-vazio">Loja não encontrada.</div>}
@@ -261,7 +261,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     </section>,
   };
   const filtrosVeiculo=<AplicacoesMobisV3 categorias={dados?.categorias??[]} opcoes={opcoes} motores={motores}
-    f={{modelo,motor,ano,categoria}} onModelo={v=>{setModelo(v);setMotor("");setAno("");}} onMotor={v=>{setMotor(v);setAno("");}}
+    f={{modelo,motor,ano,categoria}} onModelo={v=>{setModelo(v);setMotor("");}} onMotor={setMotor}
     onAno={setAno} onCategoria={setCategoria} onAplicar={aplicar}
     departamentoPendente={departamentoPendente}
     onLimpar={()=>{setF(VAZIO);setBusca("");setModelo("");setMotor("");setAno("");setCategoria("");setAbaBusca("descricao");setDepartamentoAtivo(null);setDepartamentoPendente(null);}}/>;
