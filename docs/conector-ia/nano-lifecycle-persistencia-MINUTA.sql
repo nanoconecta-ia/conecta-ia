@@ -51,11 +51,11 @@ begin
    or e->>'loja_id' is distinct from p_loja::text or e->>'revisao' is distinct from p_revisao
    or coalesce(e->>'idempotency_key','') !~ '^nano-lifecycle:[0-9a-f]{64}$'
    or coalesce(e->>'tipo','') not in ('novo','reativado','alteracao_tecnica','inativado')
-   or (e->>'destino') is distinct from case when e->>'tipo'='inativado' then 'revisao_inativacao' else 'pesquisa' end
+   or (e->>'destino') is distinct from (case when e->>'tipo'='inativado' then 'revisao_inativacao' else 'pesquisa' end)
    or jsonb_typeof(e->'pausado_na_captura') is distinct from 'boolean'
    or jsonb_typeof(e->'campos') is distinct from 'array'
   then raise exception 'evento fora do contrato'; end if;
-  if exists(select 1 from jsonb_array_elements_text(e->'campos') f(v) where f.v not in ('sku','nome','marca','gtin','categoria_bling_id','descricao_curta','descricao_complementar','peso_kg','largura_cm','altura_cm','profundidade_cm','formato','pai_bling_id')) then raise exception 'campo fora do contrato'; end if;
+  if exists(select 1 from jsonb_array_elements_text(e->'campos') f(v) where f.v is null or f.v not in ('sku','nome','marca','gtin','categoria_bling_id','descricao_curta','descricao_complementar','peso_kg','largura_cm','altura_cm','profundidade_cm','formato','pai_bling_id')) then raise exception 'campo fora do contrato'; end if;
   if not exists(select 1 from public.produtos p where p.loja_id=p_loja and p.id::text=e->>'produto_id' and p.bling_id=e->>'bling_id' and btrim(p.sku)=e->>'sku') then raise exception 'identidade divergente'; end if;
  end loop;
  if (select count(distinct x->>'idempotency_key') from jsonb_array_elements(p_eventos) x)<>jsonb_array_length(p_eventos) then raise exception 'eventos duplicados'; end if;
