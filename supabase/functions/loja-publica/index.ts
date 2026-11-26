@@ -60,7 +60,8 @@ Deno.serve(async (req) => {
     const { data: p } = await sb.from("produtos")
       .select("id,sku,marca,publicado,situacao,exibicao_teste,taxonomia_no_id")
       .eq("loja_id", loja.id).eq("id", app.produto_id).maybeSingle();
-    if (!p?.publicado || p.situacao !== "A" || !p.sku?.trim()) return json({ erro: "Produto indisponível." }, 404);
+    if (!p?.publicado) return json({ erro: "Produto indisponível." }, 404);
+    if (p.situacao !== "A" || !p.sku?.trim()) return json({ erro: "Produto indisponível." }, 404);
     // Só imagens com direitos confirmados são herdadas pelo filho. Fotos
     // candidatas da internet e recortes de fornecedores nunca saem desta view.
     const { data: imgs } = await sb.from("imagens_publicaveis")
