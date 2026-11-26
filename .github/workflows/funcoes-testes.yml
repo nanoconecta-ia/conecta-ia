@@ -55,6 +55,13 @@ jobs:
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-lote-TESTE.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-leitura-MINUTA.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-leitura-TESTE.sql
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Integrar orquestrador e RPCs reais no PostgreSQL descartável
+        env:
+          PGDATABASE: conecta_teste
+        run: node --experimental-strip-types scripts/tests/nano-lifecycle-e2e.mjs
       - run: ./supabase/tests/conecta_pair_concorrencia.sh
       - run: ./supabase/tests/exec_local_concorrencia.sh
       - run: node scripts/tests/chat-concorrencia.mjs
