@@ -1,5 +1,5 @@
--- MINUTA: CI descartável. Defesa contra escritores legados, não isolamento
--- contra operador SQL privilegiado (que pode definir GUCs ou alterar grants).
+-- MINUTA: CI descartável. Exige papel interno restrito e fence válido.
+-- Administradores do banco continuam sendo autoridade de manutenção.
 begin;
 create function public.nano_lifecycle_guard_espelho()
 returns trigger language plpgsql security invoker set search_path='' as $fn$
@@ -27,6 +27,7 @@ begin
   return new;
  end if;
  if tg_op='DELETE' then raise exception 'exclusão física protegida' using errcode='42501'; end if;
+ if current_user<>'nano_lifecycle_escritor' then raise exception 'papel de escrita não autorizado' using errcode='42501'; end if;
  token:=current_setting('nano.lifecycle_fence',true);
  partes:=string_to_array(coalesce(token,''),':');
  if coalesce(cardinality(partes),0)<>3 or partes[1] is distinct from loja::text then raise exception 'gravação direta do espelho bloqueada' using errcode='42501'; end if;

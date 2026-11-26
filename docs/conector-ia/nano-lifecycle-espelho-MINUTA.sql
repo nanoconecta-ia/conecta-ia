@@ -9,6 +9,8 @@ create function public.nano_lifecycle_gravar_espelho(
 declare e jsonb; n integer; campos text[]:=array['loja_id','bling_id','sku','nome','preco','estoque','situacao','categoria_bling_id','marca','gtin','gtin_tributario','descricao_curta','descricao_complementar','peso_kg','largura_cm','altura_cm','profundidade_cm','unidade','condicao','formato','pai_bling_id','volumes','sincronizado_em'];
  numeros text[]:=array['preco','estoque','peso_kg','largura_cm','altura_cm','profundidade_cm','volumes'];
 begin
+ -- Escopo local definido antes das leituras protegidas por RLS.
+ perform set_config('nano.lifecycle_fence',p_loja::text||':'||p_execucao::text||':'||p_geracao::text,true);
  if not public.nano_lifecycle_fence(p_loja,p_execucao,p_geracao) then raise exception 'reserva inválida' using errcode='42501'; end if;
  if p_linhas is null or jsonb_typeof(p_linhas)<>'array' then raise exception 'lote inválido'; end if;
  n:=jsonb_array_length(p_linhas);
@@ -25,8 +27,6 @@ begin
  end loop;
  if (select count(distinct v->>'bling_id') from jsonb_array_elements(p_linhas) v)<>n then raise exception 'ID duplicado no lote'; end if;
  if exists(select upper(btrim(v->>'sku')) from jsonb_array_elements(p_linhas) v where nullif(btrim(v->>'sku'),'') is not null group by 1 having count(*)>1) then raise exception 'SKU duplicado no lote'; end if;
- -- Marcador local da RPC, validado pelo trigger junto com fence real.
- perform set_config('nano.lifecycle_fence',p_loja::text||':'||p_execucao::text||':'||p_geracao::text,true);
  insert into public.produtos(loja_id,bling_id,sku,nome,preco,estoque,situacao,categoria_bling_id,marca,gtin,gtin_tributario,descricao_curta,descricao_complementar,peso_kg,largura_cm,altura_cm,profundidade_cm,unidade,condicao,formato,pai_bling_id,volumes,sincronizado_em,publicado)
  select p_loja,x.bling_id,nullif(btrim(x.sku),''),x.nome,x.preco,x.estoque,x.situacao,x.categoria_bling_id,x.marca,x.gtin,x.gtin_tributario,x.descricao_curta,x.descricao_complementar,x.peso_kg,x.largura_cm,x.altura_cm,x.profundidade_cm,x.unidade,x.condicao,x.formato,x.pai_bling_id,x.volumes,x.sincronizado_em,false
  from jsonb_populate_recordset(null::public.produtos,p_linhas) x
@@ -54,8 +54,8 @@ begin
  sincronizado_em=excluded.sincronizado_em,
  publicado=case when excluded.situacao='A' then produtos.publicado else false end;
  get diagnostics n=row_count;
- perform set_config('nano.lifecycle_fence','',true);
  if not public.nano_lifecycle_fence(p_loja,p_execucao,p_geracao) then raise exception 'reserva perdida durante lote'; end if;
+ perform set_config('nano.lifecycle_fence','',true);
  return n;
 end $fn$;
 revoke all on function public.nano_lifecycle_gravar_espelho(uuid,uuid,bigint,jsonb) from public,anon,authenticated,service_role;

@@ -23,6 +23,14 @@ update public.produtos set nome='Outra permitida' where loja_id='eb000000-0000-0
 select pg_temp.afirma((select nome='Outra permitida' from public.produtos where loja_id='eb000000-0000-0000-0000-000000000002'),'loja desabilitada mantém sync legado');
 select pg_temp.afirma(public.nano_lifecycle_reservar('eb000000-0000-0000-0000-000000000001','eb100000-0000-0000-0000-000000000001')->>'geracao'='1','reserva adquirida');
 select pg_temp.recusa($t$update public.produtos set nome='Direto com reserva' where loja_id='eb000000-0000-0000-0000-000000000001'$t$,'reserva ativa sem marcador não permite upsert direto');
+select set_config('nano.lifecycle_fence','eb000000-0000-0000-0000-000000000001:eb100000-0000-0000-0000-000000000001:1',true);
+select pg_temp.recusa($t$update public.produtos set nome='Marcador falsificado' where loja_id='eb000000-0000-0000-0000-000000000001'$t$,'marcador válido não substitui papel autorizado');
+select set_config('nano.lifecycle_fence','',true);
+select pg_temp.recusa($t$update public.nano_lifecycle_checkpoint set habilitado=false where loja_id='eb000000-0000-0000-0000-000000000001'$t$,'serviço não desativa barreira por update direto');
+select pg_temp.afirma(not pg_has_role('service_role','nano_lifecycle_escritor','MEMBER'),'serviço não é membro do papel interno');
+select pg_temp.afirma(not pg_has_role('authenticated','nano_lifecycle_escritor','MEMBER') and not pg_has_role('anon','nano_lifecycle_escritor','MEMBER'),'usuários não são membros do papel interno');
+select pg_temp.afirma(not has_function_privilege('anon','nano_lifecycle_interno.nano_lifecycle_gravar_espelho(uuid,uuid,bigint,jsonb)','execute') and not has_function_privilege('authenticated','public.nano_lifecycle_gravar_espelho(uuid,uuid,bigint,jsonb)','execute'),'RPCs sem acesso público');
+select pg_temp.afirma(not has_table_privilege('nano_lifecycle_escritor','public.produtos','delete') and not has_column_privilege('nano_lifecycle_escritor','public.produtos','protegido_por_nf','update'),'papel sem exclusão ou alteração fiscal');
 select pg_temp.afirma(public.nano_lifecycle_gravar_espelho('eb000000-0000-0000-0000-000000000001','eb100000-0000-0000-0000-000000000001',1,'[{"loja_id":"eb000000-0000-0000-0000-000000000001","bling_id":"123","sku":"NANO-G1","nome":"Protegido","preco":99,"estoque":3,"situacao":"A","categoria_bling_id":null,"marca":null,"gtin":null,"gtin_tributario":null,"descricao_curta":null,"descricao_complementar":null,"peso_kg":null,"largura_cm":null,"altura_cm":null,"profundidade_cm":null,"unidade":null,"condicao":null,"formato":null,"pai_bling_id":null,"volumes":null,"sincronizado_em":"2026-11-26T12:00:00Z"}]'::jsonb)=1,'RPC integral protegida aceita lote');
 select pg_temp.afirma((select nome='Protegido' and preco=99 and estoque=3 and publicado and protegido_por_nf from public.produtos where loja_id='eb000000-0000-0000-0000-000000000001'),'RPC preserva campos do lojista');
 select pg_temp.afirma(coalesce(current_setting('nano.lifecycle_fence',true),'')='','marcador limpo após RPC');
@@ -31,8 +39,11 @@ select pg_temp.afirma(public.nano_lifecycle_encerrar_reserva('eb000000-0000-0000
 select set_config('nano.lifecycle_fence','eb000000-0000-0000-0000-000000000001:eb100000-0000-0000-0000-000000000001:1',true);
 select pg_temp.recusa($t$update public.produtos set nome='Fence encerrado' where loja_id='eb000000-0000-0000-0000-000000000001'$t$,'marcador antigo sem fence válido recusado');
 select set_config('nano.lifecycle_fence','',true);
+reset role;
 update public.nano_lifecycle_checkpoint set habilitado=false where loja_id='eb000000-0000-0000-0000-000000000001';
+set local role service_role;
 update public.produtos set nome='Legado liberado' where loja_id='eb000000-0000-0000-0000-000000000001';
 select pg_temp.afirma((select nome='Legado liberado' from public.produtos where loja_id='eb000000-0000-0000-0000-000000000001'),'desativação controlada restaura compatibilidade');
 reset role;
+select pg_temp.afirma((select not rolcanlogin and not rolbypassrls and not rolsuper and not rolcreaterole from pg_roles where rolname='nano_lifecycle_escritor'),'papel sem login, bypass ou poder administrativo');
 rollback;
