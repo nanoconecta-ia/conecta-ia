@@ -317,6 +317,12 @@ set local role nano_lifecycle_auditoria;
 select 1/case when (nano_lifecycle_interno.nano_lifecycle_ler_fonte('ed000000-0000-0000-0000-000000000001','fonte-ci') is null and nano_lifecycle_interno.nano_lifecycle_ler_documento('ed000000-0000-0000-0000-000000000001','doc-ci') is null) then 1 else 0 end;
 reset session authorization;
 select 1/case when (not has_function_privilege('service_role','nano_lifecycle_interno.nano_lifecycle_ler_documento(uuid,text)','execute') and not has_function_privilege('nano_lifecycle_produtor','nano_lifecycle_interno.nano_lifecycle_ler_fonte(uuid,text)','execute') and not has_table_privilege('nano_lifecycle_auditoria','nano_lifecycle_interno.documentos_tecnicos','select') and not has_table_privilege('nano_lifecycle_auditor_leitor','nano_lifecycle_interno.documentos_tecnicos','insert')) then 1 else 0 end;
+-- Hash calculado sobre texto UTF-8 literal, incluindo acento, barra e quebra de linha.
+insert into nano_lifecycle_interno.documentos_tecnicos(loja_id,id,fonte_id,conteudo,consultado_em,referencia)
+ values('ed000000-0000-0000-0000-000000000001','doc-utf8','fonte-ci',concat('Peça ',chr(92),' revisão',chr(10),'Linha 2'),clock_timestamp(),'fixture hash UTF-8');
+select pg_temp.afirma((select sha256=encode(pg_catalog.sha256(convert_to(conteudo,'UTF8')),'hex') from nano_lifecycle_interno.documentos_tecnicos where loja_id='ed000000-0000-0000-0000-000000000001' and id='doc-utf8'),'hash UTF-8 literal');
+select pg_temp.recusa($t$insert into nano_lifecycle_interno.documentos_tecnicos(loja_id,id,fonte_id,conteudo,sha256,consultado_em,referencia) values('ed000000-0000-0000-0000-000000000001','doc-hash-falso','fonte-ci','texto',repeat('0',64),clock_timestamp(),'fixture hash divergente')$t$,'hash fornecido divergente recusado');
+select pg_temp.afirma(not exists(select 1 from nano_lifecycle_interno.documentos_tecnicos where loja_id='ed000000-0000-0000-0000-000000000001' and id='doc-hash-falso'),'sem registro após recusa');
 select pg_temp.recusa($t$update nano_lifecycle_interno.documentos_tecnicos set conteudo='alterado'$t$,'documento imutável');
 select pg_temp.recusa($t$delete from nano_lifecycle_interno.documentos_tecnicos$t$,'documento preservado');
 rollback;
