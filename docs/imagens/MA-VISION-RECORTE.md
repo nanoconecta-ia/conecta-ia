@@ -1,0 +1,8 @@
+# MA Vision — biblioteca de imagens individualizadas
+Escopo: homologação, processamento local de arquivos com permissão de uso. Não substitui as regras do porteiro nem a validação do SKU.
+1. Priorizar foto própria/Bling/fornecedor autorizado. EPC é evidência técnica separada, não foto real.
+2. Agente identifica a posição e confirma OEM na tabela original. Define caixa de recorte sem cortar a peça; em caso de sobreposição ou ambiguidade, encaminha à revisão. Preserva original, geometria, marca e escala relativa. Não reconstrói pixels por IA.
+3. Executar `scripts/imagens/recortar_ma_vision.py` (Python 3 + Pillow) com arquivo local, caixa x0 y0 x1 y1, fonte, referência e finalidade. O script cria PNG mestre sem perdas, WebP 256/400/1200 e manifesto SHA-256, sem ampliar. Não pesquisa nem segmenta automaticamente; o agente fornece a caixa. Fundo transparente só quando presente no original; branco preservado.
+4. Usar SVG para ícones vetoriais nativos; WebP para interface; PNG para matriz. Película no CSS, fora da imagem.
+5. Deduplicar pelo hash e pela referência confirmada, não pelo nome do componente. Vincular fotos reais ao SKU e evidências EPC ao OEM/posição/aplicação, sem duplicar estoque. Toda saída é pendente e não publicável. Nenhuma gravação no Supabase/Bling neste piloto.
+Fontes candidatas: catálogo oficial MANN-FILTER W 930/26 (https://www.mann-filter.com/br-pt/catalogo/resultados-da-pesquisa/produto.html/w930/26_mann-filter.html), Tecfil PSL332 (https://catalogo.tecfil.com.br/produto/213). Não homologar intercâmbio por aparência ou usar imagem de outra marca/SKU. Direitos de reprodução a confirmar antes de importar ou publicar.
