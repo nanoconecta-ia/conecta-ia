@@ -1,0 +1,6 @@
+# Gate de procedência Nano Engineering — 26/11/2026
+
+Base: commit 1b73616, 10/10 workflows aprovados (workflow técnico 45882538130).
+O novo contrato separa o candidato gerado pelo Nano de uma leitura documental obtida por porta independente. A comparação exige a mesma loja, produto, SKU, revisão, checkpoint, hash de extração, fonte autorizada, documento íntegro, localização, identidade de verificador diferente do produtor, OEM e versão veicular completa (geração, motor, emissão, Brasil, tipo e intervalo fechado de ano). Distribuidor permanece fonte candidata. Divergência ou ambiguidade retém o fato. Não expande períodos, não deduz por motor comum nem por similaridade.
+ 
+Limites: o adaptador de autoridade, a vinculação do escopo à evidência persistida, a autenticidade do documento e a autorização real da identidade do auditor ainda não estão implementados; a porta é injetada e os testes usam dados sintéticos. O hash comprova integridade do texto recuperado, não autenticidade do emissor ou verdade da leitura. A saída nunca aprova compatibilidade ou publicação. Sem worker, deploy, ERP, custo ou consulta externa. Não substituir regras_aplicacao.ts: esta é uma trava prévia adicional, experimental, a integrar somente após autorização independente. Próximo: adaptador de leitura confiável, recuperação de recibo após falha e revisão de fonte real.

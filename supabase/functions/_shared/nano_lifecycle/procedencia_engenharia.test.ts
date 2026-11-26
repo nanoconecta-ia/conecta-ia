@@ -1,0 +1,16 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {createHash} from "node:crypto";
+import {conferirProcedencia,type Candidato,type PortaAuditoria,type LeituraIndependente,type Documento,type FonteAutorizada} from "./procedencia_engenharia.ts";
+const agora="2026-11-26T15:00:00Z";
+const c:Candidato={escopo:{loja:"loja-a",produto:"produto-a",sku:"SKU-SINTETICO",revisao:"rev-1",checkpoint:"rev-2",hashExtracao:"a".repeat(64),produtor:"nano"},fato:{oem:"OEM-SINTETICO",montadora:"Marca teste",modelo:"Modelo teste",geracao:"G1",motor:"M1",emissao:"Euro 5",mercado:"BR",tipo_ano:"ano_modelo_crlv",ano_inicio:2014,ano_fim:2016},fonteId:"f1",documentoId:"d1",localizador:"página 4, linha 2"};
+const doc:Documento={id:"d1",fonteId:"f1",loja:"loja-a",conteudo:"fixture sintética, não catálogo real",sha256:createHash("sha256").update("fixture sintética, não catálogo real").digest("hex"),consultadoEm:"2026-11-26T12:00:00Z"};
+const fonte:FonteAutorizada={id:"f1",loja:"loja-a",tipo:"catalogo_fabricante",autorizada:true,emissor:"Fabricante sintético"};
+const leitura:LeituraIndependente={id:"l1",escopo:c.escopo,fonteId:"f1",documentoId:"d1",sha256:doc.sha256,localizador:c.localizador,fato:c.fato,verificador:"auditor-sintetico",verificadoEm:"2026-11-26T13:00:00Z",resultado:"confere"};
+const porta=(o:Partial<PortaAuditoria>={}):PortaAuditoria=>({fonte:async()=>fonte,documento:async()=>doc,leituras:async()=>[leitura],verificadorAutorizado:async()=>true,...o});
+test("procedência conferida não homologa aplicação",async()=>{assert.deepEqual(await conferirProcedencia(c,porta(),agora),{estado:"procedencia_conferida",leituraId:"l1",sha256:doc.sha256,homologada:false});});
+test("rejeita fonte fraca, não autorizada ou de outra loja",async()=>{for(const f of [{...fonte,tipo:"catalogo_distribuidor" as const},{...fonte,autorizada:false},{...fonte,loja:"loja-b"}])assert.equal((await conferirProcedencia(c,porta({fonte:async()=>f}),agora)).estado,"retida");});
+test("rejeita documento alterado e leitura ambígua",async()=>{assert.equal((await conferirProcedencia(c,porta({documento:async()=>({...doc,conteudo:"mudou"})}),agora)).estado,"retida");for(const ls of [[],[leitura,leitura]])assert.equal((await conferirProcedencia(c,porta({leituras:async()=>ls}),agora)).estado,"retida");});
+test("rejeita autoaprovação, auditor não autorizado e revisão cruzada",async()=>{for(const l of [{...leitura,verificador:"nano"},{...leitura,escopo:{...c.escopo,revisao:"rev-3"}},{...leitura,sha256:"b".repeat(64)},{...leitura,verificadoEm:"2026-11-27T13:00:00Z"}])assert.equal((await conferirProcedencia(c,porta({leituras:async()=>[l]}),agora)).estado,"retida");assert.equal((await conferirProcedencia(c,porta({verificadorAutorizado:async()=>false}),agora)).estado,"retida");});
+test("não expande período nem generaliza motor, geração, emissão ou OEM",async()=>{for(const fato of [{...c.fato,ano_fim:2017},{...c.fato,motor:"M2"},{...c.fato,geracao:"G2"},{...c.fato,emissao:"Euro 3"},{...c.fato,oem:"OUTRO"}])assert.equal((await conferirProcedencia({...c,fato},porta(),agora)).estado,"retida");});
+test("indisponibilidade da porta retém o candidato",async()=>{assert.equal((await conferirProcedencia(c,porta({fonte:async()=>{throw Error("indisponível");}}),agora)).estado,"retida");});
