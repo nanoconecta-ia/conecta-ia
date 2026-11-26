@@ -12,3 +12,6 @@ O workflow funcoes-testes.yml possui PostgreSQL 16 descartável. Acrescentada et
 
 ## Regressão detectada no primeiro teste SQL real
 Commit df2d466: 13/14 jobs técnicos verdes; 55 suítes SQL existentes passaram, mas a minuta falhou ao compilar a função (job 140057860264: syntax error at end of input na expressão IS DISTINCT FROM CASE). Corrigida a delimitação da expressão CASE com parênteses; validação adicional de campo nulo e teste de destino incoerente. Novo CI necessário; ainda não comprovada persistência real nem concorrência. Não aplicar no projeto hospedado.
+
+## Segunda execução PostgreSQL
+Commit 9064bf7: a função compilou, 55 suítes anteriores passaram; o teste específico avançou até rejeitar evento duplicado e falhou na linha 35 do próprio arquivo de teste (delimitadores de literal SQL reduzidos a um cifrão na edição). Corrigidos exatamente os dois literais com delimitador nomeado $teste$, mantendo todas as asserções negativas. CI ainda necessário para comprovar o restante e a concorrência. Nenhum deploy.
