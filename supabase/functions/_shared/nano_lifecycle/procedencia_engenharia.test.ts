@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import {conferirProcedencia,type Candidato,type PortaAuditoria,type LeituraIndependente,type Documento,type FonteAutorizada} from "./procedencia_engenharia.ts";
 const agora="2026-11-26T15:00:00Z";
-const c:Candidato={escopo:{loja:"loja-a",produto:"produto-a",sku:"SKU-SINTETICO",revisao:"rev-1",checkpoint:"rev-2",hashExtracao:"a".repeat(64),produtor:"nano"},fato:{oem:"OEM-SINTETICO",montadora:"Marca teste",modelo:"Modelo teste",geracao:"G1",motor:"M1",emissao:"Euro 5",mercado:"BR",tipo_ano:"ano_modelo_crlv",ano_inicio:2014,ano_fim:2016},fonteId:"f1",documentoId:"d1",localizador:"página 4, linha 2"};
+const c:Candidato={escopo:{loja:"loja-a",produto:"produto-a",sku:"SKU-SINTETICO",revisao:"rev-1",checkpoint:"rev-2",hashExtracao:"a".repeat(64),hashEntrada:"b".repeat(64),item:"item-a",execucao:"exec-a",geracao:1,versao:1,produtor:"nano"},fato:{oem:"OEM-SINTETICO",montadora:"Marca teste",modelo:"Modelo teste",geracao:"G1",motor:"M1",emissao:"Euro 5",mercado:"BR",tipo_ano:"ano_modelo_crlv",ano_inicio:2014,ano_fim:2016},fonteId:"f1",documentoId:"d1",localizador:"página 4, linha 2"};
 const doc:Documento={id:"d1",fonteId:"f1",loja:"loja-a",conteudo:"fixture sintética, não catálogo real",sha256:createHash("sha256").update("fixture sintética, não catálogo real").digest("hex"),consultadoEm:"2026-11-26T12:00:00Z"};
 const fonte:FonteAutorizada={id:"f1",loja:"loja-a",tipo:"catalogo_fabricante",autorizada:true,emissor:"Fabricante sintético"};
 const leitura:LeituraIndependente={id:"l1",escopo:c.escopo,fonteId:"f1",documentoId:"d1",sha256:doc.sha256,localizador:c.localizador,fato:c.fato,verificador:"auditor-sintetico",verificadoEm:"2026-11-26T13:00:00Z",resultado:"confere"};

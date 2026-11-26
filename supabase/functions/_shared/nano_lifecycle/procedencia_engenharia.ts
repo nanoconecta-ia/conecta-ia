@@ -1,7 +1,7 @@
 // Gate experimental, sem rede, DML ou aprovação. A porta de leitura confiável
 // deverá ser implementada por autoridade independente, não pelo agente produtor.
 export type FatoAplicacao={oem:string;montadora:string;modelo:string;geracao:string;motor:string;emissao:string;mercado:"BR";tipo_ano:"ano_modelo_crlv"|"fabricacao"|"comercializacao_brasil"|"importacao_brasil";ano_inicio:number;ano_fim:number};
-export type Escopo={loja:string;produto:string;sku:string;revisao:string;checkpoint:string;hashExtracao:string;produtor:string};
+export type Escopo={loja:string;produto:string;sku:string;revisao:string;checkpoint:string;hashExtracao:string;hashEntrada:string;item:string;execucao:string;geracao:number;versao:number;produtor:string};
 export type Candidato={escopo:Escopo;fato:FatoAplicacao;fonteId:string;documentoId:string;localizador:string};
 export type FonteAutorizada={id:string;loja:string;tipo:"catalogo_fabricante"|"manual_montadora"|"catalogo_distribuidor";autorizada:boolean;emissor:string};
 export type Documento={id:string;fonteId:string;loja:string;conteudo:string;sha256:string;consultadoEm:string};
@@ -18,7 +18,7 @@ const hash=(x:unknown):x is string=>typeof x==="string"&&/^[a-f0-9]{64}$/.test(x
 const instante=(x:unknown)=>typeof x==="string"&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(x)&&Number.isFinite(Date.parse(x));
 const ano=(x:unknown):x is number=>typeof x==="number"&&Number.isInteger(x)&&x>=1950&&x<=2100;
 const fatos=["oem","montadora","modelo","geracao","motor","emissao","mercado","tipo_ano","ano_inicio","ano_fim"] as const;
-const escopos=["loja","produto","sku","revisao","checkpoint","hashExtracao","produtor"] as const;
+const escopos=["loja","produto","sku","revisao","checkpoint","hashExtracao","hashEntrada","item","execucao","geracao","versao","produtor"] as const;
 const exato=(x:object,ks:readonly string[])=>!!x&&typeof x==="object"&&!Array.isArray(x)&&Object.keys(x).length===ks.length&&ks.every(k=>Object.hasOwn(x,k));
 const mesmoFato=(a:FatoAplicacao,b:FatoAplicacao)=>exato(b,fatos)&&fatos.every(k=>a[k]===b[k]);
 const mesmoEscopo=(a:Escopo,b:Escopo)=>exato(b,escopos)&&escopos.every(k=>a[k]===b[k]);
@@ -26,7 +26,7 @@ async function digest(text:string){return Array.from(new Uint8Array(await crypto
 export async function conferirProcedencia(c:Candidato,porta:PortaAuditoria,agora:string){
  const negar=(motivo:string)=>({estado:"retida" as const,motivo,homologada:false as const});
  const s=c.escopo,f=c.fato;
- if(!instante(agora)||!exato(s,escopos)||!escopos.every(k=>texto(s[k]))||!hash(s.hashExtracao)||!exato(f,fatos)||!fatos.slice(0,8).every(k=>texto(f[k]))||f.mercado!=="BR"||!["ano_modelo_crlv","fabricacao","comercializacao_brasil","importacao_brasil"].includes(f.tipo_ano)||!ano(f.ano_inicio)||!ano(f.ano_fim)||f.ano_fim<f.ano_inicio||f.ano_fim>new Date(agora).getUTCFullYear()+1||!texto(c.fonteId)||!texto(c.documentoId)||!texto(c.localizador))return negar("escopo_incompleto");
+ if(!instante(agora)||!exato(s,escopos)||!escopos.every(k=>k==='geracao'||k==='versao'?Number.isSafeInteger(s[k])&&s[k]>0:texto(s[k]))||!hash(s.hashExtracao)||!hash(s.hashEntrada)||!exato(f,fatos)||!fatos.slice(0,8).every(k=>texto(f[k]))||f.mercado!=="BR"||!["ano_modelo_crlv","fabricacao","comercializacao_brasil","importacao_brasil"].includes(f.tipo_ano)||!ano(f.ano_inicio)||!ano(f.ano_fim)||f.ano_fim<f.ano_inicio||f.ano_fim>new Date(agora).getUTCFullYear()+1||!texto(c.fonteId)||!texto(c.documentoId)||!texto(c.localizador))return negar("escopo_incompleto");
  // Igualdade exata deliberada; nenhum casamento por similaridade, expansão de ano ou transitividade.
  try{
   const fonte=await porta.fonte(s.loja,c.fonteId);
