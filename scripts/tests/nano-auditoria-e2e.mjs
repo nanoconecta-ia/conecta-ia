@@ -153,7 +153,23 @@ try{
  await testarEscritor("nano_lifecycle_interno.auditoria_escopos","delete from nano_lifecycle_interno.auditoria_escopos where loja_id='"+L+"' and login_db='nano_e2e_parecer';");
  assert.throws(()=>admin("update nano_lifecycle_interno.fontes_documentais set loja_id='"+outra+"' where loja_id='"+L+"' and id='f';"),e=>e.stderr?.includes("movimento documental entre lojas bloqueado")===true);
  assert.throws(()=>admin("truncate nano_lifecycle_interno.auditoria_escopos;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
- assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"4");
+ // Documentos novos: disputa somente dentro da mesma loja, inclusive se o INSERT usar modo replica.
+ const inserirDoc=loja=>"insert into nano_lifecycle_interno.documentos_tecnicos(loja_id,id,fonte_id,conteudo,consultado_em,referencia) values('"+loja+"','doc-concorrente','f','Documento sintético concorrente',clock_timestamp(),'fixture p. 2');";
+ await testarEscritor("nano_lifecycle_interno.documentos_tecnicos",inserirDoc(L));
+ await testarEscritor("nano_lifecycle_interno.documentos_tecnicos",inserirDoc(outra),"ja_registrada");
+ await testarEscritor("nano_lifecycle_interno.documentos_tecnicos","set local session_replication_role=replica;\n"+inserirDoc(L));
+ // Rollbacks concorrentes não criam documentos nem alteram a evidência histórica.
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.documentos_tecnicos where id='doc-concorrente';"),"0");
+ assert.equal(admin("select sha256 from nano_lifecycle_interno.documentos_tecnicos where loja_id='"+L+"' and id='d';"),hash);
+ const docHistorico=" where loja_id='"+L+"' and id='d';";
+ for(const prefixo of ["","begin; set local session_replication_role=replica; "]){
+  assert.throws(()=>admin(prefixo+"update nano_lifecycle_interno.documentos_tecnicos set referencia='alterada'"+docHistorico),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+  assert.throws(()=>admin(prefixo+"delete from nano_lifecycle_interno.documentos_tecnicos"+docHistorico),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+ }
+ assert.throws(()=>admin("begin; set local session_replication_role=replica; insert into nano_lifecycle_interno.documentos_tecnicos(loja_id,id,fonte_id,conteudo,sha256,consultado_em,referencia) values('"+L+"','hash-incorreto','f','Documento sintético','"+ "0".repeat(64)+"',clock_timestamp(),'fixture');"),e=>e.stderr?.includes("hash documental divergente")===true);
+ assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"6");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='nano_lifecycle_interno.documentos_tecnicos'::regclass and tgname in ('nano_documento_hash','nano_documento_imutavel','nano_documento_truncate') and tgenabled='A';"),"3");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','nano_lifecycle_interno.documentos_tecnicos','update');"),"f");
 
  assert.equal((await registrar(audit,candidato,concorrente)).estado,"ja_registrada");
  assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"';"),"2");
