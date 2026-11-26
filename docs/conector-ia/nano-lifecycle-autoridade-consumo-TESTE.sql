@@ -361,4 +361,28 @@ select 1/case when (not has_function_privilege('nano_lifecycle_produtor','nano_l
 select 1/case when ((select count(*)=1 from nano_lifecycle_interno.leituras_documentais where loja_id='ed000000-0000-0000-0000-000000000001')) then 1 else 0 end;
 select pg_temp.recusa($t$update nano_lifecycle_interno.leituras_documentais set resultado='diverge'$t$,'parecer imutável');
 select 1/case when ((select estado='entrada' and versao=1 and resultado='{}'::jsonb from public.pipeline_itens where id=:'nano_item'::uuid)) then 1 else 0 end;
+
+-- Autorização atual de parecerista. Sessões distintas no PostgreSQL descartável.
+create role nano_ci_auditor_b login noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls;
+grant nano_lifecycle_auditoria to nano_ci_auditor_b;
+insert into nano_lifecycle_interno.auditoria_escopos(login_db,loja_id,habilitado) values('nano_ci_auditor_b','ed000000-0000-0000-0000-000000000001',true),('nano_ci_auditor_b','ed000000-0000-0000-0000-000000000099',true);
+set session authorization nano_ci_auditor_b;
+set local role nano_lifecycle_auditoria;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_verificador_autorizado('ed000000-0000-0000-0000-000000000001','nano_ci_auditor')) then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_verificador_autorizado('ed000000-0000-0000-0000-000000000001','nano_ci_auditor_b')) then 1 else 0 end;
+select 1/case when (not nano_lifecycle_interno.nano_lifecycle_verificador_autorizado('ed000000-0000-0000-0000-000000000099','nano_ci_auditor')) then 1 else 0 end;
+select 1/case when (not nano_lifecycle_interno.nano_lifecycle_verificador_autorizado('ed000000-0000-0000-0000-000000000001','nano_ci_produtor') and not nano_lifecycle_interno.nano_lifecycle_verificador_autorizado('ed000000-0000-0000-0000-000000000001','inexistente') and not nano_lifecycle_interno.nano_lifecycle_verificador_autorizado('ed000000-0000-0000-0000-000000000001',repeat('a',64)) and not nano_lifecycle_interno.nano_lifecycle_verificador_autorizado('ed000000-0000-0000-0000-000000000001',null)) then 1 else 0 end;
+reset session authorization;
+update nano_lifecycle_interno.auditoria_escopos set habilitado=false where login_db='nano_ci_auditor' and loja_id='ed000000-0000-0000-0000-000000000001';
+set session authorization nano_ci_auditor_b;
+set local role nano_lifecycle_auditoria;
+select 1/case when (not nano_lifecycle_interno.nano_lifecycle_verificador_autorizado('ed000000-0000-0000-0000-000000000001','nano_ci_auditor')) then 1 else 0 end;
+select 1/case when (jsonb_array_length(nano_lifecycle_interno.nano_lifecycle_ler_pareceres('ed000000-0000-0000-0000-000000000001','doc-ci','p. 1',:'nano_escopo'::jsonb))=1) then 1 else 0 end;
+reset session authorization;
+set session authorization nano_ci_auditor;
+set local role nano_lifecycle_auditoria;
+select 1/case when (not nano_lifecycle_interno.nano_lifecycle_verificador_autorizado('ed000000-0000-0000-0000-000000000001','nano_ci_auditor_b')) then 1 else 0 end;
+reset session authorization;
+select 1/case when (not has_table_privilege('nano_lifecycle_autorizacao_leitor','nano_lifecycle_interno.auditoria_escopos','insert') and not has_table_privilege('nano_lifecycle_auditoria','nano_lifecycle_interno.auditoria_escopos','select') and not has_function_privilege('service_role','nano_lifecycle_interno.nano_lifecycle_verificador_autorizado(uuid,text)','execute') and not has_function_privilege('nano_lifecycle_produtor','nano_lifecycle_interno.nano_lifecycle_verificador_autorizado(uuid,text)','execute')) then 1 else 0 end;
+select 1/case when (not pg_has_role('nano_lifecycle_auditoria','nano_lifecycle_autorizacao_leitor','MEMBER') and (select count(*)=1 from nano_lifecycle_interno.leituras_documentais where loja_id='ed000000-0000-0000-0000-000000000001')) then 1 else 0 end;
 rollback;
