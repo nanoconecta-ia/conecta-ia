@@ -104,6 +104,7 @@ jobs:
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-autorizacao-parecerista-MINUTA.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-autoridade-consumo-TESTE.sql
           bash supabase/tests/nano_lifecycle_despacho_concorrencia.sh
+          node --experimental-strip-types scripts/tests/nano-auditoria-e2e.mjs
           node --experimental-strip-types scripts/tests/nano-lifecycle-e2e.mjs
       - name: Validar reversão somente no banco descartável
         env:
