@@ -5,7 +5,7 @@ import {readFileSync} from "node:fs";
 import {randomBytes,createHash} from "node:crypto";
 import assert from "node:assert/strict";
 import {extrair} from "../../supabase/functions/_shared/pipeline/extracao.ts";
-import {conferirComAuditorSql,conferirEvidenciaAtualComAuditorSql,conferirPreGateSql} from "../../supabase/functions/_shared/nano_lifecycle/porta_auditoria_sql.ts";
+import {conferirComAuditorSql,conferirEvidenciaAtualComAuditorSql,conferirPreGateSql,registrarConferenciaSql} from "../../supabase/functions/_shared/nano_lifecycle/porta_auditoria_sql.ts";
 if(process.env.GITHUB_ACTIONS!=="true"||process.env.PGHOST!=="localhost"||process.env.PGPORT!=="5432"||process.env.PGDATABASE!=="conecta_teste"||process.env.PGUSER!=="postgres")throw Error("somente CI descartável");
 const L="fa000000-0000-0000-0000-000000000001",P="fa100000-0000-0000-0000-000000000001",X="fb200000-0000-0000-0000-000000000001";
 const args=user=>["-XqAtw","-h","127.0.0.1","-p","5432","-U",user,"-d","conecta_teste","-v","ON_ERROR_STOP=1"];
@@ -101,6 +101,17 @@ try{
  assert.equal(await sqlGate(audit),false);
  admin("update nano_lifecycle_interno.auditoria_escopos set habilitado=true where loja_id='"+L+"' and login_db='nano_e2e_parecer';");
  assert.equal(await sqlGate(audit),true);
+ const request="fb300000-0000-0000-0000-000000000001", deniedRequest="fb300000-0000-0000-0000-000000000002";
+ const registro=()=>registrarConferenciaSql(candidato,k,audit,"nano_e2e_auditor",new Date().toISOString(),request);
+ const registrar=(sess,c=candidato,id=request)=>rpc(sess,"nano_lifecycle_registrar_conferencia",[...keyTypes,"jsonb","uuid","text","uuid"],[...v,JSON.stringify(c),r.id,hash,id]);
+ assert.deepEqual(await registro(),{estado:"registrada",solicitacao:request,homologada:false});
+ assert.deepEqual(await registro(),{estado:"ja_registrada",solicitacao:request,homologada:false});
+ assert.equal((await registrar(parecer,candidato,deniedRequest)).estado,"retida");
+ assert.equal((await registrar(audit,{...candidato,fato:{...fato,motor:"OUTRO"}},deniedRequest)).estado,"retida");
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"';"),"1");
+ assert.throws(()=>admin("update nano_lifecycle_interno.conferencias_gate set homologada=true where loja_id='"+L+"';"),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_auditoria','nano_lifecycle_interno.conferencias_gate','insert');"),"f");
+
 
  admin("update public.produto_automacao set pausado=true where produto_id='"+P+"';");
  assert.equal((await atual()).motivo,"evidencia_desatualizada_ou_indisponivel");
@@ -130,6 +141,9 @@ try{
  assert.equal(admin("select nome from public.produtos where id='"+P+"';"),"Alteração posterior sintética");
  assert.equal(await sqlGate(audit),false);
  assert.equal((await conferir(candidato)).estado,"procedencia_conferida");
+ assert.equal((await registrar(audit)).estado,"retida");
+ assert.equal((await registrar(audit,candidato,deniedRequest)).estado,"retida");
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"';"),"1");
  assert.equal(admin("select has_function_privilege('nano_lifecycle_produtor','nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(uuid,uuid,uuid,bigint,integer,jsonb)','execute');"),"f");
 
  admin("update nano_lifecycle_interno.auditoria_escopos set habilitado=false where login_db='nano_e2e_parecer' and loja_id='"+L+"';");

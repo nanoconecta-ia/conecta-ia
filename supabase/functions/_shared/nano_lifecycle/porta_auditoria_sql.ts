@@ -84,3 +84,19 @@ export async function conferirPreGateSql(c:Candidato,chave:ChaveEvidencia,sessao
   return {...r,preGate:"conforme_no_snapshot" as const};
  }catch{return negar("pre_gate_nao_confirmado");}
 }
+
+/** Registra uma conferência histórica, não um token de autorização. */
+export async function registrarConferenciaSql(c:Candidato,chave:ChaveEvidencia,sessao:SessaoAuditoriaSql,identidadeConfigurada:string,agora:string,solicitacao:string){
+ const negar=()=>({estado:"retida" as const,homologada:false as const});
+ try{
+  if(!uuid(solicitacao))return negar();
+  const candidato=structuredClone(c), k=Object.freeze({...chave});
+  const r=await conferirPreGateSql(candidato,k,sessao,identidadeConfigurada,agora);
+  if(r.estado!=="procedencia_conferida")return negar();
+  const rows=await sessao.consultar("select session_user::text as identidade, nano_lifecycle_interno.nano_lifecycle_registrar_conferencia($1::uuid,$2::uuid,$3::uuid,$4::bigint,$5::integer,$6::jsonb,$7::uuid,$8::text,$9::uuid) as valor",[k.loja,k.item,k.execucao,k.geracao,k.versao,JSON.stringify(candidato),r.leituraId,r.sha256,solicitacao]);
+  if(!Array.isArray(rows)||rows.length!==1||!campos(rows[0],["identidade","valor"])||rows[0].identidade!==identidadeConfigurada)return negar();
+  const v=rows[0].valor;
+  if(!campos(v,["estado","solicitacao","homologada"])||v.solicitacao!==solicitacao||v.homologada!==false||(v.estado!=="registrada"&&v.estado!=="ja_registrada"))return negar();
+  return {estado:v.estado,solicitacao,homologada:false as const};
+ }catch{return negar();}
+}
