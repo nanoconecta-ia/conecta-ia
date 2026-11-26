@@ -15,7 +15,7 @@ function igual(a:RegistroCaptura,b:RegistroCaptura):boolean{
  const bloqueios=(r:RegistroCaptura)=>r.bloqueios.map(x=>JSON.stringify([x.produto_id,x.motivo])).sort();
  return a.loja===b.loja&&a.revisao===b.revisao&&a.checkpointAnterior===b.checkpointAnterior&&a.estado===b.estado&&JSON.stringify(eventos(a))===JSON.stringify(eventos(b))&&JSON.stringify(bloqueios(a))===JSON.stringify(bloqueios(b));
 }
-export async function registrarCaptura(porta:PortaCaptura,ctx:Omit<Parameters<typeof prepararCaptura>[0],"checkpoint">){
+export async function registrarCaptura(porta:PortaCaptura,ctx:Omit<Parameters<typeof prepararCaptura>[0],"checkpoint">&{checkpointEsperado?:string|null}){
  if(!ctx.habilitada)return {estado:"desabilitada",confirmado:false};
  if(!ctx.completa)return {estado:"sync_incompleta",confirmado:false};
  const checkpoint=await porta.checkpoint(ctx.loja);
@@ -24,11 +24,13 @@ export async function registrarCaptura(porta:PortaCaptura,ctx:Omit<Parameters<ty
   if(!existente||existente.loja!==ctx.loja||existente.revisao!==ctx.revisao)return {estado:"reconciliar_checkpoint",confirmado:false};
   // Reconstruir o plano com o predecessor persistido para detectar reuso indevido
   // da mesma revisão com snapshots diferentes.
+  if(ctx.checkpointEsperado!==undefined&&existente.checkpointAnterior!==ctx.checkpointEsperado)return {estado:"checkpoint_divergente",confirmado:false};
   const plano=await prepararCaptura({...ctx,checkpoint:existente.checkpointAnterior});
   if(plano.estado!=="baseline"&&plano.estado!=="pronto_para_transacao")return {estado:"reconciliar_checkpoint",confirmado:false};
   const esperado:RegistroCaptura={loja:ctx.loja,revisao:ctx.revisao,checkpointAnterior:existente.checkpointAnterior,estado:plano.estado,eventos:plano.eventos,bloqueios:plano.bloqueios};
   return igual(existente,esperado)?{estado:"ja_confirmado",confirmado:true,eventos:esperado.eventos.length,bloqueios:esperado.bloqueios.length}:{estado:"revisao_divergente",confirmado:false};
  }
+ if(ctx.checkpointEsperado!==undefined&&checkpoint!==ctx.checkpointEsperado)return {estado:"checkpoint_divergente",confirmado:false};
  const plano=await prepararCaptura({...ctx,checkpoint});
  if(plano.estado!=="baseline"&&plano.estado!=="pronto_para_transacao")return {estado:plano.estado,confirmado:false};
  const registro:RegistroCaptura={loja:ctx.loja,revisao:ctx.revisao,checkpointAnterior:checkpoint,estado:plano.estado,eventos:plano.eventos,bloqueios:plano.bloqueios};

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { MAX_IMAGENS_GALERIA, extrairImagensBling, mapearProduto, precisaDetalhe, resumirExcluido, sincronizar, type Existente, type ItemLista, type LinhaProduto, type PortasSync } from "./bling_sync.ts";
+import { MAX_IMAGENS_GALERIA, interpretarPaginaBling, interpretarDetalheBling, extrairImagensBling, mapearProduto, precisaDetalhe, resumirExcluido, sincronizar, type Existente, type ItemLista, type LinhaProduto, type PortasSync } from "./bling_sync.ts";
 
 const AGORA = Date.parse("2026-10-18T12:00:00Z");
 // Forma real do getProduct da Mobis (valores do detalhe lido pelo MCP, só leitura).
@@ -247,3 +247,6 @@ test("sincronizar: SKU forçado não é lido duas vezes na mesma execução", as
   const r = await sincronizar("L", h.p, 100_000, new Set(["S1"]));
   assert.equal(h.detalhes, 1); assert.equal(r.gravados, 1); assert.equal(r.completo, true);
 });
+
+test("resposta inválida não equivale a página vazia; detalhe exige o ID solicitado",()=>{for(const v of [null,{}, {data:null},{data:{}},{data:[null]},{data:[{id:0}]},{data:[{id:"123"}]}])assert.ok("erro" in interpretarPaginaBling(v));assert.deepEqual(interpretarPaginaBling({data:[]}),{itens:[]});assert.deepEqual(interpretarPaginaBling({data:[{id:123}]}),{itens:[{id:123}]});assert.equal(interpretarDetalheBling({data:{id:124}},123),null);assert.equal(interpretarDetalheBling({data:{}},123),null);assert.deepEqual(interpretarDetalheBling({data:{id:123}},123),{id:123})});
+test("falha de formato em um grupo impede marcar ausentes",async()=>{const h=portas([{id:1}], [{bling_id:"999",sku:"Z",nome:"Z",preco:1,estoque:0,situacao:"A",sincronizado_em:null}]);const orig=h.p.listarPagina;h.p.listarPagina=async (p,l,g)=>g==="inativos"?interpretarPaginaBling({erro:"resposta inesperada"}):orig(p,l,g);const r=await sincronizar("L",h.p);assert.equal(r.completo,false);assert.deepEqual(h.ausentes,[])});

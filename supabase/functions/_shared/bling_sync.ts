@@ -85,6 +85,16 @@ export function extrairImagensBling(blingId: string, d: Detalhe | null): ImagemB
 }
 
 export type GrupoLista = "ativos" | "inativos" | "excluidos";
+/** Uma resposta inválida nunca é uma página vazia válida. */
+export function interpretarPaginaBling(resposta:unknown):{itens:ItemLista[]}|{erro:string}{
+ const d=(resposta as {data?:unknown}|null)?.data;
+ if(!Array.isArray(d)||d.some(x=>!x||typeof x!=="object"||!Number.isSafeInteger(x.id)||x.id<=0))return {erro:"Resposta de listagem inválida do Bling"};
+ return {itens:d as ItemLista[]};
+}
+export function interpretarDetalheBling(resposta:unknown,id:number):Detalhe|null{
+ const d=(resposta as {data?:unknown}|null)?.data;
+ return d&&typeof d==="object"&&!Array.isArray(d)&&(d as {id?:unknown}).id===id?d:null;
+}
 export interface PortasSync {
   /** `grupo`: produtos ativos, inativos ou excluídos (critério 2, 3 e 4 da API v3). */
   listarPagina(pagina: number, limite: number, grupo?: GrupoLista): Promise<{ itens: ItemLista[] } | { erro: string }>;
