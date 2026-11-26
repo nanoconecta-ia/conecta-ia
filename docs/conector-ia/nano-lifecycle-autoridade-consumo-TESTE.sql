@@ -263,4 +263,34 @@ select 1/case when (nano_lifecycle_interno.nano_lifecycle_liberar_produtor('ed00
 reset session authorization;
 select 1/case when ((select reservado_ate is null and nano_produtor='nano_ci_produtor' from public.pipeline_itens where id=:'nano_item'::uuid)) then 1 else 0 end;
 select 1/case when (not has_function_privilege('service_role','nano_lifecycle_interno.nano_lifecycle_reservar_produtor(uuid,uuid,uuid,integer)','execute') and not has_table_privilege('nano_lifecycle_produtor','public.pipeline_itens','select')) then 1 else 0 end;
+
+-- Readback por identidade de sessão; a reserva já foi liberada.
+set session authorization nano_ci_produtor;
+set local role nano_lifecycle_produtor;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_recibo_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)->>'estado'='recuperado') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_recibo_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)->>'homologada'='false') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_recibo_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,2)->>'estado'='recibo_inexistente') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_recibo_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000005',5,1)->>'estado'='recibo_inexistente') then 1 else 0 end;
+reset session authorization;
+set session authorization nano_ci_produtor_b;
+set local role nano_lifecycle_produtor;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_recibo_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)->>'estado'='recibo_inexistente') then 1 else 0 end;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_reservar_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000007',180)->>'geracao'='7') then 1 else 0 end;
+reset session authorization;
+set session authorization nano_ci_produtor;
+set local role nano_lifecycle_produtor;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_recibo_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)->>'estado'='recuperado') then 1 else 0 end;
+reset session authorization;
+set local role service_role;
+select 1/case when (public.nano_lifecycle_recibo_engenharia('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)->>'estado'='recibo_inexistente') then 1 else 0 end;
+reset role;
+update nano_lifecycle_interno.produtor_escopos set habilitado=false where login_db='nano_ci_produtor' and loja_id='ed000000-0000-0000-0000-000000000001';
+set session authorization nano_ci_produtor;
+set local role nano_lifecycle_produtor;
+select 1/case when (nano_lifecycle_interno.nano_lifecycle_recibo_produtor('ed000000-0000-0000-0000-000000000001',:'nano_item'::uuid,'ee200000-0000-0000-0000-000000000006',6,1)->>'estado'='produtor_nao_autorizado') then 1 else 0 end;
+reset session authorization;
+select 1/case when (not has_function_privilege('service_role','nano_lifecycle_interno.nano_lifecycle_recibo_produtor(uuid,uuid,uuid,bigint,integer)','execute') and not has_function_privilege('anon','nano_lifecycle_interno.nano_lifecycle_recibo_produtor(uuid,uuid,uuid,bigint,integer)','execute') and not has_function_privilege('nano_lifecycle_auditoria','nano_lifecycle_interno.nano_lifecycle_recibo_produtor(uuid,uuid,uuid,bigint,integer)','execute')) then 1 else 0 end;
+select 1/case when ((select count(*)=1 from nano_lifecycle_interno.autorias_engenharia where loja_id='ed000000-0000-0000-0000-000000000001')) then 1 else 0 end;
+select 1/case when ((select count(*)=2 from nano_lifecycle_interno.resultados_engenharia where loja_id='ed000000-0000-0000-0000-000000000001')) then 1 else 0 end;
+select 1/case when ((select estado='entrada' and versao=1 and resultado='{}'::jsonb and nano_geracao=7 and nano_produtor='nano_ci_produtor_b' from public.pipeline_itens where id=:'nano_item'::uuid)) then 1 else 0 end;
 rollback;
