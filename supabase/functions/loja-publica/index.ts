@@ -6,7 +6,7 @@ import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.t
 import { modoCliente } from "../_shared/loja/publicacao.ts";
 import { urlProduto } from "../_shared/seo/url.ts";
 import { cabecalhoIpConfigurado, guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
-import { montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
+import { aplicacaoCombinaMobis, montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" } });
@@ -58,9 +58,9 @@ Deno.serve(async (req) => {
     if (!app || app.status !== "aprovado" || app.pagina_indexavel !== true)
       return json({ erro: "Aplicação indisponível." }, 404);
     const { data: p } = await sb.from("produtos")
-      .select("id,sku,marca,publicado,exibicao_teste,taxonomia_no_id")
+      .select("id,sku,marca,publicado,situacao,exibicao_teste,taxonomia_no_id")
       .eq("loja_id", loja.id).eq("id", app.produto_id).maybeSingle();
-    if (!p?.publicado) return json({ erro: "Produto indisponível." }, 404);
+    if (!p?.publicado || p.situacao !== "A" || !p.sku?.trim()) return json({ erro: "Produto indisponível." }, 404);
     // Só imagens com direitos confirmados são herdadas pelo filho. Fotos
     // candidatas da internet e recortes de fornecedores nunca saem desta view.
     const { data: imgs } = await sb.from("imagens_publicaveis")
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
 
   // Publicados (id + categoria) e as aplicações APROVADAS deles: alimentam as opções de busca e os filtros.
   const consultaPublicados = sb.from("produtos").select("id, sku, taxonomia_no_id")
-    .eq("loja_id", loja.id).eq("publicado", true);
+    .eq("loja_id", loja.id).eq("publicado", true).eq("situacao", "A");
   const { data: pub } = await consultaPublicados.limit(5000);
   const idsPublicados = (pub ?? []).map((p: { id: string }) => p.id);
   const modoPreviaCatalogo = loja.slug === "mobis" && fase === "teste" && !host && idsPublicados.length === 0;
@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
     .eq("loja_id", loja.id);
   consulta = modoPreviaCatalogo
     ? consulta.eq("exibicao_teste", true).eq("situacao", "A")
-    : consulta.eq("publicado", true);
+    : consulta.eq("publicado", true).eq("situacao", "A");
   consulta = consulta.order("nome").range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1);
   // Espelho de códigos: apenas vínculos realmente aprovados podem levar a um
   // produto; candidato ou pendente não serve como atalho de correspondência.
@@ -166,11 +166,14 @@ Deno.serve(async (req) => {
       ? consulta.or(`sku.ilike.${buscaOr}${trechoIds}`)
       : consulta.or(`nome.ilike.%${buscaOr}%,sku.ilike.%${buscaOr}%${trechoIds}`);
   }
-  if (modelo || motor || ano !== undefined) {
+  if (loja.slug === "mobis" && (modelo || motor || ano !== undefined || tipo)) {
+    const ids = [...new Set(apls.filter(a=>aplicacaoCombinaMobis(a,{modelo,motor,ano,tipo})).map(a=>a.produto_id))];
+    consulta = consulta.in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+  } else if (modelo || motor || ano !== undefined) {
     const ids = [...produtosDoVeiculo(apls, { modelo, motor, ano })];
     consulta = consulta.in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
   }
-  if (tipo) {
+  if (tipo && loja.slug !== "mobis") {
     const ids = [...produtosDoTipo(apls, tipo)];
     consulta = consulta.in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
   }
@@ -185,7 +188,7 @@ Deno.serve(async (req) => {
   let ficha: { veiculos: ReturnType<typeof veiculosDaFicha> } | null = null;
   if (skuFicha) {
     let consultaFicha = sb.from("produtos").select("id").eq("loja_id", loja.id).eq("sku", skuFicha);
-    consultaFicha = consultaFicha.eq("publicado", true);
+    consultaFicha = consultaFicha.eq("publicado", true).eq("situacao", "A");
     const { data: alvo } = await consultaFicha.maybeSingle();
     if (alvo) ficha = { veiculos: veiculosDaFicha(apls, alvo.id as string) };
   }
@@ -219,8 +222,8 @@ Deno.serve(async (req) => {
     [l.sku, categoriaPorNo.get(l.taxonomia_no_id ?? "") ?? null]));
   const produtos = montarVitrine((linhas ?? []).map((l: Record<string, unknown>) => ({
     ...l,
-    preco: modoPreviaCatalogo ? null : l.preco,
-    estoque: modoPreviaCatalogo ? null : l.estoque,
+    preco: modoPreviaCatalogo || loja.slug === "mobis" ? null : l.preco,
+    estoque: modoPreviaCatalogo || loja.slug === "mobis" ? null : l.estoque,
     imagem: imagens.get(String(l.sku)) ?? null,
   }) as never), loja.whatsapp, urlDoProduto)
     .map((produto) => ({
@@ -229,10 +232,10 @@ Deno.serve(async (req) => {
       referencias_aprovadas: codigosAprovadosPorSku.get(produto.sku) ?? [],
     }));
 
-  const paginasPorSku: Record<string, { slug: string; titulo: string; modelo: string; status: string }[]> = {};
+  const paginasPorSku: Record<string, { slug: string; titulo: string; modelo: string; status: string; motorizacao: string|null; ano_inicial: number|null; ano_final:number|null }[]> = {};
   if (loja.slug === "mobis" && idsPublicados.length) {
     let aq = sb.from("produto_aplicacoes")
-      .select("produto_id,pagina_slug,pagina_titulo,modelo,status,pagina_indexavel")
+      .select("produto_id,pagina_slug,pagina_titulo,modelo,status,pagina_indexavel,motorizacao,ano_inicial,ano_final")
       .eq("loja_id", loja.id).in("produto_id", idsPublicados).not("pagina_slug", "is", null);
     aq = aq.eq("status", "aprovado").eq("pagina_indexavel", true);
     const { data: aps } = await aq.limit(1500);
@@ -242,6 +245,7 @@ Deno.serve(async (req) => {
       if (!sku || !a.pagina_slug || !a.pagina_titulo) continue;
       (paginasPorSku[sku] ??= []).push({
         slug: a.pagina_slug, titulo: a.pagina_titulo, modelo: a.modelo, status: a.status,
+        motorizacao:a.motorizacao,ano_inicial:a.ano_inicial,ano_final:a.ano_final,
       });
     }
     // Ordem estável ao clicar na foto: HR -> Bongo -> demais; nunca escolher
