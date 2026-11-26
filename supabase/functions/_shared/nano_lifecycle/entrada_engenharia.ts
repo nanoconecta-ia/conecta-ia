@@ -51,3 +51,15 @@ export async function persistirResultadoEngenharia(admin:RpcServidor,reserva:Res
  if(x.homologada!==false||typeof x.hash_entrada!=="string"||typeof x.hash_extracao!=="string"||!(/^[a-f0-9]{64}$/).test(x.hash_entrada)||!(/^[a-f0-9]{64}$/).test(x.hash_extracao))throw Error("recibo inválido");
  return {estado:x.estado,hash_entrada:x.hash_entrada,hash_extracao:x.hash_extracao,homologada:false as const};
 }
+
+// Recuperação explícita de recibo histórico. Não recupera lease nem reexecuta extração.
+export async function recuperarReciboEngenharia(admin:RpcServidor,reserva:ReservaEngenharia){
+ if(![reserva.loja,reserva.item,reserva.execucao].every(uuid)||!Number.isSafeInteger(reserva.geracao)||reserva.geracao<1||!Number.isSafeInteger(reserva.versao)||reserva.versao<1)throw Error("reserva inválida");
+ const r=await admin.rpc("nano_lifecycle_recibo_engenharia",{p_loja:reserva.loja,p_item:reserva.item,p_execucao:reserva.execucao,p_geracao:reserva.geracao,p_versao:reserva.versao});
+ if(r.error)throw Error("recibo não confirmado");
+ const x=objeto(r.data);
+ if(x.estado==="recibo_inexistente"||x.estado==="integridade_divergente"){exato(x,["estado"]);return {estado:"retida" as const,motivo:x.estado};}
+ exato(x,["estado","loja_id","item_id","execucao","geracao","versao","hash_entrada","hash_extracao","homologada"]);
+ if(x.estado!=="recuperado"||x.loja_id!==reserva.loja||x.item_id!==reserva.item||x.execucao!==reserva.execucao||x.geracao!==reserva.geracao||x.versao!==reserva.versao||x.homologada!==false||typeof x.hash_entrada!=="string"||typeof x.hash_extracao!=="string"||!(/^[a-f0-9]{64}$/).test(x.hash_entrada)||!(/^[a-f0-9]{64}$/).test(x.hash_extracao))throw Error("recibo histórico divergente");
+ return {estado:"recuperado" as const,hash_entrada:x.hash_entrada,hash_extracao:x.hash_extracao,homologada:false as const};
+}
