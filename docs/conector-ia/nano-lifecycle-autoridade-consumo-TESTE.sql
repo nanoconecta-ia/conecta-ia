@@ -131,6 +131,15 @@ reset role;
 select pg_temp.recusa($t$delete from public.lojas where id='ed000000-0000-0000-0000-000000000001'$t$,'cascata de exclusão Nano recusada');
 select pg_temp.recusa($t$truncate public.pipeline_historico$t$,'TRUNCATE histórico recusado');
 select pg_temp.afirma(not pg_has_role('service_role','nano_lifecycle_despachante','MEMBER') and not pg_has_role('nano_lifecycle_consumidor','nano_lifecycle_despachante','MEMBER'),'autoridades separadas');
+set local role service_role;
+select pg_temp.recusa($t$select public.pipeline_registrar_conflito('ed000000-0000-0000-0000-000000000001',(select id from public.pipeline_itens where loja_id='ed000000-0000-0000-0000-000000000001' and entrada->>'origem'='nano_lifecycle'),'oem','codigo','{}','{}')$t$,'conflito legado Nano recusado');
+select pg_temp.recusa($t$insert into public.pipeline_conflitos(item_id,loja_id,tipo,campo,lado_a,lado_b) values((select id from public.pipeline_itens where loja_id='ed000000-0000-0000-0000-000000000001' and entrada->>'origem'='nano_lifecycle'),'ed000000-0000-0000-0000-000000000001','oem','codigo','{}','{}')$t$,'DML de conflito Nano recusado');
+select pg_temp.afirma(public.pipeline_registrar_conflito('ed000000-0000-0000-0000-000000000001',(select id from public.pipeline_itens where loja_id='ed000000-0000-0000-0000-000000000001' and idempotency_key='legacy-teste'),'oem','codigo','{}','{}') is not null,'conflito legado preservado');
+select pg_temp.recusa($t$update public.pipeline_conflitos set item_id=(select id from public.pipeline_itens where loja_id='ed000000-0000-0000-0000-000000000001' and entrada->>'origem'='nano_lifecycle') where item_id=(select id from public.pipeline_itens where loja_id='ed000000-0000-0000-0000-000000000001' and idempotency_key='legacy-teste')$t$,'conflito legado não pode migrar para Nano');
+select pg_temp.afirma((select count(*)=0 from public.pipeline_conflitos where item_id=(select id from public.pipeline_itens where loja_id='ed000000-0000-0000-0000-000000000001' and entrada->>'origem'='nano_lifecycle')),'nenhum conflito Nano fabricado');
+reset role;
+select pg_temp.recusa($t$truncate public.pipeline_conflitos$t$,'TRUNCATE de conflitos bloqueado');
+
 select pg_temp.afirma(not has_function_privilege('anon','public.nano_lifecycle_encaminhar(uuid,text,text)','execute') and not has_column_privilege('nano_lifecycle_despachante','public.produtos','nome','update') and not has_table_privilege('nano_lifecycle_despachante','public.pipeline_custos','insert'),'sem acesso público, alteração ERP ou custo');
 set local role service_role;
 select pg_temp.recusa($t$update public.pipeline_itens set reservado_ate=clock_timestamp()+interval '1 minute' where id=(select id from public.pipeline_itens where loja_id='ed000000-0000-0000-0000-000000000001' and entrada->>'origem'='nano_lifecycle')$t$,'lease direto recusado');

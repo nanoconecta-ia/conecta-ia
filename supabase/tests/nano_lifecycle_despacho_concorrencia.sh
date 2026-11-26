@@ -41,3 +41,15 @@ wait "$pa"; wait "$pb"
 [[ $(grep -hx ocupado "$D/a" "$D/b" | wc -l) == 1 ]]
 [[ $(ps -c "select count(*) from public.pipeline_itens where loja_id='$L' and nano_geracao=1 and reservado_ate>clock_timestamp()") == 1 ]]
 echo "ok: disputa de consumidor gera uma única reserva"
+
+# Duas execuções reais do adaptador TS com a mesma reserva: um recibo e um retry.
+node --experimental-strip-types scripts/tests/nano-engenharia-piloto.mjs "$L" "$I" > "$D/a" & pa=$!
+node --experimental-strip-types scripts/tests/nano-engenharia-piloto.mjs "$L" "$I" > "$D/b" & pb=$!
+wait "$pa"; wait "$pb"
+[[ $(grep -hx gravado "$D/a" "$D/b" | wc -l) == 1 ]]
+[[ $(grep -hx ja_gravado "$D/a" "$D/b" | wc -l) == 1 ]]
+[[ $(ps -c "select count(*) from nano_lifecycle_interno.resultados_engenharia where loja_id='$L' and item_id='$I' and geracao=1 and not homologada and hash_entrada=encode(sha256(convert_to(entrada_snapshot::text,'UTF8')),'hex') and hash_extracao=encode(sha256(convert_to(extracao_candidata::text,'UTF8')),'hex')") == 1 ]]
+[[ $(ps -c "select count(*) from public.pipeline_itens where loja_id='$L' and id='$I' and estado='entrada' and versao=1 and resultado='{}'::jsonb") == 1 ]]
+[[ $(ps -c "select count(*) from public.pipeline_historico where loja_id='$L' and item_id='$I'") == 1 ]]
+[[ $(ps -c "select count(*) from public.pipeline_custos where loja_id='$L'") == 0 ]]
+echo "ok: piloto de um SKU, persistência concorrente, hashes de readback e fila intacta"
