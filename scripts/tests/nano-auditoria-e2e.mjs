@@ -119,7 +119,7 @@ try{
  assert.ok(respostas.some(x=>["ja_registrada","ocupada"].includes(x.estado)));
  assert.equal((await registrar(audit,candidato,concorrente)).estado,"ja_registrada");
  // Escritor concorrente: trava ROW EXCLUSIVE é mantida até rollback.
- async function testarEscritor(tabela,mutacao){
+ async function testarEscritor(tabela,mutacao,esperado='ocupada'){
   const writer=spawn("psql",args("postgres"),{env:env("postgres"),stdio:["pipe","pipe","pipe"]});
   writer.stderr.resume();
   const rl=createInterface({input:writer.stdout});
@@ -130,8 +130,8 @@ try{
     rl.on("line",line=>{if(line==="__NANO_ESCRITOR__"){clearTimeout(timer);resolve();}});
     writer.stdin.write("begin;\nlock table "+tabela+" in row exclusive mode;\n"+mutacao+"\n\\echo __NANO_ESCRITOR__\n");
    });
-   assert.equal((await registrar(audit,candidato,deniedRequest)).estado,"ocupada");
-   assert.equal((await registrar(audit,candidato,concorrente)).estado,"ocupada");
+   if(esperado==="ocupada")assert.equal((await registrar(audit,candidato,deniedRequest)).estado,"ocupada");
+   assert.equal((await registrar(audit,candidato,concorrente)).estado,esperado);
   }finally{
    const exited=new Promise(resolve=>writer.once("exit",resolve));
    writer.stdin.end("rollback;\n");
@@ -142,12 +142,25 @@ try{
  await testarEscritor("nano_lifecycle_interno.auditoria_escopos","update nano_lifecycle_interno.auditoria_escopos set habilitado=false where loja_id='"+L+"' and login_db='nano_e2e_parecer';");
  await testarEscritor("nano_lifecycle_interno.fontes_documentais","update nano_lifecycle_interno.fontes_documentais set autorizada=false where loja_id='"+L+"' and id='f';");
  await testarEscritor("public.produto_automacao","update public.produto_automacao set pausado=true where produto_id='"+P+"';");
+ // Alteração documental em loja distinta não impede o retry da loja L.
+ const outra="fa000000-0000-0000-0000-000000000099";
+ admin("insert into nano_lifecycle_interno.auditoria_escopos(login_db,loja_id,habilitado) values('nano_e2e_parecer','"+outra+"',true);");
+ admin("insert into nano_lifecycle_interno.fontes_documentais(loja_id,id,tipo,emissor,autorizada) values('"+outra+"','f','manual_montadora','Fonte sintética distinta',true);");
+ await testarEscritor("nano_lifecycle_interno.auditoria_escopos","update nano_lifecycle_interno.auditoria_escopos set habilitado=false where loja_id='"+outra+"' and login_db='nano_e2e_parecer';","ja_registrada");
+ await testarEscritor("nano_lifecycle_interno.fontes_documentais","update nano_lifecycle_interno.fontes_documentais set autorizada=false where loja_id='"+outra+"' and id='f';","ja_registrada");
+ // UPDATE, INSERT e DELETE compartilham a trava da mesma loja.
+ await testarEscritor("nano_lifecycle_interno.fontes_documentais","insert into nano_lifecycle_interno.fontes_documentais(loja_id,id,tipo,emissor,autorizada) values('"+L+"','nova','manual_montadora','Sintética',true);");
+ await testarEscritor("nano_lifecycle_interno.auditoria_escopos","delete from nano_lifecycle_interno.auditoria_escopos where loja_id='"+L+"' and login_db='nano_e2e_parecer';");
+ assert.throws(()=>admin("update nano_lifecycle_interno.fontes_documentais set loja_id='"+outra+"' where loja_id='"+L+"' and id='f';"),e=>e.stderr?.includes("movimento documental entre lojas bloqueado")===true);
+ assert.throws(()=>admin("truncate nano_lifecycle_interno.auditoria_escopos;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
+ assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"4");
+
  assert.equal((await registrar(audit,candidato,concorrente)).estado,"ja_registrada");
  assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"';"),"2");
  assert.equal(admin("select has_function_privilege('nano_lifecycle_auditoria','nano_lifecycle_interno.nano_lifecycle_travar_conferencia(uuid,uuid)','execute');"),"f");
  assert.equal(admin("select rolcanlogin or rolbypassrls or rolsuper from pg_roles where rolname='nano_lifecycle_gate_travas';"),"f");
  // Confirma que o papel de lock não consegue modificar linhas, mesmo com GRANT UPDATE.
- assert.equal(admin("set role nano_lifecycle_gate_travas;\nwith alteradas as (update nano_lifecycle_interno.fontes_documentais set autorizada=false returning 1) select count(*) from alteradas;"),"0");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','nano_lifecycle_interno.fontes_documentais','update') or has_table_privilege('nano_lifecycle_gate_travas','nano_lifecycle_interno.auditoria_escopos','update');"),"f");
  console.log("ok: concorrência de solicitação, NOWAIT de escritores, ausência de DML");
 
 
