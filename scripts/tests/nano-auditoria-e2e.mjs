@@ -5,7 +5,7 @@ import {readFileSync} from "node:fs";
 import {randomBytes,createHash} from "node:crypto";
 import assert from "node:assert/strict";
 import {extrair} from "../../supabase/functions/_shared/pipeline/extracao.ts";
-import {conferirComAuditorSql,conferirEvidenciaAtualComAuditorSql} from "../../supabase/functions/_shared/nano_lifecycle/porta_auditoria_sql.ts";
+import {conferirComAuditorSql,conferirEvidenciaAtualComAuditorSql,conferirPreGateSql} from "../../supabase/functions/_shared/nano_lifecycle/porta_auditoria_sql.ts";
 if(process.env.GITHUB_ACTIONS!=="true"||process.env.PGHOST!=="localhost"||process.env.PGPORT!=="5432"||process.env.PGDATABASE!=="conecta_teste"||process.env.PGUSER!=="postgres")throw Error("somente CI descartável");
 const L="fa000000-0000-0000-0000-000000000001",P="fa100000-0000-0000-0000-000000000001",X="fb200000-0000-0000-0000-000000000001";
 const args=user=>["-XqAtw","-h","127.0.0.1","-p","5432","-U",user,"-d","conecta_teste","-v","ON_ERROR_STOP=1"];
@@ -87,8 +87,24 @@ try{
  assert.equal((await conferir({...candidato,fato:{...fato,oem:"99999-99999"}})).estado,"retida");
  const atual=()=>conferirEvidenciaAtualComAuditorSql(candidato,k,audit,"nano_e2e_auditor",new Date().toISOString());
  assert.equal((await atual()).atualidade,"conferida_no_instante");
+ const pre=()=>conferirPreGateSql(candidato,k,audit,"nano_e2e_auditor",new Date().toISOString());
+ const sqlGate=(sess,c=candidato,id=r.id,h=hash)=>rpc(sess,"nano_lifecycle_pre_gate",[...keyTypes,"jsonb","uuid","text"],[...v,JSON.stringify(c),id,h]);
+ assert.equal((await pre()).preGate,"conforme_no_snapshot");
+ assert.equal(await sqlGate(parecer),false); // terceiro auditor, sem autoconsenso
+ assert.equal(await sqlGate(audit,{...candidato,fato:{...fato,motor:"OUTRO"}}),false);
+ assert.equal(await sqlGate(audit,candidato,"00000000-0000-0000-0000-000000000001"),false);
+ assert.equal(await sqlGate(audit,candidato,r.id,"0".repeat(64)),false);
+ admin("update nano_lifecycle_interno.fontes_documentais set autorizada=false where loja_id='"+L+"' and id='f';");
+ assert.equal(await sqlGate(audit),false);
+ admin("update nano_lifecycle_interno.fontes_documentais set autorizada=true where loja_id='"+L+"' and id='f';");
+ admin("update nano_lifecycle_interno.auditoria_escopos set habilitado=false where loja_id='"+L+"' and login_db='nano_e2e_parecer';");
+ assert.equal(await sqlGate(audit),false);
+ admin("update nano_lifecycle_interno.auditoria_escopos set habilitado=true where loja_id='"+L+"' and login_db='nano_e2e_parecer';");
+ assert.equal(await sqlGate(audit),true);
+
  admin("update public.produto_automacao set pausado=true where produto_id='"+P+"';");
  assert.equal((await atual()).motivo,"evidencia_desatualizada_ou_indisponivel");
+ assert.equal(await sqlGate(audit),false);
  admin("update public.produto_automacao set pausado=false where produto_id='"+P+"';");
  admin("update public.nano_lifecycle_checkpoint set consumo_habilitado=false where loja_id='"+L+"';");
  assert.equal((await atual()).motivo,"evidencia_desatualizada_ou_indisponivel");
@@ -112,6 +128,7 @@ try{
  // Mesmo sem sync ativo, o espelho diverge do checkpoint anterior.
  assert.equal((await atual()).motivo,"evidencia_desatualizada_ou_indisponivel");
  assert.equal(admin("select nome from public.produtos where id='"+P+"';"),"Alteração posterior sintética");
+ assert.equal(await sqlGate(audit),false);
  assert.equal((await conferir(candidato)).estado,"procedencia_conferida");
  assert.equal(admin("select has_function_privilege('nano_lifecycle_produtor','nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(uuid,uuid,uuid,bigint,integer,jsonb)','execute');"),"f");
 

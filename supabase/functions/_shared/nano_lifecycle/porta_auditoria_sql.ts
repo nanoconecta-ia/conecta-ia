@@ -71,3 +71,16 @@ export async function conferirEvidenciaAtualComAuditorSql(c:Candidato,chave:Chav
   return {...r,atualidade:"conferida_no_instante" as const};
  }catch{return negar("atualidade_nao_confirmada");}
 }
+
+/** Pré-gate de leitura consistente, NÃO uma autorização persistente ou de escrita. */
+export async function conferirPreGateSql(c:Candidato,chave:ChaveEvidencia,sessao:SessaoAuditoriaSql,identidadeConfigurada:string,agora:string){
+ const negar=(motivo:string)=>({estado:"retida" as const,motivo,homologada:false as const});
+ try{
+  const candidato=structuredClone(c), k=Object.freeze({...chave});
+  const r=await conferirComAuditorSql(candidato,k,sessao,identidadeConfigurada,agora);
+  if(r.estado!=="procedencia_conferida")return r;
+  const rows=await sessao.consultar("select session_user::text as identidade, nano_lifecycle_interno.nano_lifecycle_pre_gate($1::uuid,$2::uuid,$3::uuid,$4::bigint,$5::integer,$6::jsonb,$7::uuid,$8::text) as conforme",[k.loja,k.item,k.execucao,k.geracao,k.versao,JSON.stringify(candidato),r.leituraId,r.sha256]);
+  if(!Array.isArray(rows)||rows.length!==1||!campos(rows[0],["identidade","conforme"])||rows[0].identidade!==identidadeConfigurada||rows[0].conforme!==true)return negar("pre_gate_retido");
+  return {...r,preGate:"conforme_no_snapshot" as const};
+ }catch{return negar("pre_gate_nao_confirmado");}
+}
