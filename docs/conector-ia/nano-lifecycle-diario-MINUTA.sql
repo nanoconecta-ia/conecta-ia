@@ -156,6 +156,7 @@ begin
  if evid.digest_projecao is distinct from encode(sha256(convert_to(atual::text,'UTF8')),'hex') then return 'varredura_divergente'; end if;
  -- Não permitir avanço a partir de uma captura que não tem snapshot correspondente.
  if p_predecessor is not null and not exists(select 1 from public.nano_lifecycle_snapshots where loja_id=p_loja and revisao=p_predecessor) then return 'predecessor_sem_snapshot'; end if;
+ if not nano_lifecycle_interno.conferir_eventos(p_loja,p_revisao,p_predecessor,atual,p_eventos,p_bloqueios) then return 'eventos_divergentes'; end if;
  resposta:=nano_lifecycle_interno.nano_lifecycle_registrar(p_loja,p_revisao,p_predecessor,p_estado,p_eventos,p_bloqueios);
  if resposta<>'gravado' then return resposta; end if;
  insert into public.nano_lifecycle_snapshots(loja_id,revisao,execucao,geracao,digest,produtos)
