@@ -22,7 +22,15 @@ select pg_temp.afirma(not public.nano_lifecycle_fence('e4000000-0000-0000-0000-0
 select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000003')->>'geracao'='3','nova execução após encerramento');
 update public.nano_lifecycle_checkpoint set habilitado=false where loja_id='e4000000-0000-0000-0000-000000000001';
 select pg_temp.afirma(not public.nano_lifecycle_fence('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000003',3),'desligamento invalida fence');
+update public.nano_lifecycle_checkpoint set habilitado=true where loja_id='e4000000-0000-0000-0000-000000000001';
+select pg_temp.afirma(not public.nano_lifecycle_fence('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000003',3),'religar não restaura a reserva revogada');
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000001')->>'estado'='execucao_encerrada','primeira execução não pode voltar após várias gerações');
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000003')->>'estado'='execucao_encerrada','execução revogada não volta a reservar');
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000004')->>'geracao'='4','religar exige nova geração');
+select pg_temp.afirma((select count(*) from public.nano_lifecycle_execucoes where loja_id='e4000000-0000-0000-0000-000000000001')=4,'histórico preserva cada execução adquirida uma única vez');
 reset role;
+select pg_temp.afirma(not has_table_privilege('service_role','public.nano_lifecycle_execucoes','update') and not has_table_privilege('service_role','public.nano_lifecycle_execucoes','delete'),'histórico sem alteração ou exclusão pelo serviço');
+select pg_temp.afirma(not has_table_privilege('anon','public.nano_lifecycle_execucoes','select') and not has_table_privilege('authenticated','public.nano_lifecycle_execucoes','select'),'histórico privado');
 select pg_temp.afirma(not has_function_privilege('anon','public.nano_lifecycle_reservar(uuid,uuid,integer)','execute') and not has_function_privilege('authenticated','public.nano_lifecycle_fence(uuid,uuid,bigint)','execute'),'RPCs privadas');
 select pg_temp.afirma(not has_table_privilege('authenticated','public.nano_lifecycle_reserva','select'),'reserva privada');
 rollback;

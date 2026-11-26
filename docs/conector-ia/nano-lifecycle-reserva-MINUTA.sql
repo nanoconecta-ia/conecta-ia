@@ -12,6 +12,31 @@ create table public.nano_lifecycle_reserva (
 alter table public.nano_lifecycle_reserva enable row level security;
 revoke all on public.nano_lifecycle_reserva from public,anon,authenticated,service_role;
 grant select,insert,update on public.nano_lifecycle_reserva to service_role;
+-- Histórico mínimo de execuções adquiridas: nunca reciclar UUID após outra geração.
+create table public.nano_lifecycle_execucoes (
+ loja_id uuid not null references public.nano_lifecycle_checkpoint(loja_id) on delete cascade,
+ execucao uuid not null,
+ geracao bigint not null check(geracao>0),
+ criada_em timestamptz not null default clock_timestamp(),
+ primary key(loja_id,execucao),
+ unique(loja_id,geracao)
+);
+alter table public.nano_lifecycle_execucoes enable row level security;
+revoke all on public.nano_lifecycle_execucoes from public,anon,authenticated,service_role;
+grant select,insert on public.nano_lifecycle_execucoes to service_role;
+-- Desligar invalida a reserva na própria transação. Religá-la não a restaura.
+create function public.nano_lifecycle_revogar_ao_desligar()
+returns trigger language plpgsql security invoker set search_path='' as $fn$
+begin
+ if old.habilitado and not new.habilitado then
+  update public.nano_lifecycle_reserva set encerrada=true where loja_id=new.loja_id and not encerrada;
+ end if;
+ return new;
+end $fn$;
+revoke all on function public.nano_lifecycle_revogar_ao_desligar() from public,anon,authenticated,service_role;
+create trigger nano_lifecycle_revogar_ao_desligar after update of habilitado on public.nano_lifecycle_checkpoint
+for each row when (old.habilitado is distinct from new.habilitado)
+execute function public.nano_lifecycle_revogar_ao_desligar();
 -- Ordem única de locks: checkpoint -> reserva. Nenhum lock mantido durante rede.
 create function public.nano_lifecycle_reservar(p_loja uuid,p_execucao uuid,p_segundos integer default 180)
 returns jsonb language plpgsql security invoker set search_path='' as $fn$
@@ -26,12 +51,16 @@ begin
   if r.execucao=p_execucao then return jsonb_build_object('estado','reservado','geracao',r.geracao,'expira_em',r.expira_em); end if;
   return jsonb_build_object('estado','ocupado');
  end if;
- -- Nunca reusar a última execução expirada ou encerrada.
- if r.execucao=p_execucao then return jsonb_build_object('estado','execucao_encerrada'); end if;
+ -- O histórico sobrevive às trocas de geração; uma execução encerrada nunca
+ -- volta a ser titular, mesmo após várias outras reservas.
+ if exists(select 1 from public.nano_lifecycle_execucoes h where h.loja_id=p_loja and h.execucao=p_execucao) then
+  return jsonb_build_object('estado','execucao_encerrada');
+ end if;
  insert into public.nano_lifecycle_reserva(loja_id,geracao,execucao,expira_em,encerrada)
  values(p_loja,coalesce(r.geracao,0)+1,p_execucao,t+make_interval(secs=>p_segundos),false)
  on conflict(loja_id) do update set geracao=excluded.geracao,execucao=excluded.execucao,expira_em=excluded.expira_em,encerrada=false
  returning * into r;
+ insert into public.nano_lifecycle_execucoes(loja_id,execucao,geracao) values(p_loja,p_execucao,r.geracao);
  return jsonb_build_object('estado','reservado','geracao',r.geracao,'expira_em',r.expira_em);
 end $fn$;
 -- Esta checagem só é útil para escrita se chamada NA MESMA transação da mutação.
