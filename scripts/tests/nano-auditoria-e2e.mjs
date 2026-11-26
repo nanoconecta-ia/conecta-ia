@@ -93,12 +93,26 @@ try{
  admin("update public.nano_lifecycle_checkpoint set consumo_habilitado=false where loja_id='"+L+"';");
  assert.equal((await atual()).motivo,"evidencia_desatualizada_ou_indisponivel");
  admin("update public.nano_lifecycle_checkpoint set consumo_habilitado=true where loja_id='"+L+"';");
- admin("update public.produtos set nome='Alteração posterior sintética' where id='"+P+"';");
+ // A tentativa direta deve falhar: nem o administrador simula uma escrita fora do fence.
+ assert.throws(()=>admin("update public.produtos set nome='Alteração posterior sintética' where id='"+P+"';"),e=>e.stderr?.includes("papel de escrita não autorizado")===true);
+ assert.equal((await atual()).atualidade,"conferida_no_instante");
+ // Nova sincronização legítima, usando as RPCs protegidas existentes.
+ const sync="fa200000-0000-0000-0000-000000000003";
+ const svc=sql=>admin("set role service_role;\n"+sql);
+ const novaReserva=JSON.parse(svc("select public.nano_lifecycle_reservar('"+L+"','"+sync+"');"));
+ assert.equal(novaReserva.estado,"reservado");assert.equal(novaReserva.geracao,3);
  assert.equal((await atual()).motivo,"evidencia_desatualizada_ou_indisponivel");
- // Readback histórico continua disponível mesmo com divergência no produto.
+ // Reaproveita o lote sintético da captura original, preservando todos os campos.
+ const linha=fixture.split("\n").find(x=>x.includes("public.nano_lifecycle_gravar_espelho("));
+ const lote=JSON.parse(linha.match(/'(\[\{.*\}\])'::jsonb/)[1]);
+ assert.equal(lote.length,1);assert.equal(lote[0].loja_id,L);
+ lote[0].nome="Alteração posterior sintética";
+ assert.equal(svc("select public.nano_lifecycle_gravar_espelho('"+L+"','"+sync+"',3,'"+JSON.stringify(lote).replaceAll("'","''")+"'::jsonb);"),"1");
+ assert.equal(svc("select public.nano_lifecycle_encerrar_reserva('"+L+"','"+sync+"',3);"),"t");
+ // Mesmo sem sync ativo, o espelho diverge do checkpoint anterior.
+ assert.equal((await atual()).motivo,"evidencia_desatualizada_ou_indisponivel");
+ assert.equal(admin("select nome from public.produtos where id='"+P+"';"),"Alteração posterior sintética");
  assert.equal((await conferir(candidato)).estado,"procedencia_conferida");
- admin("update public.produtos set nome='Peça sintética OEM 12345-67890' where id='"+P+"';");
- // Não exige que a projeção restaurada seja idêntica se triggers alterarem outros campos.
  assert.equal(admin("select has_function_privilege('nano_lifecycle_produtor','nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(uuid,uuid,uuid,bigint,integer,jsonb)','execute');"),"f");
 
  admin("update nano_lifecycle_interno.auditoria_escopos set habilitado=false where login_db='nano_e2e_parecer' and loja_id='"+L+"';");
