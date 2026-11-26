@@ -31,7 +31,7 @@ import "./mobis-02-entrega-real.css";
 type Produto = {sku:string;nome:string;preco:number|null;marca:string|null;descricao:string|null;imagem:string|null;whatsapp:string|null;em_estoque:boolean|null;atualizado_em:string|null;consulta_previa?:boolean;categoria?:string|null;referencias_aprovadas?:{tipo:string;valor:string}[]};
 type Veiculo = {modelo:string;motor:string|null;de:number|null;ate:number|null};
 type Banner = {sku:string;nome:string;preco:number|null;chamada:string|null;flash:boolean;whatsapp:string|null;imagem?:string|null;fim?:string|null};
-import { paginasDaSelecao, rotuloAplicacao } from "../lib/vitrineAplicacoes.ts";
+import { modeloDoAtalho, paginasDaSelecao, rotuloAplicacao } from "../lib/vitrineAplicacoes.ts";
 type PaginaAplicacao = {slug:string;titulo:string;modelo:string;status:string;motorizacao?:string|null;ano_inicial?:number|null;ano_final?:number|null};
 type Resposta = {
   paginas_aplicacao?:Record<string,PaginaAplicacao[]>;
@@ -236,7 +236,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
       <div className="m2-modulo-titulo"><span>CATÁLOGO POR VEÍCULO</span><h2>Linhas de veículos</h2>
         <p>Escolha a linha para buscar produtos. A foto identifica o modelo, não comprova compatibilidade.</p></div>
       <div className="m2-modulo-veiculos">
-        {VEICULOS.map(v=><a key={v.valor} href={"#/loja/mobis/veiculo/"+encodeURIComponent(v.valor)} aria-label={"Buscar peças da linha "+v.nome}>
+        {VEICULOS.map(v=><a key={v.valor} href={"#/loja/mobis/veiculo/"+encodeURIComponent(modeloDoAtalho(v.valor,opcoes))} aria-label={"Buscar peças da linha "+v.nome}>
           <img src={v.foto} alt={"Imagem de referência de "+v.nome} width={480} height={360} loading="lazy"/>
           <strong>{v.nome}</strong><small>Ver linha e consultar aplicação →</small>
         </a>)}

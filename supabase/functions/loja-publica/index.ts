@@ -6,7 +6,7 @@ import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.t
 import { modoCliente } from "../_shared/loja/publicacao.ts";
 import { urlProduto } from "../_shared/seo/url.ts";
 import { cabecalhoIpConfigurado, guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
-import { aplicacaoCombinaMobis, montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
+import { aplicacaoCombinaMobis, textoSimples, montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
 
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type, apikey, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" } });
@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
   const slugAplicacao = typeof c?.aplicacao_slug === "string" && /^[a-z0-9-]{4,110}$/.test(c.aplicacao_slug) ? c.aplicacao_slug : null;
   if (slugAplicacao && loja.slug === "mobis") {
     const { data: app } = await sb.from("produto_aplicacoes")
-      .select("produto_id,modelo,motorizacao,ano_inicial,ano_final,status,pagina_slug,pagina_titulo,pagina_descricao,pagina_indexavel")
+      .select("produto_id,modelo,motorizacao,ano_inicial,ano_final,status,pagina_slug,pagina_titulo,pagina_descricao,pagina_indexavel,codigo_oem,restricao,contraindicacao")
       .eq("loja_id", loja.id).eq("pagina_slug", slugAplicacao).maybeSingle();
     if (!app || app.status !== "aprovado" || app.pagina_indexavel !== true)
       return json({ erro: "Aplicação indisponível." }, 404);
@@ -83,6 +83,7 @@ Deno.serve(async (req) => {
         ano_inicial: app.ano_inicial, ano_final: app.ano_final,
         status: app.status, indexavel: app.status === "aprovado" && app.pagina_indexavel === true,
         sku_pai: p.sku, marca: p.marca, categoria: no?.nome ?? null,
+        codigo_oem: textoSimples(app.codigo_oem, 160), restricao: textoSimples(app.restricao, 500), contraindicacao: textoSimples(app.contraindicacao, 500),
         fotos: (imgs ?? []).map((i: { url: string }) => i.url),
         preco: null, estoque: null, whatsapp,
       },

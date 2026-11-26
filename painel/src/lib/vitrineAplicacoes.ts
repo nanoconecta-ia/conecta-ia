@@ -14,3 +14,12 @@ export function rotuloAplicacao(p:FichaAplicacao):string{
   const periodo=p.ano_inicial!=null&&p.ano_final!=null?p.ano_inicial===p.ano_final?String(p.ano_inicial):p.ano_inicial+"–"+p.ano_final:p.ano_inicial!=null?"Ano inicial "+p.ano_inicial:p.ano_final!=null?"Ano final "+p.ano_final:"";
   return [p.modelo,p.motorizacao,periodo].filter(Boolean).join(" · ");
 }
+
+// Alias explícito apenas para navegação da vitrine. Não cria relações técnicas.
+// Só redireciona a um rótulo aprovado retornado pela API; ambiguidades não escolhem ao acaso.
+export function modeloDoAtalho(valor:string, modelos:readonly string[]):string {
+  if(modelos.includes(valor))return valor;
+  const aliases:Record<string,readonly string[]>={HR:["Hyundai HR"],Bongo:["Bongo K2500","Kia Bongo K2500","Kia Bongo","K2500"],L200:["Mitsubishi L200"]};
+  const candidatos=[...new Set(modelos.filter(m=>(aliases[valor]??[]).includes(m)))];
+  return candidatos.length===1?candidatos[0]:valor;
+}

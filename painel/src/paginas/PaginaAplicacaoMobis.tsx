@@ -11,7 +11,8 @@ type Aplicacao = {
   slug:string; titulo:string; descricao:string; modelo:string;
   motorizacao:string|null; ano_inicial:number|null; ano_final:number|null;
   status:string; indexavel:boolean; sku_pai:string; marca:string|null;
-  categoria:string|null; fotos:string[]; preco:null; estoque:null; whatsapp:string|null
+  categoria:string|null; fotos:string[]; preco:null; estoque:null; whatsapp:string|null;
+  codigo_oem?:string|null; restricao?:string|null; contraindicacao?:string|null
 };
 type Resposta = {loja:{nome:string;slug:string;ambiente:string;whatsapp?:string|null};pagina_aplicacao:Aplicacao;politicas?:PoliticasLojaPublicas|null};
 
@@ -91,11 +92,15 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
               <dt>Veículo</dt><dd style={{margin:0,fontWeight:700}}>{p.modelo}</dd>
               <dt>Motorização</dt><dd style={{margin:0}}>{p.motorizacao??"Confirmar com a equipe"}</dd>
               <dt>Anos</dt><dd style={{margin:0}}>{p.ano_inicial??"A confirmar"} {p.ano_final?"– "+p.ano_final:"(ano final a confirmar)"}</dd>
-              <dt>Código da peça</dt><dd style={{margin:0,fontWeight:700}}>{p.sku_pai}</dd>
+              <dt>SKU Mobis</dt><dd style={{margin:0,fontWeight:700}}>{p.sku_pai}</dd>
+              {p.codigo_oem&&<><dt>OEM desta aplicação</dt><dd style={{margin:0,fontWeight:700,overflowWrap:"anywhere"}}>{p.codigo_oem}</dd></>}
               <dt>Marca da peça</dt><dd style={{margin:0}}>{p.marca??"Confirmar fabricante"}</dd>
             </dl>
             <h2 style={{fontSize:"1.1rem",marginTop:28}}>Informações desta aplicação</h2>
             <p style={{fontSize:15,lineHeight:1.65}}>{p.descricao}</p>
+            {(p.ano_inicial==null||p.ano_final==null)&&<p style={{fontSize:14}}>Período incompleto: confirme o ano e o chassi com nossa equipe antes de comprar.</p>}
+            {p.restricao&&<p><strong>Restrições de aplicação:</strong> {p.restricao}</p>}
+            {p.contraindicacao&&<p><strong>Contraindicações:</strong> {p.contraindicacao}</p>}
             <p style={{fontSize:21,fontWeight:800}}>Preço sob consulta</p>
             <a href={"#/p/mobis/"+encodeURIComponent(p.sku_pai)}
               style={{display:"block",textAlign:"center",background:"#fff",border:"1px solid #4a5159",padding:"13px",borderRadius:9,
