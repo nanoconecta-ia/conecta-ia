@@ -10,7 +10,8 @@ A=ee200000-0000-0000-0000-000000000001
 B=ee200000-0000-0000-0000-000000000002
 D=$(mktemp -d)
 ps(){ psql -XqAt -h 127.0.0.1 -p 5432 -U postgres -d conecta_teste -v ON_ERROR_STOP=1 "$@"; }
-cleanup(){ ps -c "update public.nano_lifecycle_checkpoint set habilitado=false where loja_id='$L'; delete from public.lojas where id='$L'" >/dev/null; rm -rf "$D"; }
+# A fila Nano não pode ser apagada nem por cascata. Fixture permanece somente no banco descartável do runner.
+cleanup(){ rm -rf "$D"; }
 trap cleanup EXIT
 # Reutiliza a fixture real de captura até a evidência confirmada, sem despacho.
 awk '/^select pg_temp.afirma\(public.nano_lifecycle_encaminhar/{exit} {print}' docs/conector-ia/nano-lifecycle-despacho-TESTE.sql > "$D/fixture.sql"
