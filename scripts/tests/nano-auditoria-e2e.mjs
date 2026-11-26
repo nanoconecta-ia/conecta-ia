@@ -111,6 +111,45 @@ try{
  assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"';"),"1");
  assert.throws(()=>admin("update nano_lifecycle_interno.conferencias_gate set homologada=true where loja_id='"+L+"';"),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
  assert.equal(admin("select has_table_privilege('nano_lifecycle_auditoria','nano_lifecycle_interno.conferencias_gate','insert');"),"f");
+ // Disputa real de duas sessões com a mesma identidade: um registro, outro retry ou ocupado.
+ const audit2=connect("nano_e2e_auditor","nano_lifecycle_auditoria");
+ const concorrente="fb300000-0000-0000-0000-000000000003";
+ const respostas=await Promise.all([registrar(audit,candidato,concorrente),registrar(audit2,candidato,concorrente)]);
+ assert.equal(respostas.filter(x=>x.estado==="registrada").length,1);
+ assert.ok(respostas.some(x=>["ja_registrada","ocupada"].includes(x.estado)));
+ assert.equal((await registrar(audit,candidato,concorrente)).estado,"ja_registrada");
+ // Escritor concorrente: trava ROW EXCLUSIVE é mantida até rollback.
+ async function testarEscritor(tabela,mutacao){
+  const writer=spawn("psql",args("postgres"),{env:env("postgres"),stdio:["pipe","pipe","pipe"]});
+  writer.stderr.resume();
+  const rl=createInterface({input:writer.stdout});
+  try{
+   await new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(Error("escritor não iniciou")),10000);
+    writer.once("exit",()=>{clearTimeout(timer);reject(Error("escritor encerrou"));});
+    rl.on("line",line=>{if(line==="__NANO_ESCRITOR__"){clearTimeout(timer);resolve();}});
+    writer.stdin.write("begin;\nlock table "+tabela+" in row exclusive mode;\n"+mutacao+"\n\\echo __NANO_ESCRITOR__\n");
+   });
+   assert.equal((await registrar(audit,candidato,deniedRequest)).estado,"ocupada");
+   assert.equal((await registrar(audit,candidato,concorrente)).estado,"ocupada");
+  }finally{
+   const exited=new Promise(resolve=>writer.once("exit",resolve));
+   writer.stdin.end("rollback;\n");
+   if(writer.exitCode===null&&writer.signalCode===null)await exited;
+   rl.close();
+  }
+ }
+ await testarEscritor("nano_lifecycle_interno.auditoria_escopos","update nano_lifecycle_interno.auditoria_escopos set habilitado=false where loja_id='"+L+"' and login_db='nano_e2e_parecer';");
+ await testarEscritor("nano_lifecycle_interno.fontes_documentais","update nano_lifecycle_interno.fontes_documentais set autorizada=false where loja_id='"+L+"' and id='f';");
+ await testarEscritor("public.produto_automacao","update public.produto_automacao set pausado=true where produto_id='"+P+"';");
+ assert.equal((await registrar(audit,candidato,concorrente)).estado,"ja_registrada");
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"';"),"2");
+ assert.equal(admin("select has_function_privilege('nano_lifecycle_auditoria','nano_lifecycle_interno.nano_lifecycle_travar_conferencia(uuid,uuid)','execute');"),"f");
+ assert.equal(admin("select rolcanlogin or rolbypassrls or rolsuper from pg_roles where rolname='nano_lifecycle_gate_travas';"),"f");
+ // Confirma que o papel de lock não consegue modificar linhas, mesmo com GRANT UPDATE.
+ assert.equal(admin("set role nano_lifecycle_gate_travas;\nwith alteradas as (update nano_lifecycle_interno.fontes_documentais set autorizada=false returning 1) select count(*) from alteradas;"),"0");
+ console.log("ok: concorrência de solicitação, NOWAIT de escritores, ausência de DML");
+
 
 
  admin("update public.produto_automacao set pausado=true where produto_id='"+P+"';");
@@ -143,7 +182,7 @@ try{
  assert.equal((await conferir(candidato)).estado,"procedencia_conferida");
  assert.equal((await registrar(audit)).estado,"retida");
  assert.equal((await registrar(audit,candidato,deniedRequest)).estado,"retida");
- assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"';"),"1");
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"';"),"2");
  assert.equal(admin("select has_function_privilege('nano_lifecycle_produtor','nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(uuid,uuid,uuid,bigint,integer,jsonb)','execute');"),"f");
 
  admin("update nano_lifecycle_interno.auditoria_escopos set habilitado=false where login_db='nano_e2e_parecer' and loja_id='"+L+"';");
