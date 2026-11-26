@@ -5,6 +5,7 @@ import {randomUUID} from "node:crypto";
 import assert from "node:assert/strict";
 import {criarPortaSupabase} from "../../supabase/functions/_shared/nano_lifecycle/porta_supabase.ts";
 import {executarRodadaLifecycle} from "../../supabase/functions/_shared/nano_lifecycle/rodada_sync.ts";
+import {sincronizarComReserva} from "../../supabase/functions/_shared/nano_lifecycle/sync_protegido.ts";
 
 if(process.env.GITHUB_ACTIONS!=="true"||process.env.PGHOST!=="localhost"||process.env.PGDATABASE!=="conecta_teste"||process.env.PGPORT!=="5432"||process.env.PGUSER!=="postgres")throw Error("Somente banco descartável do CI");
 function sql(q,role="service_role"){
@@ -17,7 +18,9 @@ const assinaturas={
  nano_lifecycle_encerrar_reserva:[["p_loja","uuid"],["p_execucao","uuid"],["p_geracao","bigint"]],
  nano_lifecycle_ler:[["p_loja","uuid"],["p_tipo","text"],["p_revisao","text"]],
  nano_lifecycle_finalizar:[["p_loja","uuid"],["p_execucao","uuid"],["p_geracao","bigint"],["p_revisao","text"],["p_predecessor","text"],["p_estado","text"],["p_eventos","jsonb"],["p_bloqueios","jsonb"],["p_digest","text"],["p_produtos","jsonb"]],
- nano_lifecycle_gravar_tecnico:[["p_loja","uuid"],["p_execucao","uuid"],["p_geracao","bigint"],["p_linhas","jsonb"]]
+ nano_lifecycle_gravar_tecnico:[["p_loja","uuid"],["p_execucao","uuid"],["p_geracao","bigint"],["p_linhas","jsonb"]],
+ nano_lifecycle_gravar_espelho:[["p_loja","uuid"],["p_execucao","uuid"],["p_geracao","bigint"],["p_linhas","jsonb"]],
+ nano_lifecycle_registrar_varredura:[["p_loja","uuid"],["p_execucao","uuid"],["p_geracao","bigint"],["p_grupos","jsonb"]]
 };
 const admin={async rpc(nome,args){
  const spec=Object.hasOwn(assinaturas,nome)?assinaturas[nome]:null;
@@ -68,6 +71,49 @@ try{
  assert.equal(sql("select count(*) from public.produtos where loja_id="+q(outra)+" and nome='Outra loja' and preco=88 and estoque=2"),"1");
  assert.equal(sql("select count(*) from public.pipeline_itens where loja_id="+q(loja)),"0");
  console.log("ok E2E: identidade, dados comerciais, isolamento e ausência de despacho preservados");
+ // Agora usa o algoritmo real de sync, não o callback de lote técnico.
+ // As páginas do ERP são simuladas; SQL, reserva, espelho e diário são reais.
+ const campos="loja_id,bling_id,sku,nome,preco,estoque,situacao,sincronizado_em,categoria_bling_id,marca,gtin,gtin_tributario,descricao_curta,descricao_complementar,peso_kg,largura_cm,altura_cm,profundidade_cm,unidade,condicao,formato,pai_bling_id,volumes";
+ const item=(id,nome,codigo,preco,saldo)=>({id,nome,codigo,preco,situacao:"A",estoque:{saldoVirtualTotal:saldo}});
+ const i1=item(123,"Alteração integral","NANO-E2E-1",110,8),i2=item(456,"Peça nova","NANO-E2E-2",50,4);
+ let instante=Date.now()+48*3600_000;
+ const rodada=async(itens, falhar=false)=>{
+  const execucao=randomUUID();
+  const origem={
+   existentes:async()=>JSON.parse(sql("select coalesce(jsonb_agg(to_jsonb(t)),'[]'::jsonb)::text from (select "+campos+" from public.produtos where loja_id="+q(loja)+" order by id) t")),
+   listarPagina:async(_p,_l,g)=>g==="inativos"&&falhar?{erro:"falha simulada de listagem"}:{itens:g==="ativos"?itens:[]},
+   detalhe:async id=>itens.find(i=>i.id===id)??null,
+   registrarErro:async()=>{},espera:async()=>{},agora:()=>instante
+  };
+  instante+=48*3600_000;
+  const porta=criarPortaSupabase(admin,reserva=>sincronizarComReserva(admin,origem,reserva));
+  return {execucao,porta,resultado:await executarRodadaLifecycle(porta,{loja,execucao,habilitada:true})};
+ };
+ const d=await rodada([i1,i2],true);
+ assert.equal(d.resultado.estado,"sync_incompleta",JSON.stringify(d.resultado));
+ assert.equal(await d.porta.checkpoint(loja),rev2);
+ assert.equal(sql("select count(*) from public.nano_lifecycle_varreduras where loja_id="+q(loja)+" and execucao="+q(d.execucao)),"0");
+ console.log("ok E2E protegido: erro no grupo impede evidência e checkpoint");
+ const f=await rodada([i1]);
+ assert.equal(f.resultado.estado,"sync_incompleta",JSON.stringify(f.resultado));
+ assert.equal(await f.porta.checkpoint(loja),rev2);
+ assert.equal(sql("select candidatos->0->>'bling_id' from public.nano_lifecycle_varreduras where loja_id="+q(loja)+" and execucao="+q(f.execucao)),"456");
+ assert.equal(sql("select situacao from public.produtos where loja_id="+q(loja)+" and bling_id='456'"),"A");
+ console.log("ok E2E protegido: candidato ausente retém checkpoint sem inativar produto");
+ const g=await rodada([i1,i2]);
+ assert.equal(g.resultado.confirmado,true,JSON.stringify(g.resultado));
+ const rev3=g.resultado.revisao,cap3=await g.porta.captura(loja,rev3);
+ assert.equal(cap3.checkpointAnterior,rev2);
+ assert.equal(cap3.eventos.length,1);
+ assert.equal(cap3.eventos[0].tipo,"alteracao_tecnica");
+ assert.equal(cap3.eventos[0].produto_id,pid);
+ assert.deepEqual(cap3.eventos[0].campos,["nome"]);
+ assert.equal(sql("select count(*) from public.produtos where id="+q(pid)+" and preco=110 and estoque=8 and publicado"),"1");
+ assert.equal(sql("select count(*) from public.produtos where loja_id="+q(loja)+" and bling_id='456' and preco=50 and estoque=4 and not publicado"),"1");
+ assert.equal(sql("select count(*) from public.nano_lifecycle_varreduras where loja_id="+q(loja)+" and execucao="+q(g.execucao)+" and candidatos='[]'::jsonb"),"1");
+ assert.equal(sql("select count(*) from public.pipeline_itens where loja_id="+q(loja)),"0");
+ console.log("ok E2E protegido: recuperação integral, preços/saldos do ERP espelhados e evento técnico único");
+
 }finally{
  sql("delete from public.lojas where id in ("+q(loja)+","+q(outra)+")","postgres");
 }
