@@ -8,7 +8,7 @@ L=e1050000-0000-0000-0000-000000000003
 P=e1051000-0000-0000-0000-000000000003
 A=e1052000-0000-0000-0000-000000000003
 U=e1053000-0000-0000-0000-000000000003
-ps -c "insert into public.lojas(id,nome,slug) values ('$L','CI concorrência catálogo','ci-concorrencia-catalogo'); insert into public.produtos(id,loja_id,bling_id,sku,nome) values ('$P','$L','106','CI-105-CONC','Peça teste'); insert into public.produto_aplicacoes(id,loja_id,produto_id,modelo,status,fonte,coletado_em,pagina_indexavel,pagina_slug) values ('$A','$L','$P','Modelo teste','aprovado','fixture',now(),true,'ci-catalogo-conc');"
+ps -c "insert into public.lojas(id,nome,slug) values ('$L','CI concorrência catálogo','ci-concorrencia-catalogo'); insert into public.produtos(id,loja_id,bling_id,sku,nome) values ('$P','$L','106','CI-105-CONC','Peça teste'); insert into public.marcas(id,loja_id,nome,tipo,status) values ('e1054000-0000-0000-0000-000000000003','$L','Montadora sintética','veiculo','aprovado'); insert into public.produto_aplicacoes(id,loja_id,produto_id,modelo,marca_veiculo_id,montadora_origem_id,codigo_oem,status,fonte,coletado_em,pagina_indexavel,pagina_slug) values ('$A','$L','$P','Modelo teste','e1054000-0000-0000-0000-000000000003','e1054000-0000-0000-0000-000000000003','OEM-CI-105-CONC','aprovado','fixture',now(),true,'ci-catalogo-conc');"
 ps -c "set role service_role" -c "select public.aplicacao_decidir('$L','$A','$U','rejeitar')" & pa=$!
 ps -c "set role service_role" -c "select public.aplicacao_decidir('$L','$A','$U','aprovar')" & pb=$!
 wait "$pa"; wait "$pb"

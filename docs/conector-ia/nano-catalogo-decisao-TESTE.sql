@@ -2,8 +2,9 @@
 begin;
 insert into public.lojas(id,nome,slug) values ('e1050000-0000-0000-0000-000000000001','CI decisão A','ci-decisao-a'),('e1050000-0000-0000-0000-000000000002','CI decisão B','ci-decisao-b');
 insert into public.produtos(id,loja_id,bling_id,sku,nome,publicado) values ('e1051000-0000-0000-0000-000000000001','e1050000-0000-0000-0000-000000000001','105','CI-105','Peça teste',true);
-insert into public.produto_aplicacoes(id,loja_id,produto_id,modelo,status,fonte,coletado_em,pagina_indexavel,pagina_slug)
-values ('e1052000-0000-0000-0000-000000000001','e1050000-0000-0000-0000-000000000001','e1051000-0000-0000-0000-000000000001','Modelo teste','aprovado','fixture',now(),true,'ci-decisao-105');
+insert into public.marcas(id,loja_id,nome,tipo,status) values ('e1054000-0000-0000-0000-000000000001','e1050000-0000-0000-0000-000000000001','Montadora sintética','veiculo','aprovado');
+insert into public.produto_aplicacoes(id,loja_id,produto_id,modelo,marca_veiculo_id,montadora_origem_id,codigo_oem,status,fonte,coletado_em,pagina_indexavel,pagina_slug)
+values ('e1052000-0000-0000-0000-000000000001','e1050000-0000-0000-0000-000000000001','e1051000-0000-0000-0000-000000000001','Modelo teste','e1054000-0000-0000-0000-000000000001','e1054000-0000-0000-0000-000000000001','OEM-CI-105','aprovado','fixture',now(),true,'ci-decisao-105');
 do $$ begin
  if has_function_privilege('anon','public.aplicacao_decidir(uuid,uuid,uuid,text)','EXECUTE') or has_function_privilege('authenticated','public.aplicacao_decidir(uuid,uuid,uuid,text)','EXECUTE') or not has_function_privilege('service_role','public.aplicacao_decidir(uuid,uuid,uuid,text)','EXECUTE') then raise exception 'permissão indevida'; end if;
  raise notice 'ok: CAT-105-01 escopos preservados';
