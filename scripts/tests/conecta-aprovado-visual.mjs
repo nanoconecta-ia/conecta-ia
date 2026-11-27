@@ -45,6 +45,16 @@ async function preparar(context,autenticado=true){
   return route.fulfill({status:200,contentType:'application/json',headers:{...headers,...(count===null?{}:{'content-range':`0-${Math.max(0,count-1)}/${count}`})},body:req.method()==='HEAD'?'':JSON.stringify(body)});
  });
 }
+async function verificarMAPrivado(page,area){
+ const shell=page.locator('[data-conecta-layout="aprovado-v2"][data-ma-display="prismatic"]');
+ await shell.waitFor();
+ assert.equal(await shell.count(),1,'shell MA Display único');
+ assert.equal(await shell.getAttribute('data-area'),area,'área operacional correta');
+ assert.match(await shell.evaluate(el=>getComputedStyle(el).getPropertyValue('--ma-film-brush').trim()),/repeating-linear-gradient/,'película MA Display presente');
+ assert.match(await shell.locator('.ap-loja-marca img').getAttribute('src')||'',/mobis-mstyle-v3-sem-slogan/,'logotipo oficial Mobis preservado');
+ assert.equal(await page.locator('.topo-premium,.layout-premium,.menu-premium,.estudio-agente,.dock-agente,.balao-genesis').count(),0,'interfaces legadas ausentes');
+ assert.equal(await page.locator('[data-mobis-site="v3"]').count(),0,'painel privado não monta vitrine pública');
+}
 try{
  if(servidor)for(let i=0;i<100;i++){try{if((await fetch(base)).ok)break}catch{}await new Promise(r=>setTimeout(r,100));}
  browser=await chromium.launch({headless:true});await mkdir(root+'evidencias-conecta-aprovado',{recursive:true});
@@ -52,12 +62,15 @@ try{
   const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});await preparar(context);
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'#/');await page.locator('[data-inicio-layout="aprovado-v2"]').waitFor();await page.getByText('2 produtos no espelho',{exact:true}).waitFor();
+  await verificarMAPrivado(page,'painel');
+  await page.reload();await page.locator('[data-inicio-layout="aprovado-v2"]').waitFor();await page.getByText('2 produtos no espelho',{exact:true}).waitFor();await verificarMAPrivado(page,'painel');
   assert.equal(await page.locator('[data-conecta-layout="aprovado-v2"]').count(),1);assert.equal(await page.locator('.topo-premium,.layout-premium,.menu-premium').count(),0,'shell anterior removido');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'início sem overflow '+width);
   await page.screenshot({path:root+`evidencias-conecta-aprovado/inicio-${width}-SIMULADO.png`});
   if(width<781){await page.getByRole('button',{name:'Abrir navegação',exact:true}).click();await page.getByRole('link',{name:'Estúdio do Nano',exact:true}).click();}
   else await page.getByRole('link',{name:'Estúdio do Nano',exact:true}).click();
-  await page.locator('[data-nano-layout="aprovado-v2"]').waitFor();const campo=page.getByRole('textbox',{name:'Pergunte',exact:true});await campo.waitFor();
+  await page.locator('[data-nano-layout="aprovado-v2"]').waitFor();await verificarMAPrivado(page,'nano');
+  await page.reload();await page.locator('[data-nano-layout="aprovado-v2"]').waitFor();await verificarMAPrivado(page,'nano');const campo=page.getByRole('textbox',{name:'Pergunte',exact:true});await campo.waitFor();
   assert.equal(await page.locator('.estudio-agente,.dock-agente,.balao-genesis').count(),0,'interfaces anteriores não são montadas');assert.equal(await page.locator('.ap-tower').count(),0,'a Torre duplicada não é montada');assert.equal(await page.locator('.ap-work-tabs button').count(),5,'apenas uma navegação de artefatos permanece');if(width<781){assert.equal(await page.locator('.ap-mobile-panes button').count(),3,'Conversa, Trabalho e Ações disponíveis no topo mobile');assert.equal(await page.locator('.ap-chat-panel').evaluate(el=>Math.round(el.getBoundingClientRect().right)),width,'chat usa largura total após remover Torre');}await page.getByRole('button',{name:/Ações do Nano/}).click();await page.getByRole('navigation',{name:'Ações do Nano'}).getByRole('button',{name:'Atualizar dados do espelho'}).waitFor();await page.getByRole('button',{name:/Ações do Nano/}).click();
   await page.evaluate(()=>document.documentElement.setAttribute('data-cor','azul'));assert.equal(await page.locator('.ap-eyebrow').first().evaluate(el=>getComputedStyle(el).color),'rgb(6, 104, 201)','o perfil de cor escolhido chega à interface aprovada '+width);await page.evaluate(()=>document.documentElement.removeAttribute('data-cor'));
   assert.equal(await campo.isVisible(),true,'conversa visível '+width);
@@ -87,6 +100,8 @@ try{
   assert.equal(await campo.inputValue(),'');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'Nano sem overflow '+width);
   await page.screenshot({path:root+`evidencias-conecta-aprovado/nano-${width}-SIMULADO.png`});
   await page.goto(base+'#/catalogo-aplicacao');await page.locator('[data-catalogo-layout="aprovado-v2"]').waitFor();await page.getByText('Produto sintético para teste',{exact:true}).waitFor();
+  await verificarMAPrivado(page,'painel');
+  await page.reload();await page.locator('[data-catalogo-layout="aprovado-v2"]').waitFor();await page.getByText('Produto sintético para teste',{exact:true}).waitFor();await verificarMAPrivado(page,'painel');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'catálogo sem overflow '+width);
   await page.screenshot({path:root+`evidencias-conecta-aprovado/catalogo-${width}-SIMULADO.png`});
   assert.deepEqual(errors,[],'sem erros JavaScript');resultado.push({width,interface:'aprovado-v2',origem:remoto?'publicada':'local',dados:'SIMULADOS',errors});await context.close();console.log('CONECTA/NANO APROVADO '+width+'px OK');
