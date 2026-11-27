@@ -27,6 +27,11 @@ alter table public.produto_aplicacoes
  add column nano_produto_peca_ref_id uuid references public.produto_pecas_ref(id),
  add column nano_peca_aplicacao_id uuid references public.pecas_aplicacoes_tecnicas(id),
  add constraint nano_aplicacao_peca_par check ((nano_produto_peca_ref_id is null)=(nano_peca_aplicacao_id is null));
+-- CAT-131: hash explícito do conteúdo documental da fonte global.
+-- Sem backfill; o documento privado é revalidado pelo pre_gate.
+alter table public.fontes
+ add column nano_documento_sha256 text,
+ add constraint nano_fonte_documento_hash check(nano_documento_sha256 is null or nano_documento_sha256 ~ '^[0-9a-f]{64}$');
 -- Grafo global: leitores compartilham uma trava e escritores a adquirem exclusivamente.
 create function nano_lifecycle_interno.nano_gate_guard_grafo()
 returns trigger language plpgsql set search_path='' as $fn$
@@ -105,6 +110,15 @@ begin
   and pa.periodo_inicio<=a.ano_inicial and pa.periodo_fim>=a.ano_final
   and pa.faixa_serie is null and pa.restricoes is null
   and fp.mercado=a.nano_mercado and fr.mercado=a.nano_mercado and fa.mercado=a.nano_mercado
+  -- Escopo conservador: todas as fontes devem apontar ao mesmo conteúdo
+  -- efetivamente atestado; hash de metadados, URL ou rótulo não é suficiente.
+  and fm.nano_documento_sha256=p_hash and fv.nano_documento_sha256=p_hash
+  and fp.nano_documento_sha256=p_hash and fr.nano_documento_sha256=p_hash and fa.nano_documento_sha256=p_hash
+  and fm.tipo in ('catalogo_montadora','epc','doc_fabricante_componente')
+  and fv.tipo in ('catalogo_montadora','epc','doc_fabricante_componente')
+  and fp.tipo in ('catalogo_montadora','epc','doc_fabricante_componente')
+  and fr.tipo in ('catalogo_montadora','epc','doc_fabricante_componente')
+  and fa.tipo in ('catalogo_montadora','epc','doc_fabricante_componente')
   and m.nome=p_candidato->'fato'->>'montadora' and m.tipo='veiculo' and m.status='aprovado';
  if not found or snap is null then return jsonb_build_object('estado','retida','homologada',false); end if;
  digest:=encode(sha256(convert_to(snap::text,'UTF8')),'hex');
