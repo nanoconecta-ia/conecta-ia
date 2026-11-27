@@ -142,6 +142,8 @@ jobs:
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-leitura-MINUTA.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-auditoria-MINUTA.sql
           node --experimental-strip-types scripts/tests/nano-catalogo-decisao-e2e.mjs
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-vinculo-MINUTA.sql
+          node scripts/tests/nano-catalogo-vinculo-e2e.mjs
       - name: Validar reversão somente no banco descartável
         env:
           PGDATABASE: conecta_teste
