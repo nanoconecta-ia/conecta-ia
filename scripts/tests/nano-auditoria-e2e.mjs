@@ -405,6 +405,30 @@ try{
  assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req133+"';"),"0");
  for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria"])assert.equal(admin("select has_function_privilege('"+papel+"','nano_lifecycle_interno.nano_catalogo_auditor_vigente(text)','EXECUTE');"),"f");
  console.log("ok: CAT-135-01 paridade de papel DB e escopo, retry, ACL e rollback nas duas fronteiras");
+ // CAT-136: paridade da atualidade operacional com o mesmo recibo real.
+ const teste136=admin([
+  "begin;",
+  "insert into public.usuarios_loja(loja_id,user_id,papel) values('"+L+"','"+humano133+"','lojista');",
+  ...tecnico135,...humano135,
+  "update public.nano_lifecycle_checkpoint set consumo_habilitado=false where loja_id='"+L+"';",
+  ...tecnico135,...humano135,
+  "update public.nano_lifecycle_checkpoint set consumo_habilitado=true where loja_id='"+L+"';",
+  ...tecnico135,...humano135,
+  "update public.produto_automacao set pausado=true where loja_id='"+L+"' and produto_id='"+P+"';",
+  ...tecnico135,...humano135,
+  "update public.produto_automacao set pausado=false where loja_id='"+L+"' and produto_id='"+P+"';",
+  ...tecnico135,...humano135,
+  "select jsonb_build_object('pendente',status='a_confirmar','indexavel',pagina_indexavel) from public.produto_aplicacoes where id='"+app124+"';",
+  "rollback;"
+ ].join("\n")).split("\n").map(JSON.parse);
+ assert.equal(teste136[0].estado,"vinculo_registrado");
+ assert.deepEqual(teste136.filter((_,i)=>[1,3,5,7,9].includes(i)),[esperado133,retido133,esperado133,retido133,esperado133]);
+ assert.deepEqual(teste136.filter((_,i)=>[2,4,6,8].includes(i)).map(x=>x.estado),["retida","vinculo_ja_registrado","retida","vinculo_ja_registrado"]);
+ assert.deepEqual(teste136[10],{pendente:true,indexavel:false});
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req133+"';"),"0");
+ for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria"])assert.equal(admin("select has_function_privilege('"+papel+"','nano_lifecycle_interno.nano_catalogo_atualidade_comum(uuid,uuid,uuid,bigint,integer,jsonb,jsonb,jsonb)','EXECUTE');"),"f");
+ assert.equal(admin("select prosecdef from pg_proc where oid='nano_lifecycle_interno.nano_catalogo_atualidade_comum(uuid,uuid,uuid,bigint,integer,jsonb,jsonb,jsonb)'::regprocedure;"),"f");
+ console.log("ok: CAT-136-01 atualidade comum, checkpoint e pausa, retry, ACL, invoker e rollback");
  // Revogação permitida pelo guard legado, sem reaprovação artificial.
  admin("update public.pecas_aplicacoes_tecnicas set status='desatualizado' where id='"+g130.aresta+"';");
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");

@@ -23,17 +23,15 @@ create policy nano_atualidade_ler on public.produtos for select to nano_lifecycl
 create policy nano_atualidade_restrita on public.produtos as restrictive for all to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true)) with check(false);
 grant execute on function public.nano_lifecycle_projecao(uuid) to nano_lifecycle_atualidade_leitor;
 grant execute on function nano_lifecycle_interno.nano_lifecycle_ler_evidencia(uuid,uuid,bigint),nano_lifecycle_interno.nano_lifecycle_ler_autoria(uuid,uuid,uuid,bigint,integer),nano_lifecycle_interno.nano_lifecycle_verificador_autorizado(uuid,text) to nano_lifecycle_atualidade_leitor;
-create function nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(p_loja uuid,p_item uuid,p_execucao uuid,p_geracao bigint,p_versao integer,p_escopo jsonb)
-returns boolean language plpgsql stable security definer set search_path='' set nano.atualidade_loja='' as $fn$
-declare e jsonb; a jsonb; esc jsonb; cp public.nano_lifecycle_checkpoint; i public.pipeline_itens; atual jsonb; snap jsonb; tecnico jsonb;
+-- CAT-136: leitura compartilhada, sem autoridade própria; RLS do chamador.
+-- Entradas derivadas dos registros persistidos já conferidos pelos dois chamadores.
+create function nano_lifecycle_interno.nano_catalogo_atualidade_comum(p_loja uuid,p_item uuid,p_execucao uuid,p_geracao bigint,p_versao integer,e jsonb,a jsonb,esc jsonb)
+returns boolean language plpgsql stable security invoker set search_path='' as $comum$
+declare cp public.nano_lifecycle_checkpoint; i public.pipeline_itens; atual jsonb; snap jsonb; tecnico jsonb;
 begin
- if not nano_lifecycle_interno.nano_lifecycle_verificador_autorizado(p_loja,session_user::text) then return false; end if;
- perform set_config('nano.atualidade_loja',coalesce(p_loja::text,''),true);
- e:=nano_lifecycle_interno.nano_lifecycle_ler_evidencia(p_loja,p_item,p_geracao);
- a:=nano_lifecycle_interno.nano_lifecycle_ler_autoria(p_loja,p_item,p_execucao,p_geracao,p_versao);
- if e->>'estado' is distinct from 'evidencia_historica' or a is null or e->>'execucao' is distinct from p_execucao::text or e->>'versao' is distinct from p_versao::text or e->>'hash_entrada' is distinct from a->>'hashEntrada' or e->>'hash_extracao' is distinct from a->>'hashExtracao' then return false; end if;
- esc:=(a->'chave')||jsonb_build_object('produto',e->>'produto_id','sku',e->'entrada_snapshot'->'produto'->>'sku','revisao',e->>'revisao','checkpoint',e->>'checkpoint','hashEntrada',a->>'hashEntrada','hashExtracao',a->>'hashExtracao','produtor',a->>'produtor');
- if esc is distinct from p_escopo then return false; end if;
+ if p_loja is null or p_item is null or p_execucao is null or p_geracao is null or p_versao is null
+  or e->>'produto_id' is null or e->>'checkpoint' is null or e->>'revisao' is null
+  or a->>'produtor' is null or esc->>'sku' is null or jsonb_typeof(e->'entrada_snapshot'->'produto') is distinct from 'object' then return false; end if;
  select * into cp from public.nano_lifecycle_checkpoint where loja_id=p_loja;
  if not found or not cp.habilitado or not cp.despacho_habilitado or not cp.consumo_habilitado or cp.revisao is distinct from e->>'checkpoint' then return false; end if;
  if exists(select 1 from public.nano_lifecycle_reserva where loja_id=p_loja and not encerrada and expira_em>statement_timestamp()) then return false; end if;
@@ -46,6 +44,21 @@ begin
  if exists(select 1 from public.produtos p where p.loja_id=p_loja and p.id<>i.produto_id and (p.bling_id=atual->>'bling_id' or upper(btrim(p.sku))=upper(i.sku))) then return false; end if;
  tecnico:=jsonb_build_object('id',atual->>'id','bling_id',atual->>'bling_id','sku',i.sku,'nome',atual->>'nome','marca',atual->>'marca','gtin',atual->>'gtin','descricao_curta',atual->>'descricao_curta','descricao_complementar',atual->>'descricao_complementar');
  return tecnico is not distinct from e->'entrada_snapshot'->'produto';
+end $comum$;
+revoke all on function nano_lifecycle_interno.nano_catalogo_atualidade_comum(uuid,uuid,uuid,bigint,integer,jsonb,jsonb,jsonb) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+grant execute on function nano_lifecycle_interno.nano_catalogo_atualidade_comum(uuid,uuid,uuid,bigint,integer,jsonb,jsonb,jsonb) to nano_lifecycle_atualidade_leitor;
+create function nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(p_loja uuid,p_item uuid,p_execucao uuid,p_geracao bigint,p_versao integer,p_escopo jsonb)
+returns boolean language plpgsql stable security definer set search_path='' set nano.atualidade_loja='' as $fn$
+declare e jsonb; a jsonb; esc jsonb;
+begin
+ if not nano_lifecycle_interno.nano_lifecycle_verificador_autorizado(p_loja,session_user::text) then return false; end if;
+ perform set_config('nano.atualidade_loja',coalesce(p_loja::text,''),true);
+ e:=nano_lifecycle_interno.nano_lifecycle_ler_evidencia(p_loja,p_item,p_geracao);
+ a:=nano_lifecycle_interno.nano_lifecycle_ler_autoria(p_loja,p_item,p_execucao,p_geracao,p_versao);
+ if e->>'estado' is distinct from 'evidencia_historica' or a is null or e->>'execucao' is distinct from p_execucao::text or e->>'versao' is distinct from p_versao::text or e->>'hash_entrada' is distinct from a->>'hashEntrada' or e->>'hash_extracao' is distinct from a->>'hashExtracao' then return false; end if;
+ esc:=(a->'chave')||jsonb_build_object('produto',e->>'produto_id','sku',e->'entrada_snapshot'->'produto'->>'sku','revisao',e->>'revisao','checkpoint',e->>'checkpoint','hashEntrada',a->>'hashEntrada','hashExtracao',a->>'hashExtracao','produtor',a->>'produtor');
+ if esc is distinct from p_escopo then return false; end if;
+ return nano_lifecycle_interno.nano_catalogo_atualidade_comum(p_loja,p_item,p_execucao,p_geracao,p_versao,e,a,esc);
 end $fn$;
 alter function nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(uuid,uuid,uuid,bigint,integer,jsonb) owner to nano_lifecycle_atualidade_leitor;
 revoke all on function nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(uuid,uuid,uuid,bigint,integer,jsonb) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;

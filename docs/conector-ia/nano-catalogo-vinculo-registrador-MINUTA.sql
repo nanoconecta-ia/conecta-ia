@@ -191,7 +191,7 @@ begin
   execute format('create policy nano_humano_grafo_ler on %s for select to nano_catalogo_vinculo_humano_leitor using(true)',rel);
  end loop;
 end $leitor$;
-grant execute on function public.nano_lifecycle_projecao(uuid) to nano_catalogo_vinculo_humano_leitor;
+grant execute on function public.nano_lifecycle_projecao(uuid),nano_lifecycle_interno.nano_catalogo_atualidade_comum(uuid,uuid,uuid,bigint,integer,jsonb,jsonb,jsonb) to nano_catalogo_vinculo_humano_leitor;
 -- Verificação da identidade histórica sem fingir que a sessão humana é auditor.
 grant execute on function nano_lifecycle_interno.nano_catalogo_auditor_vigente(text) to nano_catalogo_vinculo_humano_leitor;
 create function private.nano_catalogo_conferir_vinculo(p_loja uuid,p_produto uuid,p_aplicacao uuid,p_recibo uuid)
@@ -199,8 +199,7 @@ returns jsonb language plpgsql volatile security definer set search_path='' set 
 declare ator uuid; r nano_lifecycle_interno.conferencias_gate; snap jsonb;
  e nano_lifecycle_interno.resultados_engenharia; a nano_lifecycle_interno.autorias_engenharia;
  l nano_lifecycle_interno.leituras_documentais; d nano_lifecycle_interno.documentos_tecnicos;
- cp public.nano_lifecycle_checkpoint; i public.pipeline_itens;
- esc jsonb; atual jsonb; espelho jsonb; tecnico jsonb;
+ esc jsonb;
 begin
  if current_setting('role',true) is distinct from 'authenticated' or current_setting('transaction_isolation')<>'read committed'
   or p_loja is null or p_produto is null or p_aplicacao is null or p_recibo is null then
@@ -235,26 +234,8 @@ begin
  'produto',e.produto_id::text,'sku',e.entrada_snapshot->'produto'->>'sku','revisao',e.revisao,'checkpoint',e.checkpoint,
  'hashEntrada',a.hash_entrada,'hashExtracao',a.hash_extracao,'produtor',a.produtor);
  if esc is distinct from r.candidato->'escopo' or a.produtor=r.auditor then return jsonb_build_object('estado','retida','homologada',false); end if;
- select * into cp from public.nano_lifecycle_checkpoint where loja_id=p_loja;
- if not found or not cp.habilitado or not cp.despacho_habilitado or not cp.consumo_habilitado or cp.revisao is distinct from e.checkpoint
-  or exists(select 1 from public.nano_lifecycle_reserva where loja_id=p_loja and not encerrada and expira_em>statement_timestamp()) then
+ if nano_lifecycle_interno.nano_catalogo_atualidade_comum(p_loja,e.item_id,e.execucao,e.geracao,e.versao,to_jsonb(e),jsonb_build_object('produtor',a.produtor),esc) is not true then
   return jsonb_build_object('estado','retida','homologada',false); end if;
- select * into i from public.pipeline_itens where loja_id=p_loja and id=e.item_id;
- if not found or i.estado<>'entrada' or i.entrada->>'origem' is distinct from 'nano_lifecycle'
-  or i.entrada->>'revisao' is distinct from e.revisao or i.produto_id is distinct from p_produto
-  or i.sku is distinct from esc->>'sku' or i.nano_execucao is distinct from e.execucao or i.nano_geracao is distinct from e.geracao
-  or i.versao is distinct from e.versao or i.nano_produtor::text is distinct from a.produtor::text
-  or exists(select 1 from public.produto_automacao where loja_id=p_loja and produto_id=p_produto and pausado) then
-  return jsonb_build_object('estado','retida','homologada',false); end if;
- select v into atual from jsonb_array_elements(public.nano_lifecycle_projecao(p_loja)) v where v->>'id'=p_produto::text;
- select v into espelho from public.nano_lifecycle_snapshots s cross join lateral jsonb_array_elements(s.produtos) v
- where s.loja_id=p_loja and s.revisao=cp.revisao and v->>'id'=p_produto::text;
- if atual is null or espelho is null or atual is distinct from espelho or atual->>'situacao' is distinct from 'A'
-  or btrim(atual->>'sku') is distinct from i.sku
-  or exists(select 1 from public.produtos p where p.loja_id=p_loja and p.id<>p_produto and (p.bling_id=atual->>'bling_id' or upper(btrim(p.sku))=upper(i.sku))) then
-  return jsonb_build_object('estado','retida','homologada',false); end if;
- tecnico:=jsonb_build_object('id',atual->>'id','bling_id',atual->>'bling_id','sku',i.sku,'nome',atual->>'nome','marca',atual->>'marca','gtin',atual->>'gtin','descricao_curta',atual->>'descricao_curta','descricao_complementar',atual->>'descricao_complementar');
- if tecnico is distinct from e.entrada_snapshot->'produto' then return jsonb_build_object('estado','retida','homologada',false); end if;
  select * into d from nano_lifecycle_interno.documentos_tecnicos x
  where x.loja_id=p_loja and x.id=r.candidato->>'documentoId' and x.fonte_id=r.candidato->>'fonteId'
   and x.sha256=r.sha256 and x.consultado_em<=statement_timestamp();
