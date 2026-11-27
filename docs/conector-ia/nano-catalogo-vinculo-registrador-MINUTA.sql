@@ -193,19 +193,7 @@ begin
 end $leitor$;
 grant execute on function public.nano_lifecycle_projecao(uuid) to nano_catalogo_vinculo_humano_leitor;
 -- Verificação da identidade histórica sem fingir que a sessão humana é auditor.
-create function nano_lifecycle_interno.nano_catalogo_auditor_vigente(p_login name)
-returns boolean language sql stable security invoker set search_path='' as $papel$
- select exists(select 1 from pg_catalog.pg_roles r where r.rolname=p_login
-  and r.rolcanlogin and not r.rolsuper and not r.rolbypassrls and not r.rolcreaterole
-  and pg_has_role(r.oid,'nano_lifecycle_auditoria','MEMBER')
-  and not pg_has_role(r.oid,'nano_lifecycle_produtor','MEMBER')
-  and not pg_has_role(r.oid,'service_role','MEMBER')
-  and not pg_has_role(r.oid,'nano_lifecycle_consumidor','MEMBER')
-  and not pg_has_role(r.oid,'nano_lifecycle_auditor_leitor','MEMBER')
-  and not pg_has_role(r.oid,'nano_lifecycle_autorizacao_leitor','MEMBER'))
-$papel$;
-revoke all on function nano_lifecycle_interno.nano_catalogo_auditor_vigente(name) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
-grant execute on function nano_lifecycle_interno.nano_catalogo_auditor_vigente(name) to nano_catalogo_vinculo_humano_leitor;
+grant execute on function nano_lifecycle_interno.nano_catalogo_auditor_vigente(text) to nano_catalogo_vinculo_humano_leitor;
 create function private.nano_catalogo_conferir_vinculo(p_loja uuid,p_produto uuid,p_aplicacao uuid,p_recibo uuid)
 returns jsonb language plpgsql volatile security definer set search_path='' set nano.humano_loja='' as $humano$
 declare ator uuid; r nano_lifecycle_interno.conferencias_gate; snap jsonb;
@@ -279,8 +267,8 @@ begin
   and x.resultado='confere' and x.verificado_em between d.consultado_em and statement_timestamp()
   and position(x.trecho in d.conteudo)>0;
  if not found or l.verificador in (a.produtor,r.auditor)
-  or not nano_lifecycle_interno.nano_catalogo_auditor_vigente(l.verificador)
-  or not nano_lifecycle_interno.nano_catalogo_auditor_vigente(r.auditor)
+  or not nano_lifecycle_interno.nano_catalogo_auditor_vigente(l.verificador::text)
+  or not nano_lifecycle_interno.nano_catalogo_auditor_vigente(r.auditor::text)
   or (select count(*) from nano_lifecycle_interno.auditoria_escopos x where x.loja_id=p_loja and x.habilitado and x.login_db in (l.verificador,r.auditor))<>2
   or (select count(*) from nano_lifecycle_interno.leituras_documentais x where x.loja_id=p_loja and x.documento_id=d.id and x.localizador=l.localizador and x.escopo=esc)<>1 then
   return jsonb_build_object('estado','retida','homologada',false); end if;

@@ -380,6 +380,31 @@ try{
  assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req133+"';"),"0");
  for(const tabela of ["public.nano_lifecycle_checkpoint","public.nano_lifecycle_reserva","public.nano_lifecycle_snapshots","public.pipeline_itens","public.produto_automacao","public.produtos","nano_lifecycle_interno.documentos_tecnicos","nano_lifecycle_interno.resultados_engenharia","nano_lifecycle_interno.autorias_engenharia"])assert.equal(admin("select has_table_privilege('nano_catalogo_vinculo_humano_leitor','"+tabela+"','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
  console.log("ok: CAT-134-01 checkpoint, pausa, papel DB revogado e parecer concorrente retidos; readback consultivo e rollback");
+ // CAT-135: ambas fronteiras usam o mesmo predicado DB, sem trocar a autoridade da sessão.
+ const tecnico135=["set local session authorization nano_e2e_auditor; set local role nano_lifecycle_auditoria;",chamada124(app124,req133),"reset role; reset session authorization;"];
+ const humano135=[auth133,call133(),voltar133];
+ const teste135=admin([
+  "begin;",
+  "insert into public.usuarios_loja(loja_id,user_id,papel) values('"+L+"','"+humano133+"','lojista');",
+  ...tecnico135,...humano135,
+  "revoke nano_lifecycle_auditoria from nano_e2e_parecer;",
+  ...tecnico135,...humano135,
+  "grant nano_lifecycle_auditoria to nano_e2e_parecer;",
+  ...tecnico135,...humano135,
+  "update nano_lifecycle_interno.auditoria_escopos set habilitado=false where loja_id='"+L+"' and login_db='nano_e2e_parecer';",
+  ...tecnico135,...humano135,
+  "update nano_lifecycle_interno.auditoria_escopos set habilitado=true where loja_id='"+L+"' and login_db='nano_e2e_parecer';",
+  ...tecnico135,...humano135,
+  "select jsonb_build_object('pendente',status='a_confirmar','indexavel',pagina_indexavel) from public.produto_aplicacoes where id='"+app124+"';",
+  "rollback;"
+ ].join("\n")).split("\n").map(JSON.parse);
+ assert.equal(teste135[0].estado,"vinculo_registrado");
+ assert.deepEqual(teste135.filter((_,i)=>[1,3,5,7,9].includes(i)),[esperado133,retido133,esperado133,retido133,esperado133]);
+ assert.deepEqual(teste135.filter((_,i)=>[2,4,6,8].includes(i)).map(x=>x.estado),["retida","vinculo_ja_registrado","retida","vinculo_ja_registrado"]);
+ assert.deepEqual(teste135[10],{pendente:true,indexavel:false});
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req133+"';"),"0");
+ for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria"])assert.equal(admin("select has_function_privilege('"+papel+"','nano_lifecycle_interno.nano_catalogo_auditor_vigente(text)','EXECUTE');"),"f");
+ console.log("ok: CAT-135-01 paridade de papel DB e escopo, retry, ACL e rollback nas duas fronteiras");
  // Revogação permitida pelo guard legado, sem reaprovação artificial.
  admin("update public.pecas_aplicacoes_tecnicas set status='desatualizado' where id='"+g130.aresta+"';");
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");
