@@ -464,6 +464,10 @@ try{
   });
   assert.equal((await registrar(audit,candidato,req76)).estado,"ocupada");
   assert.equal((await registrar(audit,candidato,deniedRequest)).estado,"ocupada");
+  // O gate e o despachante compartilham exatamente a mesma exclusão por loja.
+  const despacho78=(loja,item)=>admin("set role service_role; select public.nano_lifecycle_encaminhar('"+loja+"','sync_0002',(select idempotency_key from public.pipeline_itens where id='"+item+"'))->>'estado';");
+  assert.equal(despacho78(L,I),"ocupado");
+  assert.equal(despacho78(outra,I2),"ja_encaminhado");
   // SQLSTATE exato: não confundir rejeição de permissão com disputa do advisory lock.
   const mutacoes=[
    ["update nano_lifecycle_interno.fontes_documentais set autorizada=false where loja_id='"+L+"' and id='f' returning id;","update nano_lifecycle_interno.fontes_documentais set autorizada=false where loja_id='"+outra+"' and id='f' returning id;","f"],
@@ -483,6 +487,10 @@ try{
   }
   rl76.close();
  }
+ // Sentido inverso: despacho legítimo mantém a exclusão até rollback.
+ const retryDespacho78=loja=>"set local role service_role; select public.nano_lifecycle_encaminhar('"+loja+"','sync_0002',(select idempotency_key from public.pipeline_itens where id='"+(loja===L?I:I2)+"'))->>'estado'; reset role;";
+ await testarEscritor("public.pipeline_itens",retryDespacho78(L),"ocupada","postgres","ja_encaminhado");
+ await testarEscritor("public.pipeline_itens",retryDespacho78(outra),"ja_registrada","postgres","ja_encaminhado");
  // A liberação transacional permite DML legítimo e retry sem gravar o recibo abortado.
  assert.equal(admin("begin; "+atualizarAuto(P)+" rollback;"),"t");
  assert.equal((await registrar(audit,candidato,concorrente)).estado,"ja_registrada");

@@ -1,4 +1,4 @@
-// Benchmark de referência: PostgreSQL local descartável, sem alterar as travas do despachante.
+// Benchmark comparável pós-isolamento: PostgreSQL local descartável.
 import {execFile,spawn} from "node:child_process";
 import {promisify} from "node:util";
 import {createInterface} from "node:readline";
@@ -41,16 +41,16 @@ for(const [label,mutation,marker] of [
  ["fila_legada","insert into public.pipeline_itens(id,loja_id,sku,idempotency_key) values('"+fila+"','"+L+"','BENCH-LEGADO-77','bench-legado-77') returning id;",fila]
 ]){
  await escritor(mutation,marker,async()=>{
-  // Referência antiga: DML real em L impede retry em L e criação independente em L2.
+  // A primeira contenção testa criação nova em L2; a segunda, retry em L2.
   assert.equal(await despacho(L,K),"ocupado");
-  assert.equal(await despacho(L2,K2),"ocupado");
+  assert.equal(await despacho(L2,K2),label==="automacao"?"encaminhado":"ja_encaminhado");
  });
- assert.equal(await counts(L),"1");assert.equal(await counts(L2),"0");
- console.log(JSON.stringify({benchmark:"nano-despacho",cenario:"contencao_"+label,mesma_loja:"ocupado",outra_loja:"ocupado",rollback:true}));
+ assert.equal(await counts(L),"1");assert.equal(await counts(L2),"1");
+ console.log(JSON.stringify({benchmark:"nano-despacho",cenario:"contencao_"+label,mesma_loja:"ocupado",outra_loja:label==="automacao"?"encaminhado":"ja_encaminhado",rollback:true}));
 }
 assert.equal(await sql("select to_jsonb(a)::text from public.produto_automacao a where produto_id='"+P+"';"),baselineBefore);
 assert.equal(await sql("select count(*) from public.pipeline_itens where id='"+fila+"';"),"0");
-assert.equal(await despacho(L2,K2),"encaminhado");
+assert.equal(await despacho(L2,K2),"ja_encaminhado");
 assert.equal(await despacho(L,K),"ja_encaminhado");
 assert.equal(await despacho(L2,K2),"ja_encaminhado");
 const quantil=(s,p)=>s[Math.ceil(s.length*p)-1];
@@ -81,4 +81,9 @@ for(const [loja,produto,chave] of [[L,P,K],[L2,P2,K2]]){
  assert.equal(await sql("select count(*) from public.pipeline_historico where loja_id='"+loja+"';"),"1");
  assert.equal(await sql("select count(*) from public.pipeline_custos where loja_id='"+loja+"';"),"0");
 }
-console.log("ok: baseline duas lojas, nova tarefa, retry, contenção legada, métricas e zero custos");
+assert.equal(await sql("select position('lock table' in lower(pg_get_functiondef('nano_lifecycle_interno.nano_lifecycle_despachar(uuid,text,text)'::regprocedure)))=0;"),"t");
+assert.equal(await sql("select has_table_privilege('nano_lifecycle_despachante','public.pipeline_itens','update') or has_table_privilege('nano_lifecycle_despachante','public.produto_automacao','update');"),"f");
+for(const nivel of ["repeatable read","serializable"]){
+ assert.equal(await sql("begin isolation level "+nivel+"; set local role service_role; select public.nano_lifecycle_encaminhar('"+L+"','sync_0002','"+K+"')->>'estado'; rollback;"),"ocupado");
+}
+console.log("ok: pós-isolamento duas lojas, nova tarefa, retry, contenção local, métricas e zero custos");
