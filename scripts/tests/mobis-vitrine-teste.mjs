@@ -93,9 +93,19 @@ async function consultar(page, acao, criterio) {
   await resposta;
   await page.locator(".m2-catalogo-discreto").waitFor();
 }
+async function verificarIdentidadeMA(page,modelo){
+  const raiz=page.locator(".mobis-v2.m4[data-mobis-site=\"v3\"]");
+  await raiz.waitFor();
+  assert.equal(await raiz.count(),1,"uma única raiz da vitrine atual");
+  assert.equal(await raiz.getAttribute("data-mobis-modelo"),modelo,"arranjo autorizado preservado");
+  assert.match(await raiz.evaluate(el=>getComputedStyle(el).getPropertyValue("--ma-film-brush").trim()),/repeating-linear-gradient/,"película MA Display aplicada à raiz");
+  assert.match(await raiz.locator(".ms-logo img").getAttribute("src")||"",/mobis-mstyle-v3-sem-slogan/,"logo oficial preservado");
+  assert.equal(await page.locator("[data-acesso-layout], [data-conecta-layout], [data-nano-layout]").count(),0,"vitrine não monta interface privada");
+}
 try {
-  for (const width of [360,390,720,1280]) {
+  for (const width of [360,390,412,720,1280]) {
     const {context,page,consultas,erros} = await abrir({ambiente:"teste",venda_habilitada:false}, width);
+    await verificarIdentidadeMA(page,"tecnico");
     assert.equal(await page.locator("#m2-produto-teste").count(),0,"a página comercial não mostra produto fictício");
     assert.equal(await page.locator(".m2-produto").count(),0,"um catálogo vazio não inventa itens");
     assert.equal(await page.locator(".m4-banner-campanha").count(),0,"sem campanha publicada não existe banner de oferta fictício");
@@ -124,7 +134,7 @@ try {
     assert.equal(await page.locator(".m2-aviso-teste").count(),0,"aviso de ambiente de teste removido da vitrine (pedido do dono)");
     assert.equal(await page.getByText("Prévia da loja", {exact:false}).count(),0,"legenda de prévia removida do carrossel (pedido do dono)");
     assert.deepEqual(erros,[]);
-    if (width===1280 || width===390) {
+    if (width===1280 || width===390 || width===412) {
       await page.locator(".ms-aplicacoes").screenshot({path:dir+`filtros-UNICO-SIMULADO-${width}.png`});
       await page.evaluate(()=>scrollTo(0,0));
       await page.screenshot({path:dir+`inicio-SIMULADO-${width}.png`});
@@ -163,6 +173,10 @@ try {
       // Modelo 02 (técnico) move os 7 sistemas para a faixa de departamentos; os demais mantêm a grade dedicada.
       assert.equal(await page.locator(modelo==="tecnico"?".ms-departamentos-lista button":".m2-modulo-sistemas-grid button").count(),7,"os 7 sistemas do veículo aparecem no modelo "+modelo);
       assert.equal(await page.locator(".m2-produto").count(),0,"modelo visual não pode liberar produto não publicado");
+      await verificarIdentidadeMA(page,modelo);
+      await page.reload();
+      await page.locator(".m2-catalogo-discreto").getByText(/Itens em organização por aplicação aprovada/).waitFor();
+      await verificarIdentidadeMA(page,modelo);
       assert.deepEqual(erros,[],"modelo "+modelo+" sem exceção no navegador");
       await context.close();
     }
@@ -345,6 +359,14 @@ try {
     await page.locator("#m2-empresa").waitFor();
     assert.equal(new URL(page.url()).hash,"#/loja/mobis/empresa","empresa tem página dedicada");
     assert.equal(await page.locator(".m2-catalogo").count(),0,"empresa não duplica catálogo");
+    await verificarIdentidadeMA(page,"tecnico");
+    await page.goto(base+"#/loja/mobis/empresa");
+    await page.locator("#m2-empresa").waitFor();
+    await verificarIdentidadeMA(page,"tecnico");
+    await page.reload();
+    await page.locator("#m2-empresa").waitFor();
+    await verificarIdentidadeMA(page,"tecnico");
+    assert.equal(await page.locator(".m2-catalogo").count(),0,"acesso direto e recarga preservam a página institucional");
     assert.deepEqual(erros,[]);
     await context.close();
   }
