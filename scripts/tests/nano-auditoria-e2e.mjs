@@ -517,6 +517,39 @@ try{
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.produto_aplicacoes'::regclass and tgname='zz_nano_guard_decisao' and tgenabled='A';"),"1");
  for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria"])assert.equal(admin("select has_function_privilege('"+papel+"','nano_lifecycle_interno.nano_catalogo_guard_decisao()','EXECUTE');"),"f");
  console.log("ok: CAT-140-01 bloqueio da aprovacao legada no fluxo Nano, identidade monotona, replica, rejeicao e rollback");
+ // CAT-143: recibo técnico real e manifestação humana na mesma transação.
+ const req143="fb143000-0000-0000-0000-000000000001",sol143="fb143000-0000-0000-0000-000000000002",alt143="fb143000-0000-0000-0000-000000000003";
+ const chamada143=(sol=sol143,dec="aprovar",app=app124,rec=req143)=>"select private.nano_catalogo_registrar_manifestacao('"+L+"','"+P+"','"+app+"','"+rec+"','"+sol+"','"+dec+"')::text;";
+ const teste143=admin([
+  "begin;",
+  "insert into public.usuarios_loja(loja_id,user_id,papel) values('"+L+"','"+humano133+"','lojista');",
+  "set local session authorization nano_e2e_auditor; set local role nano_lifecycle_auditoria;",chamada124(app124,req143),
+  "reset role; reset session authorization;",
+  auth133,chamada143(),chamada143(),chamada143(alt143),chamada143(sol143,"rejeitar"),chamada143(sol143,"aprovar",app124b),chamada143(sol143,"aprovar",app124,request),
+  voltar133,
+  "update public.usuarios_loja set papel='editor' where loja_id='"+L+"' and user_id='"+humano133+"';",
+  auth133,chamada143(),voltar133,
+  "select jsonb_build_object('total',count(*),'ator',min(ator::text),'recibo',min(recibo::text),'decisao',min(decisao),'homologada',bool_or(homologada)) from nano_lifecycle_interno.catalogo_manifestacoes where loja_id='"+L+"';",
+  "select jsonb_build_object('status',status,'indexavel',pagina_indexavel) from public.produto_aplicacoes where id='"+app124+"';",
+  "do $ begin begin update nano_lifecycle_interno.catalogo_manifestacoes set decisao='rejeitar' where loja_id='"+L+"'; raise exception 'mutacao indevida'; exception when others then if sqlerrm not like '%documento técnico histórico imutável%' then raise; end if; end; end $;",
+  "rollback;"
+ ].join("\n")).split("\n").map(JSON.parse);
+ assert.equal(teste143[0].estado,"vinculo_registrado");
+ assert.deepEqual(teste143.slice(1),[
+  {estado:"manifestacao_registrada",solicitacao:sol143,homologada:false},
+  {estado:"manifestacao_ja_registrada",solicitacao:sol143,homologada:false},
+  ...Array.from({length:5},()=>({estado:"retida",homologada:false})),
+  {total:1,ator:humano133,recibo:req143,decisao:"aprovar",homologada:false},
+  {status:"a_confirmar",indexavel:false}
+ ]);
+ const tabela143="nano_lifecycle_interno.catalogo_manifestacoes",rpc143="private.nano_catalogo_registrar_manifestacao(uuid,uuid,uuid,uuid,uuid,text)";
+ for(const papel of ["anon","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria","nano_lifecycle_gate_registrador","nano_catalogo_vinculo_humano_leitor"])assert.equal(admin("select has_function_privilege('"+papel+"','"+rpc143+"','EXECUTE');"),"f");
+ for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria"])assert.equal(admin("select has_table_privilege('"+papel+"','"+tabela143+"','SELECT,INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
+ assert.equal(admin("select has_table_privilege('nano_catalogo_manifestacao_escritor','public.produto_aplicacoes','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
+ assert.equal(admin("select has_table_privilege('nano_catalogo_manifestacao_escritor','"+tabela143+"','UPDATE,DELETE,TRUNCATE');"),"f");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='"+tabela143+"'::regclass and tgname in ('nano_manifestacao_imutavel','nano_manifestacao_truncate') and tgenabled='A';"),"2");
+ assert.equal(admin("select count(*) from "+tabela143+";"),"0");
+ console.log("ok: CAT-143-01 manifestacao vinculada a recibo, retry exato, conflito, revogacao de papel, ACL e imutabilidade sem homologacao");
  // Revogação permitida pelo guard legado, sem reaprovação artificial.
  admin("update public.pecas_aplicacoes_tecnicas set status='desatualizado' where id='"+g130.aresta+"';");
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");

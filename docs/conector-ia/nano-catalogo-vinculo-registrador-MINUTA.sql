@@ -305,4 +305,62 @@ alter function private.nano_catalogo_conferir_vinculo(uuid,uuid,uuid,uuid) owner
 revoke all on function private.nano_catalogo_conferir_vinculo(uuid,uuid,uuid,uuid) from public,anon,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
 grant execute on function private.nano_catalogo_conferir_vinculo(uuid,uuid,uuid,uuid) to authenticated;
 revoke create on schema private from nano_catalogo_vinculo_humano_leitor;
+
+-- CAT-143: manifestação humana histórica. Não equivale a homologação nem
+-- modifica a aplicação. Escritor segregado e sem autoridade de publicação.
+create role nano_catalogo_manifestacao_escritor nologin noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls;
+grant usage on schema nano_lifecycle_interno,auth to nano_catalogo_manifestacao_escritor;
+grant usage,create on schema private to nano_catalogo_manifestacao_escritor;
+grant execute on function auth.uid(),private.nano_catalogo_conferir_vinculo(uuid,uuid,uuid,uuid) to nano_catalogo_manifestacao_escritor;
+create table nano_lifecycle_interno.catalogo_manifestacoes(
+ loja_id uuid not null, solicitacao uuid not null, produto_id uuid not null, aplicacao_id uuid not null, recibo uuid not null,
+ ator uuid not null, decisao text not null check(decisao in ('aprovar','rejeitar')),
+ registrado_em timestamptz not null default clock_timestamp(),
+ homologada boolean not null default false check(not homologada),
+ primary key(loja_id,solicitacao), unique(loja_id,recibo),
+ foreign key(loja_id,recibo) references nano_lifecycle_interno.conferencias_gate(loja_id,solicitacao)
+);
+alter table nano_lifecycle_interno.catalogo_manifestacoes enable row level security;
+revoke all on nano_lifecycle_interno.catalogo_manifestacoes from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria,nano_lifecycle_gate_registrador,nano_catalogo_vinculo_humano_leitor;
+grant select,insert on nano_lifecycle_interno.catalogo_manifestacoes to nano_catalogo_manifestacao_escritor;
+create policy nano_manifestacao_escopo on nano_lifecycle_interno.catalogo_manifestacoes for all to nano_catalogo_manifestacao_escritor
+ using(loja_id::text=current_setting('nano.manifestacao_loja',true) and ator=auth.uid())
+ with check(loja_id::text=current_setting('nano.manifestacao_loja',true) and ator=auth.uid() and not homologada);
+create policy nano_manifestacao_restrita on nano_lifecycle_interno.catalogo_manifestacoes as restrictive for all to nano_catalogo_manifestacao_escritor
+ using(loja_id::text=current_setting('nano.manifestacao_loja',true) and ator=auth.uid())
+ with check(loja_id::text=current_setting('nano.manifestacao_loja',true) and ator=auth.uid() and not homologada);
+create trigger nano_manifestacao_imutavel before update or delete on nano_lifecycle_interno.catalogo_manifestacoes for each row execute function nano_lifecycle_interno.proteger_documento_tecnico();
+create trigger nano_manifestacao_truncate before truncate on nano_lifecycle_interno.catalogo_manifestacoes for each statement execute function nano_lifecycle_interno.proteger_documento_tecnico();
+alter table nano_lifecycle_interno.catalogo_manifestacoes enable always trigger nano_manifestacao_imutavel;
+alter table nano_lifecycle_interno.catalogo_manifestacoes enable always trigger nano_manifestacao_truncate;
+create function private.nano_catalogo_registrar_manifestacao(p_loja uuid,p_produto uuid,p_aplicacao uuid,p_recibo uuid,p_solicitacao uuid,p_decisao text)
+returns jsonb language plpgsql volatile security definer set search_path='' set nano.manifestacao_loja='' as $manifestacao$
+declare v jsonb; ator_atual uuid; evento nano_lifecycle_interno.catalogo_manifestacoes;
+begin
+ if current_setting('role',true) is distinct from 'authenticated' or current_setting('transaction_isolation')<>'read committed'
+ or p_solicitacao is null or p_decisao is null or p_decisao not in ('aprovar','rejeitar') then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ ator_atual:=auth.uid();
+ if ator_atual is null then return jsonb_build_object('estado','retida','homologada',false); end if;
+ -- Mantém as travas transacionais de loja e grafo adquiridas na conferência.
+ -- Revalida inclusive no retry, sem aceitar identidade ou snapshot do cliente.
+ v:=private.nano_catalogo_conferir_vinculo(p_loja,p_produto,p_aplicacao,p_recibo);
+ if v->>'estado'='ocupada' then return jsonb_build_object('estado','ocupada','homologada',false); end if;
+ if v is distinct from jsonb_build_object('estado','vinculo_consultivo','ator',ator_atual,'loja',p_loja,'produto',p_produto,'aplicacao',p_aplicacao,'recibo',p_recibo,'homologada',false) then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ perform set_config('nano.manifestacao_loja',p_loja::text,true);
+ insert into nano_lifecycle_interno.catalogo_manifestacoes(loja_id,solicitacao,produto_id,aplicacao_id,recibo,ator,decisao)
+ values(p_loja,p_solicitacao,p_produto,p_aplicacao,p_recibo,ator_atual,p_decisao)
+ on conflict do nothing returning * into evento;
+ if found then return jsonb_build_object('estado','manifestacao_registrada','solicitacao',p_solicitacao,'homologada',false); end if;
+ select * into evento from nano_lifecycle_interno.catalogo_manifestacoes m
+ where m.loja_id=p_loja and m.solicitacao=p_solicitacao and m.produto_id=p_produto and m.aplicacao_id=p_aplicacao
+ and m.recibo=p_recibo and m.ator=ator_atual and m.decisao=p_decisao and not m.homologada;
+ if not found then return jsonb_build_object('estado','retida','homologada',false); end if;
+ return jsonb_build_object('estado','manifestacao_ja_registrada','solicitacao',p_solicitacao,'homologada',false);
+end $manifestacao$;
+alter function private.nano_catalogo_registrar_manifestacao(uuid,uuid,uuid,uuid,uuid,text) owner to nano_catalogo_manifestacao_escritor;
+revoke all on function private.nano_catalogo_registrar_manifestacao(uuid,uuid,uuid,uuid,uuid,text) from public,anon,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria,nano_lifecycle_gate_registrador,nano_catalogo_vinculo_humano_leitor;
+grant execute on function private.nano_catalogo_registrar_manifestacao(uuid,uuid,uuid,uuid,uuid,text) to authenticated;
+revoke create on schema private from nano_catalogo_manifestacao_escritor;
 commit;
