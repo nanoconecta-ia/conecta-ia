@@ -120,3 +120,32 @@ console.log("inventario CAT-112-04 ACL (não prova RLS ou autoria): "+JSON.strin
 const escritores=JSON.parse(sql("select coalesce(jsonb_agg(n.nspname||'.'||p.proname order by n.nspname,p.proname),'[]'::jsonb)::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in ('public','private','nano_lifecycle_interno') and p.prosrc ilike '%auditoria%' and p.prosrc ilike '%insert%';"));
 assert.ok(escritores.includes("public.aplicacao_decidir"));
 console.log("ok: CAT-112-04 inventário textual parcial de funções: "+JSON.stringify(escritores));
+
+// CAT-114: autoridade existente da sessão sintética, não autenticação JWT real.
+// Exercita o mesmo RPC usado por assistente/permissao.ts. Não instala rota nem amplia ACL.
+const L2="e1140000-0000-0000-0000-000000000002",H="e1143000-0000-0000-0000-000000000001",E="e1143000-0000-0000-0000-000000000002",X="e1143000-0000-0000-0000-000000000003";
+sql("begin; insert into public.lojas(id,nome,slug) values ('"+L2+"','CI outra loja','ci-catalogo-114-outra'); insert into public.usuarios_loja(loja_id,user_id,papel) values ('"+L+"','"+H+"','lojista'),('"+L+"','"+E+"','editor'),('"+L2+"','"+X+"','lojista'); commit;");
+const autoridade=(claims,loja=L)=>{
+ const c=JSON.stringify(claims);
+ assert.ok(!c.includes("'")&&[L,L2].includes(loja)); // somente fixtures fixas.
+ return JSON.parse(sql("begin; set local role authenticated; set local request.jwt.claims='"+c+"'; select jsonb_build_object('ator',auth.uid(),'pode',public.pode_administrar_loja('"+loja+"'))::text; rollback;"));
+};
+assert.deepEqual(autoridade({sub:H}),{ator:H,pode:true});
+assert.deepEqual(autoridade({sub:E}),{ator:E,pode:false});
+console.log("ok: CAT-114-01 ator da sessão e papel lojista distinguem editor");
+assert.deepEqual(autoridade({sub:X}),{ator:X,pode:false});
+assert.deepEqual(autoridade({sub:X},L2),{ator:X,pode:true});
+assert.deepEqual(autoridade({sub:H},L2),{ator:H,pode:false});
+console.log("ok: CAT-114-02 autoridade isolada por loja");
+assert.deepEqual(autoridade({}),{ator:null,pode:false});
+assert.deepEqual(autoridade({sub:E,user_metadata:{papel:"super_admin"},aal:"aal2"}),{ator:E,pode:false});
+assert.deepEqual(autoridade({sub:E,app_metadata:{papel:"super_admin"},aal:"aal1"}),{ator:E,pode:false});
+console.log("ok: CAT-114-03 ausência de ator, metadata editável e MFA insuficiente negados");
+sql("update public.usuarios_loja set papel='editor' where loja_id='"+L+"' and user_id='"+H+"';");
+assert.deepEqual(autoridade({sub:H}),{ator:H,pode:false});
+sql("delete from public.usuarios_loja where loja_id='"+L+"' and user_id='"+H+"';");
+assert.deepEqual(autoridade({sub:H}),{ator:H,pode:false});
+console.log("ok: CAT-114-04 perda de papel e revogação verificadas em nova consulta");
+assert.equal(sql("select has_function_privilege('authenticated','public.aplicacao_decidir(uuid,uuid,uuid,text)','EXECUTE');"),"f");
+const r4=restrito(L,P,A2);assert.deepEqual(r4.atual,r3.atual);assert.deepEqual(r4.eventos,r3.eventos);
+console.log("ok: CAT-114-05 autorização consultiva não cria decisão, evento ou prova");
