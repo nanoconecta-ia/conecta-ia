@@ -495,6 +495,23 @@ try{
  for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria"])assert.equal(admin("select has_function_privilege('"+papel+"','"+tempo139+"(timestamptz,timestamptz,timestamptz)','EXECUTE');"),"f");
  assert.equal(admin("select prosecdef from pg_proc where oid='"+tempo139+"(timestamptz,timestamptz,timestamptz)'::regprocedure;"),"f");
  console.log("ok: CAT-139-01 cronologia comum, microssegundos, limites, nulos, infinito e ACL");
+ // CAT-140: bloquear RPC legado e UPDATE direto, inclusive após retirar vínculos.
+ const filtro140=" where loja_id='"+L+"' and id='"+app124+"';";
+ const erro140=e=>e.stderr?.includes("decisao Nano exige autoridade humana exclusiva")===true;
+ assert.equal(admin("select nano_decisao_protegida from public.produto_aplicacoes"+filtro140),"t");
+ assert.throws(()=>admin("set role service_role; select public.aplicacao_decidir('"+L+"','"+app124+"','"+humano133+"','aprovar');"),erro140);
+ assert.throws(()=>admin("update public.produto_aplicacoes set status='aprovado'"+filtro140),erro140);
+ assert.throws(()=>admin("begin; set local session_replication_role=replica; update public.produto_aplicacoes set status='aprovado'"+filtro140+" rollback;"),erro140);
+ const semVinculo140="nano_geracao_veicular=null,nano_emissao=null,nano_mercado=null,nano_tipo_ano=null,nano_versao_id=null,nano_motor_id=null,nano_produto_peca_ref_id=null,nano_peca_aplicacao_id=null,nano_decisao_protegida=false";
+ assert.throws(()=>admin("begin; update public.produto_aplicacoes set "+semVinculo140+filtro140+" update public.produto_aplicacoes set status='aprovado'"+filtro140+" rollback;"),erro140);
+ assert.equal(admin("begin; update public.produto_aplicacoes set "+semVinculo140+filtro140+" select nano_decisao_protegida from public.produto_aplicacoes"+filtro140+" rollback;"),"t");
+ assert.throws(()=>admin("delete from public.produto_aplicacoes"+filtro140),e=>e.stderr?.includes("identidade Nano protegida contra exclusao")===true);
+ assert.throws(()=>admin("update public.produto_aplicacoes set id='fb140000-0000-0000-0000-000000000001'"+filtro140),e=>e.stderr?.includes("identidade Nano protegida contra substituicao")===true);
+ assert.equal(admin("begin; update public.produto_aplicacoes set status='rejeitado',pagina_indexavel=false"+filtro140+" select status||':'||pagina_indexavel::text from public.produto_aplicacoes"+filtro140+" rollback;"),"rejeitado:false");
+ assert.equal(admin("select status||':'||pagina_indexavel::text from public.produto_aplicacoes"+filtro140),"a_confirmar:false");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.produto_aplicacoes'::regclass and tgname='zz_nano_guard_decisao' and tgenabled='A';"),"1");
+ for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria"])assert.equal(admin("select has_function_privilege('"+papel+"','nano_lifecycle_interno.nano_catalogo_guard_decisao()','EXECUTE');"),"f");
+ console.log("ok: CAT-140-01 bloqueio da aprovacao legada no fluxo Nano, identidade monotona, replica, rejeicao e rollback");
  // Revogação permitida pelo guard legado, sem reaprovação artificial.
  admin("update public.pecas_aplicacoes_tecnicas set status='desatualizado' where id='"+g130.aresta+"';");
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");

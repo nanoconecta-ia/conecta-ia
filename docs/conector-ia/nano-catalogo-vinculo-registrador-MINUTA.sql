@@ -27,6 +27,39 @@ alter table public.produto_aplicacoes
  add column nano_produto_peca_ref_id uuid references public.produto_pecas_ref(id),
  add column nano_peca_aplicacao_id uuid references public.pecas_aplicacoes_tecnicas(id),
  add constraint nano_aplicacao_peca_par check ((nano_produto_peca_ref_id is null)=(nano_peca_aplicacao_id is null));
+-- CAT-140: fronteira fail-closed para aplicações ingressadas no fluxo Nano.
+-- Marca monotônica por linha: remover vínculos não reabre a aprovação legada.
+-- Não autoriza escritor de decisão; rejeição e edição pendente permanecem.
+alter table public.produto_aplicacoes add column nano_decisao_protegida boolean not null default false;
+create function nano_lifecycle_interno.nano_catalogo_guard_decisao()
+returns trigger language plpgsql security invoker set search_path='' as $guard$
+begin
+ if TG_OP='DELETE' then
+  if old.nano_decisao_protegida then
+   raise exception 'identidade Nano protegida contra exclusao' using errcode='42501';
+  end if;
+  return old;
+ end if;
+ if TG_OP='UPDATE' then
+  if old.nano_decisao_protegida and (new.id is distinct from old.id or new.loja_id is distinct from old.loja_id or new.produto_id is distinct from old.produto_id) then
+   raise exception 'identidade Nano protegida contra substituicao' using errcode='42501';
+  end if;
+  new.nano_decisao_protegida:=old.nano_decisao_protegida or (new.nano_decisao_protegida is true);
+ end if;
+ new.nano_decisao_protegida:=(new.nano_decisao_protegida is true)
+  or new.nano_geracao_veicular is not null or new.nano_emissao is not null
+  or new.nano_mercado is not null or new.nano_tipo_ano is not null
+  or new.nano_versao_id is not null or new.nano_motor_id is not null
+  or new.nano_produto_peca_ref_id is not null or new.nano_peca_aplicacao_id is not null;
+ if new.nano_decisao_protegida and (new.status='aprovado' or new.pagina_indexavel is true) then
+  raise exception 'decisao Nano exige autoridade humana exclusiva ainda indisponivel' using errcode='42501';
+ end if;
+ return new;
+end $guard$;
+revoke all on function nano_lifecycle_interno.nano_catalogo_guard_decisao() from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+create trigger zz_nano_guard_decisao before insert or update or delete on public.produto_aplicacoes
+ for each row execute function nano_lifecycle_interno.nano_catalogo_guard_decisao();
+alter table public.produto_aplicacoes enable always trigger zz_nano_guard_decisao;
 -- CAT-131: hash explícito do conteúdo documental da fonte global.
 -- Sem backfill; o documento privado é revalidado pelo pre_gate.
 alter table public.fontes
