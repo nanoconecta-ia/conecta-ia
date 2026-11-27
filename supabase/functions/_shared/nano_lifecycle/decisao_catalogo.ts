@@ -15,7 +15,16 @@ function igual(a:unknown,b:unknown):boolean{
 }
 const identidade=(r:unknown,e:EscopoDecisaoCatalogo):r is Linha=>obj(r)&&r.id===e.aplicacao_id&&r.loja_id===e.loja_id&&r.produto_id===e.produto_id;
 const statusOk=(s:unknown)=>["a_confirmar","aprovado","desatualizado","rejeitado"].includes(String(s));
-const instante=(s:unknown):s is string=>typeof s==="string"&&/^\d{4}-\d{2}-\d{2}T/.test(s)&&Number.isFinite(Date.parse(s));
+// Aceita somente o formato ISO emitido pelo PostgreSQL, com fuso explícito.
+const instante=(s:unknown):s is string=>{
+ if(typeof s!=="string")return false;
+ const m=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?(?:Z|[+-](\d{2}):(\d{2}))$/.exec(s);
+ if(!m||m[0]!==s)return false;
+ const [ano,mes,dia,hora,minuto,segundo]=m.slice(1,7).map(Number);
+ const dias=[31,ano%4===0&&(ano%100!==0||ano%400===0)?29:28,31,30,31,30,31,31,30,31,30,31];
+ return ano>0&&mes>=1&&mes<=12&&dia>=1&&dia<=dias[mes-1]&&hora<=23&&minuto<=59&&segundo<=59
+  &&(m[8]===undefined||(Number(m[8])<=15&&Number(m[9])<=59))&&Number.isFinite(Date.parse(s));
+};
 // PostgreSQL mantém seis casas decimais em timestamptz; Date.parse retém três.
 function microssegundos(s:string):bigint {
  const milissegundos=Date.parse(s);

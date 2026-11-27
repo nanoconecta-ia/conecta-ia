@@ -65,3 +65,22 @@ test("CAT-120-01: ordem, corte do snapshot e data da fonte respeitam microssegun
  const depois={...fontePosterior,status:"aprovado"};
  assert.equal(run(depois,[{...primeiro,antes:fontePosterior,depois}]).estado,"retida");
 });
+
+test("CAT-121-01: timestamps invalidos sao retidos em evento, snapshot e fonte",()=>{
+ for(const quando of ["2026-02-30T11:00:00Z","2026-11-26T11:00:00","2026-11-26T24:00:00Z","2026-11-26T11:00:00.1234567Z","2026-11-26T11:00:00+16:00","1900-02-29T11:00:00Z","2026-11-26T11:00:00Z\n"]){
+  assert.equal(run(aprovado,[{...ev,quando}]).estado,"retida",quando);
+  assert.equal(reconciliarDecisaoCatalogo(escopo,aprovado,[ev],quando).estado,"retida",quando);
+  const antes={...base,coletado_em:quando};
+  const depois={...antes,status:"aprovado"};
+  assert.equal(run(depois,[{...ev,antes,depois}]).estado,"retida",quando);
+ }
+});
+test("CAT-121-02: datas bissextas e fusos explicitos preservam a ordem temporal",()=>{
+ for(const coletado_em of ["2024-02-29T11:00:00.123456Z","2000-02-29T11:00:00Z","2026-11-26T08:00:00.123456-03:00","2026-11-26T11:00:00.123456+00:00"]){
+  const antes={...base,coletado_em};
+  const depois={...antes,status:"aprovado"};
+  const r=run(depois,[{...ev,quando:"2026-11-26T11:00:00.123456Z",antes,depois}]);
+  assert.equal(r.estado,"aprovacao_legada_conferida",coletado_em);
+  assert.equal(r.homologada,false);
+ }
+});
