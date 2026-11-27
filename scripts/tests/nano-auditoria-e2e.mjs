@@ -350,6 +350,36 @@ try{
  for(const tabela of ["public.produto_aplicacoes","public.usuarios_loja","public.fontes","nano_lifecycle_interno.conferencias_gate","nano_lifecycle_interno.leituras_documentais","nano_lifecycle_interno.fontes_documentais","nano_lifecycle_interno.auditoria_escopos"])assert.equal(admin("select has_table_privilege('nano_catalogo_vinculo_humano_leitor','"+tabela+"','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
  assert.equal(admin("select rolcanlogin or rolbypassrls or rolsuper from pg_roles where rolname='nano_catalogo_vinculo_humano_leitor';"),"f");
  console.log("ok: CAT-133-01 recibo vinculado, escopo, snapshot alterado, revogacoes e leitor sem escrita");
+ // CAT-134: cada contraprova ocorre sob a mesma transação do recibo real.
+ const teste134=admin([
+  "begin;",
+  "insert into public.usuarios_loja(loja_id,user_id,papel) values('"+L+"','"+humano133+"','lojista');",
+  "set local session authorization nano_e2e_auditor; set local role nano_lifecycle_auditoria;",
+  chamada124(app124,req133),
+  "reset role; reset session authorization;",
+  auth133,call133(),voltar133,
+  "update public.nano_lifecycle_checkpoint set consumo_habilitado=false where loja_id='"+L+"';",
+  auth133,call133(),voltar133,
+  "update public.nano_lifecycle_checkpoint set consumo_habilitado=true where loja_id='"+L+"';",
+  "update public.produto_automacao set pausado=true where produto_id='"+P+"';",
+  auth133,call133(),voltar133,
+  "update public.produto_automacao set pausado=false where produto_id='"+P+"';",
+  "revoke nano_lifecycle_auditoria from nano_e2e_parecer;",
+  auth133,call133(),voltar133,
+  "grant nano_lifecycle_auditoria to nano_e2e_parecer;",
+  "savepoint parecer_concorrente;",
+  "insert into nano_lifecycle_interno.leituras_documentais(loja_id,item_id,geracao,escopo,documento_id,fonte_id,sha256,localizador,trecho,fato,verificador,resultado) select loja_id,item_id,geracao,escopo,documento_id,fonte_id,sha256,localizador,trecho,fato,'nano_e2e_auditor','diverge' from nano_lifecycle_interno.leituras_documentais where id='"+r.id+"';",
+  auth133,call133(),voltar133,
+  "rollback to parecer_concorrente;",
+  auth133,call133(),voltar133,
+  "select jsonb_build_object('pendente',status='a_confirmar','indexavel',pagina_indexavel) from public.produto_aplicacoes where id='"+app124+"';",
+  "rollback;"
+ ].join("\n")).split("\n").map(JSON.parse);
+ assert.equal(teste134[0].estado,"vinculo_registrado");
+ assert.deepEqual(teste134.slice(1),[esperado133,retido133,retido133,retido133,retido133,esperado133,{pendente:true,indexavel:false}]);
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req133+"';"),"0");
+ for(const tabela of ["public.nano_lifecycle_checkpoint","public.nano_lifecycle_reserva","public.nano_lifecycle_snapshots","public.pipeline_itens","public.produto_automacao","public.produtos","nano_lifecycle_interno.documentos_tecnicos","nano_lifecycle_interno.resultados_engenharia","nano_lifecycle_interno.autorias_engenharia"])assert.equal(admin("select has_table_privilege('nano_catalogo_vinculo_humano_leitor','"+tabela+"','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
+ console.log("ok: CAT-134-01 checkpoint, pausa, papel DB revogado e parecer concorrente retidos; readback consultivo e rollback");
  // Revogação permitida pelo guard legado, sem reaprovação artificial.
  admin("update public.pecas_aplicacoes_tecnicas set status='desatualizado' where id='"+g130.aresta+"';");
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");

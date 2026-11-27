@@ -179,7 +179,9 @@ grant execute on function public.pode_administrar_loja(uuid),nano_lifecycle_inte
 do $leitor$
 declare rel regclass;
 begin
- foreach rel in array array['public.produto_aplicacoes'::regclass,'public.marcas'::regclass,'public.produto_pecas_ref'::regclass,'public.usuarios_loja'::regclass,'nano_lifecycle_interno.conferencias_gate'::regclass,'nano_lifecycle_interno.fontes_documentais'::regclass,'nano_lifecycle_interno.leituras_documentais'::regclass,'nano_lifecycle_interno.auditoria_escopos'::regclass] loop
+ foreach rel in array array['public.produto_aplicacoes'::regclass,'public.marcas'::regclass,'public.produto_pecas_ref'::regclass,'public.usuarios_loja'::regclass,'nano_lifecycle_interno.conferencias_gate'::regclass,'nano_lifecycle_interno.fontes_documentais'::regclass,'nano_lifecycle_interno.leituras_documentais'::regclass,'nano_lifecycle_interno.auditoria_escopos'::regclass,
+ 'nano_lifecycle_interno.documentos_tecnicos'::regclass,'nano_lifecycle_interno.resultados_engenharia'::regclass,'nano_lifecycle_interno.autorias_engenharia'::regclass,
+ 'public.nano_lifecycle_checkpoint'::regclass,'public.nano_lifecycle_reserva'::regclass,'public.nano_lifecycle_snapshots'::regclass,'public.pipeline_itens'::regclass,'public.produto_automacao'::regclass,'public.produtos'::regclass] loop
   execute format('grant select on %s to nano_catalogo_vinculo_humano_leitor',rel);
   execute format('create policy nano_humano_ler on %s for select to nano_catalogo_vinculo_humano_leitor using(loja_id::text=current_setting(''nano.humano_loja'',true))',rel);
   execute format('create policy nano_humano_escopo on %s as restrictive for all to nano_catalogo_vinculo_humano_leitor using(loja_id::text=current_setting(''nano.humano_loja'',true)) with check(false)',rel);
@@ -189,9 +191,28 @@ begin
   execute format('create policy nano_humano_grafo_ler on %s for select to nano_catalogo_vinculo_humano_leitor using(true)',rel);
  end loop;
 end $leitor$;
+grant execute on function public.nano_lifecycle_projecao(uuid) to nano_catalogo_vinculo_humano_leitor;
+-- Verificação da identidade histórica sem fingir que a sessão humana é auditor.
+create function nano_lifecycle_interno.nano_catalogo_auditor_vigente(p_login name)
+returns boolean language sql stable security invoker set search_path='' as $papel$
+ select exists(select 1 from pg_catalog.pg_roles r where r.rolname=p_login
+  and r.rolcanlogin and not r.rolsuper and not r.rolbypassrls and not r.rolcreaterole
+  and pg_has_role(r.oid,'nano_lifecycle_auditoria','MEMBER')
+  and not pg_has_role(r.oid,'nano_lifecycle_produtor','MEMBER')
+  and not pg_has_role(r.oid,'service_role','MEMBER')
+  and not pg_has_role(r.oid,'nano_lifecycle_consumidor','MEMBER')
+  and not pg_has_role(r.oid,'nano_lifecycle_auditor_leitor','MEMBER')
+  and not pg_has_role(r.oid,'nano_lifecycle_autorizacao_leitor','MEMBER'))
+$papel$;
+revoke all on function nano_lifecycle_interno.nano_catalogo_auditor_vigente(name) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+grant execute on function nano_lifecycle_interno.nano_catalogo_auditor_vigente(name) to nano_catalogo_vinculo_humano_leitor;
 create function private.nano_catalogo_conferir_vinculo(p_loja uuid,p_produto uuid,p_aplicacao uuid,p_recibo uuid)
 returns jsonb language plpgsql volatile security definer set search_path='' set nano.humano_loja='' as $humano$
 declare ator uuid; r nano_lifecycle_interno.conferencias_gate; snap jsonb;
+ e nano_lifecycle_interno.resultados_engenharia; a nano_lifecycle_interno.autorias_engenharia;
+ l nano_lifecycle_interno.leituras_documentais; d nano_lifecycle_interno.documentos_tecnicos;
+ cp public.nano_lifecycle_checkpoint; i public.pipeline_itens;
+ esc jsonb; atual jsonb; espelho jsonb; tecnico jsonb;
 begin
  if current_setting('role',true) is distinct from 'authenticated' or current_setting('transaction_isolation')<>'read committed'
   or p_loja is null or p_produto is null or p_aplicacao is null or p_recibo is null then
@@ -210,14 +231,59 @@ begin
  where c.loja_id=p_loja and c.solicitacao=p_recibo and c.aplicacao_id=p_aplicacao and c.candidato->'escopo'->>'produto'=p_produto::text
   and c.aplicacao_sha256 is not null and not c.homologada;
  if not found then return jsonb_build_object('estado','retida','homologada',false); end if;
- -- Rejeita fonte ou escopo documental revogado. Não simula login de auditor;
- -- a revalidação integral do lifecycle/pré-gate exige outra fronteira.
- if not exists(select 1 from nano_lifecycle_interno.leituras_documentais l
-  join nano_lifecycle_interno.fontes_documentais f on f.loja_id=l.loja_id and f.id=l.fonte_id
-  join nano_lifecycle_interno.auditoria_escopos a on a.loja_id=l.loja_id and a.login_db=r.auditor and a.habilitado
-  join nano_lifecycle_interno.auditoria_escopos v on v.loja_id=l.loja_id and v.login_db=l.verificador and v.habilitado
-  where l.loja_id=p_loja and l.id=r.leitura_id and l.resultado='confere' and l.sha256=r.sha256
-   and l.verificador<>r.auditor and f.autorizada) then return jsonb_build_object('estado','retida','homologada',false); end if;
+ -- CAT-134: revalida conteúdo, autoria e atualidade sob os mesmos locks.
+ select * into e from nano_lifecycle_interno.resultados_engenharia x
+ where x.loja_id=p_loja and x.item_id=r.item_id and x.geracao=r.geracao and x.produto_id=p_produto and not x.homologada;
+ if not found or e.hash_entrada is distinct from encode(sha256(convert_to(e.entrada_snapshot::text,'UTF8')),'hex')
+  or e.hash_extracao is distinct from encode(sha256(convert_to(e.extracao_candidata::text,'UTF8')),'hex')
+  or e.extracao_candidata->'nao_se_aplica' is distinct from 'null'::jsonb
+  or not exists(select 1 from jsonb_array_elements(e.extracao_candidata->'codigos_oem') o where o->>'normalizado'=r.candidato->'fato'->>'oem') then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ select * into a from nano_lifecycle_interno.autorias_engenharia x
+ where x.loja_id=p_loja and x.item_id=e.item_id and x.geracao=e.geracao and x.execucao=e.execucao and x.versao=e.versao
+  and x.hash_entrada=e.hash_entrada and x.hash_extracao=e.hash_extracao;
+ if not found then return jsonb_build_object('estado','retida','homologada',false); end if;
+ esc:=jsonb_build_object('loja',a.loja_id,'item',a.item_id,'execucao',a.execucao,'geracao',a.geracao,'versao',a.versao,
+ 'produto',e.produto_id::text,'sku',e.entrada_snapshot->'produto'->>'sku','revisao',e.revisao,'checkpoint',e.checkpoint,
+ 'hashEntrada',a.hash_entrada,'hashExtracao',a.hash_extracao,'produtor',a.produtor);
+ if esc is distinct from r.candidato->'escopo' or a.produtor=r.auditor then return jsonb_build_object('estado','retida','homologada',false); end if;
+ select * into cp from public.nano_lifecycle_checkpoint where loja_id=p_loja;
+ if not found or not cp.habilitado or not cp.despacho_habilitado or not cp.consumo_habilitado or cp.revisao is distinct from e.checkpoint
+  or exists(select 1 from public.nano_lifecycle_reserva where loja_id=p_loja and not encerrada and expira_em>statement_timestamp()) then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ select * into i from public.pipeline_itens where loja_id=p_loja and id=e.item_id;
+ if not found or i.estado<>'entrada' or i.entrada->>'origem' is distinct from 'nano_lifecycle'
+  or i.entrada->>'revisao' is distinct from e.revisao or i.produto_id is distinct from p_produto
+  or i.sku is distinct from esc->>'sku' or i.nano_execucao is distinct from e.execucao or i.nano_geracao is distinct from e.geracao
+  or i.versao is distinct from e.versao or i.nano_produtor::text is distinct from a.produtor::text
+  or exists(select 1 from public.produto_automacao where loja_id=p_loja and produto_id=p_produto and pausado) then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ select v into atual from jsonb_array_elements(public.nano_lifecycle_projecao(p_loja)) v where v->>'id'=p_produto::text;
+ select v into espelho from public.nano_lifecycle_snapshots s cross join lateral jsonb_array_elements(s.produtos) v
+ where s.loja_id=p_loja and s.revisao=cp.revisao and v->>'id'=p_produto::text;
+ if atual is null or espelho is null or atual is distinct from espelho or atual->>'situacao' is distinct from 'A'
+  or btrim(atual->>'sku') is distinct from i.sku
+  or exists(select 1 from public.produtos p where p.loja_id=p_loja and p.id<>p_produto and (p.bling_id=atual->>'bling_id' or upper(btrim(p.sku))=upper(i.sku))) then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ tecnico:=jsonb_build_object('id',atual->>'id','bling_id',atual->>'bling_id','sku',i.sku,'nome',atual->>'nome','marca',atual->>'marca','gtin',atual->>'gtin','descricao_curta',atual->>'descricao_curta','descricao_complementar',atual->>'descricao_complementar');
+ if tecnico is distinct from e.entrada_snapshot->'produto' then return jsonb_build_object('estado','retida','homologada',false); end if;
+ select * into d from nano_lifecycle_interno.documentos_tecnicos x
+ where x.loja_id=p_loja and x.id=r.candidato->>'documentoId' and x.fonte_id=r.candidato->>'fonteId'
+  and x.sha256=r.sha256 and x.consultado_em<=statement_timestamp();
+ if not found or d.sha256 is distinct from encode(sha256(convert_to(d.conteudo,'UTF8')),'hex')
+  or not exists(select 1 from nano_lifecycle_interno.fontes_documentais f where f.loja_id=p_loja and f.id=d.fonte_id and f.autorizada and f.tipo in ('catalogo_fabricante','manual_montadora')) then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ select * into l from nano_lifecycle_interno.leituras_documentais x where x.loja_id=p_loja and x.id=r.leitura_id
+  and x.item_id=e.item_id and x.geracao=e.geracao and x.escopo=esc and x.fato=r.candidato->'fato'
+  and x.fonte_id=d.fonte_id and x.documento_id=d.id and x.sha256=d.sha256 and x.localizador=r.candidato->>'localizador'
+  and x.resultado='confere' and x.verificado_em between d.consultado_em and statement_timestamp()
+  and position(x.trecho in d.conteudo)>0;
+ if not found or l.verificador in (a.produtor,r.auditor)
+  or not nano_lifecycle_interno.nano_catalogo_auditor_vigente(l.verificador)
+  or not nano_lifecycle_interno.nano_catalogo_auditor_vigente(r.auditor)
+  or (select count(*) from nano_lifecycle_interno.auditoria_escopos x where x.loja_id=p_loja and x.habilitado and x.login_db in (l.verificador,r.auditor))<>2
+  or (select count(*) from nano_lifecycle_interno.leituras_documentais x where x.loja_id=p_loja and x.documento_id=d.id and x.localizador=l.localizador and x.escopo=esc)<>1 then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
  snap:=nano_lifecycle_interno.nano_catalogo_snapshot_vinculado(p_loja,p_aplicacao,r.candidato,r.sha256);
  if snap is null or snap is distinct from r.aplicacao_snapshot or encode(sha256(convert_to(snap::text,'UTF8')),'hex') is distinct from r.aplicacao_sha256 then
   return jsonb_build_object('estado','retida','homologada',false);
