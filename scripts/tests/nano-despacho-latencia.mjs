@@ -69,6 +69,98 @@ async function rpc(s,loja,chave){
 }
 async function json(s,sql){const linhas=await s.query(sql);assert.equal(linhas.length,1);return JSON.parse(linhas[0]);}
 const estadoOk="ja_encaminhado";
+// Fila experimental local ao processo de teste: limite inclui tarefa em execução.
+function filaPorLoja(lojas,limite,executar){
+ assert.ok(Number.isInteger(limite)&&limite>0);
+ const estados=new Map(lojas.map(l=>[l,{pendentes:0,cauda:Promise.resolve()}]));
+ return function admitir(loja,tarefa){
+  const e=estados.get(loja);
+  if(!e)return Promise.resolve({estado:"loja_invalida"});
+  if(e.pendentes>=limite)return Promise.resolve({estado:"fila_cheia"});
+  e.pendentes++;
+  const p=e.cauda.then(()=>executar(loja,tarefa)).finally(()=>{e.pendentes--;});
+  e.cauda=p.catch(()=>{});
+  return p;
+ };
+}
+async function retryLimitado(executar){
+ const inicio=performance.now(),tentativas=[];
+ for(let i=0;i<3;i++){
+  const r=await executar();
+  tentativas.push(r);
+  if(r.estado!=="ocupado"||i===2)break;
+  await sleep(2*(i+1));
+ }
+ return {estado:tentativas.at(-1).estado,tentativas,execucao_ms:performance.now()-inicio};
+}
+async function testarContratoFila(){
+ let liberar;
+ const bloqueio=new Promise(resolve=>{liberar=resolve;});
+ const ordem=[];
+ const admitir=filaPorLoja([L,L2],2,async (loja,tarefa)=>{
+  ordem.push(tarefa);
+  if(tarefa==="a1")await bloqueio;
+  if(tarefa==="erro")throw Error("falha sintética");
+  return {estado:estadoOk};
+ });
+ const a1=admitir(L,"a1"),a2=admitir(L,"a2");
+ try{
+  assert.equal((await admitir(L,"a3")).estado,"fila_cheia");
+  assert.equal((await admitir("invalida","x")).estado,"loja_invalida");
+  assert.equal((await admitir(L2,"b1")).estado,estadoOk);
+  assert.deepEqual(ordem,["a1","b1"]);
+ }finally{liberar();}
+ await Promise.all([a1,a2]);assert.deepEqual(ordem,["a1","b1","a2"]);
+ await assert.rejects(admitir(L,"erro"),/falha sintética/);
+ assert.equal((await admitir(L,"apos_erro")).estado,estadoOk);
+ let n=0;
+ const retry=await retryLimitado(async()=>({estado:++n===3?estadoOk:"ocupado"}));
+ assert.equal(retry.estado,estadoOk);assert.equal(retry.tentativas.length,3);
+ n=0;const fim=await retryLimitado(async()=>({estado:"ocupado",n:++n}));
+ assert.equal(fim.estado,"ocupado");assert.equal(n,3);
+ n=0;await assert.rejects(retryLimitado(async()=>{n++;throw Error("erro não repetível");}),/erro não repetível/);assert.equal(n,1);
+ n=0;const retido=await retryLimitado(async()=>({estado:"pausado",n:++n}));assert.equal(retido.estado,"pausado");assert.equal(n,1);
+ console.log("ok: fila limitada, FIFO por loja, paralelismo, recuperação de erro e retry somente ocupado");
+}
+async function compararAgendador(clientes,conexoes){
+ const agregados={direto:[],por_loja:[]},tempos={direto:0,por_loja:0};
+ for(let rodada=1;rodada<=3;rodada++){
+  // Alterna ordem para reduzir viés de aquecimento; ambos recebem a mesma rajada de 48 solicitações.
+  for(const modo of rodada%2?["direto","por_loja"]:["por_loja","direto"]){
+   const inicio=performance.now();
+   const tarefas=Array.from({length:48},(_,i)=>({id:i,loja:i%2?L2:L,chave:i%2?K2:K,chegada:inicio}));
+   const amostras=[];
+   async function executar(s,t){
+    const espera=performance.now()-t.chegada;
+    const r=await retryLimitado(()=>rpc(s,t.loja,t.chave));
+    return {...r,id:t.id,fila_ms:espera,total_ms:performance.now()-t.chegada};
+   }
+   if(modo==="direto"){
+    let cursor=0;
+    await Promise.all(conexoes.map(async s=>{
+     while(cursor<tarefas.length){const t=tarefas[cursor++];amostras.push(await executar(s,t));}
+    }));
+   }else{
+    const admitir=filaPorLoja([L,L2],24,(loja,t)=>executar(loja===L?conexoes[0]:conexoes[1],t));
+    amostras.push(...await Promise.all(tarefas.map(t=>admitir(t.loja,t))));
+   }
+   const tempo=performance.now()-inicio;
+   assert.equal(amostras.length,48);assert.equal(new Set(amostras.map(r=>r.id)).size,48);
+   for(const r of amostras){
+    assert.ok([estadoOk,"ocupado"].includes(r.estado),"estado inesperado "+r.estado);
+    assert.ok(r.tentativas.length>=1&&r.tentativas.length<=3);
+    assert.ok(r.tentativas.slice(0,-1).every(t=>t.estado==="ocupado"));
+   }
+   agregados[modo].push(...amostras);tempos[modo]+=tempo;
+  }
+ }
+ for(const modo of ["direto","por_loja"]){
+  const a=agregados[modo];assert.equal(a.length,144);
+  const tentativas=a.flatMap(x=>x.tentativas),aceitas=a.filter(x=>x.estado===estadoOk).length;
+  const recusas=tentativas.filter(x=>x.estado==="ocupado").length;
+  console.log(JSON.stringify({benchmark:"nano-despacho-agendador",cenario:"rajada_48",modo,clientes_ofertados:clientes,conexoes_ativas_max:modo==="direto"?clientes:2,repeticoes:3,solicitacoes:a.length,aceitas,recusas_finais:a.length-aceitas,tentativas:tentativas.length,recusas_rpc:recusas,recusas_primeira:a.filter(x=>x.tentativas[0].estado==="ocupado").length,recuperadas:a.filter(x=>x.tentativas[0].estado==="ocupado"&&x.estado===estadoOk).length,recusas_finais_pct:arred(100*(a.length-aceitas)/a.length),sucessos_s:arred(aceitas*1000/tempos[modo]),fila_ms:resumo(a.map(x=>x.fila_ms)),total_ms:resumo(a.map(x=>x.total_ms)),rpc_ms:resumo(tentativas.map(x=>x.rpc_ms)),execucao_com_retries_ms:resumo(a.map(x=>x.execucao_ms))}));
+ }
+}
 try{
  const observador=await conectar("postgres"), titular=await conectar("postgres"), a=await conectar("service_role"), b=await conectar("service_role");
  const antes=await json(observador,"select jsonb_build_object('tarefas',(select jsonb_agg(to_jsonb(i) order by id) from public.pipeline_itens i where loja_id in ('"+L+"','"+L2+"')),'historico',(select jsonb_agg(to_jsonb(h) order by id) from public.pipeline_historico h where loja_id in ('"+L+"','"+L2+"')),'custos',(select count(*) from public.pipeline_custos where loja_id in ('"+L+"','"+L2+"')));");
@@ -114,7 +206,12 @@ try{
    console.log(JSON.stringify({benchmark:"nano-despacho-latencia",cenario:"agregado",clientes,amostras:144,conexao_psql_ms:resumo(conexoes.map(s=>s.conexao_ms)),rpc_ms:resumo(totalRpc),cliente_ms:resumo(totalCliente),sucessos_s:arred(totalEstados.ja_encaminhado*1000/tempoTotal),recusas_pct:arred(100*totalEstados.ocupado/144),estados:totalEstados}));
   }finally{await Promise.all(conexoes.map(s=>s.close()));}
  }
+ await testarContratoFila();
+ for(const clientes of [4,8]){
+  const conexoes=await Promise.all(Array.from({length:clientes},()=>conectar("service_role")));
+  try{await compararAgendador(clientes,conexoes);}finally{await Promise.all(conexoes.map(s=>s.close()));}
+ }
  const depois=await json(observador,"select jsonb_build_object('tarefas',(select jsonb_agg(to_jsonb(i) order by id) from public.pipeline_itens i where loja_id in ('"+L+"','"+L2+"')),'historico',(select jsonb_agg(to_jsonb(h) order by id) from public.pipeline_historico h where loja_id in ('"+L+"','"+L2+"')),'custos',(select count(*) from public.pipeline_custos where loja_id in ('"+L+"','"+L2+"')));");
  assert.deepEqual(depois,antes);
- console.log("ok: latência RPC, conexão separada, checkpoint observado, advisory controlado, 576 retries e estado íntegro");
+ console.log("ok: latência RPC, conexão separada, checkpoint observado, advisory controlado, 576 retries de referência, 576 solicitações comparativas e estado íntegro");
 }finally{await Promise.allSettled(sessoes.map(s=>s.close()));}
