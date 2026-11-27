@@ -345,7 +345,40 @@ try{
  // FK composta continua ativa no fluxo normal, mesmo para service_role.
  assert.throws(()=>admin("begin; set local role service_role; delete from public.produto_automacao where produto_id='"+P+"'; insert into public.produto_automacao(loja_id,produto_id,pausado) values('"+outra+"','"+P+"',true); rollback;"),e=>e.stderr?.includes("violates foreign key constraint")===true);
  assert.equal(admin("select jsonb_agg(to_jsonb(a) order by produto_id)::text from public.produto_automacao a"+filtroAuto),autoAntes);
- assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"20");
+ // Fila legada: INSERT/UPDATE/DELETE sem chamar serviços ou alterar produtos.
+ const filaId="fa740000-0000-0000-0000-000000000001",filaId2="fa740000-0000-0000-0000-000000000002";
+ const insFila=(loja,id)=>"set local role service_role; insert into public.pipeline_itens(id,loja_id,sku,idempotency_key) values('"+id+"','"+loja+"','FIXTURE-74','fixture-74-"+id+"') returning id; reset role;";
+ await testarEscritor("public.pipeline_itens",insFila(L,filaId),"ocupada","postgres",filaId);
+ await testarEscritor("public.pipeline_itens",insFila(outra,filaId2),"ja_registrada","postgres",filaId2);
+ await testarEscritor("public.pipeline_itens","set local session_replication_role=replica;\n"+insFila(L,filaId),"ocupada","postgres",filaId);
+ assert.equal(admin("select count(*) from public.pipeline_itens where id in ('"+filaId+"','"+filaId2+"');"),"0");
+ // Linhas legadas preexistentes nas duas lojas, sem vínculo ao produto Nano.
+ admin("begin; "+insFila(L,filaId)+insFila(outra,filaId2)+" commit;");
+ const filtroFila=" where id in ('"+I+"','"+I2+"','"+filaId+"','"+filaId2+"')";
+ const filaAntes=admin("select jsonb_agg(to_jsonb(i) order by id)::text from public.pipeline_itens i"+filtroFila);
+ const updFila=id=>"set local role service_role; update public.pipeline_itens set erro='fixture' where id='"+id+"' returning erro; reset role;";
+ const delFila=id=>"set local role service_role; delete from public.pipeline_itens where id='"+id+"' returning id; reset role;";
+ await testarEscritor("public.pipeline_itens",updFila(filaId),"ocupada","postgres","fixture");
+ await testarEscritor("public.pipeline_itens",updFila(filaId2),"ja_registrada","postgres","fixture");
+ await testarEscritor("public.pipeline_itens",delFila(filaId),"ocupada","postgres",filaId);
+ await testarEscritor("public.pipeline_itens",delFila(filaId2),"ja_registrada","postgres",filaId2);
+ // O serviço usa a autoridade existente de reserva; a geração é revertida no rollback.
+ const reservarFila=(loja,id)=>"set local role service_role; select public.nano_lifecycle_reivindicar('"+loja+"','"+id+"','fa740000-0000-0000-0000-000000000003',120)->>'estado'; reset role;";
+ await testarEscritor("public.pipeline_itens",reservarFila(L,I),"ocupada","postgres","reservado");
+ await testarEscritor("public.pipeline_itens",reservarFila(outra,I2),"ja_registrada","postgres","reservado");
+ for(const prefixo of ["","begin; set local session_replication_role=replica; "]){
+  assert.throws(()=>admin(prefixo+"update public.pipeline_itens set loja_id='"+outra+"' where id='"+filaId+"';"),e=>e.stderr?.includes("movimento documental entre lojas bloqueado")===true);
+  assert.throws(()=>admin(prefixo+"update public.pipeline_itens set estado='normalizado' where id='"+I+"';"),e=>e.stderr?.includes("transição Nano exige consumidor homologado")===true);
+  assert.throws(()=>admin(prefixo+"update public.pipeline_itens set nano_geracao=99 where id='"+I+"';"),e=>e.stderr?.includes("lease Nano exige consumidor restrito")===true);
+  assert.throws(()=>admin(prefixo+"update public.pipeline_itens set nano_produtor='postgres' where id='"+I+"';"),e=>e.stderr?.includes("autoria de lease protegida")===true);
+  assert.throws(()=>admin(prefixo+"delete from public.pipeline_itens where id='"+I+"';"),e=>e.stderr?.includes("exclusão direta Nano bloqueada")===true);
+  assert.throws(()=>admin(prefixo+"insert into public.pipeline_itens(loja_id,sku,entrada,idempotency_key) values('"+L+"','FORJADO-74','{\"origem\":\"nano_lifecycle\"}','nano-lifecycle:'||repeat('a',64));"),e=>e.stderr?.includes("criação Nano exige despachante")===true);
+  assert.throws(()=>admin((prefixo||"begin; ")+"truncate public.pipeline_itens cascade; rollback;"),e=>/fila Nano protegida|truncate documental bloqueado|TRUNCATE de conflitos bloqueado/i.test(e.stderr??""));
+ }
+ assert.equal(admin("select jsonb_agg(to_jsonb(i) order by id)::text from public.pipeline_itens i"+filtroFila),filaAntes);
+ assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"22");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.pipeline_itens'::regclass and tgname in ('nano_lifecycle_bloquear_transicao','nano_lifecycle_bloquear_truncate','nano_lifecycle_proteger_origem','nano_lifecycle_proteger_produtor') and tgenabled='A';"),"4");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','public.pipeline_itens','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.produto_automacao'::regclass and tgname='nano_automacao_identidade' and tgenabled='A';"),"1");
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','public.produto_automacao','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_reserva'::regclass and tgname in ('nano_reserva_transicao','nano_reserva_sem_exclusao') and tgenabled='A';"),"2");

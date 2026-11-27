@@ -1,6 +1,6 @@
--- MINUTA CI: isolamento parcial por loja; preserva duas travas de tabela.
+-- MINUTA CI: isolamento parcial por loja; preserva uma trava de tabela.
 begin;
--- O mesmo namespace de advisory lock é obrigatório para todo escritor dessas dez tabelas.
+-- O mesmo namespace de advisory lock é obrigatório para todo escritor dessas onze tabelas.
 create function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja()
 returns trigger language plpgsql security invoker set search_path='' as $fn$
 declare loja uuid;
@@ -138,6 +138,17 @@ alter table public.produto_automacao enable always trigger nano_automacao_identi
 alter table public.produto_automacao enable always trigger zz_nano_guard_documental_loja;
 alter table public.produto_automacao enable always trigger zz_nano_guard_documental_truncate;
 revoke update on public.produto_automacao from nano_lifecycle_gate_travas;
+-- Fila: todo escritor participa do namespace por loja, inclusive caminhos legados.
+-- Os guardas de origem, transição e autoria Nano continuam obrigatórios em replica.
+create trigger zz_nano_guard_documental_loja before insert or update or delete on public.pipeline_itens for each row execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja();
+create trigger zz_nano_guard_documental_truncate before truncate on public.pipeline_itens for each statement execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja();
+alter table public.pipeline_itens enable always trigger zz_nano_guard_documental_loja;
+alter table public.pipeline_itens enable always trigger zz_nano_guard_documental_truncate;
+alter table public.pipeline_itens enable always trigger nano_lifecycle_bloquear_transicao;
+alter table public.pipeline_itens enable always trigger nano_lifecycle_bloquear_truncate;
+alter table public.pipeline_itens enable always trigger nano_lifecycle_proteger_origem;
+alter table public.pipeline_itens enable always trigger nano_lifecycle_proteger_produtor;
+revoke update on public.pipeline_itens from nano_lifecycle_gate_travas;
 create or replace function nano_lifecycle_interno.nano_lifecycle_travar_conferencia(p_loja uuid,p_solicitacao uuid)
 returns boolean language plpgsql volatile security definer set search_path='' as $fn$
 begin
@@ -146,8 +157,7 @@ begin
  begin
   if not pg_try_advisory_xact_lock(hashtextextended('nano.gate:'||p_loja::text||':'||p_solicitacao::text,0)) then return false; end if;
   if not pg_try_advisory_xact_lock(hashtextextended('nano.gate.documental:'||p_loja::text,0)) then raise lock_not_available; end if;
-  lock table public.produtos,
-   public.pipeline_itens in share mode nowait;
+  lock table public.produtos in share mode nowait;
  exception when lock_not_available then return false;
  end;
  return true;
