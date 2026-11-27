@@ -27,3 +27,30 @@ test("CAT-104-05: reaprovação explícita após rejeição é rastreável mas n
  const nova={...ev,id:"9007199254740995",quando:"2026-11-26T13:00:00Z",antes:rejeitado,depois:aprovado};
  const r=run(aprovado,[nova,rev,ev]);assert.equal(r.estado,"aprovacao_legada_conferida");assert.equal(r.homologada,false);if(r.estado==="aprovacao_legada_conferida")assert.equal(r.evento_id,nova.id);
 });
+
+
+const publicado={...aprovado,pagina_indexavel:true};
+const revPublicada={...rev,antes:publicado,depois:rejeitado};
+test("CAT-107-01: rejeição de aplicação indexável retira flag e mantém toda a identidade",()=>{
+ const r=run(rejeitado,[revPublicada]);assert.equal(r.estado,"rejeitada_legada");assert.equal(r.homologada,false);
+});
+test("CAT-107-02: rejeição com flag ativa ou qualquer alteração adicional é retida",()=>{
+ for(const delta of [{pagina_indexavel:true},{motorizacao:"M2"},{fonte:"outra"},{codigo_oem:"OUTRO"}]){
+  const depois={...rejeitado,...delta};assert.equal(run(depois,[{...revPublicada,depois}]).estado,"retida");
+ }
+});
+test("CAT-107-03: reaprovação posterior preserva flag falsa e não restaura indexação",()=>{
+ const nova={...ev,id:"9007199254740995",quando:"2026-11-26T13:00:00Z",antes:rejeitado,depois:aprovado};
+ assert.equal(run(aprovado,[nova,revPublicada]).estado,"aprovacao_legada_conferida");
+ assert.equal(run(publicado,[{...nova,depois:publicado},revPublicada]).estado,"retida");
+});
+test("CAT-107-04: flag ausente, tipo inválido ou estado inicial incoerente retêm decisão",()=>{
+ const {pagina_indexavel:_,...semFlag}=base;
+ for(const antes of [semFlag,{...base,pagina_indexavel:"false"},{...base,pagina_indexavel:true}]){
+  assert.equal(run(aprovado,[{...ev,antes}]).estado,"retida");
+ }
+});
+test("CAT-107-05: aprovação repetida de registro já indexável não cria nova prova",()=>{
+ const r=run(publicado,[{...ev,antes:publicado,depois:publicado}]);
+ assert.equal(r.estado,"aprovacao_legada_conferida");assert.equal(r.homologada,false);assert.equal(Object.hasOwn(r,"prova"),false);
+});

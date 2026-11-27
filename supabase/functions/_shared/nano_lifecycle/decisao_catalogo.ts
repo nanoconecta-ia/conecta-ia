@@ -32,7 +32,11 @@ export function reconciliarDecisaoCatalogo(e:EscopoDecisaoCatalogo,atual:unknown
   for(const ev of ordenados){
    if(ev.loja_id!==e.loja_id||ev.tabela!=="produto_aplicacoes"||!uuid(ev.user_id)||!instante(ev.quando)||Date.parse(ev.quando)>Date.parse(agora)||!identidade(ev.antes,e)||!identidade(ev.depois,e)||!statusOk(ev.antes.status))return negar("evento_fora_do_escopo");
    const status=ev.acao==="aplicacao.aprovar"?"aprovado":ev.acao==="aplicacao.rejeitar"?"rejeitado":null;
-   if(!status||ev.depois.status!==status||!igual({...ev.antes,status},ev.depois))return negar("decisao_divergente");
+   // A minuta 105 permite exclusivamente retirar a visibilidade junto à rejeição.
+   // Aprovação nunca eleva visibilidade. Flag ausente/ilegível não prova o contrato.
+   if(!status||typeof ev.antes.pagina_indexavel!=="boolean"||typeof ev.depois.pagina_indexavel!=="boolean")return negar("decisao_divergente");
+   const esperado={...ev.antes,status,pagina_indexavel:status==="rejeitado"?false:ev.antes.pagina_indexavel};
+   if(!igual(esperado,ev.depois)||ev.antes.pagina_indexavel===true&&ev.antes.status!=="aprovado")return negar("decisao_divergente");
    if(anterior&&(ev.id===anterior.id||Date.parse(ev.quando)<=Date.parse(anterior.quando)||!igual(anterior.depois,ev.antes)))return negar("cadeia_ambigua");
    anterior=ev;
   }
