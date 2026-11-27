@@ -178,3 +178,13 @@ assert.ok(acesso("public.produto_aplicacoes", "service_role", "UPDATE").colunas.
 assert.ok(acesso("public.usuarios_loja", "authenticated", "UPDATE").colunas.includes("papel"));
 assert.ok(acesso("nano_lifecycle_interno.conferencias_gate", "nano_lifecycle_gate_registrador", "INSERT").colunas.includes("auditor"));
 console.log("CAT-116-01 privilégios efetivos por tabela e coluna (antes de RLS):", JSON.stringify(inventarioDml));
+
+// A conferência técnica deve ser escrita pela função do registrador.
+for (const papel of ["nano_lifecycle_produtor", "nano_lifecycle_auditoria"]) {
+  for (const operacao of ["INSERT", "UPDATE", "DELETE"]) {
+    const permissao = acesso("nano_lifecycle_interno.conferencias_gate", papel, operacao);
+    assert.equal(permissao.tabela, false, papel + " " + operacao);
+    if (operacao !== "DELETE") assert.deepEqual(permissao.colunas, [], papel + " " + operacao);
+  }
+}
+console.log("ok: CAT-117-01 produtor e auditor sem DML direto na conferência");
