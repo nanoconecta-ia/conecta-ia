@@ -107,6 +107,20 @@ try {
     assert.equal(await page.getByLabel("Montadora",{exact:true}).inputValue(),"Iveco","uma consulta contextual pode começar por montadora");
     assert.equal(consultas.length,1,"a escolha do seletor não consulta nem grava produto");
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,"sem overflow");
+    // OP-03: não basta não haver overflow; verificar a cor efetivamente pintada.
+    if(await page.locator(".mobis-v2.m4").getAttribute("data-mobis-modelo")==="tecnico"){
+      const cores=await page.evaluate(()=>{
+        const ler=seletor=>{const el=document.querySelector(seletor);if(!el)return null;const s=getComputedStyle(el);return {cor:s.color,pintura:s.webkitTextFillColor,fundo:s.backgroundColor};};
+        return {titulo:ler(".gcv3-titulo-link"),especialidade:ler(".ms-especialidade strong"),contato:ler(".ms-acoes a>small"),codigo:ler(".ms-codigo-exato")};
+      });
+      for(const k of ["titulo","especialidade","contato"]){
+        if(k==="contato"&&!cores[k])continue;
+        assert.equal(cores[k]?.cor,"rgb(31, 35, 39)","texto grafite sobre gelo: "+k+" / "+width);
+        assert.equal(cores[k]?.pintura,"rgb(31, 35, 39)","pintura real grafite: "+k+" / "+width);
+      }
+      assert.equal(cores.codigo?.cor,"rgb(245, 247, 249)","busca exata legível");
+      assert.equal(cores.codigo?.fundo,"rgb(31, 35, 39)","fundo grafite da busca exata");
+    }
     assert.equal(await page.locator(".m2-aviso-teste").count(),0,"aviso de ambiente de teste removido da vitrine (pedido do dono)");
     assert.equal(await page.getByText("Prévia da loja", {exact:false}).count(),0,"legenda de prévia removida do carrossel (pedido do dono)");
     assert.deepEqual(erros,[]);
