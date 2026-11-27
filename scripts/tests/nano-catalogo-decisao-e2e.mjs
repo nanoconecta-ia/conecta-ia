@@ -1,5 +1,6 @@
 // E2E somente no CI efêmero; nenhum adaptador/credencial de produção.
-import {execFileSync} from "node:child_process";
+import {execFileSync,spawn} from "node:child_process";
+import {createInterface} from "node:readline";
 import assert from "node:assert/strict";
 import {randomBytes} from "node:crypto";
 import {conferirDecisaoCatalogoSql} from "../../supabase/functions/_shared/nano_lifecycle/porta_decisao_catalogo_sql.ts";
@@ -230,3 +231,56 @@ assert.deepEqual(permissoesRotinas, {
   nano_lifecycle_auditoria: [false, true],
 });
 console.log("ok: CAT-118-01 permissões das rotinas de decisão legada e conferência técnica");
+
+// CAT-132: sessão humana consultiva, sem status/flag/evento ou prova técnica.
+sql("insert into public.usuarios_loja(loja_id,user_id,papel) values ('"+L+"','"+H+"','lojista');");
+const call132=(loja=L,produto=P,app=A)=>"select private.nano_catalogo_conferir_autoridade('"+loja+"','"+produto+"','"+app+"')::text;";
+const auth132=claims=>"set local role authenticated; set local request.jwt.claims='"+JSON.stringify(claims)+"'; ";
+const consultar132=(claims,loja=L,produto=P,app=A,iso="read committed")=>JSON.parse(sql("begin isolation level "+iso+"; "+auth132(claims)+call132(loja,produto,app)+" rollback;"));
+const elegivel132={estado:"autoridade_consultiva",ator:H,loja:L,produto:P,aplicacao:A,homologada:false};
+const retida132={estado:"retida",homologada:false};
+const ocupada132={estado:"ocupada",homologada:false};
+const antes132=ler();
+assert.deepEqual(consultar132({sub:H}),elegivel132);
+for(const claims of [{},{sub:E},{sub:X},{sub:E,user_metadata:{papel:"super_admin"},aal:"aal2"},{sub:X,app_metadata:{papel:"super_admin"},aal:"aal2"}])assert.deepEqual(consultar132(claims),retida132);
+assert.deepEqual(consultar132({sub:H},L2),retida132);
+assert.deepEqual(consultar132({sub:H},L,M),retida132);
+assert.deepEqual(consultar132({sub:H},L,P,M),retida132);
+assert.deepEqual(consultar132({sub:H},L,P,A,"repeatable read"),retida132);
+for(const papel of ["anon","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria"])assert.equal(sql("select has_function_privilege('"+papel+"','private.nano_catalogo_conferir_autoridade(uuid,uuid,uuid)','EXECUTE');"),"f");
+assert.equal(sql("select prosecdef from pg_proc where oid='private.nano_catalogo_conferir_autoridade(uuid,uuid,uuid)'::regprocedure;"),"f");
+console.log("ok: CAT-132-01 ator da sessao, lojista persistido, escopo individual e papel invoker");
+async function comTrava132(comandos,esperado,verificar){
+ const p=spawn("psql",["-XqAtw","-h","127.0.0.1","-p","5432","-U","postgres","-d","conecta_teste","-v","ON_ERROR_STOP=1"],{env:{PATH:process.env.PATH,PGPASSWORD:"postgres",PGCONNECT_TIMEOUT:"5"},stdio:["pipe","pipe","pipe"]});
+ const rl=createInterface({input:p.stdout});let err="";p.stderr.on("data",b=>err+=b);
+ try{
+  await new Promise((resolve,reject)=>{
+   const t=setTimeout(()=>reject(Error("timeout CAT-132 "+err)),10000);const linhas=[];
+   p.once("error",e=>{clearTimeout(t);reject(e);});p.once("exit",()=>{clearTimeout(t);reject(Error("psql CAT-132 "+err));});
+   rl.on("line",l=>{if(l==="__CAT132__"){clearTimeout(t);try{assert.deepEqual(linhas.map(JSON.parse),[esperado]);resolve();}catch(e){reject(e);}}else linhas.push(l);});
+   p.stdin.write("begin;\n"+comandos+"\n\\echo __CAT132__\n");
+  });
+  await verificar();
+ }finally{
+  if(p.exitCode===null&&p.signalCode===null)await new Promise(resolve=>{const t=setTimeout(()=>p.kill(),5000);p.once("exit",()=>{clearTimeout(t);resolve();});p.stdin.end("rollback;\n");});
+  rl.close();
+ }
+}
+const rev132="update public.usuarios_loja set papel='editor' where loja_id='"+L+"' and user_id='"+H+"'";
+await comTrava132(rev132+" returning to_jsonb(papel)::text;","editor",async()=>{
+ assert.deepEqual(consultar132({sub:H}),ocupada132);
+});
+assert.deepEqual(consultar132({sub:H}),elegivel132);
+await comTrava132(auth132({sub:H})+call132(),elegivel132,async()=>{
+ assert.throws(()=>sql("\\set VERBOSITY verbose\n"+rev132+";"),e=>e.stderr?.includes("55P03")===true&&e.stderr?.includes("escopo documental ocupado")===true);
+ assert.throws(()=>sql("\\set VERBOSITY verbose\nupdate public.produto_aplicacoes set modelo='Corrida CAT-132' where id='"+A+"';"),e=>e.stderr?.includes("55P03")===true);
+ assert.equal(sql("begin; update public.usuarios_loja set papel='editor' where loja_id='"+L2+"' and user_id='"+X+"' returning papel; rollback;"),"editor");
+});
+sql(rev132+";");
+assert.deepEqual(consultar132({sub:H}),retida132);
+sql("delete from public.usuarios_loja where loja_id='"+L+"' and user_id='"+H+"';");
+assert.deepEqual(consultar132({sub:H}),retida132);
+const depois132=ler();
+assert.deepEqual(depois132.atual,antes132.atual);
+assert.deepEqual(depois132.eventos,antes132.eventos);
+console.log("ok: CAT-132-02 revogacao concorrente nos dois sentidos, outra loja e aplicacao, sem escrita ou prova");

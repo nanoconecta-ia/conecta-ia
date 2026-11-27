@@ -135,4 +135,32 @@ alter function nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(uuid,
 revoke all on function nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text,uuid,uuid) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
 grant execute on function nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text,uuid,uuid) to nano_lifecycle_auditoria;
 revoke create on schema nano_lifecycle_interno from nano_lifecycle_gate_registrador;
+-- CAT-132: fronteira consultiva de sessão humana no CI, NÃO é decisão.
+-- SECURITY INVOKER: preserva RLS, não amplia DML nem aceita ator do chamador.
+-- Exige vínculo lojista persistido; super-admin por claim isolado não é
+-- suficiente, pois a revogação dessa claim não integra a trava por loja.
+create function private.nano_catalogo_conferir_autoridade(p_loja uuid,p_produto uuid,p_aplicacao uuid)
+returns jsonb language plpgsql volatile security invoker set search_path='' as $humano$
+declare ator uuid;
+begin
+ if current_user<>'authenticated' or current_setting('transaction_isolation')<>'read committed'
+  or p_loja is null or p_produto is null or p_aplicacao is null then
+  return jsonb_build_object('estado','retida','homologada',false);
+ end if;
+ ator:=auth.uid();
+ if ator is null then return jsonb_build_object('estado','retida','homologada',false); end if;
+ -- A trava é a mesma dos escritores de usuários e aplicações (CAT-123).
+ if not pg_try_advisory_xact_lock(hashtextextended('nano.gate.documental:'||p_loja::text,0)) then
+  return jsonb_build_object('estado','ocupada','homologada',false);
+ end if;
+ -- Leitura VOLATILE depois da exclusão em READ COMMITTED.
+ if public.pode_administrar_loja(p_loja) is not true
+  or not exists(select 1 from public.usuarios_loja u where u.loja_id=p_loja and u.user_id=ator and u.papel='lojista')
+  or not exists(select 1 from public.produto_aplicacoes a where a.loja_id=p_loja and a.produto_id=p_produto and a.id=p_aplicacao) then
+  return jsonb_build_object('estado','retida','homologada',false);
+ end if;
+ return jsonb_build_object('estado','autoridade_consultiva','ator',ator,'loja',p_loja,'produto',p_produto,'aplicacao',p_aplicacao,'homologada',false);
+end $humano$;
+revoke all on function private.nano_catalogo_conferir_autoridade(uuid,uuid,uuid) from public,anon,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+grant execute on function private.nano_catalogo_conferir_autoridade(uuid,uuid,uuid) to authenticated;
 commit;
