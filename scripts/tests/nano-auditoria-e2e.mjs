@@ -482,6 +482,19 @@ try{
  assert.equal(admin("select prosecdef from pg_proc where oid='nano_lifecycle_interno.nano_catalogo_parecer_confere(uuid,jsonb,text,text,jsonb)'::regprocedure;"),"f");
  assert.equal(admin("select nano_lifecycle_interno.nano_catalogo_parecer_confere(null,null,null,null,null);"),"f");
  console.log("ok: CAT-138-01 parecer comum, concorrencia confere/diverge, retry, ACL e rollback");
+ // CAT-139: limites nativos com diferença de um microssegundo e ACL.
+ const tempo139="nano_lifecycle_interno.nano_catalogo_tempo_confere";
+ const t139="'2026-11-26 12:00:00.123456+00'::timestamptz";
+ const limite139="'2026-11-26 12:00:00.123457+00'::timestamptz";
+ assert.equal(admin("select "+tempo139+"("+t139+","+t139+","+limite139+");"),"t");
+ assert.equal(admin("select "+tempo139+"("+t139+","+limite139+","+limite139+");"),"t");
+ assert.equal(admin("select "+tempo139+"("+t139+","+t139+"-interval '1 microsecond',"+limite139+");"),"f");
+ assert.equal(admin("select "+tempo139+"("+t139+","+limite139+"+interval '1 microsecond',"+limite139+");"),"f");
+ assert.equal(admin("select "+tempo139+"(null,"+t139+","+limite139+");"),"f");
+ assert.equal(admin("select "+tempo139+"('-infinity',"+t139+","+limite139+");"),"f");
+ for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria"])assert.equal(admin("select has_function_privilege('"+papel+"','"+tempo139+"(timestamptz,timestamptz,timestamptz)','EXECUTE');"),"f");
+ assert.equal(admin("select prosecdef from pg_proc where oid='"+tempo139+"(timestamptz,timestamptz,timestamptz)'::regprocedure;"),"f");
+ console.log("ok: CAT-139-01 cronologia comum, microssegundos, limites, nulos, infinito e ACL");
  // Revogação permitida pelo guard legado, sem reaprovação artificial.
  admin("update public.pecas_aplicacoes_tecnicas set status='desatualizado' where id='"+g130.aresta+"';");
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");

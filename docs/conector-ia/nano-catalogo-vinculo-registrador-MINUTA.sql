@@ -196,6 +196,7 @@ grant execute on function public.nano_lifecycle_projecao(uuid),nano_lifecycle_in
 grant execute on function nano_lifecycle_interno.nano_catalogo_auditor_vigente(text) to nano_catalogo_vinculo_humano_leitor;
 grant execute on function nano_lifecycle_interno.nano_catalogo_documento_confere(uuid,jsonb,jsonb,jsonb,text) to nano_catalogo_vinculo_humano_leitor;
 grant execute on function nano_lifecycle_interno.nano_catalogo_parecer_confere(uuid,jsonb,text,text,jsonb) to nano_catalogo_vinculo_humano_leitor;
+grant execute on function nano_lifecycle_interno.nano_catalogo_tempo_confere(timestamptz,timestamptz,timestamptz) to nano_catalogo_vinculo_humano_leitor;
 create function private.nano_catalogo_conferir_vinculo(p_loja uuid,p_produto uuid,p_aplicacao uuid,p_recibo uuid)
 returns jsonb language plpgsql volatile security definer set search_path='' set nano.humano_loja='' as $humano$
 declare ator uuid; r nano_lifecycle_interno.conferencias_gate; snap jsonb;
@@ -250,7 +251,7 @@ begin
  select * into l from nano_lifecycle_interno.leituras_documentais x where x.loja_id=p_loja and x.id=r.leitura_id
   and x.item_id=e.item_id and x.geracao=e.geracao and x.escopo=esc and x.fato=r.candidato->'fato'
   and x.fonte_id=d.fonte_id and x.documento_id=d.id and x.sha256=d.sha256 and x.localizador=r.candidato->>'localizador'
-  and x.resultado='confere' and x.verificado_em between d.consultado_em and statement_timestamp()
+  and x.resultado='confere' and nano_lifecycle_interno.nano_catalogo_tempo_confere(d.consultado_em,x.verificado_em,statement_timestamp())
   and position(x.trecho in d.conteudo)>0;
  if not found or not nano_lifecycle_interno.nano_catalogo_parecer_confere(r.leitura_id,r.candidato,r.sha256,r.auditor::text,
   jsonb_build_object('id',l.id,'escopo',l.escopo,'fato',l.fato,'fonteId',l.fonte_id,'documentoId',l.documento_id,

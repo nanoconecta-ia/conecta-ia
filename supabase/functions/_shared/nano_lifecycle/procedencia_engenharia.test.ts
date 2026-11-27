@@ -14,3 +14,13 @@ test("rejeita documento alterado e leitura ambígua",async()=>{assert.equal((awa
 test("rejeita autoaprovação, auditor não autorizado e revisão cruzada",async()=>{for(const l of [{...leitura,verificador:"nano"},{...leitura,escopo:{...c.escopo,revisao:"rev-3"}},{...leitura,sha256:"b".repeat(64)},{...leitura,verificadoEm:"2026-11-27T13:00:00Z"}])assert.equal((await conferirProcedencia(c,porta({leituras:async()=>[l]}),agora)).estado,"retida");assert.equal((await conferirProcedencia(c,porta({verificadorAutorizado:async()=>false}),agora)).estado,"retida");});
 test("não expande período nem generaliza motor, geração, emissão ou OEM",async()=>{for(const fato of [{...c.fato,ano_fim:2017},{...c.fato,motor:"M2"},{...c.fato,geracao:"G2"},{...c.fato,emissao:"Euro 3"},{...c.fato,oem:"OUTRO"}])assert.equal((await conferirProcedencia({...c,fato},porta(),agora)).estado,"retida");});
 test("indisponibilidade da porta retém o candidato",async()=>{assert.equal((await conferirProcedencia(c,porta({fonte:async()=>{throw Error("indisponível");}}),agora)).estado,"retida");});
+
+test("CAT-139: ordenação UTC preserva microssegundos e retém datas inválidas",async()=>{
+ const d={...doc,consultadoEm:"2026-11-26T12:00:00.123456Z"};
+ const p=(t:string)=>porta({documento:async()=>d,leituras:async()=>[{...leitura,verificadoEm:t}]});
+ const limite="2026-11-26T12:00:00.123457Z";
+ assert.equal((await conferirProcedencia(c,p(d.consultadoEm),limite)).estado,"procedencia_conferida");
+ assert.equal((await conferirProcedencia(c,p(limite),limite)).estado,"procedencia_conferida");
+ for(const t of ["2026-11-26T12:00:00.123455Z","2026-11-26T12:00:00.123458Z","2026-02-30T12:00:00Z"])assert.equal((await conferirProcedencia(c,p(t),limite)).estado,"retida");
+ assert.equal((await conferirProcedencia(c,p(limite),"2026-11-26T12:00:00.123455Z")).estado,"retida");
+});

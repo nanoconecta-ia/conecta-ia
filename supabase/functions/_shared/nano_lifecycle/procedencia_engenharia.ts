@@ -15,7 +15,9 @@ export interface PortaAuditoria {
 }
 const texto=(x:unknown):x is string=>typeof x==="string"&&x.trim().length>0&&x===x.trim();
 const hash=(x:unknown):x is string=>typeof x==="string"&&/^[a-f0-9]{64}$/.test(x);
-const instante=(x:unknown)=>typeof x==="string"&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(x)&&Number.isFinite(Date.parse(x));
+// UTC canônico com até seis casas, sem perda de microssegundos em Date.parse.
+const micros=(x:string):string=>{const [base,frac=""]=x.slice(0,-1).split(".");return base+"."+frac.padEnd(6,"0")+"Z";};
+const instante=(x:unknown)=>typeof x==="string"&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/.test(x)&&Number.isFinite(Date.parse(x))&&new Date(Date.parse(x)).toISOString().slice(0,23)===micros(x).slice(0,23);
 const ano=(x:unknown):x is number=>typeof x==="number"&&Number.isInteger(x)&&x>=1950&&x<=2100;
 const fatos=["oem","montadora","modelo","geracao","motor","emissao","mercado","tipo_ano","ano_inicio","ano_fim"] as const;
 const escopos=["loja","produto","sku","revisao","checkpoint","hashExtracao","hashEntrada","item","execucao","geracao","versao","produtor"] as const;
@@ -32,12 +34,12 @@ export async function conferirProcedencia(c:Candidato,porta:PortaAuditoria,agora
   const fonte=await porta.fonte(s.loja,c.fonteId);
   if(!fonte||fonte.id!==c.fonteId||fonte.loja!==s.loja||fonte.autorizada!==true||!texto(fonte.emissor)||!["catalogo_fabricante","manual_montadora"].includes(fonte.tipo))return negar("fonte_nao_autorizada_ou_fraca");
   const d=await porta.documento(s.loja,c.documentoId);
-  if(!d||d.id!==c.documentoId||d.loja!==s.loja||d.fonteId!==fonte.id||!texto(d.conteudo)||!hash(d.sha256)||!instante(d.consultadoEm)||Date.parse(d.consultadoEm)>Date.parse(agora))return negar("documento_invalido");
+  if(!d||d.id!==c.documentoId||d.loja!==s.loja||d.fonteId!==fonte.id||!texto(d.conteudo)||!hash(d.sha256)||!instante(d.consultadoEm)||micros(d.consultadoEm)>micros(agora))return negar("documento_invalido");
   if(await digest(d.conteudo)!==d.sha256)return negar("documento_divergente");
   const leituras=await porta.leituras(s.loja,d.id,c.localizador,s);
   if(!Array.isArray(leituras)||leituras.length!==1)return negar("leitura_ausente_ou_ambigua");
   const l=leituras[0];
-  if(!texto(l.id)||!texto(l.verificador)||l.verificador===s.produtor||!mesmoEscopo(s,l.escopo)||l.fonteId!==fonte.id||l.documentoId!==d.id||l.sha256!==d.sha256||l.localizador!==c.localizador||!instante(l.verificadoEm)||Date.parse(l.verificadoEm)<Date.parse(d.consultadoEm)||Date.parse(l.verificadoEm)>Date.parse(agora))return negar("leitura_sem_vinculo_independente");
+  if(!texto(l.id)||!texto(l.verificador)||l.verificador===s.produtor||!mesmoEscopo(s,l.escopo)||l.fonteId!==fonte.id||l.documentoId!==d.id||l.sha256!==d.sha256||l.localizador!==c.localizador||!instante(l.verificadoEm)||micros(l.verificadoEm)<micros(d.consultadoEm)||micros(l.verificadoEm)>micros(agora))return negar("leitura_sem_vinculo_independente");
   if((await porta.verificadorAutorizado(s.loja,l.verificador))!==true)return negar("verificador_nao_autorizado");
   if(l.resultado!=="confere"||!mesmoFato(f,l.fato))return negar("fato_divergente");
   // Não afirma compatibilidade física: apenas procedência conferida pelo adaptador.

@@ -15,7 +15,7 @@ begin
  select x.* into d from nano_lifecycle_interno.documentos_tecnicos x join nano_lifecycle_interno.fontes_documentais f on f.loja_id=x.loja_id and f.id=x.fonte_id
  where x.loja_id=p_loja and x.id=p_id and f.autorizada and x.consultado_em<=statement_timestamp();
  if not found then return null; end if;
- return jsonb_build_object('id',d.id,'loja',d.loja_id,'fonteId',d.fonte_id,'conteudo',d.conteudo,'sha256',d.sha256,'consultadoEm',to_char(d.consultado_em at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+ return jsonb_build_object('id',d.id,'loja',d.loja_id,'fonteId',d.fonte_id,'conteudo',d.conteudo,'sha256',d.sha256,'consultadoEm',to_char(d.consultado_em at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'));
 end $fn$;
 
 grant execute on function nano_lifecycle_interno.nano_lifecycle_ler_fonte(uuid,text),nano_lifecycle_interno.nano_lifecycle_ler_documento(uuid,text),nano_lifecycle_interno.nano_lifecycle_ler_pareceres(uuid,text,text,jsonb) to nano_lifecycle_atualidade_leitor;
@@ -43,6 +43,14 @@ returns boolean language sql stable security invoker set search_path='' as $pare
 $parecer$;
 revoke all on function nano_lifecycle_interno.nano_catalogo_parecer_confere(uuid,jsonb,text,text,jsonb) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
 grant execute on function nano_lifecycle_interno.nano_catalogo_parecer_confere(uuid,jsonb,text,text,jsonb) to nano_lifecycle_atualidade_leitor;
+-- CAT-139: mesma cronologia nativa nas fronteiras técnica e humana.
+create function nano_lifecycle_interno.nano_catalogo_tempo_confere(p_documento timestamptz,p_parecer timestamptz,p_limite timestamptz)
+returns boolean language sql immutable security invoker set search_path='' as $tempo$
+ select coalesce(isfinite(p_documento) and isfinite(p_parecer) and isfinite(p_limite)
+  and p_documento<=p_parecer and p_parecer<=p_limite,false)
+$tempo$;
+revoke all on function nano_lifecycle_interno.nano_catalogo_tempo_confere(timestamptz,timestamptz,timestamptz) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+grant execute on function nano_lifecycle_interno.nano_catalogo_tempo_confere(timestamptz,timestamptz,timestamptz) to nano_lifecycle_atualidade_leitor;
 create function nano_lifecycle_interno.nano_lifecycle_pre_gate(p_loja uuid,p_item uuid,p_execucao uuid,p_geracao bigint,p_versao integer,p_candidato jsonb,p_leitura uuid,p_hash text)
 returns boolean language plpgsql stable security definer set search_path='' as $fn$
 declare e jsonb; d jsonb; f jsonb; ls jsonb; l jsonb; esc jsonb; fato jsonb;
@@ -59,7 +67,7 @@ begin
  if jsonb_array_length(ls) is distinct from 1 then return false; end if;
  l:=ls->0;
  if not nano_lifecycle_interno.nano_catalogo_parecer_confere(p_leitura,p_candidato,p_hash,session_user::text,l)
-  or (l->>'verificadoEm')::timestamptz<(d->>'consultadoEm')::timestamptz or (l->>'verificadoEm')::timestamptz>statement_timestamp() then return false; end if;
+  or not nano_lifecycle_interno.nano_catalogo_tempo_confere((d->>'consultadoEm')::timestamptz,(l->>'verificadoEm')::timestamptz,statement_timestamp()) then return false; end if;
  return nano_lifecycle_interno.nano_lifecycle_verificador_autorizado(p_loja,l->>'verificador');
 end $fn$;
 alter function nano_lifecycle_interno.nano_lifecycle_pre_gate(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text) owner to nano_lifecycle_atualidade_leitor;

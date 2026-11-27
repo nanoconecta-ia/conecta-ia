@@ -75,7 +75,7 @@ begin
  select x.* into d from nano_lifecycle_interno.documentos_tecnicos x join nano_lifecycle_interno.fontes_documentais f on f.loja_id=x.loja_id and f.id=x.fonte_id
  where x.loja_id=p_loja and x.id=p_id and f.autorizada and x.consultado_em<=clock_timestamp();
  if not found then return null; end if;
- return jsonb_build_object('id',d.id,'loja',d.loja_id,'fonteId',d.fonte_id,'conteudo',d.conteudo,'sha256',d.sha256,'consultadoEm',to_char(d.consultado_em at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+ return jsonb_build_object('id',d.id,'loja',d.loja_id,'fonteId',d.fonte_id,'conteudo',d.conteudo,'sha256',d.sha256,'consultadoEm',to_char(d.consultado_em at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'));
 end $fn$;
 alter function nano_lifecycle_interno.nano_lifecycle_ler_fonte(uuid,text) owner to nano_lifecycle_auditor_leitor;
 revoke all on function nano_lifecycle_interno.nano_lifecycle_ler_fonte(uuid,text) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
