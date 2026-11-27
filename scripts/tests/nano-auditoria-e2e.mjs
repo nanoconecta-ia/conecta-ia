@@ -208,7 +208,29 @@ try{
  }
  assert.equal(admin("select count(*) from nano_lifecycle_interno.leituras_documentais where id='"+r.id+"' and resultado='confere' and sha256='"+hash+"';"),"1");
  assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"';"),"2");
- assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"8");
+ // Fixture exclusivamente sintética de resultado sem autoria, em ambas as lojas.
+ // Prepara o pai ANTES da disputa: a trava SHARE de resultados ainda existe.
+ // Assim o teste mede a autoria isoladamente, não a RPC composta.
+ const filtroAutoria=" where loja_id in ('"+L+"','"+outra+"') and geracao=1";
+ admin("insert into nano_lifecycle_interno.resultados_engenharia(loja_id,item_id,execucao,geracao,versao,revisao,checkpoint,produto_id,entrada_snapshot,extracao_candidata,hash_entrada,hash_extracao,extrator) select loja_id,item_id,execucao,101,versao,revisao,checkpoint,produto_id,entrada_snapshot,extracao_candidata,hash_entrada,hash_extracao,extrator from nano_lifecycle_interno.resultados_engenharia"+filtroAutoria+";");
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.resultados_engenharia where loja_id in ('"+L+"','"+outra+"') and geracao=101;"),"2");
+ const inserirAutoria=loja=>"insert into nano_lifecycle_interno.autorias_engenharia(loja_id,item_id,geracao,execucao,versao,produtor,hash_entrada,hash_extracao) select loja_id,item_id,101,execucao,versao,produtor,hash_entrada,hash_extracao from nano_lifecycle_interno.autorias_engenharia where loja_id='"+loja+"' and geracao=1 returning geracao;";
+ await testarEscritor("nano_lifecycle_interno.autorias_engenharia",inserirAutoria(L),"ocupada","postgres","101");
+ await testarEscritor("nano_lifecycle_interno.autorias_engenharia",inserirAutoria(outra),"ja_registrada","postgres","101");
+ await testarEscritor("nano_lifecycle_interno.autorias_engenharia","set local session_replication_role=replica;\n"+inserirAutoria(L),"ocupada","postgres","101");
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.autorias_engenharia where loja_id in ('"+L+"','"+outra+"') and geracao=101;"),"0");
+ const autoriaHistorica=" where loja_id='"+L+"' and item_id='"+I+"' and geracao=1;";
+ for(const prefixo of ["","begin; set local session_replication_role=replica; "]){
+  assert.throws(()=>admin(prefixo+"update nano_lifecycle_interno.autorias_engenharia set produtor='outro'"+autoriaHistorica),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+  assert.throws(()=>admin(prefixo+"delete from nano_lifecycle_interno.autorias_engenharia"+autoriaHistorica),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+  assert.throws(()=>admin(prefixo+"truncate nano_lifecycle_interno.autorias_engenharia;"),e=>e.stderr?.includes("cannot truncate a table referenced in a foreign key constraint")===true);
+  // Inclui os dependentes para chegar ao trigger da própria autoria; rollback mesmo em caso de defeito.
+  assert.throws(()=>admin((prefixo||"begin; ")+"truncate nano_lifecycle_interno.autorias_engenharia,nano_lifecycle_interno.leituras_documentais,nano_lifecycle_interno.conferencias_gate; rollback;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
+ }
+ assert.equal(admin("select produtor||':'||hash_entrada||':'||hash_extracao from nano_lifecycle_interno.autorias_engenharia"+autoriaHistorica),"nano_e2e_prod:"+recibo.hash_entrada+":"+recibo.hash_extracao);
+ assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"10");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='nano_lifecycle_interno.autorias_engenharia'::regclass and tgname='nano_autoria_imutavel' and tgenabled='A';"),"1");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','nano_lifecycle_interno.autorias_engenharia','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='nano_lifecycle_interno.leituras_documentais'::regclass and tgname in ('nano_leitura_imutavel','nano_leitura_truncate') and tgenabled='A';"),"2");
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','nano_lifecycle_interno.leituras_documentais','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='nano_lifecycle_interno.documentos_tecnicos'::regclass and tgname in ('nano_documento_hash','nano_documento_imutavel','nano_documento_truncate') and tgenabled='A';"),"3");
