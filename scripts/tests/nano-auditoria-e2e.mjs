@@ -322,7 +322,32 @@ try{
  assert.equal(admin("select to_jsonb(r)::text from public.nano_lifecycle_reserva r"+cpFiltro),reservaAntes);
  assert.equal(admin("select jsonb_agg(to_jsonb(e) order by geracao)::text from public.nano_lifecycle_execucoes e"+cpFiltro),histExec);
  assert.equal(admin("select count(*) from public.nano_lifecycle_execucoes where execucao in ('"+execReserva+"','"+execSeguinte+"');"),"0");
- assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"18");
+ // Pausa da automação: DML legítimo do service_role, apenas em fixtures descartáveis.
+ const filtroAuto=" where produto_id in ('"+P+"','"+P2+"')";
+ const autoAntes=admin("select jsonb_agg(to_jsonb(a) order by produto_id)::text from public.produto_automacao a"+filtroAuto);
+ assert.equal(admin("select count(*) from public.produto_automacao"+filtroAuto+" and not pausado;"),"2");
+ const atualizarAuto=produto=>"set local role service_role; update public.produto_automacao set pausado=true where produto_id='"+produto+"' returning pausado; reset role;";
+ const upsertAuto=(loja,produto)=>"set local role service_role; insert into public.produto_automacao(loja_id,produto_id,pausado) values('"+loja+"','"+produto+"',true) on conflict(produto_id) do update set pausado=excluded.pausado returning pausado; reset role;";
+ const excluirAuto=produto=>"set local role service_role; delete from public.produto_automacao where produto_id='"+produto+"' returning produto_id; reset role;";
+ await testarEscritor("public.produto_automacao",atualizarAuto(P),"ocupada","postgres","t");
+ await testarEscritor("public.produto_automacao",atualizarAuto(P2),"ja_registrada","postgres","t");
+ await testarEscritor("public.produto_automacao",upsertAuto(L,P),"ocupada","postgres","t");
+ await testarEscritor("public.produto_automacao",upsertAuto(outra,P2),"ja_registrada","postgres","t");
+ await testarEscritor("public.produto_automacao",excluirAuto(P),"ocupada","postgres",P);
+ await testarEscritor("public.produto_automacao",excluirAuto(P2),"ja_registrada","postgres",P2);
+ await testarEscritor("public.produto_automacao","set local session_replication_role=replica;\n"+atualizarAuto(P),"ocupada","postgres","t");
+ await testarEscritor("public.produto_automacao","set local session_replication_role=replica;\n"+upsertAuto(outra,P2),"ja_registrada","postgres","t");
+ for(const prefixo of ["","begin; set local session_replication_role=replica; "]){
+  assert.throws(()=>admin(prefixo+"update public.produto_automacao set loja_id='"+outra+"' where produto_id='"+P+"';"),e=>e.stderr?.includes("movimento documental entre lojas bloqueado")===true);
+  assert.throws(()=>admin(prefixo+"update public.produto_automacao set produto_id='fa100000-0000-0000-0000-000000000073' where produto_id='"+P+"';"),e=>e.stderr?.includes("identidade de automação protegida")===true);
+  assert.throws(()=>admin((prefixo||"begin; ")+"truncate public.produto_automacao; rollback;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
+ }
+ // FK composta continua ativa no fluxo normal, mesmo para service_role.
+ assert.throws(()=>admin("begin; set local role service_role; delete from public.produto_automacao where produto_id='"+P+"'; insert into public.produto_automacao(loja_id,produto_id,pausado) values('"+outra+"','"+P+"',true); rollback;"),e=>e.stderr?.includes("violates foreign key constraint")===true);
+ assert.equal(admin("select jsonb_agg(to_jsonb(a) order by produto_id)::text from public.produto_automacao a"+filtroAuto),autoAntes);
+ assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"20");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.produto_automacao'::regclass and tgname='nano_automacao_identidade' and tgenabled='A';"),"1");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','public.produto_automacao','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_reserva'::regclass and tgname in ('nano_reserva_transicao','nano_reserva_sem_exclusao') and tgenabled='A';"),"2");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_execucoes'::regclass and tgname in ('nano_execucao_imutavel','nano_execucao_truncate') and tgenabled='A';"),"2");
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','public.nano_lifecycle_reserva','update');"),"f");

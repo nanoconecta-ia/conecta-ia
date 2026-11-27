@@ -1,6 +1,6 @@
--- MINUTA CI: isolamento parcial por loja; preserva três travas de tabela.
+-- MINUTA CI: isolamento parcial por loja; preserva duas travas de tabela.
 begin;
--- O mesmo namespace de advisory lock é obrigatório para todo escritor dessas nove tabelas.
+-- O mesmo namespace de advisory lock é obrigatório para todo escritor dessas dez tabelas.
 create function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja()
 returns trigger language plpgsql security invoker set search_path='' as $fn$
 declare loja uuid;
@@ -120,6 +120,24 @@ create trigger nano_execucao_truncate before truncate on public.nano_lifecycle_e
 alter table public.nano_lifecycle_execucoes enable always trigger nano_execucao_imutavel;
 alter table public.nano_lifecycle_execucoes enable always trigger nano_execucao_truncate;
 revoke update on public.nano_lifecycle_reserva from nano_lifecycle_gate_travas;
+-- Automação: preserva as autoridades de pausa/retomada, RLS e FK composta.
+-- Uma pausa não pode ser transferida para outro produto por UPDATE.
+create function nano_lifecycle_interno.nano_lifecycle_validar_identidade_automacao()
+returns trigger language plpgsql security invoker set search_path='' as $fn$
+begin
+ if old.produto_id is distinct from new.produto_id then
+  raise exception 'identidade de automação protegida' using errcode='42501';
+ end if;
+ return new;
+end $fn$;
+revoke all on function nano_lifecycle_interno.nano_lifecycle_validar_identidade_automacao() from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+create trigger nano_automacao_identidade before update on public.produto_automacao for each row execute function nano_lifecycle_interno.nano_lifecycle_validar_identidade_automacao();
+create trigger zz_nano_guard_documental_loja before insert or update or delete on public.produto_automacao for each row execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja();
+create trigger zz_nano_guard_documental_truncate before truncate on public.produto_automacao for each statement execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja();
+alter table public.produto_automacao enable always trigger nano_automacao_identidade;
+alter table public.produto_automacao enable always trigger zz_nano_guard_documental_loja;
+alter table public.produto_automacao enable always trigger zz_nano_guard_documental_truncate;
+revoke update on public.produto_automacao from nano_lifecycle_gate_travas;
 create or replace function nano_lifecycle_interno.nano_lifecycle_travar_conferencia(p_loja uuid,p_solicitacao uuid)
 returns boolean language plpgsql volatile security definer set search_path='' as $fn$
 begin
@@ -129,7 +147,6 @@ begin
   if not pg_try_advisory_xact_lock(hashtextextended('nano.gate:'||p_loja::text||':'||p_solicitacao::text,0)) then return false; end if;
   if not pg_try_advisory_xact_lock(hashtextextended('nano.gate.documental:'||p_loja::text,0)) then raise lock_not_available; end if;
   lock table public.produtos,
-   public.produto_automacao,
    public.pipeline_itens in share mode nowait;
  exception when lock_not_available then return false;
  end;
