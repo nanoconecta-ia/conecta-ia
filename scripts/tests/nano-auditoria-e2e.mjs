@@ -171,6 +171,13 @@ try{
  // Grafo global sintético do CI, com IDs explícitos.
  const g126=Object.fromEntries(["fonte","montadora","modelo","geracao","versao","familia","motor"].map((x,i)=>[x,"fb126000-0000-0000-0000-00000000000"+(i+1)]));
  admin("begin; insert into public.fontes(id,tipo,titulo,documento,mercado) values ('"+g126.fonte+"','catalogo_montadora','Fixture CAT-126','Documento sintético CI','BR'); insert into public.montadoras(id,nome) values ('"+g126.montadora+"','Marca teste'); insert into public.modelos(id,montadora_id,nome,categoria) values ('"+g126.modelo+"','"+g126.montadora+"','Modelo teste','utilitario'); insert into public.geracoes(id,modelo_id,ordem,codigo_interno) values ('"+g126.geracao+"','"+g126.modelo+"',1,'G1'); insert into public.versoes(id,geracao_id,mercado,nome_comercial) values ('"+g126.versao+"','"+g126.geracao+"','BR','Versão CI 126'); insert into public.familias_motor(id,nome) values ('"+g126.familia+"','Família CI 126'); insert into public.motores(id,familia_id,codigo,sistema_emissoes,fonte_id,status) values ('"+g126.motor+"','"+g126.familia+"','M1','Euro 5','"+g126.fonte+"','aprovado'); insert into public.versao_motor(versao_id,motor_id,periodo_inicio,periodo_fim,fonte_id,status) values ('"+g126.versao+"','"+g126.motor+"',2014,2016,'"+g126.fonte+"','aprovado'); update public.produto_aplicacoes set nano_versao_id='"+g126.versao+"',nano_motor_id='"+g126.motor+"' where id in ('"+app124+"','"+app124b+"'); commit;");
+ // Vínculo explícito produto -> peça genuína -> aresta técnica (fixture CI).
+ const g130=Object.fromEntries(["peca","ponte","aresta","cruzada","motorSomente","arestaCurta","pecaErrada","ponteErrada","arestaErrada"].map((x,i)=>[x,"fb130000-0000-0000-0000-00000000000"+(i+1)]));
+ const peca130=(id,codigo)=>"('"+id+"','genuina','"+g126.montadora+"','"+codigo+"','"+g126.fonte+"',now(),'aprovado')";
+ const ponte130=(id,peca,relacao)=>"('"+id+"','"+L+"','"+P+"','"+peca+"','"+relacao+"','"+g126.fonte+"',now(),'aprovado')";
+ const aresta130=(id,peca,versao)=>"('"+id+"','"+peca+"',"+(versao?"'"+versao+"'":"null")+",'"+g126.motor+"','BR',2014,2016,'"+g126.fonte+"',now(),'aprovado')";
+ const insertAresta130="insert into public.pecas_aplicacoes_tecnicas(id,peca_id,versao_id,motor_id,mercado,periodo_inicio,periodo_fim,fonte_id,verificado_em,status) values ";
+ admin("begin; insert into public.pecas_ref(id,classe,montadora_id,codigo,fonte_id,verificado_em,status) values "+[peca130(g130.peca,"12345-67890"),peca130(g130.pecaErrada,"OEM-DIVERGENTE")].join(",")+"; insert into public.produto_pecas_ref(id,loja_id,produto_id,peca_id,relacao,fonte_id,verificado_em,status) values "+[ponte130(g130.ponte,g130.peca,"e_esta_peca"),ponte130(g130.cruzada,g130.peca,"referencia_cruzada"),ponte130(g130.ponteErrada,g130.pecaErrada,"e_esta_peca")].join(",")+"; "+insertAresta130+[aresta130(g130.aresta,g130.peca,g126.versao),aresta130(g130.motorSomente,g130.peca,null),aresta130(g130.arestaErrada,g130.pecaErrada,g126.versao)].join(",")+"; update public.produto_aplicacoes set nano_produto_peca_ref_id='"+g130.ponte+"',nano_peca_aplicacao_id='"+g130.aresta+"' where id in ('"+app124+"','"+app124b+"'); commit;");
  const assinatura124="nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text,uuid,uuid)";
  for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor"])assert.equal(admin("select has_function_privilege('"+papel+"','"+assinatura124+"','EXECUTE');"),"f");
  assert.equal(admin("select has_function_privilege('nano_lifecycle_auditoria','"+assinatura124+"','EXECUTE');"),"t");
@@ -236,13 +243,14 @@ try{
  // Aresta alternativa com período insuficiente, explicitamente criada em fixture CI.
  const versaoCurta129="fb129000-0000-0000-0000-000000000001";
  admin("begin; insert into public.versoes(id,geracao_id,mercado,nome_comercial) values ('"+versaoCurta129+"','"+g126.geracao+"','BR','Versão CI 129 período curto'); insert into public.versao_motor(versao_id,motor_id,periodo_inicio,periodo_fim,fonte_id,status) values ('"+versaoCurta129+"','"+g126.motor+"',2014,2015,'"+g126.fonte+"','aprovado'); commit;");
- mudar125("nano_versao_id='"+versaoCurta129+"',nano_motor_id='"+g126.motor+"'");
+ admin(insertAresta130+aresta130(g130.arestaCurta,g130.peca,versaoCurta129)+";");
+ mudar125("nano_versao_id='"+versaoCurta129+"',nano_motor_id='"+g126.motor+"',nano_peca_aplicacao_id='"+g130.arestaCurta+"'");
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");
- mudar125(vinculo126);
+ mudar125(vinculo126+",nano_peca_aplicacao_id='"+g130.aresta+"'");
  console.log("ok: CAT-129-COR-01 proteção legada preservada; aresta alternativa com período insuficiente retida");
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"vinculo_registrado");
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_registrador','public.motores','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
- assert.equal(admin("select count(*) from pg_trigger where tgname='zz_nano_guard_grafo' and tgenabled='A';"),"7");
+ assert.equal(admin("select count(*) from pg_trigger where tgname='zz_nano_guard_grafo' and tgenabled='A';"),"9");
  console.log("ok: CAT-126-01 IDs explícitos do grafo, revogação, período e fonte; sem homologação");
  const writer126=spawn("psql",args("postgres"),{env:env("postgres"),stdio:["pipe","pipe","pipe"]});
  writer126.stderr.resume();
@@ -265,6 +273,25 @@ try{
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"vinculo_registrado");
  assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req124+"';"),"0");
  console.log("ok: CAT-126-02 disputa real de escritor do grafo, retenção concorrente e rollback");
+ const ref130="nano_produto_peca_ref_id='"+g130.ponte+"',nano_peca_aplicacao_id='"+g130.aresta+"'";
+ mudar125("nano_produto_peca_ref_id=null,nano_peca_aplicacao_id=null");
+ assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");
+ assert.throws(()=>mudar125("nano_produto_peca_ref_id='"+g130.ponte+"'"),e=>e.stderr?.includes("nano_aplicacao_peca_par")===true);
+ mudar125(ref130);
+ for(const delta of ["nano_produto_peca_ref_id='"+g130.cruzada+"'","nano_peca_aplicacao_id='"+g130.motorSomente+"'","nano_peca_aplicacao_id='"+g130.arestaErrada+"'","nano_produto_peca_ref_id='"+g130.ponteErrada+"',nano_peca_aplicacao_id='"+g130.arestaErrada+"'"]){
+  mudar125(delta);
+  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida",delta);
+  mudar125(ref130);
+ }
+ assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"vinculo_registrado");
+ for(const tabela of ["produto_pecas_ref","pecas_ref","pecas_aplicacoes_tecnicas"])assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_registrador','public."+tabela+"','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
+ // Revogação permitida pelo guard legado, sem reaprovação artificial.
+ admin("update public.pecas_aplicacoes_tecnicas set status='desatualizado' where id='"+g130.aresta+"';");
+ assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req124+"';"),"0");
+ assert.equal(admin("select count(*) from public.produto_aplicacoes where id='"+app124+"' and status='a_confirmar' and not pagina_indexavel;"),"1");
+ console.log("ok: CAT-130-01 peça genuína, ponte direta do produto, aresta versão/motor, OEM divergente e revogação; sem homologação");
+
 
 
  // Disputa real de duas sessões com a mesma identidade: um registro, outro retry ou ocupado.

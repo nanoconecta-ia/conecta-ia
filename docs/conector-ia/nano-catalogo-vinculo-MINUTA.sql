@@ -30,7 +30,7 @@ alter table nano_lifecycle_interno.conferencias_gate
 do $$
 declare rel regclass;
 begin
- foreach rel in array array['public.produto_aplicacoes'::regclass,'public.usuarios_loja'::regclass,'public.marcas'::regclass] loop
+ foreach rel in array array['public.produto_aplicacoes'::regclass,'public.usuarios_loja'::regclass,'public.marcas'::regclass,'public.produto_pecas_ref'::regclass] loop
   execute format('create trigger zz_nano_guard_catalogo_loja before insert or update or delete on %s for each row execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja()',rel);
   execute format('create trigger zz_nano_guard_catalogo_truncate before truncate on %s for each statement execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja()',rel);
   execute format('alter table %s enable always trigger zz_nano_guard_catalogo_loja',rel);
