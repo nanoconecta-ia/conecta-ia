@@ -149,3 +149,32 @@ console.log("ok: CAT-114-04 perda de papel e revogação verificadas em nova con
 assert.equal(sql("select has_function_privilege('authenticated','public.aplicacao_decidir(uuid,uuid,uuid,text)','EXECUTE');"),"f");
 const r4=restrito(L,P,A2);assert.deepEqual(r4.atual,r3.atual);assert.deepEqual(r4.eventos,r3.eventos);
 console.log("ok: CAT-114-05 autorização consultiva não cria decisão, evento ou prova");
+
+// Inventário de compatibilidade anterior a qualquer mudança de privilégios.
+// Inclui concessões por coluna e por tabela; a autorização por linha é
+// exercitada separadamente. Os papéis são os caminhos conhecidos do piloto.
+const inventarioDml = JSON.parse(sql(`
+ select jsonb_agg(to_jsonb(i) order by relacao, papel, operacao) from (
+   select relacao, papel, operacao,
+     has_table_privilege(papel, relacao, operacao) as tabela,
+     case when operacao in ('INSERT','UPDATE') then
+       array(select a.attname from pg_attribute a
+         where a.attrelid = relacao::regclass and a.attnum > 0 and not a.attisdropped
+           and has_column_privilege(papel, relacao, a.attname, operacao)
+         order by a.attnum)
+     end as colunas
+   from unnest(array['public.produto_aplicacoes','public.auditoria','public.usuarios_loja',
+     'nano_lifecycle_interno.conferencias_gate']) as t(relacao)
+   cross join unnest(array['anon','authenticated','service_role','nano_lifecycle_produtor',
+     'nano_lifecycle_auditoria','nano_lifecycle_gate_registrador']) as p(papel)
+   cross join unnest(array['INSERT','UPDATE','DELETE']) as o(operacao)
+ ) as i;
+`));
+assert.equal(inventarioDml.length, 72);
+function acesso(relacao, papel, operacao) {
+  return inventarioDml.find(i => i.relacao === relacao && i.papel === papel && i.operacao === operacao);
+}
+assert.ok(acesso("public.produto_aplicacoes", "service_role", "UPDATE").colunas.includes("modelo"));
+assert.ok(acesso("public.usuarios_loja", "authenticated", "UPDATE").colunas.includes("papel"));
+assert.ok(acesso("nano_lifecycle_interno.conferencias_gate", "nano_lifecycle_gate_registrador", "INSERT").colunas.includes("auditor"));
+console.log("CAT-116-01 privilégios efetivos por tabela e coluna (antes de RLS):", JSON.stringify(inventarioDml));
