@@ -119,16 +119,18 @@ try{
  assert.ok(respostas.some(x=>["ja_registrada","ocupada"].includes(x.estado)));
  assert.equal((await registrar(audit,candidato,concorrente)).estado,"ja_registrada");
  // Escritor concorrente: trava ROW EXCLUSIVE é mantida até rollback.
- async function testarEscritor(tabela,mutacao,esperado='ocupada'){
-  const writer=spawn("psql",args("postgres"),{env:env("postgres"),stdio:["pipe","pipe","pipe"]});
+ async function testarEscritor(tabela,mutacao,esperado='ocupada',login='postgres',resultadoEscrita=null){
+  const writer=spawn("psql",args(login),{env:env(login==="postgres"?"postgres":passwords[login]),stdio:["pipe","pipe","pipe"]});
   writer.stderr.resume();
   const rl=createInterface({input:writer.stdout});
   try{
    await new Promise((resolve,reject)=>{
     const timer=setTimeout(()=>reject(Error("escritor não iniciou")),10000);
     writer.once("exit",()=>{clearTimeout(timer);reject(Error("escritor encerrou"));});
-    rl.on("line",line=>{if(line==="__NANO_ESCRITOR__"){clearTimeout(timer);resolve();}});
-    writer.stdin.write("begin;\nlock table "+tabela+" in row exclusive mode;\n"+mutacao+"\n\\echo __NANO_ESCRITOR__\n");
+    const linhas=[];
+    rl.on("line",line=>{if(line==="__NANO_ESCRITOR__"){clearTimeout(timer);if(resultadoEscrita!==null&&!linhas.includes(resultadoEscrita))reject(Error("resultado inesperado do escritor"));else resolve();}else linhas.push(line);});
+    const inicio=login==="postgres"?"lock table "+tabela+" in row exclusive mode;\n":"set local role nano_lifecycle_auditoria;\n";
+    writer.stdin.write("begin;\n"+inicio+mutacao+"\n\\echo __NANO_ESCRITOR__\n");
    });
    if(esperado==="ocupada")assert.equal((await registrar(audit,candidato,deniedRequest)).estado,"ocupada");
    assert.equal((await registrar(audit,candidato,concorrente)).estado,esperado);
@@ -167,7 +169,41 @@ try{
   assert.throws(()=>admin(prefixo+"delete from nano_lifecycle_interno.documentos_tecnicos"+docHistorico),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
  }
  assert.throws(()=>admin("begin; set local session_replication_role=replica; insert into nano_lifecycle_interno.documentos_tecnicos(loja_id,id,fonte_id,conteudo,sha256,consultado_em,referencia) values('"+L+"','hash-incorreto','f','Documento sintético','"+ "0".repeat(64)+"',clock_timestamp(),'fixture');"),e=>e.stderr?.includes("hash documental divergente")===true);
- assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"6");
+ // Segunda loja com cadeia de evidência real e separada, sem desabilitar FKs.
+ const P2="fc100000-0000-0000-0000-000000000001",X2="fc200000-0000-0000-0000-000000000003";
+ const fixture2=fixture.replaceAll(L,outra).replaceAll(P,P2).replaceAll("fa200000-","fc200000-").replaceAll("nano-auditoria-e2e","nano-auditoria-e2e-outra").replaceAll("NANO-EV1","NANO-EV2");
+ admin(fixture2+
+ "\nreset role;\n"+
+ "update public.nano_lifecycle_checkpoint set despacho_habilitado=true,consumo_habilitado=true where loja_id='"+outra+"';\n"+
+ "update public.produto_automacao set pausado=false where produto_id='"+P2+"';\n"+
+ "insert into public.pipeline_orcamentos(loja_id,mes,limite_usd) values ('"+outra+"',date_trunc('month',now())::date,1);\n"+
+ "insert into nano_lifecycle_interno.produtor_escopos values('nano_e2e_prod','"+outra+"',true);\n"+
+ "set local role service_role;\nselect public.nano_lifecycle_encaminhar('"+outra+"','sync_0002',(select dados->0->>'idempotency_key' from evento));\nreset role;\ncommit;");
+ const I2=admin("select id from public.pipeline_itens where loja_id='"+outra+"' and entrada->>'origem'='nano_lifecycle';");
+ assert.match(I2,/^[0-9a-f-]{36}$/);
+ admin("insert into nano_lifecycle_interno.documentos_tecnicos(loja_id,id,fonte_id,conteudo,consultado_em,referencia) values('"+outra+"','d','f','"+conteudo+"',clock_timestamp()-interval '1 day','fixture p. 1');");
+ const v2=[outra,I2,X2,1,1];
+ const lease2=await rpc(prod,"nano_lifecycle_reservar_produtor",["uuid","uuid","uuid","integer"],[outra,I2,X2,180]);
+ assert.equal(lease2.estado,"reservado");assert.equal(lease2.geracao,1);
+ const entrada2=await rpc(prod,"nano_lifecycle_entrada_produtor",keyTypes,v2);assert.equal(entrada2.estado,"preparada");
+ const p2=entrada2.produto,ex2=extrair(p2.sku,p2.nome,[p2.descricao_curta,p2.descricao_complementar].filter(Boolean).join(". "),p2.marca??"",p2.gtin??"");
+ assert.equal((await rpc(prod,"nano_lifecycle_persistir_com_autoria",[...keyTypes,"jsonb","jsonb"],[...v2,JSON.stringify(entrada2),JSON.stringify(ex2)])).estado,"gravado");
+ assert.equal(await rpc(prod,"nano_lifecycle_liberar_produtor",keyTypes,v2),true);
+ const lit=x=>"'"+String(x).replaceAll("'","''")+"'";
+ const atestarConcorrente=chave=>"select nano_lifecycle_interno.nano_lifecycle_atestar_fato("+[...chave,"d",hash,"p. 2",conteudo,JSON.stringify(fato),"confere"].map(lit).join(",")+")->>'estado';";
+ // Escrita efetiva pela RPC do parecerista, mantida aberta até rollback.
+ await testarEscritor("nano_lifecycle_interno.leituras_documentais",atestarConcorrente(v),"ocupada","nano_e2e_parecer","registrado");
+ await testarEscritor("nano_lifecycle_interno.leituras_documentais",atestarConcorrente(v2),"ja_registrada","nano_e2e_parecer","registrado");
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.leituras_documentais where loja_id in ('"+L+"','"+outra+"');"),"1");
+ const leituraHistorica=" where id='"+r.id+"';";
+ for(const prefixo of ["","begin; set local session_replication_role=replica; "]){
+  assert.throws(()=>admin(prefixo+"update nano_lifecycle_interno.leituras_documentais set resultado='diverge'"+leituraHistorica),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+  assert.throws(()=>admin(prefixo+"delete from nano_lifecycle_interno.leituras_documentais"+leituraHistorica),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+  assert.throws(()=>admin(prefixo+"truncate nano_lifecycle_interno.leituras_documentais;"),e=>e.stderr?.includes("documento técnico histórico imutável")===true||e.stderr?.includes("truncate documental bloqueado")===true);
+ }
+ assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"8");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='nano_lifecycle_interno.leituras_documentais'::regclass and tgname in ('nano_leitura_imutavel','nano_leitura_truncate') and tgenabled='A';"),"2");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','nano_lifecycle_interno.leituras_documentais','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='nano_lifecycle_interno.documentos_tecnicos'::regclass and tgname in ('nano_documento_hash','nano_documento_imutavel','nano_documento_truncate') and tgenabled='A';"),"3");
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','nano_lifecycle_interno.documentos_tecnicos','update');"),"f");
 
