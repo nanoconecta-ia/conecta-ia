@@ -188,3 +188,23 @@ for (const papel of ["nano_lifecycle_produtor", "nano_lifecycle_auditoria"]) {
   }
 }
 console.log("ok: CAT-117-01 produtor e auditor sem DML direto na conferência");
+
+// Conferir as duas assinaturas existentes no catálogo instalado pelo runner.
+// EXECUTE é uma pré-condição: a chamada ainda passa pelas guardas da função.
+const permissoesRotinas = JSON.parse(sql(`
+ select jsonb_object_agg(papel, jsonb_build_array(
+   has_function_privilege(papel, 'public.aplicacao_decidir(uuid,uuid,uuid,text)', 'EXECUTE'),
+   has_function_privilege(papel,
+     'nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text,uuid)',
+     'EXECUTE')))
+ from unnest(array['anon','authenticated','service_role',
+   'nano_lifecycle_produtor','nano_lifecycle_auditoria']) as papeis(papel);
+`));
+assert.deepEqual(permissoesRotinas, {
+  anon: [false, false],
+  authenticated: [false, false],
+  service_role: [true, false],
+  nano_lifecycle_produtor: [false, false],
+  nano_lifecycle_auditoria: [false, true],
+});
+console.log("ok: CAT-118-01 permissões das rotinas de decisão legada e conferência técnica");
