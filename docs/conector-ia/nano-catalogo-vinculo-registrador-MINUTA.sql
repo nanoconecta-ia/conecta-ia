@@ -194,11 +194,12 @@ end $leitor$;
 grant execute on function public.nano_lifecycle_projecao(uuid),nano_lifecycle_interno.nano_catalogo_atualidade_comum(uuid,uuid,uuid,bigint,integer,jsonb,jsonb,jsonb) to nano_catalogo_vinculo_humano_leitor;
 -- Verificação da identidade histórica sem fingir que a sessão humana é auditor.
 grant execute on function nano_lifecycle_interno.nano_catalogo_auditor_vigente(text) to nano_catalogo_vinculo_humano_leitor;
+grant execute on function nano_lifecycle_interno.nano_catalogo_documento_confere(uuid,jsonb,jsonb,jsonb,text) to nano_catalogo_vinculo_humano_leitor;
 create function private.nano_catalogo_conferir_vinculo(p_loja uuid,p_produto uuid,p_aplicacao uuid,p_recibo uuid)
 returns jsonb language plpgsql volatile security definer set search_path='' set nano.humano_loja='' as $humano$
 declare ator uuid; r nano_lifecycle_interno.conferencias_gate; snap jsonb;
  e nano_lifecycle_interno.resultados_engenharia; a nano_lifecycle_interno.autorias_engenharia;
- l nano_lifecycle_interno.leituras_documentais; d nano_lifecycle_interno.documentos_tecnicos;
+ l nano_lifecycle_interno.leituras_documentais; d nano_lifecycle_interno.documentos_tecnicos; f nano_lifecycle_interno.fontes_documentais;
  esc jsonb;
 begin
  if current_setting('role',true) is distinct from 'authenticated' or current_setting('transaction_isolation')<>'read committed'
@@ -239,8 +240,11 @@ begin
  select * into d from nano_lifecycle_interno.documentos_tecnicos x
  where x.loja_id=p_loja and x.id=r.candidato->>'documentoId' and x.fonte_id=r.candidato->>'fonteId'
   and x.sha256=r.sha256 and x.consultado_em<=statement_timestamp();
- if not found or d.sha256 is distinct from encode(sha256(convert_to(d.conteudo,'UTF8')),'hex')
-  or not exists(select 1 from nano_lifecycle_interno.fontes_documentais f where f.loja_id=p_loja and f.id=d.fonte_id and f.autorizada and f.tipo in ('catalogo_fabricante','manual_montadora')) then
+ if not found then return jsonb_build_object('estado','retida','homologada',false); end if;
+ select * into f from nano_lifecycle_interno.fontes_documentais x where x.loja_id=p_loja and x.id=d.fonte_id;
+ if not found or not nano_lifecycle_interno.nano_catalogo_documento_confere(p_loja,
+  jsonb_build_object('id',d.id,'loja',d.loja_id,'fonteId',d.fonte_id,'conteudo',d.conteudo,'sha256',d.sha256),
+  jsonb_build_object('id',f.id,'loja',f.loja_id,'tipo',f.tipo,'autorizada',f.autorizada),r.candidato,r.sha256) then
   return jsonb_build_object('estado','retida','homologada',false); end if;
  select * into l from nano_lifecycle_interno.leituras_documentais x where x.loja_id=p_loja and x.id=r.leitura_id
   and x.item_id=e.item_id and x.geracao=e.geracao and x.escopo=esc and x.fato=r.candidato->'fato'

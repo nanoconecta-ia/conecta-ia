@@ -20,6 +20,17 @@ end $fn$;
 
 grant execute on function nano_lifecycle_interno.nano_lifecycle_ler_fonte(uuid,text),nano_lifecycle_interno.nano_lifecycle_ler_documento(uuid,text),nano_lifecycle_interno.nano_lifecycle_ler_pareceres(uuid,text,text,jsonb) to nano_lifecycle_atualidade_leitor;
 grant create on schema nano_lifecycle_interno to nano_lifecycle_atualidade_leitor;
+-- CAT-137: predicado comum, sem acesso a tabelas ou autoridade própria.
+create function nano_lifecycle_interno.nano_catalogo_documento_confere(p_loja uuid,d jsonb,f jsonb,c jsonb,p_hash text)
+returns boolean language sql stable security invoker set search_path='' as $doc$
+ select coalesce(p_loja is not null and d->>'loja'=p_loja::text and f->>'loja'=p_loja::text
+  and d->>'id'=c->>'documentoId' and d->>'fonteId'=f->>'id' and f->>'id'=c->>'fonteId'
+  and f->'autorizada'='true'::jsonb and f->>'tipo' in ('catalogo_fabricante','manual_montadora')
+  and p_hash ~ '^[0-9a-f]{64}$' and d->>'sha256'=p_hash
+  and encode(sha256(convert_to(d->>'conteudo','UTF8')),'hex')=p_hash,false)
+$doc$;
+revoke all on function nano_lifecycle_interno.nano_catalogo_documento_confere(uuid,jsonb,jsonb,jsonb,text) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+grant execute on function nano_lifecycle_interno.nano_catalogo_documento_confere(uuid,jsonb,jsonb,jsonb,text) to nano_lifecycle_atualidade_leitor;
 create function nano_lifecycle_interno.nano_lifecycle_pre_gate(p_loja uuid,p_item uuid,p_execucao uuid,p_geracao bigint,p_versao integer,p_candidato jsonb,p_leitura uuid,p_hash text)
 returns boolean language plpgsql stable security definer set search_path='' as $fn$
 declare e jsonb; d jsonb; f jsonb; ls jsonb; l jsonb; esc jsonb; fato jsonb;
@@ -31,7 +42,7 @@ begin
  if e->>'estado' is distinct from 'evidencia_historica' or e->'extracao_candidata'->'nao_se_aplica' is distinct from 'null'::jsonb or not exists(select 1 from jsonb_array_elements(e->'extracao_candidata'->'codigos_oem') o where o->>'normalizado'=fato->>'oem') then return false; end if;
  d:=nano_lifecycle_interno.nano_lifecycle_ler_documento(p_loja,p_candidato->>'documentoId');
  f:=nano_lifecycle_interno.nano_lifecycle_ler_fonte(p_loja,p_candidato->>'fonteId');
- if d is null or f is null or d->>'fonteId' is distinct from f->>'id' or f->>'tipo' not in ('catalogo_fabricante','manual_montadora') or d->>'sha256' is distinct from p_hash or encode(sha256(convert_to(d->>'conteudo','UTF8')),'hex') is distinct from p_hash then return false; end if;
+ if not nano_lifecycle_interno.nano_catalogo_documento_confere(p_loja,d,f,p_candidato,p_hash) then return false; end if;
  ls:=nano_lifecycle_interno.nano_lifecycle_ler_pareceres(p_loja,d->>'id',p_candidato->>'localizador',esc);
  if jsonb_array_length(ls) is distinct from 1 then return false; end if;
  l:=ls->0;
