@@ -53,7 +53,7 @@ end $$;
 revoke all on function nano_financeiro_interno.travar(uuid,date) from public,anon,authenticated,service_role;
 grant execute on function nano_financeiro_interno.travar(uuid,date) to nano_financeiro_escritor;
 create function nano_financeiro_interno.reservar(p_loja uuid,p_item uuid,p_capacidade text,p_tipo text,p_fonte text,p_usd_estimado numeric)
-returns bigint language plpgsql security definer set search_path='' set nano.financeiro_loja='' as $
+returns bigint language plpgsql security definer set search_path='' set nano.financeiro_loja='' as $$
 declare m date:=date_trunc('month',now())::date; teto numeric; gasto numeric; estimado numeric(12,6); novo bigint;
 begin
  if p_usd_estimado is null or p_usd_estimado<0 or p_usd_estimado::text in ('NaN','Infinity','-Infinity') then raise exception 'estimativa inválida' using errcode='22023'; end if;
@@ -72,7 +72,7 @@ begin
  return novo;
 end $$;
 create function nano_financeiro_interno.confirmar(p_loja uuid,p_custo bigint,p_usd_real numeric,p_chamadas int,p_tokens_in bigint,p_tokens_out bigint,p_duracao_ms int)
-returns void language plpgsql security definer set search_path='' set nano.financeiro_loja='' as $
+returns void language plpgsql security definer set search_path='' set nano.financeiro_loja='' as $$
 declare m date; anterior numeric; realvalor numeric(12,6); teto numeric; gasto numeric;
 begin
  if p_usd_real is null or p_usd_real<0 or p_usd_real::text in ('NaN','Infinity','-Infinity') then raise exception 'custo real inválido' using errcode='22023'; end if;
@@ -94,7 +94,7 @@ begin
  values(p_custo,'confirmacao',p_loja,m,anterior,realvalor,teto,teto-gasto);
 end $$;
 create function nano_financeiro_interno.registrar_zero(p_loja uuid,p_item uuid,p_capacidade text,p_tipo text,p_fonte text,p_duracao_ms int)
-returns bigint language plpgsql security definer set search_path='' set nano.financeiro_loja='' as $
+returns bigint language plpgsql security definer set search_path='' set nano.financeiro_loja='' as $$
 declare m date:=date_trunc('month',now())::date; novo bigint;
 begin
  perform nano_financeiro_interno.travar(p_loja,m);
