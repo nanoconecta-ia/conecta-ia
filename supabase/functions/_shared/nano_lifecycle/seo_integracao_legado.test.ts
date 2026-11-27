@@ -6,7 +6,7 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {reconciliarProvaSeo,type HomologacaoSeoVigente} from "./seo_evidencia.ts";
 import type {Produto,ContextoVisualAplicacao} from "./projecoes.ts";
-import {aplicacaoIndexavel,type AplicacaoSeo} from "../seo/aplicacao.ts";
+import {aplicacaoIndexavel,podeConsultarAplicacao,projetarAplicacaoLegada,type AplicacaoSeo,type RegistroAplicacaoLegada} from "../seo/aplicacao.ts";
 import type {ProdutoSeo,LojaSeo} from "../seo/dados.ts";
 import {responderSeo} from "../seo/rotas.ts";
 import {urlsDoSitemap} from "../seo/sitemap.ts";
@@ -79,4 +79,33 @@ test("INT-101-06: consulta de aplicação não emite preço, estoque ou oferta",
  }
  const inicio=api.indexOf("pagina_aplicacao: {");
  assert.ok(inicio>=0);assert.match(api.slice(inicio,inicio+1800),/preco:\s*null,\s*estoque:\s*null/);
+});
+
+// Checkpoint 102: ambos os adaptadores usam a mesma projeção e o gate da rota.
+const legado:RegistroAplicacaoLegada={pagina_slug:a.slug,pagina_titulo:a.titulo,pagina_descricao:a.descricao,modelo:a.modelo,motorizacao:a.motor,ano_inicial:a.inicio,ano_final:a.fim,codigo_oem:a.oem,restricao:a.restricao,contraindicacao:a.contraindicacao,status:a.status,pagina_indexavel:a.visivel,modelo_id:a.modeloId,fonte:a.fonte,coletado_em:a.coletadoEm};
+test("INT-102-01: projeção compartilhada mantém campos e descarta prova e preço injetados",()=>{
+ const entrada={...legado,prova:a.prova,preco:999,estoque:12};
+ const out=projetarAplicacaoLegada(entrada,p.sku);
+ assert.equal(out.sku,p.sku);assert.equal(out.oem,a.oem);assert.equal(out.modeloId,a.modeloId);
+ assert.equal(podeConsultarAplicacao(out,[ps]),true);exigeNoindex(out);
+ assert.equal(Object.hasOwn(out,"preco"),false);assert.equal(Object.hasOwn(out,"estoque"),false);
+});
+test("INT-102-02: fonte ausente, contraditória e data inválida negam consulta nos dois destinos",()=>{
+ for(const delta of [{fonte:null},{fonte:"não homologada"},{coletado_em:null},{coletado_em:"inválida"},{modelo:null},{pagina_titulo:null},{pagina_indexavel:false},{status:"pendente"}]){
+  const out=projetarAplicacaoLegada({...legado,...delta},p.sku);
+  assert.equal(podeConsultarAplicacao(out,[ps]),false);assert.equal(naRota(out).status,404);assert.equal(noMapa(out),false);
+ }
+});
+test("INT-102-03: pai publicado ativo com nome e SKU é exigido, sem consultar preço",()=>{
+ const out=projetarAplicacaoLegada(legado,p.sku);
+ for(const pais of [[{...ps,nome:null}],[{...ps,situacao:"I"}],[{...ps,publicado:false}],[{...ps,sku:"OUTRO"}],[ps,ps],[]]){
+  assert.equal(podeConsultarAplicacao(out,pais),false);assert.equal(responderSeo(caminho,loja,pais,[out]).status,404);
+ }
+ assert.equal(podeConsultarAplicacao(out,[{sku:ps.sku,nome:ps.nome,publicado:ps.publicado,situacao:ps.situacao}]),true);
+});
+test("INT-102-04: ligação estática dos adaptadores ao contrato comum e dados já existentes",()=>{
+ assert.match(api,/const consulta = projetarAplicacaoLegada\(app, p\.sku\)/);
+ assert.match(api,/!podeConsultarAplicacao\(consulta, \[p\]\)/);
+ assert.match(api,/contraindicacao,modelo_id,fonte,coletado_em/);
+ assert.match(seo,/\[projetarAplicacaoLegada\(a,sku\)\]/);
 });

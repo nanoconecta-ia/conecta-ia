@@ -2,7 +2,7 @@
 // estoque ou oferta. Prova de homologação estruturada só pode vir de adaptador
 // de auditoria confiável, nunca do texto legado nem do agente.
 import {esc,truncar} from "./escape.ts";
-import {produtoIndexavel,textoSimples,type LojaSeo,type ProdutoSeo} from "./dados.ts";
+import {produtoIndexavel,textoSimples,type LojaSeo,type ProdutoSeo,type IdentidadeProdutoSeo} from "./dados.ts";
 import {baseUrl,caminhoProduto} from "./url.ts";
 export interface AplicacaoSeo {
  slug:string;sku:string;titulo:string|null;descricao:string|null;modelo:string;
@@ -12,16 +12,29 @@ export interface AplicacaoSeo {
  // prova por versão/mercado BR/código e aprovação independente na revisão atual.
  prova?:{revisao:string;referencia:string;aplicacaoSlug:string;sku:string;modeloId:string;motor:string;inicio:number;fim:number;oem:string;mercado:"BR";validada:boolean};
 }
+/** Projeção única dos campos legados selecionados pelos dois adaptadores públicos.
+ * Whitelist explícita: não copia prova, preço, estoque, dados privados nem IDs internos.
+ * A flag antiga representa visibilidade de consulta, não autoridade de indexação.
+ */
+export interface RegistroAplicacaoLegada {
+ pagina_slug:string|null;pagina_titulo:string|null;pagina_descricao:string|null;modelo:string|null;
+ motorizacao:string|null;ano_inicial:number|null;ano_final:number|null;codigo_oem:string|null;
+ restricao:string|null;contraindicacao:string|null;status:string;pagina_indexavel:boolean;
+ modelo_id:string|null;fonte:string|null;coletado_em:string|null;
+}
+export function projetarAplicacaoLegada(a:RegistroAplicacaoLegada,sku:string):AplicacaoSeo{
+ return {slug:a.pagina_slug??"",sku,titulo:a.pagina_titulo,descricao:a.pagina_descricao,modelo:a.modelo??"",motor:a.motorizacao,inicio:a.ano_inicial,fim:a.ano_final,oem:a.codigo_oem,restricao:a.restricao,contraindicacao:a.contraindicacao,status:a.status,visivel:a.pagina_indexavel,modeloId:a.modelo_id,fonte:a.fonte,coletadoEm:a.coletado_em};
+}
 export const slugAplicacaoValido=(s:string)=>/^[a-z0-9-]{4,110}$/.test(s);
 export const caminhoAplicacao=(s:string)=>"/aplicacao/"+s;
 const texto=(s:string|null)=>textoSimples(s,2000)??"";
 const contradiz=(s:string|null)=>/\b(?:nao homologad[oa]s?|a homologar|sem homologacao|nao confirmad[oa]s?)\b/.test((s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase());
 const ano=(x:number|null)=>x!==null&&Number.isInteger(x)&&x>=1950&&x<=2100;
-export function paiDaAplicacao(a:AplicacaoSeo,ps:ProdutoSeo[]):ProdutoSeo|undefined{
+export function paiDaAplicacao<T extends IdentidadeProdutoSeo>(a:AplicacaoSeo,ps:T[]):T|undefined{
  const pais=ps.filter(p=>p.sku===a.sku);
  return pais.length===1&&produtoIndexavel(pais[0])?pais[0]:undefined;
 }
-export function podeConsultarAplicacao(a:AplicacaoSeo,ps:ProdutoSeo[]):boolean{
+export function podeConsultarAplicacao(a:AplicacaoSeo,ps:IdentidadeProdutoSeo[]):boolean{
  return slugAplicacaoValido(a.slug)&&a.status==="aprovado"&&a.visivel===true&&!!a.modelo.trim()&&!!texto(a.titulo)&&!!paiDaAplicacao(a,ps)&&!!a.fonte?.trim()&&!!a.coletadoEm&&Number.isFinite(Date.parse(a.coletadoEm))&&!contradiz(a.fonte);
 }
 export function aplicacaoIndexavel(a:AplicacaoSeo,ps:ProdutoSeo[]):boolean{

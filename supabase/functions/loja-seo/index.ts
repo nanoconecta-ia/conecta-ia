@@ -7,7 +7,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { normalizarHost, SLUG_RE } from "../_shared/loja/publica.ts";
 import { responderSeo } from "../_shared/seo/rotas.ts";
 import { skuDoCaminho } from "../_shared/seo/url.ts";
-import { slugAplicacaoValido, type AplicacaoSeo } from "../_shared/seo/aplicacao.ts";
+import { slugAplicacaoValido, projetarAplicacaoLegada, type AplicacaoSeo } from "../_shared/seo/aplicacao.ts";
 import type { ImagemPublica, LojaSeo, PoliticasPublicas, ProdutoSeo } from "../_shared/seo/dados.ts";
 
 const PAGINA = 1000, MAX_PRODUTOS = 50_000;
@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       const skuPorId=new Map(linhas.map(p=>[p.id,p.sku]));
       // Não inferir prova estruturada de texto/status legado. Sem prova, consulta
       // não indexável (e fonte contraditória = 404); não entra no sitemap.
-      aplicacoes=appRows.flatMap(a=>{const sku=skuPorId.get(a.produto_id);return typeof sku==="string"?[{slug:a.pagina_slug,sku,titulo:a.pagina_titulo,descricao:a.pagina_descricao,modelo:a.modelo,motor:a.motorizacao,inicio:a.ano_inicial,fim:a.ano_final,oem:a.codigo_oem,restricao:a.restricao,contraindicacao:a.contraindicacao,status:a.status,visivel:a.pagina_indexavel,modeloId:a.modelo_id,fonte:a.fonte,coletadoEm:a.coletado_em}]:[]});
+      aplicacoes=appRows.flatMap(a=>{const sku=skuPorId.get(a.produto_id);return typeof sku==="string"?[projetarAplicacaoLegada(a,sku)]:[]});
       produtos = linhas.map((p) => ({
         sku: p.sku, nome: p.nome, descricao: p.descricao_curta, descricao_longa: longas.get(p.id) ?? null, marca: p.marca, gtin: p.gtin, mpn: mpns.get(p.id) ?? null,
         preco: p.preco == null ? null : Number(p.preco), estoque: p.estoque == null ? null : Number(p.estoque), publicado: p.publicado === true, situacao: p.situacao,

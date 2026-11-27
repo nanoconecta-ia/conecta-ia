@@ -5,6 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { FONTES, PERFIS, variaveisCss, type Fonte } from "../_shared/loja/tema.ts";
 import { modoCliente } from "../_shared/loja/publicacao.ts";
 import { urlProduto } from "../_shared/seo/url.ts";
+import { podeConsultarAplicacao, projetarAplicacaoLegada } from "../_shared/seo/aplicacao.ts";
 import { cabecalhoIpConfigurado, guardarPublico, portaViaRpc, segredoDoLimite } from "../_shared/limite/publico.ts";
 import { aplicacaoCombinaMobis, textoSimples, montarBanners, montarVitrine, normalizarHost, veiculosDaFicha, opcoesVeiculo, produtosDoTipo, produtosDoVeiculo, SLUG_RE, TIPOS_VEICULO, tiposDoVeiculo, type Aplicacao } from "../_shared/loja/publica.ts";
 
@@ -53,15 +54,17 @@ Deno.serve(async (req) => {
   const slugAplicacao = typeof c?.aplicacao_slug === "string" && /^[a-z0-9-]{4,110}$/.test(c.aplicacao_slug) ? c.aplicacao_slug : null;
   if (slugAplicacao && loja.slug === "mobis") {
     const { data: app } = await sb.from("produto_aplicacoes")
-      .select("produto_id,modelo,motorizacao,ano_inicial,ano_final,status,pagina_slug,pagina_titulo,pagina_descricao,pagina_indexavel,codigo_oem,restricao,contraindicacao")
+      .select("produto_id,modelo,motorizacao,ano_inicial,ano_final,status,pagina_slug,pagina_titulo,pagina_descricao,pagina_indexavel,codigo_oem,restricao,contraindicacao,modelo_id,fonte,coletado_em")
       .eq("loja_id", loja.id).eq("pagina_slug", slugAplicacao).maybeSingle();
     if (!app || app.status !== "aprovado" || app.pagina_indexavel !== true)
       return json({ erro: "Aplicação indisponível." }, 404);
     const { data: p } = await sb.from("produtos")
-      .select("id,sku,marca,publicado,situacao,exibicao_teste,taxonomia_no_id")
+      .select("id,sku,nome,marca,publicado,situacao,exibicao_teste,taxonomia_no_id")
       .eq("loja_id", loja.id).eq("id", app.produto_id).maybeSingle();
     if (!p?.publicado) return json({ erro: "Produto indisponível." }, 404);
     if (p.situacao !== "A" || !p.sku?.trim()) return json({ erro: "Produto indisponível." }, 404);
+    const consulta = projetarAplicacaoLegada(app, p.sku);
+    if (!podeConsultarAplicacao(consulta, [p])) return json({ erro: "Aplicação indisponível." }, 404);
     // Só imagens com direitos confirmados são herdadas pelo filho. Fotos
     // candidatas da internet e recortes de fornecedores nunca saem desta view.
     const { data: imgs } = await sb.from("imagens_publicaveis")
