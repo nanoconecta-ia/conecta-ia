@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {filtrarProdutos,blocosFabricante,previaBling,type Produto,type No,type Aplicacao,resolverRepresentacaoNo,type ReferenciaVisualNo,validarBibliotecaVisual,type RegistroVisualNo,projetarRastreabilidadeVisual,type ContextoVisualAplicacao,validarTransicaoBibliotecaVisual,medirCoberturaBibliotecaVisual,type ExigenciaVisualNo,projetarPaginaProduto} from "./projecoes.ts";
+import {filtrarProdutos,blocosFabricante,previaBling,type Produto,type No,type Aplicacao,resolverRepresentacaoNo,type ReferenciaVisualNo,validarBibliotecaVisual,type RegistroVisualNo,projetarRastreabilidadeVisual,type ContextoVisualAplicacao,validarTransicaoBibliotecaVisual,medirCoberturaBibliotecaVisual,type ExigenciaVisualNo,projetarPaginaProduto,projetarDestinoProduto} from "./projecoes.ts";
 const fato={aprovado:true,fonte:"fixture",consultado_em:"2026-11-26"};
 const n=(id:string,rotulo=id):No=>({...fato,id,rotulo});
 const a:Aplicacao={...fato,id:"a",montadora:n("m","Hyundai"),modelo:n("hr","HR"),motor:n("d","D4CB"),inicio:2014,fim:2018,mercado:"BR",oems:[{...fato,codigo:"TEST-001"}]};
@@ -246,4 +246,58 @@ test("VIS-94-05: categoria existente não vira aplicação e código sem prova f
  const out=projetarPaginaProduto("l",[q],"p",[],[cat])!;
  assert.equal(out.mpn,null);assert.equal(out.categorias[0].visual[0].ativo_id,"asset-cat");
  assert.ok(out.aplicacoes.every(a=>a.geracao_id===null));
+});
+
+
+test("INT-95-01: três destinos conservam um SKU físico e OEM por aplicação",()=>{
+ const site=projetarDestinoProduto("l",[p],"p",[c92],lib92,{tipo:"site_publico"});
+ const interno=projetarDestinoProduto("l",[p],"p",[c92],lib92,{tipo:"conecta"});
+ const erp=projetarDestinoProduto("l",[p],"p",[c92],lib92,{tipo:"bling_previa",pausado:false});
+ assert.ok(site?.destino==="site_publico"&&interno?.destino==="conecta"&&erp?.destino==="bling_previa");
+ assert.equal(site.ficha.produto_id,interno.produto_id);assert.equal(erp.previa.produto_id,interno.produto_id);
+ assert.equal(site.ficha.sku,erp.previa.sku);assert.equal(interno.bling_id,erp.previa.bling_id);
+ assert.deepEqual(site.ficha.aplicacoes.map(x=>x.oems),[["TEST-001"],["TEST-002"]]);
+ assert.deepEqual(interno.ficha.aplicacoes.map(x=>x.oems),[["TEST-001"],["TEST-002"]]);
+ assert.deepEqual(Object.keys(erp.previa.campos),["descricaoCurta","descricaoComplementar"]);
+});
+test("INT-95-02: não publicado permanece privado; inativo não gera projeção",()=>{
+ const q={...p,publicado:false};
+ assert.equal(projetarDestinoProduto("l",[q],"p",[],[],{tipo:"site_publico"}),null);
+ assert.equal(projetarDestinoProduto("l",[q],"p",[],[],{tipo:"conecta"})?.destino,"conecta");
+ assert.equal(projetarDestinoProduto("l",[q],"p",[],[],{tipo:"bling_previa",pausado:false})?.destino,"bling_previa");
+ for(const tipo of [{tipo:"site_publico"},{tipo:"conecta"},{tipo:"bling_previa",pausado:false}] as const){
+  assert.equal(projetarDestinoProduto("l",[{...q,ativo:false}],"p",[],[],tipo),null);
+ }
+});
+test("INT-95-03: candidatos e mercado externo não viram aplicações BR",()=>{
+ const q={...p,aplicacoes:[a,{...b,aprovado:false},{...a,id:"ext",mercado:"KR"}]};
+ const site=projetarDestinoProduto("l",[q],"p",[c92],lib92,{tipo:"site_publico"});
+ const interno=projetarDestinoProduto("l",[q],"p",[c92],lib92,{tipo:"conecta"});
+ const erp=projetarDestinoProduto("l",[q],"p",[c92],lib92,{tipo:"bling_previa",pausado:false});
+ assert.ok(site?.destino==="site_publico"&&interno?.destino==="conecta"&&erp?.destino==="bling_previa");
+ assert.deepEqual(site.ficha.aplicacoes.map(x=>x.id),["a"]);
+ assert.deepEqual(interno.pendencias,[{aplicacao_id:"b",motivo:"fato_pendente_ou_invalido"},{aplicacao_id:"ext",motivo:"fora_escopo_br"}]);
+ assert.ok(!erp.previa.campos.descricaoComplementar.includes("TEST-002"));
+});
+test("INT-95-04: isolamento, colisões físicas e aplicação duplicada bloqueiam os destinos",()=>{
+ for(const tipo of [{tipo:"site_publico"},{tipo:"conecta"},{tipo:"bling_previa",pausado:false}] as const){
+  assert.throws(()=>projetarDestinoProduto("l",[p,{...p,loja_id:"outra"}],"p",[],[],tipo));
+  assert.throws(()=>projetarDestinoProduto("l",[p,p],"p",[],[],tipo));
+  assert.equal(projetarDestinoProduto("l",[p,{...p,produto_id:"outro",bling_id:"124"}],"p",[],[],tipo),null);
+  assert.throws(()=>projetarDestinoProduto("l",[{...p,aplicacoes:[a,a]}],"p",[],[],tipo));
+ }
+});
+test("INT-95-05: prévia ERP sem imagem legada, sem escrita ou campos comerciais",()=>{
+ const q={...p,preco:999,fornecedor:"SEGREDO",aplicacoes:[{...a,montadora:{...a.montadora,icone:{url:"https://media.example.com/icons/a.webp",aprovado:true,direitos:true}}}]};
+ const r=projetarDestinoProduto("l",[q],"p",[],[],{tipo:"bling_previa",pausado:false});
+ assert.ok(r?.destino==="bling_previa");
+ assert.equal(r.previa.modo,"previa");assert.ok(!JSON.stringify(r).includes("SEGREDO"));assert.ok(!JSON.stringify(r).includes("999"));assert.ok(!JSON.stringify(r).includes("a.webp"));
+ assert.throws(()=>projetarDestinoProduto("l",[q],"p",[],[],{tipo:"bling_previa",pausado:true}));
+ const site=projetarDestinoProduto("l",[q],"p",[],[],{tipo:"site_publico"});
+ assert.ok(!JSON.stringify(site).includes("bling_id"));assert.ok(!JSON.stringify(site).includes("SEGREDO"));
+});
+test("INT-95-06: manifesto revogado contraditório bloqueia todas as projeções",()=>{
+ const alvo=lib92.find(r=>r.no_id==="g1"&&r.nivel==="compacto")!;
+ const alias=lib92.map(r=>r===alvo?{...r,estado:"revogado" as const,direitos:false}:r.no_id==="hr"&&r.nivel==="compacto"?{...r,sha256:alvo.sha256}:r);
+ for(const tipo of [{tipo:"site_publico"},{tipo:"conecta"},{tipo:"bling_previa",pausado:false}] as const)assert.throws(()=>projetarDestinoProduto("l",[p],"p",[c92],alias,tipo));
 });

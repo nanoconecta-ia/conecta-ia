@@ -295,3 +295,43 @@ export function projetarPaginaProduto(loja:string,produtos:Produto[],produtoId:s
   const categorias=p.categoria.filter(noOk).map(n=>({id:n.id,rotulo:n.rotulo,visual:niveisVisuais.map(nivel=>resolverRepresentacaoNo(loja,n,"categoria",nivel,acervo))}));
   return {produto_id:base.produto_id,sku:base.sku,nome:base.nome,marca:base.marca,fabricante:base.fabricante,mpn:p.mpn&&valido(p.mpn)&&cod(p.mpn.codigo)?p.mpn.codigo:null,categorias,aplicacoes};
 }
+
+
+// Uma identidade física, três projeções distintas. A seleção de destino NÃO
+// autoriza o chamador: o adaptador servidor deve autenticar e impor o escopo.
+// Nunca encaminhar a resposta interna/ERP para um endpoint público.
+export type DestinoProduto = {tipo:"site_publico"} | {tipo:"conecta"} | {tipo:"bling_previa";pausado:boolean};
+export function projetarDestinoProduto(loja:string,produtos:Produto[],produtoId:string,contextos:readonly ContextoVisualAplicacao[],registros:readonly RegistroVisualNo[],destino:DestinoProduto){
+  if(!chaveExata(loja)||!chaveExata(produtoId)||produtos.some(p=>p.loja_id!==loja)||contextos.some(c=>c.loja_id!==loja||c.produto_id!==produtoId))throw new Error("escopo de projeção inválido");
+  if(!["site_publico","conecta","bling_previa"].includes(destino.tipo))throw new Error("destino de projeção inválido");
+  const ids=new Set<string>();
+  for(const p of produtos){
+    if(!chaveExata(p.produto_id)||ids.has(p.produto_id))throw new Error("identidade de produto ambígua");
+    ids.add(p.produto_id);
+  }
+  validarTransicaoBibliotecaVisual(loja,registros,registros);
+  if(destino.tipo==="site_publico"){
+    const ficha=projetarPaginaProduto(loja,produtos,produtoId,contextos,registros);
+    return ficha?{destino:"site_publico" as const,ficha}:null;
+  }
+  const p=elegiveis(loja,produtos,false).find(x=>x.produto_id===produtoId);
+  if(!p)return null;
+  const aplicacoesIds=new Set<string>();
+  for(const a of p.aplicacoes){
+    if(!chaveExata(a.id)||aplicacoesIds.has(a.id))throw new Error("identidade de aplicação ambígua");
+    aplicacoesIds.add(a.id);
+  }
+  if(destino.tipo==="bling_previa"){
+    if(destino.pausado!==false)throw new Error("prévia ERP pausada ou não autorizada");
+    // Texto apenas: a mídia legada ainda não tem vínculo verificável ao
+    // manifesto vigente. Não copiar HTML, imagem, preço ou campos fiscais.
+    const previa=previaBling(loja,p,{pausado:false,htmlHomologado:false,origemMidia:"",prefixoMidia:""});
+    return {destino:"bling_previa" as const,previa};
+  }
+  const ficha=filtrarProdutos(loja,[p],{},false)[0];
+  if(!ficha)return null;
+  const aprovadas=new Set(ficha.aplicacoes.map(a=>a.id));
+  // As pendências são IDs para revisão privada, não compatibilidades publicáveis.
+  const pendencias=p.aplicacoes.filter(a=>!aprovadas.has(a.id)).map(a=>({aplicacao_id:a.id,motivo:a.mercado!=="BR"?"fora_escopo_br" as const:"fato_pendente_ou_invalido" as const}));
+  return {destino:"conecta" as const,loja_id:loja,produto_id:p.produto_id,bling_id:p.bling_id,sku:p.sku,publicado:p.publicado,ficha,pendencias};
+}
