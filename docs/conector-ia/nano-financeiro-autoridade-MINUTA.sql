@@ -13,6 +13,13 @@ grant select on public.pipeline_orcamentos,public.pipeline_custos to nano_financ
 grant insert(loja_id,item_id,mes,capacidade,tipo,fonte,usd,estado,duracao_ms),
  update(usd,chamadas,tokens_in,tokens_out,duracao_ms,estado) on public.pipeline_custos to nano_financeiro_escritor;
 grant usage on sequence public.pipeline_custos_id_seq to nano_financeiro_escritor;
+-- O trigger legado SECURITY INVOKER consulta somente id, loja_id e entrada.
+-- Manter o guardião ativo, sem ampliar DML, sem BYPASSRLS e sem leitura de outras lojas.
+grant select(id,loja_id,entrada) on public.pipeline_itens to nano_financeiro_escritor;
+create policy nano_financeiro_le_origem on public.pipeline_itens for select to nano_financeiro_escritor
+ using(loja_id::text=coalesce(current_setting('nano.financeiro_loja',true),''));
+create policy nano_financeiro_escopo_origem on public.pipeline_itens as restrictive for select to nano_financeiro_escritor
+ using(loja_id::text=coalesce(current_setting('nano.financeiro_loja',true),''));
 create policy nano_financeiro_le_orcamento on public.pipeline_orcamentos for select to nano_financeiro_escritor using(true);
 create policy nano_financeiro_le_custo on public.pipeline_custos for select to nano_financeiro_escritor using(true);
 create policy nano_financeiro_ins_custo on public.pipeline_custos for insert to nano_financeiro_escritor with check(true);
@@ -46,13 +53,14 @@ end $$;
 revoke all on function nano_financeiro_interno.travar(uuid,date) from public,anon,authenticated,service_role;
 grant execute on function nano_financeiro_interno.travar(uuid,date) to nano_financeiro_escritor;
 create function nano_financeiro_interno.reservar(p_loja uuid,p_item uuid,p_capacidade text,p_tipo text,p_fonte text,p_usd_estimado numeric)
-returns bigint language plpgsql security definer set search_path='' as $$
+returns bigint language plpgsql security definer set search_path='' set nano.financeiro_loja='' as $
 declare m date:=date_trunc('month',now())::date; teto numeric; gasto numeric; estimado numeric(12,6); novo bigint;
 begin
  if p_usd_estimado is null or p_usd_estimado<0 or p_usd_estimado::text in ('NaN','Infinity','-Infinity') then raise exception 'estimativa inválida' using errcode='22023'; end if;
  -- Arredonda para cima na precisão do razão, nunca autoriza fração positiva como zero.
  estimado:=ceil(p_usd_estimado*1000000)/1000000;
  perform nano_financeiro_interno.travar(p_loja,m);
+ perform set_config('nano.financeiro_loja',p_loja::text,true);
  select limite_usd into teto from public.pipeline_orcamentos where loja_id=p_loja and mes=m;
  if teto is null then return null; end if;
  select coalesce(sum(usd),0) into gasto from public.pipeline_custos where loja_id=p_loja and mes=m;
@@ -64,7 +72,7 @@ begin
  return novo;
 end $$;
 create function nano_financeiro_interno.confirmar(p_loja uuid,p_custo bigint,p_usd_real numeric,p_chamadas int,p_tokens_in bigint,p_tokens_out bigint,p_duracao_ms int)
-returns void language plpgsql security definer set search_path='' as $$
+returns void language plpgsql security definer set search_path='' set nano.financeiro_loja='' as $
 declare m date; anterior numeric; realvalor numeric(12,6); teto numeric; gasto numeric;
 begin
  if p_usd_real is null or p_usd_real<0 or p_usd_real::text in ('NaN','Infinity','-Infinity') then raise exception 'custo real inválido' using errcode='22023'; end if;
@@ -73,6 +81,7 @@ begin
  select mes into m from public.pipeline_custos where id=p_custo and loja_id=p_loja and estado='reservado';
  if not found then raise exception 'reserva de custo inexistente nesta loja' using errcode='P0002'; end if;
  perform nano_financeiro_interno.travar(p_loja,m);
+ perform set_config('nano.financeiro_loja',p_loja::text,true);
  select usd into anterior from public.pipeline_custos where id=p_custo and loja_id=p_loja and mes=m and estado='reservado';
  if not found then raise exception 'reserva de custo inexistente nesta loja' using errcode='P0002'; end if;
  update public.pipeline_custos set usd=realvalor,chamadas=p_chamadas,tokens_in=p_tokens_in,tokens_out=p_tokens_out,duracao_ms=p_duracao_ms,estado='confirmado'
@@ -85,10 +94,11 @@ begin
  values(p_custo,'confirmacao',p_loja,m,anterior,realvalor,teto,teto-gasto);
 end $$;
 create function nano_financeiro_interno.registrar_zero(p_loja uuid,p_item uuid,p_capacidade text,p_tipo text,p_fonte text,p_duracao_ms int)
-returns bigint language plpgsql security definer set search_path='' as $$
+returns bigint language plpgsql security definer set search_path='' set nano.financeiro_loja='' as $
 declare m date:=date_trunc('month',now())::date; novo bigint;
 begin
  perform nano_financeiro_interno.travar(p_loja,m);
+ perform set_config('nano.financeiro_loja',p_loja::text,true);
  insert into public.pipeline_custos(loja_id,item_id,mes,capacidade,tipo,fonte,usd,estado,duracao_ms)
  values(p_loja,p_item,m,p_capacidade,p_tipo,p_fonte,0,'confirmado',p_duracao_ms) returning id into novo;
  insert into nano_financeiro_interno.diario(custo_id,evento,loja_id,mes,reservado_usd,real_usd)
