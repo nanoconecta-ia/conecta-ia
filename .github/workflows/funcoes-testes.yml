@@ -115,6 +115,8 @@ jobs:
           bash supabase/tests/nano_lifecycle_despacho_concorrencia.sh
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-vinculo-MINUTA.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-vinculo-registrador-MINUTA.sql
+          # Dependência do CAT-140: instalar RPC legada antes da contraprova.
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-decisao-MINUTA.sql
           node --experimental-strip-types scripts/tests/nano-auditoria-e2e.mjs
           node --experimental-strip-types scripts/tests/nano-lifecycle-e2e.mjs
       - name: Homologar minuta da autoridade financeira exclusivamente no CI
@@ -138,7 +140,6 @@ jobs:
         env:
           PGDATABASE: conecta_teste
         run: |
-          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-decisao-MINUTA.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-decisao-TESTE.sql
           bash supabase/tests/nano_catalogo_decisao_concorrencia.sh
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-leitura-MINUTA.sql
