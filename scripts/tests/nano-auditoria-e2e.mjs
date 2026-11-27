@@ -111,6 +111,55 @@ try{
  assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"';"),"1");
  assert.throws(()=>admin("update nano_lifecycle_interno.conferencias_gate set homologada=true where loja_id='"+L+"';"),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
  assert.equal(admin("select has_table_privilege('nano_lifecycle_auditoria','nano_lifecycle_interno.conferencias_gate','insert');"),"f");
+
+ // CAT-122: contraprova de vínculo explícito no recibo real, não uma nova autoridade.
+ // A aplicação e a decisão humana ainda não fazem parte da chave da conferência.
+ // As duas aplicações e o usuário abaixo existem somente na transação descartada.
+ const app122a="fb122000-0000-0000-0000-000000000001",app122b="fb122000-0000-0000-0000-000000000002";
+ const marca122="fb122100-0000-0000-0000-000000000001",humano122="fb122200-0000-0000-0000-000000000001";
+ const snapshot122=admin(`
+ begin;
+ insert into public.marcas(id,loja_id,nome,tipo,status) values ('${marca122}','${L}','Marca teste CAT-122','veiculo','aprovado');
+ insert into public.produto_aplicacoes(id,loja_id,produto_id,modelo,motorizacao,ano_inicial,ano_final,marca_veiculo_id,montadora_origem_id,codigo_oem,status,fonte,coletado_em,pagina_indexavel,pagina_slug)
+ values ('${app122a}','${L}','${P}','Modelo teste','M1',2014,2016,'${marca122}','${marca122}','12345-67890','a_confirmar','fixture CAT-122',now(),false,'ci-cat-122-a'),
+ ('${app122b}','${L}','${P}','Modelo distinto','M2',2014,2016,'${marca122}','${marca122}','12345-67890','a_confirmar','fixture CAT-122',now(),false,'ci-cat-122-b');
+ insert into public.usuarios_loja(loja_id,user_id,papel) values ('${L}','${humano122}','lojista');
+ select jsonb_build_object('recibo',to_jsonb(c),'aplicacoes',(
+  select jsonb_agg(a.id order by a.id) from public.produto_aplicacoes a
+  where a.loja_id=c.loja_id and a.produto_id::text=c.candidato->'escopo'->>'produto'
+   and a.codigo_oem=c.candidato->'fato'->>'oem' and a.id in ('${app122a}','${app122b}')
+ )) from nano_lifecycle_interno.conferencias_gate c where c.loja_id='${L}' and c.solicitacao='${request}';
+ set local role authenticated;
+ set local request.jwt.claims='{"sub":"${humano122}"}';
+ select jsonb_build_object('ator',auth.uid(),'autorizado',public.pode_administrar_loja('${L}'));
+ reset role;
+ update public.usuarios_loja set papel='editor' where loja_id='${L}' and user_id='${humano122}';
+ set local role authenticated;
+ select jsonb_build_object('ator',auth.uid(),'autorizado',public.pode_administrar_loja('${L}'));
+ reset role;
+ select jsonb_build_object('recibo',to_jsonb(c),'pendentes',(
+  select count(*) from public.produto_aplicacoes a where a.loja_id='${L}' and a.id in ('${app122a}','${app122b}')
+  and a.status='a_confirmar' and not a.pagina_indexavel
+ )) from nano_lifecycle_interno.conferencias_gate c where c.loja_id='${L}' and c.solicitacao='${request}';
+ rollback;
+ `).split("\n").map(linha=>JSON.parse(linha));
+ assert.equal(snapshot122.length,4);
+ const [s122,aut122,rev122,final122]=snapshot122;
+ assert.deepEqual(s122.aplicacoes,[app122a,app122b]);
+ assert.equal(s122.recibo.homologada,false);
+ assert.equal(s122.recibo.leitura_id,r.id);
+ assert.equal(s122.recibo.sha256,hash);
+ for(const obj of [s122.recibo,s122.recibo.candidato.escopo]){
+  assert.equal(Object.hasOwn(obj,"aplicacao_id"),false);
+  assert.equal(Object.hasOwn(obj,"aplicacao"),false);
+ }
+ console.log("ok: CAT-122-01 recibo persistido real e OEM comum nao identificam aplicacao individual");
+ assert.deepEqual(aut122,{ator:humano122,autorizado:true});
+ assert.deepEqual(rev122,{ator:humano122,autorizado:false});
+ assert.deepEqual(final122.recibo,s122.recibo);
+ assert.equal(final122.pendentes,2);
+ assert.equal(admin("select count(*) from public.produto_aplicacoes where id in ('"+app122a+"','"+app122b+"');"),"0");
+ console.log("ok: CAT-122-02 autoridade humana revogada sem mudar recibo nem aprovar aplicacoes; rollback");
  // Disputa real de duas sessões com a mesma identidade: um registro, outro retry ou ocupado.
  const audit2=connect("nano_e2e_auditor","nano_lifecycle_auditoria");
  const concorrente="fb300000-0000-0000-0000-000000000003";
