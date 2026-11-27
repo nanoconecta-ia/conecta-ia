@@ -62,3 +62,39 @@ export function previaBling(loja:string,p:Produto,opts:{htmlHomologado:boolean;o
   const html="<p>"+esc(curto)+"</p>"+(cat?"<p>"+esc(cat)+"</p>":"")+aps.map((a,i)=>"<p>"+(midiaOk?img(a.montadora,opts.origemMidia,opts.prefixoMidia)+img(a.modelo,opts.origemMidia,opts.prefixoMidia):"")+esc(linhas[i])+"</p>").join("");
   return {modo:"previa" as const,produto_id:p.produto_id,bling_id:p.bling_id,sku:p.sku,campos:{descricaoCurta:curto,descricaoComplementar:midiaOk?html:longo},textoAlternativo:longo,pendencias:["Revalidar unicidade no catálogo completo e dados atuais do Bling","Preservar descrição manual; diff e aprovação por campo","Verificar retorno, renderização e exportações do ERP"]};
 }
+
+
+// Projeção visual pura: a identidade do nó existente é autoridade, não a imagem.
+// Entradas devem vir de um adaptador confiável que já verificou fatos, direitos e escopo.
+export type NivelVisualNo = "compacto" | "3d" | "epc";
+export type TipoVisualNo = "montadora" | "modelo" | "geracao" | "carroceria" | "motor" | "tracao" | "combustivel" | "propulsao" | "sistema" | "componente" | "categoria";
+export interface ReferenciaVisualNo extends Fato {
+  loja_id: string;
+  no_id: string;
+  tipo: TipoVisualNo;
+  nivel: NivelVisualNo;
+  ativo_id: string;
+  revisao: number;
+  direitos: boolean;
+  origem: "fabricante" | "epc" | "derivacao_autorizada";
+}
+export interface SelecaoVisualNo {
+  no_id: string;
+  tipo: TipoVisualNo;
+  rotulo: string;
+  nivel: NivelVisualNo;
+  ativo_id: string | null;
+  revisao: number | null;
+  estado: "referencia" | "texto";
+}
+// Nunca procura por rótulo, imagem semelhante, marca vizinha ou família genérica.
+// Colisão é pendência; nenhuma seleção arbitrária de versão.
+export function resolverRepresentacaoNo(loja:string,n:No,tipo:TipoVisualNo,nivel:NivelVisualNo,acervo:readonly ReferenciaVisualNo[]):SelecaoVisualNo {
+  if(!loja?.trim()||acervo.some(r=>r.loja_id!==loja))throw new Error("escopo visual de loja inválido");
+  if(!noOk(n))throw new Error("nó sem evidência aprovada");
+  const candidatos=acervo.filter(r=>r.no_id===n.id&&r.tipo===tipo&&r.nivel===nivel&&valido(r)&&r.direitos===true&&["fabricante","epc","derivacao_autorizada"].includes(r.origem)&&!!r.ativo_id?.trim()&&Number.isSafeInteger(r.revisao)&&r.revisao>0);
+  const base={no_id:n.id,tipo,rotulo:n.rotulo,nivel};
+  if(candidatos.length!==1)return {...base,ativo_id:null,revisao:null,estado:"texto"};
+  const r=candidatos[0];
+  return {...base,ativo_id:r.ativo_id,revisao:r.revisao,estado:"referencia"};
+}
