@@ -1,6 +1,6 @@
--- MINUTA CI: isolamento parcial por loja; preserva sete travas de tabela.
+-- MINUTA CI: isolamento parcial por loja; preserva seis travas de tabela.
 begin;
--- O mesmo namespace de advisory lock é obrigatório para todo escritor dessas cinco tabelas.
+-- O mesmo namespace de advisory lock é obrigatório para todo escritor dessas seis tabelas.
 create function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja()
 returns trigger language plpgsql security invoker set search_path='' as $fn$
 declare loja uuid;
@@ -48,6 +48,26 @@ alter table nano_lifecycle_interno.autorias_engenharia enable always trigger zz_
 alter table nano_lifecycle_interno.autorias_engenharia enable always trigger zz_nano_guard_documental_truncate;
 alter table nano_lifecycle_interno.autorias_engenharia enable always trigger nano_autoria_imutavel;
 revoke update on nano_lifecycle_interno.autorias_engenharia from nano_lifecycle_gate_travas;
+-- Resultado histórico: hashes verificáveis no INSERT, inclusive no modo replica.
+create function nano_lifecycle_interno.nano_lifecycle_validar_hashes_resultado()
+returns trigger language plpgsql security invoker set search_path='' as $fn$
+begin
+ if new.hash_entrada is distinct from encode(sha256(convert_to(new.entrada_snapshot::text,'UTF8')),'hex')
+ or new.hash_extracao is distinct from encode(sha256(convert_to(new.extracao_candidata::text,'UTF8')),'hex') then
+  raise exception 'hash de resultado de engenharia divergente' using errcode='23514';
+ end if;
+ return new;
+end $fn$;
+revoke all on function nano_lifecycle_interno.nano_lifecycle_validar_hashes_resultado() from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+create trigger nano_resultado_hashes before insert on nano_lifecycle_interno.resultados_engenharia for each row execute function nano_lifecycle_interno.nano_lifecycle_validar_hashes_resultado();
+create trigger nano_resultado_imutavel before update or delete on nano_lifecycle_interno.resultados_engenharia for each row execute function nano_lifecycle_interno.proteger_documento_tecnico();
+create trigger zz_nano_guard_documental_loja before insert or update or delete on nano_lifecycle_interno.resultados_engenharia for each row execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja();
+create trigger zz_nano_guard_documental_truncate before truncate on nano_lifecycle_interno.resultados_engenharia for each statement execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja();
+alter table nano_lifecycle_interno.resultados_engenharia enable always trigger nano_resultado_hashes;
+alter table nano_lifecycle_interno.resultados_engenharia enable always trigger nano_resultado_imutavel;
+alter table nano_lifecycle_interno.resultados_engenharia enable always trigger zz_nano_guard_documental_loja;
+alter table nano_lifecycle_interno.resultados_engenharia enable always trigger zz_nano_guard_documental_truncate;
+revoke update on nano_lifecycle_interno.resultados_engenharia from nano_lifecycle_gate_travas;
 create or replace function nano_lifecycle_interno.nano_lifecycle_travar_conferencia(p_loja uuid,p_solicitacao uuid)
 returns boolean language plpgsql volatile security definer set search_path='' as $fn$
 begin
@@ -61,8 +81,7 @@ begin
    public.nano_lifecycle_snapshots,
    public.produtos,
    public.produto_automacao,
-   public.pipeline_itens,
-   nano_lifecycle_interno.resultados_engenharia in share mode nowait;
+   public.pipeline_itens in share mode nowait;
  exception when lock_not_available then return false;
  end;
  return true;

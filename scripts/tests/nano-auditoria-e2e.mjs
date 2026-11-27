@@ -228,7 +228,27 @@ try{
   assert.throws(()=>admin((prefixo||"begin; ")+"truncate nano_lifecycle_interno.autorias_engenharia,nano_lifecycle_interno.leituras_documentais,nano_lifecycle_interno.conferencias_gate; rollback;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
  }
  assert.equal(admin("select produtor||':'||hash_entrada||':'||hash_extracao from nano_lifecycle_interno.autorias_engenharia"+autoriaHistorica),"nano_e2e_prod:"+recibo.hash_entrada+":"+recibo.hash_extracao);
- assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"10");
+ // Resultado isolado: a fixture é sintética; a RPC composta mantém as seis travas de origem.
+ const inserirResultado=(loja,he="hash_entrada",hr="hash_extracao")=>"insert into nano_lifecycle_interno.resultados_engenharia(loja_id,item_id,execucao,geracao,versao,revisao,checkpoint,produto_id,entrada_snapshot,extracao_candidata,hash_entrada,hash_extracao,extrator) select loja_id,item_id,execucao,102,versao,revisao,checkpoint,produto_id,entrada_snapshot,extracao_candidata,"+he+","+hr+",extrator from nano_lifecycle_interno.resultados_engenharia where loja_id='"+loja+"' and geracao=1 returning geracao;";
+ await testarEscritor("nano_lifecycle_interno.resultados_engenharia",inserirResultado(L),"ocupada","postgres","102");
+ await testarEscritor("nano_lifecycle_interno.resultados_engenharia",inserirResultado(outra),"ja_registrada","postgres","102");
+ await testarEscritor("nano_lifecycle_interno.resultados_engenharia","set local session_replication_role=replica;\n"+inserirResultado(L),"ocupada","postgres","102");
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.resultados_engenharia where loja_id in ('"+L+"','"+outra+"') and geracao=102;"),"0");
+ const resultadoHistorico=" where loja_id='"+L+"' and item_id='"+I+"' and geracao=1;";
+ for(const prefixo of ["","begin; set local session_replication_role=replica; "]){
+  for(const mutacao of ["update nano_lifecycle_interno.resultados_engenharia set extracao_candidata='{}'","update nano_lifecycle_interno.resultados_engenharia set hash_entrada='alterado'","update nano_lifecycle_interno.resultados_engenharia set homologada=true","delete from nano_lifecycle_interno.resultados_engenharia"]){
+   assert.throws(()=>admin(prefixo+mutacao+resultadoHistorico),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+  }
+  assert.throws(()=>admin(prefixo+inserirResultado(L,"repeat('0',64)")),e=>e.stderr?.includes("hash de resultado de engenharia divergente")===true);
+  assert.throws(()=>admin(prefixo+inserirResultado(L,"hash_entrada","repeat('0',64)")),e=>e.stderr?.includes("hash de resultado de engenharia divergente")===true);
+  assert.throws(()=>admin(prefixo+"truncate nano_lifecycle_interno.resultados_engenharia;"),e=>e.stderr?.includes("cannot truncate a table referenced in a foreign key constraint")===true);
+  assert.throws(()=>admin((prefixo||"begin; ")+"truncate nano_lifecycle_interno.resultados_engenharia,nano_lifecycle_interno.autorias_engenharia,nano_lifecycle_interno.leituras_documentais,nano_lifecycle_interno.conferencias_gate; rollback;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
+ }
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.resultados_engenharia"+resultadoHistorico.slice(0,-1)+" and not homologada and hash_entrada=encode(sha256(convert_to(entrada_snapshot::text,'UTF8')),'hex') and hash_extracao=encode(sha256(convert_to(extracao_candidata::text,'UTF8')),'hex');"),"1");
+ assert.equal(admin("select hash_entrada||':'||hash_extracao from nano_lifecycle_interno.resultados_engenharia"+resultadoHistorico),recibo.hash_entrada+":"+recibo.hash_extracao);
+ assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"12");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='nano_lifecycle_interno.resultados_engenharia'::regclass and tgname in ('nano_resultado_hashes','nano_resultado_imutavel') and tgenabled='A';"),"2");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','nano_lifecycle_interno.resultados_engenharia','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='nano_lifecycle_interno.autorias_engenharia'::regclass and tgname='nano_autoria_imutavel' and tgenabled='A';"),"1");
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','nano_lifecycle_interno.autorias_engenharia','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='nano_lifecycle_interno.leituras_documentais'::regclass and tgname in ('nano_leitura_imutavel','nano_leitura_truncate') and tgenabled='A';"),"2");
