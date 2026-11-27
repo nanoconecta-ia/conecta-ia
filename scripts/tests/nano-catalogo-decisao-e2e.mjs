@@ -89,3 +89,33 @@ const n=outros();
 sql("insert into public.restricoes_loja(loja_id,somente_catalogo) values ('"+L+"',true) on conflict(loja_id) do update set somente_catalogo=true;");
 assert.equal(outros(),n+1);assert.equal(ler().eventos.length,3);
 console.log("ok: CAT-111-05 auditoria legada de restrições permanece operacional e isolada do catálogo");
+
+// CAT-112: caracterização da autoridade efetiva legada, NÃO é aprovação humana.
+// Inventário parcial: ACLs e funções do banco efêmero; não prova caminhos HTTP.
+const rpc="public.aplicacao_decidir(uuid,uuid,uuid,text)";
+for(const role of ["anon","authenticated","nano_lifecycle_produtor","nano_lifecycle_auditoria"]){
+ assert.equal(sql("select has_function_privilege('"+role+"','"+rpc+"','EXECUTE');"),"f");
+}
+assert.equal(sql("select has_function_privilege('service_role','"+rpc+"','EXECUTE');"),"t");
+console.log("ok: CAT-112-01 fronteira EXECUTE do RPC legado restrita; não autentica humano");
+const A2="e1082000-0000-0000-0000-000000000002",U2="e1083000-0000-0000-0000-000000000002";
+assert.equal(sql("select count(*) from auth.users where id='"+U2+"';"),"0");
+sql("insert into public.produto_aplicacoes(id,loja_id,produto_id,modelo,marca_veiculo_id,montadora_origem_id,codigo_oem,status,fonte,coletado_em,pagina_indexavel,pagina_slug) values ('"+A2+"','"+L+"','"+P+"','Modelo CI autoridade','"+M+"','"+M+"','OEM-CI-112','a_confirmar','fixture',now(),false,'ci-catalogo-112');");
+// Contraprova: o UUID passado pelo serviço não corresponde a usuário autenticado.
+sql("set role service_role; select public.aplicacao_decidir('"+L+"','"+A2+"','"+U2+"','aprovar');");
+const e2={loja_id:L,produto_id:P,aplicacao_id:A2},r2=restrito(L,P,A2),v2=verificar(r2,e2);
+assert.equal(r2.eventos.length,1);assert.equal(r2.eventos[0].user_id,U2);
+assert.equal(v2.estado,"aprovacao_legada_conferida");assert.equal(v2.homologada,false);assert.equal(Object.hasOwn(v2,"prova"),false);
+console.log("ok: CAT-112-02 contraprova de autoria: UUID sem usuário ainda gera decisão legada, nunca prova");
+assert.equal(sql("select has_table_privilege('service_role','public.produto_aplicacoes','UPDATE');"),"t");
+sql("set role service_role; update public.produto_aplicacoes set modelo='Modelo CI autoridade alterado' where loja_id='"+L+"' and id='"+A2+"';");
+const r3=restrito(L,P,A2);
+assert.equal(r3.atual.modelo,"Modelo CI autoridade alterado");assert.deepEqual(r3.eventos,r2.eventos);
+assert.equal(verificar(r3,e2).estado,"retida");
+console.log("ok: CAT-112-03 contraprova de escritor direto: mudança sem evento é detectada");
+const acl=JSON.parse(sql("select jsonb_agg(jsonb_build_object('papel',r,'auditoria_insert',has_table_privilege(r,'public.auditoria','INSERT'),'aplicacao_update',has_table_privilege(r,'public.produto_aplicacoes','UPDATE')) order by r)::text from unnest(array['anon','authenticated','service_role','nano_lifecycle_produtor','nano_lifecycle_auditoria','nano_catalogo_decisao_leitor']) r;"));
+assert.equal(acl.length,6);
+console.log("inventario CAT-112-04 ACL (não prova RLS ou autoria): "+JSON.stringify(acl));
+const escritores=JSON.parse(sql("select coalesce(jsonb_agg(n.nspname||'.'||p.proname order by n.nspname,p.proname),'[]'::jsonb)::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in ('public','private','nano_lifecycle_interno') and p.prosrc ilike '%auditoria%' and p.prosrc ilike '%insert%';"));
+assert.ok(escritores.includes("public.aplicacao_decidir"));
+console.log("ok: CAT-112-04 inventário textual parcial de funções: "+JSON.stringify(escritores));
