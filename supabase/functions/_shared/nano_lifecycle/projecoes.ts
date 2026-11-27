@@ -98,3 +98,36 @@ export function resolverRepresentacaoNo(loja:string,n:No,tipo:TipoVisualNo,nivel
   const r=candidatos[0];
   return {...base,ativo_id:r.ativo_id,revisao:r.revisao,estado:"referencia"};
 }
+
+
+// Registro versionado da mesma projeção, não uma taxonomia paralela nem uma escrita.
+// O adaptador autorizado confirma o hash dos bytes, licença, aprovação e revisão;
+// esta função só verifica a coerência do manifesto já recebido.
+export interface RegistroVisualNo extends ReferenciaVisualNo {
+  icon_id: string;
+  sha256: string;
+  descricao_acessivel: string;
+  estado: "vigente" | "historico" | "revogado";
+}
+const tiposVisuais:readonly TipoVisualNo[]=["montadora","modelo","geracao","carroceria","motor","tracao","combustivel","propulsao","sistema","componente","categoria"];
+const niveisVisuais:readonly NivelVisualNo[]=["compacto","3d","epc"];
+export function validarBibliotecaVisual(loja:string,registros:readonly RegistroVisualNo[]):ReferenciaVisualNo[]{
+  if(!loja?.trim()||registros.some(r=>r.loja_id!==loja))throw new Error("escopo visual de loja inválido");
+  const porIcone=new Map<string,string>(),porNo=new Map<string,string>(),porAtivo=new Map<string,string>();
+  const revisoes=new Set<string>(),vigentes=new Set<string>();
+  const saida:ReferenciaVisualNo[]=[];
+  for(const r of registros){
+    if(!r.icon_id?.trim()||r.icon_id!==r.icon_id.trim()||!r.no_id?.trim()||r.no_id!==r.no_id.trim()||!r.ativo_id?.trim()||r.ativo_id!==r.ativo_id.trim()||!r.descricao_acessivel?.trim()||!/^[0-9a-f]{64}$/.test(r.sha256)||!Number.isSafeInteger(r.revisao)||r.revisao<1||!tiposVisuais.includes(r.tipo)||!niveisVisuais.includes(r.nivel)||!["vigente","historico","revogado"].includes(r.estado)||!["fabricante","epc","derivacao_autorizada"].includes(r.origem)||!r.fonte?.trim()||!Number.isFinite(Date.parse(r.consultado_em)))throw new Error("registro visual inválido");
+    const chave=JSON.stringify([r.no_id,r.tipo,r.nivel]),rev=JSON.stringify([r.icon_id,r.revisao]);
+    if((porIcone.has(r.icon_id)&&porIcone.get(r.icon_id)!==chave)||(porNo.has(chave)&&porNo.get(chave)!==r.icon_id))throw new Error("identidade visual divergente");
+    if(porAtivo.has(r.ativo_id)&&porAtivo.get(r.ativo_id)!==r.sha256)throw new Error("ativo com hash divergente");
+    if(revisoes.has(rev))throw new Error("revisão visual duplicada");
+    porIcone.set(r.icon_id,chave);porNo.set(chave,r.icon_id);porAtivo.set(r.ativo_id,r.sha256);revisoes.add(rev);
+    if(r.estado!=="vigente")continue;
+    if(!valido(r)||r.direitos!==true||vigentes.has(chave))throw new Error("referência vigente sem autoridade única");
+    vigentes.add(chave);
+    // Projeção explícita: não transportar campos internos de licença ou auditoria.
+    saida.push({loja_id:r.loja_id,no_id:r.no_id,tipo:r.tipo,nivel:r.nivel,ativo_id:r.ativo_id,revisao:r.revisao,direitos:r.direitos,origem:r.origem,aprovado:r.aprovado,fonte:r.fonte,consultado_em:r.consultado_em});
+  }
+  return saida;
+}

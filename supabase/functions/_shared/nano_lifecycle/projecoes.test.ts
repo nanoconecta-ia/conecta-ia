@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {filtrarProdutos,blocosFabricante,previaBling,type Produto,type No,type Aplicacao,resolverRepresentacaoNo,type ReferenciaVisualNo} from "./projecoes.ts";
+import {filtrarProdutos,blocosFabricante,previaBling,type Produto,type No,type Aplicacao,resolverRepresentacaoNo,type ReferenciaVisualNo,validarBibliotecaVisual,type RegistroVisualNo} from "./projecoes.ts";
 const fato={aprovado:true,fonte:"fixture",consultado_em:"2026-11-26"};
 const n=(id:string,rotulo=id):No=>({...fato,id,rotulo});
 const a:Aplicacao={...fato,id:"a",montadora:n("m","Hyundai"),modelo:n("hr","HR"),motor:n("d","D4CB"),inicio:2014,fim:2018,mercado:"BR",oems:[{...fato,codigo:"TEST-001"}]};
@@ -47,4 +47,40 @@ test("VIS-90-05: novas tecnologias reutilizam o contrato sem inferir aplicação
  const r=resolverRepresentacaoNo("l",n("ev","Elétrico"),"propulsao","compacto",vis);
  assert.deepEqual(r,{no_id:"ev",tipo:"propulsao",rotulo:"Elétrico",nivel:"compacto",ativo_id:"asset-ev",revisao:1,estado:"referencia"});
  assert.equal(filtrarProdutos("l",[p],{modelo:"ev"}).length,0);
+});
+
+
+const registro=(r:ReferenciaVisualNo):RegistroVisualNo=>({...r,icon_id:JSON.stringify([r.no_id,r.tipo,r.nivel]),sha256:"a".repeat(64),descricao_acessivel:"Referência sintética "+r.no_id,estado:"vigente"});
+test("VIS-91-01: identidade estável por nó e nível; só revisão vigente entra na projeção",()=>{
+ const r=registro(vis[0]),antigo={...r,estado:"historico" as const},novo={...r,revisao:2,ativo_id:"asset-hr-v2",sha256:"b".repeat(64)};
+ for(const entrada of [[antigo,novo],[novo,antigo]]){
+  const out=validarBibliotecaVisual("l",entrada);
+  assert.equal(out.length,1);assert.equal(resolverRepresentacaoNo("l",a.modelo,"modelo","compacto",out).ativo_id,"asset-hr-v2");
+  assert.equal("sha256" in out[0],false);
+ }
+});
+test("VIS-91-02: revogação e histórico não ativam automaticamente a maior revisão",()=>{
+ const r=registro(vis[0]);const out=validarBibliotecaVisual("l",[{...r,estado:"historico"},{...r,revisao:2,estado:"revogado",direitos:false}]);
+ assert.equal(out.length,0);assert.equal(resolverRepresentacaoNo("l",a.modelo,"modelo","compacto",out).estado,"texto");
+});
+test("VIS-91-03: rejeita colisão de identidade, revisão e autoridade vigente",()=>{
+ const r=registro(vis[0]);
+ for(const entrada of [[r,r],[r,{...r,revisao:2}],[r,{...r,no_id:"bongo",revisao:2}],[r,{...r,icon_id:"outro",revisao:2}]]){
+  assert.throws(()=>validarBibliotecaVisual("l",entrada));
+ }
+});
+test("VIS-91-04: integridade declarada, acessibilidade e origem obrigatórias",()=>{
+ const r=registro(vis[0]);
+ for(const alterado of [{...r,sha256:"invalid"},{...r,descricao_acessivel:" "},{...r,fonte:""},{...r,consultado_em:"inválido"},{...r,direitos:false},{...r,aprovado:false}]){
+  assert.throws(()=>validarBibliotecaVisual("l",[alterado]));
+ }
+ assert.throws(()=>validarBibliotecaVisual("l",[r,{...r,revisao:2,estado:"historico",sha256:"b".repeat(64)}]));
+});
+test("VIS-91-05: manifesto não mistura lojas e não altera taxonomia/aplicações",()=>{
+ const registros=vis.map(registro),out=validarBibliotecaVisual("l",registros);
+ assert.equal(out.length,5);
+ assert.equal(resolverRepresentacaoNo("l",b.modelo,"modelo","compacto",out).ativo_id,"asset-bongo");
+ assert.equal(resolverRepresentacaoNo("l",n("ev","Elétrico"),"propulsao","compacto",out).ativo_id,"asset-ev");
+ assert.equal(filtrarProdutos("l",[p],{modelo:"ev"}).length,0);
+ assert.throws(()=>validarBibliotecaVisual("l",[{...registros[0],loja_id:"outra"}]));
 });
