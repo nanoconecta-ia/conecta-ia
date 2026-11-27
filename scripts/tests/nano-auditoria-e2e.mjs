@@ -455,6 +455,33 @@ try{
  assert.equal(admin("select prosecdef from pg_proc where oid='nano_lifecycle_interno.nano_catalogo_documento_confere(uuid,jsonb,jsonb,jsonb,text)'::regprocedure;"),"f");
  assert.equal(admin("select nano_lifecycle_interno.nano_catalogo_documento_confere(null,null,null,null,null);"),"f");
  console.log("ok: CAT-137-01 documento comum, fonte revogada e tipo inelegivel, retry, ACL e rollback");
+ // CAT-138: nenhuma fronteira aceita parecer concorrente ou autoatestado.
+ const teste138=admin([
+  "begin;",
+  "insert into public.usuarios_loja(loja_id,user_id,papel) values('"+L+"','"+humano133+"','lojista');",
+  ...tecnico135,...humano135,
+  "savepoint parecer_138;",
+  "insert into nano_lifecycle_interno.leituras_documentais(loja_id,item_id,geracao,escopo,documento_id,fonte_id,sha256,localizador,trecho,fato,verificador,resultado) select loja_id,item_id,geracao,escopo,documento_id,fonte_id,sha256,localizador,trecho,fato,'nano_e2e_auditor','diverge' from nano_lifecycle_interno.leituras_documentais where id='"+r.id+"';",
+  ...tecnico135,...humano135,
+  "rollback to parecer_138;",
+  ...tecnico135,...humano135,
+  "savepoint parecer_138b;",
+  "insert into nano_lifecycle_interno.leituras_documentais(loja_id,item_id,geracao,escopo,documento_id,fonte_id,sha256,localizador,trecho,fato,verificador,resultado) select loja_id,item_id,geracao,escopo,documento_id,fonte_id,sha256,localizador,trecho,fato,'nano_e2e_auditor','confere' from nano_lifecycle_interno.leituras_documentais where id='"+r.id+"';",
+  ...tecnico135,...humano135,
+  "rollback to parecer_138b;",
+  ...tecnico135,...humano135,
+  "select jsonb_build_object('pendente',status='a_confirmar','indexavel',pagina_indexavel) from public.produto_aplicacoes where id='"+app124+"';",
+  "rollback;"
+ ].join("\n")).split("\n").map(JSON.parse);
+ assert.equal(teste138[0].estado,"vinculo_registrado");
+ assert.deepEqual(teste138.filter((_,i)=>[1,3,5,7,9].includes(i)),[esperado133,retido133,esperado133,retido133,esperado133]);
+ assert.deepEqual(teste138.filter((_,i)=>[2,4,6,8].includes(i)).map(x=>x.estado),["retida","vinculo_ja_registrado","retida","vinculo_ja_registrado"]);
+ assert.deepEqual(teste138[10],{pendente:true,indexavel:false});
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req133+"';"),"0");
+ for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria"])assert.equal(admin("select has_function_privilege('"+papel+"','nano_lifecycle_interno.nano_catalogo_parecer_confere(uuid,jsonb,text,text,jsonb)','EXECUTE');"),"f");
+ assert.equal(admin("select prosecdef from pg_proc where oid='nano_lifecycle_interno.nano_catalogo_parecer_confere(uuid,jsonb,text,text,jsonb)'::regprocedure;"),"f");
+ assert.equal(admin("select nano_lifecycle_interno.nano_catalogo_parecer_confere(null,null,null,null,null);"),"f");
+ console.log("ok: CAT-138-01 parecer comum, concorrencia confere/diverge, retry, ACL e rollback");
  // Revogação permitida pelo guard legado, sem reaprovação artificial.
  admin("update public.pecas_aplicacoes_tecnicas set status='desatualizado' where id='"+g130.aresta+"';");
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");

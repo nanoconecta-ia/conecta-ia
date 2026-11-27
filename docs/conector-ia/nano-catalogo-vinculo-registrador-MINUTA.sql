@@ -195,6 +195,7 @@ grant execute on function public.nano_lifecycle_projecao(uuid),nano_lifecycle_in
 -- Verificação da identidade histórica sem fingir que a sessão humana é auditor.
 grant execute on function nano_lifecycle_interno.nano_catalogo_auditor_vigente(text) to nano_catalogo_vinculo_humano_leitor;
 grant execute on function nano_lifecycle_interno.nano_catalogo_documento_confere(uuid,jsonb,jsonb,jsonb,text) to nano_catalogo_vinculo_humano_leitor;
+grant execute on function nano_lifecycle_interno.nano_catalogo_parecer_confere(uuid,jsonb,text,text,jsonb) to nano_catalogo_vinculo_humano_leitor;
 create function private.nano_catalogo_conferir_vinculo(p_loja uuid,p_produto uuid,p_aplicacao uuid,p_recibo uuid)
 returns jsonb language plpgsql volatile security definer set search_path='' set nano.humano_loja='' as $humano$
 declare ator uuid; r nano_lifecycle_interno.conferencias_gate; snap jsonb;
@@ -251,7 +252,9 @@ begin
   and x.fonte_id=d.fonte_id and x.documento_id=d.id and x.sha256=d.sha256 and x.localizador=r.candidato->>'localizador'
   and x.resultado='confere' and x.verificado_em between d.consultado_em and statement_timestamp()
   and position(x.trecho in d.conteudo)>0;
- if not found or l.verificador in (a.produtor,r.auditor)
+ if not found or not nano_lifecycle_interno.nano_catalogo_parecer_confere(r.leitura_id,r.candidato,r.sha256,r.auditor::text,
+  jsonb_build_object('id',l.id,'escopo',l.escopo,'fato',l.fato,'fonteId',l.fonte_id,'documentoId',l.documento_id,
+   'localizador',l.localizador,'sha256',l.sha256,'resultado',l.resultado,'verificador',l.verificador))
   or not nano_lifecycle_interno.nano_catalogo_auditor_vigente(l.verificador::text)
   or not nano_lifecycle_interno.nano_catalogo_auditor_vigente(r.auditor::text)
   or (select count(*) from nano_lifecycle_interno.auditoria_escopos x where x.loja_id=p_loja and x.habilitado and x.login_db in (l.verificador,r.auditor))<>2

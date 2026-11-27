@@ -31,6 +31,18 @@ returns boolean language sql stable security invoker set search_path='' as $doc$
 $doc$;
 revoke all on function nano_lifecycle_interno.nano_catalogo_documento_confere(uuid,jsonb,jsonb,jsonb,text) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
 grant execute on function nano_lifecycle_interno.nano_catalogo_documento_confere(uuid,jsonb,jsonb,jsonb,text) to nano_lifecycle_atualidade_leitor;
+-- CAT-138: identidade, escopo, fato e independência do parecer, sem ler tabelas.
+-- Autorização DB e temporalidade permanecem nas fronteiras de leitura existentes.
+create function nano_lifecycle_interno.nano_catalogo_parecer_confere(p_leitura uuid,c jsonb,p_hash text,p_auditor text,l jsonb)
+returns boolean language sql stable security invoker set search_path='' as $parecer$
+ select coalesce(p_leitura is not null and p_auditor is not null and p_hash ~ '^[0-9a-f]{64}$'
+  and l->>'id'=p_leitura::text and l->'escopo'=c->'escopo' and l->'fato'=c->'fato'
+  and l->>'fonteId'=c->>'fonteId' and l->>'documentoId'=c->>'documentoId'
+  and l->>'localizador'=c->>'localizador' and l->>'sha256'=p_hash and l->>'resultado'='confere'
+  and l->>'verificador'<>c->'escopo'->>'produtor' and l->>'verificador'<>p_auditor,false)
+$parecer$;
+revoke all on function nano_lifecycle_interno.nano_catalogo_parecer_confere(uuid,jsonb,text,text,jsonb) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+grant execute on function nano_lifecycle_interno.nano_catalogo_parecer_confere(uuid,jsonb,text,text,jsonb) to nano_lifecycle_atualidade_leitor;
 create function nano_lifecycle_interno.nano_lifecycle_pre_gate(p_loja uuid,p_item uuid,p_execucao uuid,p_geracao bigint,p_versao integer,p_candidato jsonb,p_leitura uuid,p_hash text)
 returns boolean language plpgsql stable security definer set search_path='' as $fn$
 declare e jsonb; d jsonb; f jsonb; ls jsonb; l jsonb; esc jsonb; fato jsonb;
@@ -46,7 +58,8 @@ begin
  ls:=nano_lifecycle_interno.nano_lifecycle_ler_pareceres(p_loja,d->>'id',p_candidato->>'localizador',esc);
  if jsonb_array_length(ls) is distinct from 1 then return false; end if;
  l:=ls->0;
- if l->>'id' is distinct from p_leitura::text or l->'escopo' is distinct from esc or l->>'fonteId' is distinct from f->>'id' or l->>'documentoId' is distinct from d->>'id' or l->>'sha256' is distinct from p_hash or l->'fato' is distinct from fato or l->>'resultado' is distinct from 'confere' or l->>'verificador'=esc->>'produtor' or l->>'verificador'=session_user::text or (l->>'verificadoEm')::timestamptz<(d->>'consultadoEm')::timestamptz or (l->>'verificadoEm')::timestamptz>statement_timestamp() then return false; end if;
+ if not nano_lifecycle_interno.nano_catalogo_parecer_confere(p_leitura,p_candidato,p_hash,session_user::text,l)
+  or (l->>'verificadoEm')::timestamptz<(d->>'consultadoEm')::timestamptz or (l->>'verificadoEm')::timestamptz>statement_timestamp() then return false; end if;
  return nano_lifecycle_interno.nano_lifecycle_verificador_autorizado(p_loja,l->>'verificador');
 end $fn$;
 alter function nano_lifecycle_interno.nano_lifecycle_pre_gate(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text) owner to nano_lifecycle_atualidade_leitor;
