@@ -125,6 +125,13 @@ jobs:
         env:
           PGDATABASE: conecta_teste
         run: node scripts/tests/nano-financeiro-autoridade-concorrencia.mjs
+      - name: Homologar autoridade administrativa do orçamento no CI descartável
+        env:
+          PGDATABASE: conecta_teste
+        run: |
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-financeiro-orcamento-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-financeiro-orcamento-TESTE.sql
+          node scripts/tests/nano-financeiro-orcamento-concorrencia.mjs
       - name: Validar reversão somente no banco descartável
         env:
           PGDATABASE: conecta_teste
