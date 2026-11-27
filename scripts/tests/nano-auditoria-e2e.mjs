@@ -531,7 +531,7 @@ try{
   auth133,chamada143(),voltar133,
   "select jsonb_build_object('total',count(*),'ator',min(ator::text),'recibo',min(recibo::text),'decisao',min(decisao),'homologada',bool_or(homologada)) from nano_lifecycle_interno.catalogo_manifestacoes where loja_id='"+L+"';",
   "select jsonb_build_object('status',status,'indexavel',pagina_indexavel) from public.produto_aplicacoes where id='"+app124+"';",
-  "do $ begin begin update nano_lifecycle_interno.catalogo_manifestacoes set decisao='rejeitar' where loja_id='"+L+"'; raise exception 'mutacao indevida'; exception when others then if sqlerrm not like '%documento técnico histórico imutável%' then raise; end if; end; end $;",
+  "do $cat143$ begin begin update nano_lifecycle_interno.catalogo_manifestacoes set decisao='rejeitar' where loja_id='"+L+"'; raise exception 'mutacao indevida'; exception when others then if sqlerrm not like '%documento técnico histórico imutável%' then raise; end if; end; end $cat143$;",
   "rollback;"
  ].join("\n")).split("\n").map(JSON.parse);
  assert.equal(teste143[0].estado,"vinculo_registrado");
