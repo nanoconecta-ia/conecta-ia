@@ -108,6 +108,28 @@ const e2={loja_id:L,produto_id:P,aplicacao_id:A2},r2=restrito(L,P,A2),v2=verific
 assert.equal(r2.eventos.length,1);assert.equal(r2.eventos[0].user_id,U2);
 assert.equal(v2.estado,"aprovacao_legada_conferida");assert.equal(v2.homologada,false);assert.equal(Object.hasOwn(v2,"prova"),false);
 console.log("ok: CAT-112-02 contraprova de autoria: sessão sem auth.uid aceita UUID declarado, nunca prova");
+// Revisão física no escopo do produto, com OEM coincidente na segunda aplicação.
+const revisaoFisica = "e1190000-0000-0000-0000-000000000001";
+sql(`insert into public.produto_revisoes
+  (id, loja_id, produto_id, codigo, o_que_mudou, fonte, coletado_em, status)
+  values ('${revisaoFisica}', '${L}', '${P}', 'OEM-CI-112',
+    'medida da peça', 'fixture CAT-119', now(), 'aprovado');`);
+try {
+  const aplicacoesDaPeca = JSON.parse(sql(`
+    select jsonb_agg(a.id order by a.id)
+    from public.produto_revisoes r
+    join public.produto_aplicacoes a using (loja_id, produto_id)
+    where r.id = '${revisaoFisica}' and r.status = 'aprovado';`));
+  assert.deepEqual(aplicacoesDaPeca, [A, A2].sort());
+  const resultado = verificar(restrito(L, P, A2), e2);
+  assert.equal(resultado.estado, "aprovacao_legada_conferida");
+  assert.equal(resultado.homologada, false);
+  assert.equal(Object.hasOwn(resultado, "prova"), false);
+  console.log("ok: CAT-119-01 revisão física aprovada não homologa a aplicação com OEM coincidente");
+} finally {
+  sql(`delete from public.produto_revisoes where id = '${revisaoFisica}';`);
+}
+
 assert.equal(sql("select has_table_privilege('service_role','public.produto_aplicacoes','UPDATE');"),"t");
 sql("set role service_role; update public.produto_aplicacoes set modelo='Modelo CI autoridade alterado' where loja_id='"+L+"' and id='"+A2+"';");
 const r3=restrito(L,P,A2);
