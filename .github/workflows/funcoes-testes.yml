@@ -64,6 +64,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Caracterizar riscos financeiros em banco descartável
+        env:
+          PGDATABASE: conecta_teste
+        run: node scripts/tests/nano-financeiro-caracterizacao.mjs
       - name: Integrar orquestrador e RPCs reais no PostgreSQL descartável
         env:
           PGDATABASE: conecta_teste
