@@ -43,6 +43,7 @@ ps -f "$D/fixture2.sql" >/dev/null
 K2=$(ps -c "select eventos->0->>'idempotency_key' from public.nano_lifecycle_capturas where loja_id='$L2' and revisao='sync_0002'")
 [[ "$K2" =~ ^nano-lifecycle:[0-9a-f]{64}$ ]]
 node scripts/tests/nano-despacho-benchmark.mjs "$L" "$P" "$K" "$L2" "$P2" "$K2"
+node scripts/tests/nano-despacho-latencia.mjs "$L" "$K" "$L2" "$K2"
 ps -c "set role service_role" -c "select public.nano_lifecycle_reivindicar('$L','$I','$A')->>'estado'" > "$D/a" & pa=$!
 ps -c "set role service_role" -c "select public.nano_lifecycle_reivindicar('$L','$I','$B')->>'estado'" > "$D/b" & pb=$!
 wait "$pa"; wait "$pb"
