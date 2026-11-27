@@ -165,6 +165,8 @@ try{
  // CAT-124: escritor técnico real, recibos novos somente em rollback.
  const app124="fb124000-0000-0000-0000-000000000001",app124b="fb124000-0000-0000-0000-000000000002",marca124="fb124100-0000-0000-0000-000000000001",req124="fb124200-0000-0000-0000-000000000001";
  admin("begin; insert into public.marcas(id,loja_id,nome,tipo,status) values ('"+marca124+"','"+L+"','Marca teste','veiculo','aprovado'); insert into public.produto_aplicacoes(id,loja_id,produto_id,modelo,motorizacao,ano_inicial,ano_final,marca_veiculo_id,montadora_origem_id,codigo_oem,status,fonte,coletado_em,pagina_indexavel,pagina_slug) values ('"+app124+"','"+L+"','"+P+"','Modelo teste','M1',2014,2016,'"+marca124+"','"+marca124+"','12345-67890','a_confirmar','fixture CAT-124',now(),false,'ci-cat-124-a'),('"+app124b+"','"+L+"','"+P+"','Modelo distinto','M2',2014,2016,'"+marca124+"','"+marca124+"','12345-67890','a_confirmar','fixture CAT-124',now(),false,'ci-cat-124-b'); commit;");
+ // Fixture explícita: não copiar campos do candidato na rotina produtiva.
+ admin("update public.produto_aplicacoes set nano_geracao_veicular='G1',nano_emissao='Euro 5',nano_mercado='BR',nano_tipo_ano='ano_modelo_crlv' where id in ('"+app124+"','"+app124b+"');");
  const assinatura124="nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text,uuid,uuid)";
  for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor"])assert.equal(admin("select has_function_privilege('"+papel+"','"+assinatura124+"','EXECUTE');"),"f");
  assert.equal(admin("select has_function_privilege('nano_lifecycle_auditoria','"+assinatura124+"','EXECUTE');"),"t");
@@ -187,6 +189,26 @@ try{
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"vinculo_registrado");
  assert.equal(admin("select count(*) from public.produto_aplicacoes where id in ('"+app124+"','"+app124b+"') and status='a_confirmar' and not pagina_indexavel;"),"2");
  console.log("ok: CAT-124-02 autoria segregada, revogação da fonte, divergência de marca e ausência de publicação");
+ // CAT-125: ausência de qualquer dimensão ou divergência nunca vira prova.
+ const filtro125=" where loja_id='"+L+"' and id='"+app124+"';";
+ const completo125="nano_geracao_veicular='G1',nano_emissao='Euro 5',nano_mercado='BR',nano_tipo_ano='ano_modelo_crlv'";
+ const vazio125="nano_geracao_veicular=null,nano_emissao=null,nano_mercado=null,nano_tipo_ano=null";
+ const mudar125=campos=>admin("update public.produto_aplicacoes set "+campos+filtro125);
+ mudar125(vazio125);
+ assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");
+ assert.throws(()=>mudar125("nano_geracao_veicular='G1'"),e=>e.stderr?.includes("nano_aplicacao_dimensoes")===true);
+ mudar125(completo125);
+ for(const delta of ["nano_geracao_veicular='G2'","nano_emissao='Euro 3'","nano_tipo_ano='fabricacao'"]){
+  mudar125(delta);
+  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida",delta);
+  mudar125(completo125);
+ }
+ assert.throws(()=>mudar125("nano_mercado='US'"),e=>e.stderr?.includes("nano_aplicacao_dimensoes")===true);
+ assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"vinculo_registrado");
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req124+"';"),"0");
+ assert.equal(admin("select count(*) from public.produto_aplicacoes where id='"+app124+"' and status='a_confirmar' and not pagina_indexavel;"),"1");
+ console.log("ok: CAT-125-01 dimensões explícitas, ausência e divergências retidas, mercado e tipo de ano estritos; sem homologação");
+
  // Disputa real de duas sessões com a mesma identidade: um registro, outro retry ou ocupado.
  const audit2=connect("nano_e2e_auditor","nano_lifecycle_auditoria");
  const concorrente="fb300000-0000-0000-0000-000000000003";
