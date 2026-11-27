@@ -149,10 +149,11 @@ try{
  assert.equal(s122.recibo.homologada,false);
  assert.equal(s122.recibo.leitura_id,r.id);
  assert.equal(s122.recibo.sha256,hash);
- for(const obj of [s122.recibo,s122.recibo.candidato.escopo]){
-  assert.equal(Object.hasOwn(obj,"aplicacao_id"),false);
-  assert.equal(Object.hasOwn(obj,"aplicacao"),false);
- }
+ assert.equal(s122.recibo.aplicacao_id,null);
+ assert.equal(s122.recibo.aplicacao_snapshot,null);
+ assert.equal(s122.recibo.aplicacao_sha256,null);
+ assert.equal(Object.hasOwn(s122.recibo.candidato.escopo,"aplicacao_id"),false);
+ assert.equal(Object.hasOwn(s122.recibo.candidato.escopo,"aplicacao"),false);
  console.log("ok: CAT-122-01 recibo persistido real e OEM comum nao identificam aplicacao individual");
  assert.deepEqual(aut122,{ator:humano122,autorizado:true});
  assert.deepEqual(rev122,{ator:humano122,autorizado:false});
@@ -160,6 +161,32 @@ try{
  assert.equal(final122.pendentes,2);
  assert.equal(admin("select count(*) from public.produto_aplicacoes where id in ('"+app122a+"','"+app122b+"');"),"0");
  console.log("ok: CAT-122-02 autoridade humana revogada sem mudar recibo nem aprovar aplicacoes; rollback");
+
+ // CAT-124: escritor técnico real, recibos novos somente em rollback.
+ const app124="fb124000-0000-0000-0000-000000000001",app124b="fb124000-0000-0000-0000-000000000002",marca124="fb124100-0000-0000-0000-000000000001",req124="fb124200-0000-0000-0000-000000000001";
+ admin("begin; insert into public.marcas(id,loja_id,nome,tipo,status) values ('"+marca124+"','"+L+"','Marca teste','veiculo','aprovado'); insert into public.produto_aplicacoes(id,loja_id,produto_id,modelo,motorizacao,ano_inicial,ano_final,marca_veiculo_id,montadora_origem_id,codigo_oem,status,fonte,coletado_em,pagina_indexavel,pagina_slug) values ('"+app124+"','"+L+"','"+P+"','Modelo teste','M1',2014,2016,'"+marca124+"','"+marca124+"','12345-67890','a_confirmar','fixture CAT-124',now(),false,'ci-cat-124-a'),('"+app124b+"','"+L+"','"+P+"','Modelo distinto','M2',2014,2016,'"+marca124+"','"+marca124+"','12345-67890','a_confirmar','fixture CAT-124',now(),false,'ci-cat-124-b'); commit;");
+ const assinatura124="nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text,uuid,uuid)";
+ for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor"])assert.equal(admin("select has_function_privilege('"+papel+"','"+assinatura124+"','EXECUTE');"),"f");
+ assert.equal(admin("select has_function_privilege('nano_lifecycle_auditoria','"+assinatura124+"','EXECUTE');"),"t");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_registrador','public.produto_aplicacoes','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
+ const quote124=x=>"'"+String(x).replaceAll("'","''")+"'";
+ const chamada124=(app=app124,id=req124,h=hash,c=candidato)=>"select nano_lifecycle_interno.nano_lifecycle_registrar_conferencia("+[...v,JSON.stringify(c),r.id,h,id,app].map(quote124).join(",")+")::text;";
+ const exec124=(user,linhas)=>execFileSync("psql",args(user),{input:"set role nano_lifecycle_auditoria;\nbegin;\n"+linhas.join("\n")+"\nrollback;",encoding:"utf8",timeout:15000,env:env(passwords[user]),stdio:["pipe","pipe","pipe"]}).trim().split("\n").map(JSON.parse);
+ const res124=exec124("nano_e2e_auditor",[chamada124(),chamada124(),chamada124(app124b),chamada124(app124,request),chamada124(app124,req124,"0".repeat(64))]);
+ assert.deepEqual(res124.map(x=>x.estado),["vinculo_registrado","vinculo_ja_registrado","retida","retida","retida"]);
+ assert.ok(res124.every(x=>x.homologada===false));
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req124+"';"),"0");
+ console.log("ok: CAT-124-01 registrador técnico real, vínculo individual, retry e colisão com recibo histórico; rollback");
+ assert.equal(exec124("nano_e2e_parecer",[chamada124()])[0].estado,"retida");
+ admin("update nano_lifecycle_interno.fontes_documentais set autorizada=false where loja_id='"+L+"' and id='f';");
+ assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");
+ admin("update nano_lifecycle_interno.fontes_documentais set autorizada=true where loja_id='"+L+"' and id='f';");
+ admin("update public.marcas set nome='Marca alterada' where id='"+marca124+"';");
+ assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");
+ admin("update public.marcas set nome='Marca teste' where id='"+marca124+"';");
+ assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"vinculo_registrado");
+ assert.equal(admin("select count(*) from public.produto_aplicacoes where id in ('"+app124+"','"+app124b+"') and status='a_confirmar' and not pagina_indexavel;"),"2");
+ console.log("ok: CAT-124-02 autoria segregada, revogação da fonte, divergência de marca e ausência de publicação");
  // Disputa real de duas sessões com a mesma identidade: um registro, outro retry ou ocupado.
  const audit2=connect("nano_e2e_auditor","nano_lifecycle_auditoria");
  const concorrente="fb300000-0000-0000-0000-000000000003";
