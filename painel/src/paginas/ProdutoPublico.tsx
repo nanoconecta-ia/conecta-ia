@@ -8,6 +8,7 @@ import logoMobis from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
 import logoMobisOficial from "../assets/marcas/mobis-mstyle-v3-logo.png";
 import { fichaPilotoMobis } from "../lib/fichaPilotoMobis.ts";
 import "./produto-publico-mobis.css";
+import "../ma-display-prismatic.css";
 import type { FichaProduto as Produto, FichaVeiculo } from "../lib/ficha.ts";
 type PaginaVeiculo = { slug:string;titulo:string;modelo:string;status:string };
 

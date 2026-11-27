@@ -23,6 +23,7 @@ import "./mobis-vitrine-completa-v3.css";
 import "./mobis-v3-limpo.css";
 import "./mobis-tres-modelos.css";
 import "./mobis-02-entrega-real.css";
+import "../ma-display-prismatic.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
