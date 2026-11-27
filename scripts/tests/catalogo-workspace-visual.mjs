@@ -78,6 +78,9 @@ try {
     // Nano Studio: galeria real reaproveitada; 8 no máximo, seleção para comparação,
     // status de identidade/direitos e aprovação humana POR IMAGEM.
     const galeria=modal.locator(".galeria-produto");await galeria.waitFor();
+    // A seção monta antes de a consulta assíncrona da galeria terminar.
+    // Aguardar o contador renderizado, mantendo todas as asserções exatas.
+    await galeria.locator(".gs-contador").filter({hasText:/^3\/8$/}).waitFor({timeout:10000});
     assert.equal(await galeria.locator(".gs-card").count(),3,"as três imagens do produto aparecem na grade");
     const carrossel=galeria.locator(".gv2");
     assert.equal(await carrossel.count(),1,"carrossel vítreo está na galeria real");
