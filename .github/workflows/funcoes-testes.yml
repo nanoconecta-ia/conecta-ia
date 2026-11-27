@@ -115,6 +115,12 @@ jobs:
           bash supabase/tests/nano_lifecycle_despacho_concorrencia.sh
           node --experimental-strip-types scripts/tests/nano-auditoria-e2e.mjs
           node --experimental-strip-types scripts/tests/nano-lifecycle-e2e.mjs
+      - name: Homologar minuta da autoridade financeira exclusivamente no CI
+        env:
+          PGDATABASE: conecta_teste
+        run: |
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-financeiro-autoridade-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-financeiro-autoridade-TESTE.sql
       - name: Validar reversão somente no banco descartável
         env:
           PGDATABASE: conecta_teste
