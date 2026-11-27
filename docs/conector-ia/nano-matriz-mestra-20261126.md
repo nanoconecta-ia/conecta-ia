@@ -233,3 +233,7 @@ Base 81aeb8af6fb64737e1bb4113e0857ddddbb4ae15 (126): job banco 140679393074 falh
 
 ## Checkpoint 128 — correção sintática da minuta do grafo
 Base 2968e015df31a12aa1a6e24f3949bdf189553f67 (127): CAT-127-COR-01 aprovado no job 140680514588. O mesmo job falhou antes da execução de CAT-126-01/02 ao carregar nano-catalogo-vinculo-registrador-MINUTA.sql, por delimitador DO reduzido a um único cifrão (linhas 35–44). Corrigir apenas o delimitador nomeado $grafo$ em ambas as extremidades do bloco; manter todas as travas, restrições, políticas, grants e testes. Não declarar CI verde até execução efetiva dos ensaios. Nenhum avanço funcional, alteração produtiva, ERP, preço, main, merge ou deploy. Parecer independente pendente.
+
+
+## Checkpoint 129 — correção do cenário de período do grafo
+Base 6b8d90d7c7d330702a1c2a58216abf8cf0355390 (128): job banco 140682424116 confirmou CAT-127-COR-01 e CAT-124/125, e carregou corretamente a minuta do grafo. CAT-126 interrompido pelo guard legado private.protege_aprovado ao tentar alterar período de versao_motor aprovado. CAT-129-COR-01 exige recusa dessa mutação e preservação do período original; usa uma aresta alternativa sintética, aprovada na fixture e com intervalo insuficiente, para comprovar retenção pelo registrador, depois restaura a referência da aplicação. Não desativa trigger, não usa conecta.revisao_humana e não altera SQL de autoridade. CI 129 e auditoria independente pendentes. Sem avanço funcional, produção, ERP, preços, main, merge ou deploy.

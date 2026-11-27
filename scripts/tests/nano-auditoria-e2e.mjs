@@ -230,9 +230,16 @@ try{
   admin("update public."+tabela+" set "+original+" where id='"+id+"';");
  }
  const filtroG126=" where versao_id='"+g126.versao+"' and motor_id='"+g126.motor+"';";
- admin("update public.versao_motor set periodo_fim=2015"+filtroG126);
+ // A proteção legada impede modificar a aresta aprovada; não usar o bypass de revisão humana.
+ assert.throws(()=>admin("update public.versao_motor set periodo_fim=2015"+filtroG126),e=>e.stderr?.includes("registro aprovado não é alterado automaticamente")===true);
+ assert.equal(admin("select periodo_fim from public.versao_motor"+filtroG126),"2016");
+ // Aresta alternativa com período insuficiente, explicitamente criada em fixture CI.
+ const versaoCurta129="fb129000-0000-0000-0000-000000000001";
+ admin("begin; insert into public.versoes(id,geracao_id,mercado,nome_comercial) values ('"+versaoCurta129+"','"+g126.geracao+"','BR','Versão CI 129 período curto'); insert into public.versao_motor(versao_id,motor_id,periodo_inicio,periodo_fim,fonte_id,status) values ('"+versaoCurta129+"','"+g126.motor+"',2014,2015,'"+g126.fonte+"','aprovado'); commit;");
+ mudar125("nano_versao_id='"+versaoCurta129+"',nano_motor_id='"+g126.motor+"'");
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");
- admin("update public.versao_motor set periodo_fim=2016"+filtroG126);
+ mudar125(vinculo126);
+ console.log("ok: CAT-129-COR-01 proteção legada preservada; aresta alternativa com período insuficiente retida");
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"vinculo_registrado");
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_registrador','public.motores','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgname='zz_nano_guard_grafo' and tgenabled='A';"),"7");
