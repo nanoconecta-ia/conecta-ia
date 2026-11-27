@@ -131,3 +131,73 @@ export function validarBibliotecaVisual(loja:string,registros:readonly RegistroV
   }
   return saida;
 }
+
+// Rastreabilidade visual por aplicação: relação aprovada de nós existentes,
+// não cria aplicação, não amplia o filtro BR atual e não autoriza publicação.
+// A autoridade de origem precisa confirmar fatos, vínculos, bytes e direitos.
+export type TipoVisualVeiculo = "montadora" | "modelo" | "geracao";
+export interface VinculoVisualAplicacao extends Fato {
+  no_id: string;
+  tipo: TipoVisualVeiculo;
+  nivel: NivelVisualNo;
+  ativo_id: string;
+  revisao: number;
+}
+export interface ContextoVisualAplicacao extends Fato {
+  loja_id: string;
+  produto_id: string;
+  aplicacao_id: string;
+  montadora_id: string;
+  modelo_id: string;
+  geracao: No;
+  mercado: string;
+  referencias: readonly VinculoVisualAplicacao[];
+}
+const chaveExata=(v:string)=>typeof v==="string"&&!!v.trim()&&v===v.trim();
+const mercadoExato=(v:string)=>chaveExata(v)&&/^[A-Z0-9][A-Z0-9_-]{1,31}$/.test(v);
+const tiposVeiculo:readonly TipoVisualVeiculo[]=["montadora","modelo","geracao"];
+// Não interpretar o mercado por rótulo ou traduzir códigos: o adaptador fornece
+// o identificador canônico aprovado. Os filtros públicos BR não são modificados.
+export function projetarRastreabilidadeVisual(
+  loja:string,p:Produto,contextos:readonly ContextoVisualAplicacao[],
+  registros:readonly RegistroVisualNo[],nivel:NivelVisualNo
+){
+  if(!chaveExata(loja)||p.loja_id!==loja||contextos.some(c=>c.loja_id!==loja||c.produto_id!==p.produto_id))throw new Error("escopo de rastreabilidade inválido");
+  if(!niveisVisuais.includes(nivel))throw new Error("nível visual inválido");
+  const acervo=validarBibliotecaVisual(loja,registros);
+  if(!elegiveis(loja,[p],true).length)return [];
+  const aplicacoes=new Map<string,Aplicacao>();
+  for(const a of p.aplicacoes){
+    if(!chaveExata(a.id)||aplicacoes.has(a.id))throw new Error("identidade de aplicação ambígua");
+    aplicacoes.set(a.id,a);
+  }
+  const vistos=new Set<string>(),paisModelo=new Map<string,string>(),paisGeracao=new Map<string,string>();
+  const saida=[];
+  for(const c of contextos){
+    if(!chaveExata(c.aplicacao_id)||vistos.has(c.aplicacao_id))throw new Error("contexto de aplicação ambíguo");
+    vistos.add(c.aplicacao_id);
+    if(!valido(c)||!noOk(c.geracao)||!chaveExata(c.geracao.id)||!mercadoExato(c.mercado))continue;
+    const a=aplicacoes.get(c.aplicacao_id);
+    if(!a||!valido(a)||!noOk(a.montadora)||!noOk(a.modelo)||!noOk(a.motor)||!chaveExata(a.montadora.id)||!chaveExata(a.modelo.id)||!Number.isInteger(a.inicio)||a.inicio<1900||(a.fim!==null&&(!Number.isInteger(a.fim)||a.fim<a.inicio)))continue;
+    if(a.montadora.id!==c.montadora_id||a.modelo.id!==c.modelo_id||a.mercado!==c.mercado)continue;
+    const pai=JSON.stringify([a.montadora.id,a.modelo.id]);
+    if((paisModelo.has(a.modelo.id)&&paisModelo.get(a.modelo.id)!==a.montadora.id)||(paisGeracao.has(c.geracao.id)&&paisGeracao.get(c.geracao.id)!==pai))throw new Error("parentesco visual divergente");
+    paisModelo.set(a.modelo.id,a.montadora.id);paisGeracao.set(c.geracao.id,pai);
+    const nos={montadora:a.montadora,modelo:a.modelo,geracao:c.geracao};
+    const chaves=new Set<string>();
+    for(const v of c.referencias){
+      if(!tiposVeiculo.includes(v.tipo)||!niveisVisuais.includes(v.nivel)||v.no_id!==nos[v.tipo].id||!chaveExata(v.ativo_id)||!Number.isSafeInteger(v.revisao)||v.revisao<1)throw new Error("vínculo visual fora do contexto");
+      const k=JSON.stringify([v.tipo,v.nivel]);
+      if(chaves.has(k))throw new Error("vínculo visual ambíguo");
+      chaves.add(k);
+    }
+    const representacoes=tiposVeiculo.map(tipo=>{
+      const no=nos[tipo],v=c.referencias.find(x=>x.tipo===tipo&&x.nivel===nivel);
+      const autorizado=v&&valido(v)?acervo.filter(r=>r.no_id===no.id&&r.tipo===tipo&&r.nivel===nivel&&r.ativo_id===v.ativo_id&&r.revisao===v.revisao):[];
+      return resolverRepresentacaoNo(loja,no,tipo,nivel,autorizado);
+    });
+    // Saída explícita: não expõe preço, fornecedor, evidência interna, URL ou licença.
+    saida.push({produto_id:p.produto_id,aplicacao_id:a.id,mercado:c.mercado,montadora_id:a.montadora.id,modelo_id:a.modelo.id,geracao_id:c.geracao.id,inicio:a.inicio,fim:a.fim,representacoes});
+  }
+  return saida;
+}

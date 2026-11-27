@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {filtrarProdutos,blocosFabricante,previaBling,type Produto,type No,type Aplicacao,resolverRepresentacaoNo,type ReferenciaVisualNo,validarBibliotecaVisual,type RegistroVisualNo} from "./projecoes.ts";
+import {filtrarProdutos,blocosFabricante,previaBling,type Produto,type No,type Aplicacao,resolverRepresentacaoNo,type ReferenciaVisualNo,validarBibliotecaVisual,type RegistroVisualNo,projetarRastreabilidadeVisual,type ContextoVisualAplicacao} from "./projecoes.ts";
 const fato={aprovado:true,fonte:"fixture",consultado_em:"2026-11-26"};
 const n=(id:string,rotulo=id):No=>({...fato,id,rotulo});
 const a:Aplicacao={...fato,id:"a",montadora:n("m","Hyundai"),modelo:n("hr","HR"),motor:n("d","D4CB"),inicio:2014,fim:2018,mercado:"BR",oems:[{...fato,codigo:"TEST-001"}]};
@@ -83,4 +83,65 @@ test("VIS-91-05: manifesto não mistura lojas e não altera taxonomia/aplicaçõ
  assert.equal(resolverRepresentacaoNo("l",n("ev","Elétrico"),"propulsao","compacto",out).ativo_id,"asset-ev");
  assert.equal(filtrarProdutos("l",[p],{modelo:"ev"}).length,0);
  assert.throws(()=>validarBibliotecaVisual("l",[{...registros[0],loja_id:"outra"}]));
+});
+
+// Fixtures exclusivamente sintéticas: nenhuma afirmação sobre veículos reais.
+const ger=n("g1","Geração sintética 1"),ger2=n("g2","Geração sintética 2");
+const v92=(tipo:"montadora"|"modelo"|"geracao",no_id:string,ativo_id:string,nivel:ReferenciaVisualNo["nivel"]="compacto")=>({...fato,tipo,no_id,nivel,ativo_id,revisao:1});
+const c92:ContextoVisualAplicacao={...fato,loja_id:"l",produto_id:"p",aplicacao_id:"a",montadora_id:"m",modelo_id:"hr",geracao:ger,mercado:"BR",referencias:[v92("montadora","m","asset-m"),v92("modelo","hr","asset-hr"),v92("geracao","g1","asset-g1"),v92("geracao","g1","asset-g1-3d","3d"),v92("geracao","g1","asset-g1-epc","epc")]};
+const lib92=[...vis.map(registro),registro(visual("m","montadora","compacto","asset-m")),registro(visual("g1","geracao","compacto","asset-g1")),registro(visual("g1","geracao","3d","asset-g1-3d")),registro(visual("g1","geracao","epc","asset-g1-epc")),registro(visual("g2","geracao","compacto","asset-g2"))];
+test("VIS-92-01: monta identidade exata e três níveis sem misturar aplicações",()=>{
+ const out=projetarRastreabilidadeVisual("l",p,[c92],lib92,"compacto");
+ assert.equal(out.length,1);
+ assert.deepEqual([out[0].montadora_id,out[0].modelo_id,out[0].geracao_id,out[0].mercado],["m","hr","g1","BR"]);
+ assert.deepEqual(out[0].representacoes.map(x=>x.ativo_id),["asset-m","asset-hr","asset-g1"]);
+ for(const [nivel,ativo] of [["3d","asset-g1-3d"],["epc","asset-g1-epc"]] as const){
+  assert.deepEqual(projetarRastreabilidadeVisual("l",p,[c92],lib92,nivel)[0].representacoes.map(x=>x.ativo_id),[null,null,ativo]);
+ }
+});
+test("VIS-92-02: mesmo modelo em mercados e gerações distintos exige vínculo explícito",()=>{
+ const a2={...a,id:"a2",mercado:"KR",inicio:2020,fim:2022};
+ const c2={...c92,aplicacao_id:"a2",mercado:"KR",geracao:ger2,referencias:[v92("geracao","g2","asset-g2")]};
+ const q={...p,aplicacoes:[a,a2]};
+ const out=projetarRastreabilidadeVisual("l",q,[c92,c2],lib92,"compacto");
+ assert.deepEqual(out.map(x=>[x.mercado,x.geracao_id,x.representacoes[2].ativo_id]),[["BR","g1","asset-g1"],["KR","g2","asset-g2"]]);
+ assert.deepEqual(out[1].representacoes.slice(0,2).map(x=>x.estado),["texto","texto"]);
+ assert.equal(projetarRastreabilidadeVisual("l",q,[{...c2,mercado:"BR"}],lib92,"compacto").length,0);
+ assert.equal(filtrarProdutos("l",[q],{modelo:"hr",ano:2021}).length,0);
+});
+test("VIS-92-03: rejeita troca de fabricante/modelo, geração não aprovada e contexto sem fonte",()=>{
+ for(const c of [{...c92,montadora_id:"k"},{...c92,modelo_id:"bongo"},{...c92,geracao:{...ger,aprovado:false}},{...c92,fonte:""},{...c92,mercado:"br"},{...c92,aplicacao_id:"inexistente"}]){
+  assert.equal(projetarRastreabilidadeVisual("l",p,[c],lib92,"compacto").length,0);
+ }
+ assert.equal(projetarRastreabilidadeVisual("l",{...p,aplicacoes:[{...a,aprovado:false}]},[c92],lib92,"compacto").length,0);
+});
+test("VIS-92-04: vínculo ausente, revogado, não aprovado ou revisão antiga retorna texto",()=>{
+ const v=v92("geracao","g1","asset-g1");
+ for(const refs of [[],[{...v,aprovado:false}],[{...v,revisao:2}],[{...v,ativo_id:"asset-g2"}]]){
+  assert.equal(projetarRastreabilidadeVisual("l",p,[{...c92,referencias:refs}],lib92,"compacto")[0].representacoes[2].estado,"texto");
+ }
+ const rev=lib92.map(r=>r.no_id==="g1"&&r.nivel==="compacto"?{...r,estado:"revogado" as const}:r);
+ assert.equal(projetarRastreabilidadeVisual("l",p,[c92],rev,"compacto")[0].representacoes[2].estado,"texto");
+});
+test("VIS-92-05: colisão, troca de nó e escopo entre lojas/produtos falham fechado",()=>{
+ for(const c of [{...c92,loja_id:"outra"},{...c92,produto_id:"outro"},{...c92,referencias:[v92("geracao","g2","asset-g2")]},{...c92,referencias:[c92.referencias[0],c92.referencias[0]]}]){
+  assert.throws(()=>projetarRastreabilidadeVisual("l",p,[c],lib92,"compacto"));
+ }
+ assert.throws(()=>projetarRastreabilidadeVisual("l",p,[c92,c92],lib92,"compacto"));
+ assert.throws(()=>projetarRastreabilidadeVisual("l",{...p,aplicacoes:[a,a]},[c92],lib92,"compacto"));
+ assert.throws(()=>projetarRastreabilidadeVisual("l",p,[c92],lib92.map(r=>({...r,loja_id:"outra"})),"compacto"));
+ const cb={...c92,aplicacao_id:"b",montadora_id:"k",modelo_id:"bongo",referencias:[]};
+ assert.throws(()=>projetarRastreabilidadeVisual("l",p,[c92,cb],lib92,"compacto"));
+});
+test("VIS-92-06: tecnologias novas sem inferência, sem preço ou dados privados, sem produto não publicado",()=>{
+ const ev={...a,id:"ev",montadora:n("ev-m"),modelo:n("ev-model"),motor:n("ev-motor","Motor elétrico"),mercado:"DE",fim:null};
+ const he={...a,id:"he",montadora:n("he-m"),modelo:n("he-model"),motor:n("he-motor","Propulsão híbrida"),mercado:"JP"};
+ const q={...p,aplicacoes:[ev,he],preco:999,fornecedor:"SIGILO"};
+ const ce={...c92,aplicacao_id:"ev",montadora_id:"ev-m",modelo_id:"ev-model",geracao:n("ev-g"),mercado:"DE",referencias:[]};
+ const ch={...c92,aplicacao_id:"he",montadora_id:"he-m",modelo_id:"he-model",geracao:n("he-g"),mercado:"JP",referencias:[]};
+ const out=projetarRastreabilidadeVisual("l",q,[ce,ch],lib92,"compacto");
+ assert.equal(out.length,2);assert.equal(out[0].fim,null);assert.ok(out.every(x=>x.representacoes.every(y=>y.estado==="texto")));
+ assert.ok(!JSON.stringify(out).includes("SIGILO"));assert.ok(!JSON.stringify(out).includes("999"));
+ assert.equal(projetarRastreabilidadeVisual("l",{...q,publicado:false},[ce,ch],lib92,"compacto").length,0);
+ assert.equal(projetarRastreabilidadeVisual("l",{...q,ativo:false},[ce,ch],lib92,"compacto").length,0);
 });
