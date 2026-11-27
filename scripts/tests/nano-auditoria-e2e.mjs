@@ -167,6 +167,10 @@ try{
  admin("begin; insert into public.marcas(id,loja_id,nome,tipo,status) values ('"+marca124+"','"+L+"','Marca teste','veiculo','aprovado'); insert into public.produto_aplicacoes(id,loja_id,produto_id,modelo,motorizacao,ano_inicial,ano_final,marca_veiculo_id,montadora_origem_id,codigo_oem,status,fonte,coletado_em,pagina_indexavel,pagina_slug) values ('"+app124+"','"+L+"','"+P+"','Modelo teste','M1',2014,2016,'"+marca124+"','"+marca124+"','12345-67890','a_confirmar','fixture CAT-124',now(),false,'ci-cat-124-a'),('"+app124b+"','"+L+"','"+P+"','Modelo distinto','M2',2014,2016,'"+marca124+"','"+marca124+"','12345-67890','a_confirmar','fixture CAT-124',now(),false,'ci-cat-124-b'); commit;");
  // Fixture explícita: não copiar campos do candidato na rotina produtiva.
  admin("update public.produto_aplicacoes set nano_geracao_veicular='G1',nano_emissao='Euro 5',nano_mercado='BR',nano_tipo_ano='ano_modelo_crlv' where id in ('"+app124+"','"+app124b+"');");
+
+ // Grafo global sintético do CI, com IDs explícitos.
+ const g126=Object.fromEntries(["fonte","montadora","modelo","geracao","versao","familia","motor"].map((x,i)=>[x,"fb126000-0000-0000-0000-00000000000"+(i+1)]));
+ admin("begin; insert into public.fontes(id,tipo,titulo,documento,mercado) values ('"+g126.fonte+"','catalogo_montadora','Fixture CAT-126','Documento sintético CI','BR'); insert into public.montadoras(id,nome) values ('"+g126.montadora+"','Marca teste'); insert into public.modelos(id,montadora_id,nome,categoria) values ('"+g126.modelo+"','"+g126.montadora+"','Modelo teste','utilitario'); insert into public.geracoes(id,modelo_id,ordem,codigo_interno) values ('"+g126.geracao+"','"+g126.modelo+"',1,'G1'); insert into public.versoes(id,geracao_id,mercado,nome_comercial) values ('"+g126.versao+"','"+g126.geracao+"','BR','Versão CI 126'); insert into public.familias_motor(id,nome) values ('"+g126.familia+"','Família CI 126'); insert into public.motores(id,familia_id,codigo,sistema_emissoes,fonte_id,status) values ('"+g126.motor+"','"+g126.familia+"','M1','Euro 5','"+g126.fonte+"','aprovado'); insert into public.versao_motor(versao_id,motor_id,periodo_inicio,periodo_fim,fonte_id,status) values ('"+g126.versao+"','"+g126.motor+"',2014,2016,'"+g126.fonte+"','aprovado'); update public.produto_aplicacoes set nano_versao_id='"+g126.versao+"',nano_motor_id='"+g126.motor+"' where id in ('"+app124+"','"+app124b+"'); commit;");
  const assinatura124="nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text,uuid,uuid)";
  for(const papel of ["anon","authenticated","service_role","nano_lifecycle_produtor"])assert.equal(admin("select has_function_privilege('"+papel+"','"+assinatura124+"','EXECUTE');"),"f");
  assert.equal(admin("select has_function_privilege('nano_lifecycle_auditoria','"+assinatura124+"','EXECUTE');"),"t");
@@ -208,6 +212,53 @@ try{
  assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req124+"';"),"0");
  assert.equal(admin("select count(*) from public.produto_aplicacoes where id='"+app124+"' and status='a_confirmar' and not pagina_indexavel;"),"1");
  console.log("ok: CAT-125-01 dimensões explícitas, ausência e divergências retidas, mercado e tipo de ano estritos; sem homologação");
+ // CAT-126: ausência, divergência, revogação e isolamento do grafo.
+ const vinculo126="nano_versao_id='"+g126.versao+"',nano_motor_id='"+g126.motor+"'";
+ mudar125("nano_versao_id=null,nano_motor_id=null");
+ assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");
+ assert.throws(()=>mudar125("nano_versao_id='"+g126.versao+"'"),e=>e.stderr?.includes("nano_aplicacao_grafo_par")===true);
+ mudar125(vinculo126);
+ for(const [tabela,id,alterado,original] of [
+  ["geracoes",g126.geracao,"codigo_interno='G2'","codigo_interno='G1'"],
+  ["motores",g126.motor,"sistema_emissoes='Euro 3'","sistema_emissoes='Euro 5'"],
+  ["motores",g126.motor,"status='a_confirmar'","status='aprovado'"],
+  ["versoes",g126.versao,"mercado='US'","mercado='BR'"],
+  ["fontes",g126.fonte,"mercado='US'","mercado='BR'"]
+ ]){
+  admin("update public."+tabela+" set "+alterado+" where id='"+id+"';");
+  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida",tabela);
+  admin("update public."+tabela+" set "+original+" where id='"+id+"';");
+ }
+ const filtroG126=" where versao_id='"+g126.versao+"' and motor_id='"+g126.motor+"';";
+ admin("update public.versao_motor set periodo_fim=2015"+filtroG126);
+ assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");
+ admin("update public.versao_motor set periodo_fim=2016"+filtroG126);
+ assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"vinculo_registrado");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_registrador','public.motores','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
+ assert.equal(admin("select count(*) from pg_trigger where tgname='zz_nano_guard_grafo' and tgenabled='A';"),"7");
+ console.log("ok: CAT-126-01 IDs explícitos do grafo, revogação, período e fonte; sem homologação");
+ const writer126=spawn("psql",args("postgres"),{env:env("postgres"),stdio:["pipe","pipe","pipe"]});
+ writer126.stderr.resume();
+ const reader126=createInterface({input:writer126.stdout});
+ try {
+  await new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>reject(Error("trava grafo CI não iniciou")),10000);
+   writer126.once("error",e=>{clearTimeout(timer);reject(e);});
+   writer126.once("exit",()=>{clearTimeout(timer);reject(Error("escritor grafo encerrou"));});
+   reader126.on("line",line=>{if(line==="__CAT126__"){clearTimeout(timer);resolve();}});
+   writer126.stdin.write("begin;\nupdate public.motores set status='a_confirmar' where id='"+g126.motor+"';\n\\echo __CAT126__\n");
+  });
+  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"ocupada");
+ }finally{
+  if(writer126.exitCode===null&&writer126.signalCode===null){
+   await new Promise(resolve=>{const timer=setTimeout(()=>writer126.kill(),5000);writer126.once("exit",()=>{clearTimeout(timer);resolve();});writer126.stdin.end("rollback;\n");});
+  }
+  reader126.close();
+ }
+ assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"vinculo_registrado");
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req124+"';"),"0");
+ console.log("ok: CAT-126-02 disputa real de escritor do grafo, retenção concorrente e rollback");
+
 
  // Disputa real de duas sessões com a mesma identidade: um registro, outro retry ou ocupado.
  const audit2=connect("nano_e2e_auditor","nano_lifecycle_auditoria");

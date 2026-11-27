@@ -16,6 +16,32 @@ alter table public.produto_aplicacoes
    and nano_tipo_ano in ('ano_modelo_crlv','fabricacao','comercializacao_brasil','importacao_brasil')
   ) is true
  );
+-- CAT-126: IDs explícitos da versão e do motor no grafo existente.
+alter table public.produto_aplicacoes
+ add column nano_versao_id uuid,
+ add column nano_motor_id uuid,
+ add constraint nano_aplicacao_grafo_par check ((nano_versao_id is null)=(nano_motor_id is null)),
+ add constraint nano_aplicacao_grafo_fk foreign key(nano_versao_id,nano_motor_id) references public.versao_motor(versao_id,motor_id);
+-- Grafo global: leitores compartilham uma trava e escritores a adquirem exclusivamente.
+create function nano_lifecycle_interno.nano_gate_guard_grafo()
+returns trigger language plpgsql set search_path='' as $fn$
+begin
+ if not pg_try_advisory_xact_lock(hashtextextended('nano.gate.grafo.veicular',0)) then
+  raise exception 'grafo veicular ocupado' using errcode='55P03';
+ end if;
+ return null;
+end $fn$;
+revoke all on function nano_lifecycle_interno.nano_gate_guard_grafo() from public,anon,authenticated,service_role;
+do $
+declare rel regclass;
+begin
+ foreach rel in array array['public.montadoras'::regclass,'public.modelos'::regclass,'public.geracoes'::regclass,'public.versoes'::regclass,'public.motores'::regclass,'public.versao_motor'::regclass,'public.fontes'::regclass] loop
+  execute format('grant select on %s to nano_lifecycle_gate_registrador',rel);
+  execute format('create policy nano_gate_grafo_ler on %s for select to nano_lifecycle_gate_registrador using(true)',rel);
+  execute format('create trigger zz_nano_guard_grafo before insert or update or delete or truncate on %s for each statement execute function nano_lifecycle_interno.nano_gate_guard_grafo()',rel);
+  execute format('alter table %s enable always trigger zz_nano_guard_grafo',rel);
+ end loop;
+end $;
 -- Campos candidatos, ainda sujeitos ao parecer e ao futuro gate humano.
 -- Mesmo registrador NOLOGIN, escopo RLS e trava da conferência existente.
 grant select on public.produto_aplicacoes,public.marcas to nano_lifecycle_gate_registrador;
@@ -34,10 +60,19 @@ begin
   or nano_lifecycle_interno.nano_lifecycle_verificador_autorizado(p_loja,session_user::text) is not true
   or pg_has_role(session_user,'nano_lifecycle_gate_registrador','MEMBER') then return jsonb_build_object('estado','retida','homologada',false); end if;
  if not nano_lifecycle_interno.nano_lifecycle_travar_conferencia(p_loja,p_solicitacao) then return jsonb_build_object('estado','ocupada','homologada',false); end if;
+ if not pg_try_advisory_xact_lock_shared(hashtextextended('nano.gate.grafo.veicular',0)) then return jsonb_build_object('estado','ocupada','homologada',false); end if;
  perform set_config('nano.gate_loja',p_loja::text,true);
  -- Leitura depois da trava comum de produto, aplicação, marca e fonte.
- select to_jsonb(a.*)||jsonb_build_object('marca_conferida',to_jsonb(m.*)) into snap
+ select to_jsonb(a.*)||jsonb_build_object('marca_conferida',to_jsonb(m.*),'grafo_conferido',jsonb_build_object('montadora',to_jsonb(ma.*),'modelo',to_jsonb(mo.*),'geracao',to_jsonb(g.*),'versao',to_jsonb(ve.*),'motor',to_jsonb(mt.*),'vinculo_motor',to_jsonb(vm.*),'fonte_motor',to_jsonb(fm.*),'fonte_vinculo',to_jsonb(fv.*))) into snap
  from public.produto_aplicacoes a join public.marcas m on m.id=a.marca_veiculo_id and m.id=a.montadora_origem_id and m.loja_id=a.loja_id
+ join public.versao_motor vm on vm.versao_id=a.nano_versao_id and vm.motor_id=a.nano_motor_id
+ join public.versoes ve on ve.id=vm.versao_id
+ join public.geracoes g on g.id=ve.geracao_id
+ join public.modelos mo on mo.id=g.modelo_id
+ join public.montadoras ma on ma.id=mo.montadora_id
+ join public.motores mt on mt.id=vm.motor_id
+ join public.fontes fm on fm.id=mt.fonte_id
+ join public.fontes fv on fv.id=vm.fonte_id
  where a.loja_id=p_loja and a.id=p_aplicacao and a.produto_id::text=p_candidato->'escopo'->>'produto'
   and a.codigo_oem=p_candidato->'fato'->>'oem' and a.modelo=p_candidato->'fato'->>'modelo'
   and a.motorizacao=p_candidato->'fato'->>'motor'
@@ -46,6 +81,11 @@ begin
   and a.nano_emissao=p_candidato->'fato'->>'emissao'
   and a.nano_mercado=p_candidato->'fato'->>'mercado'
   and a.nano_tipo_ano=p_candidato->'fato'->>'tipo_ano'
+  and ma.nome=m.nome and mo.nome=a.modelo and g.codigo_interno=a.nano_geracao_veicular
+  and ve.mercado=a.nano_mercado and mt.codigo=a.motorizacao and mt.sistema_emissoes=a.nano_emissao
+  and mt.status='aprovado' and vm.status='aprovado'
+  and vm.periodo_inicio<=a.ano_inicial and vm.periodo_fim>=a.ano_final
+  and fm.mercado=a.nano_mercado and fv.mercado=a.nano_mercado
   and m.nome=p_candidato->'fato'->>'montadora' and m.tipo='veiculo' and m.status='aprovado';
  if not found or snap is null then return jsonb_build_object('estado','retida','homologada',false); end if;
  digest:=encode(sha256(convert_to(snap::text,'UTF8')),'hex');
