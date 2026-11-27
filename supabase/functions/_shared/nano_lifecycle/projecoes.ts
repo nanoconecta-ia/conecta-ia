@@ -201,3 +201,67 @@ export function projetarRastreabilidadeVisual(
   }
   return saida;
 }
+
+// Transições do manifesto: função pura, não substitui a autoridade persistente.
+// O adaptador deve carregar o snapshot anterior completo, autenticado e atual,
+// serializar a escrita com CAS/transação e verificar bytes, licença e aprovação.
+const chaveRevisaoVisual=(r:RegistroVisualNo)=>JSON.stringify([r.icon_id,r.revisao]);
+const metadadosImutaveisVisual=(r:RegistroVisualNo)=>JSON.stringify([r.loja_id,r.icon_id,r.no_id,r.tipo,r.nivel,r.revisao,r.ativo_id,r.sha256,r.descricao_acessivel,r.origem,r.fonte,r.consultado_em]);
+export function validarTransicaoBibliotecaVisual(loja:string,anterior:readonly RegistroVisualNo[],proximo:readonly RegistroVisualNo[]):ReferenciaVisualNo[]{
+  if(!chaveExata(loja))throw new Error("escopo visual inválido");
+  validarBibliotecaVisual(loja,anterior);
+  const vigentes=validarBibliotecaVisual(loja,proximo);
+  const antigos=new Map(anterior.map(r=>[chaveRevisaoVisual(r),r]));
+  const novos=new Map(proximo.map(r=>[chaveRevisaoVisual(r),r]));
+  const maxima=new Map<string,number>();
+  for(const a of anterior){
+    maxima.set(a.icon_id,Math.max(maxima.get(a.icon_id)??0,a.revisao));
+    const b=novos.get(chaveRevisaoVisual(a));
+    if(!b||metadadosImutaveisVisual(a)!==metadadosImutaveisVisual(b))throw new Error("histórico visual removido ou adulterado");
+    if((a.estado==="historico"&&b.estado==="vigente")||(a.estado==="revogado"&&b.estado!=="revogado"))throw new Error("reativação de revisão proibida");
+    if(typeof a.aprovado!=="boolean"||typeof a.direitos!=="boolean"||typeof b.aprovado!=="boolean"||typeof b.direitos!=="boolean")throw new Error("autoridade visual inválida");
+    if((a.aprovado!==b.aprovado&&(b.estado!=="revogado"||b.aprovado!==false))||(a.direitos!==b.direitos&&(b.estado!=="revogado"||b.direitos!==false)))throw new Error("alteração retroativa de autoridade");
+  }
+  const inseridos=new Set<string>();
+  for(const r of proximo){
+    if(antigos.has(chaveRevisaoVisual(r)))continue;
+    // Uma revisão nova por ícone nesta transição; não importar histórico fabricado.
+    if(r.estado!=="vigente"||r.revisao!==(maxima.get(r.icon_id)??0)+1||inseridos.has(r.icon_id))throw new Error("sequência de revisão visual inválida");
+    inseridos.add(r.icon_id);
+  }
+  // Revogação conservadora por ID do ativo ou digest declarado, inclusive alias.
+  // O digest não comprova bytes; não liberar reuso automaticamente.
+  const idsRevogados=new Set(proximo.filter(r=>r.estado==="revogado").map(r=>r.ativo_id));
+  const hashesRevogados=new Set(proximo.filter(r=>r.estado==="revogado").map(r=>r.sha256));
+  for(const r of proximo){
+    if(r.estado==="vigente"&&(idsRevogados.has(r.ativo_id)||hashesRevogados.has(r.sha256)))throw new Error("ativo revogado não pode estar vigente");
+  }
+  return vigentes;
+}
+
+// Inventário obrigatório fornecido pela autoridade de taxonomia, não inferido
+// de quantos ativos existem. EPC pode não ser exigível para um nó específico.
+export interface ExigenciaVisualNo extends Fato {
+  loja_id:string;
+  no:No;
+  tipo:TipoVisualNo;
+  niveis:readonly NivelVisualNo[];
+}
+export function medirCoberturaBibliotecaVisual(loja:string,exigencias:readonly ExigenciaVisualNo[],registros:readonly RegistroVisualNo[]){
+  if(!chaveExata(loja)||!exigencias.length)throw new Error("inventário obrigatório ausente");
+  const acervo=validarTransicaoBibliotecaVisual(loja,registros,registros);
+  const vistos=new Set<string>();
+  const itens:{no_id:string;tipo:TipoVisualNo;nivel:NivelVisualNo;estado:"referencia"|"texto";ativo_id:string|null;revisao:number|null}[]=[];
+  for(const e of exigencias){
+    if(e.loja_id!==loja||!valido(e)||!noOk(e.no)||!chaveExata(e.no.id)||!tiposVisuais.includes(e.tipo)||!e.niveis.length)throw new Error("exigência visual inválida");
+    const chave=JSON.stringify([e.no.id,e.tipo]);
+    if(vistos.has(chave)||new Set(e.niveis).size!==e.niveis.length||e.niveis.some(n=>!niveisVisuais.includes(n)))throw new Error("inventário visual ambíguo");
+    vistos.add(chave);
+    for(const nivel of e.niveis){
+      const r=resolverRepresentacaoNo(loja,e.no,e.tipo,nivel,acervo);
+      itens.push({no_id:r.no_id,tipo:r.tipo,nivel:r.nivel,estado:r.estado,ativo_id:r.ativo_id,revisao:r.revisao});
+    }
+  }
+  const aprovados=itens.filter(i=>i.estado==="referencia").length;
+  return {obrigatorios:itens.length,aprovados,pendentes:itens.length-aprovados,indice:aprovados/itens.length,itens};
+}

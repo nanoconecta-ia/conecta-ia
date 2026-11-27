@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {filtrarProdutos,blocosFabricante,previaBling,type Produto,type No,type Aplicacao,resolverRepresentacaoNo,type ReferenciaVisualNo,validarBibliotecaVisual,type RegistroVisualNo,projetarRastreabilidadeVisual,type ContextoVisualAplicacao} from "./projecoes.ts";
+import {filtrarProdutos,blocosFabricante,previaBling,type Produto,type No,type Aplicacao,resolverRepresentacaoNo,type ReferenciaVisualNo,validarBibliotecaVisual,type RegistroVisualNo,projetarRastreabilidadeVisual,type ContextoVisualAplicacao,validarTransicaoBibliotecaVisual,medirCoberturaBibliotecaVisual,type ExigenciaVisualNo} from "./projecoes.ts";
 const fato={aprovado:true,fonte:"fixture",consultado_em:"2026-11-26"};
 const n=(id:string,rotulo=id):No=>({...fato,id,rotulo});
 const a:Aplicacao={...fato,id:"a",montadora:n("m","Hyundai"),modelo:n("hr","HR"),motor:n("d","D4CB"),inicio:2014,fim:2018,mercado:"BR",oems:[{...fato,codigo:"TEST-001"}]};
@@ -144,4 +144,65 @@ test("VIS-92-06: tecnologias novas sem inferência, sem preço ou dados privados
  assert.ok(!JSON.stringify(out).includes("SIGILO"));assert.ok(!JSON.stringify(out).includes("999"));
  assert.equal(projetarRastreabilidadeVisual("l",{...q,publicado:false},[ce,ch],lib92,"compacto").length,0);
  assert.equal(projetarRastreabilidadeVisual("l",{...q,ativo:false},[ce,ch],lib92,"compacto").length,0);
+});
+
+// Manifestos sintéticos: cada ativo tem digest declarado distinto quando necessário.
+const r93=registro(vis[0]);
+const novo93={...r93,revisao:2,ativo_id:"asset-hr-novo",sha256:"b".repeat(64)};
+const antigo93={...r93,estado:"historico" as const};
+const revogado93={...r93,estado:"revogado" as const,direitos:false};
+test("VIS-93-01: identidade estável, sequência e revisão vigente explícita",()=>{
+ assert.deepEqual(validarTransicaoBibliotecaVisual("l",[],[r93]).map(r=>r.revisao),[1]);
+ for(const next of [[antigo93,novo93],[novo93,antigo93]]){
+  assert.deepEqual(validarTransicaoBibliotecaVisual("l",[r93],next).map(r=>r.revisao),[2]);
+ }
+ for(const next of [[antigo93,{...novo93,revisao:3}],[antigo93,{...novo93,icon_id:"outro"}],[antigo93,{...novo93,estado:"historico" as const}]]){
+  assert.throws(()=>validarTransicaoBibliotecaVisual("l",[r93],next));
+ }
+});
+test("VIS-93-02: histórico não pode desaparecer nem sofrer mutação retroativa",()=>{
+ for(const next of [[novo93],[{...r93,sha256:"c".repeat(64)}],[{...r93,descricao_acessivel:"alterada"}],[{...r93,fonte:"outra"}],[{...r93,no_id:"outro"}],[{...r93,ativo_id:"alias"}],[{...r93,consultado_em:"2026-11-27"}]]){
+  assert.throws(()=>validarTransicaoBibliotecaVisual("l",[r93],next));
+ }
+ assert.throws(()=>validarTransicaoBibliotecaVisual("l",[antigo93],[r93]));
+});
+test("VIS-93-03: revogação definitiva por revisão, ativo e digest, inclusive alias",()=>{
+ assert.equal(validarTransicaoBibliotecaVisual("l",[r93],[revogado93]).length,0);
+ assert.equal(validarTransicaoBibliotecaVisual("l",[antigo93],[revogado93]).length,0);
+ assert.equal(validarTransicaoBibliotecaVisual("l",[revogado93],[revogado93,novo93]).length,1);
+ for(const next of [[r93],[antigo93],[revogado93,{...novo93,ativo_id:r93.ativo_id,sha256:r93.sha256}],[revogado93,{...novo93,sha256:r93.sha256}],[{...revogado93,direitos:true}]]){
+  assert.throws(()=>validarTransicaoBibliotecaVisual("l",[revogado93],next));
+ }
+ const outro={...registro(vis[1]),sha256:r93.sha256};
+ assert.throws(()=>validarTransicaoBibliotecaVisual("l",[r93,outro],[revogado93,outro]));
+});
+const exigencia93:ExigenciaVisualNo={...fato,loja_id:"l",no:a.modelo,tipo:"modelo",niveis:["compacto","3d","epc"]};
+test("VIS-93-04: cobertura mede denominador obrigatório e não oculta ausência",()=>{
+ const parcial=medirCoberturaBibliotecaVisual("l",[exigencia93],[r93]);
+ assert.deepEqual([parcial.obrigatorios,parcial.aprovados,parcial.pendentes,parcial.indice],[3,1,2,1/3]);
+ const completo=medirCoberturaBibliotecaVisual("l",[exigencia93],vis.map(registro));
+ assert.deepEqual([completo.obrigatorios,completo.aprovados,completo.pendentes,completo.indice],[3,3,0,1]);
+ assert.throws(()=>medirCoberturaBibliotecaVisual("l",[],[r93]));
+ assert.throws(()=>medirCoberturaBibliotecaVisual("l",[{...exigencia93,niveis:[]}],[r93]));
+});
+test("VIS-93-05: origem, aprovação e direitos não podem ser promovidos retroativamente",()=>{
+ for(const next of [[{...r93,origem:"epc" as const}],[{...r93,estado:"historico" as const,direitos:false}],[{...r93,estado:"historico" as const,aprovado:false}]]){
+  assert.throws(()=>validarTransicaoBibliotecaVisual("l",[r93],next));
+ }
+ assert.throws(()=>validarTransicaoBibliotecaVisual("l",[],[{...r93,direitos:false}]));
+ assert.throws(()=>medirCoberturaBibliotecaVisual("l",[{...exigencia93,fonte:""}],[r93]));
+});
+test("VIS-93-06: tecnologias novas entram no mesmo inventário por identidade",()=>{
+ const ev:ExigenciaVisualNo={...fato,loja_id:"l",no:n("ev","Elétrico"),tipo:"propulsao",niveis:["compacto"]};
+ const he:ExigenciaVisualNo={...ev,no:n("he","Híbrido")};
+ const out=medirCoberturaBibliotecaVisual("l",[ev,he],vis.map(registro));
+ assert.deepEqual(out.itens.map(i=>[i.no_id,i.estado]),[["ev","referencia"],["he","texto"]]);
+ assert.equal(out.indice,0.5);
+});
+test("VIS-93-07: escopo, duplicidade e inventário contraditório falham fechado",()=>{
+ assert.throws(()=>validarTransicaoBibliotecaVisual("l",[r93],[{...r93,loja_id:"outra"}]));
+ assert.throws(()=>medirCoberturaBibliotecaVisual("l",[{...exigencia93,loja_id:"outra"}],[r93]));
+ assert.throws(()=>medirCoberturaBibliotecaVisual("l",[exigencia93,exigencia93],[r93]));
+ assert.throws(()=>medirCoberturaBibliotecaVisual("l",[{...exigencia93,niveis:["compacto","compacto"]}],[r93]));
+ assert.throws(()=>medirCoberturaBibliotecaVisual("l",[exigencia93],[revogado93,{...novo93,sha256:r93.sha256}]));
 });
