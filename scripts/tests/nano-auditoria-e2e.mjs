@@ -442,6 +442,65 @@ try{
  assert.equal(admin("select rolcanlogin or rolbypassrls or rolsuper from pg_roles where rolname='nano_lifecycle_gate_travas';"),"f");
  // Confirma que o papel de lock não consegue modificar linhas, mesmo com GRANT UPDATE.
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','nano_lifecycle_interno.fontes_documentais','update') or has_table_privilege('nano_lifecycle_gate_travas','nano_lifecycle_interno.auditoria_escopos','update');"),"f");
+ // Revisão pós-auditoria: concorrência inversa com o gate real em transação aberta.
+ const recibosFiltro=" where loja_id='"+L+"'";
+ const recibosAntes=admin("select jsonb_agg(to_jsonb(c) order by solicitacao)::text from nano_lifecycle_interno.conferencias_gate c"+recibosFiltro);
+ const req76="fb300000-0000-0000-0000-000000000076";
+ const chamadaGate76=id=>"select nano_lifecycle_interno.nano_lifecycle_registrar_conferencia("+[...v,JSON.stringify(candidato),r.id,hash,id].map(lit).join(",")+")->>'estado';";
+ const gate76=spawn("psql",args("nano_e2e_auditor"),{env:env(passwords.nano_e2e_auditor),stdio:["pipe","pipe","pipe"]});
+ const rl76=createInterface({input:gate76.stdout});
+ gate76.stderr.resume();
+ try{
+  await new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>reject(Error("gate inverso não iniciou")),10000);
+   const linhas=[];
+   gate76.once("error",e=>{clearTimeout(timer);reject(e);});
+   gate76.once("exit",()=>{clearTimeout(timer);reject(Error("gate inverso encerrou"));});
+   rl76.on("line",linha=>{
+    if(linha==="__NANO_GATE_76__"){clearTimeout(timer);if(!linhas.includes("registrada"))reject(Error("gate inverso não registrou"));else resolve();}
+    else linhas.push(linha);
+   });
+   gate76.stdin.write("set role nano_lifecycle_auditoria;\nbegin isolation level read committed;\n"+chamadaGate76(req76)+"\n\\echo __NANO_GATE_76__\n");
+  });
+  assert.equal((await registrar(audit,candidato,req76)).estado,"ocupada");
+  assert.equal((await registrar(audit,candidato,deniedRequest)).estado,"ocupada");
+  // SQLSTATE exato: não confundir rejeição de permissão com disputa do advisory lock.
+  const mutacoes=[
+   ["update nano_lifecycle_interno.fontes_documentais set autorizada=false where loja_id='"+L+"' and id='f' returning id;","update nano_lifecycle_interno.fontes_documentais set autorizada=false where loja_id='"+outra+"' and id='f' returning id;","f"],
+   [atualizarAuto(P),atualizarAuto(P2),"t"],
+   [updFila(filaId),updFila(filaId2),"fixture"],
+   [toqueEspelho(P),toqueEspelho(P2),P2]
+  ];
+  for(const [mesma,distinta,marcador] of mutacoes){
+   assert.throws(()=>admin("\\set VERBOSITY verbose\nbegin;\n"+mesma+"\nrollback;"),e=>e.stderr?.includes("55P03")===true&&e.stderr?.includes("escopo documental ocupado")===true);
+   assert.equal(admin("begin;\n"+distinta+"\nrollback;"),marcador);
+  }
+  // A linha de recibo ainda não é visível a outra sessão antes do commit.
+  assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"' and solicitacao='"+req76+"';"),"0");
+ }finally{
+  if(gate76.exitCode===null&&gate76.signalCode===null){
+   await new Promise(resolve=>{const timer=setTimeout(()=>gate76.kill(),5000);gate76.once("exit",()=>{clearTimeout(timer);resolve();});gate76.stdin.end("rollback;\n");});
+  }
+  rl76.close();
+ }
+ // A liberação transacional permite DML legítimo e retry sem gravar o recibo abortado.
+ assert.equal(admin("begin; "+atualizarAuto(P)+" rollback;"),"t");
+ assert.equal((await registrar(audit,candidato,concorrente)).estado,"ja_registrada");
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"' and solicitacao='"+req76+"';"),"0");
+ // O mesmo login real de auditor deve receber retida em snapshots incompatíveis.
+ for(const isolamento of ["repeatable read","serializable"]){
+  const recusada=execFileSync("psql",args("nano_e2e_auditor"),{input:"set role nano_lifecycle_auditoria;\nbegin isolation level "+isolamento+";\n"+chamadaGate76(req76)+"\nrollback;",encoding:"utf8",timeout:15000,env:env(passwords.nano_e2e_auditor),stdio:["pipe","pipe","pipe"]}).trim();
+  assert.equal(recusada,"retida");
+ }
+ // Imutabilidade do recibo, inclusive quando triggers ordinários seriam ignorados.
+ for(const prefixo of ["","set local session_replication_role=replica; "]){
+  for(const mutacao of ["update nano_lifecycle_interno.conferencias_gate set conferido_em=conferido_em+interval '1 second'"+recibosFiltro,"delete from nano_lifecycle_interno.conferencias_gate"+recibosFiltro,"truncate nano_lifecycle_interno.conferencias_gate"]){
+   assert.throws(()=>admin("begin; "+prefixo+mutacao+"; rollback;"),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+  }
+ }
+ assert.equal(admin("select jsonb_agg(to_jsonb(c) order by solicitacao)::text from nano_lifecycle_interno.conferencias_gate c"+recibosFiltro),recibosAntes);
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='nano_lifecycle_interno.conferencias_gate'::regclass and tgname in ('nano_gate_imutavel','nano_gate_truncate') and tgenabled='A';"),"2");
+ console.log("ok: gate inverso, SQLSTATE 55P03, outras lojas, rollback, isolamento e recibos imutáveis");
  console.log("ok: concorrência de solicitação, NOWAIT de escritores, ausência de DML");
 
 

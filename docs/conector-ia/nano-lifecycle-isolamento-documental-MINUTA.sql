@@ -158,6 +158,10 @@ alter table public.produtos enable always trigger zz_nano_guard_documental_trunc
 alter table public.produtos enable always trigger zz_nano_lifecycle_guard_espelho;
 alter table public.produtos enable always trigger zz_nano_lifecycle_guard_truncate;
 revoke update on public.produtos from nano_lifecycle_gate_travas;
+-- Recibo final: registro append-only, inclusive em replica. Não integra
+-- as 12 tabelas de entrada da conferência; não concede autorização de escrita.
+alter table nano_lifecycle_interno.conferencias_gate enable always trigger nano_gate_imutavel;
+alter table nano_lifecycle_interno.conferencias_gate enable always trigger nano_gate_truncate;
 create or replace function nano_lifecycle_interno.nano_lifecycle_travar_conferencia(p_loja uuid,p_solicitacao uuid)
 returns boolean language plpgsql volatile security definer set search_path='' as $fn$
 begin
