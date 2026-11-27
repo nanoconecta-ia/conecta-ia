@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {filtrarProdutos,blocosFabricante,previaBling,type Produto,type No,type Aplicacao,resolverRepresentacaoNo,type ReferenciaVisualNo,validarBibliotecaVisual,type RegistroVisualNo,projetarRastreabilidadeVisual,type ContextoVisualAplicacao,validarTransicaoBibliotecaVisual,medirCoberturaBibliotecaVisual,type ExigenciaVisualNo} from "./projecoes.ts";
+import {filtrarProdutos,blocosFabricante,previaBling,type Produto,type No,type Aplicacao,resolverRepresentacaoNo,type ReferenciaVisualNo,validarBibliotecaVisual,type RegistroVisualNo,projetarRastreabilidadeVisual,type ContextoVisualAplicacao,validarTransicaoBibliotecaVisual,medirCoberturaBibliotecaVisual,type ExigenciaVisualNo,projetarPaginaProduto} from "./projecoes.ts";
 const fato={aprovado:true,fonte:"fixture",consultado_em:"2026-11-26"};
 const n=(id:string,rotulo=id):No=>({...fato,id,rotulo});
 const a:Aplicacao={...fato,id:"a",montadora:n("m","Hyundai"),modelo:n("hr","HR"),motor:n("d","D4CB"),inicio:2014,fim:2018,mercado:"BR",oems:[{...fato,codigo:"TEST-001"}]};
@@ -89,7 +89,7 @@ test("VIS-91-05: manifesto não mistura lojas e não altera taxonomia/aplicaçõ
 const ger=n("g1","Geração sintética 1"),ger2=n("g2","Geração sintética 2");
 const v92=(tipo:"montadora"|"modelo"|"geracao",no_id:string,ativo_id:string,nivel:ReferenciaVisualNo["nivel"]="compacto")=>({...fato,tipo,no_id,nivel,ativo_id,revisao:1});
 const c92:ContextoVisualAplicacao={...fato,loja_id:"l",produto_id:"p",aplicacao_id:"a",montadora_id:"m",modelo_id:"hr",geracao:ger,mercado:"BR",referencias:[v92("montadora","m","asset-m"),v92("modelo","hr","asset-hr"),v92("geracao","g1","asset-g1"),v92("geracao","g1","asset-g1-3d","3d"),v92("geracao","g1","asset-g1-epc","epc")]};
-const lib92=[...vis.map(registro),registro(visual("m","montadora","compacto","asset-m")),registro(visual("g1","geracao","compacto","asset-g1")),registro(visual("g1","geracao","3d","asset-g1-3d")),registro(visual("g1","geracao","epc","asset-g1-epc")),registro(visual("g2","geracao","compacto","asset-g2"))];
+const lib92=[...vis.map(registro),registro(visual("m","montadora","compacto","asset-m")),registro(visual("g1","geracao","compacto","asset-g1")),registro(visual("g1","geracao","3d","asset-g1-3d")),registro(visual("g1","geracao","epc","asset-g1-epc")),registro(visual("g2","geracao","compacto","asset-g2"))].map((r,i)=>({...r,sha256:(i+1).toString(16).padStart(64,"0")}));
 test("VIS-92-01: monta identidade exata e três níveis sem misturar aplicações",()=>{
  const out=projetarRastreabilidadeVisual("l",p,[c92],lib92,"compacto");
  assert.equal(out.length,1);
@@ -205,4 +205,45 @@ test("VIS-93-07: escopo, duplicidade e inventário contraditório falham fechado
  assert.throws(()=>medirCoberturaBibliotecaVisual("l",[exigencia93,exigencia93],[r93]));
  assert.throws(()=>medirCoberturaBibliotecaVisual("l",[{...exigencia93,niveis:["compacto","compacto"]}],[r93]));
  assert.throws(()=>medirCoberturaBibliotecaVisual("l",[exigencia93],[revogado93,{...novo93,sha256:r93.sha256}]));
+});
+
+test("VIS-94-01: ficha única, OEM por aplicação e visual por geração",()=>{
+ const q={...p,mpn:{...fato,codigo:"MPN-1"},preco:999,fornecedor:"SIGILO"};
+ const out=projetarPaginaProduto("l",[q],"p",[c92],lib92)!;
+ assert.equal(out.sku,"SKU1");assert.equal(out.mpn,"MPN-1");assert.equal(out.aplicacoes.length,2);
+ assert.deepEqual(out.aplicacoes[0].oems,["TEST-001"]);assert.deepEqual(out.aplicacoes[1].oems,["TEST-002"]);
+ assert.equal(out.aplicacoes[0].geracao_id,"g1");assert.equal(out.aplicacoes[1].geracao_id,null);
+ assert.deepEqual(out.aplicacoes[0].visual.map(v=>v.representacoes[2].ativo_id),["asset-g1","asset-g1-3d","asset-g1-epc"]);
+ assert.ok(out.aplicacoes[1].visual.every(v=>v.representacoes.length===0));
+ assert.ok(!JSON.stringify(out).includes("SIGILO"));assert.ok(!JSON.stringify(out).includes("999"));assert.ok(!("bling_id" in out));
+});
+test("VIS-94-02: visibilidade, identidade e escopo falham fechado",()=>{
+ for(const q of [{...p,publicado:false},{...p,ativo:false}])assert.equal(projetarPaginaProduto("l",[q],"p",[c92],lib92),null);
+ assert.equal(projetarPaginaProduto("l",[p,{...p,produto_id:"outro",bling_id:"124"}],"p",[c92],lib92),null);
+ assert.throws(()=>projetarPaginaProduto("l",[p,p],"p",[c92],lib92));
+ assert.throws(()=>projetarPaginaProduto("l",[p,{...p,loja_id:"outra"}],"p",[c92],lib92));
+ assert.throws(()=>projetarPaginaProduto("l",[p],"p",[{...c92,produto_id:"outro"}],lib92));
+});
+test("VIS-94-03: mercado externo não entra na ficha BR; fato não aprovado não entra",()=>{
+ const ext={...a,id:"ext",mercado:"KR"};
+ const cext={...c92,aplicacao_id:"ext",mercado:"KR"};
+ const q={...p,aplicacoes:[a,{...b,aprovado:false},ext]};
+ const out=projetarPaginaProduto("l",[q],"p",[c92,cext],lib92)!;
+ assert.deepEqual(out.aplicacoes.map(a=>a.id),["a"]);
+});
+test("VIS-94-04: revogação também bloqueia leitura por manifesto, contexto e ficha",()=>{
+ const alvo=lib92.find(r=>r.no_id==="g1"&&r.nivel==="compacto")!;
+ const rev=lib92.map(r=>r===alvo?{...r,estado:"revogado" as const,direitos:false}:r);
+ assert.equal(projetarPaginaProduto("l",[p],"p",[c92],rev)!.aplicacoes[0].visual[0].representacoes[2].estado,"texto");
+ const alias=rev.map(r=>r.no_id==="hr"&&r.nivel==="compacto"?{...r,sha256:alvo.sha256}:r);
+ assert.throws(()=>validarBibliotecaVisual("l",alias));
+ assert.throws(()=>projetarRastreabilidadeVisual("l",p,[c92],alias,"compacto"));
+ assert.throws(()=>projetarPaginaProduto("l",[p],"p",[c92],alias));
+});
+test("VIS-94-05: categoria existente não vira aplicação e código sem prova fica nulo",()=>{
+ const cat=registro(visual("filtro","categoria","compacto","asset-cat"));
+ const q={...p,mpn:{...fato,aprovado:false,codigo:"MPN-X"}};
+ const out=projetarPaginaProduto("l",[q],"p",[],[cat])!;
+ assert.equal(out.mpn,null);assert.equal(out.categorias[0].visual[0].ativo_id,"asset-cat");
+ assert.ok(out.aplicacoes.every(a=>a.geracao_id===null));
 });

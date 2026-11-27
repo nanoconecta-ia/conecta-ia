@@ -129,6 +129,10 @@ export function validarBibliotecaVisual(loja:string,registros:readonly RegistroV
     // Projeção explícita: não transportar campos internos de licença ou auditoria.
     saida.push({loja_id:r.loja_id,no_id:r.no_id,tipo:r.tipo,nivel:r.nivel,ativo_id:r.ativo_id,revisao:r.revisao,direitos:r.direitos,origem:r.origem,aprovado:r.aprovado,fonte:r.fonte,consultado_em:r.consultado_em});
   }
+  // A leitura também deve rejeitar aliases de ativos revogados, não apenas a escrita.
+  const idsRevogados=new Set(registros.filter(r=>r.estado==="revogado").map(r=>r.ativo_id));
+  const hashesRevogados=new Set(registros.filter(r=>r.estado==="revogado").map(r=>r.sha256));
+  if(registros.some(r=>r.estado==="vigente"&&(idsRevogados.has(r.ativo_id)||hashesRevogados.has(r.sha256))))throw new Error("ativo revogado não pode estar vigente");
   return saida;
 }
 
@@ -264,4 +268,30 @@ export function medirCoberturaBibliotecaVisual(loja:string,exigencias:readonly E
   }
   const aprovados=itens.filter(i=>i.estado==="referencia").length;
   return {obrigatorios:itens.length,aprovados,pendentes:itens.length-aprovados,indice:aprovados/itens.length,itens};
+}
+
+// Ficha pública universal: projeção pura sobre os mesmos produtos e aplicações.
+// O conjunto de produtos deve ser completo no escopo autorizado para reconciliar
+// identidades; não é endpoint, SSR, autorização de publicação ou escritura ERP.
+export function projetarPaginaProduto(loja:string,produtos:Produto[],produtoId:string,contextos:readonly ContextoVisualAplicacao[],registros:readonly RegistroVisualNo[]){
+  if(!chaveExata(loja)||!chaveExata(produtoId)||produtos.some(p=>p.loja_id!==loja)||contextos.some(c=>c.loja_id!==loja||c.produto_id!==produtoId))throw new Error("escopo de ficha inválido");
+  const ids=new Set<string>();
+  for(const p of produtos){
+    if(!chaveExata(p.produto_id)||ids.has(p.produto_id))throw new Error("identidade de produto ambígua");
+    ids.add(p.produto_id);
+  }
+  const acervo=validarTransicaoBibliotecaVisual(loja,registros,registros);
+  const p=elegiveis(loja,produtos,true).find(p=>p.produto_id===produtoId);
+  if(!p)return null;
+  const base=filtrarProdutos(loja,[p],{},true)[0];
+  if(!base)return null;
+  // Valida todo o contexto recebido, mas não amplia o mercado comercial BR.
+  const visuais=niveisVisuais.map(nivel=>projetarRastreabilidadeVisual(loja,p,contextos,registros,nivel));
+  const porNivel=visuais.map(rows=>new Map(rows.map(r=>[r.aplicacao_id,r])));
+  const aplicacoes=base.aplicacoes.map(a=>{
+    const v=porNivel[0].get(a.id);
+    return {...a,mercado:"BR",geracao_id:v?.geracao_id??null,visual:niveisVisuais.map((nivel,i)=>({nivel,representacoes:porNivel[i].get(a.id)?.representacoes??[]}))};
+  });
+  const categorias=p.categoria.filter(noOk).map(n=>({id:n.id,rotulo:n.rotulo,visual:niveisVisuais.map(nivel=>resolverRepresentacaoNo(loja,n,"categoria",nivel,acervo))}));
+  return {produto_id:base.produto_id,sku:base.sku,nome:base.nome,marca:base.marca,fabricante:base.fabricante,mpn:p.mpn&&valido(p.mpn)&&cod(p.mpn.codigo)?p.mpn.codigo:null,categorias,aplicacoes};
 }
