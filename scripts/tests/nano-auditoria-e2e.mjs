@@ -81,13 +81,18 @@ try{
  assert.equal(await rpc(prod,"nano_lifecycle_liberar_produtor",keyTypes,v),true);
  const r=await rpc(parecer,"nano_lifecycle_atestar_fato",[...keyTypes,"text","text","text","text","jsonb","text"],[...v,"d",hash,"p. 1",conteudo,JSON.stringify(fato),"confere"]);assert.equal(r.estado,"registrado");
  const candidato={escopo:{...k,produto:P,sku:p.sku,revisao:entrada.revisao,checkpoint:entrada.checkpoint,hashEntrada:recibo.hash_entrada,hashExtracao:recibo.hash_extracao,produtor:"nano_e2e_prod"},fato,fonteId:"f",documentoId:"d",localizador:"p. 1"};
- const conferir=c=>conferirComAuditorSql(c,k,audit,"nano_e2e_auditor",new Date().toISOString());
+ // CAT-142: referência temporal do mesmo PostgreSQL descartável, em microssegundos.
+ // Capturar após a atestação e antes de cada conferência; sem arredondar para cima
+ // nem introduzir tolerância para evidências futuras.
+ const agoraBanco=()=>admin(`select to_char(clock_timestamp() at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"');`);
+ assert.match(agoraBanco(),/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/);
+ const conferir=c=>conferirComAuditorSql(c,k,audit,"nano_e2e_auditor",agoraBanco());
  assert.deepEqual(await conferir(candidato),{estado:"procedencia_conferida",leituraId:r.id,sha256:hash,homologada:false});
  assert.equal((await conferir({...candidato,escopo:{...candidato.escopo,geracao:2}})).estado,"retida");
  assert.equal((await conferir({...candidato,fato:{...fato,oem:"99999-99999"}})).estado,"retida");
- const atual=()=>conferirEvidenciaAtualComAuditorSql(candidato,k,audit,"nano_e2e_auditor",new Date().toISOString());
+ const atual=()=>conferirEvidenciaAtualComAuditorSql(candidato,k,audit,"nano_e2e_auditor",agoraBanco());
  assert.equal((await atual()).atualidade,"conferida_no_instante");
- const pre=()=>conferirPreGateSql(candidato,k,audit,"nano_e2e_auditor",new Date().toISOString());
+ const pre=()=>conferirPreGateSql(candidato,k,audit,"nano_e2e_auditor",agoraBanco());
  const sqlGate=(sess,c=candidato,id=r.id,h=hash)=>rpc(sess,"nano_lifecycle_pre_gate",[...keyTypes,"jsonb","uuid","text"],[...v,JSON.stringify(c),id,h]);
  assert.equal((await pre()).preGate,"conforme_no_snapshot");
  assert.equal(await sqlGate(parecer),false); // terceiro auditor, sem autoconsenso
@@ -102,7 +107,7 @@ try{
  admin("update nano_lifecycle_interno.auditoria_escopos set habilitado=true where loja_id='"+L+"' and login_db='nano_e2e_parecer';");
  assert.equal(await sqlGate(audit),true);
  const request="fb300000-0000-0000-0000-000000000001", deniedRequest="fb300000-0000-0000-0000-000000000002";
- const registro=()=>registrarConferenciaSql(candidato,k,audit,"nano_e2e_auditor",new Date().toISOString(),request);
+ const registro=()=>registrarConferenciaSql(candidato,k,audit,"nano_e2e_auditor",agoraBanco(),request);
  const registrar=(sess,c=candidato,id=request)=>rpc(sess,"nano_lifecycle_registrar_conferencia",[...keyTypes,"jsonb","uuid","text","uuid"],[...v,JSON.stringify(c),r.id,hash,id]);
  assert.deepEqual(await registro(),{estado:"registrada",solicitacao:request,homologada:false});
  assert.deepEqual(await registro(),{estado:"ja_registrada",solicitacao:request,homologada:false});

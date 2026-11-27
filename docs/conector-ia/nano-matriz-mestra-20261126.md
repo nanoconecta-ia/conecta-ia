@@ -285,3 +285,7 @@ Base 2a597090f29b8ae3c94f84bcba3898947fa9726b (139): CI 10/10, CAT-139-01 confir
 
 ## Checkpoint 141 — correção da dependência do teste CAT-140
 Base 33ba5fd03611927d599746843de7b2257b3f992d (140): job banco 140712642640 falhou na contraprova RPC por ordem de instalação (aplicacao_decidir ainda inexistente); funções aprovadas. Move a instalação da minuta da RPC legada para imediatamente antes do E2E de auditoria, mantém a contraprova real, os testes posteriores e o guard ALWAYS sem flexibilização. CI 141 pendente; nenhuma autoridade nova de decisão humana criada nesta correção. Somente CI descartável; sem produção, ERP, preços, main, merge ou deploy.
+
+
+## Checkpoint 142 — relógio de referência do E2E com precisão nativa
+Base 7ec58557257cd7d624a20217d20b7c0582bcc6c3 (141): job banco 140713271236 falhou antes de CAT-140-01, na linha 85 do E2E de auditoria, com leitura_sem_vinculo_independente; funções aprovadas. A referência JavaScript em milissegundos pode preceder a atestação em microssegundos no mesmo milissegundo. Captura do relógio UTC do PostgreSQL descartável com seis casas antes de cada conferência do E2E, depois da atestação, sem tolerância ou arredondamento para cima. Preserva as comparações estritas e os testes de evidências futuras CAT-139, assim como a correção de ordem do CAT-140. Diagnóstico de precisão é hipótese fundamentada; eficácia depende do novo CI. Ainda pendente escritor humano, revogação definitiva, idempotência e auditoria independente. Sem produção, ERP, preços, main, merge ou deploy.
