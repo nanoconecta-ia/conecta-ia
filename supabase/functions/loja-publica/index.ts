@@ -81,7 +81,11 @@ Deno.serve(async (req) => {
         slug: app.pagina_slug, titulo: app.pagina_titulo, descricao: app.pagina_descricao,
         modelo: app.modelo, motorizacao: app.motorizacao,
         ano_inicial: app.ano_inicial, ano_final: app.ano_final,
-        status: app.status, indexavel: app.status === "aprovado" && app.pagina_indexavel === true,
+        // Checkpoint 100: pagina_indexavel legado autoriza somente a consulta.
+        // A rota SEO exige prova estruturada vigente (aplicacaoIndexavel); este
+        // adaptador ainda não recebe essa prova, logo não pode declarar indexável.
+        // Não alterar status, SKU, visibilidade da ficha ou aprovação existente.
+        status: app.status, indexavel: false,
         sku_pai: p.sku, marca: p.marca, categoria: no?.nome ?? null,
         codigo_oem: textoSimples(app.codigo_oem, 160), restricao: textoSimples(app.restricao, 500), contraindicacao: textoSimples(app.contraindicacao, 500),
         fotos: (imgs ?? []).map((i: { url: string }) => i.url),
