@@ -64,3 +64,37 @@ test("snapshot sem identidade Bling ou com campo extra é retido",async()=>{
   assert.equal((await conferirEvidenciaPersistida(c,chave,porta({evidencia:async()=>({...e,entrada_snapshot:snapshot})}),agora)).estado,"retida");
  }
 });
+
+
+import {conferirVinculoAplicacaoSql,type AlvoVinculoAplicacao} from "./porta_auditoria_sql.ts";
+const alvo:AlvoVinculoAplicacao={loja_id:chave.loja,produto_id:produto.id,aplicacao_id:"00000000-0000-0000-0000-000000000005",sku:produto.sku,revisao:c.escopo.revisao,fato:c.fato};
+const preGate=(sql:string)=>sql.includes("nano_lifecycle_pre_gate(")?[{identidade:"auditor-ci",conforme:true}]:undefined;
+test("AUT-103-01: vínculo consultivo reutiliza pré-gate SQL e não homologa",async()=>{
+ const {sessao,chamadas}=consultas(preGate);
+ const r=await conferirVinculoAplicacaoSql(c,chave,alvo,sessao,"auditor-ci",agora);
+ assert.deepEqual(r,{estado:"vinculo_consultivo_conferido",homologada:false,loja_id:alvo.loja_id,produto_id:alvo.produto_id,aplicacao_id:alvo.aplicacao_id,sku:alvo.sku,revisao:alvo.revisao,chave,leituraId:l.id,sha256:d.sha256});
+ assert.equal(chamadas.length,9);assert.ok(chamadas.every(x=>x.sql.startsWith("select ")));
+ assert.match(chamadas.at(-1)!.sql,/nano_lifecycle_pre_gate/);
+});
+test("AUT-103-02: divergência de loja, produto, SKU, revisão ou chave não consulta SQL",async()=>{
+ for(const a of [{...alvo,loja_id:chave.execucao},{...alvo,produto_id:chave.item},{...alvo,sku:"OUTRO"},{...alvo,revisao:"outra"},{...alvo,aplicacao_id:"invalido"}]){
+  const {sessao,chamadas}=consultas(preGate);assert.equal((await conferirVinculoAplicacaoSql(c,chave,a,sessao,"auditor-ci",agora)).estado,"retida");assert.equal(chamadas.length,0);
+ }
+ const {sessao,chamadas}=consultas(preGate);assert.equal((await conferirVinculoAplicacaoSql(c,{...chave,versao:2},alvo,sessao,"auditor-ci",agora)).estado,"retida");assert.equal(chamadas.length,0);
+});
+test("AUT-103-03: cada dimensão física divergente impede vínculo",async()=>{
+ for(const delta of [{oem:"OUTRO"},{montadora:"Outra"},{modelo:"Outro"},{geracao:"G2"},{motor:"M2"},{emissao:"Euro 3"},{ano_inicio:2015},{ano_fim:2017},{tipo_ano:"fabricacao" as const}]){
+  const {sessao,chamadas}=consultas(preGate);assert.equal((await conferirVinculoAplicacaoSql(c,chave,{...alvo,fato:{...alvo.fato,...delta}},sessao,"auditor-ci",agora)).estado,"retida");assert.equal(chamadas.length,0);
+ }
+});
+test("AUT-103-04: sessão revogada, pré-gate negativo ou falha de transporte retém vínculo",async()=>{
+ for(const override of [(sql:string)=>sql.includes("nano_lifecycle_pre_gate(")?[{identidade:"auditor-ci",conforme:false}]:undefined,(sql:string)=>sql.includes("nano_lifecycle_pre_gate(")?[{identidade:"outro",conforme:true}]:undefined,(sql:string)=>sql.includes("ler_evidencia")?[]:undefined]){
+  const {sessao}=consultas(override);const r=await conferirVinculoAplicacaoSql(c,chave,alvo,sessao,"auditor-ci",agora);assert.equal(r.estado,"retida");assert.equal(r.homologada,false);assert.equal(Object.hasOwn(r,"prova"),false);
+ }
+});
+test("AUT-103-05: mutação externa durante consulta não troca aplicação ou revisão capturada",async()=>{
+ const mutavel=structuredClone(alvo);
+ const {sessao}=consultas(sql=>{mutavel.aplicacao_id=chave.item;mutavel.revisao="outra";mutavel.fato.motor="outro";return preGate(sql);});
+ const r=await conferirVinculoAplicacaoSql(c,chave,mutavel,sessao,"auditor-ci",agora);
+ assert.equal(r.estado,"vinculo_consultivo_conferido");if(r.estado==="vinculo_consultivo_conferido"){assert.equal(r.aplicacao_id,alvo.aplicacao_id);assert.equal(r.revisao,alvo.revisao);}
+});

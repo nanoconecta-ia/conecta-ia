@@ -2,7 +2,7 @@
 // provisiona conexão: o chamador deve fornecer uma sessão PostgreSQL dedicada
 // ao auditor, com parâmetros vinculados pelo driver e sem reconexão implícita.
 import {conferirEvidenciaPersistida,type ChaveEvidencia,type PortaEvidenciaAuditoria} from "./evidencia_procedencia.ts";
-import type {Candidato,Documento,Escopo,FonteAutorizada,LeituraIndependente} from "./procedencia_engenharia.ts";
+import type {Candidato,Documento,Escopo,FatoAplicacao,FonteAutorizada,LeituraIndependente} from "./procedencia_engenharia.ts";
 export interface SessaoAuditoriaSql {
  consultar(sql:string,parametros:readonly (string|number)[]):Promise<readonly unknown[]>;
 }
@@ -99,4 +99,31 @@ export async function registrarConferenciaSql(c:Candidato,chave:ChaveEvidencia,s
   if(!campos(v,["estado","solicitacao","homologada"])||v.solicitacao!==solicitacao||v.homologada!==false||(v.estado!=="registrada"&&v.estado!=="ja_registrada"))return negar();
   return {estado:v.estado,solicitacao,homologada:false as const};
  }catch{return negar();}
+}
+
+
+/** Vínculo consultivo entre identidade da aplicação (carregada pelo servidor)
+ * e a evidência persistida. NÃO é registro persistente da aplicação, decisão
+ * independente de homologação, prova SEO ou autorização de publicação.
+ * O chamador deve carregar alvo da autoridade de catálogo, nunca do cliente.
+ * O pré-gate já existente reconfirma autoria, documento, escopo e atualidade.
+ */
+export interface AlvoVinculoAplicacao {
+ loja_id:string;produto_id:string;aplicacao_id:string;sku:string;revisao:string;
+ fato:FatoAplicacao;
+}
+const fatoVinculo=["oem","montadora","modelo","geracao","motor","emissao","mercado","tipo_ano","ano_inicio","ano_fim"] as const;
+export async function conferirVinculoAplicacaoSql(c:Candidato,chave:ChaveEvidencia,alvo:AlvoVinculoAplicacao,sessao:SessaoAuditoriaSql,identidadeConfigurada:string,agora:string){
+ const negar=(motivo:string)=>({estado:"retida" as const,motivo,homologada:false as const});
+ try{
+  // Captura antes de awaits. Alvo não é usado para escolher credenciais.
+  const candidato=structuredClone(c), k=structuredClone(chave), a=structuredClone(alvo), s=candidato.escopo;
+  if(!uuid(a.loja_id)||!uuid(a.produto_id)||!uuid(a.aplicacao_id)||a.loja_id!==k.loja||a.loja_id!==s.loja||a.produto_id!==s.produto||a.sku!==s.sku||a.revisao!==s.revisao||k.item!==s.item||k.execucao!==s.execucao||k.geracao!==s.geracao||k.versao!==s.versao)return negar("vinculo_identidade_divergente");
+  if(!campos(a.fato,[...fatoVinculo])||!fatoVinculo.every(f=>a.fato[f]===candidato.fato[f]))return negar("vinculo_fato_divergente");
+  const r=await conferirPreGateSql(candidato,k,sessao,identidadeConfigurada,agora);
+  if(r.estado!=="procedencia_conferida")return negar("vinculo_evidencia_retida");
+  // Não emite prova SEO. Conferência é pontual; associação do alvo ao ID e
+  // decisão técnica independente exigem autoridade persistente e novo gate.
+  return {estado:"vinculo_consultivo_conferido" as const,homologada:false as const,loja_id:a.loja_id,produto_id:a.produto_id,aplicacao_id:a.aplicacao_id,sku:a.sku,revisao:a.revisao,chave:k,leituraId:r.leituraId,sha256:r.sha256};
+ }catch{return negar("vinculo_nao_confirmado");}
 }
