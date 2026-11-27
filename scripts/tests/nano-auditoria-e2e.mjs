@@ -268,7 +268,36 @@ try{
  }
  assert.equal(admin("select to_jsonb(s)::text from public.nano_lifecycle_snapshots s"+snapshotHistorico),snapshotAntes);
  assert.equal(admin("select to_jsonb(c)::text from public.nano_lifecycle_capturas c"+snapshotHistorico),capturaAntes);
- assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"14");
+ // Checkpoint mutável: alteração isolada sem desligar a reserva da outra loja.
+ const atualizarCheckpoint=loja=>"update public.nano_lifecycle_checkpoint set consumo_habilitado=false where loja_id='"+loja+"' returning consumo_habilitado;";
+ await testarEscritor("public.nano_lifecycle_checkpoint",atualizarCheckpoint(L),"ocupada","postgres","f");
+ await testarEscritor("public.nano_lifecycle_checkpoint",atualizarCheckpoint(outra),"ja_registrada","postgres","f");
+ await testarEscritor("public.nano_lifecycle_checkpoint","set local session_replication_role=replica;\n"+atualizarCheckpoint(L),"ocupada","postgres","f");
+ // ON CONFLICT também executa o guard no INSERT; não confundir com UPDATE puro.
+ const upsertCheckpoint=loja=>"insert into public.nano_lifecycle_checkpoint(loja_id,habilitado) values('"+loja+"',true) on conflict(loja_id) do update set consumo_habilitado=false returning consumo_habilitado;";
+ await testarEscritor("public.nano_lifecycle_checkpoint",upsertCheckpoint(L),"ocupada","postgres","f");
+ await testarEscritor("public.nano_lifecycle_checkpoint",upsertCheckpoint(outra),"ja_registrada","postgres","f");
+ const cpFiltro=" where loja_id='"+L+"';";
+ const cpAntes=admin("select to_jsonb(c)::text from public.nano_lifecycle_checkpoint c"+cpFiltro);
+ const reservaAntes=admin("select to_jsonb(r)::text from public.nano_lifecycle_reserva r"+cpFiltro);
+ assert.ok(cpAntes&&reservaAntes);
+ for(const prefixo of ["","begin; set local session_replication_role=replica; "]){
+  assert.throws(()=>admin(prefixo+"update public.nano_lifecycle_checkpoint set loja_id='"+outra+"'"+cpFiltro),e=>e.stderr?.includes("movimento documental entre lojas bloqueado")===true);
+  assert.throws(()=>admin(prefixo+"delete from public.nano_lifecycle_checkpoint"+cpFiltro),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+  assert.throws(()=>admin(prefixo+"truncate public.nano_lifecycle_checkpoint;"),e=>e.stderr?.includes("cannot truncate a table referenced in a foreign key constraint")===true);
+  assert.throws(()=>admin((prefixo||"begin; ")+"truncate public.nano_lifecycle_checkpoint cascade; rollback;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
+  // A RPC legítima adquire a reserva; desligamento e religamento, inclusive
+  // em replica, devem manter a revogação. Tudo reverte ao final do teste.
+  const modo=prefixo?"set local session_replication_role=replica; ":"";
+  const revogacao=admin("begin; set local role service_role; select public.nano_lifecycle_reservar('"+L+"','fa200000-0000-0000-0000-000000000071')->>'estado'; reset role; "+modo+"update public.nano_lifecycle_checkpoint set habilitado=false"+cpFiltro+" select encerrada from public.nano_lifecycle_reserva"+cpFiltro+" update public.nano_lifecycle_checkpoint set habilitado=true"+cpFiltro+" select encerrada from public.nano_lifecycle_reserva"+cpFiltro+" rollback;");
+  assert.equal(revogacao,"reservado\nt\nt");
+ }
+ assert.equal(admin("select to_jsonb(c)::text from public.nano_lifecycle_checkpoint c"+cpFiltro),cpAntes);
+ assert.equal(admin("select to_jsonb(r)::text from public.nano_lifecycle_reserva r"+cpFiltro),reservaAntes);
+ assert.equal(admin("select count(*) from public.nano_lifecycle_checkpoint where loja_id in ('"+L+"','"+outra+"') and consumo_habilitado;"),"2");
+ assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"16");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_checkpoint'::regclass and tgname in ('nano_checkpoint_sem_exclusao','nano_lifecycle_revogar_ao_desligar') and tgenabled='A';"),"2");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','public.nano_lifecycle_checkpoint','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_snapshots'::regclass and tgname='nano_snapshot_imutavel' and tgenabled='A';"),"1");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_capturas'::regclass and tgname in ('nano_captura_imutavel','nano_captura_truncate') and tgenabled='A';"),"2");
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','public.nano_lifecycle_snapshots','update');"),"f");

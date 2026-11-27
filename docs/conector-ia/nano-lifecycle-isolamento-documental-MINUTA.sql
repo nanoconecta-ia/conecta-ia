@@ -1,6 +1,6 @@
--- MINUTA CI: isolamento parcial por loja; preserva cinco travas de tabela.
+-- MINUTA CI: isolamento parcial por loja; preserva quatro travas de tabela.
 begin;
--- O mesmo namespace de advisory lock é obrigatório para todo escritor dessas sete tabelas.
+-- O mesmo namespace de advisory lock é obrigatório para todo escritor dessas oito tabelas.
 create function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja()
 returns trigger language plpgsql security invoker set search_path='' as $fn$
 declare loja uuid;
@@ -81,6 +81,16 @@ create trigger nano_captura_truncate before truncate on public.nano_lifecycle_ca
 alter table public.nano_lifecycle_capturas enable always trigger nano_captura_imutavel;
 alter table public.nano_lifecycle_capturas enable always trigger nano_captura_truncate;
 revoke update on public.nano_lifecycle_snapshots from nano_lifecycle_gate_travas;
+-- Checkpoint: configuração mutável por autoridade existente, identidade e histórico
+-- de gerações preservados. Desligamento continua revogando a reserva atomicamente.
+create trigger nano_checkpoint_sem_exclusao before delete on public.nano_lifecycle_checkpoint for each row execute function nano_lifecycle_interno.proteger_documento_tecnico();
+create trigger zz_nano_guard_documental_loja before insert or update or delete on public.nano_lifecycle_checkpoint for each row execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja();
+create trigger zz_nano_guard_documental_truncate before truncate on public.nano_lifecycle_checkpoint for each statement execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja();
+alter table public.nano_lifecycle_checkpoint enable always trigger nano_checkpoint_sem_exclusao;
+alter table public.nano_lifecycle_checkpoint enable always trigger zz_nano_guard_documental_loja;
+alter table public.nano_lifecycle_checkpoint enable always trigger zz_nano_guard_documental_truncate;
+alter table public.nano_lifecycle_checkpoint enable always trigger nano_lifecycle_revogar_ao_desligar;
+revoke update on public.nano_lifecycle_checkpoint from nano_lifecycle_gate_travas;
 create or replace function nano_lifecycle_interno.nano_lifecycle_travar_conferencia(p_loja uuid,p_solicitacao uuid)
 returns boolean language plpgsql volatile security definer set search_path='' as $fn$
 begin
@@ -89,8 +99,7 @@ begin
  begin
   if not pg_try_advisory_xact_lock(hashtextextended('nano.gate:'||p_loja::text||':'||p_solicitacao::text,0)) then return false; end if;
   if not pg_try_advisory_xact_lock(hashtextextended('nano.gate.documental:'||p_loja::text,0)) then raise lock_not_available; end if;
-  lock table public.nano_lifecycle_checkpoint,
-   public.nano_lifecycle_reserva,
+  lock table public.nano_lifecycle_reserva,
    public.produtos,
    public.produto_automacao,
    public.pipeline_itens in share mode nowait;
