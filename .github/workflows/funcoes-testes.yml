@@ -121,6 +121,10 @@ jobs:
         run: |
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-financeiro-autoridade-MINUTA.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-financeiro-autoridade-TESTE.sql
+      - name: Validar concorrência da autoridade financeira no CI descartável
+        env:
+          PGDATABASE: conecta_teste
+        run: node scripts/tests/nano-financeiro-autoridade-concorrencia.mjs
       - name: Validar reversão somente no banco descartável
         env:
           PGDATABASE: conecta_teste
