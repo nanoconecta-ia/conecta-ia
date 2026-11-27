@@ -1,6 +1,6 @@
--- MINUTA CI: isolamento parcial por loja; preserva quatro travas de tabela.
+-- MINUTA CI: isolamento parcial por loja; preserva três travas de tabela.
 begin;
--- O mesmo namespace de advisory lock é obrigatório para todo escritor dessas oito tabelas.
+-- O mesmo namespace de advisory lock é obrigatório para todo escritor dessas nove tabelas.
 create function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja()
 returns trigger language plpgsql security invoker set search_path='' as $fn$
 declare loja uuid;
@@ -91,6 +91,35 @@ alter table public.nano_lifecycle_checkpoint enable always trigger zz_nano_guard
 alter table public.nano_lifecycle_checkpoint enable always trigger zz_nano_guard_documental_truncate;
 alter table public.nano_lifecycle_checkpoint enable always trigger nano_lifecycle_revogar_ao_desligar;
 revoke update on public.nano_lifecycle_checkpoint from nano_lifecycle_gate_travas;
+-- Reserva: o fence legítimo mantém a ordem checkpoint -> reserva.
+-- Não permitir reabertura da mesma geração, extensão ou regressão do lease.
+create function nano_lifecycle_interno.nano_lifecycle_validar_transicao_reserva()
+returns trigger language plpgsql security invoker set search_path='' as $fn$
+begin
+ if new.geracao=old.geracao then
+  if new.execucao is distinct from old.execucao or new.expira_em>old.expira_em or (old.encerrada and not new.encerrada) then
+   raise exception 'transição de reserva inválida' using errcode='23514';
+  end if;
+ elsif new.geracao<>old.geracao+1 or new.execucao=old.execucao or new.encerrada or (not old.encerrada and old.expira_em>clock_timestamp()) then
+  raise exception 'transição de reserva inválida' using errcode='23514';
+ end if;
+ return new;
+end $fn$;
+revoke all on function nano_lifecycle_interno.nano_lifecycle_validar_transicao_reserva() from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+create trigger nano_reserva_transicao before update on public.nano_lifecycle_reserva for each row execute function nano_lifecycle_interno.nano_lifecycle_validar_transicao_reserva();
+create trigger nano_reserva_sem_exclusao before delete on public.nano_lifecycle_reserva for each row execute function nano_lifecycle_interno.proteger_documento_tecnico();
+create trigger zz_nano_guard_documental_loja before insert or update or delete on public.nano_lifecycle_reserva for each row execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja();
+create trigger zz_nano_guard_documental_truncate before truncate on public.nano_lifecycle_reserva for each statement execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja();
+alter table public.nano_lifecycle_reserva enable always trigger nano_reserva_transicao;
+alter table public.nano_lifecycle_reserva enable always trigger nano_reserva_sem_exclusao;
+alter table public.nano_lifecycle_reserva enable always trigger zz_nano_guard_documental_loja;
+alter table public.nano_lifecycle_reserva enable always trigger zz_nano_guard_documental_truncate;
+-- Histórico auxiliar append-only: impede apagar/reutilizar UUID e geração.
+create trigger nano_execucao_imutavel before update or delete on public.nano_lifecycle_execucoes for each row execute function nano_lifecycle_interno.proteger_documento_tecnico();
+create trigger nano_execucao_truncate before truncate on public.nano_lifecycle_execucoes for each statement execute function nano_lifecycle_interno.proteger_documento_tecnico();
+alter table public.nano_lifecycle_execucoes enable always trigger nano_execucao_imutavel;
+alter table public.nano_lifecycle_execucoes enable always trigger nano_execucao_truncate;
+revoke update on public.nano_lifecycle_reserva from nano_lifecycle_gate_travas;
 create or replace function nano_lifecycle_interno.nano_lifecycle_travar_conferencia(p_loja uuid,p_solicitacao uuid)
 returns boolean language plpgsql volatile security definer set search_path='' as $fn$
 begin
@@ -99,8 +128,7 @@ begin
  begin
   if not pg_try_advisory_xact_lock(hashtextextended('nano.gate:'||p_loja::text||':'||p_solicitacao::text,0)) then return false; end if;
   if not pg_try_advisory_xact_lock(hashtextextended('nano.gate.documental:'||p_loja::text,0)) then raise lock_not_available; end if;
-  lock table public.nano_lifecycle_reserva,
-   public.produtos,
+  lock table public.produtos,
    public.produto_automacao,
    public.pipeline_itens in share mode nowait;
  exception when lock_not_available then return false;

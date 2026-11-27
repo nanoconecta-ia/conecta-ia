@@ -295,7 +295,37 @@ try{
  assert.equal(admin("select to_jsonb(c)::text from public.nano_lifecycle_checkpoint c"+cpFiltro),cpAntes);
  assert.equal(admin("select to_jsonb(r)::text from public.nano_lifecycle_reserva r"+cpFiltro),reservaAntes);
  assert.equal(admin("select count(*) from public.nano_lifecycle_checkpoint where loja_id in ('"+L+"','"+outra+"') and consumo_habilitado;"),"2");
- assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"16");
+ // A RPC real de reserva agora escreve apenas tabelas sem SHARE global:
+ // disputa na mesma loja, enquanto a loja distinta não impede a conferência.
+ const execReserva="fa200000-0000-0000-0000-000000000072";
+ const reservarSql=loja=>"set local role service_role; select public.nano_lifecycle_reservar('"+loja+"','"+execReserva+"')->>'estado'; reset role;";
+ const histExec=admin("select jsonb_agg(to_jsonb(e) order by geracao)::text from public.nano_lifecycle_execucoes e"+cpFiltro);
+ assert.ok(histExec);
+ await testarEscritor("public.nano_lifecycle_reserva",reservarSql(L),"ocupada","postgres","reservado");
+ await testarEscritor("public.nano_lifecycle_reserva",reservarSql(outra),"ja_registrada","postgres","reservado");
+ await testarEscritor("public.nano_lifecycle_reserva","set local session_replication_role=replica;\n"+reservarSql(L),"ocupada","postgres","reservado");
+ for(const prefixo of ["","begin; set local session_replication_role=replica; "]){
+  for(const mutacao of ["update public.nano_lifecycle_reserva set geracao=geracao-1","update public.nano_lifecycle_reserva set encerrada=false","update public.nano_lifecycle_reserva set execucao='"+execReserva+"'","update public.nano_lifecycle_reserva set expira_em=expira_em+interval '1 day'"]){
+   assert.throws(()=>admin(prefixo+mutacao+cpFiltro),e=>e.stderr?.includes("transição de reserva inválida")===true);
+  }
+  assert.throws(()=>admin(prefixo+"update public.nano_lifecycle_reserva set loja_id='"+outra+"'"+cpFiltro),e=>e.stderr?.includes("movimento documental entre lojas bloqueado")===true);
+  for(const mutacao of ["delete from public.nano_lifecycle_reserva","delete from public.nano_lifecycle_execucoes","update public.nano_lifecycle_execucoes set geracao=geracao+10"]){
+   assert.throws(()=>admin(prefixo+mutacao+cpFiltro),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+  }
+  assert.throws(()=>admin((prefixo||"begin; ")+"truncate public.nano_lifecycle_reserva cascade; rollback;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
+  assert.throws(()=>admin((prefixo||"begin; ")+"truncate public.nano_lifecycle_execucoes cascade; rollback;"),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+ }
+ // Retomar somente com UUID novo e geração seguinte; tudo em rollback.
+ const execSeguinte="fa200000-0000-0000-0000-000000000073";
+ const cicloReserva=admin("begin; set local role service_role; select public.nano_lifecycle_reservar('"+L+"','"+execReserva+"')->>'geracao'; select public.nano_lifecycle_encerrar_reserva('"+L+"','"+execReserva+"',3); select public.nano_lifecycle_reservar('"+L+"','"+execReserva+"')->>'estado'; select public.nano_lifecycle_reservar('"+L+"','"+execSeguinte+"')->>'geracao'; rollback;");
+ assert.equal(cicloReserva,"3\nt\nexecucao_encerrada\n4");
+ assert.equal(admin("select to_jsonb(r)::text from public.nano_lifecycle_reserva r"+cpFiltro),reservaAntes);
+ assert.equal(admin("select jsonb_agg(to_jsonb(e) order by geracao)::text from public.nano_lifecycle_execucoes e"+cpFiltro),histExec);
+ assert.equal(admin("select count(*) from public.nano_lifecycle_execucoes where execucao in ('"+execReserva+"','"+execSeguinte+"');"),"0");
+ assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"18");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_reserva'::regclass and tgname in ('nano_reserva_transicao','nano_reserva_sem_exclusao') and tgenabled='A';"),"2");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_execucoes'::regclass and tgname in ('nano_execucao_imutavel','nano_execucao_truncate') and tgenabled='A';"),"2");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','public.nano_lifecycle_reserva','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_checkpoint'::regclass and tgname in ('nano_checkpoint_sem_exclusao','nano_lifecycle_revogar_ao_desligar') and tgenabled='A';"),"2");
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','public.nano_lifecycle_checkpoint','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_snapshots'::regclass and tgname='nano_snapshot_imutavel' and tgenabled='A';"),"1");
