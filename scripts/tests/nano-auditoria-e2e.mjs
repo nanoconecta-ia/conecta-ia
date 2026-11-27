@@ -311,6 +311,45 @@ try{
  assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req124+"';"),"0");
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_registrador','public.fontes','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
  console.log("ok: CAT-131-01 hash documental ausente/divergente, tipo e fonte alternativa retidos; retry idempotente");
+ // CAT-133: produz recibo pelo registrador real e consulta sob outro papel na
+ // mesma transação descartável. SET SESSION AUTHORIZATION é apenas harness admin CI.
+ const humano133="fb133000-0000-0000-0000-000000000001";
+ const req133="fb133000-0000-0000-0000-000000000002";
+ const call133=(app=app124,req=req133,loja=L,produto=P)=>"select private.nano_catalogo_conferir_vinculo('"+loja+"','"+produto+"','"+app+"','"+req+"')::text;";
+ const auth133="set local role authenticated; set local request.jwt.claims='"+JSON.stringify({sub:humano133})+"';";
+ const voltar133="reset role;";
+ const teste133=admin([
+  "begin;",
+  "insert into public.usuarios_loja(loja_id,user_id,papel) values('"+L+"','"+humano133+"','lojista');",
+  "set local session authorization nano_e2e_auditor; set local role nano_lifecycle_auditoria;",
+  chamada124(app124,req133),
+  "reset role; reset session authorization;",
+  auth133,call133(),call133(app124b),call133(app124,request),call133(app124,req133,L,app124b),
+  voltar133,"update nano_lifecycle_interno.fontes_documentais set autorizada=false where loja_id='"+L+"' and id='f';",
+  auth133,call133(),
+  voltar133,"update nano_lifecycle_interno.fontes_documentais set autorizada=true where loja_id='"+L+"' and id='f';",
+  "update nano_lifecycle_interno.auditoria_escopos set habilitado=false where loja_id='"+L+"' and login_db='nano_e2e_parecer';",
+  auth133,call133(),
+  voltar133,"update nano_lifecycle_interno.auditoria_escopos set habilitado=true where loja_id='"+L+"' and login_db='nano_e2e_parecer';",
+  "update public.fontes set titulo='Fonte alterada CAT-133'"+filtroFonte131,
+  auth133,call133(),
+  voltar133,"update public.fontes set titulo='Fixture CAT-126'"+filtroFonte131,
+  auth133,call133(),
+  voltar133,"update public.usuarios_loja set papel='editor' where loja_id='"+L+"' and user_id='"+humano133+"';",
+  auth133,call133(),
+  voltar133,
+  "select jsonb_build_object('pendente',status='a_confirmar','indexavel',pagina_indexavel) from public.produto_aplicacoes where id='"+app124+"';",
+  "rollback;"
+ ].join("\n")).split("\n").map(JSON.parse);
+ assert.equal(teste133[0].estado,"vinculo_registrado");
+ const esperado133={estado:"vinculo_consultivo",ator:humano133,loja:L,produto:P,aplicacao:app124,recibo:req133,homologada:false};
+ const retido133={estado:"retida",homologada:false};
+ assert.deepEqual(teste133.slice(1),[esperado133,retido133,retido133,retido133,retido133,retido133,retido133,esperado133,retido133,{pendente:true,indexavel:false}]);
+ assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where solicitacao='"+req133+"';"),"0");
+ for(const papel of ["anon","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria"])assert.equal(admin("select has_function_privilege('"+papel+"','private.nano_catalogo_conferir_vinculo(uuid,uuid,uuid,uuid)','EXECUTE');"),"f");
+ for(const tabela of ["public.produto_aplicacoes","public.usuarios_loja","public.fontes","nano_lifecycle_interno.conferencias_gate","nano_lifecycle_interno.leituras_documentais","nano_lifecycle_interno.fontes_documentais","nano_lifecycle_interno.auditoria_escopos"])assert.equal(admin("select has_table_privilege('nano_catalogo_vinculo_humano_leitor','"+tabela+"','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
+ assert.equal(admin("select rolcanlogin or rolbypassrls or rolsuper from pg_roles where rolname='nano_catalogo_vinculo_humano_leitor';"),"f");
+ console.log("ok: CAT-133-01 recibo vinculado, escopo, snapshot alterado, revogacoes e leitor sem escrita");
  // Revogação permitida pelo guard legado, sem reaprovação artificial.
  admin("update public.pecas_aplicacoes_tecnicas set status='desatualizado' where id='"+g130.aresta+"';");
  assert.equal(exec124("nano_e2e_auditor",[chamada124()])[0].estado,"retida");
