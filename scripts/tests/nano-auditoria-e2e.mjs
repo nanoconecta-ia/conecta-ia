@@ -652,7 +652,7 @@ try{
   // Inclui explicitamente a tabela dependente para exercitar o trigger histórico.
   // Transação descartável: mesmo se a proteção falhar, ROLLBACK preserva a fixture e a asserção falha.
   const inicio=prefixo||"begin; ";
-  assert.throws(()=>admin(inicio+"truncate nano_lifecycle_interno.leituras_documentais,nano_lifecycle_interno.conferencias_gate; rollback;"),e=>e.stderr?.includes("documento técnico histórico imutável")===true||e.stderr?.includes("truncate documental bloqueado")===true);
+  assert.throws(()=>admin(inicio+"truncate nano_lifecycle_interno.leituras_documentais,nano_lifecycle_interno.conferencias_gate,nano_lifecycle_interno.catalogo_manifestacoes; rollback;"),e=>e.stderr?.includes("documento técnico histórico imutável")===true||e.stderr?.includes("truncate documental bloqueado")===true);
  }
  assert.equal(admin("select count(*) from nano_lifecycle_interno.leituras_documentais where id='"+r.id+"' and resultado='confere' and sha256='"+hash+"';"),"1");
  assert.equal(admin("select count(*) from nano_lifecycle_interno.conferencias_gate where loja_id='"+L+"';"),"2");
@@ -673,7 +673,7 @@ try{
   assert.throws(()=>admin(prefixo+"delete from nano_lifecycle_interno.autorias_engenharia"+autoriaHistorica),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
   assert.throws(()=>admin(prefixo+"truncate nano_lifecycle_interno.autorias_engenharia;"),e=>e.stderr?.includes("cannot truncate a table referenced in a foreign key constraint")===true);
   // Inclui os dependentes para chegar ao trigger da própria autoria; rollback mesmo em caso de defeito.
-  assert.throws(()=>admin((prefixo||"begin; ")+"truncate nano_lifecycle_interno.autorias_engenharia,nano_lifecycle_interno.leituras_documentais,nano_lifecycle_interno.conferencias_gate; rollback;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
+  assert.throws(()=>admin((prefixo||"begin; ")+"truncate nano_lifecycle_interno.autorias_engenharia,nano_lifecycle_interno.leituras_documentais,nano_lifecycle_interno.conferencias_gate,nano_lifecycle_interno.catalogo_manifestacoes; rollback;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
  }
  assert.equal(admin("select produtor||':'||hash_entrada||':'||hash_extracao from nano_lifecycle_interno.autorias_engenharia"+autoriaHistorica),"nano_e2e_prod:"+recibo.hash_entrada+":"+recibo.hash_extracao);
  // Resultado isolado: a fixture é sintética; a RPC composta mantém as seis travas de origem.
@@ -690,7 +690,7 @@ try{
   assert.throws(()=>admin(prefixo+inserirResultado(L,"repeat('0',64)")),e=>e.stderr?.includes("hash de resultado de engenharia divergente")===true);
   assert.throws(()=>admin(prefixo+inserirResultado(L,"hash_entrada","repeat('0',64)")),e=>e.stderr?.includes("hash de resultado de engenharia divergente")===true);
   assert.throws(()=>admin(prefixo+"truncate nano_lifecycle_interno.resultados_engenharia;"),e=>e.stderr?.includes("cannot truncate a table referenced in a foreign key constraint")===true);
-  assert.throws(()=>admin((prefixo||"begin; ")+"truncate nano_lifecycle_interno.resultados_engenharia,nano_lifecycle_interno.autorias_engenharia,nano_lifecycle_interno.leituras_documentais,nano_lifecycle_interno.conferencias_gate; rollback;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
+  assert.throws(()=>admin((prefixo||"begin; ")+"truncate nano_lifecycle_interno.resultados_engenharia,nano_lifecycle_interno.autorias_engenharia,nano_lifecycle_interno.leituras_documentais,nano_lifecycle_interno.conferencias_gate,nano_lifecycle_interno.catalogo_manifestacoes; rollback;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
  }
  assert.equal(admin("select count(*) from nano_lifecycle_interno.resultados_engenharia"+resultadoHistorico.slice(0,-1)+" and not homologada and hash_entrada=encode(sha256(convert_to(entrada_snapshot::text,'UTF8')),'hex') and hash_extracao=encode(sha256(convert_to(extracao_candidata::text,'UTF8')),'hex');"),"1");
  assert.equal(admin("select hash_entrada||':'||hash_extracao from nano_lifecycle_interno.resultados_engenharia"+resultadoHistorico),recibo.hash_entrada+":"+recibo.hash_extracao);
@@ -949,8 +949,9 @@ try{
   assert.equal(recusada,"retida");
  }
  // Imutabilidade do recibo, inclusive quando triggers ordinários seriam ignorados.
+ assert.throws(()=>admin("begin; truncate nano_lifecycle_interno.conferencias_gate; rollback;"),e=>e.stderr?.includes("cannot truncate a table referenced in a foreign key constraint")===true);
  for(const prefixo of ["","set local session_replication_role=replica; "]){
-  for(const mutacao of ["update nano_lifecycle_interno.conferencias_gate set conferido_em=conferido_em+interval '1 second'"+recibosFiltro,"delete from nano_lifecycle_interno.conferencias_gate"+recibosFiltro,"truncate nano_lifecycle_interno.conferencias_gate"]){
+  for(const mutacao of ["update nano_lifecycle_interno.conferencias_gate set conferido_em=conferido_em+interval '1 second'"+recibosFiltro,"delete from nano_lifecycle_interno.conferencias_gate"+recibosFiltro,"truncate nano_lifecycle_interno.conferencias_gate,nano_lifecycle_interno.catalogo_manifestacoes"]){
    assert.throws(()=>admin("begin; "+prefixo+mutacao+"; rollback;"),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
   }
  }
