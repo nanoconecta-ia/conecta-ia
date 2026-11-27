@@ -34,6 +34,15 @@ I=$(ps -c "select id from public.pipeline_itens where loja_id='$L' and idempoten
 [[ "$I" =~ ^[0-9a-f-]{36}$ ]]
 [[ $(ps -c "select count(*) from public.pipeline_itens where loja_id='$L'") == 1 ]]
 echo "ok: disputa de despacho cria uma única tarefa"
+
+# Referência de contenção: segunda loja, mesma cadeia de captura real e sem despacho inicial.
+L2=e7000000-0000-0000-0000-000000000001
+P2=e7100000-0000-0000-0000-000000000001
+sed -e 's/ed000000-/e7000000-/g' -e 's/ed100000-/e7100000-/g' -e 's/ed200000-/e7200000-/g' -e 's/nano-eventos/nano-despacho-bench-77/g' -e 's/NANO-EV1/NANO-BENCH-77/g' "$D/fixture.sql" > "$D/fixture2.sql"
+ps -f "$D/fixture2.sql" >/dev/null
+K2=$(ps -c "select eventos->0->>'idempotency_key' from public.nano_lifecycle_capturas where loja_id='$L2' and revisao='sync_0002'")
+[[ "$K2" =~ ^nano-lifecycle:[0-9a-f]{64}$ ]]
+node scripts/tests/nano-despacho-benchmark.mjs "$L" "$P" "$K" "$L2" "$P2" "$K2"
 ps -c "set role service_role" -c "select public.nano_lifecycle_reivindicar('$L','$I','$A')->>'estado'" > "$D/a" & pa=$!
 ps -c "set role service_role" -c "select public.nano_lifecycle_reivindicar('$L','$I','$B')->>'estado'" > "$D/b" & pb=$!
 wait "$pa"; wait "$pb"
