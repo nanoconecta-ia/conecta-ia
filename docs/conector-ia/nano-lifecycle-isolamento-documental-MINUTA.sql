@@ -1,6 +1,6 @@
--- MINUTA CI: isolamento parcial por loja; preserva seis travas de tabela.
+-- MINUTA CI: isolamento parcial por loja; preserva cinco travas de tabela.
 begin;
--- O mesmo namespace de advisory lock é obrigatório para todo escritor dessas seis tabelas.
+-- O mesmo namespace de advisory lock é obrigatório para todo escritor dessas sete tabelas.
 create function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja()
 returns trigger language plpgsql security invoker set search_path='' as $fn$
 declare loja uuid;
@@ -68,6 +68,19 @@ alter table nano_lifecycle_interno.resultados_engenharia enable always trigger n
 alter table nano_lifecycle_interno.resultados_engenharia enable always trigger zz_nano_guard_documental_loja;
 alter table nano_lifecycle_interno.resultados_engenharia enable always trigger zz_nano_guard_documental_truncate;
 revoke update on nano_lifecycle_interno.resultados_engenharia from nano_lifecycle_gate_travas;
+-- Snapshot e captura são históricos append-only. Protege também a origem da cascata,
+-- inclusive UPDATE/DELETE diretos em replica, sem alterar FK ou digest canônico.
+create trigger nano_snapshot_imutavel before update or delete on public.nano_lifecycle_snapshots for each row execute function nano_lifecycle_interno.proteger_documento_tecnico();
+create trigger zz_nano_guard_documental_loja before insert or update or delete on public.nano_lifecycle_snapshots for each row execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja();
+create trigger zz_nano_guard_documental_truncate before truncate on public.nano_lifecycle_snapshots for each statement execute function nano_lifecycle_interno.nano_lifecycle_guard_documental_loja();
+alter table public.nano_lifecycle_snapshots enable always trigger nano_snapshot_imutavel;
+alter table public.nano_lifecycle_snapshots enable always trigger zz_nano_guard_documental_loja;
+alter table public.nano_lifecycle_snapshots enable always trigger zz_nano_guard_documental_truncate;
+create trigger nano_captura_imutavel before update or delete on public.nano_lifecycle_capturas for each row execute function nano_lifecycle_interno.proteger_documento_tecnico();
+create trigger nano_captura_truncate before truncate on public.nano_lifecycle_capturas for each statement execute function nano_lifecycle_interno.proteger_documento_tecnico();
+alter table public.nano_lifecycle_capturas enable always trigger nano_captura_imutavel;
+alter table public.nano_lifecycle_capturas enable always trigger nano_captura_truncate;
+revoke update on public.nano_lifecycle_snapshots from nano_lifecycle_gate_travas;
 create or replace function nano_lifecycle_interno.nano_lifecycle_travar_conferencia(p_loja uuid,p_solicitacao uuid)
 returns boolean language plpgsql volatile security definer set search_path='' as $fn$
 begin
@@ -78,7 +91,6 @@ begin
   if not pg_try_advisory_xact_lock(hashtextextended('nano.gate.documental:'||p_loja::text,0)) then raise lock_not_available; end if;
   lock table public.nano_lifecycle_checkpoint,
    public.nano_lifecycle_reserva,
-   public.nano_lifecycle_snapshots,
    public.produtos,
    public.produto_automacao,
    public.pipeline_itens in share mode nowait;

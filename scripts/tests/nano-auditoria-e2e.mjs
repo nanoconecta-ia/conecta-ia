@@ -246,7 +246,32 @@ try{
  }
  assert.equal(admin("select count(*) from nano_lifecycle_interno.resultados_engenharia"+resultadoHistorico.slice(0,-1)+" and not homologada and hash_entrada=encode(sha256(convert_to(entrada_snapshot::text,'UTF8')),'hex') and hash_extracao=encode(sha256(convert_to(extracao_candidata::text,'UTF8')),'hex');"),"1");
  assert.equal(admin("select hash_entrada||':'||hash_extracao from nano_lifecycle_interno.resultados_engenharia"+resultadoHistorico),recibo.hash_entrada+":"+recibo.hash_extracao);
- assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"12");
+ // Capturas pais sintéticas preexistentes: mede apenas a escrita do snapshot,
+ // sem declarar que a finalização composta (checkpoint/reserva) foi isolada.
+ admin("insert into public.nano_lifecycle_capturas(loja_id,revisao,estado,eventos,bloqueios) values('"+L+"','fixture_snap_70','baseline','[]','[]'),('"+outra+"','fixture_snap_70','baseline','[]','[]');");
+ const inserirSnapshot=loja=>"insert into public.nano_lifecycle_snapshots(loja_id,revisao,execucao,geracao,digest,produtos) select loja_id,'fixture_snap_70',execucao,geracao,digest,produtos from public.nano_lifecycle_snapshots where loja_id='"+loja+"' and revisao='sync_0002' returning revisao;";
+ await testarEscritor("public.nano_lifecycle_snapshots",inserirSnapshot(L),"ocupada","postgres","fixture_snap_70");
+ await testarEscritor("public.nano_lifecycle_snapshots",inserirSnapshot(outra),"ja_registrada","postgres","fixture_snap_70");
+ await testarEscritor("public.nano_lifecycle_snapshots","set local session_replication_role=replica;\n"+inserirSnapshot(L),"ocupada","postgres","fixture_snap_70");
+ assert.equal(admin("select count(*) from public.nano_lifecycle_snapshots where loja_id in ('"+L+"','"+outra+"') and revisao='fixture_snap_70';"),"0");
+ const snapshotHistorico=" where loja_id='"+L+"' and revisao='sync_0002';";
+ const snapshotAntes=admin("select to_jsonb(s)::text from public.nano_lifecycle_snapshots s"+snapshotHistorico);
+ const capturaAntes=admin("select to_jsonb(c)::text from public.nano_lifecycle_capturas c"+snapshotHistorico);
+ assert.ok(snapshotAntes&&capturaAntes);
+ for(const prefixo of ["","begin; set local session_replication_role=replica; "]){
+  for(const mutacao of ["update public.nano_lifecycle_snapshots set digest=repeat('0',64)","update public.nano_lifecycle_snapshots set produtos='[]'","delete from public.nano_lifecycle_snapshots","update public.nano_lifecycle_capturas set eventos='[]'","delete from public.nano_lifecycle_capturas"]){
+   assert.throws(()=>admin(prefixo+mutacao+snapshotHistorico),e=>e.stderr?.includes("documento técnico histórico imutável")===true);
+  }
+  assert.throws(()=>admin(prefixo+"truncate public.nano_lifecycle_snapshots;"),e=>e.stderr?.includes("truncate documental bloqueado")===true);
+  assert.throws(()=>admin(prefixo+"truncate public.nano_lifecycle_capturas;"),e=>e.stderr?.includes("cannot truncate a table referenced in a foreign key constraint")===true);
+  assert.throws(()=>admin((prefixo||"begin; ")+"truncate public.nano_lifecycle_capturas,public.nano_lifecycle_snapshots; rollback;"),e=>e.stderr?.includes("documento técnico histórico imutável")===true||e.stderr?.includes("truncate documental bloqueado")===true);
+ }
+ assert.equal(admin("select to_jsonb(s)::text from public.nano_lifecycle_snapshots s"+snapshotHistorico),snapshotAntes);
+ assert.equal(admin("select to_jsonb(c)::text from public.nano_lifecycle_capturas c"+snapshotHistorico),capturaAntes);
+ assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"14");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_snapshots'::regclass and tgname='nano_snapshot_imutavel' and tgenabled='A';"),"1");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_capturas'::regclass and tgname in ('nano_captura_imutavel','nano_captura_truncate') and tgenabled='A';"),"2");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','public.nano_lifecycle_snapshots','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='nano_lifecycle_interno.resultados_engenharia'::regclass and tgname in ('nano_resultado_hashes','nano_resultado_imutavel') and tgenabled='A';"),"2");
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','nano_lifecycle_interno.resultados_engenharia','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='nano_lifecycle_interno.autorias_engenharia'::regclass and tgname='nano_autoria_imutavel' and tgenabled='A';"),"1");

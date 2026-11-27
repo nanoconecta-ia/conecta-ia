@@ -119,5 +119,12 @@ try{
  console.log("ok E2E protegido: recuperação integral, preços/saldos do ERP espelhados e evento técnico único");
 
 }finally{
- sql("update public.nano_lifecycle_checkpoint set habilitado=false where loja_id="+q(loja)+"; delete from public.lojas where id in ("+q(loja)+","+q(outra)+")","postgres");
+ // A segunda execução ocorre após a minuta append-only. Não desabilitar triggers
+ // nem apagar evidências: UUIDs aleatórios ficam somente no banco efêmero.
+ sql("update public.nano_lifecycle_checkpoint set habilitado=false where loja_id="+q(loja),"postgres");
+ if(sql("select count(*) from pg_trigger where tgrelid='public.nano_lifecycle_capturas'::regclass and tgname='nano_captura_imutavel' and tgenabled='A'","postgres")==="0"){
+  sql("delete from public.lojas where id in ("+q(loja)+","+q(outra)+")","postgres");
+ }else{
+  console.log("ok: histórico sintético preservado até descarte integral do banco CI");
+ }
 }
