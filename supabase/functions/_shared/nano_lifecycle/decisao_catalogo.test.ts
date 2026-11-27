@@ -54,3 +54,14 @@ test("CAT-107-05: aprovação repetida de registro já indexável não cria nova
  const r=run(publicado,[{...ev,antes:publicado,depois:publicado}]);
  assert.equal(r.estado,"aprovacao_legada_conferida");assert.equal(r.homologada,false);assert.equal(Object.hasOwn(r,"prova"),false);
 });
+
+test("CAT-120-01: ordem, corte do snapshot e data da fonte respeitam microssegundos",()=>{
+ const primeiro={...ev,quando:"2026-11-26T11:00:00.123456Z"};
+ const segundo={...rev,quando:"2026-11-26T08:00:00.123457-03:00"};
+ assert.equal(run(rejeitado,[segundo,primeiro]).estado,"rejeitada_legada");
+ assert.equal(run(rejeitado,[primeiro,{...segundo,quando:primeiro.quando}]).estado,"retida");
+ assert.equal(reconciliarDecisaoCatalogo(escopo,rejeitado,[primeiro,segundo],primeiro.quando).estado,"retida");
+ const fontePosterior={...base,coletado_em:segundo.quando};
+ const depois={...fontePosterior,status:"aprovado"};
+ assert.equal(run(depois,[{...primeiro,antes:fontePosterior,depois}]).estado,"retida");
+});
