@@ -99,14 +99,15 @@ for(const role of ["anon","authenticated","nano_lifecycle_produtor","nano_lifecy
 assert.equal(sql("select has_function_privilege('service_role','"+rpc+"','EXECUTE');"),"t");
 console.log("ok: CAT-112-01 fronteira EXECUTE do RPC legado restrita; não autentica humano");
 const A2="e1082000-0000-0000-0000-000000000002",U2="e1083000-0000-0000-0000-000000000002";
-assert.equal(sql("select count(*) from auth.users where id='"+U2+"';"),"0");
+// O stub local não implementa auth.users; a contraprova é ausência de identidade de sessão.
 sql("insert into public.produto_aplicacoes(id,loja_id,produto_id,modelo,marca_veiculo_id,montadora_origem_id,codigo_oem,status,fonte,coletado_em,pagina_indexavel,pagina_slug) values ('"+A2+"','"+L+"','"+P+"','Modelo CI autoridade','"+M+"','"+M+"','OEM-CI-112','a_confirmar','fixture',now(),false,'ci-catalogo-112');");
-// Contraprova: o UUID passado pelo serviço não corresponde a usuário autenticado.
-sql("set role service_role; select public.aplicacao_decidir('"+L+"','"+A2+"','"+U2+"','aprovar');");
+// Contraprova: chamada e checagem de auth.uid() na MESMA sessão sem claims.
+const semAtor=sql("begin; set local role service_role; set local request.jwt.claims='{}'; select auth.uid() is null; select public.aplicacao_decidir('"+L+"','"+A2+"','"+U2+"','aprovar'); commit;");
+assert.equal(semAtor,"t");
 const e2={loja_id:L,produto_id:P,aplicacao_id:A2},r2=restrito(L,P,A2),v2=verificar(r2,e2);
 assert.equal(r2.eventos.length,1);assert.equal(r2.eventos[0].user_id,U2);
 assert.equal(v2.estado,"aprovacao_legada_conferida");assert.equal(v2.homologada,false);assert.equal(Object.hasOwn(v2,"prova"),false);
-console.log("ok: CAT-112-02 contraprova de autoria: UUID sem usuário ainda gera decisão legada, nunca prova");
+console.log("ok: CAT-112-02 contraprova de autoria: sessão sem auth.uid aceita UUID declarado, nunca prova");
 assert.equal(sql("select has_table_privilege('service_role','public.produto_aplicacoes','UPDATE');"),"t");
 sql("set role service_role; update public.produto_aplicacoes set modelo='Modelo CI autoridade alterado' where loja_id='"+L+"' and id='"+A2+"';");
 const r3=restrito(L,P,A2);
