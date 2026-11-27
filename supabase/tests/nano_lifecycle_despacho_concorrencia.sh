@@ -52,12 +52,17 @@ wait "$pa"; wait "$pb"
 [[ $(ps -c "select count(*) from public.pipeline_itens where loja_id='$L' and nano_geracao=1 and reservado_ate>clock_timestamp()") == 1 ]]
 echo "ok: disputa de consumidor gera uma única reserva"
 
-# Duas execuções reais do adaptador TS com a mesma reserva: um recibo e um retry.
+# Duas execuções reais com a mesma reserva: uma gravação e retry ou contenção explícita.
 node --experimental-strip-types scripts/tests/nano-engenharia-piloto.mjs "$L" "$I" > "$D/a" & pa=$!
 node --experimental-strip-types scripts/tests/nano-engenharia-piloto.mjs "$L" "$I" > "$D/b" & pb=$!
 wait "$pa"; wait "$pb"
+[[ $(cat "$D/a" "$D/b" | wc -l) == 2 ]]
 [[ $(grep -hx gravado "$D/a" "$D/b" | wc -l) == 1 ]]
-[[ $(grep -hx ja_gravado "$D/a" "$D/b" | wc -l) == 1 ]]
+[[ $(grep -hEx 'ja_gravado|ocupado' "$D/a" "$D/b" | wc -l) == 1 ]]
+# Após ambos os processos terminarem, a mesma reserva deve recuperar o recibo.
+# Não aceitar ocupado, nova gravação ou outro erro na verificação sequencial.
+[[ $(node --experimental-strip-types scripts/tests/nano-engenharia-piloto.mjs "$L" "$I") == ja_gravado ]]
+echo "ok: CAT-127-COR-01 contenção explícita permitida na disputa; retry sequencial obrigatório"
 [[ $(ps -c "select count(*) from nano_lifecycle_interno.resultados_engenharia where loja_id='$L' and item_id='$I' and geracao=1 and not homologada and hash_entrada=encode(sha256(convert_to(entrada_snapshot::text,'UTF8')),'hex') and hash_extracao=encode(sha256(convert_to(extracao_candidata::text,'UTF8')),'hex')") == 1 ]]
 [[ $(ps -c "select count(*) from public.pipeline_itens where loja_id='$L' and id='$I' and estado='entrada' and versao=1 and resultado='{}'::jsonb") == 1 ]]
 [[ $(ps -c "select count(*) from public.pipeline_historico where loja_id='$L' and item_id='$I'") == 1 ]]

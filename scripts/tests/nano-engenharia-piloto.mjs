@@ -21,5 +21,11 @@ const admin={async rpc(nome,args){
  catch(e){console.error("falha RPC no piloto",nome,e.stderr?.toString().slice(0,500));return {data:null,error:"SQL"};}
 }};
 const resultado=await persistirResultadoEngenharia(admin,r);
-assert.ok(["gravado","ja_gravado"].includes(resultado.estado),JSON.stringify(resultado));assert.equal(resultado.homologada,false);
-console.log(resultado.estado);
+// Apenas a contenção explícita do protocolo é recuperável no ensaio concorrente.
+if(resultado.estado==="retida"&&resultado.motivo==="ocupado"){
+ console.log("ocupado");
+}else{
+ assert.ok(["gravado","ja_gravado"].includes(resultado.estado),JSON.stringify(resultado));
+ assert.equal(resultado.homologada,false);
+ console.log(resultado.estado);
+}
