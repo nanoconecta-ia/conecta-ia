@@ -139,6 +139,7 @@ jobs:
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-decisao-MINUTA.sql
           psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-decisao-TESTE.sql
           bash supabase/tests/nano_catalogo_decisao_concorrencia.sh
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-leitura-MINUTA.sql
           node --experimental-strip-types scripts/tests/nano-catalogo-decisao-e2e.mjs
       - name: Validar reversão somente no banco descartável
         env:
