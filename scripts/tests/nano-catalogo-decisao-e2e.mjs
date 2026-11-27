@@ -2,6 +2,7 @@
 import {execFileSync} from "node:child_process";
 import assert from "node:assert/strict";
 import {randomBytes} from "node:crypto";
+import {conferirDecisaoCatalogoSql} from "../../supabase/functions/_shared/nano_lifecycle/porta_decisao_catalogo_sql.ts";
 import {reconciliarDecisaoCatalogo} from "../../supabase/functions/_shared/nano_lifecycle/decisao_catalogo.ts";
 if(process.env.GITHUB_ACTIONS!=="true"||process.env.PGHOST!=="localhost"||process.env.PGPORT!=="5432"||process.env.PGDATABASE!=="conecta_teste"||process.env.PGUSER!=="postgres")throw Error("somente CI descartável");
 const L="e1080000-0000-0000-0000-000000000001",P="e1081000-0000-0000-0000-000000000001",A="e1082000-0000-0000-0000-000000000001",U="e1083000-0000-0000-0000-000000000001",M="e1084000-0000-0000-0000-000000000001";
@@ -33,13 +34,25 @@ r=ler();assert.equal(r.eventos.length,1);assert.equal(r.atual.pagina_indexavel,f
 decidir("aprovar");
 r=ler();assert.equal(r.eventos.length,2);assert.equal(r.atual.pagina_indexavel,false);const v=verificar(r);assert.equal(v.estado,"aprovacao_legada_conferida");assert.equal(v.homologada,false);assert.equal(Object.hasOwn(v,"prova"),false);assert.equal(v.evento_id,r.eventos[1].id);assert.equal(v.aprovador,U);console.log("ok: CAT-108-03 reaprovação SQL rastreável sem prova ou republicação");
 const rr=restrito();assert.deepEqual(rr.atual,r.atual);assert.deepEqual(rr.eventos,r.eventos);assert.equal(verificar(rr).estado,"aprovacao_legada_conferida");console.log("ok: CAT-109-01 auditor real lê snapshot e cadeia idênticos");
+const sessao={consultar:async(q,params)=>{
+ assert.equal(q,"select session_user::text as identidade, nano_lifecycle_interno.nano_catalogo_ler_decisao($1::uuid,$2::uuid,$3::uuid) as valor");
+ assert.ok(params.every(x=>typeof x==="string"&&/^[0-9a-f-]{36}$/.test(x)));
+ // psql 16: valores pelo protocolo estendido, não interpolados no SELECT.
+ const raw=auditor("select row_to_json(q) from ("+q+") q\n\\bind "+params.map(x=>"'"+x+"'").join(" ")+"\n\\g\n");
+ return [JSON.parse(raw)];
+}};
+const conferir=()=>conferirDecisaoCatalogoSql(escopo,sessao,"nano_catalogo_e2e_auditor");
+assert.equal((await conferir()).estado,"aprovacao_legada_conferida");
+assert.equal((await conferirDecisaoCatalogoSql(escopo,sessao,"outro")).estado,"retida");
+console.log("ok: CAT-110-06 porta parametrizada com login real e identidade conferida");
+
 assert.equal(restrito(M,P,A),null);assert.equal(restrito(L,M,A),null);assert.equal(restrito(L,P,M),null);console.log("ok: CAT-109-02 loja, produto e aplicação divergentes negados");
 for(const role of ["anon","authenticated","service_role","nano_lifecycle_produtor"])assert.equal(sql("select has_function_privilege('"+role+"','nano_lifecycle_interno.nano_catalogo_ler_decisao(uuid,uuid,uuid)','EXECUTE');"),"f");
 assert.equal(sql("select has_table_privilege('nano_catalogo_decisao_leitor','public.auditoria','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
 assert.throws(()=>auditor("select * from public.auditoria;"),e=>e.stderr?.includes("permission denied")===true);
 console.log("ok: CAT-109-03 sem acesso direto à auditoria, produtor ou service_role");
 sql("update nano_lifecycle_interno.auditoria_escopos set habilitado=false where login_db='nano_catalogo_e2e_auditor' and loja_id='"+L+"';");
-assert.equal(restrito(),null);console.log("ok: CAT-109-04 revogação do auditor impede nova leitura");
+assert.equal(restrito(),null);assert.equal((await conferir()).estado,"retida");console.log("ok: CAT-109-04 revogação do auditor impede nova leitura");
 sql("update nano_lifecycle_interno.auditoria_escopos set habilitado=true where login_db='nano_catalogo_e2e_auditor' and loja_id='"+L+"';");
 assert.equal(verificar(restrito()).estado,"aprovacao_legada_conferida");console.log("ok: CAT-109-05 autorização restabelecida não cria homologação");
 
@@ -48,3 +61,5 @@ sql("update public.produto_aplicacoes set modelo='Modelo alterado' where loja_id
 r=ler();assert.equal(r.eventos.length,2);assert.equal(verificar(r).estado,"retida");console.log("ok: CAT-108-05 alteração posterior invalida decisão no readback real");
 
 assert.equal(verificar(restrito()).estado,"retida");console.log("ok: CAT-109-06 leitura restrita detecta alteração posterior");
+
+assert.equal((await conferir()).estado,"retida");console.log("ok: CAT-110-07 porta real retém revogação e edição posterior");
