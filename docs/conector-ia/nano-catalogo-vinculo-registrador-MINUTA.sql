@@ -32,7 +32,7 @@ begin
  return null;
 end $fn$;
 revoke all on function nano_lifecycle_interno.nano_gate_guard_grafo() from public,anon,authenticated,service_role;
-do $
+do $grafo$
 declare rel regclass;
 begin
  foreach rel in array array['public.montadoras'::regclass,'public.modelos'::regclass,'public.geracoes'::regclass,'public.versoes'::regclass,'public.motores'::regclass,'public.versao_motor'::regclass,'public.fontes'::regclass] loop
@@ -41,7 +41,7 @@ begin
   execute format('create trigger zz_nano_guard_grafo before insert or update or delete or truncate on %s for each statement execute function nano_lifecycle_interno.nano_gate_guard_grafo()',rel);
   execute format('alter table %s enable always trigger zz_nano_guard_grafo',rel);
  end loop;
-end $;
+end $grafo$;
 -- Campos candidatos, ainda sujeitos ao parecer e ao futuro gate humano.
 -- Mesmo registrador NOLOGIN, escopo RLS e trava da conferência existente.
 grant select on public.produto_aplicacoes,public.marcas to nano_lifecycle_gate_registrador;
