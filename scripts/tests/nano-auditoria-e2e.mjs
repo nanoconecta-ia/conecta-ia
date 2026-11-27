@@ -376,7 +376,45 @@ try{
   assert.throws(()=>admin((prefixo||"begin; ")+"truncate public.pipeline_itens cascade; rollback;"),e=>/fila Nano protegida|truncate documental bloqueado|TRUNCATE de conflitos bloqueado/i.test(e.stderr??""));
  }
  assert.equal(admin("select jsonb_agg(to_jsonb(i) order by id)::text from public.pipeline_itens i"+filtroFila),filaAntes);
- assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"22");
+ // Espelho físico: nenhuma trava global de tabela é exigida pelo gate.
+ const filtroEspelho=" where id in ('"+P+"','"+P2+"')";
+ const espelhoAntes=admin("select jsonb_agg(to_jsonb(p) order by id)::text from public.produtos p"+filtroEspelho);
+ const cpAntes75=admin("select jsonb_agg(to_jsonb(c) order by loja_id)::text from public.nano_lifecycle_checkpoint c where loja_id in ('"+L+"','"+outra+"');");
+ const reservaAntes75=admin("select jsonb_agg(to_jsonb(r) order by loja_id)::text from public.nano_lifecycle_reserva r where loja_id in ('"+L+"','"+outra+"');");
+ const exec75="fa750000-0000-0000-0000-000000000001";
+ const lote75=texto=>JSON.parse(texto.split("\n").find(x=>x.includes("public.nano_lifecycle_gravar_espelho(")).match(/'(\[\{.*\}\])'::jsonb/)[1]);
+ const sincronizar75=(loja,origem)=>{
+  const linhas=lote75(origem);
+  assert.equal(linhas[0].loja_id,loja);
+  linhas[0].nome="Alteração concorrente sintética 75";
+  return "set local role service_role; select public.nano_lifecycle_reservar('"+loja+"','"+exec75+"')->>'geracao'; select public.nano_lifecycle_gravar_espelho('"+loja+"','"+exec75+"',3,'"+JSON.stringify(linhas).replaceAll("'","''")+"'::jsonb); reset role;";
+ };
+ await testarEscritor("public.produtos",sincronizar75(L,fixture),"ocupada","postgres","1");
+ await testarEscritor("public.produtos",sincronizar75(outra,fixture2),"ja_registrada","postgres","1");
+ // Um lock de tabela ROW EXCLUSIVE, sozinho, não é alteração de evidência.
+ await testarEscritor("public.produtos","select 'sem_dml';","ja_registrada","postgres","sem_dml");
+ // Até UPDATE que preserva os dados comerciais participa do protocolo.
+ const toqueEspelho=id=>"update public.produtos set publicado=publicado where id='"+id+"' returning id;";
+ await testarEscritor("public.produtos",toqueEspelho(P),"ocupada","postgres",P);
+ await testarEscritor("public.produtos",toqueEspelho(P2),"ja_registrada","postgres",P2);
+ await testarEscritor("public.produtos","set local session_replication_role=replica;\n"+toqueEspelho(P),"ocupada","postgres",P);
+ await testarEscritor("public.produtos","set local session_replication_role=replica;\n"+sincronizar75(outra,fixture2),"ja_registrada","postgres","1");
+ for(const prefixo of ["","begin; set local session_replication_role=replica; "]){
+  assert.throws(()=>admin(prefixo+"update public.produtos set nome='direto' where id='"+P+"';"),e=>e.stderr?.includes("papel de escrita não autorizado")===true);
+  assert.throws(()=>admin(prefixo+"update public.produtos set bling_id='98765' where id='"+P+"';"),e=>e.stderr?.includes("identidade protegida")===true);
+  assert.throws(()=>admin(prefixo+"update public.produtos set loja_id='"+outra+"' where id='"+P+"';"),e=>e.stderr?.includes("movimento documental entre lojas bloqueado")===true);
+  assert.throws(()=>admin(prefixo+"insert into public.produtos(loja_id,bling_id,sku,nome,situacao) values('"+L+"','98765','FORJADO-75','direto','A');"),e=>e.stderr?.includes("papel de escrita não autorizado")===true);
+  assert.throws(()=>admin(prefixo+"delete from public.produtos where id='"+P+"';"),e=>e.stderr?.includes("exclusão física protegida")===true);
+  assert.throws(()=>admin((prefixo||"begin; ")+"truncate public.produtos cascade; rollback;"),e=>/truncate documental bloqueado|espelho protegido contra truncate/i.test(e.stderr??""));
+ }
+ assert.equal(admin("select jsonb_agg(to_jsonb(p) order by id)::text from public.produtos p"+filtroEspelho),espelhoAntes);
+ assert.equal(admin("select jsonb_agg(to_jsonb(c) order by loja_id)::text from public.nano_lifecycle_checkpoint c where loja_id in ('"+L+"','"+outra+"');"),cpAntes75);
+ assert.equal(admin("select jsonb_agg(to_jsonb(r) order by loja_id)::text from public.nano_lifecycle_reserva r where loja_id in ('"+L+"','"+outra+"');"),reservaAntes75);
+ assert.equal(admin("select count(*) from public.nano_lifecycle_execucoes where execucao='"+exec75+"';"),"0");
+ assert.equal(admin("select count(*) from pg_trigger where tgname in ('zz_nano_guard_documental_loja','zz_nano_guard_documental_truncate') and tgenabled='A';"),"24");
+ assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.produtos'::regclass and tgname in ('zz_nano_lifecycle_guard_espelho','zz_nano_lifecycle_guard_truncate') and tgenabled='A';"),"2");
+ assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','public.produtos','update');"),"f");
+ assert.equal(admin("select position('lock table' in lower(pg_get_functiondef('nano_lifecycle_interno.nano_lifecycle_travar_conferencia(uuid,uuid)'::regprocedure)))=0;"),"t");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.pipeline_itens'::regclass and tgname in ('nano_lifecycle_bloquear_transicao','nano_lifecycle_bloquear_truncate','nano_lifecycle_proteger_origem','nano_lifecycle_proteger_produtor') and tgenabled='A';"),"4");
  assert.equal(admin("select has_table_privilege('nano_lifecycle_gate_travas','public.pipeline_itens','update');"),"f");
  assert.equal(admin("select count(*) from pg_trigger where tgrelid='public.produto_automacao'::regclass and tgname='nano_automacao_identidade' and tgenabled='A';"),"1");
