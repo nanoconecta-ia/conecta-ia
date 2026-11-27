@@ -63,3 +63,29 @@ r=ler();assert.equal(r.eventos.length,2);assert.equal(verificar(r).estado,"retid
 assert.equal(verificar(restrito()).estado,"retida");console.log("ok: CAT-109-06 leitura restrita detecta alteração posterior");
 
 assert.equal((await conferir()).estado,"retida");console.log("ok: CAT-110-07 porta real retém revogação e edição posterior");
+
+
+// Imutabilidade vale também no modo replica, sem bloquear novos eventos legítimos.
+const filtro=" where loja_id='"+L+"' and tabela='produto_aplicacoes'";
+const historico=()=>sql("select coalesce(jsonb_agg(to_jsonb(h) order by h.id),'[]'::jsonb)::text from public.auditoria h"+filtro+";");
+const preservado=historico();
+for(const prefixo of ["","set local session_replication_role=replica; "]){
+ for(const mutacao of ["update public.auditoria set quando=quando+interval '1 day'"+filtro,"delete from public.auditoria"+filtro,"truncate public.auditoria"]){
+  assert.throws(()=>sql("begin; "+prefixo+mutacao+"; rollback;"),e=>e.stderr?.includes("auditoria é imutável")===true);
+ }
+ assert.equal(historico(),preservado);
+}
+console.log("ok: CAT-111-01 update e delete bloqueados em modo normal e replica");
+console.log("ok: CAT-111-02 truncate bloqueado em modo normal e replica");
+assert.equal(sql("select count(*) from pg_trigger where tgrelid='public.auditoria'::regclass and tgname in ('auditoria_sem_update','auditoria_sem_truncate') and tgenabled='A';"),"2");
+assert.equal(historico(),preservado);console.log("ok: CAT-111-03 triggers ALWAYS e histórico integral preservado");
+decidir("rejeitar");
+assert.equal(ler().eventos.length,3);assert.equal(ler().atual.status,"rejeitado");
+assert.equal((await conferir()).estado,"retida"); // edição anterior rompe cadeia; novo evento não apaga lacuna.
+console.log("ok: CAT-111-04 nova decisão legítima registra evento sem mascarar quebra histórica");
+// Exercita outro escritor legado: trigger da política comercial, apenas fixture do CI.
+const outros=()=>Number(sql("select count(*) from public.auditoria where loja_id='"+L+"' and tabela='restricoes_loja';"));
+const n=outros();
+sql("insert into public.restricoes_loja(loja_id,somente_catalogo) values ('"+L+"',true) on conflict(loja_id) do update set somente_catalogo=true;");
+assert.equal(outros(),n+1);assert.equal(ler().eventos.length,3);
+console.log("ok: CAT-111-05 auditoria legada de restrições permanece operacional e isolada do catálogo");
