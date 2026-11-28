@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="#14181B" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round">
+  <defs>
+    <linearGradient id="aco" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2F6F8"/><stop offset=".45" stop-color="#C4C9CD"/>
+      <stop offset=".75" stop-color="#8A9196"/><stop offset="1" stop-color="#4C5257"/>
+    </linearGradient>
+    <linearGradient id="grafite" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A4149"/><stop offset="1" stop-color="#1F2327"/>
+    </linearGradient>
+    <linearGradient id="vermelho" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F23B3D"/><stop offset="1" stop-color="#B9141A"/>
+    </linearGradient>
+  </defs>
+      <path d="M12 34 L44 34 L44 48 L12 48 Z" fill="url(#grafite)"/>
+      <path d="M12 34 L20 26 L52 26 L44 34 Z" fill="url(#aco)"/>
+      <path d="M44 34 L52 26 L52 40 L44 48 Z" fill="url(#aco)"/>
+      <!-- molas de válvula no topo -->
+      <g stroke="#2b3137" stroke-width="1.4" fill="none">
+        <path d="M24 30 q2 -1.5 4 0 M24 28.6 q2 -1.5 4 0 M24 27.2 q2 -1.5 4 0"/>
+        <path d="M34 30 q2 -1.5 4 0 M34 28.6 q2 -1.5 4 0 M34 27.2 q2 -1.5 4 0"/>
+      </g>
+      <circle cx="26" cy="31.5" r="1" fill="url(#vermelho)"/><circle cx="36" cy="31.5" r="1" fill="url(#vermelho)"/>
+      <!-- dutos laterais -->
+      <circle cx="16" cy="41" r="2.4" fill="#1F2327" stroke="#F2F6F8" stroke-width="1"/>
+      <circle cx="40" cy="41" r="2.4" fill="#1F2327" stroke="#F2F6F8" stroke-width="1"/>
+      <path d="M12 41 L44 41" stroke="#14181B" stroke-width="1"/></svg>

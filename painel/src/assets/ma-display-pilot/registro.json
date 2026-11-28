@@ -1,0 +1,48 @@
+{
+  "versao": "0.1.0-candidato",
+  "nota": "Piloto MA Display DFT/EPC. Não homologado. Não altera maIcones.ts.",
+  "icones": [
+    {
+      "id": "ma.motor",
+      "arquivo": "motor.svg",
+      "rotulo": "Motor",
+      "conceito": "Bloco do motor (isométrico)",
+      "estado": "candidato"
+    },
+    {
+      "id": "ma.cabecote",
+      "arquivo": "cabecote.svg",
+      "rotulo": "Cabeçote",
+      "conceito": "Cabeçote com molas de válvula",
+      "estado": "candidato"
+    },
+    {
+      "id": "ma.virabrequim",
+      "arquivo": "virabrequim.svg",
+      "rotulo": "Virabrequim",
+      "conceito": "Virabrequim (munhões e contrapesos)",
+      "estado": "candidato"
+    },
+    {
+      "id": "ma.freios",
+      "arquivo": "freios.svg",
+      "rotulo": "Freios",
+      "conceito": "Disco ventilado + pinça",
+      "estado": "candidato"
+    },
+    {
+      "id": "ma.suspensao",
+      "arquivo": "suspensao.svg",
+      "rotulo": "Suspensão",
+      "conceito": "Amortecedor com mola helicoidal",
+      "estado": "candidato"
+    },
+    {
+      "id": "ma.injecao",
+      "arquivo": "injecao.svg",
+      "rotulo": "Injeção",
+      "conceito": "Bico injetor com leque de spray",
+      "estado": "candidato"
+    }
+  ]
+}
