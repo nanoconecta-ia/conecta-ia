@@ -62,8 +62,22 @@ try{
   const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});await preparar(context);
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'#/');await page.locator('[data-inicio-layout="aprovado-v2"]').waitFor();await page.getByText('2 produtos no espelho',{exact:true}).waitFor();
-  await verificarMAPrivado(page,'painel');
-  await page.reload();await page.locator('[data-inicio-layout="aprovado-v2"]').waitFor();await page.getByText('2 produtos no espelho',{exact:true}).waitFor();await verificarMAPrivado(page,'painel');
+  const mapa=page.locator('[data-mapa-operacional="1.0.0"]');await mapa.waitFor();
+  const painel=page.locator('[data-conecta-layout="aprovado-v2"]');
+  assert.ok(await painel.locator('[data-ativo-estado="pendente"]').count()>0,'ativos ausentes sinalizados');
+  assert.equal(await painel.locator('[data-ativo-estado="atlas-historico"]').count(),0,'Mobis não renderiza atlas anterior');
+  assert.equal(await painel.locator('.ap-ativo').evaluateAll(els=>els.filter(el=>getComputedStyle(el).backgroundImage.includes('atlas-modelo-aprovado')).length),0,'atlas não é pintado no painel Mobis');
+
+  assert.equal(await mapa.locator('[data-raiz-operacional]').count(),12,'as 12 raízes canônicas estão presentes');
+  assert.equal(await mapa.locator('a').count(),4,'somente atalhos existentes');
+  assert.equal(await mapa.locator('[data-raiz-operacional="erp"] a').getAttribute('href'),'#/catalogo-espelho');
+  assert.equal(await mapa.locator('[data-raiz-operacional="supplier"] a').count(),0,'não oferece integração não homologada');
+  assert.equal(await mapa.locator('.ap-ativo,img,svg').count(),0,'mapa não reutiliza atlas ou ícone genérico');
+  assert.equal(await mapa.locator('[data-raiz-operacional="erp"] strong').textContent(),'2','contagem do espelho autenticado simulado');
+  assert.equal(await mapa.locator('[data-raiz-operacional="auditor"] strong').count(),0,'sem nota fictícia de auditoria');
+  await mapa.locator('[data-raiz-operacional="erp"] summary').click();
+  await mapa.getByText('identidade_unica — não medido',{exact:true}).waitFor();
+  await mapa.locator('[data-raiz-operacional="erp"] summary').click();
   assert.equal(await page.locator('[data-conecta-layout="aprovado-v2"]').count(),1);assert.equal(await page.locator('.topo-premium,.layout-premium,.menu-premium').count(),0,'shell anterior removido');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'início sem overflow '+width);
   await page.screenshot({path:root+`evidencias-conecta-aprovado/inicio-${width}-SIMULADO.png`});
