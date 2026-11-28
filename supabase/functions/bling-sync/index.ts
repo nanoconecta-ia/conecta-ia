@@ -13,7 +13,7 @@ import { armazemSupabase } from "../_shared/bling_armazem.ts";
 import { blingFetch } from "../_shared/bling_api.ts";
 import type { Chaveiro } from "../_shared/cripto.ts";
 import { chaveiroPlataforma } from "../_shared/plataforma.ts";
-import { MAX_IMAGENS_GALERIA, sincronizar, type Existente, type PortasSync } from "../_shared/bling_sync.ts";
+import { MAX_IMAGENS_GALERIA, sincronizar, interpretarPaginaBling, interpretarDetalheBling, type Existente, type PortasSync } from "../_shared/bling_sync.ts";
 import { sincronizarCategorias, type PortasCategorias } from "../_shared/bling_categorias.ts";
 
 const CORS = {
@@ -40,20 +40,20 @@ function portasDaLoja(admin: any, lojaId: string, chaveCifra: Chaveiro): PortasS
         const r = await blingFetch(arm, lojaId, `/produtos?pagina=${pagina}&limite=${limite}&criterio=${grupo === "inativos" ? 3 : grupo === "excluidos" ? 4 : 2}&tipo=T`, cfg);
         if (!r.ok) return { erro: `Bling respondeu ${r.status} ao listar produtos` };
         const j = await r.json().catch(() => null);
-        return { itens: Array.isArray(j?.data) ? j.data : [] };
+        return interpretarPaginaBling(j);
       } catch (e) { return { erro: e instanceof Error ? e.message : "falha ao listar produtos" }; }
     },
     async detalhe(id) {
       try {
         const r = await blingFetch(arm, lojaId, `/produtos/${id}`, cfg);
         if (!r.ok) return null;
-        return (await r.json().catch(() => null))?.data ?? null;
+        return interpretarDetalheBling(await r.json().catch(() => null), id);
       } catch { return null; }
     },
     async existentes() {
       const out: Existente[] = [];
       for (let de = 0; ; de += 1000) {
-        const { data, error } = await admin.from("produtos").select("bling_id, sku, nome, preco, estoque, situacao, sincronizado_em, categoria_bling_id, marca, gtin, gtin_tributario, descricao_curta, descricao_complementar, peso_kg, largura_cm, altura_cm, profundidade_cm, unidade, condicao, formato, pai_bling_id, volumes").eq("loja_id", lojaId).range(de, de + 999);
+        const { data, error } = await admin.from("produtos").select("bling_id, sku, nome, preco, estoque, situacao, sincronizado_em, categoria_bling_id, marca, gtin, gtin_tributario, descricao_curta, descricao_complementar, peso_kg, largura_cm, altura_cm, profundidade_cm, unidade, condicao, formato, pai_bling_id, volumes").eq("loja_id", lojaId).order("id").range(de, de + 999);
         if (error) throw new Error("falha ao ler o espelho");
         out.push(...((data ?? []) as Existente[]));
         if ((data ?? []).length < 1000) break;

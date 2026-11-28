@@ -1,0 +1,3 @@
+# E2E da auditoria privada — CI descartável
+
+Base 849ddae: testes das funções e do banco aprovados (45894957551). O novo cenário usa PostgreSQL local, logins distintos com senhas aleatórias efêmeras, conexão psql 16+ persistente por autoridade e parâmetros vinculados por \bind. O produtor extrai o candidato de um SKU sintético e grava autoria; o parecerista registra o fato; terceiro auditor usa a porta TypeScript e verifica readback, escopo, OEM e revogação. Verifica ausência de custos e de transição. Não é driver de produção nem credencial hospedada; fixture permanece somente no banco descartável. Não valida semântica de documento real ou atualidade da revisão, nem cria autorização para publicar. CI novo pendente.

@@ -1,0 +1,10 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {auditarAplicacoesLegadas,type AplicacaoLegada,type ModeloRelacional} from "./reconciliacao_veicular.ts";
+const m:ModeloRelacional={id:"m1",nome:"Modelo X",montadora_id:"fab1",montadora:"Fabricante teste"};
+const a:AplicacaoLegada={id:"a1",loja_id:"l1",produto_id:"p1",modelo:"Modelo X",modelo_id:null,motorizacao:"Motor 1",ano_inicial:2010,ano_final:2015,codigo_oem:"TEST001",fonte:"ficha teste",coletado_em:"2026-11-25",status:"aprovado"};
+test("correspondencia exata sugere identidade, nunca confirma aplicacao",()=>{const r=auditarAplicacoesLegadas("l1",[a],[m]);assert.equal(r.candidatosUnicos,1);assert.equal(r.resultados[0].candidato?.id,"m1");assert.equal(r.resultados[0].acao,"revisao");assert.ok(r.resultados[0].pendencias.includes("evidencia_tecnica_estruturada_a_verificar"))});
+test("homonimos e variantes nao escolhem arbitrariamente",()=>{assert.equal(auditarAplicacoesLegadas("l1",[a],[m,{...m,id:"m2",montadora_id:"fab2"}]).resultados[0].identidade,"ambiguo");assert.equal(auditarAplicacoesLegadas("l1",[{...a,modelo:"Modelo X Plus"}],[m]).resultados[0].identidade,"sem_no")});
+test("fonte contradiz status aprovado, inclusive com vinculo existente",()=>{for(const fonte of ["NÃO homologada","a homologar","sem homologação"]){const r=auditarAplicacoesLegadas("l1",[{...a,modelo_id:"m1",fonte}],[m]);assert.equal(r.vinculadas,1);assert.equal(r.conflitosFonte,1);assert.equal(r.resultados[0].acao,"revisao")}});
+test("anos desconhecidos e motor composto sao pendencias",()=>{const r=auditarAplicacoesLegadas("l1",[{...a,ano_final:null,motorizacao:"Motor 1/Motor 2"}],[m]).resultados[0];assert.ok(r.pendencias.includes("ano_final_ausente_ou_invalido"));assert.ok(r.pendencias.includes("motor_composto_a_revisar"))});
+test("vinculo existente divergente nunca substituido; isolamento e unicidade",()=>{assert.equal(auditarAplicacoesLegadas("l1",[{...a,modelo_id:"outro"}],[m]).resultados[0].identidade,"conflito_vinculo");assert.throws(()=>auditarAplicacoesLegadas("l2",[a],[m]));assert.throws(()=>auditarAplicacoesLegadas("l1",[a,a],[m]))});

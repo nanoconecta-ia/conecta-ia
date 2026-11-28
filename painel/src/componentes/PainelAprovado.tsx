@@ -1,15 +1,16 @@
 import { MarcaConectaNova } from "./MarcaConectaNova.tsx";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import type { Loja } from "../lib/dados.ts";
-import { AtivoAprovado } from "./AtivoAprovado.tsx";
+import { AtivoAprovado, AtivosMobisSemLegado } from "./AtivoAprovado.tsx";
 import { Icone } from "./Icone.tsx";
 import { VERSAO_LOCAL, rotuloVersao } from "../lib/versao.ts";
 import "../workspace-aprovado.css";
 import "../painel-paleta-legivel.css";
 import "../contraste-wcag-pr427.css";
+import "../ma-display-prismatic.css";
 import { PERFIS, lerPerfil, gravarPerfil, aplicarPerfil } from "../lib/perfilCor.ts";
 import { PREFERENCIAS, lerPreferencia, armazemLocal, aplicarTema, gravarPreferencia, type Preferencia } from "../lib/tema.ts";
-import marcaMobis from "../assets/mobis-identidade-aprovada.jpg";
+import marcaMobis from "../assets/marcas/mobis-mstyle-v3-sem-slogan.svg";
 import { urlLojaPublica } from "../lib/lojaHost.ts";
 
 const PRINCIPAIS=[
@@ -32,7 +33,7 @@ export function PainelAprovado({loja,caminho,menu,children,menuMovel,recolhido,a
  const mudarPerfil=(id:string)=>{setPerfil(id);gravarPerfil(armazemLocal(),id);aplicarPerfil(id);};
  const mudarTema=(id:Preferencia)=>{setTema(id);gravarPreferencia(armazemLocal(),id);aplicarTema(id);};
  const mudarLeitura=(id:"confortavel"|"ampliada")=>{setLeitura(id);try{localStorage.setItem("conecta:leitura",id);}catch{/* preferência local facultativa */}};
- return <div className={`conecta-aprovado ${menuMovel?"ap-menu-aberto":""} ${recolhido?"ap-recolhido":""}`} data-conecta-layout="aprovado-v2" data-area={nano?"nano":"painel"} data-leitura={leitura} style={{"--res-esq":res.esq+"px","--res-dir":res.dir+"px"} as CSSProperties}>
+ return <AtivosMobisSemLegado.Provider value={loja?.slug==="mobis"}><div className={`conecta-aprovado ${menuMovel?"ap-menu-aberto":""} ${recolhido?"ap-recolhido":""}`} data-conecta-layout="aprovado-v2" data-ma-display={loja?.slug==="mobis"?"prismatic":undefined} data-area={nano?"nano":"painel"} data-leitura={leitura} style={{"--res-esq":res.esq+"px","--res-dir":res.dir+"px"} as CSSProperties}>
   {menuMovel&&<button className="ap-menu-fundo" aria-label="Fechar menu de navegação" onClick={aoMenu}/>}
   <aside className="ap-sidebar" id="menu-principal" aria-label="Menu principal">
    <a className="ap-identidade" href="#/"><MarcaConectaNova/></a>
@@ -63,5 +64,5 @@ export function PainelAprovado({loja,caminho,menu,children,menuMovel,recolhido,a
    <main className="ap-content">{children}</main>
    <footer className="ap-ledger" role="status" aria-label="Estado do painel"><span>CONECTA.IA · {loja?.nome??"Ambiente autenticado"}</span><span>Interface aprovada · v{rotuloVersao(VERSAO_LOCAL)}</span></footer>
   </div>
- </div>;
+ </div></AtivosMobisSemLegado.Provider>;
 }

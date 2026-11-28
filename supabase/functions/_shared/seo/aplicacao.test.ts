@@ -1,0 +1,14 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {type AplicacaoSeo,aplicacaoIndexavel} from "./aplicacao.ts";
+import {responderSeo} from "./rotas.ts";
+import {urlsDoSitemap} from "./sitemap.ts";
+import type {ProdutoSeo,LojaSeo} from "./dados.ts";
+const p:ProdutoSeo={sku:"TEST-1",nome:"Filtro teste",descricao:null,descricao_longa:null,marca:null,gtin:null,mpn:null,preco:999.99,estoque:12,publicado:true,situacao:"A",atualizado_em:null,categoria:null,imagens:[]};
+const l:LojaSeo={nome:"Mobis",slug:"mobis",ativa:true,dominio:"exemplo.com.br",whatsapp:null,politicas:null};
+const a:AplicacaoSeo={slug:"modelo-x-teste",sku:"TEST-1",titulo:"Filtro teste para Modelo X",descricao:"Descrição específica de teste",modelo:"Modelo X",motor:"M1",inicio:2010,fim:2015,oem:"OEMTEST",restricao:null,contraindicacao:null,status:"aprovado",visivel:true,modeloId:"modelo1",fonte:"Documento de teste",coletadoEm:"2026-11-25",prova:{validada:true,revisao:"r1",referencia:"evidencia-teste",aplicacaoSlug:"modelo-x-teste",sku:"TEST-1",modeloId:"modelo1",motor:"M1",inicio:2010,fim:2015,oem:"OEMTEST",mercado:"BR"}};
+const caminho="/aplicacao/"+a.slug;
+test("rota filha indexável somente com prova vinculada e canonical próprio",()=>{const r=responderSeo(caminho,l,[p],[a]);assert.equal(r.status,200);assert.match(r.corpo,/canonical" href="https:\/\/exemplo.com.br\/aplicacao\/modelo-x-teste"/);assert.match(r.corpo,/OEMTEST/);assert.ok(!r.corpo.includes("999.99")&&!r.corpo.includes("offers"));assert.ok(urlsDoSitemap(l.dominio,[p],[],[a]).some(x=>x.loc.endsWith(caminho)))});
+test("legado sem prova ou período incompleto é noindex e fora do sitemap",()=>{for(const v of [{...a,prova:undefined},{...a,fim:null},{...a,prova:{...a.prova!,sku:"OUTRO"}}]){assert.equal(aplicacaoIndexavel(v,[p]),false);const r=responderSeo(caminho,l,[p],[v]);assert.equal(r.status,200);assert.match(r.cabecalhos["x-robots-tag"],/noindex/);assert.ok(!r.corpo.includes("canonical")&&!r.corpo.includes("OEMTEST"));assert.ok(!urlsDoSitemap(l.dominio,[p],[],[v]).some(x=>x.loc.endsWith(caminho)))}});
+test("fonte contraditória, produto inativo, duplicidade ou página não liberada retornam 404",()=>{for(const [ps,aps] of [[[p],[{...a,fonte:"NÃO homologada"}]],[[{...p,situacao:"I"}],[a]],[[p],[a,a]],[[p],[{...a,visivel:false}]],[[p,p],[a]]] as [ProdutoSeo[],AplicacaoSeo[]][]){assert.equal(responderSeo(caminho,l,ps,aps).status,404);assert.ok(!urlsDoSitemap(l.dominio,ps,[],aps).some(x=>x.loc.endsWith(caminho)))}});
+test("sem domínio noindex e sem canonical; HTML escapado",()=>{const r=responderSeo(caminho,{...l,dominio:null},[p],[{...a,restricao:"<script>alert(1)</script>"}]);assert.equal(r.status,200);assert.ok(!r.corpo.includes("<script>")&&!r.corpo.includes("canonical"));assert.match(r.corpo,/noindex/)});

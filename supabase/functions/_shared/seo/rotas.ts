@@ -6,6 +6,7 @@ import { CABECALHOS_HTML, PAGINA_404, paginaPoliticaHtml, paginaProdutoHtml } fr
 import { paginasPublicadas, SLUGS_POLITICA } from "./politicas.ts";
 import { gerarIndiceSitemap, gerarRobots, gerarSitemap } from "./sitemap.ts";
 import { skuDoCaminho } from "./url.ts";
+import { aplicacaoIndexavel, aplicacoesUnicas, paginaAplicacaoHtml, slugAplicacaoValido, type AplicacaoSeo } from "./aplicacao.ts";
 
 export interface RespostaSeo { status: number; cabecalhos: Record<string, string>; corpo: string }
 const XML = { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=300", "x-content-type-options": "nosniff" };
@@ -13,7 +14,7 @@ const TXT = { "content-type": "text/plain; charset=utf-8", "cache-control": "pub
 const naoEncontrada = (): RespostaSeo => ({ status: 404, cabecalhos: { ...CABECALHOS_HTML, "x-robots-tag": "noindex" }, corpo: PAGINA_404 });
 const indisponivel = (msg: string): RespostaSeo => ({ status: 409, cabecalhos: { ...TXT, "cache-control": "no-store" }, corpo: msg });
 
-export function responderSeo(caminho: string, loja: LojaSeo | null, produtos: ProdutoSeo[]): RespostaSeo {
+export function responderSeo(caminho: string, loja: LojaSeo | null, produtos: ProdutoSeo[], aplicacoes: AplicacaoSeo[] = []): RespostaSeo {
   if (!loja || !loja.ativa) return naoEncontrada(); // loja desconhecida e inativa respondem igual
   const slugsPol = paginasPublicadas(loja.politicas).map((p) => p.slug);
 
@@ -21,9 +22,9 @@ export function responderSeo(caminho: string, loja: LojaSeo | null, produtos: Pr
 
   if (caminho === "/sitemap.xml" || /^\/sitemap-\d{1,3}\.xml$/.test(caminho)) {
     if (!loja.dominio) return indisponivel("Domínio ainda não ativo (DNS e SSL): sitemap indisponível.");
-    const indice = caminho === "/sitemap.xml" ? gerarIndiceSitemap(loja.dominio, produtos, slugsPol) : null;
+    const indice = caminho === "/sitemap.xml" ? gerarIndiceSitemap(loja.dominio, produtos, slugsPol, aplicacoes) : null;
     const pagina = caminho === "/sitemap.xml" ? 1 : Number(caminho.match(/\d+/)![0]);
-    const xml = indice ?? gerarSitemap(loja.dominio, produtos, pagina, slugsPol);
+    const xml = indice ?? gerarSitemap(loja.dominio, produtos, pagina, slugsPol, aplicacoes);
     return xml ? { status: 200, cabecalhos: XML, corpo: xml } : naoEncontrada();
   }
 
@@ -31,6 +32,16 @@ export function responderSeo(caminho: string, loja: LojaSeo | null, produtos: Pr
     if (!loja.dominio) return indisponivel("Domínio ainda não ativo (DNS e SSL): feed indisponível.");
     const f = gerarFeedMerchant(loja, produtos);
     return f.xml ? { status: 200, cabecalhos: XML, corpo: f.xml } : indisponivel("Nenhum produto atende aos requisitos do feed.");
+  }
+
+  const app = caminho.match(/^\/aplicacao\/([^/]+)$/);
+  if (app) {
+    const a = slugAplicacaoValido(app[1]) ? aplicacoesUnicas(aplicacoes).find(x=>x.slug===app[1]) : undefined;
+    if(!a || loja.slug !== "mobis") return naoEncontrada();
+    const html = paginaAplicacaoHtml(loja,a,produtos);
+    if(!html)return naoEncontrada();
+    const indexa=!!loja.dominio&&aplicacaoIndexavel(a,produtos);
+    return {status:200,cabecalhos:{...CABECALHOS_HTML,"cache-control":indexa?"public, max-age=300":"no-store",...(!indexa?{"x-robots-tag":"noindex, nofollow"}:{})},corpo:html};
   }
 
   const prod = caminho.match(/^\/produto\/([^/]+)$/);

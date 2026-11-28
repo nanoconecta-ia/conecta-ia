@@ -1,0 +1,36 @@
+-- Teste isolado. Nenhuma alteração de produtos/ERP.
+begin;
+create function pg_temp.afirma(ok boolean,msg text) returns void language plpgsql as $fn$
+begin if ok is distinct from true then raise exception 'FALHOU: %',msg; end if; raise notice 'ok: %',msg; end $fn$;
+insert into public.lojas(id,nome,slug) values ('e4000000-0000-0000-0000-000000000001','Nano reserva A','nano-reserva-a'),('e4000000-0000-0000-0000-000000000002','Nano reserva B','nano-reserva-b');
+insert into public.nano_lifecycle_checkpoint(loja_id) values ('e4000000-0000-0000-0000-000000000001');
+set local role service_role;
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000001')->>'estado'='desabilitado','reserva desligada por padrão');
+update public.nano_lifecycle_checkpoint set habilitado=true where loja_id='e4000000-0000-0000-0000-000000000001';
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000001')->>'geracao'='1','primeira geração');
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000001')->>'geracao'='1','repetição não troca geração');
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000002')->>'estado'='ocupado','segundo executor bloqueado');
+select pg_temp.afirma(public.nano_lifecycle_fence('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000001',1),'fence atual válido');
+select pg_temp.afirma(not public.nano_lifecycle_fence('e4000000-0000-0000-0000-000000000002','e4100000-0000-0000-0000-000000000001',1),'outra loja não usa reserva');
+update public.nano_lifecycle_reserva set expira_em=clock_timestamp()-interval '1 second' where loja_id='e4000000-0000-0000-0000-000000000001';
+select pg_temp.afirma(not public.nano_lifecycle_fence('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000001',1),'fence expirado recusado');
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000001')->>'estado'='execucao_encerrada','execução expirada não recupera sua reserva');
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000002')->>'geracao'='2','nova execução incrementa geração');
+select pg_temp.afirma(not public.nano_lifecycle_encerrar_reserva('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000001',1),'executor antigo não encerra reserva nova');
+select pg_temp.afirma(public.nano_lifecycle_encerrar_reserva('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000002',2),'executor atual encerra');
+select pg_temp.afirma(not public.nano_lifecycle_fence('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000002',2),'encerramento invalida fence');
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000003')->>'geracao'='3','nova execução após encerramento');
+update public.nano_lifecycle_checkpoint set habilitado=false where loja_id='e4000000-0000-0000-0000-000000000001';
+select pg_temp.afirma(not public.nano_lifecycle_fence('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000003',3),'desligamento invalida fence');
+update public.nano_lifecycle_checkpoint set habilitado=true where loja_id='e4000000-0000-0000-0000-000000000001';
+select pg_temp.afirma(not public.nano_lifecycle_fence('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000003',3),'religar não restaura a reserva revogada');
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000001')->>'estado'='execucao_encerrada','primeira execução não pode voltar após várias gerações');
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000003')->>'estado'='execucao_encerrada','execução revogada não volta a reservar');
+select pg_temp.afirma(public.nano_lifecycle_reservar('e4000000-0000-0000-0000-000000000001','e4100000-0000-0000-0000-000000000004')->>'geracao'='4','religar exige nova geração');
+select pg_temp.afirma((select count(*) from public.nano_lifecycle_execucoes where loja_id='e4000000-0000-0000-0000-000000000001')=4,'histórico preserva cada execução adquirida uma única vez');
+reset role;
+select pg_temp.afirma(not has_table_privilege('service_role','public.nano_lifecycle_execucoes','update') and not has_table_privilege('service_role','public.nano_lifecycle_execucoes','delete'),'histórico sem alteração ou exclusão pelo serviço');
+select pg_temp.afirma(not has_table_privilege('anon','public.nano_lifecycle_execucoes','select') and not has_table_privilege('authenticated','public.nano_lifecycle_execucoes','select'),'histórico privado');
+select pg_temp.afirma(not has_function_privilege('anon','public.nano_lifecycle_reservar(uuid,uuid,integer)','execute') and not has_function_privilege('authenticated','public.nano_lifecycle_fence(uuid,uuid,bigint)','execute'),'RPCs privadas');
+select pg_temp.afirma(not has_table_privilege('authenticated','public.nano_lifecycle_reserva','select'),'reserva privada');
+rollback;

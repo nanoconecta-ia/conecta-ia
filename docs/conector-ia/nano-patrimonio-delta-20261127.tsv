@@ -1,0 +1,149 @@
+estado	path	mode_base	type_base	sha_base	mode_candidato	type_candidato	sha_candidato
+alterado	.github/workflows/funcoes-testes.yml	100644	blob	e38b490c9d43b8e8e5d5436370992c19547f3b3f	100644	blob	516647915ac17f2e910bc660eccf44c25982fe7d
+alterado	artifacts/bling-sync/index.ts	100644	blob	3c37a808811581d2527341f76eb6ce1821e52a13	100644	blob	f68a3112791e7ac95e5d0b2f73c17484e303ee80
+alterado	artifacts/bling-sync/manifesto.json	100644	blob	137f45809b3c9e1206295d2931a4003609d82b14	100644	blob	5753d8272e7f24271e18c3db2932dae7591cd276
+alterado	docs/identidade/mobis-ma-20261118.md	100644	blob	27eaf9b10ef505adc6968b34deff209f116734ee	100644	blob	d9d99d9c479d8ec656275933b1a6c639c1c613ae
+alterado	painel/src/paginas/LojaMobisNova.tsx	100644	blob	df1725b613d9d7dd07253feb9167d38e20957c03	100644	blob	20f83aaa779fd7130d603edeb3d3dc541a6d1fe4
+alterado	painel/src/paginas/PaginaAplicacaoMobis.tsx	100644	blob	b626cead1c65c781ea95635b4272d4bb7bc4f2ff	100644	blob	fdc801f48aaced7a5b3b765884a396e2eea3c086
+alterado	painel/src/paginas/Taxonomia.tsx	100644	blob	a14706dbe3ea66dbee641e4bb464aba16ae67a7c	100644	blob	3c12bee0db8f41fab14cc7c1c9967f8d929c3558
+alterado	painel/src/paginas/mobis-v3-limpo.css	100644	blob	492b7a3164651972962cc3587b9d83fdabea9caa	100644	blob	e5f4249504f70e2fd5cc51829b4550bed3b5064d
+alterado	painel/src/paginas/taxonomia.css	100644	blob	0b9ae489237b93571f7911cd9b3c2e3d036671b1	100644	blob	7956d2a9c0aed0e6b1a2aab93aa0748d7acb20be
+alterado	scripts/tests/mobis-vitrine-teste.mjs	100644	blob	0da18303999f71258d51c739edc298b10e507264	100644	blob	46c76439937e12ebb492213fad844f525d4f993d
+alterado	supabase/functions/_shared/bling_sync.test.ts	100644	blob	f954ef9e6b6fa9196d013690a37b740ab68ce34f	100644	blob	a30c5eeb6c8b4ee86a10f759cf0953609918a484
+alterado	supabase/functions/_shared/bling_sync.ts	100644	blob	593e32e07734f7d980043550d4ebcd6948be2633	100644	blob	34b96fbae0af63ca934b1b658068b339d76e4096
+alterado	supabase/functions/_shared/loja/publica.test.ts	100644	blob	0c39b1b48c721f7fffb26261775614e743357f64	100644	blob	1ef32d8132932f58f7aa51e7f98661798a552e7a
+alterado	supabase/functions/_shared/loja/publica.ts	100644	blob	02078f2f34427c9c3ce41e2ce0a4e9448ae7b87b	100644	blob	fb821a69b0c570d34b5cedfb645c116614e1cd1c
+alterado	supabase/functions/_shared/seo/rotas.ts	100644	blob	83a572de4c84bcdb9442ff4306fafb07318571e4	100644	blob	b2fe7937c7c7d7e71804502af959688a608656f6
+alterado	supabase/functions/_shared/seo/sitemap.ts	100644	blob	6ebc2863df2c693dbf2ecb1e6b2e1e856748e801	100644	blob	625fccbf41bfca39b00a6c9384bb5653b568006e
+alterado	supabase/functions/bling-sync/index.ts	100644	blob	55d2b1a03f84125f38469c9fadb4b8a4851b5023	100644	blob	2cb6f3b4e1f69f8e8bf02fc019d84f56fee0a698
+alterado	supabase/functions/loja-publica/index.ts	100644	blob	bd77a311fffd2ced2596103cd28b7353483925cb	100644	blob	4bbf1d51387e4e4c091ec019efa2ff2adbbc6dd2
+alterado	supabase/functions/loja-seo/index.ts	100644	blob	f51ea54c81c2e4a5043d5f1f67ca7d2bf389d55c	100644	blob	6fdc470a0956476d8a87ba83b53293d535f26af5
+novo	docs/conector-ia/nano-commercial-intelligence-20261126.md				100644	blob	7feb2e5bbc986a5dad14aa90b8d550331cd89605
+novo	docs/conector-ia/nano-engenharia-procedencia-20261126.md				100644	blob	d91ac58c246f2098bd3e55fd9673a24cc26b7843
+novo	docs/conector-ia/nano-engenharia-vinculo-procedencia-20261126.md				100644	blob	29928ade7e7e57a9342a534055568141c36d77a9
+novo	docs/conector-ia/nano-financeiro-autoridade-MINUTA.sql				100644	blob	5e859477b69a95fcc7e3e60e383f9f7e6e093e15
+novo	docs/conector-ia/nano-financeiro-autoridade-TESTE.sql				100644	blob	e14efa6c8a89d29cd7a095f9d92f7e2c647f04d7
+novo	docs/conector-ia/nano-financeiro-orcamento-MINUTA.sql				100644	blob	9e5bb65da7ce1fad4ec9d3d14dc6561b2cc67bdc
+novo	docs/conector-ia/nano-financeiro-orcamento-TESTE.sql				100644	blob	09f493fbcce2e88c1bb8a29ed101fba190b815df
+novo	docs/conector-ia/nano-lifecycle-20261126.md				100644	blob	5911d46ba39812284f63c853ad0fb88caf32ba37
+novo	docs/conector-ia/nano-lifecycle-atestacao-20261126.md				100644	blob	a3ac962cee5448bc543b901f201ecaff0a7d2837
+novo	docs/conector-ia/nano-lifecycle-atestacao-MINUTA.sql				100644	blob	6a345705679a4f239eb32dbc504bb82f4d20bdaa
+novo	docs/conector-ia/nano-lifecycle-atualidade-20261126.md				100644	blob	1fff65f4518963901bc7e5aade78997936c32d27
+novo	docs/conector-ia/nano-lifecycle-atualidade-MINUTA.sql				100644	blob	71a054e2e6a9afe6dbcd6ceb48f84b3e49cc1348
+novo	docs/conector-ia/nano-lifecycle-auditoria-e2e-20261126.md				100644	blob	d49e86ecd8d3ece92c84d8ef2ac440289066c25d
+novo	docs/conector-ia/nano-lifecycle-ausencias-MINUTA.sql				100644	blob	0e03a5676e8c557aef181bf84b3044ad5a156307
+novo	docs/conector-ia/nano-lifecycle-ausencias-TESTE.sql				100644	blob	ab13c4b5548aefc43663d822b6d900dcf11cebb0
+novo	docs/conector-ia/nano-lifecycle-autoria-20261126.md				100644	blob	6711c78d7c3d6f700123584086734349a8b7ef9d
+novo	docs/conector-ia/nano-lifecycle-autoria-MINUTA.sql				100644	blob	81b1da88e31f3acb3e102f8eae285ceaa3c7f793
+novo	docs/conector-ia/nano-lifecycle-autoridade-consumo-MINUTA.sql				100644	blob	629ee37228f7f17be39a6653a0b813cde2007084
+novo	docs/conector-ia/nano-lifecycle-autoridade-consumo-TESTE.sql				100644	blob	335423c878e99a2b54388ae9e3a90d0be18345d6
+novo	docs/conector-ia/nano-lifecycle-autoridade-despacho-20261126.md				100644	blob	30fd10ebe18d7b71c2b996e37191115712e28562
+novo	docs/conector-ia/nano-lifecycle-autoridade-despacho-MINUTA.sql				100644	blob	35d8ed93988d72551f509dab2390bacaf6983526
+novo	docs/conector-ia/nano-lifecycle-autorizacao-parecerista-20261126.md				100644	blob	4394bdd248cb436a2279c3c3db08d07ab7fb5c6e
+novo	docs/conector-ia/nano-lifecycle-autorizacao-parecerista-MINUTA.sql				100644	blob	4ec06dae93d587cac9529e729f8540790797b992
+novo	docs/conector-ia/nano-lifecycle-concorrencia-gate-20261126.md				100644	blob	e8f7d978d1bc917ff10eb79fd3f612e81214d3e1
+novo	docs/conector-ia/nano-lifecycle-concorrencia-gate-MINUTA.sql				100644	blob	6ea8c674a3cd300dcac1ac2f0689f90f5cbb01b7
+novo	docs/conector-ia/nano-lifecycle-conferencia-gate-20261126.md				100644	blob	3ccfb2241200057e0893dc407adc13d78ead0cd1
+novo	docs/conector-ia/nano-lifecycle-conferencia-gate-MINUTA.sql				100644	blob	c1b0d7504a6934d8881683fba64fcabaac5cd09e
+novo	docs/conector-ia/nano-lifecycle-conflitos-MINUTA.sql				100644	blob	c0726c8d13d8979cf07f54295e7b4cfdc1c075e9
+novo	docs/conector-ia/nano-lifecycle-consumo-MINUTA.sql				100644	blob	98f2c95ee62e10bb667eccc553107dd1a0149d1c
+novo	docs/conector-ia/nano-lifecycle-consumo-TESTE.sql				100644	blob	b5243398064ff2ee3f92414c9dee0ecf93f13781
+novo	docs/conector-ia/nano-lifecycle-despacho-MINUTA.sql				100644	blob	cbc7d78c9e6dddc8eeebabd6397cad29ddd269d4
+novo	docs/conector-ia/nano-lifecycle-despacho-TESTE.sql				100644	blob	e03ca692fd3c3b2f0c446d676f7158f3083de072
+novo	docs/conector-ia/nano-lifecycle-diario-MINUTA.sql				100644	blob	cb2119898bd3c4dcd1d758b727f6d0595b390314
+novo	docs/conector-ia/nano-lifecycle-diario-TESTE.sql				100644	blob	4d145c092c4b0842a26f886e808ce9696d1f26b4
+novo	docs/conector-ia/nano-lifecycle-documentos-20261126.md				100644	blob	d25eb55b275f1d2eb0f042d190f611ffcc61a820
+novo	docs/conector-ia/nano-lifecycle-documentos-MINUTA.sql				100644	blob	c722c5233334b2141daac400176d3c02f122d5ac
+novo	docs/conector-ia/nano-lifecycle-entrada-MINUTA.sql				100644	blob	aada3ff43e4e9ca502425de1e3de9ff486c65730
+novo	docs/conector-ia/nano-lifecycle-entrada-TESTE.sql				100644	blob	01bea17b45a90db9c34859aaf6733c0cf48f5d66
+novo	docs/conector-ia/nano-lifecycle-espelho-MINUTA.sql				100644	blob	361db623dadfa60580d5cdcdf06fad5396fefbea
+novo	docs/conector-ia/nano-lifecycle-espelho-TESTE.sql				100644	blob	65fc81ed42a4adad7cef7e4ff8efc95fee6e07be
+novo	docs/conector-ia/nano-lifecycle-eventos-MINUTA.sql				100644	blob	5aa3b0db0641f607124d10173d11b463453c5ac0
+novo	docs/conector-ia/nano-lifecycle-eventos-TESTE.sql				100644	blob	52c651a89564e1c0185a48b4eaffd1fe8c8f153b
+novo	docs/conector-ia/nano-lifecycle-finalizacao-MINUTA.sql				100644	blob	e446146fe4082e0a887d80d94bcb64a85923a634
+novo	docs/conector-ia/nano-lifecycle-finalizacao-TESTE.sql				100644	blob	d139c49f19356815c73294a98c4e6ad857078d67
+novo	docs/conector-ia/nano-lifecycle-guard-MINUTA.sql				100644	blob	123ea12a63f343a8fa472edb82f3f989bf116d3f
+novo	docs/conector-ia/nano-lifecycle-guard-TESTE.sql				100644	blob	29d97b1aa1b1c5f58c27ab758c51244ceeab1dfa
+novo	docs/conector-ia/nano-lifecycle-isolamento-documental-20261126.md				100644	blob	40eea97045f6390cf09ff327b00344fa5f390e8d
+novo	docs/conector-ia/nano-lifecycle-isolamento-documental-MINUTA.sql				100644	blob	cdd38b8897e9723233130f26726bac300923c429
+novo	docs/conector-ia/nano-lifecycle-leitura-MINUTA.sql				100644	blob	9375e5bf759bc47c2858b9fcce543426550d421d
+novo	docs/conector-ia/nano-lifecycle-leitura-TESTE.sql				100644	blob	c19af9c4843b8a14449bfa827656e5946129130b
+novo	docs/conector-ia/nano-lifecycle-lote-MINUTA.sql				100644	blob	9ded87b7495bd04b6b047f08e763f50275344801
+novo	docs/conector-ia/nano-lifecycle-lote-TESTE.sql				100644	blob	90158119c65b2d927e0bffa40078b871f04b60bc
+novo	docs/conector-ia/nano-lifecycle-papeis-MINUTA.sql				100644	blob	3dbe141b2b701b4d8237eec8bf6de8804b1fd225
+novo	docs/conector-ia/nano-lifecycle-persistencia-20261126.md				100644	blob	c0e91539ccc45756b4ea1e4c5eac6449a854cead
+novo	docs/conector-ia/nano-lifecycle-persistencia-MINUTA.sql				100644	blob	77853eff82c6f9cb3cb8cdf3066e250f20a76cee
+novo	docs/conector-ia/nano-lifecycle-persistencia-TESTE.sql				100644	blob	86d9d3e50bf188dc000306d1bf6ac0a734265bdd
+novo	docs/conector-ia/nano-lifecycle-piloto-engenharia-20261126.md				100644	blob	5e65b9ed02bbb7d6878da9d757f7c872da563d23
+novo	docs/conector-ia/nano-lifecycle-porta-auditoria-sql-20261126.md				100644	blob	13c0f6351f14188c7a81b6f72ee3ea1b46b958e9
+novo	docs/conector-ia/nano-lifecycle-pre-gate-20261126.md				100644	blob	625aa7fbeb17d442d30c211ac987b3002040b0ad
+novo	docs/conector-ia/nano-lifecycle-pre-gate-MINUTA.sql				100644	blob	a6042387b6ea21c64862d33d26ebf4edbd950d6e
+novo	docs/conector-ia/nano-lifecycle-projecao-MINUTA.sql				100644	blob	7a9a1cbf5cdf6e25fff4a52d571826dd6aea3d69
+novo	docs/conector-ia/nano-lifecycle-projecoes-nos-20261126.md				100644	blob	58765385cb6adc7b94cd40378210f9fc13e98b54
+novo	docs/conector-ia/nano-lifecycle-recibo-auditoria-20261126.md				100644	blob	5b90be87f2fbb324cf0aadc449bac51f5916601b
+novo	docs/conector-ia/nano-lifecycle-recibo-auditoria-MINUTA.sql				100644	blob	401d189f1a44eda4ca41b38e9bbc25e707002e2a
+novo	docs/conector-ia/nano-lifecycle-recibo-produtor-20261126.md				100644	blob	ef24a8bf30b0724264046afef6ce96d52e1cb458
+novo	docs/conector-ia/nano-lifecycle-recibo-produtor-MINUTA.sql				100644	blob	329b37b63979c4a811dd3732d8974aebc55deb7e
+novo	docs/conector-ia/nano-lifecycle-reserva-MINUTA.sql				100644	blob	9a95109f051d8ba69687a9cc649df42a348d84ab
+novo	docs/conector-ia/nano-lifecycle-reserva-TESTE.sql				100644	blob	4ff5f3e9d1c4c8341baade40a49f81826c761071
+novo	docs/conector-ia/nano-lifecycle-reserva-produtor-20261126.md				100644	blob	44d9e3afef8c0c8bdd50ce7426d30b63948b7f12
+novo	docs/conector-ia/nano-lifecycle-reserva-produtor-MINUTA.sql				100644	blob	b04265d14f5d2c1bd031351e28c147d19e375cf9
+novo	docs/conector-ia/nano-lifecycle-resultado-engenharia-20261126.md				100644	blob	e98fa8e8d26e15d17896558190adf80a8989a300
+novo	docs/conector-ia/nano-lifecycle-resultado-engenharia-MINUTA.sql				100644	blob	4ac6fe1fce928b87bf39c7c91205af50f91c01cb
+novo	docs/conector-ia/nano-lifecycle-transicoes-MINUTA.sql				100644	blob	ac0bdf8e93a7e9da5b4fda707cef3e6c342188d4
+novo	docs/conector-ia/nano-lifecycle-transicoes-TESTE.sql				100644	blob	4bc7e665ac27e374e16b0cad020e5302f96e4df2
+novo	docs/conector-ia/nano-mapeamento-filtros-vitrine-20261126.md				100644	blob	3fb43df1670cd6dce9258e3d157bcf7028330293
+novo	docs/conector-ia/nano-matriz-mestra-20261126.md				100644	blob	28f27bf436a82886d2e7eae9610d064201d80cb5
+novo	docs/conector-ia/nano-reconciliacao-veicular-20261126.md				100644	blob	6cb787fbeaa62303c33f63441ec9ebf2307507ba
+novo	docs/conector-ia/nano-relatorio-montagem-20261126.md				100644	blob	538886276e9d0cf9ebad28f978b5068d4a4a8fff
+novo	docs/conector-ia/nano-seo-aplicacao-20261126.md				100644	blob	55e9b246f34b277210390480fa59007673ff452f
+novo	docs/conector-ia/nano-supplier-intelligence-rmp-radar-20261126.md				100644	blob	4ce02985016f2f37c681766b81e1a898f6fa1892
+novo	docs/conector-ia/nano-visual-studio-distribuidores-20261126.md				100644	blob	05892e23b9549b58a1cc5d96a17fc408863a4f9e
+novo	docs/conector-ia/nano-vitrine-enriquecida-20261126.md				100644	blob	f8d040ca352941b80526a21b3087df8b7f2d575c
+novo	painel/src/componentes/AuditoriaVeicular.tsx				100644	blob	09b4c77ee2f027c170447c907f9af3a753454c47
+novo	painel/src/lib/vitrineAplicacoes.test.ts				100644	blob	31ffe47e21c23e84d18eb7f9120908844702d84f
+novo	painel/src/lib/vitrineAplicacoes.ts				100644	blob	a7a8a27c68e4b48785d6cbcf21841a40924dfca5
+novo	scripts/tests/nano-auditoria-e2e.mjs				100644	blob	07544c7b4534ecedd512a32b19b973f6fdaa9996
+novo	scripts/tests/nano-despacho-benchmark.mjs				100644	blob	7c6bcbc4829ebee19108d62ece68504e06e930cb
+novo	scripts/tests/nano-despacho-latencia.mjs				100644	blob	654668e91c498c713e91a75fbfea2b70a63ab1df
+novo	scripts/tests/nano-engenharia-piloto.mjs				100644	blob	2aa2737de9941a72435c9a21339a44dfcc831dfb
+novo	scripts/tests/nano-financeiro-autoridade-concorrencia.mjs				100644	blob	a7edcf733309c1a6d7ca2edfd67824d0baaeaf93
+novo	scripts/tests/nano-financeiro-caracterizacao.mjs				100644	blob	a236aca68bfc361b33dfd5005130f4a724cd36ab
+novo	scripts/tests/nano-financeiro-orcamento-concorrencia.mjs				100644	blob	e99ad9d707a4cccaefbcb8d2b0b854727015fdab
+novo	scripts/tests/nano-lifecycle-e2e.mjs				100644	blob	6f9c22abb661002e28af5bee2235e4eeeaf038f9
+novo	supabase/functions/_shared/nano_lifecycle/captura.test.ts				100644	blob	3f423cc157909d01ae0e00f13428523c14da1c10
+novo	supabase/functions/_shared/nano_lifecycle/captura.ts				100644	blob	4f30af1d55c03a9585fceed9902ee36f65158be7
+novo	supabase/functions/_shared/nano_lifecycle/detector.test.ts				100644	blob	09b5e53d7c0f9e6713e75d6797c7599e4f46903f
+novo	supabase/functions/_shared/nano_lifecycle/detector.ts				100644	blob	c24a6537c8d3aa6118e3bf02f92a0617336adaab
+novo	supabase/functions/_shared/nano_lifecycle/entrada_engenharia.test.ts				100644	blob	bec37ab6b17299ef7f4af4e5311e57a81bbe61e5
+novo	supabase/functions/_shared/nano_lifecycle/entrada_engenharia.ts				100644	blob	3368842ad1f19472ba50a00d6dcc26d307df9a72
+novo	supabase/functions/_shared/nano_lifecycle/evidencia_procedencia.test.ts				100644	blob	4fef0843dd0ddb9f73b86140b6a56b5c08653777
+novo	supabase/functions/_shared/nano_lifecycle/evidencia_procedencia.ts				100644	blob	32a728c848844336d48add575199781a74e22fd1
+novo	supabase/functions/_shared/nano_lifecycle/integracao_sync.test.ts				100644	blob	d938defd9017e2a805ccb873c1c7d02568a3a6d2
+novo	supabase/functions/_shared/nano_lifecycle/integracao_sync.ts				100644	blob	25c162876d3b1d0d73f1d72d403166dc95a6b7c0
+novo	supabase/functions/_shared/nano_lifecycle/matriz_mestra.test.ts				100644	blob	98e5af789c46ba6430046b59b514c9e5a4eb2c98
+novo	supabase/functions/_shared/nano_lifecycle/matriz_mestra.ts				100644	blob	8ad21937be56f7a2fc3f070156f1baf9378394bf
+novo	supabase/functions/_shared/nano_lifecycle/persistencia.test.ts				100644	blob	c7e980398ebbd30e07fe88b8fc3abca0c56ebb87
+novo	supabase/functions/_shared/nano_lifecycle/persistencia.ts				100644	blob	d6e8a7727219902aeda0eda8815bf9b1105c983d
+novo	supabase/functions/_shared/nano_lifecycle/porta_auditoria_sql.ts				100644	blob	148a504a2b99c7955c703788631db5f4207ac741
+novo	supabase/functions/_shared/nano_lifecycle/porta_supabase.test.ts				100644	blob	f31bbc4f8dc37ce6c2423da09f8c8ee0067bbc0b
+novo	supabase/functions/_shared/nano_lifecycle/porta_supabase.ts				100644	blob	e3cce1481a2f83ab045550492a9030b921299252
+novo	supabase/functions/_shared/nano_lifecycle/procedencia_engenharia.test.ts				100644	blob	21c0d5a61b74df7e14125eecb3d087727c3fcf3a
+novo	supabase/functions/_shared/nano_lifecycle/procedencia_engenharia.ts				100644	blob	950cc5b6266e7ec760327e6b8fe9a0a6a25163a2
+novo	supabase/functions/_shared/nano_lifecycle/projecoes.test.ts				100644	blob	4b48a5f003ccf2e5dfcf469c6251dda650744743
+novo	supabase/functions/_shared/nano_lifecycle/projecoes.ts				100644	blob	9c17d604e60df71ebc9e328f8a1fdc4340faccf6
+novo	supabase/functions/_shared/nano_lifecycle/qualidade_ci.test.ts				100644	blob	38d28db3a630f7b2afcabc7dc22610fe888ad66d
+novo	supabase/functions/_shared/nano_lifecycle/qualidade_ci.ts				100644	blob	05a15549e144028cd4880d0ce371ddc8fe4651ef
+novo	supabase/functions/_shared/nano_lifecycle/reconciliacao_veicular.test.ts				100644	blob	c10a737c696888ab2997fea5afeeaced41ea5128
+novo	supabase/functions/_shared/nano_lifecycle/reconciliacao_veicular.ts				100644	blob	06c3b613221f3e4444a57bfe8051f994b6074bf0
+novo	supabase/functions/_shared/nano_lifecycle/rodada_sync.test.ts				100644	blob	94e9ec1ff3171e3d44033d008d6efd0b27dc09a4
+novo	supabase/functions/_shared/nano_lifecycle/rodada_sync.ts				100644	blob	de95845fb3c49c5c26b31ce30372e265488219a5
+novo	supabase/functions/_shared/nano_lifecycle/seo_evidencia.test.ts				100644	blob	13235a825ea0e03c858f54e806a5e10ff355a2c2
+novo	supabase/functions/_shared/nano_lifecycle/seo_evidencia.ts				100644	blob	ccf375f3ace12f52ad635720b91c6f16f37664a7
+novo	supabase/functions/_shared/nano_lifecycle/sync_protegido.test.ts				100644	blob	2cb5c093f4b6787dd9de5df6a84ae122746cabee
+novo	supabase/functions/_shared/nano_lifecycle/sync_protegido.ts				100644	blob	02cd3f4294c56c926ebd48fb3b6c6aa55f344439
+novo	supabase/functions/_shared/seo/aplicacao.test.ts				100644	blob	1a51596cd241196c84c79e46aca2cba9c18a3ac5
+novo	supabase/functions/_shared/seo/aplicacao.ts				100644	blob	20eff80dfe99a9a58f82f56cca5721a00d478058
+novo	supabase/tests/nano_lifecycle_concorrencia.sh				100644	blob	36fed2bf67c3bdfbf79f2ce9384e5447a47ec3de
+novo	supabase/tests/nano_lifecycle_despacho_concorrencia.sh				100755	blob	73bd3699194805bafcb8fa0190634397e3f2840b
+novo	supabase/tests/nano_lifecycle_reserva_concorrencia.sh				100644	blob	c4f728772257a8fe0edf11f70f2a7bd5c632e0cc

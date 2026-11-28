@@ -124,3 +124,19 @@ export function veiculosDaFicha(apls: Aplicacao[], produtoId: string): FichaVeic
   }
   return out.slice(0, 40);
 }
+
+/** Vitrine Mobis: limites desconhecidos não autorizam extrapolar anos. Todos os
+ * atributos selecionados pertencem à MESMA aplicação aprovada. */
+export function aplicacaoCombinaMobis(a: Aplicacao, f: {modelo?:string;motor?:string;ano?:number;tipo?:string}):boolean {
+  if(f.modelo && a.modelo!==f.modelo)return false;
+  if(f.motor && a.motorizacao!==f.motor)return false;
+  if(f.tipo && !(TIPOS_VEICULO[f.tipo]??[]).includes(a.categoria??""))return false;
+  if(f.ano!=null){
+    if(!Number.isInteger(f.ano))return false;
+    if(a.ano_inicial==null && a.ano_final==null)return false;
+    const inicio=a.ano_inicial??a.ano_final!;
+    const fim=a.ano_final??a.ano_inicial!;
+    if(f.ano<inicio||f.ano>fim)return false;
+  }
+  return true;
+}

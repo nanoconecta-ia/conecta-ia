@@ -1,0 +1,10 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {BLOCOS,RAIZES,VERSAO_MATRIZ,validarMapa,avaliarBloco,avaliarLiberacao,type EvidenciaGate} from "./matriz_mestra.ts";
+const evidencia=(bloco:typeof RAIZES[number],gate:string):EvidenciaGate=>({bloco,gate,versaoMatriz:VERSAO_MATRIZ,revisao:"abc",resultado:"conforme",referencia:"teste://fixture",verificador:"auditoria-fixture",verificadoEm:"2026-11-26T00:00:00Z"});
+test("12 raízes, modelos distintos e dependências acíclicas",()=>{assert.equal(BLOCOS.length,12);assert.deepEqual(validarMapa(),[])});
+test("ciclo e duplicidade bloqueiam matriz",()=>{assert.ok(validarMapa([...BLOCOS,BLOCOS[0]]).includes("raiz_duplicada"));assert.ok(validarMapa(BLOCOS.map(b=>b.id==="erp"?{...b,depende:["lifecycle"]}:b)).some(e=>e.startsWith("ciclo:")))});
+test("ausência de prova não é conformidade",()=>{const r=avaliarBloco("erp","abc",[]);assert.equal(r.aceiteLocal,false);assert.equal(r.indiceConformidade,0)});
+test("provas antigas e duplicadas não aprovam",()=>{const b=BLOCOS[0], es=b.gates.map(g=>evidencia(b.id,g));assert.equal(avaliarBloco("erp","abc",es).aceiteLocal,true);assert.equal(avaliarBloco("erp","def",es).aceiteLocal,false);assert.equal(avaliarBloco("erp","abc",[...es,es[0]]).aceiteLocal,false)});
+test("gate local não libera sem dependências e auditor",()=>{const b=BLOCOS.find(b=>b.id==="vitrine")!;assert.equal(avaliarLiberacao("vitrine","abc",b.gates.map(g=>evidencia(b.id,g))).apto,false)});
+test("conformidade completa na revisão permite apenas aceite técnico, não execução",()=>{const es=BLOCOS.flatMap(b=>b.gates.map(g=>evidencia(b.id,g)));assert.equal(avaliarLiberacao("vitrine","abc",es).apto,true);assert.equal(avaliarLiberacao("vitrine","abc",es.map(e=>e.bloco==="auditor"?{...e,resultado:"falhou"}:e)).apto,false)});

@@ -1,0 +1,15 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {detectarLifecycle,type ProdutoLifecycle} from "./detector.ts";
+const p: ProdutoLifecycle={id:"p1",loja_id:"mobis",bling_id:"123",sku:"SKU1",situacao:"A",nome:"Filtro",marca:"Marca",preco:10,estoque:1};
+const run=(a:ProdutoLifecycle[],b:ProdutoLifecycle[],pausas=new Set<string>(),completa=true)=>detectarLifecycle("mobis",a,b,pausas,completa);
+test("novo ativo, repetição do snapshot sem evento",()=>{assert.equal(run([], [p]).eventos[0].tipo,"novo");assert.equal(run([p],[p]).eventos.length,0)});
+test("mudança somente comercial não dispara pesquisa",()=>assert.equal(run([p],[{...p,preco:11,estoque:8,publicado:true}]).eventos.length,0));
+test("marca e descrição alteradas disparam só campos técnicos",()=>assert.deepEqual(run([p],[{...p,marca:"M",descricao_curta:"D"}]).eventos[0].campos,["marca","descricao_curta"]));
+test("pausa e identidade incompleta bloqueiam",()=>{assert.equal(run([], [p],new Set(["p1"])).bloqueios[0].motivo,"pausado");assert.equal(run([], [{...p,sku:null}]).bloqueios[0].motivo,"identidade_incompleta")});
+test("colisão SKU entre IDs, inclusive inativo, bloqueia",()=>assert.equal(run([], [p,{...p,id:"p2",bling_id:"124",sku:"sku1",situacao:"E"}]).bloqueios[0].motivo,"sku_duplicado"));
+test("ID repetido não produz evento",()=>assert.equal(run([], [p,{...p,id:"p2"}]).eventos.length,0));
+test("sincronização parcial não produz evento",()=>assert.equal(run([], [p],new Set(),false).incompleto,true));
+test("reativação e inativação identificadas sem publicar",()=>{assert.equal(run([{...p,situacao:"I"}],[p]).eventos[0].tipo,"reativado");assert.equal(run([p],[{...p,situacao:"ausente"}]).eventos[0].tipo,"inativado")});
+test("isolamento entre lojas e alteração de identidade",()=>{assert.throws(()=>run([], [{...p,loja_id:"outra"}]));assert.equal(run([p],[{...p,id:"p3"}]).bloqueios[0].motivo,"identidade_alterada")});
+test("evento não contém campos comerciais",()=>{const e=run([], [p]).eventos[0];assert.ok(!("preco" in e));assert.ok(!("estoque" in e));assert.ok(!("publicado" in e))});

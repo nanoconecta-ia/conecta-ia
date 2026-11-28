@@ -7,6 +7,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { normalizarHost, SLUG_RE } from "../_shared/loja/publica.ts";
 import { responderSeo } from "../_shared/seo/rotas.ts";
 import { skuDoCaminho } from "../_shared/seo/url.ts";
+import { slugAplicacaoValido, projetarAplicacaoLegada, type AplicacaoSeo } from "../_shared/seo/aplicacao.ts";
 import type { ImagemPublica, LojaSeo, PoliticasPublicas, ProdutoSeo } from "../_shared/seo/dados.ts";
 
 const PAGINA = 1000, MAX_PRODUTOS = 50_000;
@@ -54,12 +55,23 @@ Deno.serve(async (req) => {
     const sku = (caminho.match(/^\/produto\/([^/]+)$/) ?? [])[1];
     const skuAlvo = sku ? skuDoCaminho(sku) : null;
     if (sku && !skuAlvo) return resposta(responderSeo(caminho, loja, []));
-    const precisaProdutos = caminho === "/sitemap.xml" || /^\/sitemap-\d+\.xml$/.test(caminho) || caminho === "/feed/merchant.xml" || !!skuAlvo;
+    const appSlug=caminho.match(/^\/aplicacao\/([^/]+)$/)?.[1];
+    if(appSlug&&(!slugAplicacaoValido(appSlug)||l.slug!=="mobis"))return generico();
+    const mapa=caminho==="/sitemap.xml"||/^\/sitemap-\d+\.xml$/.test(caminho);
+    const appRows=l.slug==="mobis"&&(appSlug||mapa&&loja.dominio)?await todas((de,ate)=>{
+      let c=sb.from("produto_aplicacoes").select("produto_id,pagina_slug,pagina_titulo,pagina_descricao,modelo,motorizacao,ano_inicial,ano_final,codigo_oem,restricao,contraindicacao,status,pagina_indexavel,modelo_id,fonte,coletado_em").eq("loja_id",l.id).eq("status","aprovado").eq("pagina_indexavel",true).not("pagina_slug","is",null).order("id").range(de,ate);
+      if(appSlug)c=c.eq("pagina_slug",appSlug);
+      return c;
+    }):[];
+    if(appSlug&&appRows.length!==1)return generico();
+    const precisaProdutos = caminho === "/sitemap.xml" || /^\/sitemap-\d+\.xml$/.test(caminho) || caminho === "/feed/merchant.xml" || !!skuAlvo || !!appSlug;
     let produtos: ProdutoSeo[] = [];
-    if ((precisaProdutos && loja.dominio !== null) || skuAlvo) {
+    let aplicacoes: AplicacaoSeo[]=[];
+    if ((precisaProdutos && loja.dominio !== null) || skuAlvo || appSlug) {
       const linhas = await todas((de, ate) => {
         let c = sb.from("produtos").select("id, sku, nome, descricao_curta, marca, gtin, preco, estoque, publicado, situacao, sincronizado_em, taxonomia_no_id").eq("loja_id", l.id).eq("publicado", true).order("sku").range(de, ate);
         if (skuAlvo) c = c.eq("sku", skuAlvo);
+        if(appSlug)c=c.eq("id",appRows[0].produto_id);
         return c;
       });
       const ids = new Set<string>(linhas.map((p) => p.id));
@@ -76,6 +88,10 @@ Deno.serve(async (req) => {
       const nosIds = [...new Set(linhas.map((p) => p.taxonomia_no_id).filter(Boolean))] as string[];
       const { data: nos } = nosIds.length ? await sb.from("taxonomia_nos").select("id, nome").eq("status", "aprovado").in("id", nosIds) : { data: [] as { id: string; nome: string }[] };
       const nomeNo = new Map<string, string>((nos ?? []).map((n: { id: string; nome: string }) => [n.id, n.nome] as [string, string]));
+      const skuPorId=new Map(linhas.map(p=>[p.id,p.sku]));
+      // Não inferir prova estruturada de texto/status legado. Sem prova, consulta
+      // não indexável (e fonte contraditória = 404); não entra no sitemap.
+      aplicacoes=appRows.flatMap(a=>{const sku=skuPorId.get(a.produto_id);return typeof sku==="string"?[projetarAplicacaoLegada(a,sku)]:[]});
       produtos = linhas.map((p) => ({
         sku: p.sku, nome: p.nome, descricao: p.descricao_curta, descricao_longa: longas.get(p.id) ?? null, marca: p.marca, gtin: p.gtin, mpn: mpns.get(p.id) ?? null,
         preco: p.preco == null ? null : Number(p.preco), estoque: p.estoque == null ? null : Number(p.estoque), publicado: p.publicado === true, situacao: p.situacao,
@@ -91,7 +107,8 @@ Deno.serve(async (req) => {
       const pecas = Array.isArray(bu?.pecas) ? bu.pecas : [];
       alvo.bula = { medidas: pecas.flatMap((x: { medidas: { nome: string; valor: number; unidade: string }[] }) => x.medidas), contraindicacoes: pecas.flatMap((x: { contraindicacoes: { tipo: string; texto: string }[] }) => x.contraindicacoes) };
     }
-    const r = responderSeo(caminho, loja, produtos);
+    // Acesso por slug à página filha é prévia, mesmo se a loja tem domínio.
+    const r = responderSeo(caminho, appSlug&&!host?{...loja,dominio:null}:loja, produtos, aplicacoes);
     return req.method === "HEAD" ? new Response(null, { status: r.status, headers: r.cabecalhos }) : resposta(r);
   } catch {
     return new Response("Serviço indisponível.", { status: 503, headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });

@@ -1,0 +1,13 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {digestTecnico,registrarSyncConcluida} from "./integracao_sync.ts";
+import type {ProdutoLifecycle} from "./detector.ts";
+import type {PortaCaptura,RegistroCaptura} from "./persistencia.ts";
+const p:ProdutoLifecycle={id:"p1",loja_id:"l",bling_id:"123",sku:"TEST",situacao:"A",nome:"Filtro",preco:12,estoque:2};
+const r={paginas:3,vistos:1,gravados:1,detalhes:1,resumosExcluidos:0,ausentes:0,completo:true};
+function fake(cp:string|null=null){let writes=0;const m=new Map<string,RegistroCaptura>();const porta:PortaCaptura={checkpoint:async()=>cp,obter:async(_l,k)=>m.get(k)??null,gravar:async x=>{writes++;if(cp!==x.checkpointAnterior)return "conflito";m.set(x.revisao,x);cp=x.revisao;return "gravado"}};return {porta,writes:()=>writes}}
+const ctx={loja:"l",execucaoId:"execucao_01",resultado:r,habilitada:true,exclusaoVerificada:true,anterior:null,depois:[p],totalConfirmado:1,pausados:new Set<string>()};
+test("digest ignora preço, estoque e ordem, mas detecta alteração técnica",async()=>{const q={...p,id:"p2",bling_id:"124",sku:"T2"};assert.equal(await digestTecnico("l",[p,q]),await digestTecnico("l",[q,{...p,preco:99,estoque:9,publicado:true}]));assert.notEqual(await digestTecnico("l",[p]),await digestTecnico("l",[{...p,nome:"Outro"}]));await assert.rejects(digestTecnico("l",[p,p]))});
+test("sem exclusão, sync parcial ou contagem divergente não persiste",async()=>{const f=fake();for(const c of [{...ctx,exclusaoVerificada:false},{...ctx,resultado:{...r,completo:false}},{...ctx,totalConfirmado:2}])assert.equal((await registrarSyncConcluida(f.porta,c)).confirmado,false);assert.equal(f.writes(),0)});
+test("baseline vinculado ao conteúdo; replay não duplica; snapshot diferente não reutiliza revisão",async()=>{const f=fake();const a=await registrarSyncConcluida(f.porta,ctx);assert.equal(a.confirmado,true);assert.equal((await registrarSyncConcluida(f.porta,ctx)).confirmado,true);assert.equal((await registrarSyncConcluida(f.porta,{...ctx,depois:[{...p,nome:"Outro"}]})).confirmado,false);assert.equal(f.writes(),1)});
+test("snapshot anterior adulterado e predecessor obsoleto não avançam",async()=>{const f=fake("sync_0001");const anterior={checkpoint:"sync_0001",digest:await digestTecnico("l",[p]),produtos:[p]};assert.equal((await registrarSyncConcluida(f.porta,{...ctx,anterior:{...anterior,digest:"errado"}})).estado,"snapshot_anterior_divergente");assert.equal((await registrarSyncConcluida(f.porta,{...ctx,anterior:{...anterior,checkpoint:"sync_0000"}})).estado,"checkpoint_divergente");assert.equal(f.writes(),0);assert.equal((await registrarSyncConcluida(f.porta,{...ctx,anterior,depois:[{...p,nome:"Filtro novo"}]})).confirmado,true);assert.equal(f.writes(),1)});

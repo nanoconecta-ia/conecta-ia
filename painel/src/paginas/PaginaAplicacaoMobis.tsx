@@ -11,7 +11,8 @@ type Aplicacao = {
   slug:string; titulo:string; descricao:string; modelo:string;
   motorizacao:string|null; ano_inicial:number|null; ano_final:number|null;
   status:string; indexavel:boolean; sku_pai:string; marca:string|null;
-  categoria:string|null; fotos:string[]; preco:null; estoque:null; whatsapp:string|null
+  categoria:string|null; fotos:string[]; preco:null; estoque:null; whatsapp:string|null;
+  codigo_oem?:string|null; restricao?:string|null; contraindicacao?:string|null
 };
 type Resposta = {loja:{nome:string;slug:string;ambiente:string;whatsapp?:string|null};pagina_aplicacao:Aplicacao;politicas?:PoliticasLojaPublicas|null};
 
@@ -29,7 +30,7 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
   useEffect(()=>{
     let montado=true;
     document.title="MOBIS AUTOPEÇAS — Aplicação de peça";
-    setEstado("carregando");
+    setDados(null);setEstado("carregando");
     fetch(SUPABASE_URL+"/functions/v1/loja-publica",{
       method:"POST",headers:{"content-type":"application/json",apikey:SUPABASE_CHAVE_PUBLICAVEL},
       body:JSON.stringify({slug:"mobis",aplicacao_slug:slug})
@@ -47,7 +48,7 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
   return <main className="mobis-v2 mobis-aplicacao-v3" style={{minHeight:"100vh",background:"#eaf2f6",color:"#1f2327",paddingBottom:45}}>
     <header style={{background:"#fff",borderBottom:"1px solid #dfe4e8",padding:"14px max(16px, calc((100vw - 1200px)/2))",display:"flex",alignItems:"center",flexWrap:"wrap",gap:20,justifyContent:"space-between"}}>
       <img src={logoMobis} alt="MOBIS AUTOPEÇAS" style={{width:"min(310px,75vw)",height:"auto",objectFit:"contain"}} />
-      <a href="#/loja/mobis" style={{color:"#4a5159",fontWeight:700,textDecoration:"none"}}>← Voltar ao catálogo</a>
+      <a href={p?"#/loja/mobis/veiculo/"+encodeURIComponent(p.modelo):"#/loja/mobis"} style={{color:"#4a5159",fontWeight:700,textDecoration:"none"}}>← Voltar às peças do veículo</a>
     </header>
     <div style={{maxWidth:1120,margin:"30px auto",padding:"0 18px"}}>
       {estado==="carregando"&&<p role="status">Buscando a ficha da aplicação…</p>}
@@ -70,7 +71,7 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
           <section className="mobis-peca-foto-secao" aria-label={"Fotografias da peça física SKU "+p.sku_pai}>
             <div className="mobis-peca-foto-principal">
               {foto ? <a href={foto} target="_blank" rel="noopener noreferrer" aria-label={"Abrir fotografia aprovada da peça "+p.sku_pai}>
-                <img src={foto} alt={"Fotografia real do motor parcial, peça física SKU "+p.sku_pai} loading="eager" />
+                <img src={foto} alt={"Fotografia real da peça física SKU "+p.sku_pai} loading="eager" />
               </a> : <div className="mobis-peca-sem-foto" role="status">
                 <strong>Foto real da peça em preparação</strong>
                 <small>SKU {p.sku_pai} · A fotografia será incluída após verificação e aprovação.</small>
@@ -85,17 +86,21 @@ export function PaginaAplicacaoMobis({slug}:{slug:string}){
           </section>
           <section style={{background:"#fff",border:"1px solid #d3dce2",borderRadius:12,padding:22}}>
             <p style={{fontSize:13,letterSpacing:"0.05em",color:"#b90013",fontWeight:800,display:"flex",alignItems:"center",gap:10}}>
-              {p.categoria??"Motor parcial"}
+              {p.categoria??"Peça automotiva"}
             </p>
             <dl style={{display:"grid",gridTemplateColumns:"120px minmax(0,1fr)",gap:"9px 14px",fontSize:15,lineHeight:1.5}}>
               <dt>Veículo</dt><dd style={{margin:0,fontWeight:700}}>{p.modelo}</dd>
               <dt>Motorização</dt><dd style={{margin:0}}>{p.motorizacao??"Confirmar com a equipe"}</dd>
               <dt>Anos</dt><dd style={{margin:0}}>{p.ano_inicial??"A confirmar"} {p.ano_final?"– "+p.ano_final:"(ano final a confirmar)"}</dd>
-              <dt>Código da peça</dt><dd style={{margin:0,fontWeight:700}}>{p.sku_pai}</dd>
+              <dt>SKU Mobis</dt><dd style={{margin:0,fontWeight:700}}>{p.sku_pai}</dd>
+              {p.codigo_oem&&<><dt>OEM desta aplicação</dt><dd style={{margin:0,fontWeight:700,overflowWrap:"anywhere"}}>{p.codigo_oem}</dd></>}
               <dt>Marca da peça</dt><dd style={{margin:0}}>{p.marca??"Confirmar fabricante"}</dd>
             </dl>
             <h2 style={{fontSize:"1.1rem",marginTop:28}}>Informações desta aplicação</h2>
             <p style={{fontSize:15,lineHeight:1.65}}>{p.descricao}</p>
+            {(p.ano_inicial==null||p.ano_final==null)&&<p style={{fontSize:14}}>Período incompleto: confirme o ano e o chassi com nossa equipe antes de comprar.</p>}
+            {p.restricao&&<p><strong>Restrições de aplicação:</strong> {p.restricao}</p>}
+            {p.contraindicacao&&<p><strong>Contraindicações:</strong> {p.contraindicacao}</p>}
             <p style={{fontSize:21,fontWeight:800}}>Preço sob consulta</p>
             <a href={"#/p/mobis/"+encodeURIComponent(p.sku_pai)}
               style={{display:"block",textAlign:"center",background:"#fff",border:"1px solid #4a5159",padding:"13px",borderRadius:9,

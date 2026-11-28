@@ -1,3 +1,6 @@
 node_modules
 dist
 *.tsbuildinfo
+# Ativos gerados pelo build (scripts/imagens/gerar-icones-mobis-ma.mjs) — não versionar
+public/icones/mobis-ma-maskable-512.png
+public/mobis-ma-favicon.ico

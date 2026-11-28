@@ -1,0 +1,366 @@
+-- MINUTA CI descartável. Vínculo técnico candidato, jamais decisão humana.
+begin;
+-- CAT-125: dimensões explícitas na aplicação legada somente na minuta do CI.
+-- NULL significa não demonstrado; sem backfill ou inferência por OEM, modelo ou ano.
+alter table public.produto_aplicacoes
+ add column nano_geracao_veicular text,
+ add column nano_emissao text,
+ add column nano_mercado text,
+ add column nano_tipo_ano text,
+ add constraint nano_aplicacao_dimensoes check (
+  (nano_geracao_veicular is null and nano_emissao is null and nano_mercado is null and nano_tipo_ano is null)
+  or (
+   nano_geracao_veicular is not null and length(btrim(nano_geracao_veicular)) between 1 and 256 and nano_geracao_veicular=btrim(nano_geracao_veicular)
+   and nano_emissao is not null and length(btrim(nano_emissao)) between 1 and 256 and nano_emissao=btrim(nano_emissao)
+   and nano_mercado='BR'
+   and nano_tipo_ano in ('ano_modelo_crlv','fabricacao','comercializacao_brasil','importacao_brasil')
+  ) is true
+ );
+-- CAT-126: IDs explícitos da versão e do motor no grafo existente.
+alter table public.produto_aplicacoes
+ add column nano_versao_id uuid,
+ add column nano_motor_id uuid,
+ add constraint nano_aplicacao_grafo_par check ((nano_versao_id is null)=(nano_motor_id is null)),
+ add constraint nano_aplicacao_grafo_fk foreign key(nano_versao_id,nano_motor_id) references public.versao_motor(versao_id,motor_id);
+-- CAT-130: referência individualizada da peça e da aresta técnica, nunca por OEM isolado.
+alter table public.produto_aplicacoes
+ add column nano_produto_peca_ref_id uuid references public.produto_pecas_ref(id),
+ add column nano_peca_aplicacao_id uuid references public.pecas_aplicacoes_tecnicas(id),
+ add constraint nano_aplicacao_peca_par check ((nano_produto_peca_ref_id is null)=(nano_peca_aplicacao_id is null));
+-- CAT-140: fronteira fail-closed para aplicações ingressadas no fluxo Nano.
+-- Marca monotônica por linha: remover vínculos não reabre a aprovação legada.
+-- Não autoriza escritor de decisão; rejeição e edição pendente permanecem.
+alter table public.produto_aplicacoes add column nano_decisao_protegida boolean not null default false;
+create function nano_lifecycle_interno.nano_catalogo_guard_decisao()
+returns trigger language plpgsql security invoker set search_path='' as $guard$
+begin
+ if TG_OP='DELETE' then
+  if old.nano_decisao_protegida then
+   raise exception 'identidade Nano protegida contra exclusao' using errcode='42501';
+  end if;
+  return old;
+ end if;
+ if TG_OP='UPDATE' then
+  if old.nano_decisao_protegida and (new.id is distinct from old.id or new.loja_id is distinct from old.loja_id or new.produto_id is distinct from old.produto_id) then
+   raise exception 'identidade Nano protegida contra substituicao' using errcode='42501';
+  end if;
+  new.nano_decisao_protegida:=old.nano_decisao_protegida or (new.nano_decisao_protegida is true);
+ end if;
+ new.nano_decisao_protegida:=(new.nano_decisao_protegida is true)
+  or new.nano_geracao_veicular is not null or new.nano_emissao is not null
+  or new.nano_mercado is not null or new.nano_tipo_ano is not null
+  or new.nano_versao_id is not null or new.nano_motor_id is not null
+  or new.nano_produto_peca_ref_id is not null or new.nano_peca_aplicacao_id is not null;
+ if new.nano_decisao_protegida and (new.status='aprovado' or new.pagina_indexavel is true) then
+  raise exception 'decisao Nano exige autoridade humana exclusiva ainda indisponivel' using errcode='42501';
+ end if;
+ return new;
+end $guard$;
+revoke all on function nano_lifecycle_interno.nano_catalogo_guard_decisao() from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+create trigger zz_nano_guard_decisao before insert or update or delete on public.produto_aplicacoes
+ for each row execute function nano_lifecycle_interno.nano_catalogo_guard_decisao();
+alter table public.produto_aplicacoes enable always trigger zz_nano_guard_decisao;
+-- CAT-131: hash explícito do conteúdo documental da fonte global.
+-- Sem backfill; o documento privado é revalidado pelo pre_gate.
+alter table public.fontes
+ add column nano_documento_sha256 text,
+ add constraint nano_fonte_documento_hash check(nano_documento_sha256 is null or nano_documento_sha256 ~ '^[0-9a-f]{64}$');
+-- Grafo global: leitores compartilham uma trava e escritores a adquirem exclusivamente.
+create function nano_lifecycle_interno.nano_gate_guard_grafo()
+returns trigger language plpgsql set search_path='' as $fn$
+begin
+ if not pg_try_advisory_xact_lock(hashtextextended('nano.gate.grafo.veicular',0)) then
+  raise exception 'grafo veicular ocupado' using errcode='55P03';
+ end if;
+ return null;
+end $fn$;
+revoke all on function nano_lifecycle_interno.nano_gate_guard_grafo() from public,anon,authenticated,service_role;
+do $grafo$
+declare rel regclass;
+begin
+ foreach rel in array array['public.montadoras'::regclass,'public.modelos'::regclass,'public.geracoes'::regclass,'public.versoes'::regclass,'public.motores'::regclass,'public.versao_motor'::regclass,'public.fontes'::regclass,'public.pecas_ref'::regclass,'public.pecas_aplicacoes_tecnicas'::regclass] loop
+  execute format('grant select on %s to nano_lifecycle_gate_registrador',rel);
+  execute format('create policy nano_gate_grafo_ler on %s for select to nano_lifecycle_gate_registrador using(true)',rel);
+  execute format('create trigger zz_nano_guard_grafo before insert or update or delete or truncate on %s for each statement execute function nano_lifecycle_interno.nano_gate_guard_grafo()',rel);
+  execute format('alter table %s enable always trigger zz_nano_guard_grafo',rel);
+ end loop;
+end $grafo$;
+-- Campos candidatos, ainda sujeitos ao parecer e ao futuro gate humano.
+-- Mesmo registrador NOLOGIN, escopo RLS e trava da conferência existente.
+grant select on public.produto_aplicacoes,public.marcas,public.produto_pecas_ref to nano_lifecycle_gate_registrador;
+create policy nano_gate_produto_peca_ler on public.produto_pecas_ref for select to nano_lifecycle_gate_registrador using(loja_id::text=current_setting('nano.gate_loja',true));
+create policy nano_gate_produto_peca_escopo on public.produto_pecas_ref as restrictive for all to nano_lifecycle_gate_registrador using(loja_id::text=current_setting('nano.gate_loja',true)) with check(false);
+create policy nano_gate_aplicacao_ler on public.produto_aplicacoes for select to nano_lifecycle_gate_registrador using(loja_id::text=current_setting('nano.gate_loja',true));
+create policy nano_gate_aplicacao_escopo on public.produto_aplicacoes as restrictive for all to nano_lifecycle_gate_registrador using(loja_id::text=current_setting('nano.gate_loja',true)) with check(false);
+create policy nano_gate_marca_ler on public.marcas for select to nano_lifecycle_gate_registrador using(loja_id::text=current_setting('nano.gate_loja',true));
+create policy nano_gate_marca_escopo on public.marcas as restrictive for all to nano_lifecycle_gate_registrador using(loja_id::text=current_setting('nano.gate_loja',true)) with check(false);
+grant create on schema nano_lifecycle_interno to nano_lifecycle_gate_registrador;
+-- CAT-133: uma única projeção compartilhada pelo registrador e pelo leitor humano.
+-- INVOKER: sem autoridade de escrita ou acesso externo. Chamador adquire locks e RLS.
+create function nano_lifecycle_interno.nano_catalogo_snapshot_vinculado(p_loja uuid,p_aplicacao uuid,p_candidato jsonb,p_hash text)
+returns jsonb language sql stable security invoker set search_path='' as $snapshot$
+ select to_jsonb(a.*)||jsonb_build_object('marca_conferida',to_jsonb(m.*),'grafo_conferido',jsonb_build_object('montadora',to_jsonb(ma.*),'modelo',to_jsonb(mo.*),'geracao',to_jsonb(g.*),'versao',to_jsonb(ve.*),'motor',to_jsonb(mt.*),'vinculo_motor',to_jsonb(vm.*),'fonte_motor',to_jsonb(fm.*),'fonte_vinculo',to_jsonb(fv.*),'produto_peca',to_jsonb(pp.*),'peca',to_jsonb(pr.*),'aplicacao_peca',to_jsonb(pa.*),'fonte_produto_peca',to_jsonb(fp.*),'fonte_peca',to_jsonb(fr.*),'fonte_aplicacao_peca',to_jsonb(fa.*)))
+ from public.produto_aplicacoes a join public.marcas m on m.id=a.marca_veiculo_id and m.id=a.montadora_origem_id and m.loja_id=a.loja_id
+ join public.versao_motor vm on vm.versao_id=a.nano_versao_id and vm.motor_id=a.nano_motor_id
+ join public.versoes ve on ve.id=vm.versao_id
+ join public.geracoes g on g.id=ve.geracao_id
+ join public.modelos mo on mo.id=g.modelo_id
+ join public.montadoras ma on ma.id=mo.montadora_id
+ join public.motores mt on mt.id=vm.motor_id
+ join public.fontes fm on fm.id=mt.fonte_id
+ join public.fontes fv on fv.id=vm.fonte_id
+ join public.produto_pecas_ref pp on pp.id=a.nano_produto_peca_ref_id and pp.loja_id=a.loja_id and pp.produto_id=a.produto_id
+ join public.pecas_ref pr on pr.id=pp.peca_id
+ join public.pecas_aplicacoes_tecnicas pa on pa.id=a.nano_peca_aplicacao_id and pa.peca_id=pr.id and pa.versao_id=ve.id and pa.motor_id=mt.id
+ join public.fontes fp on fp.id=pp.fonte_id
+ join public.fontes fr on fr.id=pr.fonte_id
+ join public.fontes fa on fa.id=pa.fonte_id
+ where a.loja_id=p_loja and a.id=p_aplicacao and a.produto_id::text=p_candidato->'escopo'->>'produto'
+  and a.codigo_oem=p_candidato->'fato'->>'oem' and a.modelo=p_candidato->'fato'->>'modelo'
+  and a.motorizacao=p_candidato->'fato'->>'motor'
+  and a.ano_inicial::text=p_candidato->'fato'->>'ano_inicio' and a.ano_final::text=p_candidato->'fato'->>'ano_fim'
+  and a.nano_geracao_veicular=p_candidato->'fato'->>'geracao'
+  and a.nano_emissao=p_candidato->'fato'->>'emissao'
+  and a.nano_mercado=p_candidato->'fato'->>'mercado'
+  and a.nano_tipo_ano=p_candidato->'fato'->>'tipo_ano'
+  and ma.nome=m.nome and mo.nome=a.modelo and g.codigo_interno=a.nano_geracao_veicular
+  and ve.mercado=a.nano_mercado and mt.codigo=a.motorizacao and mt.sistema_emissoes=a.nano_emissao
+  and mt.status='aprovado' and vm.status='aprovado'
+  and vm.periodo_inicio<=a.ano_inicial and vm.periodo_fim>=a.ano_final
+  and fm.mercado=a.nano_mercado and fv.mercado=a.nano_mercado
+  and pp.relacao='e_esta_peca' and pp.status='aprovado' and pp.verificado_em is not null
+  and pr.classe='genuina' and pr.montadora_id=ma.id and pr.codigo=a.codigo_oem and pr.status='aprovado' and pr.verificado_em is not null
+  and pa.status='aprovado' and pa.verificado_em is not null and pa.mercado=a.nano_mercado
+  and pa.periodo_inicio<=a.ano_inicial and pa.periodo_fim>=a.ano_final
+  and pa.faixa_serie is null and pa.restricoes is null
+  and fp.mercado=a.nano_mercado and fr.mercado=a.nano_mercado and fa.mercado=a.nano_mercado
+  -- Escopo conservador: todas as fontes devem apontar ao mesmo conteúdo
+  -- efetivamente atestado; hash de metadados, URL ou rótulo não é suficiente.
+  and fm.nano_documento_sha256=p_hash and fv.nano_documento_sha256=p_hash
+  and fp.nano_documento_sha256=p_hash and fr.nano_documento_sha256=p_hash and fa.nano_documento_sha256=p_hash
+  and fm.tipo in ('catalogo_montadora','epc','doc_fabricante_componente')
+  and fv.tipo in ('catalogo_montadora','epc','doc_fabricante_componente')
+  and fp.tipo in ('catalogo_montadora','epc','doc_fabricante_componente')
+  and fr.tipo in ('catalogo_montadora','epc','doc_fabricante_componente')
+  and fa.tipo in ('catalogo_montadora','epc','doc_fabricante_componente')
+  and m.nome=p_candidato->'fato'->>'montadora' and m.tipo='veiculo' and m.status='aprovado';
+$snapshot$;
+revoke all on function nano_lifecycle_interno.nano_catalogo_snapshot_vinculado(uuid,uuid,jsonb,text) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+grant execute on function nano_lifecycle_interno.nano_catalogo_snapshot_vinculado(uuid,uuid,jsonb,text) to nano_lifecycle_gate_registrador;
+-- Sobrecarga explícita: a versão histórica de nove argumentos não vincula aplicação.
+-- Não aceita snapshot/hash da aplicação do chamador; deriva da leitura protegida.
+create function nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(p_loja uuid,p_item uuid,p_execucao uuid,p_geracao bigint,p_versao integer,p_candidato jsonb,p_leitura uuid,p_hash text,p_solicitacao uuid,p_aplicacao uuid)
+returns jsonb language plpgsql volatile security definer set search_path='' set nano.gate_loja='' as $fn$
+declare r nano_lifecycle_interno.conferencias_gate; snap jsonb; digest text;
+begin
+ if p_loja is null or p_solicitacao is null or p_aplicacao is null or current_setting('transaction_isolation')<>'read committed'
+  or nano_lifecycle_interno.nano_lifecycle_verificador_autorizado(p_loja,session_user::text) is not true
+  or pg_has_role(session_user,'nano_lifecycle_gate_registrador','MEMBER') then return jsonb_build_object('estado','retida','homologada',false); end if;
+ if not nano_lifecycle_interno.nano_lifecycle_travar_conferencia(p_loja,p_solicitacao) then return jsonb_build_object('estado','ocupada','homologada',false); end if;
+ if not pg_try_advisory_xact_lock_shared(hashtextextended('nano.gate.grafo.veicular',0)) then return jsonb_build_object('estado','ocupada','homologada',false); end if;
+ perform set_config('nano.gate_loja',p_loja::text,true);
+ -- Leitura depois da trava comum de produto, aplicação, marca e fonte.
+ snap:=nano_lifecycle_interno.nano_catalogo_snapshot_vinculado(p_loja,p_aplicacao,p_candidato,p_hash);
+ if snap is null then return jsonb_build_object('estado','retida','homologada',false); end if;
+ digest:=encode(sha256(convert_to(snap::text,'UTF8')),'hex');
+ if nano_lifecycle_interno.nano_lifecycle_pre_gate(p_loja,p_item,p_execucao,p_geracao,p_versao,p_candidato,p_leitura,p_hash) is not true then return jsonb_build_object('estado','retida','homologada',false); end if;
+ insert into nano_lifecycle_interno.conferencias_gate(loja_id,solicitacao,item_id,geracao,candidato,leitura_id,sha256,auditor,conferido_em,aplicacao_id,aplicacao_snapshot,aplicacao_sha256)
+ values(p_loja,p_solicitacao,p_item,p_geracao,p_candidato,p_leitura,p_hash,session_user,clock_timestamp(),p_aplicacao,snap,digest)
+ on conflict(loja_id,solicitacao) do nothing returning * into r;
+ if found then return jsonb_build_object('estado','vinculo_registrado','solicitacao',r.solicitacao,'homologada',false); end if;
+ select * into r from nano_lifecycle_interno.conferencias_gate where loja_id=p_loja and solicitacao=p_solicitacao;
+ if not found or r.item_id is distinct from p_item or r.geracao is distinct from p_geracao or r.candidato is distinct from p_candidato or r.leitura_id is distinct from p_leitura or r.sha256 is distinct from p_hash or r.aplicacao_id is distinct from p_aplicacao or r.aplicacao_snapshot is distinct from snap or r.aplicacao_sha256 is distinct from digest then return jsonb_build_object('estado','retida','homologada',false); end if;
+ return jsonb_build_object('estado','vinculo_ja_registrado','solicitacao',r.solicitacao,'homologada',false);
+end $fn$;
+alter function nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text,uuid,uuid) owner to nano_lifecycle_gate_registrador;
+revoke all on function nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text,uuid,uuid) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+grant execute on function nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text,uuid,uuid) to nano_lifecycle_auditoria;
+revoke create on schema nano_lifecycle_interno from nano_lifecycle_gate_registrador;
+-- CAT-132: fronteira consultiva de sessão humana no CI, NÃO é decisão.
+-- SECURITY INVOKER: preserva RLS, não amplia DML nem aceita ator do chamador.
+-- Exige vínculo lojista persistido; super-admin por claim isolado não é
+-- suficiente, pois a revogação dessa claim não integra a trava por loja.
+create function private.nano_catalogo_conferir_autoridade(p_loja uuid,p_produto uuid,p_aplicacao uuid)
+returns jsonb language plpgsql volatile security invoker set search_path='' as $humano$
+declare ator uuid;
+begin
+ if current_user<>'authenticated' or current_setting('transaction_isolation')<>'read committed'
+  or p_loja is null or p_produto is null or p_aplicacao is null then
+  return jsonb_build_object('estado','retida','homologada',false);
+ end if;
+ ator:=auth.uid();
+ if ator is null then return jsonb_build_object('estado','retida','homologada',false); end if;
+ -- A trava é a mesma dos escritores de usuários e aplicações (CAT-123).
+ if not pg_try_advisory_xact_lock(hashtextextended('nano.gate.documental:'||p_loja::text,0)) then
+  return jsonb_build_object('estado','ocupada','homologada',false);
+ end if;
+ -- Leitura VOLATILE depois da exclusão em READ COMMITTED.
+ if public.pode_administrar_loja(p_loja) is not true
+  or not exists(select 1 from public.usuarios_loja u where u.loja_id=p_loja and u.user_id=ator and u.papel='lojista')
+  or not exists(select 1 from public.produto_aplicacoes a where a.loja_id=p_loja and a.produto_id=p_produto and a.id=p_aplicacao) then
+  return jsonb_build_object('estado','retida','homologada',false);
+ end if;
+ return jsonb_build_object('estado','autoridade_consultiva','ator',ator,'loja',p_loja,'produto',p_produto,'aplicacao',p_aplicacao,'homologada',false);
+end $humano$;
+revoke all on function private.nano_catalogo_conferir_autoridade(uuid,uuid,uuid) from public,anon,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+grant execute on function private.nano_catalogo_conferir_autoridade(uuid,uuid,uuid) to authenticated;
+-- CAT-133: leitura humana privada de recibo explícito, NÃO pré-gate humano nem decisão.
+create role nano_catalogo_vinculo_humano_leitor nologin noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls;
+grant usage on schema public,auth,nano_lifecycle_interno to nano_catalogo_vinculo_humano_leitor;
+grant usage,create on schema private to nano_catalogo_vinculo_humano_leitor;
+grant execute on function public.pode_administrar_loja(uuid),nano_lifecycle_interno.nano_catalogo_snapshot_vinculado(uuid,uuid,jsonb,text) to nano_catalogo_vinculo_humano_leitor;
+do $leitor$
+declare rel regclass;
+begin
+ foreach rel in array array['public.produto_aplicacoes'::regclass,'public.marcas'::regclass,'public.produto_pecas_ref'::regclass,'public.usuarios_loja'::regclass,'nano_lifecycle_interno.conferencias_gate'::regclass,'nano_lifecycle_interno.fontes_documentais'::regclass,'nano_lifecycle_interno.leituras_documentais'::regclass,'nano_lifecycle_interno.auditoria_escopos'::regclass,
+ 'nano_lifecycle_interno.documentos_tecnicos'::regclass,'nano_lifecycle_interno.resultados_engenharia'::regclass,'nano_lifecycle_interno.autorias_engenharia'::regclass,
+ 'public.nano_lifecycle_checkpoint'::regclass,'public.nano_lifecycle_reserva'::regclass,'public.nano_lifecycle_snapshots'::regclass,'public.pipeline_itens'::regclass,'public.produto_automacao'::regclass,'public.produtos'::regclass] loop
+  execute format('grant select on %s to nano_catalogo_vinculo_humano_leitor',rel);
+  execute format('create policy nano_humano_ler on %s for select to nano_catalogo_vinculo_humano_leitor using(loja_id::text=current_setting(''nano.humano_loja'',true))',rel);
+  execute format('create policy nano_humano_escopo on %s as restrictive for all to nano_catalogo_vinculo_humano_leitor using(loja_id::text=current_setting(''nano.humano_loja'',true)) with check(false)',rel);
+ end loop;
+ foreach rel in array array['public.montadoras'::regclass,'public.modelos'::regclass,'public.geracoes'::regclass,'public.versoes'::regclass,'public.motores'::regclass,'public.versao_motor'::regclass,'public.fontes'::regclass,'public.pecas_ref'::regclass,'public.pecas_aplicacoes_tecnicas'::regclass] loop
+  execute format('grant select on %s to nano_catalogo_vinculo_humano_leitor',rel);
+  execute format('create policy nano_humano_grafo_ler on %s for select to nano_catalogo_vinculo_humano_leitor using(true)',rel);
+ end loop;
+end $leitor$;
+grant execute on function public.nano_lifecycle_projecao(uuid),nano_lifecycle_interno.nano_catalogo_atualidade_comum(uuid,uuid,uuid,bigint,integer,jsonb,jsonb,jsonb) to nano_catalogo_vinculo_humano_leitor;
+-- Verificação da identidade histórica sem fingir que a sessão humana é auditor.
+grant execute on function nano_lifecycle_interno.nano_catalogo_auditor_vigente(text) to nano_catalogo_vinculo_humano_leitor;
+grant execute on function nano_lifecycle_interno.nano_catalogo_documento_confere(uuid,jsonb,jsonb,jsonb,text) to nano_catalogo_vinculo_humano_leitor;
+grant execute on function nano_lifecycle_interno.nano_catalogo_parecer_confere(uuid,jsonb,text,text,jsonb) to nano_catalogo_vinculo_humano_leitor;
+grant execute on function nano_lifecycle_interno.nano_catalogo_tempo_confere(timestamptz,timestamptz,timestamptz) to nano_catalogo_vinculo_humano_leitor;
+create function private.nano_catalogo_conferir_vinculo(p_loja uuid,p_produto uuid,p_aplicacao uuid,p_recibo uuid)
+returns jsonb language plpgsql volatile security definer set search_path='' set nano.humano_loja='' as $humano$
+declare ator uuid; r nano_lifecycle_interno.conferencias_gate; snap jsonb;
+ e nano_lifecycle_interno.resultados_engenharia; a nano_lifecycle_interno.autorias_engenharia;
+ l nano_lifecycle_interno.leituras_documentais; d nano_lifecycle_interno.documentos_tecnicos; f nano_lifecycle_interno.fontes_documentais;
+ esc jsonb;
+begin
+ if current_setting('role',true) is distinct from 'authenticated' or current_setting('transaction_isolation')<>'read committed'
+  or p_loja is null or p_produto is null or p_aplicacao is null or p_recibo is null then
+  return jsonb_build_object('estado','retida','homologada',false);
+ end if;
+ ator:=auth.uid();
+ if ator is null then return jsonb_build_object('estado','retida','homologada',false); end if;
+ if not pg_try_advisory_xact_lock(hashtextextended('nano.gate.documental:'||p_loja::text,0)) then return jsonb_build_object('estado','ocupada','homologada',false); end if;
+ if not pg_try_advisory_xact_lock_shared(hashtextextended('nano.gate.grafo.veicular',0)) then return jsonb_build_object('estado','ocupada','homologada',false); end if;
+ perform set_config('nano.humano_loja',p_loja::text,true);
+ if public.pode_administrar_loja(p_loja) is not true
+  or not exists(select 1 from public.usuarios_loja u where u.loja_id=p_loja and u.user_id=ator and u.papel='lojista') then
+  return jsonb_build_object('estado','retida','homologada',false);
+ end if;
+ select * into r from nano_lifecycle_interno.conferencias_gate c
+ where c.loja_id=p_loja and c.solicitacao=p_recibo and c.aplicacao_id=p_aplicacao and c.candidato->'escopo'->>'produto'=p_produto::text
+  and c.aplicacao_sha256 is not null and not c.homologada;
+ if not found then return jsonb_build_object('estado','retida','homologada',false); end if;
+ -- CAT-134: revalida conteúdo, autoria e atualidade sob os mesmos locks.
+ select * into e from nano_lifecycle_interno.resultados_engenharia x
+ where x.loja_id=p_loja and x.item_id=r.item_id and x.geracao=r.geracao and x.produto_id=p_produto and not x.homologada;
+ if not found or e.hash_entrada is distinct from encode(sha256(convert_to(e.entrada_snapshot::text,'UTF8')),'hex')
+  or e.hash_extracao is distinct from encode(sha256(convert_to(e.extracao_candidata::text,'UTF8')),'hex')
+  or e.extracao_candidata->'nao_se_aplica' is distinct from 'null'::jsonb
+  or not exists(select 1 from jsonb_array_elements(e.extracao_candidata->'codigos_oem') o where o->>'normalizado'=r.candidato->'fato'->>'oem') then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ select * into a from nano_lifecycle_interno.autorias_engenharia x
+ where x.loja_id=p_loja and x.item_id=e.item_id and x.geracao=e.geracao and x.execucao=e.execucao and x.versao=e.versao
+  and x.hash_entrada=e.hash_entrada and x.hash_extracao=e.hash_extracao;
+ if not found then return jsonb_build_object('estado','retida','homologada',false); end if;
+ esc:=jsonb_build_object('loja',a.loja_id,'item',a.item_id,'execucao',a.execucao,'geracao',a.geracao,'versao',a.versao,
+ 'produto',e.produto_id::text,'sku',e.entrada_snapshot->'produto'->>'sku','revisao',e.revisao,'checkpoint',e.checkpoint,
+ 'hashEntrada',a.hash_entrada,'hashExtracao',a.hash_extracao,'produtor',a.produtor);
+ if esc is distinct from r.candidato->'escopo' or a.produtor=r.auditor then return jsonb_build_object('estado','retida','homologada',false); end if;
+ if nano_lifecycle_interno.nano_catalogo_atualidade_comum(p_loja,e.item_id,e.execucao,e.geracao,e.versao,to_jsonb(e),jsonb_build_object('produtor',a.produtor),esc) is not true then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ select * into d from nano_lifecycle_interno.documentos_tecnicos x
+ where x.loja_id=p_loja and x.id=r.candidato->>'documentoId' and x.fonte_id=r.candidato->>'fonteId'
+  and x.sha256=r.sha256 and x.consultado_em<=statement_timestamp();
+ if not found then return jsonb_build_object('estado','retida','homologada',false); end if;
+ select * into f from nano_lifecycle_interno.fontes_documentais x where x.loja_id=p_loja and x.id=d.fonte_id;
+ if not found or not nano_lifecycle_interno.nano_catalogo_documento_confere(p_loja,
+  jsonb_build_object('id',d.id,'loja',d.loja_id,'fonteId',d.fonte_id,'conteudo',d.conteudo,'sha256',d.sha256),
+  jsonb_build_object('id',f.id,'loja',f.loja_id,'tipo',f.tipo,'autorizada',f.autorizada),r.candidato,r.sha256) then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ select * into l from nano_lifecycle_interno.leituras_documentais x where x.loja_id=p_loja and x.id=r.leitura_id
+  and x.item_id=e.item_id and x.geracao=e.geracao and x.escopo=esc and x.fato=r.candidato->'fato'
+  and x.fonte_id=d.fonte_id and x.documento_id=d.id and x.sha256=d.sha256 and x.localizador=r.candidato->>'localizador'
+  and x.resultado='confere' and nano_lifecycle_interno.nano_catalogo_tempo_confere(d.consultado_em,x.verificado_em,statement_timestamp())
+  and position(x.trecho in d.conteudo)>0;
+ if not found or not nano_lifecycle_interno.nano_catalogo_parecer_confere(r.leitura_id,r.candidato,r.sha256,r.auditor::text,
+  jsonb_build_object('id',l.id,'escopo',l.escopo,'fato',l.fato,'fonteId',l.fonte_id,'documentoId',l.documento_id,
+   'localizador',l.localizador,'sha256',l.sha256,'resultado',l.resultado,'verificador',l.verificador))
+  or not nano_lifecycle_interno.nano_catalogo_auditor_vigente(l.verificador::text)
+  or not nano_lifecycle_interno.nano_catalogo_auditor_vigente(r.auditor::text)
+  or (select count(*) from nano_lifecycle_interno.auditoria_escopos x where x.loja_id=p_loja and x.habilitado and x.login_db in (l.verificador,r.auditor))<>2
+  or (select count(*) from nano_lifecycle_interno.leituras_documentais x where x.loja_id=p_loja and x.documento_id=d.id and x.localizador=l.localizador and x.escopo=esc)<>1 then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ snap:=nano_lifecycle_interno.nano_catalogo_snapshot_vinculado(p_loja,p_aplicacao,r.candidato,r.sha256);
+ if snap is null or snap is distinct from r.aplicacao_snapshot or encode(sha256(convert_to(snap::text,'UTF8')),'hex') is distinct from r.aplicacao_sha256 then
+  return jsonb_build_object('estado','retida','homologada',false);
+ end if;
+ -- Resposta mínima: não expõe documento, hash, snapshot ou credenciais.
+ return jsonb_build_object('estado','vinculo_consultivo','ator',ator,'loja',p_loja,'produto',p_produto,'aplicacao',p_aplicacao,'recibo',p_recibo,'homologada',false);
+end $humano$;
+alter function private.nano_catalogo_conferir_vinculo(uuid,uuid,uuid,uuid) owner to nano_catalogo_vinculo_humano_leitor;
+revoke all on function private.nano_catalogo_conferir_vinculo(uuid,uuid,uuid,uuid) from public,anon,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+grant execute on function private.nano_catalogo_conferir_vinculo(uuid,uuid,uuid,uuid) to authenticated;
+revoke create on schema private from nano_catalogo_vinculo_humano_leitor;
+
+-- CAT-143: manifestação humana histórica. Não equivale a homologação nem
+-- modifica a aplicação. Escritor segregado e sem autoridade de publicação.
+create role nano_catalogo_manifestacao_escritor nologin noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls;
+grant usage on schema nano_lifecycle_interno,auth to nano_catalogo_manifestacao_escritor;
+grant usage,create on schema private to nano_catalogo_manifestacao_escritor;
+grant execute on function auth.uid(),private.nano_catalogo_conferir_vinculo(uuid,uuid,uuid,uuid) to nano_catalogo_manifestacao_escritor;
+create table nano_lifecycle_interno.catalogo_manifestacoes(
+ loja_id uuid not null, solicitacao uuid not null, produto_id uuid not null, aplicacao_id uuid not null, recibo uuid not null,
+ ator uuid not null, decisao text not null check(decisao in ('aprovar','rejeitar')),
+ registrado_em timestamptz not null default clock_timestamp(),
+ homologada boolean not null default false check(not homologada),
+ primary key(loja_id,solicitacao), unique(loja_id,recibo),
+ foreign key(loja_id,recibo) references nano_lifecycle_interno.conferencias_gate(loja_id,solicitacao)
+);
+alter table nano_lifecycle_interno.catalogo_manifestacoes enable row level security;
+revoke all on nano_lifecycle_interno.catalogo_manifestacoes from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria,nano_lifecycle_gate_registrador,nano_catalogo_vinculo_humano_leitor;
+grant select,insert on nano_lifecycle_interno.catalogo_manifestacoes to nano_catalogo_manifestacao_escritor;
+create policy nano_manifestacao_escopo on nano_lifecycle_interno.catalogo_manifestacoes for all to nano_catalogo_manifestacao_escritor
+ using(loja_id::text=current_setting('nano.manifestacao_loja',true) and ator=auth.uid())
+ with check(loja_id::text=current_setting('nano.manifestacao_loja',true) and ator=auth.uid() and not homologada);
+create policy nano_manifestacao_restrita on nano_lifecycle_interno.catalogo_manifestacoes as restrictive for all to nano_catalogo_manifestacao_escritor
+ using(loja_id::text=current_setting('nano.manifestacao_loja',true) and ator=auth.uid())
+ with check(loja_id::text=current_setting('nano.manifestacao_loja',true) and ator=auth.uid() and not homologada);
+create trigger nano_manifestacao_imutavel before update or delete on nano_lifecycle_interno.catalogo_manifestacoes for each row execute function nano_lifecycle_interno.proteger_documento_tecnico();
+create trigger nano_manifestacao_truncate before truncate on nano_lifecycle_interno.catalogo_manifestacoes for each statement execute function nano_lifecycle_interno.proteger_documento_tecnico();
+alter table nano_lifecycle_interno.catalogo_manifestacoes enable always trigger nano_manifestacao_imutavel;
+alter table nano_lifecycle_interno.catalogo_manifestacoes enable always trigger nano_manifestacao_truncate;
+create function private.nano_catalogo_registrar_manifestacao(p_loja uuid,p_produto uuid,p_aplicacao uuid,p_recibo uuid,p_solicitacao uuid,p_decisao text)
+returns jsonb language plpgsql volatile security definer set search_path='' set nano.manifestacao_loja='' as $manifestacao$
+declare v jsonb; ator_atual uuid; evento nano_lifecycle_interno.catalogo_manifestacoes;
+begin
+ if current_setting('role',true) is distinct from 'authenticated' or current_setting('transaction_isolation')<>'read committed'
+ or p_solicitacao is null or p_decisao is null or p_decisao not in ('aprovar','rejeitar') then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ ator_atual:=auth.uid();
+ if ator_atual is null then return jsonb_build_object('estado','retida','homologada',false); end if;
+ -- Mantém as travas transacionais de loja e grafo adquiridas na conferência.
+ -- Revalida inclusive no retry, sem aceitar identidade ou snapshot do cliente.
+ v:=private.nano_catalogo_conferir_vinculo(p_loja,p_produto,p_aplicacao,p_recibo);
+ if v->>'estado'='ocupada' then return jsonb_build_object('estado','ocupada','homologada',false); end if;
+ if v is distinct from jsonb_build_object('estado','vinculo_consultivo','ator',ator_atual,'loja',p_loja,'produto',p_produto,'aplicacao',p_aplicacao,'recibo',p_recibo,'homologada',false) then
+  return jsonb_build_object('estado','retida','homologada',false); end if;
+ perform set_config('nano.manifestacao_loja',p_loja::text,true);
+ insert into nano_lifecycle_interno.catalogo_manifestacoes(loja_id,solicitacao,produto_id,aplicacao_id,recibo,ator,decisao)
+ values(p_loja,p_solicitacao,p_produto,p_aplicacao,p_recibo,ator_atual,p_decisao)
+ on conflict do nothing returning * into evento;
+ if found then return jsonb_build_object('estado','manifestacao_registrada','solicitacao',p_solicitacao,'homologada',false); end if;
+ select * into evento from nano_lifecycle_interno.catalogo_manifestacoes m
+ where m.loja_id=p_loja and m.solicitacao=p_solicitacao and m.produto_id=p_produto and m.aplicacao_id=p_aplicacao
+ and m.recibo=p_recibo and m.ator=ator_atual and m.decisao=p_decisao and not m.homologada;
+ if not found then return jsonb_build_object('estado','retida','homologada',false); end if;
+ return jsonb_build_object('estado','manifestacao_ja_registrada','solicitacao',p_solicitacao,'homologada',false);
+end $manifestacao$;
+alter function private.nano_catalogo_registrar_manifestacao(uuid,uuid,uuid,uuid,uuid,text) owner to nano_catalogo_manifestacao_escritor;
+revoke all on function private.nano_catalogo_registrar_manifestacao(uuid,uuid,uuid,uuid,uuid,text) from public,anon,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria,nano_lifecycle_gate_registrador,nano_catalogo_vinculo_humano_leitor;
+grant execute on function private.nano_catalogo_registrar_manifestacao(uuid,uuid,uuid,uuid,uuid,text) to authenticated;
+revoke create on schema private from nano_catalogo_manifestacao_escritor;
+commit;

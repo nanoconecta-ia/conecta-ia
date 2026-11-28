@@ -23,6 +23,7 @@ import "./mobis-vitrine-completa-v3.css";
 import "./mobis-v3-limpo.css";
 import "./mobis-tres-modelos.css";
 import "./mobis-02-entrega-real.css";
+import "../ma-display-prismatic.css";
 
 /** Vitrine Mobis aprovada: exclusiva da loja pública, sem controles Conecta.IA.
  * Todo dado comercial e aplicação vem da Edge Function loja-publica, que filtra
@@ -31,7 +32,8 @@ import "./mobis-02-entrega-real.css";
 type Produto = {sku:string;nome:string;preco:number|null;marca:string|null;descricao:string|null;imagem:string|null;whatsapp:string|null;em_estoque:boolean|null;atualizado_em:string|null;consulta_previa?:boolean;categoria?:string|null;referencias_aprovadas?:{tipo:string;valor:string}[]};
 type Veiculo = {modelo:string;motor:string|null;de:number|null;ate:number|null};
 type Banner = {sku:string;nome:string;preco:number|null;chamada:string|null;flash:boolean;whatsapp:string|null;imagem?:string|null;fim?:string|null};
-type PaginaAplicacao = {slug:string;titulo:string;modelo:string;status:string};
+import { modeloDoAtalho, paginasDaSelecao, rotuloAplicacao } from "../lib/vitrineAplicacoes.ts";
+type PaginaAplicacao = {slug:string;titulo:string;modelo:string;status:string;motorizacao?:string|null;ano_inicial?:number|null;ano_final?:number|null};
 type Resposta = {
   paginas_aplicacao?:Record<string,PaginaAplicacao[]>;
   loja:{nome:string;slug:string;ambiente?:"teste"|"producao";whatsapp?:string|null;venda_habilitada?:boolean};
@@ -159,9 +161,8 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     const categoriaEscolhida=no?.slug??chave;
     setDepartamentoAtivo(chave);
     setDepartamentoPendente(no?null:{chave,nome});
-    setModelo("");setMotor("");setAno("");setCategoria(categoriaEscolhida);
-    setBusca("");setAbaBusca("descricao");
-    setF({...VAZIO,categoria:categoriaEscolhida});
+    setCategoria(categoriaEscolhida);
+    setF({...f,q:busca.trim(),modelo,motor,ano,categoria:categoriaEscolhida,pagina:1});
     window.requestAnimationFrame(()=>para("ms-aplicacoes"));
   }
   const whatsapp=linkWhatsAppPublico(dados?.loja.whatsapp,
@@ -187,6 +188,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
     catalogo: <>
       <section className="m2-wrap m2-secao m2-catalogo" data-bloco="produtos" id="m2-catalogo" aria-live="polite">
         <div className="m2-cab-secao"><div><span className="m2-kicker">PEÇAS E COMPONENTES</span><h2>{modeloVisual==="tecnico"?"Destaques da loja":"Produtos no catálogo"}</h2><small>{estado==="carregando"?"Consultando…":estado==="ok"?(dados?.total??0)>0?String(dados?.total??0)+" produtos para consulta":"Novos itens em preparação":""}</small></div></div>
+        {(f.q||f.modelo||f.motor||f.ano||f.categoria)&&<p className="m2-busca-selecionada">Busca selecionada: {[f.q,f.modelo,f.motor,f.ano,dados?.categorias.find(c=>c.slug===f.categoria)?.nome??f.categoria].filter(Boolean).join(" · ")}</p>}
         {estado==="carregando"&&<div className="m2-vazio">Consultando catálogo público autorizado…</div>}
         {(estado==="erro"||estado==="limite")&&<div className="m2-vazio"><strong>Não foi possível carregar o catálogo.</strong><p>{estado==="limite"?"Limite de consultas atingido.":"Tente novamente."}</p><button onClick={()=>setTentativa(x=>x+1)}>Tentar novamente</button></div>}
         {estado==="naoachada"&&<div className="m2-vazio">Loja não encontrada.</div>}
@@ -195,9 +197,9 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
             ?"Ainda não há peças liberadas para esses filtros."
             :"Itens em organização por aplicação aprovada."}
         </p>}
-        {dados&&dados.produtos.length>0&&<div className="m2-produto-grade">{dados.produtos.map(p=><article key={p.sku} data-sku-fisico={p.sku} className="m2-produto">
+        {dados&&dados.produtos.length>0&&<div className="m2-produto-grade">{dados.produtos.map(p=>{const fichas=paginasDaSelecao(aplicacoesPublicas(dados.paginas_aplicacao?.[p.sku]),f);const href=fichas.length===1?"#/a/"+fichas[0].slug:"#/p/mobis/"+encodeURIComponent(p.sku);return <article key={p.sku} data-sku-fisico={p.sku} className="m2-produto">
           <div className="m2-foto-produto">
-            <a href={"#/p/mobis/"+encodeURIComponent(p.sku)} aria-label={"Abrir página do produto físico "+p.sku} className="m2-foto-link">
+            <a href={href} aria-label={fichas.length===1?"Abrir ficha de "+rotuloAplicacao(fichas[0]):"Abrir ficha do produto "+p.sku} className="m2-foto-link">
               {p.imagem?<img src={p.imagem} alt={"Foto real aprovada da peça física "+p.sku} loading="lazy"/>:
                 <span className="m2-sem-foto-real" role="status">Foto real da peça em preparação<small>SKU {p.sku}</small></span>}
             </a>
@@ -208,28 +210,26 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
               {p.referencias_aprovadas.map((r,i)=><span key={r.tipo+":"+r.valor+":"+i}>
                 <b>{r.tipo==="fabricante"?"FABRICANTE":r.tipo==="oem"?"OEM":r.tipo.toUpperCase()}</b> {r.valor}
               </span>)}
-            </div>:null}<h3>{aplicacoesPublicas(dados.paginas_aplicacao?.[p.sku]).length
-                ? p.nome
-                : p.nome}</h3>
-            {aplicacoesPublicas(dados.paginas_aplicacao?.[p.sku]).length
+            </div>:null}<h3>{fichas.length===1?fichas[0].titulo:p.nome}</h3>
+            {fichas.length
               ? <div style={{margin:"12px 0",borderTop:"1px solid #e0d9ce",paddingTop:12}}>
                   <p style={{fontWeight:700}}>Páginas por veículo — aplicações aprovadas</p>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {aplicacoesPublicas(dados.paginas_aplicacao?.[p.sku]).map(ap=>
+                    {fichas.map(ap=>
                       <a key={ap.slug} href={"#/a/"+ap.slug}
                         style={{display:"inline-block",padding:"8px 11px",border:"1px solid #E2181A",borderRadius:6,color:"#b50009",fontWeight:700,fontSize:13,textDecoration:"none"}}>
-                        {ap.modelo} · ver ficha ↗
+                        {rotuloAplicacao(ap)} · ver ficha ↗
                       </a>)}
                   </div>
                 </div>
               : p.descricao&&<p>{p.descricao.slice(0,105)}</p>}
             <strong>Preço sob consulta</strong>
-            <p>Confirme aplicação e disponibilidade.</p>
+            <p>{f.modelo&&!fichas.length?"Ficha específica em preparação. Confirme a aplicação com a equipe.":"Confirme aplicação e disponibilidade."}</p>
             <div>{p.whatsapp&&<a href={p.whatsapp} target="_blank" rel="noopener noreferrer">Consultar no WhatsApp ↗</a>}
-              {!p.consulta_previa&&<a href={"#/p/mobis/"+encodeURIComponent(p.sku)} target="_blank" rel="noopener noreferrer">Abrir ficha em nova aba ↗</a>}
+              {!p.consulta_previa&&<a href={href} target="_blank" rel="noopener noreferrer">Abrir ficha em nova aba ↗</a>}
             </div>
           </div>
-        </article>)}</div>}
+        </article>})}</div>}
         {dados&&paginas>1&&<nav className="m2-paginas" aria-label="Páginas de produtos"><button disabled={f.pagina<=1} onClick={()=>setF({...f,pagina:f.pagina-1})}>Anterior</button><span>{f.pagina} / {paginas}</span><button disabled={f.pagina>=paginas} onClick={()=>setF({...f,pagina:f.pagina+1})}>Próxima</button></nav>}
       </section>
     </>,
@@ -237,7 +237,7 @@ export function LojaMobisNova({slug,contexto}:{slug:string;contexto?:{tipo:"veic
       <div className="m2-modulo-titulo"><span>CATÁLOGO POR VEÍCULO</span><h2>Linhas de veículos</h2>
         <p>Escolha a linha para buscar produtos. A foto identifica o modelo, não comprova compatibilidade.</p></div>
       <div className="m2-modulo-veiculos">
-        {VEICULOS.map(v=><a key={v.valor} href={"#/loja/mobis/veiculo/"+encodeURIComponent(v.valor)} aria-label={"Buscar peças da linha "+v.nome}>
+        {VEICULOS.map(v=><a key={v.valor} href={"#/loja/mobis/veiculo/"+encodeURIComponent(modeloDoAtalho(v.valor,opcoes))} aria-label={"Buscar peças da linha "+v.nome}>
           <img src={v.foto} alt={"Imagem de referência de "+v.nome} width={480} height={360} loading="lazy"/>
           <strong>{v.nome}</strong><small>Ver linha e consultar aplicação →</small>
         </a>)}

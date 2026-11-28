@@ -1,0 +1,117 @@
+/* MA DISPLAY — Prismatic Pro · camada visual Mobis, sem dependências externas.
+ * A marca Conecta.IA, a geometria dos logos, os temas e o fluxo funcional permanecem.
+ * Película estática: sem WebGL, blur contínuo, animações, texto sobreposto ou alteração de fotos.
+ * Escopo: lojista Mobis no painel e vitrines/fichas públicas exclusivas Mobis. */
+:where([data-ma-display="prismatic"], .mobis-v2.m4[data-mobis-site="v3"], .produto-publico-mobis) {
+  --ma-film-glass: linear-gradient(126deg, #ffffff26 0%, #ffffff08 22%, transparent 38%);
+  --ma-film-brush: repeating-linear-gradient(90deg, #ffffff07 0 1px, transparent 1px 4px);
+  --ma-film-prism: linear-gradient(120deg, #ffffff1a 0%, transparent 27%, #a5bdce12 62%, transparent 82%);
+  --ma-edge: inset 0 1px 0 #ffffff35, inset 0 -1px 0 #0000001c;
+  --ma-depth: 0 5px 16px #11191e1a;
+}
+
+/* O SVG cromado aprovado tem fundo transparente: não recortar, esticar ou recolorir. */
+.conecta-aprovado-root [data-ma-display="prismatic"] .ap-marca-window {
+  width: 100%;
+  max-width: 167px;
+  height: auto;
+  overflow: visible;
+}
+.conecta-aprovado-root [data-ma-display="prismatic"] .ap-loja-marca .ap-marca-window img {
+  position: static;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Conecta: acabamento das superfícies, sem alterar tokens, contraste ou navegação. */
+@media (forced-colors: none) {
+  html:not([data-tema="contraste"]) .conecta-aprovado-root [data-ma-display="prismatic"] .ap-sidebar {
+    background-image: var(--ma-film-brush), var(--ma-film-prism), linear-gradient(160deg,#101e2e,#192c3e 62%,#122133);
+    box-shadow: inset -1px 0 #a5bdce38, 5px 0 18px #11191e16;
+  }
+  html:not([data-tema="contraste"]) .conecta-aprovado-root [data-ma-display="prismatic"] .ap-sidebar nav a[aria-current="page"] {
+    background-image: var(--ma-film-glass);
+    box-shadow: inset 4px 0 #bd6672, inset 0 1px 0 #ffffff2b;
+  }
+  html:not([data-tema="contraste"]) .conecta-aprovado-root [data-ma-display="prismatic"] :is(.ap-topbar,.ap-preferencias>summary,.ap-protecao) {
+    background-image: var(--ma-film-prism);
+    box-shadow: var(--ma-edge), var(--ma-depth);
+  }
+  html:not([data-tema="contraste"]) .conecta-aprovado-root [data-ma-display="prismatic"] :is(.cartao,.v-cartao,.indicador) {
+    box-shadow: var(--ma-edge), var(--ma-depth);
+  }
+
+  /* Mobis: vermelho original, grafite e gelo; nenhuma mudança em paletas publicadas. */
+  .mobis-v2.m4[data-mobis-site="v3"] .ms-navegacao {
+    background-image: var(--ma-film-glass), linear-gradient(#e92428,#a70009 86%,#790009);
+    box-shadow: var(--ma-edge);
+  }
+  .mobis-v2.m4[data-mobis-site="v3"] .ms-menu :is(a,button):hover {
+    box-shadow: var(--ma-edge);
+  }
+  .mobis-v2.m4[data-mobis-site="v3"] .ms-departamentos-lista button {
+    background-image: var(--ma-film-brush), var(--ma-film-glass), linear-gradient(145deg,#30383e,#1f2327);
+    box-shadow: var(--ma-edge), var(--ma-depth);
+  }
+  .mobis-v2.m4[data-mobis-site="v3"][data-mobis-modelo="tecnico"] main .ms-departamentos-lista button {
+    background-image: var(--ma-film-brush), var(--ma-film-glass), linear-gradient(145deg,#30383e,#1f2327);
+  }
+  .mobis-v2.m4[data-mobis-site="v3"] :is(.m2-produto,.ms-pesquisa,.ms-encontrar,.gcv3-painel) {
+    box-shadow: var(--ma-edge), var(--ma-depth);
+  }
+  .mobis-v2.m4[data-mobis-site="v3"] .m2-foto-produto > .pelicula {
+    /* Foto do produto continua fiel: o acabamento fica no contorno do cartão. */
+    opacity: 0;
+  }
+
+  /* Ficha: brilho metálico discreto nas superfícies, sem alterar dados nem fotos. */
+  .produto-publico-mobis :is(.produto-publico-mobis-cab,.ficha-tecnica,.ficha-oem,.produto-publico-mobis-grade a) {
+    box-shadow: var(--ma-edge), var(--ma-depth);
+  }
+  .produto-publico-mobis .ficha-mobis-tecnico-icone,
+  .produto-publico-mobis .ficha-mobis-veiculo-icone {
+    background-image: var(--ma-film-brush), var(--ma-film-glass), linear-gradient(#4b5056,#191d22 58%,#101215);
+  }
+}
+/* Sem efeito adicional em alto contraste e sem alteração de transições existentes. */
+@media (prefers-reduced-motion: reduce) {
+  .mobis-v2.m4[data-mobis-site="v3"] .ms-departamentos-lista button { transition: none; transform: none; }
+}
+
+/* Catálogo interno Mobis: veículos ilustrativos, sem alteração do filtro técnico. */
+[data-ma-display="prismatic"] .ma-atalhos-veiculos{padding:14px;margin:12px 0}
+[data-ma-display="prismatic"] .ma-atalhos-veiculos h2{font-size:1rem;margin:0 0 4px}
+[data-ma-display="prismatic"] .ma-atalhos-veiculos p{font-size:.78rem;margin:0 0 12px}
+[data-ma-display="prismatic"] .ma-atalhos-veiculos-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px}
+[data-ma-display="prismatic"] .ma-atalhos-veiculos-grade article{min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:10px;border:1px solid #8996a466;border-radius:10px}
+[data-ma-display="prismatic"] .ma-atalhos-veiculos-grade img{display:block;width:100%;height:auto;aspect-ratio:4/3;max-height:132px;object-fit:contain;background:white;border-radius:5px}
+[data-ma-display="prismatic"] .ma-atalhos-veiculos-grade button{min-height:44px;white-space:normal}
+[data-ma-display="prismatic"] .ma-atalhos-veiculos-grade button[aria-pressed="true"]{outline:2px solid currentColor;outline-offset:2px}
+
+/* OP-03: capturas do modelo 02 mostram texto branco sobre gelo e texto
+ * escuro sobre a faixa grafite da busca. Corrigir só esse modelo,
+ * preservando logo, geometria, fotos e os modelos Oficial/Impacto. */
+@media (forced-colors: none) {
+  .mobis-v2.m4[data-mobis-site="v3"][data-mobis-modelo="tecnico"] .gcv3-copy :is(h1,.gcv3-titulo-link) {
+    color:#1f2327 !important;
+    -webkit-text-fill-color:currentColor !important;
+    text-shadow:none !important;
+    background:none !important;
+  }
+  .mobis-v2.m4[data-mobis-site="v3"][data-mobis-modelo="tecnico"] .ms-principal .ms-especialidade strong,
+  .mobis-v2.m4[data-mobis-site="v3"][data-mobis-modelo="tecnico"] .ms-principal .ms-acoes :is(a,button)>small {
+    color:#1f2327 !important;
+    -webkit-text-fill-color:currentColor !important;
+  }
+  .mobis-v2.m4[data-mobis-site="v3"][data-mobis-modelo="tecnico"] .ms-principal .ms-especialidade small {
+    color:#a10e15 !important;
+  }
+  .mobis-v2.m4[data-mobis-site="v3"][data-mobis-modelo="tecnico"] .ms-pesquisa .ms-codigo-exato {
+    background:#1f2327;
+    color:#f5f7f9 !important;
+    -webkit-text-fill-color:currentColor !important;
+  }
+}
