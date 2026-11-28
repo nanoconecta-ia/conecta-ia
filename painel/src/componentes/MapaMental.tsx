@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import { layoutArvore, mapaParaTexto, type MapaNo, type Tom } from "../lib/mapaPagina.ts";
 import { perguntarAoNano } from "../lib/contextoPagina.ts";
 import { iconeNoMapa } from "../lib/iconeNoMapa.ts";
+import { iconeMA, iconeMAParaPeca } from "../lib/maIcones.ts";
+import { AtivosMobisSemLegado } from "./AtivoAprovado.tsx";
 import "./MapaMentalIcones.css";
 
 const COR: Record<Tom, string> = { ok: "var(--ok)", atencao: "var(--atencao)", erro: "var(--erro)", neutro: "var(--ciano)" };
@@ -9,6 +11,7 @@ const LARG_NO = 208, ALT_NO = 26; // 208: com o ícone, o nome da categoria aind
 
 /** Mapa mental da página: árvore horizontal em SVG. Clique (ou Enter/Espaço) recolhe e expande um ramo. Só mostra números e rótulos já higienizados. */
 export function MapaMental({ raiz, titulo }: { raiz: MapaNo; titulo: string }) {
+  const semLegado = useContext(AtivosMobisSemLegado);
   const [recolhidos, setRecolhidos] = useState<Set<string>>(() => new Set(raiz.filhos?.filter((f) => f.id === "taxonomia").map((f) => f.id)));
   const l = useMemo(() => layoutArvore(raiz, { colunaLargura: 232, linhaAltura: 34, margem: 14, recolhidos }), [raiz, recolhidos]);
   const posicao = useMemo(() => new Map(l.nos.map((n) => [n.id, n])), [l]);
@@ -31,6 +34,7 @@ export function MapaMental({ raiz, titulo }: { raiz: MapaNo; titulo: string }) {
           {l.nos.map((n) => {
             const cor = COR[n.tom];
             const icone = iconeNoMapa(n.id, n.rotulo, n.slug);
+            const ma = semLegado && icone ? iconeMA(iconeMAParaPeca(icone)) : undefined;
             const maxRotulo = icone ? 20 : 25;
             const rotulo = n.rotulo.length > maxRotulo ? `${n.rotulo.slice(0, maxRotulo - 1)}…` : n.rotulo;
             const valor = n.valor !== undefined ? String(n.valor) : "";
@@ -40,7 +44,14 @@ export function MapaMental({ raiz, titulo }: { raiz: MapaNo; titulo: string }) {
                 <title>{n.dica ?? `${n.rotulo}${valor ? `: ${valor}` : ""}`}</title>
                 <rect width={LARG_NO} height={ALT_NO} rx={8} style={{ stroke: cor }} />
                 <rect width={5} height={ALT_NO} rx={2} style={{ fill: cor }} />
-                {icone && <svg className="mapa-peca" x={8} y={3} width={21} height={21} viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href={`#i-${icone}`} /></svg>}
+                {ma ? (
+                  <svg className="mapa-peca" data-ma-icone={ma.id} x={8} y={3} width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+                    <path d={ma.d} />
+                    {ma.acento && <path d={ma.acento} stroke="#E2181A" />}
+                  </svg>
+                ) : (
+                  icone && <svg className="mapa-peca" x={8} y={3} width={21} height={21} viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href={`#i-${icone}`} /></svg>
+                )}
                 <text x={icone ? 36 : 14} y={ALT_NO / 2 + 4} className="mapa-rotulo">{rotulo}</text>
                 {valor && <text x={LARG_NO - 10} y={ALT_NO / 2 + 4} textAnchor="end" className="mapa-valor" style={{ fill: cor }}>{valor}</text>}
                 {n.temFilhos && <text x={LARG_NO + 6} y={ALT_NO / 2 + 4} className="mapa-seta" aria-hidden="true">{n.recolhido ? "›" : "‹"}</text>}
