@@ -1,14 +1,20 @@
 {
-  "versao": "0.1.0-candidato",
+  "versao": "0.2.0-candidato",
   "estilo": "MA Display 3D (aço/cromo, acento vermelho, fundo grafite)",
   "origem": "modelo de imagem (Canva generate-image) a pedido do dono em 2026-11-28",
-  "natureza": "ilustrativo / candidato — NÃO é foto real de produto; não prova aplicação, OEM nem compatibilidade; aguarda aprovação do lojista (porteiro). Não homologado, não publicado.",
-  "icones": [
-    {"id": "ma.motor", "arquivo": "motor.png", "rotulo": "Motor"},
-    {"id": "ma.cabecote", "arquivo": "cabecote.png", "rotulo": "Cabeçote"},
-    {"id": "ma.virabrequim", "arquivo": "virabrequim.png", "rotulo": "Virabrequim"},
-    {"id": "ma.freios", "arquivo": "freios.png", "rotulo": "Freios"},
-    {"id": "ma.suspensao", "arquivo": "suspensao.png", "rotulo": "Suspensão"},
-    {"id": "ma.injecao", "arquivo": "injecao.png", "rotulo": "Injeção"}
+  "natureza": "ILUSTRATIVO / candidato — NÃO é foto real de produto; não prova aplicação, OEM nem compatibilidade; aguarda aprovação do lojista (porteiro). Não homologado, não publicado.",
+  "regra": "Usar 3D para nós FÍSICOS (sistemas, componentes, veículos). Nós abstratos (raízes, módulos, oem/sku/epc) continuam vetor (maIcones.ts).",
+  "sistemas_componentes": [
+    {"id":"ma.motor","arquivo":"motor.png"},{"id":"ma.cabecote","arquivo":"cabecote.png"},
+    {"id":"ma.virabrequim","arquivo":"virabrequim.png"},{"id":"ma.freios","arquivo":"freios.png"},
+    {"id":"ma.suspensao","arquivo":"suspensao.png"},{"id":"ma.injecao","arquivo":"injecao.png"},
+    {"id":"ma.arrefecimento","arquivo":"arrefecimento.png"},{"id":"ma.eletrica","arquivo":"eletrica.png"},
+    {"id":"ma.transmissao","arquivo":"transmissao.png"},{"id":"ma.filtragem","arquivo":"filtragem.png"},
+    {"id":"ma.lubrificacao","arquivo":"lubrificacao.png"}
+  ],
+  "veiculos": [
+    {"id":"ma.passeio","arquivo":"passeio.png"},{"id":"ma.suv","arquivo":"suv.png"},
+    {"id":"ma.furgao","arquivo":"furgao.png"},{"id":"ma.picape","arquivo":"picape.png"},
+    {"id":"ma.caminhao","arquivo":"caminhao.png"},{"id":"ma.moto","arquivo":"moto.png"}
   ]
 }
