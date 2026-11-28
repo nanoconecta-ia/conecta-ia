@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SUPABASE_URL, SUPABASE_CHAVE_PUBLICAVEL } from "../config.ts";
 import { MOBIS } from "../lib/publicoLoja.ts";
+import { AtivosMobisSemLegado } from "../componentes/AtivoAprovado.tsx";
 import { FichaProduto } from "../componentes/FichaProduto.tsx";
 import { RodapeMobisEnxuto } from "../componentes/RodapeMobisEnxuto.tsx";
 import type { PoliticasLojaPublicas } from "../componentes/RodapeLoja.tsx";
@@ -49,7 +50,7 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
   const piloto = slug === MOBIS.slug && sku === "CI003696";
   const tecnicaPiloto = piloto && ficha ? fichaPilotoMobis(ficha.produto) : null;
   return (
-    <main className={slug === MOBIS.slug ? `produto-publico-mobis${piloto ? " ficha-mobis-piloto" : ""}` : undefined}>
+    <AtivosMobisSemLegado.Provider value={slug === MOBIS.slug}><main className={slug === MOBIS.slug ? `produto-publico-mobis${piloto ? " ficha-mobis-piloto" : ""}` : undefined}>
       {slug === MOBIS.slug && <header className="produto-publico-mobis-cab">
         <a href="#/loja/mobis" aria-label="Voltar à loja Mobis Autopeças">
           <img src={piloto ? logoMobisOficial : logoMobis} alt="MOBIS AUTOPEÇAS" /></a>
@@ -78,6 +79,6 @@ export function ProdutoPublico({ slug, sku }: { slug: string; sku: string }) {
         </nav>}
         {slug === MOBIS.slug && <p className="suave"><a href={MOBIS.site}>mobisautopecas.com.br — site oficial</a></p>}
       </div>}
-    </main>
+    </main></AtivosMobisSemLegado.Provider>
   );
 }

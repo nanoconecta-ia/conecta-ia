@@ -3,6 +3,7 @@ import { supabase } from "../supabase.ts";
 import type { Loja } from "../lib/dados.ts";
 import { caminhoAte, contar, montarArvore, type No, type NoComTotais } from "../lib/arvore.ts";
 import { iconeDaCategoria } from "../lib/icones.ts";
+import { IconeMA } from "../componentes/IconeMA.tsx";
 import { IconePeca } from "../componentes/IconePeca.tsx";
 import { vistaDaArea } from "../lib/vistas.ts";
 import { VistaExplodida } from "../componentes/VistaExplodida.tsx";
@@ -238,11 +239,11 @@ export function Taxonomia({ loja }: { loja: Loja }) {
                 <AuditoriaVeicular key={loja.id} lojaId={loja.id} />
                 <div className="tx-veiculos">
                   {v.veiculos.map((m) => (
-                    <article key={m.id} className={`tx-montadora ${m.citados ? "" : "vazio"}`}>
-                      <header><h2>{m.nome}</h2><span className="tx-selo mono">{m.citados}</span></header>
+                    <article key={m.id} className={`tx-montadora ${m.citados ? "" : "vazio"}`} data-no-semantico="montadora">
+                      <header><span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><IconeMA id="tipo.montadora" tamanho={24} variante="aco" /><h2>{m.nome}</h2></span><span className="tx-selo mono">{m.citados}</span></header>
                       <ul>
                         {m.modelos.map((x) => (
-                          <li key={x.id}><span>{x.nome}</span><span className="tx-barra" aria-hidden="true"><i style={{ width: `${pct(x.citados, Math.max(1, m.modelos[0]?.citados ?? 1))}%` }} /></span><span className="mono">{x.citados}</span></li>
+                          <li key={x.id} data-no-semantico="modelo"><span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><IconeMA id="tipo.modelo" tamanho={18} variante="azul" />{x.nome}</span><span className="tx-barra" aria-hidden="true"><i style={{ width: `${pct(x.citados, Math.max(1, m.modelos[0]?.citados ?? 1))}%` }} /></span><span className="mono">{x.citados}</span></li>
                         ))}
                         {!m.modelos.length && <li className="suave">Nenhum modelo cadastrado.</li>}
                       </ul>
@@ -251,7 +252,7 @@ export function Taxonomia({ loja }: { loja: Loja }) {
                 </div>
                 <h2 className="tx-sub">Motores citados nos nomes</h2>
                 <div className="tx-chips">
-                  {v.motores.map((m) => <span key={m.id} className={`tx-chip ${m.citados ? "" : "vazio"}`}><span className="mono">{m.codigo}</span><b className="mono">{m.citados}</b></span>)}
+                  {v.motores.map((m) => <span key={m.id} className={`tx-chip ${m.citados ? "" : "vazio"}`} data-no-semantico="motor"><IconeMA id="tipo.motor" tamanho={18} variante="aco" /><span className="mono">{m.codigo}</span><b className="mono">{m.citados}</b></span>)}
                 </div>
               </section>
             )}

@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { BLOCOS, VERSAO_MATRIZ, validarMapa, type Raiz } from "../../../supabase/functions/_shared/nano_lifecycle/matriz_mestra.ts";
 import type { Loja } from "../lib/dados.ts";
 import { useWorkspaceDados } from "../lib/workspaceDados.ts";
 import { AtivoAprovado } from "../componentes/AtivoAprovado.tsx";
+import { IconeMA } from "../componentes/IconeMA.tsx";
+import { iconeDaRaiz, VERSAO_BIBLIOTECA_MA } from "../lib/maIcones.ts";
 import { IndicadoresInicio } from "./IndicadoresInicio.tsx";
 import { urlLojaPublica } from "../lib/lojaHost.ts";
 const numero=(n:number|null|undefined)=>n==null?"—":n.toLocaleString("pt-BR");
@@ -41,6 +44,7 @@ const ROTAS_MAPA:Partial<Record<Raiz,{href:string;rotulo:string}>>={
 };
 type DadosMapa=ReturnType<typeof useWorkspaceDados>["dados"];
 function MapaOperacionalMobis({dados}:{dados:DadosMapa}){
+ const [ativa,setAtiva]=useState<Raiz|null>(null);
  const erros=validarMapa();
  if(erros.length)return <section className="ap-workspace" data-mapa-operacional="invalido" role="alert">Matriz operacional indisponível: contrato inválido. Nenhum módulo liberado pelo mapa.</section>;
  // Contagens já obtidas pelo hook autenticado; não equivalem aos gates canônicos.
@@ -49,17 +53,30 @@ function MapaOperacionalMobis({dados}:{dados:DadosMapa}){
   engineering:{rotulo:"Aplicações com status aprovado na base",valor:dados?.aprovadas},
   vitrine:{rotulo:"Registros marcados como publicados",valor:dados?.publicados},
  };
- return <section className="ap-workspace" data-mapa-operacional={VERSAO_MATRIZ} aria-labelledby="ma-mapa-titulo">
-  <header className="ap-heading"><div><span className="ap-eyebrow">MA DISPLAY · MATRIZ MESTRA {VERSAO_MATRIZ}</span><h2 id="ma-mapa-titulo">Mapa operacional Nano Ecosystem</h2><p>Dependências canônicas, módulos existentes e leituras da loja autenticada. Aceite integrado ainda não medido.</p></div></header>
-  <p role="status">Biblioteca de ícones técnicos: pendente de referência homologada. Os nós usam texto, sem reutilizar o atlas antigo.</p>
-  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,245px),1fr))",gap:"12px"}}>
-   {BLOCOS.map(b=>{const rota=ROTAS_MAPA[b.id],medida=leitura[b.id];return <article key={b.id} data-raiz-operacional={b.id} style={{border:"1px solid currentColor",borderRadius:"10px",padding:"12px",minWidth:0,overflowWrap:"anywhere"}}>
-    <h3>{b.nome}</h3><p><small>Autoridade: {b.autoridade}</small></p>
-    <p>Depende de: {b.depende.length?b.depende.map(id=>BLOCOS.find(x=>x.id===id)?.nome??id).join(" · "):"Nenhuma raiz anterior"}</p>
-    {medida&&<p>{medida.rotulo}: <strong>{numero(medida.valor)}</strong></p>}
-    <details><summary>Critérios de aceite ({b.gates.length})</summary><ul>{b.gates.map(g=><li key={g}>{g} — não medido</li>)}</ul></details>
-    <p>{rota?<a href={rota.href}>{rota.rotulo} →</a>:<small>Sem atalho operacional homologado neste mapa.</small>}</p>
-   </article>})}
+ const blocoAtivo=ativa?BLOCOS.find(b=>b.id===ativa)??null:null;
+ const depsAtivas=new Set<Raiz>(blocoAtivo?.depende??[]);
+ const dependentesAtivos=new Set<Raiz>(ativa?BLOCOS.filter(b=>b.depende.includes(ativa)).map(b=>b.id):[]);
+ return <section className="ap-workspace ma-mapa-operacional" data-mapa-operacional={VERSAO_MATRIZ} data-ma-biblioteca={VERSAO_BIBLIOTECA_MA} aria-labelledby="ma-mapa-titulo">
+  <header className="ap-heading"><div><span className="ap-eyebrow">MA DISPLAY · MATRIZ MESTRA {VERSAO_MATRIZ} · 12 RAÍZES</span><h2 id="ma-mapa-titulo">Mapa mental navegável Nano Ecosystem</h2><p>Dependências canônicas, módulos existentes e leituras da loja autenticada. Selecione uma raiz para destacar origem e impacto.</p></div></header>
+  <nav className="ma-mapa-barra" aria-label="Navegação das 12 raízes">
+   <button type="button" className={`ma-raiz-chip ${ativa===null?"ativo":""}`} onClick={()=>setAtiva(null)} aria-pressed={ativa===null}>Todas (12)</button>
+   {BLOCOS.map(b=>{
+    const rel=ativa===b.id?"ativo":depsAtivas.has(b.id)?"origem":dependentesAtivos.has(b.id)?"impacto":"";
+    return <button key={b.id} type="button" className={`ma-raiz-chip ${rel}`} data-raiz-chip={b.id} onClick={()=>setAtiva(ativa===b.id?null:b.id)} aria-pressed={ativa===b.id}><IconeMA id={iconeDaRaiz(b.id)} tamanho={20} variante={ativa===b.id?"vermelho":"aco"}/><span>{b.nome}</span></button>;
+   })}
+  </nav>
+  <div className="ma-mapa-grade">
+   {BLOCOS.map(b=>{
+    const rota=ROTAS_MAPA[b.id],medida=leitura[b.id];
+    const rel=ativa===b.id?"ativo":depsAtivas.has(b.id)?"origem":dependentesAtivos.has(b.id)?"impacto":ativa?"secundario":"";
+    return <article key={b.id} data-raiz-operacional={b.id} data-raiz-relacao={rel||"padrao"} className={`ma-raiz-card ${rel}`}>
+     <div className="ma-raiz-topo"><IconeMA id={iconeDaRaiz(b.id)} tamanho={30} variante={ativa===b.id?"vermelho":depsAtivas.has(b.id)?"azul":"aco"}/><div><h3>{b.nome}</h3><small>Autoridade: {b.autoridade}</small></div></div>
+     <p>Depende de: {b.depende.length?b.depende.map(id=>BLOCOS.find(x=>x.id===id)?.nome??id).join(" · "):"Nenhuma raiz anterior"}</p>
+     {medida&&<p>{medida.rotulo}: <strong>{numero(medida.valor)}</strong></p>}
+     <details><summary>Critérios de aceite ({b.gates.length})</summary><ul>{b.gates.map(g=><li key={g}>{g} — não medido</li>)}</ul></details>
+     <p>{rota?<a href={rota.href}>{rota.rotulo} →</a>:<small>Sem atalho operacional homologado neste mapa.</small>}</p>
+    </article>;
+   })}
   </div>
  </section>;
 }

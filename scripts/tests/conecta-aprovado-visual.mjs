@@ -64,17 +64,23 @@ try{
   await page.goto(base+'#/');await page.locator('[data-inicio-layout="aprovado-v2"]').waitFor();await page.getByText('2 produtos no espelho',{exact:true}).waitFor();
   const mapa=page.locator('[data-mapa-operacional="1.0.0"]');await mapa.waitFor();
   const painel=page.locator('[data-conecta-layout="aprovado-v2"]');
-  assert.ok(await painel.locator('[data-ativo-estado="pendente"]').count()>0,'ativos ausentes sinalizados');
+  assert.ok(await painel.locator('[data-ativo-estado="ma-display"]').count()>0,'biblioteca universal MA Display ativa no painel Mobis');
   assert.equal(await painel.locator('[data-ativo-estado="atlas-historico"]').count(),0,'Mobis não renderiza atlas anterior');
   assert.equal(await painel.locator('.ap-ativo').evaluateAll(els=>els.filter(el=>getComputedStyle(el).backgroundImage.includes('atlas-modelo-aprovado')).length),0,'atlas não é pintado no painel Mobis');
 
   assert.equal(await mapa.locator('[data-raiz-operacional]').count(),12,'as 12 raízes canônicas estão presentes');
+  assert.equal(await mapa.locator('[data-raiz-operacional] [data-ma-icone^="raiz."]').count(),12,'cada raiz usa ícone da biblioteca universal MA');
   assert.equal(await mapa.locator('a').count(),4,'somente atalhos existentes');
   assert.equal(await mapa.locator('[data-raiz-operacional="erp"] a').getAttribute('href'),'#/catalogo-espelho');
   assert.equal(await mapa.locator('[data-raiz-operacional="supplier"] a').count(),0,'não oferece integração não homologada');
-  assert.equal(await mapa.locator('.ap-ativo,img,svg').count(),0,'mapa não reutiliza atlas ou ícone genérico');
+  assert.equal(await mapa.locator('.ap-ativo,img').count(),0,'mapa não reutiliza atlas ou imagem genérica');
   assert.equal(await mapa.locator('[data-raiz-operacional="erp"] strong').textContent(),'2','contagem do espelho autenticado simulado');
   assert.equal(await mapa.locator('[data-raiz-operacional="auditor"] strong').count(),0,'sem nota fictícia de auditoria');
+  await mapa.locator('[data-raiz-chip="engineering"]').click();
+  assert.equal(await mapa.locator('[data-raiz-operacional="engineering"]').getAttribute('data-raiz-relacao'),'ativo');
+  assert.equal(await mapa.locator('[data-raiz-operacional="lifecycle"]').getAttribute('data-raiz-relacao'),'origem');
+  assert.equal(await mapa.locator('[data-raiz-operacional="taxonomy"]').getAttribute('data-raiz-relacao'),'impacto');
+  await mapa.locator('[data-raiz-chip="engineering"]').click();
   await mapa.locator('[data-raiz-operacional="erp"] summary').click();
   await mapa.getByText('identidade_unica — não medido',{exact:true}).waitFor();
   await mapa.locator('[data-raiz-operacional="erp"] summary').click();
@@ -114,6 +120,8 @@ try{
   assert.equal(await campo.inputValue(),'');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'Nano sem overflow '+width);
   await page.screenshot({path:root+`evidencias-conecta-aprovado/nano-${width}-SIMULADO.png`});
   await page.goto(base+'#/catalogo-aplicacao');await page.locator('[data-catalogo-layout="aprovado-v2"]').waitFor();await page.getByText('Produto sintético para teste',{exact:true}).waitFor();
+  assert.equal(await page.locator('[data-rota-semantica="ma-display"] [data-dimensao-ma]').count(),10,'10 dimensões semânticas MA Display individualizadas');
+  assert.equal(await page.locator('.ap-produto-nome [data-ma-icone="sistema.motor"]').count(),1,'produto vinculado ao ícone MA do nó da taxonomia');
   await verificarMAPrivado(page,'painel');
   await page.reload();await page.locator('[data-catalogo-layout="aprovado-v2"]').waitFor();await page.getByText('Produto sintético para teste',{exact:true}).waitFor();await verificarMAPrivado(page,'painel');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'catálogo sem overflow '+width);
