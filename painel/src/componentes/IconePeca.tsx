@@ -1,8 +1,15 @@
+import { useContext } from "react";
 import { TIPOS_VEICULO, type TipoVeiculo } from "../lib/icones.ts";
+import { iconeMAParaPeca } from "../lib/maIcones.ts";
+import { AtivosMobisSemLegado } from "./AtivoAprovado.tsx";
+import { IconeMA } from "./IconeMA.tsx";
 import { ICONE_3D_PECA, ICONE_3D_VEICULO } from "./icones3d.ts";
 
-/** Ícone de peça. Onde há ícone 3D aprovado usa a imagem; senão, o símbolo i-<nome> do sprite. Sem `titulo` é decorativo. */
+/** Ícone de peça. No ambiente Mobis MA Display usa a biblioteca universal; nos demais preserva 3D/sprite. */
 export function IconePeca({ nome, tamanho = 40, titulo }: { nome: string; tamanho?: number; titulo?: string }) {
+  if (useContext(AtivosMobisSemLegado)) {
+    return <IconeMA id={iconeMAParaPeca(nome)} tamanho={tamanho} variante="aco" titulo={titulo} className="ico-peca" />;
+  }
   const img = ICONE_3D_PECA[nome];
   if (img) return <img className="ico-peca ico-3d" src={img} width={tamanho} height={tamanho} alt={titulo ?? ""} aria-hidden={titulo ? undefined : true} loading="lazy" decoding="async" />;
   return (
@@ -12,10 +19,13 @@ export function IconePeca({ nome, tamanho = 40, titulo }: { nome: string; tamanh
   );
 }
 
-/** Veículo do tipo. Com ícone 3D aprovado usa a imagem (recorte largo); senão, a silhueta v-<tipo> na cor do tipo. */
+/** Veículo do tipo. No ambiente Mobis MA Display usa a biblioteca universal; nos demais preserva 3D/sprite. */
 export function IconeVeiculo({ tipo, largura = 120, titulo }: { tipo: TipoVeiculo | string; largura?: number; titulo?: string }) {
   const t = typeof tipo === "string" ? TIPOS_VEICULO.find((x) => x.chave === tipo) : tipo;
   if (!t) return null;
+  if (useContext(AtivosMobisSemLegado)) {
+    return <IconeMA id={`veiculo.${t.chave}`} tamanho={Math.min(largura, 48)} variante="azul" titulo={titulo ?? t.rotulo} className="ico-veiculo" />;
+  }
   const img = ICONE_3D_VEICULO[t.chave];
   if (img) return <img className="ico-veiculo ico-3d ico-3d-largo" src={img} width={largura} height={Math.round(largura * 0.62)} alt={titulo ?? t.rotulo} loading="lazy" decoding="async" />;
   return (
