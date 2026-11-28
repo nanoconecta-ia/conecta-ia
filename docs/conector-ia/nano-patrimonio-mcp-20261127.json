@@ -1,0 +1,773 @@
+{
+  "baseline": "b8d6b32338fa06da08c9f2d05859d9b4c22519db",
+  "candidato": "8e6ff9f56b11e22dfc4cf5967dd7a98a5b2917df",
+  "registro": [
+    "bling.categorias.consultar",
+    "bling.categorias.criar",
+    "bling.categorias.preparar_alteracao_lote",
+    "bling.categorias.preparar_criacao",
+    "bling.estoque.consultar",
+    "bling.precos.consultar",
+    "bling.produtos.alterar",
+    "bling.produtos.alterar_preco",
+    "bling.produtos.confirmar",
+    "bling.produtos.consultar",
+    "bling.produtos.criar",
+    "bling.produtos.imagens_adicionar",
+    "bling.produtos.preparar_alteracao_preco",
+    "bling.produtos.preparar_atualizacao",
+    "bling.produtos.preparar_cadastro",
+    "bling.produtos.preparar_reativacao",
+    "bling.status.consultar",
+    "conecta.aplicacao.propor",
+    "conecta.banner.anexar",
+    "conecta.banners.gerenciar",
+    "conecta.catalogo.listar",
+    "conecta.catalogo.resumo",
+    "conecta.catalogo.ver",
+    "conecta.codigo.propor",
+    "conecta.contexto.produto_ativo",
+    "conecta.enriquecimento.definir",
+    "conecta.enriquecimento.pendentes",
+    "conecta.enriquecimento.propor",
+    "conecta.fabricante.pagina_preparar",
+    "conecta.imagem.buscar_web",
+    "conecta.imagem.propor",
+    "conecta.midia.anexar_produto",
+    "conecta.plugins.chamar",
+    "conecta.plugins.listar",
+    "conecta.proposta.criar",
+    "conecta.proposta.estado",
+    "conecta.publicacao.preparar",
+    "conecta.publicacao.publicar",
+    "conecta.seo.verificar",
+    "conecta.travas.consultar",
+    "conecta.web.pesquisar_tecnico",
+    "conhecimento.buscar",
+    "dev.codigo.preparar",
+    "dev.docs.consultar",
+    "dev.github.consultar",
+    "dev.pr.propor",
+    "dev.testes.executar",
+    "engenharia.aplicacoes.validar",
+    "engenharia.bula.verificar",
+    "engenharia.classificacao.propor",
+    "engenharia.compartilhamento.sugerir",
+    "engenharia.consulta.interpretar",
+    "engenharia.cruzados.verificar",
+    "engenharia.duplicidade.detectar",
+    "engenharia.fabricantes.identificar",
+    "engenharia.genealogia.organizar",
+    "engenharia.intercambio.listar",
+    "engenharia.loja.condicoes",
+    "engenharia.loja.filtros",
+    "engenharia.loja.pecas_do_veiculo",
+    "engenharia.oem.buscar",
+    "engenharia.oem.pesquisar",
+    "engenharia.pesquisa.investigar",
+    "engenharia.taxonomia.buscar",
+    "engenharia.taxonomia.construir",
+    "nano.atividade.registrar",
+    "nano.diagnostico.ia"
+  ],
+  "locais": [
+    "browser.elemento.clicar",
+    "browser.pagina.ler",
+    "windows.ambiente.versoes",
+    "windows.disco.livre",
+    "windows.processo.existe",
+    "windows.servico.estado",
+    "windows.servico.reiniciar",
+    "windows.sistema.inventario"
+  ],
+  "aliasesAssistente": {
+    "resumo_loja": "conecta.catalogo.resumo",
+    "diagnostico_ia": "nano.diagnostico.ia",
+    "listar_produtos": "conecta.catalogo.listar",
+    "ver_produto": "conecta.catalogo.ver",
+    "itens_pendentes": "conecta.enriquecimento.pendentes",
+    "buscar_taxonomia": "engenharia.taxonomia.buscar",
+    "status_bling": "bling.status.consultar",
+    "listar_plugins": "conecta.plugins.listar",
+    "chamar_plugin": "conecta.plugins.chamar",
+    "propor_enriquecimento": "conecta.enriquecimento.propor",
+    "propor_codigo": "conecta.codigo.propor",
+    "propor_aplicacao": "conecta.aplicacao.propor",
+    "buscar_dados_tecnicos_web": "conecta.web.pesquisar_tecnico",
+    "buscar_imagem_web": "conecta.imagem.buscar_web",
+    "propor_imagem": "conecta.imagem.propor",
+    "bling_categorias": "bling.categorias.consultar",
+    "bling_propor_categoria": "bling.categorias.preparar_criacao",
+    "bling_propor_reativar_produto": "bling.produtos.preparar_reativacao",
+    "bling_propor_ajuste_produto": "bling.produtos.preparar_atualizacao",
+    "bling_propor_cadastro_produto": "bling.produtos.preparar_cadastro",
+    "bling_propor_alterar_preco": "bling.produtos.preparar_alteracao_preco",
+    "bling_propor_trocar_categoria": "bling.categorias.preparar_alteracao_lote"
+  },
+  "aliasesPair": {
+    "conecta.bling_consultar_produto": "bling.produtos.consultar",
+    "conecta.list_products": "conecta.catalogo.listar",
+    "conecta.get_product": "conecta.catalogo.ver",
+    "conecta.propose_enrichment": "conecta.enriquecimento.propor",
+    "conecta.propose_code": "conecta.codigo.propor",
+    "conecta.propose_application": "conecta.aplicacao.propor",
+    "conecta.propose_image": "conecta.imagem.propor",
+    "conecta.get_part_by_code": null,
+    "conecta.propose_bula": null,
+    "conecta.propose_banner": null,
+    "conecta.get_pending_approvals": null,
+    "conecta.get_task_status": null,
+    "conecta.set_active_product": null,
+    "conecta.get_validated_fields": null,
+    "conecta.get_sync_status": null,
+    "conecta.get_product_images": null,
+    "conecta.chat_reivindicar": null,
+    "conecta.chat_responder": null
+  },
+  "fontes": [
+    {
+      "path": "docs/ordem-mestra/05-contratos-ferramentas.md",
+      "sha_base": "d9719dae7da24f95e05bf4bf2ad4d5fa35a3d804",
+      "sha_candidato": "d9719dae7da24f95e05bf4bf2ad4d5fa35a3d804",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/bling_ferramentas.ts",
+      "sha_base": "04f46f9f7ba370837140ea006f60de625dfbb440",
+      "sha_candidato": "04f46f9f7ba370837140ea006f60de625dfbb440",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/aceitacao.test.ts",
+      "sha_base": "6dc19980bf9a2d8706b1bd59ddb19dae2cc0e6da",
+      "sha_candidato": "6dc19980bf9a2d8706b1bd59ddb19dae2cc0e6da",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/acoes.test.ts",
+      "sha_base": "a517da2bb666d6445472b069971a57a114a7e77e",
+      "sha_candidato": "a517da2bb666d6445472b069971a57a114a7e77e",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/acoes.ts",
+      "sha_base": "668c45e94e72d1a5f8703dfcc2188cdbe46f9989",
+      "sha_candidato": "668c45e94e72d1a5f8703dfcc2188cdbe46f9989",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/aliases.test.ts",
+      "sha_base": "da64d0979293b1c769e4691eed39b6a6454d5440",
+      "sha_candidato": "da64d0979293b1c769e4691eed39b6a6454d5440",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/aliases.ts",
+      "sha_base": "e4b393c288ea720822ba17ae7cb833729ab46e0c",
+      "sha_candidato": "e4b393c288ea720822ba17ae7cb833729ab46e0c",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/atividade.test.ts",
+      "sha_base": "131e24ab3d7685ccac22e700c431d76b0a2ed879",
+      "sha_candidato": "131e24ab3d7685ccac22e700c431d76b0a2ed879",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/atividade.ts",
+      "sha_base": "b3053e22c0cc5ee7f8608091604db849a9d9246f",
+      "sha_candidato": "b3053e22c0cc5ee7f8608091604db849a9d9246f",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/bling_campos.ts",
+      "sha_base": "c38a0a4dae86565a7b68987956a408196bfa39c5",
+      "sha_candidato": "c38a0a4dae86565a7b68987956a408196bfa39c5",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/bling_mock.ts",
+      "sha_base": "75f0d9e1daac2adf975806c89ddcb606b2eeb5e8",
+      "sha_candidato": "75f0d9e1daac2adf975806c89ddcb606b2eeb5e8",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/cadastro_novo.test.ts",
+      "sha_base": "6aae52d8f522d1fb45b7480d579a3e30e762b061",
+      "sha_candidato": "6aae52d8f522d1fb45b7480d579a3e30e762b061",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/cadastro_novo_execucao.test.ts",
+      "sha_base": "08dab0360796662c4ba5cade9913e81a35297bdd",
+      "sha_candidato": "08dab0360796662c4ba5cade9913e81a35297bdd",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/campos_liberados.test.ts",
+      "sha_base": "89bff6552a1dc5bdd4c50f174f699db40b47c5c7",
+      "sha_candidato": "89bff6552a1dc5bdd4c50f174f699db40b47c5c7",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/caso_ci001086.test.ts",
+      "sha_base": "c88222189d29455140579f1ef23e1bbdb250ff67",
+      "sha_candidato": "c88222189d29455140579f1ef23e1bbdb250ff67",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/catalogo_ferramentas.ts",
+      "sha_base": "21c9e564222080f9066ad21a7680dcfbc3b6f6de",
+      "sha_candidato": "21c9e564222080f9066ad21a7680dcfbc3b6f6de",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/categoria_bling.test.ts",
+      "sha_base": "221ef5ae97793c08ee0d8762e89c1a70290e8a86",
+      "sha_candidato": "221ef5ae97793c08ee0d8762e89c1a70290e8a86",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/categoria_bling.ts",
+      "sha_base": "1d8365261ce5c53ae19baf761d7ae206995a9bd5",
+      "sha_candidato": "1d8365261ce5c53ae19baf761d7ae206995a9bd5",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/categoria_criacao.test.ts",
+      "sha_base": "dad6d5db5ed59ab0facb1d1ebe6741a789c499ae",
+      "sha_candidato": "dad6d5db5ed59ab0facb1d1ebe6741a789c499ae",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/categoria_lote.test.ts",
+      "sha_base": "2ad21636918a77ba1b2154455df176cf7b396faf",
+      "sha_candidato": "2ad21636918a77ba1b2154455df176cf7b396faf",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/chat.test.ts",
+      "sha_base": "1ee1aa467e946a6c5d7464c08e20e3ac7a1d030f",
+      "sha_candidato": "1ee1aa467e946a6c5d7464c08e20e3ac7a1d030f",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/chat.ts",
+      "sha_base": "3c6535e93ee132b9dc11ac3396f6f9333eae3f9d",
+      "sha_candidato": "3c6535e93ee132b9dc11ac3396f6f9333eae3f9d",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/chat_cadastro_novo.test.ts",
+      "sha_base": "66e7a54535b8f948f3783a1c45ddc442107dbadc",
+      "sha_candidato": "66e7a54535b8f948f3783a1c45ddc442107dbadc",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/chat_free.test.ts",
+      "sha_base": "2087ac620d85b72e3b72c4fd070adf679df4a5b8",
+      "sha_candidato": "2087ac620d85b72e3b72c4fd070adf679df4a5b8",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/chat_portas.ts",
+      "sha_base": "d0888cdc923495e61b6f10bde0a950af96b22bcc",
+      "sha_candidato": "d0888cdc923495e61b6f10bde0a950af96b22bcc",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/conector.test.ts",
+      "sha_base": "f52ff30afbfd9fdfcbd2907b0584893da824333c",
+      "sha_candidato": "f52ff30afbfd9fdfcbd2907b0584893da824333c",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/contexto_chat.test.ts",
+      "sha_base": "c4951f170364e84d758718dc83c1b408db085a8a",
+      "sha_candidato": "c4951f170364e84d758718dc83c1b408db085a8a",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/contexto_integracao.test.ts",
+      "sha_base": "6120f280eae36a6626e326b9658e81640725e306",
+      "sha_candidato": "6120f280eae36a6626e326b9658e81640725e306",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/contratos.ts",
+      "sha_base": "eef35e1f4cd480fcd05b1dcf076ae42959bf8d8c",
+      "sha_candidato": "eef35e1f4cd480fcd05b1dcf076ae42959bf8d8c",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/cripto.ts",
+      "sha_base": "a03c68bd932152d24c41f24fac30fb89da7d9626",
+      "sha_candidato": "a03c68bd932152d24c41f24fac30fb89da7d9626",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/dados.ts",
+      "sha_base": "cbd3119f1be0aa8d18d8506090ff028e5f278cb9",
+      "sha_candidato": "cbd3119f1be0aa8d18d8506090ff028e5f278cb9",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/despacho.ts",
+      "sha_base": "076343efe21958960153598cd09f19a15d9f9a05",
+      "sha_candidato": "076343efe21958960153598cd09f19a15d9f9a05",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/edge.ts",
+      "sha_base": "4ac1e01281120e7ef4e6aa7247883ecf247f1f20",
+      "sha_candidato": "4ac1e01281120e7ef4e6aa7247883ecf247f1f20",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/escrita_cadastro_novo.test.ts",
+      "sha_base": "3b966cbe703e1b330cd18a0e3e2a56f4c8c9bc93",
+      "sha_candidato": "3b966cbe703e1b330cd18a0e3e2a56f4c8c9bc93",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/executor.ts",
+      "sha_base": "064d6fbfaede9d73875d2ec1276e7d5955b003fd",
+      "sha_candidato": "064d6fbfaede9d73875d2ec1276e7d5955b003fd",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/gateway.test.ts",
+      "sha_base": "d27d1daecc58587f1c924da826ba7fe2ea7fa340",
+      "sha_candidato": "d27d1daecc58587f1c924da826ba7fe2ea7fa340",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/gateway.ts",
+      "sha_base": "f8e55deace661bec98670ff1767c5ce752a44090",
+      "sha_candidato": "f8e55deace661bec98670ff1767c5ce752a44090",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/gateway_oauth.test.ts",
+      "sha_base": "4f2bf76af19487160efcfc902aec092564350f08",
+      "sha_candidato": "4f2bf76af19487160efcfc902aec092564350f08",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/handlers.ts",
+      "sha_base": "1490f94f40490301e4466c46b23b57913b2bb031",
+      "sha_candidato": "1490f94f40490301e4466c46b23b57913b2bb031",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/matriz_bling.ts",
+      "sha_base": "d4477261a9f5191763efaf6fe2f5e876c3fa7b26",
+      "sha_candidato": "d4477261a9f5191763efaf6fe2f5e876c3fa7b26",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/midias_mcp.test.ts",
+      "sha_base": "7196141824d9c884e34d39fe2686fc6cefd8c144",
+      "sha_candidato": "7196141824d9c884e34d39fe2686fc6cefd8c144",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/midias_mcp.ts",
+      "sha_base": "9c60c66507fcb0dc13ebe31f3a308c156c62b705",
+      "sha_candidato": "9c60c66507fcb0dc13ebe31f3a308c156c62b705",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/mobis_politica.test.ts",
+      "sha_base": "c9558afe8772d20e0229875a9d13c87fa690a1f1",
+      "sha_candidato": "c9558afe8772d20e0229875a9d13c87fa690a1f1",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/mobis_politica.ts",
+      "sha_base": "26b94f8456d205065b13245fe03431e6755f41d6",
+      "sha_candidato": "26b94f8456d205065b13245fe03431e6755f41d6",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/policy.ts",
+      "sha_base": "bc8b2c18192b5238f2bb13644d824d39c4c326b9",
+      "sha_candidato": "bc8b2c18192b5238f2bb13644d824d39c4c326b9",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/porta_bling.ts",
+      "sha_base": "f4a2eb94bf6aa3ab334fa37f80490a3674053c8f",
+      "sha_candidato": "f4a2eb94bf6aa3ab334fa37f80490a3674053c8f",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/porta_escrita.test.ts",
+      "sha_base": "3f03f8d61ecd788bc19813b4cc0a157cb8ff4b9f",
+      "sha_candidato": "3f03f8d61ecd788bc19813b4cc0a157cb8ff4b9f",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/prompts.ts",
+      "sha_base": "c248464f5f39ad4da7f7eabccb687618b034856b",
+      "sha_candidato": "c248464f5f39ad4da7f7eabccb687618b034856b",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/prompts_bling.test.ts",
+      "sha_base": "eca1a393373b67208b1e63fa695c6382a6a670f2",
+      "sha_candidato": "eca1a393373b67208b1e63fa695c6382a6a670f2",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/proposta_preco.test.ts",
+      "sha_base": "4781acc0256d65e916d601b66eab5b222f6c29a1",
+      "sha_candidato": "4781acc0256d65e916d601b66eab5b222f6c29a1",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/proposta_preco_execucao.test.ts",
+      "sha_base": "88ca327c6631d792f9b2cd1d047ca29951398ce0",
+      "sha_candidato": "88ca327c6631d792f9b2cd1d047ca29951398ce0",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/psql_cliente.testutil.ts",
+      "sha_base": "0204844783b435cb878a079837e0294e2e5008e2",
+      "sha_candidato": "0204844783b435cb878a079837e0294e2e5008e2",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/reativacao_produto.test.ts",
+      "sha_base": "e7f98281de8dc8793c99a9c706d815bc5c4262e5",
+      "sha_candidato": "e7f98281de8dc8793c99a9c706d815bc5c4262e5",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/registro.test.ts",
+      "sha_base": "d2d94c2b585b2a2c4884d369ca55c0a8b9467443",
+      "sha_candidato": "d2d94c2b585b2a2c4884d369ca55c0a8b9467443",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/registro.ts",
+      "sha_base": "db0a992ea31015510e8121d1f1faf8ff6b5c10ac",
+      "sha_candidato": "db0a992ea31015510e8121d1f1faf8ff6b5c10ac",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/regra_sem_memoria.test.ts",
+      "sha_base": "64d19442b717e36277c39552978288daa44e91cb",
+      "sha_candidato": "64d19442b717e36277c39552978288daa44e91cb",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/schema.ts",
+      "sha_base": "d905e46431b5e06460724873a75721b3f4dbbbb4",
+      "sha_candidato": "d905e46431b5e06460724873a75721b3f4dbbbb4",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/shims/deno.d.ts",
+      "sha_base": "4ade2ff8982eb0916bc8a9c30f01d0c488f35929",
+      "sha_candidato": "4ade2ff8982eb0916bc8a9c30f01d0c488f35929",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/conector/tipos.ts",
+      "sha_base": "4fd0ec5377b3366a1e8ad4783730077ba53c4dac",
+      "sha_candidato": "4fd0ec5377b3366a1e8ad4783730077ba53c4dac",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/apresentacao_chat.test.ts",
+      "sha_base": "d04dc3969b63d3caeecbd8f61734987e23a22865",
+      "sha_candidato": "d04dc3969b63d3caeecbd8f61734987e23a22865",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/apresentacao_chat.ts",
+      "sha_base": "a7e82f71b6e557e6498a4f4076b6d86a29a9f396",
+      "sha_candidato": "a7e82f71b6e557e6498a4f4076b6d86a29a9f396",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/capacidades.ts",
+      "sha_base": "494361d0bf598ab816a75e187488525585fe9878",
+      "sha_candidato": "494361d0bf598ab816a75e187488525585fe9878",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/catalogo_mcp.test.ts",
+      "sha_base": "8fae36e09e1f5283f7c215aab1c3d8bf0f5f31f5",
+      "sha_candidato": "8fae36e09e1f5283f7c215aab1c3d8bf0f5f31f5",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/catalogo_mcp.ts",
+      "sha_base": "6a043bd98a17a4d633daad5cba688d09871bc0c4",
+      "sha_candidato": "6a043bd98a17a4d633daad5cba688d09871bc0c4",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/executor.test.ts",
+      "sha_base": "34b825b150da99bd6152c21a4b7fa62c7096e693",
+      "sha_candidato": "34b825b150da99bd6152c21a4b7fa62c7096e693",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/executor.ts",
+      "sha_base": "08bda41c1b56baa8264085ffd819e4ab93c545b0",
+      "sha_candidato": "08bda41c1b56baa8264085ffd819e4ab93c545b0",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/fila.test.ts",
+      "sha_base": "c7e0de5e0a2b6e8db8c4ef2e5acb18563e71f399",
+      "sha_candidato": "c7e0de5e0a2b6e8db8c4ef2e5acb18563e71f399",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/fila.ts",
+      "sha_base": "030b49667be885d4637166566bf9a12f01949288",
+      "sha_candidato": "030b49667be885d4637166566bf9a12f01949288",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/gateway_local.test.ts",
+      "sha_base": "4034e6d4c9112977c31f49558b19e6b376edbaec",
+      "sha_candidato": "4034e6d4c9112977c31f49558b19e6b376edbaec",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/gateway_local.ts",
+      "sha_base": "9dcaeb249eede1fd53fd00d041b333b922f24247",
+      "sha_candidato": "9dcaeb249eede1fd53fd00d041b333b922f24247",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/integracao_banco.test.ts",
+      "sha_base": "da3d5bf9470015b2aa3f5349ae726a861ebe5087",
+      "sha_candidato": "da3d5bf9470015b2aa3f5349ae726a861ebe5087",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/pareamento_agente.test.ts",
+      "sha_base": "a84b4557b9cd95d54433a8613f916fa5cca663aa",
+      "sha_candidato": "a84b4557b9cd95d54433a8613f916fa5cca663aa",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/portas_supabase.ts",
+      "sha_base": "15c9c0b36b9369704778e2ad8435da98b406953f",
+      "sha_candidato": "15c9c0b36b9369704778e2ad8435da98b406953f",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/rotas_dispositivo.test.ts",
+      "sha_base": "7544165d0630b62aa329876df5615ea779a9119c",
+      "sha_candidato": "7544165d0630b62aa329876df5615ea779a9119c",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/rotas_dispositivo.ts",
+      "sha_base": "6ebfee7100261feec1bf05ce76c8df28dabc3ff2",
+      "sha_candidato": "6ebfee7100261feec1bf05ce76c8df28dabc3ff2",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/exec_local/runner_db.ts",
+      "sha_base": "f2f8b8b04434fe7d6a9ccf3d1f8d8b14319a313c",
+      "sha_candidato": "f2f8b8b04434fe7d6a9ccf3d1f8d8b14319a313c",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/escrita.ts",
+      "sha_base": "ad5dd681a930db4c027a4aefecb5d42ea551b9b3",
+      "sha_candidato": "ad5dd681a930db4c027a4aefecb5d42ea551b9b3",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/ia/ferramentas.ts",
+      "sha_base": "556b130ab7a94da799492b714300d335fac919c7",
+      "sha_candidato": "556b130ab7a94da799492b714300d335fac919c7",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/cripto.ts",
+      "sha_base": "d5b8ff20f6629ccb10e0757c7ad0389737847059",
+      "sha_candidato": "d5b8ff20f6629ccb10e0757c7ad0389737847059",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/escopos.ts",
+      "sha_base": "26bf908b259369809c0e4276ae2f0d6d58188c0b",
+      "sha_candidato": "26bf908b259369809c0e4276ae2f0d6d58188c0b",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/executor.test.ts",
+      "sha_base": "dd54edf95f52da614d96f119a646759cc1b86b22",
+      "sha_candidato": "dd54edf95f52da614d96f119a646759cc1b86b22",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/executor.ts",
+      "sha_base": "af024afdfac3e9618cf505bb76ad391981920605",
+      "sha_candidato": "af024afdfac3e9618cf505bb76ad391981920605",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/gateway.ts",
+      "sha_base": "f0752ea07129ff436c873869bd0eea1979b60fff",
+      "sha_candidato": "f0752ea07129ff436c873869bd0eea1979b60fff",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/gateway_dados.ts",
+      "sha_base": "42508a39a2115d4ab1163de717a0f5dd0dbd849b",
+      "sha_candidato": "42508a39a2115d4ab1163de717a0f5dd0dbd849b",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/implantacao.test.ts",
+      "sha_base": "9c97dd5db5b78124881cea9d42980f840d7396b9",
+      "sha_candidato": "9c97dd5db5b78124881cea9d42980f840d7396b9",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/implantacao.ts",
+      "sha_base": "6465ece926f0930fb00c9d5ac4ce57b0d4c38f63",
+      "sha_candidato": "6465ece926f0930fb00c9d5ac4ce57b0d4c38f63",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/oauth.test.ts",
+      "sha_base": "15a70e45ead4a64d0e9c8ad928090997fb57924a",
+      "sha_candidato": "15a70e45ead4a64d0e9c8ad928090997fb57924a",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/oauth.ts",
+      "sha_base": "e00c5e5e921bd2d26cdf1781bacf746c469fa62b",
+      "sha_candidato": "e00c5e5e921bd2d26cdf1781bacf746c469fa62b",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/pair.test.ts",
+      "sha_base": "11d44819b8ef99d01f1b3eac0fdf983d38d3a328",
+      "sha_candidato": "11d44819b8ef99d01f1b3eac0fdf983d38d3a328",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/_shared/pair/servico.ts",
+      "sha_base": "0a3fa439f9d6122fd8661a00e65c9e2a6fe23181",
+      "sha_candidato": "0a3fa439f9d6122fd8661a00e65c9e2a6fe23181",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/conecta-gateway/index.ts",
+      "sha_base": "c6e648f6b857580d99e57753473fc91d70ec5563",
+      "sha_candidato": "c6e648f6b857580d99e57753473fc91d70ec5563",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    },
+    {
+      "path": "supabase/functions/conector-mcp/index.ts",
+      "sha_base": "e4153a292da310e1c85909b973f47c51b70d4d28",
+      "sha_candidato": "e4153a292da310e1c85909b973f47c51b70d4d28",
+      "mode_base": "100644",
+      "mode_candidato": "100644"
+    }
+  ]
+}

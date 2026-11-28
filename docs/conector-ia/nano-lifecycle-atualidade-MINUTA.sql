@@ -1,0 +1,67 @@
+-- MINUTA CI descartável. Conferência pontual, não autorização de transição.
+begin;
+create role nano_lifecycle_atualidade_leitor nologin noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls;
+grant usage on schema public,nano_lifecycle_interno to nano_lifecycle_atualidade_leitor;
+grant create on schema nano_lifecycle_interno to nano_lifecycle_atualidade_leitor;
+grant select on public.nano_lifecycle_checkpoint to nano_lifecycle_atualidade_leitor;
+create policy nano_atualidade_ler on public.nano_lifecycle_checkpoint for select to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true));
+create policy nano_atualidade_restrita on public.nano_lifecycle_checkpoint as restrictive for all to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true)) with check(false);
+grant select on public.nano_lifecycle_reserva to nano_lifecycle_atualidade_leitor;
+create policy nano_atualidade_ler on public.nano_lifecycle_reserva for select to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true));
+create policy nano_atualidade_restrita on public.nano_lifecycle_reserva as restrictive for all to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true)) with check(false);
+grant select on public.nano_lifecycle_snapshots to nano_lifecycle_atualidade_leitor;
+create policy nano_atualidade_ler on public.nano_lifecycle_snapshots for select to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true));
+create policy nano_atualidade_restrita on public.nano_lifecycle_snapshots as restrictive for all to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true)) with check(false);
+grant select on public.pipeline_itens to nano_lifecycle_atualidade_leitor;
+create policy nano_atualidade_ler on public.pipeline_itens for select to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true));
+create policy nano_atualidade_restrita on public.pipeline_itens as restrictive for all to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true)) with check(false);
+grant select on public.produto_automacao to nano_lifecycle_atualidade_leitor;
+create policy nano_atualidade_ler on public.produto_automacao for select to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true));
+create policy nano_atualidade_restrita on public.produto_automacao as restrictive for all to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true)) with check(false);
+grant select on public.produtos to nano_lifecycle_atualidade_leitor;
+create policy nano_atualidade_ler on public.produtos for select to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true));
+create policy nano_atualidade_restrita on public.produtos as restrictive for all to nano_lifecycle_atualidade_leitor using(loja_id::text=current_setting('nano.atualidade_loja',true)) with check(false);
+grant execute on function public.nano_lifecycle_projecao(uuid) to nano_lifecycle_atualidade_leitor;
+grant execute on function nano_lifecycle_interno.nano_lifecycle_ler_evidencia(uuid,uuid,bigint),nano_lifecycle_interno.nano_lifecycle_ler_autoria(uuid,uuid,uuid,bigint,integer),nano_lifecycle_interno.nano_lifecycle_verificador_autorizado(uuid,text) to nano_lifecycle_atualidade_leitor;
+-- CAT-136: leitura compartilhada, sem autoridade própria; RLS do chamador.
+-- Entradas derivadas dos registros persistidos já conferidos pelos dois chamadores.
+create function nano_lifecycle_interno.nano_catalogo_atualidade_comum(p_loja uuid,p_item uuid,p_execucao uuid,p_geracao bigint,p_versao integer,e jsonb,a jsonb,esc jsonb)
+returns boolean language plpgsql stable security invoker set search_path='' as $comum$
+declare cp public.nano_lifecycle_checkpoint; i public.pipeline_itens; atual jsonb; snap jsonb; tecnico jsonb;
+begin
+ if p_loja is null or p_item is null or p_execucao is null or p_geracao is null or p_versao is null
+  or e->>'produto_id' is null or e->>'checkpoint' is null or e->>'revisao' is null
+  or a->>'produtor' is null or esc->>'sku' is null or jsonb_typeof(e->'entrada_snapshot'->'produto') is distinct from 'object' then return false; end if;
+ select * into cp from public.nano_lifecycle_checkpoint where loja_id=p_loja;
+ if not found or not cp.habilitado or not cp.despacho_habilitado or not cp.consumo_habilitado or cp.revisao is distinct from e->>'checkpoint' then return false; end if;
+ if exists(select 1 from public.nano_lifecycle_reserva where loja_id=p_loja and not encerrada and expira_em>statement_timestamp()) then return false; end if;
+ select * into i from public.pipeline_itens where loja_id=p_loja and id=p_item;
+ if not found or i.estado<>'entrada' or i.entrada->>'origem' is distinct from 'nano_lifecycle' or i.entrada->>'revisao' is distinct from e->>'revisao' or i.produto_id::text is distinct from e->>'produto_id' or i.sku is distinct from esc->>'sku' or i.nano_execucao is distinct from p_execucao or i.nano_geracao is distinct from p_geracao or i.versao is distinct from p_versao or i.nano_produtor::text is distinct from a->>'produtor' then return false; end if;
+ if exists(select 1 from public.produto_automacao where loja_id=p_loja and produto_id=i.produto_id and pausado) then return false; end if;
+ select v into atual from jsonb_array_elements(public.nano_lifecycle_projecao(p_loja)) v where v->>'id'=i.produto_id::text;
+ select v into snap from public.nano_lifecycle_snapshots s cross join lateral jsonb_array_elements(s.produtos) v where s.loja_id=p_loja and s.revisao=cp.revisao and v->>'id'=i.produto_id::text;
+ if atual is null or snap is null or atual is distinct from snap or atual->>'situacao' is distinct from 'A' or btrim(atual->>'sku') is distinct from i.sku then return false; end if;
+ if exists(select 1 from public.produtos p where p.loja_id=p_loja and p.id<>i.produto_id and (p.bling_id=atual->>'bling_id' or upper(btrim(p.sku))=upper(i.sku))) then return false; end if;
+ tecnico:=jsonb_build_object('id',atual->>'id','bling_id',atual->>'bling_id','sku',i.sku,'nome',atual->>'nome','marca',atual->>'marca','gtin',atual->>'gtin','descricao_curta',atual->>'descricao_curta','descricao_complementar',atual->>'descricao_complementar');
+ return tecnico is not distinct from e->'entrada_snapshot'->'produto';
+end $comum$;
+revoke all on function nano_lifecycle_interno.nano_catalogo_atualidade_comum(uuid,uuid,uuid,bigint,integer,jsonb,jsonb,jsonb) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+grant execute on function nano_lifecycle_interno.nano_catalogo_atualidade_comum(uuid,uuid,uuid,bigint,integer,jsonb,jsonb,jsonb) to nano_lifecycle_atualidade_leitor;
+create function nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(p_loja uuid,p_item uuid,p_execucao uuid,p_geracao bigint,p_versao integer,p_escopo jsonb)
+returns boolean language plpgsql stable security definer set search_path='' set nano.atualidade_loja='' as $fn$
+declare e jsonb; a jsonb; esc jsonb;
+begin
+ if not nano_lifecycle_interno.nano_lifecycle_verificador_autorizado(p_loja,session_user::text) then return false; end if;
+ perform set_config('nano.atualidade_loja',coalesce(p_loja::text,''),true);
+ e:=nano_lifecycle_interno.nano_lifecycle_ler_evidencia(p_loja,p_item,p_geracao);
+ a:=nano_lifecycle_interno.nano_lifecycle_ler_autoria(p_loja,p_item,p_execucao,p_geracao,p_versao);
+ if e->>'estado' is distinct from 'evidencia_historica' or a is null or e->>'execucao' is distinct from p_execucao::text or e->>'versao' is distinct from p_versao::text or e->>'hash_entrada' is distinct from a->>'hashEntrada' or e->>'hash_extracao' is distinct from a->>'hashExtracao' then return false; end if;
+ esc:=(a->'chave')||jsonb_build_object('produto',e->>'produto_id','sku',e->'entrada_snapshot'->'produto'->>'sku','revisao',e->>'revisao','checkpoint',e->>'checkpoint','hashEntrada',a->>'hashEntrada','hashExtracao',a->>'hashExtracao','produtor',a->>'produtor');
+ if esc is distinct from p_escopo then return false; end if;
+ return nano_lifecycle_interno.nano_catalogo_atualidade_comum(p_loja,p_item,p_execucao,p_geracao,p_versao,e,a,esc);
+end $fn$;
+alter function nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(uuid,uuid,uuid,bigint,integer,jsonb) owner to nano_lifecycle_atualidade_leitor;
+revoke all on function nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(uuid,uuid,uuid,bigint,integer,jsonb) from public,anon,authenticated,service_role,nano_lifecycle_produtor,nano_lifecycle_auditoria;
+grant execute on function nano_lifecycle_interno.nano_lifecycle_conferir_atualidade(uuid,uuid,uuid,bigint,integer,jsonb) to nano_lifecycle_auditoria;
+revoke create on schema nano_lifecycle_interno from nano_lifecycle_atualidade_leitor;
+commit;

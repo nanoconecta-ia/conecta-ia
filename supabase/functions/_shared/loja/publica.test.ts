@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { anoNoIntervalo, linkWhatsapp, mensagemWhatsapp, montarBanners, montarVitrine, produtosDoTipo, tiposDoVeiculo, veiculosDaFicha, tipoDaCategoria, normalizarHost, opcoesVeiculo, produtosDoVeiculo, SLUG_RE, textoSimples } from "./publica.ts";
+import { aplicacaoCombinaMobis, anoNoIntervalo, linkWhatsapp, mensagemWhatsapp, montarBanners, montarVitrine, produtosDoTipo, tiposDoVeiculo, veiculosDaFicha, tipoDaCategoria, normalizarHost, opcoesVeiculo, produtosDoVeiculo, SLUG_RE, textoSimples } from "./publica.ts";
 
 test("normalizarHost: minúsculas, sem porta nem ponto final; recusa lixo", () => {
   assert.equal(normalizarHost("WWW.MobisAutoParts.com.br:443"), "www.mobisautoparts.com.br");
@@ -102,3 +102,5 @@ test("veiculosDaFicha: só o produto pedido, sem repetição, com tipo quando li
   assert.deepEqual(veiculosDaFicha(apls, "a"), [{ modelo: "HR", motor: "2.5", de: 2010, ate: null, tipo: "furgao" }, { modelo: "Texto", motor: null, de: null, ate: null, tipo: null }]);
   assert.deepEqual(veiculosDaFicha(apls, "zzz"), []);
 });
+
+test("Mobis: intervalo desconhecido não é ilimitado; tipo e modelo na mesma aplicação",()=>{const a={produto_id:"p",modelo:"HR",motorizacao:"D4CB",ano_inicial:2014,ano_final:null,categoria:"van"};assert.ok(aplicacaoCombinaMobis(a,{modelo:"HR",ano:2014,tipo:"furgao"}));assert.ok(!aplicacaoCombinaMobis(a,{ano:2025}));assert.ok(!aplicacaoCombinaMobis(a,{modelo:"HR",tipo:"picape"}));});

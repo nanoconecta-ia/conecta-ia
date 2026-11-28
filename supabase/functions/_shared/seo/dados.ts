@@ -28,7 +28,8 @@ export interface ProdutoSeo {
 export interface AplicacaoPublica { montadora: string; modelo: string; versao: string; periodo_inicio: number | null; periodo_fim: number | null; restricoes?: string | null }
 
 /** Produto visível e indexável: publicado, ativo no ERP, com nome e SKU. Despublicado/ausente/incompleto => fora de sitemap e feed. */
-export const produtoIndexavel = (p: ProdutoSeo): boolean => p.publicado === true && p.situacao === "A" && !!p.nome?.trim() && !!p.sku?.trim();
+export type IdentidadeProdutoSeo = Pick<ProdutoSeo, "sku" | "nome" | "publicado" | "situacao">;
+export const produtoIndexavel = (p: IdentidadeProdutoSeo): boolean => p.publicado === true && p.situacao === "A" && !!p.nome?.trim() && !!p.sku?.trim();
 
 /** O Bling às vezes traz o rótulo no valor ("MARCA: TRIM GO"). Tira só o rótulo; o resto fica como veio. */
 export function limparMarca(m: string | null | undefined): string | null {

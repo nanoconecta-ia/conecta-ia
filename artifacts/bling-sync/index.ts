@@ -431,6 +431,19 @@ function extrairImagensBling(blingId, d) {
     lerLista(m.internas, "interna", "link");
     return out.slice(0, MAX_IMAGENS_GALERIA);
 }
+function interpretarPaginaBling(resposta) {
+    const d = resposta?.data;
+    if (!Array.isArray(d) || d.some((x)=>!x || typeof x !== "object" || !Number.isSafeInteger(x.id) || x.id <= 0)) return {
+        erro: "Resposta de listagem inválida do Bling"
+    };
+    return {
+        itens: d
+    };
+}
+function interpretarDetalheBling(resposta, id) {
+    const d = resposta?.data;
+    return d && typeof d === "object" && !Array.isArray(d) && d.id === id ? d : null;
+}
 const LIMITE = 100, INTERVALO_MS = 350;
 function resumirExcluido(lojaId, item, anterior, agoraISO) {
     const base = mapearProduto(lojaId, {
@@ -640,7 +653,7 @@ async function sincronizar(lojaId, p, orcamentoMs = 100_000, forcarSkus = new Se
     return r;
 }
 
-return { mapearProduto: mapearProduto, precisaDetalhe: precisaDetalhe, MAX_IMAGENS_GALERIA: MAX_IMAGENS_GALERIA, extrairImagensBling: extrairImagensBling, resumirExcluido: resumirExcluido, sincronizar: sincronizar };
+return { mapearProduto: mapearProduto, precisaDetalhe: precisaDetalhe, MAX_IMAGENS_GALERIA: MAX_IMAGENS_GALERIA, extrairImagensBling: extrairImagensBling, interpretarPaginaBling: interpretarPaginaBling, interpretarDetalheBling: interpretarDetalheBling, resumirExcluido: resumirExcluido, sincronizar: sincronizar };
 })();
 
 // ---------- supabase/functions/_shared/bling_categorias.ts ----------
@@ -720,7 +733,7 @@ const { createClient: createClient } = __sdk;
 const { armazemSupabase: armazemSupabase } = __m1;
 const { blingFetch: blingFetch } = __m2;
 const { chaveiroPlataforma: chaveiroPlataforma } = __m6;
-const { MAX_IMAGENS_GALERIA: MAX_IMAGENS_GALERIA, sincronizar: sincronizar } = __m7;
+const { MAX_IMAGENS_GALERIA: MAX_IMAGENS_GALERIA, sincronizar: sincronizar, interpretarPaginaBling: interpretarPaginaBling, interpretarDetalheBling: interpretarDetalheBling } = __m7;
 const { sincronizarCategorias: sincronizarCategorias } = __m8;
 const CORS = {
     "Access-Control-Allow-Origin": "*",
@@ -753,9 +766,7 @@ function portasDaLoja(admin, lojaId, chaveCifra) {
                     erro: `Bling respondeu ${r.status} ao listar produtos`
                 };
                 const j = await r.json().catch(()=>null);
-                return {
-                    itens: Array.isArray(j?.data) ? j.data : []
-                };
+                return interpretarPaginaBling(j);
             } catch (e) {
                 return {
                     erro: e instanceof Error ? e.message : "falha ao listar produtos"
@@ -766,7 +777,7 @@ function portasDaLoja(admin, lojaId, chaveCifra) {
             try {
                 const r = await blingFetch(arm, lojaId, `/produtos/${id}`, cfg);
                 if (!r.ok) return null;
-                return (await r.json().catch(()=>null))?.data ?? null;
+                return interpretarDetalheBling(await r.json().catch(()=>null), id);
             } catch  {
                 return null;
             }
@@ -774,7 +785,7 @@ function portasDaLoja(admin, lojaId, chaveCifra) {
         async existentes () {
             const out = [];
             for(let de = 0;; de += 1000){
-                const { data, error } = await admin.from("produtos").select("bling_id, sku, nome, preco, estoque, situacao, sincronizado_em, categoria_bling_id, marca, gtin, gtin_tributario, descricao_curta, descricao_complementar, peso_kg, largura_cm, altura_cm, profundidade_cm, unidade, condicao, formato, pai_bling_id, volumes").eq("loja_id", lojaId).range(de, de + 999);
+                const { data, error } = await admin.from("produtos").select("bling_id, sku, nome, preco, estoque, situacao, sincronizado_em, categoria_bling_id, marca, gtin, gtin_tributario, descricao_curta, descricao_complementar, peso_kg, largura_cm, altura_cm, profundidade_cm, unidade, condicao, formato, pai_bling_id, volumes").eq("loja_id", lojaId).order("id").range(de, de + 999);
                 if (error) throw new Error("falha ao ler o espelho");
                 out.push(...data ?? []);
                 if ((data ?? []).length < 1000) break;

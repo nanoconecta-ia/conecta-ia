@@ -1,0 +1,286 @@
+// E2E somente no CI efêmero; nenhum adaptador/credencial de produção.
+import {execFileSync,spawn} from "node:child_process";
+import {createInterface} from "node:readline";
+import assert from "node:assert/strict";
+import {randomBytes} from "node:crypto";
+import {conferirDecisaoCatalogoSql} from "../../supabase/functions/_shared/nano_lifecycle/porta_decisao_catalogo_sql.ts";
+import {reconciliarDecisaoCatalogo} from "../../supabase/functions/_shared/nano_lifecycle/decisao_catalogo.ts";
+if(process.env.GITHUB_ACTIONS!=="true"||process.env.PGHOST!=="localhost"||process.env.PGPORT!=="5432"||process.env.PGDATABASE!=="conecta_teste"||process.env.PGUSER!=="postgres")throw Error("somente CI descartável");
+const L="e1080000-0000-0000-0000-000000000001",P="e1081000-0000-0000-0000-000000000001",A="e1082000-0000-0000-0000-000000000001",U="e1083000-0000-0000-0000-000000000001",M="e1084000-0000-0000-0000-000000000001";
+const sql=texto=>execFileSync("psql",["-XqAtw","-h","127.0.0.1","-p","5432","-U","postgres","-d","conecta_teste","-v","ON_ERROR_STOP=1"],{input:texto,encoding:"utf8",timeout:30000,env:{PATH:process.env.PATH,PGPASSWORD:"postgres",PGCONNECT_TIMEOUT:"5"},stdio:["pipe","pipe","pipe"]}).trim();
+sql("begin; insert into public.lojas(id,nome,slug) values ('"+L+"','CI catálogo E2E','ci-catalogo-e2e-108'); insert into public.produtos(id,loja_id,bling_id,sku,nome,publicado) values ('"+P+"','"+L+"','108','CI-108','Peça sintética',true); insert into public.marcas(id,loja_id,nome,tipo,status) values ('"+M+"','"+L+"','Montadora sintética','veiculo','aprovado'); insert into public.produto_aplicacoes(id,loja_id,produto_id,modelo,marca_veiculo_id,montadora_origem_id,codigo_oem,status,fonte,coletado_em,pagina_indexavel,pagina_slug) values ('"+A+"','"+L+"','"+P+"','Modelo teste','"+M+"','"+M+"','OEM-CI-108','aprovado','fixture',now(),true,'ci-catalogo-108'); commit;");
+const escopo={loja_id:L,produto_id:P,aplicacao_id:A};
+const pw=randomBytes(24).toString("hex");
+sql("create role nano_catalogo_e2e_auditor login noinherit nosuperuser nocreatedb nocreaterole noreplication nobypassrls password '"+pw+"'; grant nano_lifecycle_auditoria to nano_catalogo_e2e_auditor; insert into nano_lifecycle_interno.auditoria_escopos values('nano_catalogo_e2e_auditor','"+L+"',true);");
+const auditor=texto=>execFileSync("psql",["-XqAtw","-h","127.0.0.1","-p","5432","-U","nano_catalogo_e2e_auditor","-d","conecta_teste","-v","ON_ERROR_STOP=1"],{input:"set role nano_lifecycle_auditoria;\n"+texto,encoding:"utf8",timeout:30000,env:{PATH:process.env.PATH,PGPASSWORD:pw,PGCONNECT_TIMEOUT:"5"},stdio:["pipe","pipe","pipe"]}).trim();
+const restrito=(l=L,p=P,a=A)=>{
+ // Somente UUIDs fixos de fixture; sem SQL vindo de cliente.
+ assert.ok([l,p,a].every(x=>/^[0-9a-f-]{36}$/.test(x)));
+ const raw=auditor("select nano_lifecycle_interno.nano_catalogo_ler_decisao('"+l+"','"+p+"','"+a+"');");
+ return raw?JSON.parse(raw):null;
+};
+
+// Uma única instrução SELECT obtém snapshot MVCC consistente do estado e histórico.
+// IDs bigint convertidos no banco antes da serialização. Sem limite/truncamento.
+// Consulta privilegiada exclusivamente de teste, não autorização operacional.
+function ler(){
+ const r=JSON.parse(sql("select jsonb_build_object('atual',(select to_jsonb(a.*) from public.produto_aplicacoes a where a.loja_id='"+L+"' and a.produto_id='"+P+"' and a.id='"+A+"'),'eventos',(select coalesce(jsonb_agg(jsonb_build_object('id',h.id::text,'quando',h.quando,'loja_id',h.loja_id,'user_id',h.user_id,'acao',h.acao,'tabela',h.tabela,'antes',h.antes,'depois',h.depois) order by h.id),'[]'::jsonb) from public.auditoria h where h.tabela='produto_aplicacoes' and (h.antes->>'id'='"+A+"' or h.depois->>'id'='"+A+"')),'agora',statement_timestamp());"));
+ return r;
+}
+const decidir=d=>sql("set role service_role; select public.aplicacao_decidir('"+L+"','"+A+"','"+U+"','"+d+"');");
+const verificar=(r,e=escopo)=>reconciliarDecisaoCatalogo(e,r.atual,r.eventos,r.agora);
+let r=ler();assert.equal(verificar(r).estado,"retida");assert.equal(r.eventos.length,0);console.log("ok: CAT-108-01 flag sem histórico não confirma decisão");
+decidir("rejeitar");
+r=ler();assert.equal(r.eventos.length,1);assert.equal(r.atual.pagina_indexavel,false);assert.equal(verificar(r).estado,"rejeitada_legada");console.log("ok: CAT-108-02 rejeição SQL reconciliada pelo TypeScript");
+decidir("aprovar");
+r=ler();assert.equal(r.eventos.length,2);assert.equal(r.atual.pagina_indexavel,false);const v=verificar(r);assert.equal(v.estado,"aprovacao_legada_conferida");assert.equal(v.homologada,false);assert.equal(Object.hasOwn(v,"prova"),false);assert.equal(v.evento_id,r.eventos[1].id);assert.equal(v.aprovador,U);console.log("ok: CAT-108-03 reaprovação SQL rastreável sem prova ou republicação");
+const rr=restrito();assert.deepEqual(rr.atual,r.atual);assert.deepEqual(rr.eventos,r.eventos);assert.equal(verificar(rr).estado,"aprovacao_legada_conferida");console.log("ok: CAT-109-01 auditor real lê snapshot e cadeia idênticos");
+const sessao={consultar:async(q,params)=>{
+ assert.equal(q,"select session_user::text as identidade, nano_lifecycle_interno.nano_catalogo_ler_decisao($1::uuid,$2::uuid,$3::uuid) as valor");
+ assert.ok(params.every(x=>typeof x==="string"&&/^[0-9a-f-]{36}$/.test(x)));
+ // psql 16: valores pelo protocolo estendido, não interpolados no SELECT.
+ const raw=auditor("select row_to_json(q) from ("+q+") q\n\\bind "+params.map(x=>"'"+x+"'").join(" ")+"\n\\g\n");
+ return [JSON.parse(raw)];
+}};
+const conferir=()=>conferirDecisaoCatalogoSql(escopo,sessao,"nano_catalogo_e2e_auditor");
+assert.equal((await conferir()).estado,"aprovacao_legada_conferida");
+assert.equal((await conferirDecisaoCatalogoSql(escopo,sessao,"outro")).estado,"retida");
+console.log("ok: CAT-110-06 porta parametrizada com login real e identidade conferida");
+
+assert.equal(restrito(M,P,A),null);assert.equal(restrito(L,M,A),null);assert.equal(restrito(L,P,M),null);console.log("ok: CAT-109-02 loja, produto e aplicação divergentes negados");
+for(const role of ["anon","authenticated","service_role","nano_lifecycle_produtor"])assert.equal(sql("select has_function_privilege('"+role+"','nano_lifecycle_interno.nano_catalogo_ler_decisao(uuid,uuid,uuid)','EXECUTE');"),"f");
+assert.equal(sql("select has_table_privilege('nano_catalogo_decisao_leitor','public.auditoria','INSERT,UPDATE,DELETE,TRUNCATE');"),"f");
+assert.throws(()=>auditor("select * from public.auditoria;"),e=>e.stderr?.includes("permission denied")===true);
+console.log("ok: CAT-109-03 sem acesso direto à auditoria, produtor ou service_role");
+sql("update nano_lifecycle_interno.auditoria_escopos set habilitado=false where login_db='nano_catalogo_e2e_auditor' and loja_id='"+L+"';");
+assert.equal(restrito(),null);assert.equal((await conferir()).estado,"retida");console.log("ok: CAT-109-04 revogação do auditor impede nova leitura");
+sql("update nano_lifecycle_interno.auditoria_escopos set habilitado=true where login_db='nano_catalogo_e2e_auditor' and loja_id='"+L+"';");
+assert.equal(verificar(restrito()).estado,"aprovacao_legada_conferida");console.log("ok: CAT-109-05 autorização restabelecida não cria homologação");
+
+assert.equal(verificar(r,{...escopo,loja_id:M}).estado,"retida");assert.equal(verificar({...r,eventos:r.eventos.slice(0,1)}).estado,"retida");console.log("ok: CAT-108-04 escopo trocado e histórico desatualizado retidos");
+sql("update public.produto_aplicacoes set modelo='Modelo alterado' where loja_id='"+L+"' and id='"+A+"';");
+r=ler();assert.equal(r.eventos.length,2);assert.equal(verificar(r).estado,"retida");console.log("ok: CAT-108-05 alteração posterior invalida decisão no readback real");
+
+assert.equal(verificar(restrito()).estado,"retida");console.log("ok: CAT-109-06 leitura restrita detecta alteração posterior");
+
+assert.equal((await conferir()).estado,"retida");console.log("ok: CAT-110-07 porta real retém revogação e edição posterior");
+
+
+// Imutabilidade vale também no modo replica, sem bloquear novos eventos legítimos.
+const filtro=" where loja_id='"+L+"' and tabela='produto_aplicacoes'";
+const historico=()=>sql("select coalesce(jsonb_agg(to_jsonb(h) order by h.id),'[]'::jsonb)::text from public.auditoria h"+filtro+";");
+const preservado=historico();
+for(const prefixo of ["","set local session_replication_role=replica; "]){
+ for(const mutacao of ["update public.auditoria set quando=quando+interval '1 day'"+filtro,"delete from public.auditoria"+filtro,"truncate public.auditoria"]){
+  assert.throws(()=>sql("begin; "+prefixo+mutacao+"; rollback;"),e=>e.stderr?.includes("auditoria é imutável")===true);
+ }
+ assert.equal(historico(),preservado);
+}
+console.log("ok: CAT-111-01 update e delete bloqueados em modo normal e replica");
+console.log("ok: CAT-111-02 truncate bloqueado em modo normal e replica");
+assert.equal(sql("select count(*) from pg_trigger where tgrelid='public.auditoria'::regclass and tgname in ('auditoria_sem_update','auditoria_sem_truncate') and tgenabled='A';"),"2");
+assert.equal(historico(),preservado);console.log("ok: CAT-111-03 triggers ALWAYS e histórico integral preservado");
+decidir("rejeitar");
+assert.equal(ler().eventos.length,3);assert.equal(ler().atual.status,"rejeitado");
+assert.equal((await conferir()).estado,"retida"); // edição anterior rompe cadeia; novo evento não apaga lacuna.
+console.log("ok: CAT-111-04 nova decisão legítima registra evento sem mascarar quebra histórica");
+// Exercita outro escritor legado: trigger da política comercial, apenas fixture do CI.
+const outros=()=>Number(sql("select count(*) from public.auditoria where loja_id='"+L+"' and tabela='restricoes_loja';"));
+const n=outros();
+sql("insert into public.restricoes_loja(loja_id,somente_catalogo) values ('"+L+"',true) on conflict(loja_id) do update set somente_catalogo=true;");
+assert.equal(outros(),n+1);assert.equal(ler().eventos.length,3);
+console.log("ok: CAT-111-05 auditoria legada de restrições permanece operacional e isolada do catálogo");
+
+// CAT-112: caracterização da autoridade efetiva legada, NÃO é aprovação humana.
+// Inventário parcial: ACLs e funções do banco efêmero; não prova caminhos HTTP.
+const rpc="public.aplicacao_decidir(uuid,uuid,uuid,text)";
+for(const role of ["anon","authenticated","nano_lifecycle_produtor","nano_lifecycle_auditoria"]){
+ assert.equal(sql("select has_function_privilege('"+role+"','"+rpc+"','EXECUTE');"),"f");
+}
+assert.equal(sql("select has_function_privilege('service_role','"+rpc+"','EXECUTE');"),"t");
+console.log("ok: CAT-112-01 fronteira EXECUTE do RPC legado restrita; não autentica humano");
+const A2="e1082000-0000-0000-0000-000000000002",U2="e1083000-0000-0000-0000-000000000002";
+// O stub local não implementa auth.users; a contraprova é ausência de identidade de sessão.
+sql("insert into public.produto_aplicacoes(id,loja_id,produto_id,modelo,marca_veiculo_id,montadora_origem_id,codigo_oem,status,fonte,coletado_em,pagina_indexavel,pagina_slug) values ('"+A2+"','"+L+"','"+P+"','Modelo CI autoridade','"+M+"','"+M+"','OEM-CI-112','a_confirmar','fixture',now(),false,'ci-catalogo-112');");
+// Contraprova: chamada e checagem de auth.uid() na MESMA sessão sem claims.
+const semAtor=sql("begin; set local role service_role; set local request.jwt.claims='{}'; select auth.uid() is null; select public.aplicacao_decidir('"+L+"','"+A2+"','"+U2+"','aprovar'); commit;");
+assert.equal(semAtor,"t");
+const e2={loja_id:L,produto_id:P,aplicacao_id:A2},r2=restrito(L,P,A2),v2=verificar(r2,e2);
+assert.equal(r2.eventos.length,1);assert.equal(r2.eventos[0].user_id,U2);
+assert.equal(v2.estado,"aprovacao_legada_conferida");assert.equal(v2.homologada,false);assert.equal(Object.hasOwn(v2,"prova"),false);
+console.log("ok: CAT-112-02 contraprova de autoria: sessão sem auth.uid aceita UUID declarado, nunca prova");
+// Revisão física no escopo do produto, com OEM coincidente na segunda aplicação.
+const revisaoFisica = "e1190000-0000-0000-0000-000000000001";
+sql(`insert into public.produto_revisoes
+  (id, loja_id, produto_id, codigo, o_que_mudou, fonte, coletado_em, status)
+  values ('${revisaoFisica}', '${L}', '${P}', 'OEM-CI-112',
+    'medida da peça', 'fixture CAT-119', now(), 'aprovado');`);
+try {
+  const aplicacoesDaPeca = JSON.parse(sql(`
+    select jsonb_agg(a.id order by a.id)
+    from public.produto_revisoes r
+    join public.produto_aplicacoes a using (loja_id, produto_id)
+    where r.id = '${revisaoFisica}' and r.status = 'aprovado';`));
+  assert.deepEqual(aplicacoesDaPeca, [A, A2].sort());
+  const resultado = verificar(restrito(L, P, A2), e2);
+  assert.equal(resultado.estado, "aprovacao_legada_conferida");
+  assert.equal(resultado.homologada, false);
+  assert.equal(Object.hasOwn(resultado, "prova"), false);
+  console.log("ok: CAT-119-01 revisão física aprovada não homologa a aplicação com OEM coincidente");
+} finally {
+  sql(`delete from public.produto_revisoes where id = '${revisaoFisica}';`);
+}
+
+assert.equal(sql("select has_table_privilege('service_role','public.produto_aplicacoes','UPDATE');"),"t");
+sql("set role service_role; update public.produto_aplicacoes set modelo='Modelo CI autoridade alterado' where loja_id='"+L+"' and id='"+A2+"';");
+const r3=restrito(L,P,A2);
+assert.equal(r3.atual.modelo,"Modelo CI autoridade alterado");assert.deepEqual(r3.eventos,r2.eventos);
+assert.equal(verificar(r3,e2).estado,"retida");
+console.log("ok: CAT-112-03 contraprova de escritor direto: mudança sem evento é detectada");
+const acl=JSON.parse(sql("select jsonb_agg(jsonb_build_object('papel',r,'auditoria_insert',has_table_privilege(r,'public.auditoria','INSERT'),'aplicacao_update',has_table_privilege(r,'public.produto_aplicacoes','UPDATE')) order by r)::text from unnest(array['anon','authenticated','service_role','nano_lifecycle_produtor','nano_lifecycle_auditoria','nano_catalogo_decisao_leitor']) r;"));
+assert.equal(acl.length,6);
+console.log("inventario CAT-112-04 ACL (não prova RLS ou autoria): "+JSON.stringify(acl));
+const escritores=JSON.parse(sql("select coalesce(jsonb_agg(n.nspname||'.'||p.proname order by n.nspname,p.proname),'[]'::jsonb)::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in ('public','private','nano_lifecycle_interno') and p.prosrc ilike '%auditoria%' and p.prosrc ilike '%insert%';"));
+assert.ok(escritores.includes("public.aplicacao_decidir"));
+console.log("ok: CAT-112-04 inventário textual parcial de funções: "+JSON.stringify(escritores));
+
+// CAT-114: autoridade existente da sessão sintética, não autenticação JWT real.
+// Exercita o mesmo RPC usado por assistente/permissao.ts. Não instala rota nem amplia ACL.
+const L2="e1140000-0000-0000-0000-000000000002",H="e1143000-0000-0000-0000-000000000001",E="e1143000-0000-0000-0000-000000000002",X="e1143000-0000-0000-0000-000000000003";
+sql("begin; insert into public.lojas(id,nome,slug) values ('"+L2+"','CI outra loja','ci-catalogo-114-outra'); insert into public.usuarios_loja(loja_id,user_id,papel) values ('"+L+"','"+H+"','lojista'),('"+L+"','"+E+"','editor'),('"+L2+"','"+X+"','lojista'); commit;");
+const autoridade=(claims,loja=L)=>{
+ const c=JSON.stringify(claims);
+ assert.ok(!c.includes("'")&&[L,L2].includes(loja)); // somente fixtures fixas.
+ return JSON.parse(sql("begin; set local role authenticated; set local request.jwt.claims='"+c+"'; select jsonb_build_object('ator',auth.uid(),'pode',public.pode_administrar_loja('"+loja+"'))::text; rollback;"));
+};
+assert.deepEqual(autoridade({sub:H}),{ator:H,pode:true});
+assert.deepEqual(autoridade({sub:E}),{ator:E,pode:false});
+console.log("ok: CAT-114-01 ator da sessão e papel lojista distinguem editor");
+assert.deepEqual(autoridade({sub:X}),{ator:X,pode:false});
+assert.deepEqual(autoridade({sub:X},L2),{ator:X,pode:true});
+assert.deepEqual(autoridade({sub:H},L2),{ator:H,pode:false});
+console.log("ok: CAT-114-02 autoridade isolada por loja");
+assert.deepEqual(autoridade({}),{ator:null,pode:false});
+assert.deepEqual(autoridade({sub:E,user_metadata:{papel:"super_admin"},aal:"aal2"}),{ator:E,pode:false});
+assert.deepEqual(autoridade({sub:E,app_metadata:{papel:"super_admin"},aal:"aal1"}),{ator:E,pode:false});
+console.log("ok: CAT-114-03 ausência de ator, metadata editável e MFA insuficiente negados");
+sql("update public.usuarios_loja set papel='editor' where loja_id='"+L+"' and user_id='"+H+"';");
+assert.deepEqual(autoridade({sub:H}),{ator:H,pode:false});
+sql("delete from public.usuarios_loja where loja_id='"+L+"' and user_id='"+H+"';");
+assert.deepEqual(autoridade({sub:H}),{ator:H,pode:false});
+console.log("ok: CAT-114-04 perda de papel e revogação verificadas em nova consulta");
+assert.equal(sql("select has_function_privilege('authenticated','public.aplicacao_decidir(uuid,uuid,uuid,text)','EXECUTE');"),"f");
+const r4=restrito(L,P,A2);assert.deepEqual(r4.atual,r3.atual);assert.deepEqual(r4.eventos,r3.eventos);
+console.log("ok: CAT-114-05 autorização consultiva não cria decisão, evento ou prova");
+
+// Inventário de compatibilidade anterior a qualquer mudança de privilégios.
+// Inclui concessões por coluna e por tabela; a autorização por linha é
+// exercitada separadamente. Os papéis são os caminhos conhecidos do piloto.
+const inventarioDml = JSON.parse(sql(`
+ select jsonb_agg(to_jsonb(i) order by relacao, papel, operacao) from (
+   select relacao, papel, operacao,
+     has_table_privilege(papel, relacao, operacao) as tabela,
+     case when operacao in ('INSERT','UPDATE') then
+       array(select a.attname from pg_attribute a
+         where a.attrelid = relacao::regclass and a.attnum > 0 and not a.attisdropped
+           and has_column_privilege(papel, relacao, a.attname, operacao)
+         order by a.attnum)
+     end as colunas
+   from unnest(array['public.produto_aplicacoes','public.auditoria','public.usuarios_loja',
+     'nano_lifecycle_interno.conferencias_gate']) as t(relacao)
+   cross join unnest(array['anon','authenticated','service_role','nano_lifecycle_produtor',
+     'nano_lifecycle_auditoria','nano_lifecycle_gate_registrador']) as p(papel)
+   cross join unnest(array['INSERT','UPDATE','DELETE']) as o(operacao)
+ ) as i;
+`));
+assert.equal(inventarioDml.length, 72);
+function acesso(relacao, papel, operacao) {
+  return inventarioDml.find(i => i.relacao === relacao && i.papel === papel && i.operacao === operacao);
+}
+assert.ok(acesso("public.produto_aplicacoes", "service_role", "UPDATE").colunas.includes("modelo"));
+assert.ok(acesso("public.usuarios_loja", "authenticated", "UPDATE").colunas.includes("papel"));
+assert.ok(acesso("nano_lifecycle_interno.conferencias_gate", "nano_lifecycle_gate_registrador", "INSERT").colunas.includes("auditor"));
+console.log("CAT-116-01 privilégios efetivos por tabela e coluna (antes de RLS):", JSON.stringify(inventarioDml));
+
+// A conferência técnica deve ser escrita pela função do registrador.
+for (const papel of ["nano_lifecycle_produtor", "nano_lifecycle_auditoria"]) {
+  for (const operacao of ["INSERT", "UPDATE", "DELETE"]) {
+    const permissao = acesso("nano_lifecycle_interno.conferencias_gate", papel, operacao);
+    assert.equal(permissao.tabela, false, papel + " " + operacao);
+    if (operacao !== "DELETE") assert.deepEqual(permissao.colunas, [], papel + " " + operacao);
+  }
+}
+console.log("ok: CAT-117-01 produtor e auditor sem DML direto na conferência");
+
+// Conferir as duas assinaturas existentes no catálogo instalado pelo runner.
+// EXECUTE é uma pré-condição: a chamada ainda passa pelas guardas da função.
+const permissoesRotinas = JSON.parse(sql(`
+ select jsonb_object_agg(papel, jsonb_build_array(
+   has_function_privilege(papel, 'public.aplicacao_decidir(uuid,uuid,uuid,text)', 'EXECUTE'),
+   has_function_privilege(papel,
+     'nano_lifecycle_interno.nano_lifecycle_registrar_conferencia(uuid,uuid,uuid,bigint,integer,jsonb,uuid,text,uuid)',
+     'EXECUTE')))
+ from unnest(array['anon','authenticated','service_role',
+   'nano_lifecycle_produtor','nano_lifecycle_auditoria']) as papeis(papel);
+`));
+assert.deepEqual(permissoesRotinas, {
+  anon: [false, false],
+  authenticated: [false, false],
+  service_role: [true, false],
+  nano_lifecycle_produtor: [false, false],
+  nano_lifecycle_auditoria: [false, true],
+});
+console.log("ok: CAT-118-01 permissões das rotinas de decisão legada e conferência técnica");
+
+// CAT-132: sessão humana consultiva, sem status/flag/evento ou prova técnica.
+sql("insert into public.usuarios_loja(loja_id,user_id,papel) values ('"+L+"','"+H+"','lojista');");
+const call132=(loja=L,produto=P,app=A)=>"select private.nano_catalogo_conferir_autoridade('"+loja+"','"+produto+"','"+app+"')::text;";
+const auth132=claims=>"set local role authenticated; set local request.jwt.claims='"+JSON.stringify(claims)+"'; ";
+const consultar132=(claims,loja=L,produto=P,app=A,iso="read committed")=>JSON.parse(sql("begin isolation level "+iso+"; "+auth132(claims)+call132(loja,produto,app)+" rollback;"));
+const elegivel132={estado:"autoridade_consultiva",ator:H,loja:L,produto:P,aplicacao:A,homologada:false};
+const retida132={estado:"retida",homologada:false};
+const ocupada132={estado:"ocupada",homologada:false};
+const antes132=ler();
+assert.deepEqual(consultar132({sub:H}),elegivel132);
+for(const claims of [{},{sub:E},{sub:X},{sub:E,user_metadata:{papel:"super_admin"},aal:"aal2"},{sub:X,app_metadata:{papel:"super_admin"},aal:"aal2"}])assert.deepEqual(consultar132(claims),retida132);
+assert.deepEqual(consultar132({sub:H},L2),retida132);
+assert.deepEqual(consultar132({sub:H},L,M),retida132);
+assert.deepEqual(consultar132({sub:H},L,P,M),retida132);
+assert.deepEqual(consultar132({sub:H},L,P,A,"repeatable read"),retida132);
+for(const papel of ["anon","service_role","nano_lifecycle_produtor","nano_lifecycle_auditoria"])assert.equal(sql("select has_function_privilege('"+papel+"','private.nano_catalogo_conferir_autoridade(uuid,uuid,uuid)','EXECUTE');"),"f");
+assert.equal(sql("select prosecdef from pg_proc where oid='private.nano_catalogo_conferir_autoridade(uuid,uuid,uuid)'::regprocedure;"),"f");
+console.log("ok: CAT-132-01 ator da sessao, lojista persistido, escopo individual e papel invoker");
+async function comTrava132(comandos,esperado,verificar){
+ const p=spawn("psql",["-XqAtw","-h","127.0.0.1","-p","5432","-U","postgres","-d","conecta_teste","-v","ON_ERROR_STOP=1"],{env:{PATH:process.env.PATH,PGPASSWORD:"postgres",PGCONNECT_TIMEOUT:"5"},stdio:["pipe","pipe","pipe"]});
+ const rl=createInterface({input:p.stdout});let err="";p.stderr.on("data",b=>err+=b);
+ try{
+  await new Promise((resolve,reject)=>{
+   const t=setTimeout(()=>reject(Error("timeout CAT-132 "+err)),10000);const linhas=[];
+   p.once("error",e=>{clearTimeout(t);reject(e);});p.once("exit",()=>{clearTimeout(t);reject(Error("psql CAT-132 "+err));});
+   rl.on("line",l=>{if(l==="__CAT132__"){clearTimeout(t);try{assert.deepEqual(linhas.map(JSON.parse),[esperado]);resolve();}catch(e){reject(e);}}else linhas.push(l);});
+   p.stdin.write("begin;\n"+comandos+"\n\\echo __CAT132__\n");
+  });
+  await verificar();
+ }finally{
+  if(p.exitCode===null&&p.signalCode===null)await new Promise(resolve=>{const t=setTimeout(()=>p.kill(),5000);p.once("exit",()=>{clearTimeout(t);resolve();});p.stdin.end("rollback;\n");});
+  rl.close();
+ }
+}
+const rev132="update public.usuarios_loja set papel='editor' where loja_id='"+L+"' and user_id='"+H+"'";
+await comTrava132(rev132+" returning to_jsonb(papel)::text;","editor",async()=>{
+ assert.deepEqual(consultar132({sub:H}),ocupada132);
+});
+assert.deepEqual(consultar132({sub:H}),elegivel132);
+await comTrava132(auth132({sub:H})+call132(),elegivel132,async()=>{
+ assert.throws(()=>sql("\\set VERBOSITY verbose\n"+rev132+";"),e=>e.stderr?.includes("55P03")===true&&e.stderr?.includes("escopo documental ocupado")===true);
+ assert.throws(()=>sql("\\set VERBOSITY verbose\nupdate public.produto_aplicacoes set modelo='Corrida CAT-132' where id='"+A+"';"),e=>e.stderr?.includes("55P03")===true);
+ assert.equal(sql("begin; update public.usuarios_loja set papel='editor' where loja_id='"+L2+"' and user_id='"+X+"' returning papel; rollback;"),"editor");
+});
+sql(rev132+";");
+assert.deepEqual(consultar132({sub:H}),retida132);
+sql("delete from public.usuarios_loja where loja_id='"+L+"' and user_id='"+H+"';");
+assert.deepEqual(consultar132({sub:H}),retida132);
+const depois132=ler();
+assert.deepEqual(depois132.atual,antes132.atual);
+assert.deepEqual(depois132.eventos,antes132.eventos);
+console.log("ok: CAT-132-02 revogacao concorrente nos dois sentidos, outra loja e aplicacao, sem escrita ou prova");

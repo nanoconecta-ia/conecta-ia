@@ -40,10 +40,112 @@ jobs:
       - uses: actions/checkout@v4
       # Banco DESCARTÁVEL do runner (nunca o Supabase). Aplica stub + migrações e roda os testes SQL do Conecta Pair.
       - run: ./supabase/tests/rodar_local.sh
+      - name: Homologar minuta Nano Lifecycle no PostgreSQL descartável
+        env:
+          PGDATABASE: conecta_teste
+        run: |
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-persistencia-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-persistencia-TESTE.sql
+          bash supabase/tests/nano_lifecycle_concorrencia.sh
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-reserva-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-reserva-TESTE.sql
+          bash supabase/tests/nano_lifecycle_reserva_concorrencia.sh
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-projecao-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-ausencias-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-ausencias-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-finalizacao-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-finalizacao-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-lote-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-lote-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-espelho-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-espelho-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-leitura-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-leitura-TESTE.sql
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Caracterizar riscos financeiros em banco descartável
+        env:
+          PGDATABASE: conecta_teste
+        run: node scripts/tests/nano-financeiro-caracterizacao.mjs
+      - name: Integrar orquestrador e RPCs reais no PostgreSQL descartável
+        env:
+          PGDATABASE: conecta_teste
+        run: node --experimental-strip-types scripts/tests/nano-lifecycle-e2e.mjs
       - run: ./supabase/tests/conecta_pair_concorrencia.sh
       - run: ./supabase/tests/exec_local_concorrencia.sh
       - run: node scripts/tests/chat-concorrencia.mjs
       - run: node scripts/tests/chat-fila-concorrencia.mjs
+      - name: Validar proteção de escritores e repetir E2E com trigger
+        env:
+          PGDATABASE: conecta_teste
+        run: |
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-guard-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-papeis-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-guard-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-diario-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-eventos-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-diario-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-eventos-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-despacho-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-despacho-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-consumo-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-consumo-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-transicoes-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-transicoes-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-entrada-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-entrada-TESTE.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-autoridade-consumo-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-resultado-engenharia-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-autoridade-despacho-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-conflitos-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-recibo-auditoria-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-autoria-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-reserva-produtor-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-recibo-produtor-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-documentos-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-atestacao-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-autorizacao-parecerista-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-atualidade-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-pre-gate-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-conferencia-gate-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-concorrencia-gate-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-isolamento-documental-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-lifecycle-autoridade-consumo-TESTE.sql
+          bash supabase/tests/nano_lifecycle_despacho_concorrencia.sh
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-vinculo-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-vinculo-registrador-MINUTA.sql
+          # Dependência do CAT-140: instalar RPC legada antes da contraprova.
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-decisao-MINUTA.sql
+          node --experimental-strip-types scripts/tests/nano-auditoria-e2e.mjs
+          node --experimental-strip-types scripts/tests/nano-lifecycle-e2e.mjs
+      - name: Homologar minuta da autoridade financeira exclusivamente no CI
+        env:
+          PGDATABASE: conecta_teste
+        run: |
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-financeiro-autoridade-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-financeiro-autoridade-TESTE.sql
+      - name: Validar concorrência da autoridade financeira no CI descartável
+        env:
+          PGDATABASE: conecta_teste
+        run: node scripts/tests/nano-financeiro-autoridade-concorrencia.mjs
+      - name: Homologar autoridade administrativa do orçamento no CI descartável
+        env:
+          PGDATABASE: conecta_teste
+        run: |
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-financeiro-orcamento-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-financeiro-orcamento-TESTE.sql
+          node scripts/tests/nano-financeiro-orcamento-concorrencia.mjs
+      - name: Homologar decisão de catálogo e revogação exclusivamente no CI
+        env:
+          PGDATABASE: conecta_teste
+        run: |
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-decisao-TESTE.sql
+          bash supabase/tests/nano_catalogo_decisao_concorrencia.sh
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-leitura-MINUTA.sql
+          psql -Xq -v ON_ERROR_STOP=1 -f docs/conector-ia/nano-catalogo-auditoria-MINUTA.sql
+          node --experimental-strip-types scripts/tests/nano-catalogo-decisao-e2e.mjs
+          node scripts/tests/nano-catalogo-vinculo-e2e.mjs
       - name: Validar reversão somente no banco descartável
         env:
           PGDATABASE: conecta_teste

@@ -1,0 +1,25 @@
+// Recebe somente páginas da API pública. Ausência de dados de motor/ano não
+// autoriza escolher uma ficha por suposição. Nunca altera o SKU.
+export interface FichaAplicacao {slug:string;titulo:string;modelo:string;status:string;motorizacao?:string|null;ano_inicial?:number|null;ano_final?:number|null}
+export function paginasDaSelecao<T extends FichaAplicacao>(paginas:T[],f:{modelo?:string;motor?:string;ano?:string}):T[]{
+  return paginas.filter(p=>{
+    if(p.status!=="aprovado"||!p.slug||!p.titulo)return false;
+    if(f.modelo&&p.modelo!==f.modelo)return false;
+    if(f.motor&&p.motorizacao!==f.motor)return false;
+    if(f.ano){const ano=Number(f.ano);const i=p.ano_inicial??p.ano_final;const j=p.ano_final??p.ano_inicial;if(!Number.isInteger(ano)||i==null||j==null||ano<i||ano>j)return false}
+    return true;
+  });
+}
+export function rotuloAplicacao(p:FichaAplicacao):string{
+  const periodo=p.ano_inicial!=null&&p.ano_final!=null?p.ano_inicial===p.ano_final?String(p.ano_inicial):p.ano_inicial+"–"+p.ano_final:p.ano_inicial!=null?"Ano inicial "+p.ano_inicial:p.ano_final!=null?"Ano final "+p.ano_final:"";
+  return [p.modelo,p.motorizacao,periodo].filter(Boolean).join(" · ");
+}
+
+// Alias explícito apenas para navegação da vitrine. Não cria relações técnicas.
+// Só redireciona a um rótulo aprovado retornado pela API; ambiguidades não escolhem ao acaso.
+export function modeloDoAtalho(valor:string, modelos:readonly string[]):string {
+  if(modelos.includes(valor))return valor;
+  const aliases:Record<string,readonly string[]>={HR:["Hyundai HR"],Bongo:["Bongo K2500","Kia Bongo K2500","Kia Bongo","K2500"],L200:["Mitsubishi L200"]};
+  const candidatos=[...new Set(modelos.filter(m=>(aliases[valor]??[]).includes(m)))];
+  return candidatos.length===1?candidatos[0]:valor;
+}

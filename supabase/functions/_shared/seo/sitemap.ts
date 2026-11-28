@@ -3,11 +3,12 @@
 import { escXml } from "./escape.ts";
 import { dataIso, produtoIndexavel, type ProdutoSeo } from "./dados.ts";
 import { baseUrl, caminhoPolitica, caminhoProduto } from "./url.ts";
+import { aplicacaoIndexavel, aplicacoesUnicas, caminhoAplicacao, type AplicacaoSeo } from "./aplicacao.ts";
 
 export const MAX_URLS_SITEMAP = 50_000;
 export interface UrlSitemap { loc: string; lastmod: string | null }
 
-export function urlsDoSitemap(dominio: string | null, produtos: ProdutoSeo[], slugsPolitica: string[] = []): UrlSitemap[] {
+export function urlsDoSitemap(dominio: string | null, produtos: ProdutoSeo[], slugsPolitica: string[] = [], aplicacoes: AplicacaoSeo[] = []): UrlSitemap[] {
   const base = baseUrl(dominio);
   if (!base) return [];
   const vistos = new Set<string>();
@@ -17,22 +18,23 @@ export function urlsDoSitemap(dominio: string | null, produtos: ProdutoSeo[], sl
     vistos.add(p.sku!);
     out.push({ loc: base + caminhoProduto(p.sku!), lastmod: dataIso(p.atualizado_em) });
   }
+  for(const a of aplicacoesUnicas(aplicacoes).filter(a=>aplicacaoIndexavel(a,produtos)).sort((a,b)=>a.slug.localeCompare(b.slug)))out.push({loc:base+caminhoAplicacao(a.slug),lastmod:null});
   for (const s of slugsPolitica) out.push({ loc: base + caminhoPolitica(s), lastmod: null });
   return out;
 }
 export const totalPaginasSitemap = (urls: UrlSitemap[]) => Math.max(1, Math.ceil(urls.length / MAX_URLS_SITEMAP));
 
-export function gerarSitemap(dominio: string | null, produtos: ProdutoSeo[], pagina = 1, slugsPolitica: string[] = []): string | null {
-  const urls = urlsDoSitemap(dominio, produtos, slugsPolitica);
+export function gerarSitemap(dominio: string | null, produtos: ProdutoSeo[], pagina = 1, slugsPolitica: string[] = [], aplicacoes: AplicacaoSeo[] = []): string | null {
+  const urls = urlsDoSitemap(dominio, produtos, slugsPolitica, aplicacoes);
   if (!urls.length || pagina < 1 || pagina > totalPaginasSitemap(urls)) return null;
   const fatia = urls.slice((pagina - 1) * MAX_URLS_SITEMAP, pagina * MAX_URLS_SITEMAP);
   const itens = fatia.map((u) => `  <url><loc>${escXml(u.loc)}</loc>${u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : ""}</url>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${itens}\n</urlset>\n`;
 }
 /** Índice de sitemaps: só existe quando passa de uma página. */
-export function gerarIndiceSitemap(dominio: string | null, produtos: ProdutoSeo[], slugsPolitica: string[] = []): string | null {
+export function gerarIndiceSitemap(dominio: string | null, produtos: ProdutoSeo[], slugsPolitica: string[] = [], aplicacoes: AplicacaoSeo[] = []): string | null {
   const base = baseUrl(dominio);
-  const n = totalPaginasSitemap(urlsDoSitemap(dominio, produtos, slugsPolitica));
+  const n = totalPaginasSitemap(urlsDoSitemap(dominio, produtos, slugsPolitica, aplicacoes));
   if (!base || n < 2) return null;
   const itens = Array.from({ length: n }, (_, i) => `  <sitemap><loc>${escXml(`${base}/sitemap-${i + 1}.xml`)}</loc></sitemap>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${itens}\n</sitemapindex>\n`;
