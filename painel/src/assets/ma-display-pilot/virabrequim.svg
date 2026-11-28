@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="#14181B" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round">
+  <defs>
+    <linearGradient id="aco" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2F6F8"/><stop offset=".45" stop-color="#C4C9CD"/>
+      <stop offset=".75" stop-color="#8A9196"/><stop offset="1" stop-color="#4C5257"/>
+    </linearGradient>
+    <linearGradient id="grafite" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A4149"/><stop offset="1" stop-color="#1F2327"/>
+    </linearGradient>
+    <linearGradient id="vermelho" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F23B3D"/><stop offset="1" stop-color="#B9141A"/>
+    </linearGradient>
+  </defs>
+      <!-- eixo -->
+      <path d="M8 32 L56 32" stroke="url(#aco)" stroke-width="5"/>
+      <!-- munhões -->
+      <g fill="url(#aco)" stroke="#14181B" stroke-width="1.2">
+        <circle cx="16" cy="32" r="4.5"/><circle cx="32" cy="32" r="4.5"/><circle cx="48" cy="32" r="4.5"/>
+      </g>
+      <!-- contrapesos -->
+      <path d="M22 28 q4 -9 8 0 l0 2 q-4 5 -8 0 Z" fill="url(#grafite)"/>
+      <path d="M38 36 q4 9 -8 0 l0 -2 q4 -5 8 0 Z" fill="url(#grafite)" transform="translate(4 0)"/>
+      <!-- flange -->
+      <circle cx="54" cy="32" r="6" fill="url(#aco)" stroke="#14181B"/><circle cx="54" cy="32" r="1.6" fill="url(#vermelho)"/>
+      <circle cx="16" cy="32" r="1.3" fill="#1F2327"/><circle cx="32" cy="32" r="1.3" fill="#1F2327"/><circle cx="48" cy="32" r="1.3" fill="#1F2327"/></svg>

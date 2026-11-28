@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="#14181B" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round">
+  <defs>
+    <linearGradient id="aco" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2F6F8"/><stop offset=".45" stop-color="#C4C9CD"/>
+      <stop offset=".75" stop-color="#8A9196"/><stop offset="1" stop-color="#4C5257"/>
+    </linearGradient>
+    <linearGradient id="grafite" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A4149"/><stop offset="1" stop-color="#1F2327"/>
+    </linearGradient>
+    <linearGradient id="vermelho" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F23B3D"/><stop offset="1" stop-color="#B9141A"/>
+    </linearGradient>
+  </defs>
+      <!-- conector elétrico -->
+      <rect x="25" y="10" width="14" height="9" rx="2" fill="url(#grafite)" stroke="#14181B"/>
+      <path d="M29 10 L29 7 M35 10 L35 7" stroke="#2b3137" stroke-width="2"/>
+      <!-- corpo -->
+      <path d="M26 19 L38 19 L36 40 L28 40 Z" fill="url(#aco)" stroke="#14181B"/>
+      <path d="M27 25 L37 25 M27.4 31 L36.6 31" stroke="#9aa0a5" stroke-width="1.4"/>
+      <!-- bico -->
+      <path d="M30 40 L34 40 L33 46 L31 46 Z" fill="url(#grafite)" stroke="#14181B"/>
+      <!-- spray (acento) -->
+      <g stroke="url(#vermelho)" stroke-width="1.8">
+        <path d="M32 47 L27 56"/><path d="M32 47 L32 57"/><path d="M32 47 L37 56"/>
+      </g></svg>

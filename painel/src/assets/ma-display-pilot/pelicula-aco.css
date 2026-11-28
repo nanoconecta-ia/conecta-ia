@@ -1,0 +1,10 @@
+/* Película de aço escovado MA Display — aplicada SEPARADAMENTE por CSS, por cima do ícone.
+   Uso: <span class="ma-chip"><svg.../></span>  (a película é um ::after, não altera o SVG). */
+.ma-chip{position:relative;display:inline-grid;place-items:center;width:72px;height:72px;border-radius:14px;
+  background:linear-gradient(145deg,#30363d,#1b1f23);border:1px solid #3a4149;overflow:hidden}
+.ma-chip>svg{position:relative;z-index:1;width:48px;height:48px}
+.ma-chip::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:soft-light;opacity:.55;
+  background:
+    repeating-linear-gradient(115deg, rgba(255,255,255,.14) 0 1px, rgba(0,0,0,.10) 1px 2px),
+    radial-gradient(120% 80% at 30% 15%, rgba(255,255,255,.35), rgba(255,255,255,0) 55%);}
+@media (prefers-reduced-motion: reduce){.ma-chip::after{opacity:.4}}

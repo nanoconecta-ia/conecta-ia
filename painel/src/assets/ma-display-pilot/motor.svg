@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="#14181B" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round">
+  <defs>
+    <linearGradient id="aco" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2F6F8"/><stop offset=".45" stop-color="#C4C9CD"/>
+      <stop offset=".75" stop-color="#8A9196"/><stop offset="1" stop-color="#4C5257"/>
+    </linearGradient>
+    <linearGradient id="grafite" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A4149"/><stop offset="1" stop-color="#1F2327"/>
+    </linearGradient>
+    <linearGradient id="vermelho" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F23B3D"/><stop offset="1" stop-color="#B9141A"/>
+    </linearGradient>
+  </defs>
+      <!-- face frontal -->
+      <path d="M14 30 L40 30 L40 50 L14 50 Z" fill="url(#grafite)"/>
+      <!-- topo com bores -->
+      <path d="M14 30 L22 22 L48 22 L40 30 Z" fill="url(#aco)"/>
+      <!-- lado direito -->
+      <path d="M40 30 L48 22 L48 42 L40 50 Z" fill="url(#aco)"/>
+      <!-- bores no topo -->
+      <ellipse cx="27" cy="26.5" rx="3.2" ry="1.6" fill="#1F2327" stroke="#F2F6F8" stroke-width="1"/>
+      <ellipse cx="35" cy="26.5" rx="3.2" ry="1.6" fill="#1F2327" stroke="#F2F6F8" stroke-width="1"/>
+      <!-- parafusos frontais -->
+      <circle cx="17.5" cy="33" r="1" fill="#2b3137"/><circle cx="17.5" cy="47" r="1" fill="#2b3137"/>
+      <circle cx="36.5" cy="33" r="1" fill="#2b3137"/><circle cx="36.5" cy="47" r="1" fill="#2b3137"/>
+      <path d="M14 41 L40 41" stroke="#14181B" stroke-width="1"/>
+      <!-- polia + correia (acento) -->
+      <circle cx="47" cy="47" r="7" fill="url(#aco)"/><circle cx="47" cy="47" r="2.3" fill="#1F2327"/>
+      <path d="M44 41 a 7 7 0 0 1 6 0" stroke="url(#vermelho)" stroke-width="2.4"/></svg>
