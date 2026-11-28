@@ -11,6 +11,9 @@ import furgao from "../assets/icones3d/veiculo-furgao.webp";
 import caminhao from "../assets/icones3d/veiculo-caminhao.webp";
 import passeio from "../assets/icones3d/veiculo-passeio.webp";
 import suv from "../assets/icones3d/veiculo-suv.webp";
+// Candidatos MA Display (28/11/2026) — recortes transparentes, aguardando aprovação do lojista. Só apresentação.
+import alimentacao from "../assets/icones3d/peca-alimentacao.png";
+import moto from "../assets/icones3d/veiculo-moto.png";
 
-export const ICONE_3D_PECA: Readonly<Record<string, string>> = { motor, arrefecimento, freios, suspensao, eletrica, transmissao };
-export const ICONE_3D_VEICULO: Readonly<Record<string, string>> = { picape, furgao, caminhao, passeio, suv };
+export const ICONE_3D_PECA: Readonly<Record<string, string>> = { motor, arrefecimento, freios, suspensao, eletrica, transmissao, alimentacao };
+export const ICONE_3D_VEICULO: Readonly<Record<string, string>> = { picape, furgao, caminhao, passeio, suv, moto };
