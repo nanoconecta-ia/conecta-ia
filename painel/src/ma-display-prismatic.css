@@ -90,3 +90,28 @@
 [data-ma-display="prismatic"] .ma-atalhos-veiculos-grade img{display:block;width:100%;height:auto;aspect-ratio:4/3;max-height:132px;object-fit:contain;background:white;border-radius:5px}
 [data-ma-display="prismatic"] .ma-atalhos-veiculos-grade button{min-height:44px;white-space:normal}
 [data-ma-display="prismatic"] .ma-atalhos-veiculos-grade button[aria-pressed="true"]{outline:2px solid currentColor;outline-offset:2px}
+
+/* OP-03: capturas do modelo 02 mostram texto branco sobre gelo e texto
+ * escuro sobre a faixa grafite da busca. Corrigir só esse modelo,
+ * preservando logo, geometria, fotos e os modelos Oficial/Impacto. */
+@media (forced-colors: none) {
+  .mobis-v2.m4[data-mobis-site="v3"][data-mobis-modelo="tecnico"] .gcv3-copy :is(h1,.gcv3-titulo-link) {
+    color:#1f2327 !important;
+    -webkit-text-fill-color:currentColor !important;
+    text-shadow:none !important;
+    background:none !important;
+  }
+  .mobis-v2.m4[data-mobis-site="v3"][data-mobis-modelo="tecnico"] .ms-principal .ms-especialidade strong,
+  .mobis-v2.m4[data-mobis-site="v3"][data-mobis-modelo="tecnico"] .ms-principal .ms-acoes :is(a,button)>small {
+    color:#1f2327 !important;
+    -webkit-text-fill-color:currentColor !important;
+  }
+  .mobis-v2.m4[data-mobis-site="v3"][data-mobis-modelo="tecnico"] .ms-principal .ms-especialidade small {
+    color:#a10e15 !important;
+  }
+  .mobis-v2.m4[data-mobis-site="v3"][data-mobis-modelo="tecnico"] .ms-pesquisa .ms-codigo-exato {
+    background:#1f2327;
+    color:#f5f7f9 !important;
+    -webkit-text-fill-color:currentColor !important;
+  }
+}
