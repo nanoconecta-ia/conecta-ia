@@ -1,0 +1,14 @@
+{
+  "versao": "0.1.0-candidato",
+  "estilo": "MA Display 3D (aço/cromo, acento vermelho, fundo grafite)",
+  "origem": "modelo de imagem (Canva generate-image) a pedido do dono em 2026-11-28",
+  "natureza": "ilustrativo / candidato — NÃO é foto real de produto; não prova aplicação, OEM nem compatibilidade; aguarda aprovação do lojista (porteiro). Não homologado, não publicado.",
+  "icones": [
+    {"id": "ma.motor", "arquivo": "motor.png", "rotulo": "Motor"},
+    {"id": "ma.cabecote", "arquivo": "cabecote.png", "rotulo": "Cabeçote"},
+    {"id": "ma.virabrequim", "arquivo": "virabrequim.png", "rotulo": "Virabrequim"},
+    {"id": "ma.freios", "arquivo": "freios.png", "rotulo": "Freios"},
+    {"id": "ma.suspensao", "arquivo": "suspensao.png", "rotulo": "Suspensão"},
+    {"id": "ma.injecao", "arquivo": "injecao.png", "rotulo": "Injeção"}
+  ]
+}
