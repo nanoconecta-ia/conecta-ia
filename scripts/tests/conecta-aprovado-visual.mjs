@@ -120,6 +120,8 @@ try{
   assert.equal(await campo.inputValue(),'');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'Nano sem overflow '+width);
   await page.screenshot({path:root+`evidencias-conecta-aprovado/nano-${width}-SIMULADO.png`});
   await page.goto(base+'#/catalogo-aplicacao');await page.locator('[data-catalogo-layout="aprovado-v2"]').waitFor();await page.getByText('Produto sintético para teste',{exact:true}).waitFor();
+  assert.equal(await page.locator('[data-rota-semantica="ma-display"] [data-dimensao-ma]').count(),10,'10 dimensões semânticas MA Display individualizadas');
+  assert.equal(await page.locator('.ap-produto-nome [data-ma-icone="sistema.motor"]').count(),1,'produto vinculado ao ícone MA do nó da taxonomia');
   await verificarMAPrivado(page,'painel');
   await page.reload();await page.locator('[data-catalogo-layout="aprovado-v2"]').waitFor();await page.getByText('Produto sintético para teste',{exact:true}).waitFor();await verificarMAPrivado(page,'painel');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'catálogo sem overflow '+width);
